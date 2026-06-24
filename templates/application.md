@@ -1,0 +1,49 @@
+# Topic — As Applied To <System>
+
+## Canonical Owner
+
+Link to the canonical file(s) this application depends on.
+
+Example:
+- Mechanics: `../engineering-fundamentals/state-machines.md`
+- Idempotency model: `../distributed-systems/idempotency.md`
+
+This file does not re-teach those concepts. If you find yourself explaining what idempotency *is*, stop and link instead.
+
+---
+
+## Context
+
+Which system, which subsystem, which problem inside that system. One paragraph.
+
+---
+
+## Application
+
+How the canonical concept is applied here. Concrete, specific, with diagrams.
+
+Include code only if it sharpens the explanation; otherwise, prose and diagrams.
+
+---
+
+## Decisions Made Here
+
+The specific choices made for this application (knob settings, thresholds, library picks). For larger decisions, link to an ADR in `adr/` rather than re-deriving them inline.
+
+---
+
+## Failure Modes Observed
+
+What actually broke or could break in this specific system, distinct from the generic failure modes in the canonical file.
+
+---
+
+## Observability Hooks
+
+The specific metrics, logs, traces, and dashboards used for this application. Link to `observability/` canonical files for the concepts.
+
+---
+
+## Cross-References
+
+Other application files that exercise the same canonical concept, so the reader can compare.

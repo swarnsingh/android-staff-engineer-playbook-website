@@ -1,0 +1,22 @@
+# Backend For Mobile
+
+## Purpose
+
+The contract between mobile clients and the services they call — BFFs, transport protocols, push vs poll. The push-vs-poll-vs-SSE topic is directly AirBridge-relevant (SSE-based progress).
+
+## Why It Matters
+
+Mobile clients have different needs than web (battery, intermittent connectivity, payload size). The BFF pattern and mobile-specific API design exist because generic backend interfaces don't serve mobile well.
+
+## Learning Order
+
+BFF pattern and API design first (the shape), then transport protocols (the wire), then push-vs-poll and rate limiting (the operational concerns).
+
+## Topics
+
+- [BFF Pattern](backend-for-mobile/bff-pattern.md)
+- [API Design for Mobile](backend-for-mobile/api-design-for-mobile.md)
+- [Transport Protocols (REST / gRPC / GraphQL)](backend-for-mobile/transport-protocols.md)
+- [Push vs Poll vs SSE vs WebSockets](backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md) — directly relevant to AirBridge's SSE progress
+- [Rate Limiting](backend-for-mobile/rate-limiting.md)
+- [Data Formats (JSON / Protobuf)](backend-for-mobile/data-formats.md)
