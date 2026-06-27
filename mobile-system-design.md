@@ -39,7 +39,7 @@ Each is a full topic file. Image Loading appears once here, not also in Platform
 - [YouTube / Video Streaming](mobile-system-design/youtube-video-streaming.md)
 - [Stock Trading App](mobile-system-design/stock-trading-app.md)
 - [Ride-Hailing](mobile-system-design/ride-hailing.md)
-- [File Downloader](mobile-system-design/file-downloader.md) — AirBridge anchor
+- [File Downloader](mobile-system-design/file-downloader.md)
 - [Image Loading](mobile-system-design/image-loading.md)
 - [Caching Library](mobile-system-design/caching-library.md)
 - [Typeahead / Autocomplete Search](mobile-system-design/typeahead-autocomplete-search.md)
@@ -62,7 +62,6 @@ Each is a full topic file. Image Loading appears once here, not also in Platform
 - [Deep Links & Universal Links](mobile-system-design/deep-links-and-universal-links.md)
 - [A/B Testing Infrastructure](mobile-system-design/a-b-testing-infrastructure.md)
 - [Experimentation Platform](mobile-system-design/experimentation-platform.md)
-- [AirBridge at Scale](mobile-system-design/airbridge-at-scale.md)
 
 Release strategy is **not** in this tree — it folds into [`release-engineering.md`](release-engineering.md).
 
