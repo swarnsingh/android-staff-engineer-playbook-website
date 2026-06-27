@@ -1,120 +1,372 @@
-# System Design: Performance
+# Mobile Performance (Frame Rate, Memory, Battery, Network)
 
-## Overview
+> A 45-60 minute mobile system-design walkthrough for the *performance engineering* of an Android app — how to keep the UI smooth, the memory bounded, the battery happy, and the network frugal. Not a single feature, but a horizontal concern that crosses every screen.
 
-In standard software engineering, "Performance" usually refers to Backend throughput—how many requests per second (RPS) a server can handle before it melts. 
+---
 
-In Mobile System Design, **Performance** means exactly three things:
-1.  **Cold Start Time:** How fast does the app open?
-2.  **Jank (Frame Rate):** Does the screen stutter when the user scrolls?
-3.  **Battery & Thermal Drain:** Does using the app make the phone hot and drain 10% of the battery in 15 minutes?
+## 1. Gathering Requirements (~5 min)
 
-A Staff Engineer designing a mobile system must prove to the interviewer that their architectural choices will not violate these three core constraints. If you design a beautiful offline-syncing GraphQL architecture, but it takes 4 seconds for the app to open, the design has failed.
+> **Interviewer:** "How would you keep an Android app performant at scale?"
+> **Candidate:** "Performance is a set of budgets across four dimensions: rendering, memory, battery, network. I'll set the budgets first, then walk through the levers, then deep-dive frame-rate."
 
-## Why It Matters
+### Functional Requirements
+- **Smooth scroll** across all list/feed screens.
+- **Cold start under a budget** (typically < 1.5s on a mid-tier device).
+- **Memory pressure handled** (no OOM, no jank from GC).
+- **Battery drain bounded** (no measurable drain at idle).
+- **Network usage minimised** on cellular.
 
-Mobile users are phenomenally impatient. Google's internal telemetry shows that for every 1 second delay in App Startup time, user drop-off increases exponentially. 
+### Non-Functional Requirements
+- **Measurable**: every budget has a dashboard.
+- **Regression-blocking**: PRs that worsen budgets get flagged.
+- **Per-device-tier**: budgets differ for low-end vs flagship.
+- **Real-user, not lab-only**: production telemetry, not just benchmarks.
+- **No surprise debt**: every "slow" feature has a known root cause.
 
-If you are designing an E-commerce app, a 2-second Cold Start delay translates directly to millions of dollars in lost revenue. Performance is not a "nice to have" polish item; it is a foundational business requirement.
+### Out of Scope
+- Backend latency optimization (server problem)
+- App size optimization (separate; APK / AAB minification, dynamic delivery)
+- Game-loop / OpenGL performance (specialist)
+- ML model inference on device (separate concern)
+- Performance regressions specific to one feature (debug as needed)
 
-## First Principles (The 3 Pillars)
+---
 
-### 1. Cold Start
-- **Definition:** The time from when the user taps the app icon to when the first frame of usable UI is drawn on the screen. The Android OS has to fork the Zygote process, boot the ART runtime, and execute your `Application.onCreate()`.
-- **The Enemy:** Synchronous I/O on the Main Thread (reading `SharedPreferences`), massive Dependency Injection graph initialization, and blocking network calls.
+## 2. Clarifying Questions (~3 min)
 
-### 2. Jank (Dropped Frames)
-- **Definition:** The human eye perceives smooth motion at 60 Frames Per Second (FPS). That means you have exactly **16.6 milliseconds** to measure, layout, and draw every single frame. If you take 17ms, you drop a frame. The screen stutters (Jank).
-- **The Enemy:** Garbage Collection (GC) pauses caused by allocating too many objects in tight loops (e.g., `onDraw`), complex nested UI hierarchies (`ConstraintLayout` measuring itself multiple times), and parsing massive JSON payloads on the Main Thread.
+| Question | Why it matters |
+|---|---|
+| Device-tier distribution (low-end share)? | Where to focus budgets |
+| Target refresh rate (60, 90, 120 Hz)? | Frame budget (16.7 / 11.1 / 8.3 ms) |
+| Cold start budget? | Splash, modules to defer |
+| Major user flows (feed, video, camera)? | Per-flow budgets |
+| Battery telemetry source (Android Vitals, in-app)? | Measurement infra |
+| Cellular constraints (data caps)? | Compression / quality strategy |
+| Memory target (heap, RSS)? | LowMemoryKiller risk |
 
-### 3. Battery & Thermals
-- **Definition:** The phone's CPU and Cellular Radio consume massive power when active. The goal is to finish work instantly and let the hardware go back to "Sleep" state.
-- **The Enemy:** Wakelocks, Polling the network every 5 seconds, keeping WebSockets open in the background, and spinning the CPU in infinite retry loops.
+> **Candidate:** "70% mid-tier, 90 Hz, < 1.5s cold start, feed + video + camera as critical paths, Android Vitals + in-app telemetry, payload < 100 KB per page, heap target < 200 MB."
 
-## System Design Interview Tactics
+---
 
-When asked about Performance in a System Design interview, you must aggressively isolate the bottlenecks.
+## 3. High-Level Diagram (~10 min)
 
-### Strategy 1: The App Startup Bottleneck
-*Interviewer:* "How do you ensure this chat app opens in under 1 second?"
-
-*Staff Answer:* 
-"App startup is dominated by `Application.onCreate()`. 
-First, I will strictly defer the initialization of heavy SDKs (like Crashlytics or Analytics) to a background thread using Androidx `App Startup` or `WorkManager`. They do not block the UI.
-Second, I will lazy-load my Dependency Injection graph. If I am using Dagger/Hilt, I will ensure Singletons are only instantiated when they are first injected, not all at once at boot.
-Third, I will implement a **Baseline Profile** (`baseline-prof.txt`). This tells the ART compiler exactly which methods to Ahead-Of-Time (AOT) compile during APK installation, completely bypassing the JIT compiler during the first critical second of startup."
-
-### Strategy 2: The Scrolling Bottleneck (Jank)
-*Interviewer:* "The user is scrolling through a massive feed of 10,000 photos. How do you prevent stuttering?"
-
-*Staff Answer:*
-"Stuttering happens if we exceed 16.6ms per frame. The biggest risk here is Bitmap memory allocation causing Garbage Collection (GC) pauses, and UI measurement thrashing.
-First, I will enforce **Pagination** (e.g., Paging 3). We only hold 50 items in memory at a time.
-Second, for image loading, I will use a library like `Coil` or `Glide`, which utilizes a Bitmap Pool. Instead of destroying and allocating massive 5MB Bitmaps (which triggers the GC), the library reuses the exact same byte arrays in memory for new photos.
-Third, if using Jetpack Compose, I will strictly enforce `Stable` and `Immutable` annotations on my UI state models to prevent unnecessary Recomposition sweeps."
-
-### Strategy 3: The Network/Battery Bottleneck
-*Interviewer:* "We need to sync the user's contacts to the server. How do you do this without draining the battery?"
-
-*Staff Answer:*
-"The cellular radio is the most expensive hardware on the phone. Waking it up costs battery.
-I will absolutely not use a `while(true)` polling loop or a foreground Service.
-I will use Android's **WorkManager**. I will schedule a background job with specific `Constraints`: `setRequiredNetworkType(UNMETERED)` (Wi-Fi only) and `setRequiresCharging(true)`. 
-This allows the Android OS to batch my contact sync together with other apps' background jobs, waking the radio up only once, drastically saving battery life."
-
-## Architecture (The Performance Triangle)
-
-```mermaid
-graph TD
-    subgraph The Performance Triangle
-        CS[Cold Start < 1000ms]
-        Jank[60 FPS / No Jank]
-        Bat[Battery Efficiency]
-        
-        CS --- Jank
-        Jank --- Bat
-        Bat --- CS
-    end
-    
-    subgraph Core Mitigations
-        CS -.->|Baseline Profiles, Lazy DI| M1[Init Optimization]
-        Jank -.->|Bitmap Pooling, Paging| M2[Memory Optimization]
-        Bat -.->|WorkManager, Push over Poll| M3[Radio Optimization]
-    end
+```
+            Performance Dimensions
+   ┌──────────────┬──────────────┬──────────────┬──────────────┐
+   │   Rendering  │    Memory    │   Battery    │   Network    │
+   │  (frame ms)  │ (heap + RSS) │ (mAh/hour)   │  (bytes/req) │
+   └──────────────┴──────────────┴──────────────┴──────────────┘
+            │                │                  │             │
+            ▼                ▼                  ▼             ▼
+       Compose +         Coil/Coil pool     ProcessLifecycle Coil-tier
+       LazyColumn        bitmap budget      socket policy    WS/FCM
+       JankStats         Room cache TTL     WorkManager      OkHttp
+       Macrobenchmark    Bitmap heap        Doze respect     cache
+                                                              Brotli
 ```
 
-## Failure Modes
+**Telemetry sources:**
+- **Android Vitals** (Play Console) — Real-User-Monitoring; ANR, crash, jank, slow start.
+- **In-app telemetry SDK** — fine-grained, custom traces (see `telemetry-sdk.md`).
+- **Macrobenchmark** (Jetpack) — CI-time startup/jank/baseline profiles.
+- **Perfetto** — system-level traces during debugging.
 
-- **The "JSON in the UI" Freeze:**
-  You download a 5MB JSON string on a background thread (good). But you pass the raw string to the `ViewModel` and call `Moshi.fromJson()` on the Main Thread. The CPU locks up for 200ms to parse it, dropping 12 frames instantly.
-  *(Fix: All deserialization and heavy data transformation MUST happen on `Dispatchers.Default` before the UI state is updated).*
-- **The SharedPreferences Lock:**
-  A developer calls `sharedPreferences.getString("token")` inside `Application.onCreate()`. `SharedPreferences` reads from the physical disk. Disk I/O is notoriously slow and unpredictable. It blocks the Main Thread and causes StrictMode violations.
-  *(Fix: Migrate to `DataStore` which uses Kotlin Flows and guarantees asynchronous reads, or read from memory caches instead of disk during the critical startup path).*
+---
 
-## Staff Engineer Thinking
+## 4. Performance Budgets (per device tier)
 
-When reviewing code for Performance, a Staff engineer focuses on the **Critical Path**.
+| Budget | Low-tier | Mid-tier | Flagship |
+|---|---|---|---|
+| Cold start (TTID) | < 2.5 s | < 1.5 s | < 1.0 s |
+| Cold start (TTFD) | < 4.0 s | < 2.5 s | < 1.8 s |
+| Frame p95 (60 Hz) | < 16.7 ms | < 16.7 ms | < 8.3 ms (120 Hz) |
+| Heap | < 150 MB | < 200 MB | < 300 MB |
+| Battery (active hour) | < 8% | < 5% | < 4% |
+| Page payload (feed) | < 60 KB | < 100 KB | < 150 KB |
 
-1.  **Macro vs Micro Optimization:** I do not care if a developer uses a slightly slower sorting algorithm for a list of 5 items. I *do* care if they initialize a massive database connection on the Main Thread during app startup. We optimize the Macro architecture (Thread routing, I/O boundaries) before we worry about Micro syntax.
-2.  **Telemetry is Mandatory:** You cannot fix what you cannot measure. I mandate Firebase Performance Monitoring or New Relic. If a PR degrades the P90 Cold Start time by 100ms, the CI pipeline fails. Performance is tracked continuously, not just before a big release.
-3.  **Perceived Performance vs Real Performance:** If a network call takes 2 seconds, we cannot fix physics. But we *can* fix Perceived Performance. I mandate Optimistic UI Updates (updating the local screen instantly before the server replies) and Skeleton Loaders. If the app *feels* instant, the user is happy, even if the background math is slow.
+> **TTID** = Time to Initial Display. **TTFD** = Time to Full Display.
 
-## Probing Questions
+---
 
-1.  Explain why Mobile System Design defines "Performance" completely differently than Backend System Design (FPS/Battery vs RPS/Throughput).
-2.  What is the "16.6ms rule," and what happens to the user experience if the Main Thread violates it?
-3.  How does a "Baseline Profile" drastically reduce Cold Start time by interacting directly with the Android Runtime (ART)?
-4.  Why is Garbage Collection (GC) thrashing the primary enemy of smooth 60fps scrolling, and how do Bitmap Pools solve it?
-5.  Explain why using Android's `WorkManager` with constraints (`RequiresCharging`) is vastly superior for battery life compared to running a custom background `Thread` or `Service`.
-6.  Describe the severe performance consequences of performing JSON serialization/deserialization on the Main Thread.
-7.  How does lazy-loading a Dependency Injection (DI) graph improve Cold Start time?
-8.  What is "Perceived Performance," and how can an Optimistic UI update make a slow network connection feel instantaneous to the user?
-9.  Why is reading from `SharedPreferences` during `Application.onCreate()` considered an architectural anti-pattern for performance?
-10. If an interviewer asks you to design a highly complex, animation-heavy screen, why is it critical to mention `Stable` and `Immutable` annotations if using Jetpack Compose?
+## 5. Levers per Dimension
 
-## Further Reading
+### Rendering
 
-- [`jank.md`](../android/performance/jank.md) — Deep dive into the 16.6ms render loop.
-- [`baseline-profiles.md`](../android/performance/jank.md) — The technical implementation of AOT compilation for startup speed.
-- [`push-vs-poll-vs-sse-vs-websockets.md`](../backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md) — The battery tradeoffs of different network transports.
+- Compose `key { id }` on list items to prevent recomposition.
+- `derivedStateOf` for computed UI state.
+- `LazyColumn` with stable item types, not `Column { items.forEach { } }`.
+- `remember` mutable state at the right scope.
+- Avoid `Modifier.fillMaxSize()` chains that trigger relayout.
+- Stable types (`@Immutable`, `@Stable`) for data classes.
+- Strong-skipping mode (Compose Compiler).
+- Baseline profiles for hot startup paths.
+
+### Memory
+
+- Coil with `MemoryCache.Builder().maxSizePercent(0.25)` — bounded bitmap heap.
+- `DisposableEffect { onDispose { player.release() } }` for ExoPlayer.
+- Room queries return `Flow<List<T>>` not `List<T>` — backpressure.
+- `LruCache` for any in-memory caches.
+- Profile leaks with LeakCanary; never leak `Activity`/`Context`.
+
+### Battery
+
+- Foreground-only sockets; FCM for background events.
+- WorkManager constraints (NetworkType.CONNECTED, BatteryNotLow) instead of fighting Doze.
+- No `WakeLock`s unless absolutely necessary.
+- `setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)` to opt into expedited only for user-initiated.
+- Throttle quote/location streams when stationary or backgrounded.
+
+### Network
+
+- HTTP/2 + connection keep-alive (OkHttp default).
+- Brotli or gzip for JSON.
+- Image-tier selection by `ConnectivityManager.isActiveNetworkMetered`.
+- Pagination + cache-first reads.
+- Bundle small updates instead of chatty calls.
+- Single source of truth (Room) so the UI re-renders without re-fetching.
+
+---
+
+## 6. Local Storage (telemetry of perf data)
+
+Perf events flow through the telemetry SDK with category `perf` — see `telemetry-sdk.md`. No separate storage.
+
+---
+
+## 7. Deep Dive: Frame Rate / Jank (~15 min)
+
+> *I'd pick this as the deep dive because frame jank is the most visible perf problem to users. Smooth scroll under load demands discipline across rendering, memory, and threading.*
+
+### Measure first
+
+```kotlin
+class JankMonitor @Inject constructor(activity: Activity) {
+    private val jankStats: JankStats = JankStats.createAndTrack(activity.window) { frame ->
+        if (frame.isJank) {
+            Telemetry.recordJank(
+                screen = currentScreen(),
+                frameDurationMs = frame.frameDurationUiNanos / 1_000_000.0,
+                states = frame.states.joinToString(",") { it.key }
+            )
+        }
+    }
+}
+```
+
+`JankStats` reports janky frames in production. Combine with `Macrobenchmark` for CI-time regression detection.
+
+### Compose stability
+
+```kotlin
+@Immutable
+data class Post(val id: String, val title: String, val author: Author, val createdAt: Long)
+
+@Composable
+fun PostCard(post: Post, onLike: () -> Unit) { ... }
+```
+
+`@Immutable` signals to Compose that `Post` never changes — recomposition skips this composable when the same instance is passed. Without it, Compose conservatively recomposes on every parent change.
+
+### LazyColumn discipline
+
+```kotlin
+LazyColumn(state = listState) {
+    items(items.itemCount, key = items.itemKey { it.id }) { i ->
+        items[i]?.let { post ->
+            PostCard(
+                post = post,
+                onLike = remember(post.id) { { vm.onLike(post.id) } }
+            )
+        }
+    }
+}
+```
+
+- **`key`** — stable identity across data changes; animations + recomposition skip work.
+- **`remember(post.id) { { ... } }`** — lambda identity stable per item; otherwise every recomposition allocates a new lambda and child `PostCard` recomposes.
+
+### derivedStateOf for computed UI
+
+```kotlin
+val showFab by remember { derivedStateOf { listState.firstVisibleItemIndex > 5 } }
+```
+
+`derivedStateOf` only triggers recomposition when the *computed value* changes — not every time `firstVisibleItemIndex` changes by 1.
+
+### Baseline profiles
+
+Baseline profiles are AOT-compiled hot paths shipped with the APK. Generated via `Macrobenchmark`:
+
+```kotlin
+@OptIn(ExperimentalBaselineProfilesApi::class)
+class BaselineProfileGenerator {
+    @get:Rule
+    val rule = BaselineProfileRule()
+
+    @Test
+    fun generate() = rule.collect("com.app") {
+        startActivityAndWait()
+        device.findObject(By.text("Open feed")).click()
+        device.wait(Until.hasObject(By.text("Latest")), 5_000)
+        // scroll feed for a few seconds
+    }
+}
+```
+
+The output goes into `app/src/main/baseline-prof.txt`. R8 / ART uses it to AOT-compile those methods. Result: 20-40% faster cold start.
+
+### Strong-skipping mode
+
+Set in `gradle.properties`:
+
+```
+android.experimental.composeStrongSkipping=true
+```
+
+Compose Compiler skips recomposition more aggressively when inputs haven't changed.
+
+### Bitmap memory
+
+```kotlin
+val imageLoader = ImageLoader.Builder(context)
+    .memoryCache { MemoryCache.Builder().maxSizePercent(0.25).build() }
+    .diskCache { DiskCache.Builder().directory(cacheDir.resolve("images")).maxSizeBytes(150 * MB).build() }
+    .build()
+```
+
+Coil 3 binds the memory cache to 25% of heap. Without a budget, the JVM happily allocates bitmaps until OOM. Profile with `Bitmap.getAllocationByteCount()` aggregated.
+
+### Off-screen GPU surfaces
+
+```kotlin
+// Inside a LazyColumn item:
+if (isVisible) {
+    AndroidView(factory = { /* expensive map view */ })
+} else {
+    SimplePlaceholder()
+}
+```
+
+Don't instantiate heavy views off-screen. `LazyColumn` already does this for its children, but custom logic can defeat it.
+
+### Threading discipline
+
+| Work | Where |
+|---|---|
+| UI / Compose | Main |
+| Network | OkHttp dispatcher (default), Ktor's `Dispatchers.IO` |
+| Disk (Room) | `Dispatchers.IO` (Room handles internally for suspend DAOs) |
+| Image decode | Coil's decode dispatcher |
+| Cryptographic | `Dispatchers.Default` |
+| WorkManager | Its own dispatcher |
+
+Never `runBlocking` on Main. Use `withContext(Dispatchers.IO)` in repositories.
+
+### Failure modes
+
+| What breaks | Behavior |
+|---|---|
+| Jank during scroll | Profile with Perfetto; suspect bitmap decode, layout passes, GC |
+| OOM | Bound caches; release players; profile Bitmap allocations |
+| Slow cold start | Defer work to `Initializer`, generate baseline profile, audit `Application.onCreate` |
+| ANR | Profile main-thread work; move I/O off main |
+| Battery drain | Audit sockets, WorkManager, FCM frequency |
+| Network spike | Aggregate analytics; check for chatty endpoints |
+
+---
+
+## 8. Trade-offs
+
+### Measurement source
+
+| Option | Pros | Cons | Verdict |
+|---|---|---|---|
+| **Android Vitals + in-app telemetry SDK + Macrobenchmark** | Real-user + CI gates | Three tools | Pick all three (use each for its strength) |
+| Vitals only | Free, real-user | Only Play Console; coarse | Necessary but not sufficient |
+| Lab benchmarks only | Reproducible | Doesn't match user reality | Skip-only |
+
+### Memory budget enforcement
+
+| Option | Verdict |
+|---|---|
+| **Cap per-component (Coil, Glide, custom)** | Pick — bounded |
+| Trust the system | Bad — OOM in low-mem |
+| Manual GC | Don't — counterproductive |
+
+### Compose perf
+
+| Lever | When |
+|---|---|
+| `@Immutable` / `@Stable` | All data classes UI consumes |
+| `key { }` on lists | Always |
+| `remember { }` for derived state | Yes |
+| Strong-skipping mode | Yes on Compose 1.6+ |
+| Baseline profile | Yes for cold start |
+
+### Battery measurement
+
+| Option | Verdict |
+|---|---|
+| **Android Vitals (background drain)** | Pick |
+| Battery Historian | Use for deep dive |
+| In-app battery API (`BatteryManager`) | OK for in-app indicators |
+
+---
+
+## 9. Major Concerns
+
+- **Perceived vs measured.** A user judges by feel, not p99. Target p95 + animations + skeleton screens for perceived smoothness.
+- **Tier diversity.** A flagship feels fine; a mid-tier doesn't. Always test on the lowest-tier supported device.
+- **Regression gates.** Macrobenchmark in CI flags PR-level regressions before merge.
+- **Background work.** The biggest battery wins come from honouring Doze and not fighting it.
+- **GC pressure.** Allocating in tight loops (e.g., per-frame composable) causes jank from GC pauses; cache where possible.
+- **Cold start budget.** Every `Application.onCreate` line counts. Defer non-critical SDK init via `AppStartup` library.
+- **Network in startup.** Don't block first paint on network. Skeleton + async hydrate.
+- **Profile, don't guess.** Perfetto > intuition. Macrobenchmark > stopwatch.
+
+---
+
+## 10. Follow-up Questions
+
+> **Q: How do you decide what to measure first?**
+> Start with the user complaint or business metric — "feed scroll feels janky" → JankStats per-screen breakdown. Don't optimize what no one notices.
+
+> **Q: A feature is slow on low-tier devices but fine on flagships. What do you do?**
+> Tiered behavior: smaller image variants, fewer prefetched items, simpler animations. Make the tradeoff explicit; degrade gracefully.
+
+> **Q: Compose recompositions are happening more than expected — how to debug?**
+> Compose Compiler reports + `composableInvocations` tooling shows per-composable recomp counts. Use `Recomposer` logs in debug builds. Add `@Stable`/`@Immutable` where needed.
+
+> **Q: How do you decide between baseline profile and ahead-of-time compilation?**
+> Baseline profile is the standard ART path. AOT is automatic post-install on Android 11+ (when system idle). Baseline profile delivers wins from day 1 for cold start.
+
+> **Q: How is battery drain debugged in production?**
+> Android Vitals shows aggregate. For per-user, request `dumpsys batterystats` on a specific device. The biggest culprits are: wake-locks, JobScheduler abuse, foreground services, background sockets.
+
+> **Q: Memory usage suddenly grew in a release — how do you bisect?**
+> `MAT` or `Android Profiler` snapshot before/after the suspect feature. Diff retained heap. Common culprits: held listeners, leaked contexts, undisposed players, bitmap caches without size budget.
+
+---
+
+## 11. Out of Scope (defended)
+
+- **APK size optimisation** — different concern (R8, dynamic delivery, AAB).
+- **Backend latency** — server problem.
+- **Game engines** — specialist.
+- **On-device ML** — separate latency model.
+- **Specific bug fixes** — performance is the system; bugs are individual.
+
+---
+
+## 12. Further Reading
+
+- [Android Developers — App Performance overview](https://developer.android.com/topic/performance) — official guide.
+- [JankStats library](https://developer.android.com/topic/performance/jankstats) — RUM frame metrics.
+- [Macrobenchmark](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview) — CI startup/jank gates.
+- [Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/overview) — AOT-compile hot paths.
+- [Compose performance](https://developer.android.com/jetpack/compose/performance) — stability, recomposition, derivedStateOf.
+
+---
+
+> **Closing in the interview:** "I anchored on frame jank because it's the visible problem. Happy to dig into cold-start optimisation, memory pressure handling, or the battery-discipline patterns next."

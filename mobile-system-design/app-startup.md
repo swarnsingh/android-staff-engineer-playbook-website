@@ -1,132 +1,444 @@
-# Platform Design: App Startup (Cold Start Optimization)
+# App Startup (Cold-Start Optimisation)
 
-## The Prompt
+> A 45-60 minute mobile system-design walkthrough for cold-start optimization on Android: what happens between app icon tap and first interactive frame, where time goes, and how to claw it back.
 
-*"The PM reports that users are abandoning the application because it takes 4 seconds to open. Your team has added 20 different SDKs over the last 3 years. Design an App Startup Architecture that reduces Cold Start time to under 1 second without removing any SDKs."*
+---
 
-## 1. Requirements & Clarification (RADIO Framework)
+## 1. Gathering Requirements (~5 min)
+
+> **Interviewer:** "How do you keep app cold start fast?"
+> **Candidate:** "Start is composed of: process launch → Application.onCreate → first Activity → first frame. I'll map the budgets, walk through the levers, and deep-dive deferred initialization."
 
 ### Functional Requirements
-- Initialize 20+ SDKs (Crashlytics, Analytics, Dagger/Hilt, Room, WorkManager, Braze, etc.).
-- Show the first frame of the Home Screen (Time to Initial Display - TTID) in < 1 second.
-- Show fully loaded network data (Time to Full Display - TTFD) in < 1.5 seconds.
+- **TTID** (Time To Initial Display) < 1.5s on mid-tier.
+- **TTFD** (Time To Full Display) < 2.5s on mid-tier.
+- **Deferred work**: non-critical SDKs init after first frame.
+- **Splash screen** uses the SplashScreen API (no white flash).
+- **Measurable** in production and CI.
 
-### Non-Functional Requirements (NFRs)
-- **Concurrency:** SDKs must be initialized in parallel where possible, maximizing CPU core usage.
-- **Dependency Graph:** If SDK 'B' requires SDK 'A' to be initialized first, the system must respect that order.
+### Non-Functional Requirements
+- **No regression**: CI gates new init paths.
+- **Tier-aware**: budgets relaxed on low-tier.
+- **Observable**: real-user telemetry breaks down each phase.
+- **Reproducible**: Macrobenchmark in CI.
+- **Maintainable**: ownership for each init step.
 
-## 2. High-Level Architecture (The Directed Acyclic Graph)
+### Out of Scope
+- Hot start / warm start (already fast)
+- App size optimisation (separate)
+- Memory at cold start (covered in `performance.md`)
+- Background work optimisation (`performance.md`)
+- iOS launch optimisation
 
-A Junior engineer dumps `Crashlytics.init()`, `Mixpanel.init()`, and `Database.init()` synchronously into `Application.onCreate()`. This guarantees a 4-second cold start and blocks the UI thread.
-A Staff engineer builds a **Startup DAG (Directed Acyclic Graph)**, moving every possible initialization off the Main Thread and delaying non-critical SDKs.
+---
 
-```mermaid
-graph TD
-    subgraph Critical Path (Main Thread - Blockers)
-        Crashlytics[Crash Reporter]
-        DI[Dependency Injection Graph]
-    end
-    
-    subgraph Async Phase (Background Threads)
-        DB[Room Database]
-        Analytics[Analytics SDK]
-    end
-    
-    subgraph Lazy Phase (Post-Render)
-        Marketing[Braze / Braze Push]
-        Ads[AdMob SDK]
-        Review[App Review Prompt SDK]
-    end
-    
-    Application_onCreate --> Critical Path
-    Critical Path --> First_Frame_Drawn
-    
-    First_Frame_Drawn --> Async Phase
-    First_Frame_Drawn --> Lazy Phase
+## 2. Clarifying Questions (~3 min)
+
+| Question | Why it matters |
+|---|---|
+| Current TTID/TTFD distribution? | Where to focus |
+| Device-tier split? | Where the slow users are |
+| What SDKs run in `Application.onCreate`? | Init audit target |
+| Splash screen requirements? | Branded vs system |
+| Cold start frequency vs warm? | Whether to optimise process boot or just first frame |
+| Baseline profiles in place? | Quick win available |
+| Multidex needed? | Pre-Android 5 only |
+
+> **Candidate:** "Median cold start currently 2.3s; targeting < 1.5s mid-tier; ~12 SDKs in `Application.onCreate`; branded splash; baseline profile not yet shipped."
+
+---
+
+## 3. High-Level Diagram (~10 min)
+
+```
+User taps icon
+     │
+     ▼
+Zygote fork → app process
+     │
+     ▼
+Application.onCreate            [Phase 1]
+     ├── Hilt graph init
+     ├── Critical SDKs (Crash, Analytics, Flags)
+     └── Deferred SDKs queued via AppStartup
+     │
+     ▼
+First Activity launched         [Phase 2]
+     ├── Splash screen
+     ├── Theme + window
+     └── ContentView / setContent { }
+     │
+     ▼
+First frame drawn               [TTID]
+     │
+     ▼
+Content ready (network/disk done) [TTFD]
+     │
+     ▼
+Deferred work fires (after frame)
 ```
 
-## 3. The Core Flows (Deep Dive)
+**Phases to budget separately:**
+- **Cold launch path** (zygote → process start) — minimal control.
+- **`Application.onCreate`** — fully in our control.
+- **First Activity to first frame** — Theme + Compose / View tree.
+- **First frame to interactive** — async data loading.
 
-### Flow 1: Triage (The 3 Phases of Startup)
-*Interviewer:* "You have 20 SDKs. How do you mathematically decide which ones go where?"
+---
 
-**Staff Answer:**
-"I triage every SDK into three strict buckets:
-1.  **Critical Path (Phase 1):** Must run synchronously before the first UI frame. (e.g., Crashlytics, DI Framework). If it takes >50ms, it is an incident.
-2.  **Async/Background (Phase 2):** Can be initialized in parallel on a background thread while the UI renders. (e.g., Room Database, Analytics).
-3.  **Lazy/Deferred (Phase 3):** Does not need to exist until the user actually interacts with a specific feature. (e.g., The Camera SDK, Marketing/Push SDKs, Ad SDKs). These are delayed by 5-10 seconds using `IdleHandler` or simply initialized on first use."
+## 4. Budgets
 
-### Flow 2: The AndroidX App Startup Library (The ContentProvider Hack)
-*Interviewer:* "Many third-party SDKs secretly initialize themselves using empty `ContentProvider` components in their Manifests. This happens *before* `Application.onCreate()`. You have no control over them. How do you stop this?"
+| Phase | Mid-tier budget |
+|---|---|
+| Process start (Android) | ~150-300 ms |
+| `Application.onCreate` | < 300 ms |
+| Activity create + first frame | < 400 ms |
+| First frame to interactive | < 600 ms |
+| **Total TTID** | **< 1.5 s** |
+| **Total TTFD** | **< 2.5 s** |
 
-**Staff Answer:**
-"This is a massive hidden bottleneck. The OS instantiates all `ContentProviders` on the Main Thread sequentially.
-I will use the **AndroidX App Startup Library** to hijack this process.
-1. I add an overriding `<provider>` tag in my `AndroidManifest.xml` that explicitly *disables* the 3rd-party SDK's automatic provider using `tools:node="remove"`.
-2. I funnel all SDK initializations through a single `Initializer` class provided by the AndroidX library.
-3. This gives me back complete control over the ordering and threading, removing the hidden OS-level blockage."
+---
 
-### Flow 3: The IdleHandler (Phase 3 Execution)
-*Interviewer:* "How do you guarantee that Phase 3 (Lazy) SDKs are only initialized when the phone's CPU is completely free, so you don't accidentally cause UI jank while the user is scrolling the newly-rendered feed?"
+## 5. Mobile App Architecture
 
-**Staff Answer:**
-"I use the `Looper.myQueue().addIdleHandler()`.
-An `IdleHandler` is a callback that the Android OS only executes when the Main Thread has absolutely nothing else to do.
-1. The Home screen draws its first frame.
-2. The user is looking at the screen. The Main Thread goes idle.
-3. The `IdleHandler` fires.
-4. I initialize the Marketing SDK (Braze) and the Ad SDK.
-If the user touches the screen and starts scrolling, the `IdleHandler` pauses, ensuring 60 FPS scrolling is never interrupted by a background SDK initialization."
+### `Application.onCreate` discipline
 
-## 4. Failure Modes & Bottlenecks
-
-### Bottleneck: Disk I/O on the Main Thread (Strict Mode)
-*Interviewer:* "Your code looks clean, but the app still takes 2 seconds to start. You don't know why."
-
-**Staff Answer:**
-"There is hidden Disk I/O or Network I/O happening on the Main Thread.
-I will enable **Android StrictMode** during debug builds.
 ```kotlin
-StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder()
-    .detectDiskReads()
-    .detectDiskWrites()
-    .detectNetwork()
-    .penaltyDeath() // CRASH the app if I/O is found
-    .build())
+@HiltAndroidApp
+class App : Application() {
+    @Inject lateinit var crash: Crashlytics
+    @Inject lateinit var flags: FlagsRepository
+
+    override fun onCreate() {
+        super.onCreate()
+        // Critical only — must be done before first frame
+        crash.install()
+        flags.bootstrap()                    // sync-from-disk; async refresh
+        // AppStartup will run others later via Initializer chain
+    }
+}
 ```
-This forces the app to crash aggressively in development if *any* library attempts to read SharedPreferences, instantiate a Room Database, or touch the file system on the Main Thread during `Application.onCreate()`. I will find the offending SDK and move it to a Coroutine."
 
-### Bottleneck: Over-Parallelization (Thread Contention)
-*Interviewer:* "You move 15 SDKs into `Dispatchers.IO` to initialize them in parallel. The app gets slower, not faster."
+### `AppStartup` for deferred SDKs
 
-**Staff Answer:**
-"This is Thread Contention (Context Switching overhead).
-A mobile phone only has 4 to 8 CPU cores. If you launch 15 heavy initialization tasks simultaneously on `Dispatchers.IO` (which is backed by a thread pool of 64 threads), the OS spends more time rapidly switching context between the 15 threads than actually executing the code.
-**The Fix:** We must limit the parallelism. We use a single background thread (`Executors.newSingleThreadExecutor()`) or a constrained Coroutine Dispatcher to execute the Async Phase SDKs sequentially in the background. It keeps CPU cache locality high and prevents thermal throttling."
+```xml
+<!-- AndroidManifest.xml -->
+<provider
+    android:name="androidx.startup.InitializationProvider"
+    android:authorities="${applicationId}.androidx-startup"
+    android:exported="false"
+    tools:node="merge">
+    <meta-data
+        android:name="com.app.di.HiltInitializer"
+        android:value="androidx.startup" />
+    <meta-data
+        android:name="com.app.analytics.AnalyticsInitializer"
+        android:value="androidx.startup" />
+</provider>
+```
 
-## 5. Staff Engineer Thinking: Metrics and Regression
+```kotlin
+class AnalyticsInitializer : Initializer<Analytics> {
+    override fun create(context: Context): Analytics {
+        return Analytics.also { it.init(context, AnalyticsConfig(...)) }
+    }
+    override fun dependencies(): List<Class<out Initializer<*>>> = listOf(HiltInitializer::class.java)
+}
+```
 
-A Staff Engineer knows that fixing Cold Start is easy; *keeping* it fixed is hard.
-In a 100-engineer team, someone will merge a PR next month that accidentally adds a 500ms block back to `Application.onCreate()`.
+`AppStartup` lets you parallelize independent inits and explicitly state dependencies, avoiding the "init everything in `onCreate`" anti-pattern.
 
-The Architecture is incomplete without **CI/CD Performance Regression Testing**.
-I will implement **Macrobenchmark**. Every night, a CI pipeline runs the app on a physical device in the Firebase Test Lab. It measures the exact millisecond TTID (Time to Initial Display). If the PR increases the median startup time by more than 50ms, the CI build fails, and the PR cannot be merged.
+### Splash screen (SplashScreen API)
 
-## 6. Probing Questions (For Practice)
+```kotlin
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        val splash = installSplashScreen()
+        super.onCreate(savedInstanceState)
+        splash.setKeepOnScreenCondition {
+            vm.initState.value == InitState.Pending
+        }
+        setContent { App() }
+    }
+}
+```
 
-1.  Explain the concept of Triage (Critical, Async, Lazy) for SDK initialization. Why is Crashlytics always in Phase 1, but a Marketing SDK belongs in Phase 3?
-2.  Describe the hidden performance danger of third-party SDKs using `ContentProvider` for automatic initialization, and how the AndroidX App Startup library solves it.
-3.  How does `Looper.myQueue().addIdleHandler()` provide a mathematically safer way to defer work compared to a simple `Handler.postDelayed(5000)`?
-4.  Explain how Android `StrictMode` acts as a guardrail against UI thread blockages, and why a Staff Engineer enables `penaltyDeath()` in debug builds.
-5.  Walk through the danger of "Over-Parallelization." Why does launching 15 Coroutines simultaneously on an 8-core CPU sometimes result in a slower startup time?
-6.  Describe the difference between Time to Initial Display (TTID) and Time to Full Display (TTFD). How do you optimize the gap between them?
-7.  Why is relying solely on developer discipline insufficient for maintaining fast startup times on a large team, and how does Macrobenchmark in CI solve this?
-8.  If SDK B strictly requires SDK A to be initialized first, how do you model this dependency in the AndroidX App Startup `Initializer` graph?
-9.  Explain why instantiating a Room Database or reading SharedPreferences is considered a "Disk I/O" violation and must be banned from `Application.onCreate()`.
-10. If an app must fetch a Feature Flag from the network before determining which Home Screen UI to show, how does this destroy Cold Start time, and what is the required architectural fix?
+The system splash is drawn during the cold-start window — no white flash, no manual splash Activity.
 
-## Further Reading
+### First frame to interactive
 
-- [`jank.md`](../android/performance/jank.md) — Understanding the Main Thread and Looper.
-- [`baseline-profiles.md`](../android/performance/jank.md) — The ultimate OS-level hack for faster cold starts (AOT compilation).
-- [`feature-flags-and-remote-config.md`](feature-flags-and-remote-config.md) — Why waiting for the network during startup is an anti-pattern.
+```kotlin
+@Composable
+fun FeedScreen(vm: FeedViewModel = hiltViewModel()) {
+    val state by vm.state.collectAsStateWithLifecycle()
+    when (state) {
+        Loading -> FeedSkeleton()       // first paint
+        is Ready -> FeedList(state.items)
+        is Error -> ErrorState(...)
+    }
+    ReportDrawnWhen { state is Ready }   // TTFD signal
+}
+```
+
+`ReportDrawnWhen` (Activity Compose) tells the system "we're fully drawn" — Android Vitals uses it for TTFD.
+
+---
+
+## 6. Local Storage
+
+Cold-start telemetry flows through the telemetry SDK as a `cold_start` event with breakdown by phase:
+
+```json
+{
+  "type": "cold_start",
+  "processStartMs": 187,
+  "appOnCreateMs": 240,
+  "firstActivityMs": 365,
+  "firstFrameMs": 612,
+  "reportDrawnMs": 1480
+}
+```
+
+---
+
+## 7. Deep Dive: Deferred Initialization + Baseline Profile (~15 min)
+
+> *I'd pick this as the deep dive because deferred init + baseline profile is where 60% of the wins live: avoiding work on the cold path and pre-compiling what's left.*
+
+### Audit `Application.onCreate`
+
+```
+1. List every SDK init line in onCreate.
+2. For each: classify as
+   - CRITICAL (must be before first frame): crash reporter, flag bootstrap, Hilt graph
+   - DEFERRABLE (can be after first frame): analytics, perf monitor, ads SDK, feature SDKs
+   - LAZY (init on first use): rare paths
+3. Move DEFERRABLE to AppStartup Initializers.
+4. Move LAZY to `lazy { }` or first-call init.
+```
+
+Common offenders:
+- Image loader SDK (move to lazy)
+- Analytics SDK (defer via AppStartup)
+- A/B testing SDK (can be flag-bootstrapped earlier and stays lightweight)
+- 3rd-party SDKs (Facebook, Branch, Mixpanel) — defer or lazy
+- Logger / OkHttp (`lazy { }` is fine)
+
+### AppStartup Initializer chain
+
+```kotlin
+class HiltInitializer : Initializer<Unit> {
+    override fun create(context: Context) { /* Hilt initializes via @HiltAndroidApp */ }
+    override fun dependencies(): List<Class<out Initializer<*>>> = emptyList()
+}
+
+class AnalyticsInitializer : Initializer<Analytics> {
+    override fun create(context: Context): Analytics {
+        return Analytics.also { it.init(context, ...) }
+    }
+    override fun dependencies() = listOf(HiltInitializer::class.java)
+}
+
+class CrashInitializer : Initializer<Crashlytics> {
+    override fun create(context: Context): Crashlytics =
+        Crashlytics.also { it.install(context) }
+    override fun dependencies() = listOf(HiltInitializer::class.java)
+}
+```
+
+The `InitializationProvider` runs these in dependency order, possibly in parallel where the graph allows.
+
+### Lazy init for first-use SDKs
+
+```kotlin
+@Singleton
+class FeatureSdk @Inject constructor(@ApplicationContext private val context: Context) {
+    private val client by lazy { ThirdPartyClient.init(context, config) }
+
+    fun doWork() = client.execute()
+}
+```
+
+Until something calls `doWork`, the SDK never touches disk or threads. Cold start budget preserved.
+
+### Baseline profile
+
+```kotlin
+@OptIn(ExperimentalBaselineProfilesApi::class)
+class BaselineProfileGenerator {
+    @get:Rule val rule = BaselineProfileRule()
+
+    @Test
+    fun generate() = rule.collect(packageName = "com.app") {
+        pressHome()
+        startActivityAndWait()
+        device.wait(Until.hasObject(By.text("Feed")), 3_000)
+        device.findObject(By.text("Feed")).click()
+        device.wait(Until.hasObject(By.text("Latest")), 3_000)
+        // scroll the feed briefly
+    }
+}
+```
+
+Generated file goes into `app/src/main/baseline-prof.txt`. ART AOT-compiles those methods on install. Typical wins: 20-40% TTID on cold start.
+
+### Macrobenchmark gate
+
+```kotlin
+@LargeTest
+class StartupBenchmark {
+    @get:Rule val rule = MacrobenchmarkRule()
+
+    @Test
+    fun startup() = rule.measureRepeated(
+        packageName = "com.app",
+        metrics = listOf(StartupTimingMetric()),
+        compilationMode = CompilationMode.Partial(BaselineProfileMode.Require),
+        iterations = 10,
+        startupMode = StartupMode.COLD,
+    ) {
+        pressHome()
+        startActivityAndWait()
+    }
+}
+```
+
+CI runs this on a known device (or Firebase Test Lab) and fails the build if cold start regresses past the threshold.
+
+### Window background pre-draw
+
+```xml
+<!-- styles.xml -->
+<style name="Theme.App.Starting" parent="Theme.SplashScreen">
+    <item name="windowSplashScreenBackground">@color/brand_bg</item>
+    <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+    <item name="postSplashScreenTheme">@style/Theme.App</item>
+</style>
+```
+
+The system pre-draws this from manifest before `Application.onCreate` runs — instant visual feedback, even if process startup is slow.
+
+### Compose first-frame composition
+
+- Avoid `LaunchedEffect(Unit) { /* fetch */ }` that drives loading state from cold; prefer the ViewModel constructor (which has fired already on first composition).
+- Use `Modifier.layoutId` + `SubcomposeLayout` only when truly needed.
+- Don't `remember { computeExpensiveThing() }` at the top of a screen — move to ViewModel.
+
+### Network during cold start
+
+**Don't block first frame on network.** Show skeleton, fetch in parallel, hydrate. If you must block (e.g., flag fetch), parallelise with first frame and apply at frame 2.
+
+### Failure modes
+
+| What breaks | Behavior |
+|---|---|
+| Hilt graph grows; cold start regresses | Per-Initializer Macrobenchmark; isolate the culprit |
+| SDK init blocks main thread | Move to dispatcher in Initializer |
+| Baseline profile stale | Regenerate on major UI changes |
+| Splash screen flashes | Use SplashScreen API, not a custom splash Activity |
+| Crash reporter init fails | App still launches; crash data lost until next launch |
+| Flags fetch slow | Disk-cached values used; UI doesn't block |
+
+---
+
+## 8. Trade-offs
+
+### Init strategy
+
+| Option | When | Verdict |
+|---|---|---|
+| **AppStartup Initializers** | Most SDKs | Pick this |
+| `lazy { }` first-use | Truly rare SDKs | Use for non-critical paths |
+| `Application.onCreate` direct | Critical only (crash, Hilt) | Last resort |
+| `ContentProvider` (vendor SDK pattern) | Vendors love this; pre-Initializer | Avoid; merges all to one provider |
+
+### Splash screen
+
+| Option | Verdict |
+|---|---|
+| **`SplashScreen` API** | Pick — system-managed, no flash |
+| Custom Activity | Adds an activity transition; flashy |
+| Window background only | OK if you don't need a logo |
+| 3rd party splash library | Don't |
+
+### CI vs production measurement
+
+| Source | Pros | Cons |
+|---|---|---|
+| **Macrobenchmark in CI** | Reproducible; gates PRs | Lab-only |
+| **Android Vitals** | Real-user; aggregate | Coarse phases |
+| **In-app telemetry** | Per-phase, real-user | More code |
+
+### Baseline profile
+
+| Option | Verdict |
+|---|---|
+| **Ship baseline-prof.txt** | Pick — large win, low cost |
+| Rely on ART JIT only | Slow first-few launches |
+| Cloud Profiles (Play Console) | Augment baseline-prof; opt-in |
+
+### Multidex
+
+| Option | Verdict |
+|---|---|
+| **Not needed** (Android 5+) | Pick — almost everyone |
+| Legacy multidex | Only for Android 4.4 and below |
+
+---
+
+## 9. Major Concerns
+
+- **Critical path discipline.** Every line in `Application.onCreate` runs on every cold start. Audit ruthlessly.
+- **Don't block first frame.** Skeleton over spinner; render layout structure even when data isn't ready.
+- **Bound init parallelism.** Initializers can run in parallel where dependency graph allows. Don't serialize unless required.
+- **Baseline profile must reflect real usage.** Generate from real flows; stale profiles waste compute.
+- **Splash misuse.** Don't use a splash Activity to hide slow start. Fix the start.
+- **Measurement matters.** Both lab (Macrobenchmark) and real (Vitals) are needed. Lab catches regressions; real measures user impact.
+- **Cold vs hot.** Optimising cold doesn't help warm. Both matter; cold is harder.
+- **Process death.** A user backgrounded for hours sees a cold start, not hot. Common in our actual user base.
+
+---
+
+## 10. Follow-up Questions
+
+> **Q: What's the single biggest cold-start win you can do today?**
+> Ship a baseline profile. It's a one-time setup with a 20-40% TTID improvement on cold start, broadly across the user base.
+
+> **Q: How do you decide what's "critical" vs "deferred"?**
+> Critical = needed before first frame draws (Hilt graph, crash reporter, flag snapshot). Everything else defers. If you're unsure, defer; if you missed something, it'll surface on the first interaction.
+
+> **Q: Compose vs Views for cold start?**
+> Compose's first composition has overhead. Modern Compose (1.6+) + baseline profile narrows this. Views are slightly faster at cold but lose elsewhere. The tradeoff favors Compose for any non-trivial app.
+
+> **Q: How do you measure the impact of each init?**
+> Wrap each Initializer in a trace span. Compare cumulative duration across builds. Macrobenchmark validates net impact on TTID.
+
+> **Q: A vendor SDK is slow in `Application.onCreate` — what do you do?**
+> Move to AppStartup Initializer with dependencies. If they ship as a ContentProvider, override via `tools:node="remove"` and call their init explicitly. Talk to the vendor.
+
+> **Q: Why does cold start vary so much between users?**
+> Device CPU + thermals, foreground/background memory state, ART optimisation level (post-install AOT), system load. Use p95, not avg.
+
+---
+
+## 11. Out of Scope (defended)
+
+- **APK size** — separate optimisation (R8, AAB, dynamic delivery).
+- **Memory at start** — `performance.md`.
+- **Hot start** — already fast; don't over-optimise.
+- **iOS launch** — different platform.
+- **Specific bug fixes** — slow init in a feature is a bug, not architecture.
+
+---
+
+## 12. Further Reading
+
+- [Android Developers — App startup time](https://developer.android.com/topic/performance/vitals/launch-time) — official guide.
+- [AppStartup library](https://developer.android.com/topic/libraries/app-startup) — `Initializer` API.
+- [SplashScreen API](https://developer.android.com/develop/ui/views/launch/splash-screen) — modern splash.
+- [Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/overview) — AOT compilation.
+- [Macrobenchmark](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview) — CI startup measurement.
+
+---
+
+> **Closing in the interview:** "I anchored on deferred init + baseline profile because that's where the biggest wins live. Happy to dig into Compose first-frame composition, splash transitions, or the multi-process startup pattern next."
