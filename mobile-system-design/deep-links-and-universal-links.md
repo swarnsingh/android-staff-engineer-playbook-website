@@ -1,138 +1,476 @@
-# Platform Design: Deep Links & App Links (Universal Links)
+# Deep Links & App Links (Android Universal Links)
 
-## The Prompt
+> A 45-60 minute mobile system-design walkthrough for the deep-linking subsystem of an Android app: URI schemes vs App Links, intent filters, the verification handshake, deferred deep links, and routing inside the app.
 
-*"Design the Deep Linking architecture for an E-Commerce application. When a user clicks `https://shop.com/shoes/123` in an email, the app must open directly to the Shoe Product Page. If the user does not have the app installed, it must route them to the Play Store, and upon installation, remember that they wanted to see 'Shoe 123' (Deferred Deep Linking)."*
+---
 
-## 1. Requirements & Clarification (RADIO Framework)
+## 1. Gathering Requirements (~5 min)
+
+> **Interviewer:** "Design deep linking for an app."
+> **Candidate:** "Three layers: domain → app handoff (App Links), deferred deep links (install-attribution), and in-app routing (the nav graph). I'll deep-dive routing + App Links verification, since that's where most bugs live."
 
 ### Functional Requirements
-- Standard Deep Linking (Custom URI Schemes).
-- Android App Links (HTTP/HTTPS Universal Links).
-- Deferred Deep Linking (Surviving the App Store installation gap).
-- Navigation routing (opening the correct screen with the correct back-stack).
+- **Open any in-app screen from a URL** (`https://example.com/users/42` → user profile).
+- **Universal**: same URL works on web, iOS, Android.
+- **Deferred deep linking** — install the app then route to the original destination.
+- **Authenticated routes** — gate on session, save destination, re-route after login.
+- **Back-stack hygiene** — opening from a notification doesn't lose the home screen.
 
-### Non-Functional Requirements (NFRs)
-- **Security (Priority 0):** Prevent malicious apps from hijacking `shop.com` URLs to steal user credentials (Phishing).
-- **UX Consistency:** When the user presses the 'Back' button after opening a deep link, they must not exit the app; they should go to the App's Home Screen.
+### Non-Functional Requirements
+- **No "Open with..." chooser** for our domain — App Links + verified domain.
+- **Survive process death** — route resumes correctly even if cold-started.
+- **Safe** — no exfiltration via spoofed `intent://` URLs.
+- **Composable** with the navigation graph (one source of truth for routes).
+- **Observable** — track every deep-link hit by source.
 
-## 2. High-Level Architecture (The Routing Pipeline)
+### Out of Scope
+- Web bridge (JS ↔ native) — separate concern
+- Notification routing logic (see `push-notifications.md`)
+- Authentication flow (see `authentication.md`)
+- Cross-app sharing (`Intent.ACTION_SEND` etc.)
 
-A Junior engineer handles deep links by writing a massive `switch(intent.data)` statement in `MainActivity.onCreate()`.
-A Staff engineer builds a **Centralized Routing Engine** mapped to the Navigation Graph, and utilizes cryptographic Verification (Digital Asset Links).
+---
 
-```mermaid
-graph TD
-    User[User Clicks Link in Email] --> OS[Android OS Intent System]
-    
-    subgraph Security Layer
-        OS -->|Checks assetlinks.json| Verified[Verified App Link]
-        Verified --> App[Mobile App]
-    end
-    
-    subgraph Routing Engine (DeepLinkHandler)
-        App --> Router[Central Router]
-        Router -->|Extract Params| Graph[Navigation Graph]
-        Graph -->|Synthesize Back-Stack| ProductScreen[Product Screen]
-    end
-    
-    subgraph Deferred Flow (Branch / Firebase)
-        Uninstalled[User doesn't have app] --> PlayStore[Google Play Store]
-        PlayStore --> Install[App Installed]
-        Install --> DeferredSDK[Deferred Link SDK]
-        DeferredSDK --> Router
-    end
+## 2. Clarifying Questions (~3 min)
+
+| Question | Why it matters |
+|---|---|
+| Domain ownership (one or many)? | One assetlinks file per domain |
+| Need install-attribution (Branch, AppsFlyer)? | Deferred deep link SDK choice |
+| Use Compose Navigation or Jetpack Navigation? | Routing surface |
+| Multi-module nav graph? | Centralized route registry |
+| Wear / Auto / Chromebook surfaces? | Additional intent filters |
+| Authenticated deep links? | Save-and-resume pattern |
+| Cross-platform parity (iOS Universal Links)? | URL scheme symmetry |
+
+> **Candidate:** "Single primary domain, Compose Navigation, multi-module routes, Branch for deferred attribution, authenticated routes save-and-resume, parity with iOS Universal Links."
+
+---
+
+## 3. High-Level Diagram (~10 min)
+
+```
+Web Browser ──tap https://example.com/users/42──► Android System
+                                                           │
+                                          (App Links verified for example.com?)
+                                                           │
+                                       ┌───────────────────┴───────────────────┐
+                                       ▼                                       ▼
+                              Yes: open our app                       No: open browser
+                                       │
+                                       ▼
+                            LinkRouterActivity (intent-filtered)
+                                       │
+                                       ▼
+                                 DeepLinkParser
+                                       │
+                                       ▼
+                          NavController.navigate(route)
+                                       │
+                                       ▼
+                              (Auth-gated route?)
+                                  yes / no
 ```
 
-## 3. The Core Flows (Deep Dive)
+**Components:**
+- **`assetlinks.json`** — served at `/.well-known/assetlinks.json` on our domain; lists package + SHA-256 fingerprint.
+- **Intent filter** — `<intent-filter android:autoVerify="true">` for the domain.
+- **`LinkRouterActivity`** — single entry; parses URI and dispatches.
+- **`DeepLinkParser`** — `Uri` → `Route` mapping.
+- **`Navigator`** — applies the route via `NavController`.
+- **Branch / AppsFlyer SDK** — optional, for deferred attribution.
 
-### Flow 1: Android App Links vs Custom Schemes (Security)
-*Interviewer:* "I register a custom scheme `<data android:scheme="shopapp" />`. Another malicious app on the phone also registers `shopapp://`. When the user clicks the link, the OS shows an 'Open With' dialog, and the user accidentally clicks the malicious app. How do you prevent this?"
+---
 
-**Staff Answer:**
-"Custom schemes are insecure. Anyone can claim them. We must migrate to **Android App Links** (the equivalent of iOS Universal Links).
-1. We declare support for standard HTTP/HTTPS URLs: `<data android:scheme="https" android:host="shop.com" />` and add `android:autoVerify="true"`.
-2. When our app is installed, the Android OS automatically pings `https://shop.com/.well-known/assetlinks.json`.
-3. This JSON file contains the SHA-256 fingerprint of our app's signing certificate.
-4. The OS mathematically verifies that we own both the App and the Website.
-5. Once verified, the OS *never* shows the 'Open With' disambiguation dialog. Clicks on `https://shop.com` are instantly and forcefully routed to our app, mathematically locking out malicious hijackers."
+## 4. API Contract
 
-### Flow 2: Synthesizing the Back-Stack (Navigation)
-*Interviewer:* "The user opens the deep link and goes straight to the 'Shoe 123' screen. They hit the Android system 'Back' button. The app closes completely and dumps them back into their Email app. This is terrible UX. How do you fix it?"
+### `assetlinks.json` (served at `https://example.com/.well-known/assetlinks.json`)
 
-**Staff Answer:**
-"We must synthesize an artificial **Back-Stack**.
-If a user organically navigates to the Shoe screen, the stack is `Home -> Search -> Shoe`. 
-When they deep link, the stack is just `Shoe`.
-Using the Jetpack Navigation Component (or a custom Router), we define the hierarchy. When the deep link is intercepted, the Router does *not* just launch the `ShoeFragment`. It first launches the `HomeFragment`, suppresses the animation, and then pushes the `ShoeFragment` on top.
-When the user hits 'Back', they pop the `ShoeFragment` and land gracefully on the `HomeFragment`, keeping them inside our ecosystem."
+```json
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.example.app",
+    "sha256_cert_fingerprints": [
+      "14:6D:E9:83:C5:73:06:50:D8:..."
+    ]
+  }
+}]
+```
 
-### Flow 3: Deferred Deep Linking (The App Store Gap)
-*Interviewer:* "A user clicks your ad for 'Shoe 123', but they don't have the app. They go to the Play Store and install it. When the app opens, all intent data is gone. They land on the generic Home Screen. How do you preserve the intent across the installation gap?"
+### Intent filter (`AndroidManifest.xml`)
 
-**Staff Answer:**
-"The Android OS does not natively pass URLs through the Play Store installation process. We must use a **Deferred Deep Linking Provider** (like Branch.io or Firebase Dynamic Links).
-1. The user clicks a Branch URL (`https://shop.app.link/shoe123`).
-2. Branch's backend records a fingerprint of the user (IP Address, User Agent, Timestamp, Screen Size).
-3. The user is redirected to the Play Store and installs the app.
-4. On the first launch, the App initializes the Branch SDK.
-5. The SDK sends the device fingerprint to the Branch backend.
-6. Branch looks at its database, says 'Ah! This fingerprint matches a click from 2 minutes ago for Shoe 123!', and returns the URL to the app.
-7. The App's Router parses the URL and opens the Shoe screen.
-*(Note: Fingerprinting is increasingly restricted by Privacy laws like iOS ATT, so fallback mechanics to web-to-app banners are also necessary).*
+```xml
+<activity android:name=".routing.LinkRouterActivity"
+          android:exported="true">
+    <intent-filter android:autoVerify="true">
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="https" android:host="example.com" />
+    </intent-filter>
+    <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="myapp" />   <!-- legacy URI scheme fallback -->
+    </intent-filter>
+</activity>
+```
 
-## 4. Failure Modes & Bottlenecks
+### URL → route mapping
 
-### Bottleneck: The Massive Switch Statement (Scalability)
-A Junior developer puts `if (path == "/shoes") { ... } else if (path == "/cart") { ... }` in `MainActivity`. After 3 years, the file is 5,000 lines long, full of regex errors, and crashes frequently.
+| URL pattern | Route |
+|---|---|
+| `https://example.com/users/{id}` | `user/{id}` |
+| `https://example.com/orders/{id}` | `order/{id}` (auth required) |
+| `https://example.com/p/{shareCode}` | `post/{shareCode}` |
+| `https://example.com/login` | `login` |
+| `myapp://chat/{convId}?message={msgId}` | `chat/{convId}` + scrollTo |
 
-**Staff Answer:**
-"Routing must be Declarative, not Imperative.
-In modern Android (Jetpack Navigation or Compose Navigation), deep links are declared directly on the destination node in the graph:
+---
+
+## 5. Mobile App Architecture
+
+### Module structure
+
+```
+:app
+:core:navigation         ← Navigator interface, Route definitions
+:core:deeplinks          ← LinkRouterActivity, DeepLinkParser
+:feature:user            ← contributes user routes
+:feature:order
+:feature:chat
+:data:auth               ← knows if user is signed in
+```
+
+### Layered diagram
+
+```
+   Intent (VIEW + uri)
+        │
+        ▼
+   LinkRouterActivity
+        │
+        ▼
+   DeepLinkParser.parse(uri) → Route
+        │
+        ▼
+   AuthGate.check(route) ─ unauthenticated? save + go to login
+        │
+        ▼
+   Navigator.go(route)
+        │
+        ▼
+   Compose NavController navigates
+```
+
+### Key class signatures
+
 ```kotlin
-composable(
-    route = "shoe_detail/{shoeId}",
-    deepLinks = listOf(navDeepLink { uriPattern = "https://shop.com/shoes/{shoeId}" })
-) { backStackEntry ->
-    ShoeScreen(id = backStackEntry.arguments?.getString("shoeId"))
+sealed class Route {
+    data class User(val id: String) : Route()
+    data class Order(val id: String) : Route()
+    data class Chat(val convId: String, val scrollToMessage: String? = null) : Route()
+    data class Post(val shareCode: String) : Route()
+    object Login : Route()
+}
+
+interface DeepLinkParser {
+    fun parse(uri: Uri): Route?
+}
+
+interface Navigator {
+    fun go(route: Route)
+    fun goAndSaveDestination(route: Route)
+    fun resumePendingDestination(): Route?
 }
 ```
-The framework automatically parses the regex, extracts the `{shoeId}` variable, and routes the user. The centralized Router engine handles the delegation, keeping `MainActivity` completely clean."
 
-### Bottleneck: The "Web-Only" Feature Crash
-*Interviewer:* "Marketing sends out an email blast with `https://shop.com/new-feature`. The Android app intercepts `https://shop.com/*`. But the Android app hasn't built the 'new-feature' screen yet. The app intercepts the link, fails to parse it, and crashes or shows a blank screen."
+---
 
-**Staff Answer:**
-"The app must have a **Web Fallback Mechanism**.
-1. The Router intercepts the link.
-2. It queries its internal Navigation Graph: 'Do I know how to handle `/new-feature`?'
-3. The Graph returns `false`.
-4. The Router MUST gracefully degrade. It opens an internal `WebViewActivity` (or Chrome Custom Tab) and passes the URL to it.
-5. The user sees the mobile-web version of the 'new-feature' screen inside the app shell. The UX is preserved, and the app doesn't crash."
+## 6. Local Storage (Pending destination)
 
-## 5. Staff Engineer Thinking: Security & Authentication
+Pending deep-link destination survives auth flow:
 
-A Staff Engineer anticipates security exploits related to state changes.
+```kotlin
+@Entity(tableName = "pending_route")
+data class PendingRouteRow(
+    @PrimaryKey val id: Int = 1,
+    val routeJson: String, val savedAt: Long
+)
+```
 
-*Exploit:* What if a malicious website embeds an iframe pointing to `https://shop.com/logout` or `https://shop.com/transfer?amount=100`? If the Android app aggressively intercepts these as deep links and executes them without user confirmation, it creates a Cross-Site Request Forgery (CSRF) vulnerability on mobile.
+Only the destination; transient query params are encoded into the route itself.
 
-*Fix:* Deep links must **never** execute state-mutating actions (POST/PUT/DELETE equivalents) immediately upon opening. A deep link must only ever *navigate* the user to a UI screen. If the link is `shop.com/transfer`, the app opens the Transfer Screen, pre-fills the amount, but **requires the user to manually tap the 'Confirm' button**. 
+---
 
-## 6. Probing Questions (For Practice)
+## 7. Deep Dive: Routing + Verification (~15 min)
 
-1.  Explain the security difference between a Custom URI Scheme (`shopapp://`) and an Android App Link (`https://shop.com`), focusing on the disambiguation dialog.
-2.  Describe the cryptographic verification process of `assetlinks.json`. How does the Android OS prove that the app developer also owns the website?
-3.  Walk through the problem of navigating "Back" after opening a deep link. How does synthesizing a back-stack prevent the app from unexpectedly closing?
-4.  What is Deferred Deep Linking? Explain the concept of "Fingerprinting" used by providers like Branch.io to pass data through the Play Store installation gap.
-5.  Why is a massive `switch/if-else` statement for URL parsing considered a technical debt bottleneck, and how do declarative Navigation Graphs solve it?
-6.  Explain the "Web Fallback Mechanism." What must the Android app do if it intercepts a valid website URL but lacks the native code to render that specific feature?
-7.  Describe the security vulnerability of executing state-mutating actions (like transferring money) directly from a parsed deep link. How must the UI handle this?
-8.  How does the introduction of strict privacy frameworks (like Apple's ATT and Android's Privacy Sandbox) threaten the reliability of Deferred Deep Linking?
-9.  If a user has multiple versions of your app installed (e.g., Production and Beta), how do Android App Links decide which app to open, and how can you configure the `assetlinks.json` to handle this?
-10. Why should a mobile app heavily prefer Chrome Custom Tabs over a raw `WebView` when falling back to render web content?
+> *I'd pick this as the deep dive because it covers App Links verification (the "no chooser" magic), the parser, the auth gate, and back-stack policy — the parts that decide whether the deep link feels native.*
 
-## Further Reading
+### App Links verification handshake
 
-- [`security-and-privacy.md`](../mobile-system-design/security-and-privacy.md) — How CSRF vulnerabilities manifest on mobile.
-- [`navigation.md`](../android/architecture/navigation.md) — The mechanics of Jetpack Navigation and Back-Stack synthesis.
-- [`code-signing.md`](../release-engineering/code-signing.md) — Understanding the SHA-256 certificate fingerprints required for `assetlinks.json`.
+1. Sign your release APK.
+2. Compute SHA-256 fingerprint: `keytool -list -v -keystore release.keystore` → SHA-256 line.
+3. Host `assetlinks.json` at `https://example.com/.well-known/assetlinks.json` over HTTPS with `Content-Type: application/json`.
+4. On install, Android downloads the file and verifies. Status visible via `adb shell pm get-app-links com.example.app`.
+
+If verification succeeds: tapping `https://example.com/...` opens our app silently. If it fails: user gets a "Open with..." chooser (bad UX).
+
+### Manifest intent filter (recap)
+
+`autoVerify="true"` on the App Links intent filter. The legacy `myapp://` scheme is a separate, non-verified filter — useful for QR codes that don't need an HTTPS handshake.
+
+### Single router activity
+
+```kotlin
+class LinkRouterActivity : ComponentActivity() {
+
+    @Inject lateinit var parser: DeepLinkParser
+    @Inject lateinit var navigator: Navigator
+    @Inject lateinit var authGate: AuthGate
+    @Inject lateinit var analytics: AnalyticsClient
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val uri = intent.data
+        if (uri == null) { finish(); return }
+
+        val route = parser.parse(uri)
+        analytics.log("deeplink_received", mapOf("uri" to uri.scrubbedString(), "route" to (route?.name ?: "unknown")))
+
+        if (route == null) {
+            navigator.go(Route.Home)   // fallback
+        } else if (authGate.requires(route) && !authGate.isAuthenticated) {
+            navigator.goAndSaveDestination(route)
+            navigator.go(Route.Login)
+        } else {
+            navigator.go(route)
+        }
+        finish()       // Router is invisible; never stays on the back stack
+    }
+}
+```
+
+### Parser
+
+```kotlin
+class DefaultDeepLinkParser @Inject constructor(
+    private val patterns: List<RoutePattern>
+) : DeepLinkParser {
+    override fun parse(uri: Uri): Route? =
+        patterns.firstNotNullOfOrNull { it.match(uri) }
+}
+
+class UserPattern : RoutePattern {
+    override fun match(uri: Uri): Route? =
+        if (uri.host == "example.com" && uri.pathSegments.firstOrNull() == "users") {
+            uri.pathSegments.getOrNull(1)?.let { Route.User(it) }
+        } else null
+}
+```
+
+Patterns contributed per-feature module via Hilt multi-binding.
+
+### Auth gate + pending destination
+
+```kotlin
+class AuthGate @Inject constructor(
+    private val session: SessionRepository,
+    private val pendingDao: PendingRouteDao,
+) {
+    val isAuthenticated: Boolean get() = session.isSignedIn
+
+    fun requires(route: Route): Boolean = route in AUTH_REQUIRED_ROUTES
+
+    suspend fun savePending(route: Route) {
+        pendingDao.save(PendingRouteRow(routeJson = json.encodeToString(route), savedAt = clock.now()))
+    }
+
+    suspend fun consumePending(): Route? {
+        val row = pendingDao.get() ?: return null
+        pendingDao.clear()
+        return json.decodeFromString<Route>(row.routeJson)
+    }
+}
+```
+
+After login completes, the post-login screen calls `consumePending()` and navigates.
+
+### Navigator (Compose Navigation under the hood)
+
+```kotlin
+class ComposeNavigator @Inject constructor(
+    private val controller: NavController
+) : Navigator {
+
+    override fun go(route: Route) {
+        when (route) {
+            is Route.User -> controller.navigate("user/${route.id}")
+            is Route.Order -> controller.navigate("order/${route.id}") {
+                popUpTo("home")                 // collapse back stack
+                launchSingleTop = true
+            }
+            is Route.Chat -> controller.navigate("chat/${route.convId}?msg=${route.scrollToMessage.orEmpty()}")
+            is Route.Post -> controller.navigate("post/${route.shareCode}")
+            Route.Login -> controller.navigate("login")
+            Route.Home -> controller.popBackStack("home", false)
+        }
+    }
+}
+```
+
+### Back-stack policy
+
+For deep links from notifications:
+
+```kotlin
+val intent = Intent(Intent.ACTION_VIEW, Uri.parse(deepLink)).apply {
+    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+}
+val pi = PendingIntent.getActivity(ctx, requestCode, intent,
+    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+```
+
+Inside the nav graph, the deep-link destination uses `popUpTo("home")` so the user can press Back and land on home, not on the router activity.
+
+### Deferred deep linking
+
+For "install the app and resume the link":
+
+1. User taps `https://example.com/p/abc` without app installed.
+2. Web page shows Play Store link with a `referrer` query (`?referrer=p%2Fabc`).
+3. Install Referrer API delivers `referrer` to the app on first launch.
+4. Splash screen reads referrer, hands to parser, resumes deep link.
+
+```kotlin
+class InstallReferrerClient @Inject constructor(@ApplicationContext ctx: Context) {
+    suspend fun getReferrer(): String? = withContext(Dispatchers.IO) {
+        val client = com.android.installreferrer.api.InstallReferrerClient.newBuilder(ctx).build()
+        suspendCancellableCoroutine { cont ->
+            client.startConnection(object : InstallReferrerStateListener {
+                override fun onInstallReferrerSetupFinished(responseCode: Int) {
+                    val ref = if (responseCode == OK) client.installReferrer.installReferrer else null
+                    client.endConnection()
+                    cont.resume(ref)
+                }
+                override fun onInstallReferrerServiceDisconnected() { cont.resume(null) }
+            })
+        }
+    }
+}
+```
+
+For more complex attribution (which channel? which campaign?), use Branch / AppsFlyer / Firebase Dynamic Links (sunsetting).
+
+### Failure modes
+
+| What breaks | Behavior |
+|---|---|
+| `assetlinks.json` not reachable | Verification fails; chooser appears |
+| Fingerprint mismatch (e.g., new keystore) | Verification fails on next OS check |
+| Parser doesn't know a route | Fallback to home; log unknown URI |
+| Auth-required route + offline | Show splash, retry session on reconnect |
+| Spoofed `intent://` URI | Validate scheme; only `https`/`myapp` accepted |
+| Notification deep link with stale id | Land on screen, screen handles "not found" |
+| Cold start with deep link | Splash + nav graph; pending route consumed after auth |
+
+---
+
+## 8. Trade-offs
+
+### Linking transport
+
+| Option | Pros | Cons | Verdict |
+|---|---|---|---|
+| **App Links (`https`)** | No chooser, verified, web parity | DevOps to host `assetlinks.json` | Pick this |
+| URI scheme (`myapp://`) | Trivial setup | Spoofable, no web parity | Fallback only |
+| Firebase Dynamic Links | Easy deferred | Sunsetting (Aug 2025) | Migrate away |
+| Branch.io / AppsFlyer | Full attribution | Vendor dependency, cost | Pick if attribution matters |
+
+### Routing
+
+| Option | Verdict |
+|---|---|
+| **Compose Navigation + `NavController`** | Pick — Compose-native |
+| Jetpack Navigation XML | OK for View-based apps |
+| Single Activity custom router | Reinvents the wheel |
+| Per-feature Activity | Bad UX (multiple tasks) |
+
+### Router activity
+
+| Option | Verdict |
+|---|---|
+| **Single invisible Activity** | Pick — clean separation |
+| Route in `MainActivity.onNewIntent` | Acceptable for small apps; harder to test |
+| Per-feature router | Don't — duplication |
+
+### Auth-gating
+
+| Option | Verdict |
+|---|---|
+| **Save destination, redirect to login, consume after** | Pick — best UX |
+| Hard-block + show "please log in" | Worse UX, user loses context |
+| Allow deep link, then 401 in API | Confusing |
+
+---
+
+## 9. Major Concerns
+
+- **Verification fragility.** New keystore (e.g., Play App Signing) means new SHA-256 — update `assetlinks.json`. Check `adb shell pm get-app-links` after every cert change.
+- **Security.** Never `eval` URI fragments. Validate scheme + host. Strip user-controllable content from logs.
+- **Privacy.** Don't log full URIs with sensitive query params (`?token=…`). Use `scrubbedString()` that drops known-sensitive keys.
+- **Localization.** Routes are language-agnostic; URLs use codes, not localized words.
+- **Back stack.** Plan it per route. Notification → screen should have Home in the back stack so pressing Back doesn't exit the app.
+- **Process death.** Pending destination in Room survives. Otherwise the user gets stuck on the login screen after auth.
+- **Multi-domain.** Each domain needs its own `assetlinks.json` and intent filter `<data>`.
+- **Web parity.** A URL that works on web must work on app. If app doesn't handle the route, fall back to web (don't 404).
+- **Testing.** `adb shell am start -a android.intent.action.VIEW -d "https://example.com/users/42"` to test from terminal.
+
+---
+
+## 10. Follow-up Questions
+
+> **Q: User taps a deep link, app cold-starts — how is the back stack constructed?**
+> The intent flags + nav graph define it. Best practice: deep link to `target`, but push `home` underneath. Compose Navigation does this with `popUpTo("home") { saveState = true }` or via the `TaskStackBuilder` for legacy nav.
+
+> **Q: Two apps want to handle the same URL — how does Android decide?**
+> Verified App Links win without chooser. If multiple are verified for the same domain (unusual), Android shows the chooser. If only one is verified, it wins silently.
+
+> **Q: How do you preview deep links during development?**
+> `adb shell am start -W -a android.intent.action.VIEW -d "<url>" com.example.app`. Or use the IDE's "Run Deeplink" tool. Test against the real-device flow before release.
+
+> **Q: What if `https` linking fails because the user's browser intercepts?**
+> Most modern browsers respect App Links on Android. Chrome, Edge, Firefox do. Some in-app browsers (Instagram, Facebook) don't and open in their WebView — those are out of our control; we recommend the user open in Chrome.
+
+> **Q: Deferred deep linking — privacy concerns?**
+> Install Referrer is a Play Store-provided string with limited PII. Branch / AppsFlyer collect more; require user consent (GDPR). If you don't strictly need attribution, install referrer alone is enough.
+
+> **Q: How do you test the parser?**
+> Unit tests with URIs of every known pattern + known-bad URIs. Should be deterministic, no Android dependencies. Parser is a pure function.
+
+---
+
+## 11. Out of Scope (defended)
+
+- **Web bridge** (JS ↔ native) — different mechanism (JavaScript interfaces).
+- **Notification routing** — `push-notifications.md`.
+- **Auth flow internals** — `authentication.md`.
+- **Attribution analytics dashboards** — vendor-specific.
+- **Cross-app intents** (`ACTION_SEND` from other apps) — different problem.
+
+---
+
+## 12. Further Reading
+
+- [Android Developers — App Links](https://developer.android.com/training/app-links) — official, including verification steps.
+- [Android Developers — Compose Navigation deep links](https://developer.android.com/jetpack/compose/navigation#deeplinks) — official Compose Nav guidance.
+- [Digital Asset Links spec](https://developers.google.com/digital-asset-links/v1/getting-started) — the assetlinks.json format.
+- [Install Referrer API](https://developer.android.com/google/play/installreferrer) — deferred deep link basics.
+- [Branch.io — deferred deep linking](https://help.branch.io/) — vendor for full attribution.
+
+---
+
+> **Closing in the interview:** "App Links verification + the router is the heart of the design — that's where the user experience lives or dies. Happy to dig into the auth-gate save-and-resume pattern, Branch integration, or multi-domain setup next."

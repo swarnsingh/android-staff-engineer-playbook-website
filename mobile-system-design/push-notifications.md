@@ -1,127 +1,456 @@
-# Platform Design: Push Notifications (FCM Architecture)
+# Push Notifications (FCM Client-Side)
 
-## The Prompt
+> A 45-60 minute mobile system-design walkthrough for the Android *client* side of push: FCM token lifecycle, data vs notification messages, MessagingStyle, channels, deep linking, and OEM kill resilience. The server-side delivery fan-out is the next file (`notification-system.md`).
 
-*"Design the Push Notification architecture for an E-Commerce app. The backend must be able to send a 'Flash Sale' notification to 10 million users simultaneously. The mobile app must receive the notification, download an image of the product in the background, and display a rich notification to the user. Handle the scenario where the user gets a new phone."*
+---
 
-## 1. Requirements & Clarification (RADIO Framework)
+## 1. Gathering Requirements (~5 min)
+
+> **Interviewer:** "Design how the app receives and displays push notifications."
+> **Candidate:** "The client-side problems are: token registration with backend, data vs notification choice, lifecycle (foreground vs background vs killed), MessagingStyle, deep links, and the OEM-kill problem. I'll deep-dive the receive pipeline."
 
 ### Functional Requirements
-- Send broadcast notifications (1-to-Millions).
-- Display rich notifications (Images, Action Buttons) on the device.
-- Background execution (app is closed/swiped away when the push arrives).
+- **Register FCM token** with backend on install / token rotation.
+- **Receive data messages** when the app is foreground, background, killed.
+- **Display rich notifications** (`MessagingStyle`, large image, actions).
+- **Tap to deep-link** to the right screen with the right state.
+- **Channels + groups** so users can mute categories.
 
-### Non-Functional Requirements (NFRs)
-- **Delivery Reliability:** Android OS heavily restricts background execution (Doze Mode). The architecture must guarantee delivery without destroying the battery.
-- **Scale:** 10 million payloads sent instantly without crashing the backend or the CDN (when 10M devices try to download the image).
-- **Token Management:** The system must perfectly track which device belongs to which user.
+### Non-Functional Requirements
+- **Always-on**: notifications must arrive even if the app is killed.
+- **Battery**: no polling, no background socket for the sake of notifications.
+- **Privacy**: notification content respects lock-screen visibility settings.
+- **OEM resilience**: best-effort delivery on aggressive vendors (Xiaomi, OPPO, Vivo).
+- **Compliance**: notification permission flow (Android 13+).
 
-## 2. High-Level Architecture (FCM & Data Payloads)
+### Out of Scope
+- Server-side delivery infrastructure (see `notification-system.md`)
+- Web push / desktop
+- iOS APNs (separate stack entirely)
+- In-app messages (Braze-style overlays)
+- Notification analytics dashboards
 
-A Junior engineer sends notifications using FCM (Firebase Cloud Messaging) "Notification Payloads". The OS displays them automatically, providing zero control to the app.
-A Staff engineer uses FCM **"Data Payloads"** to wake up the app and execute custom logic (downloading images, updating local DBs) before showing the notification.
+---
 
-```mermaid
-graph TD
-    subgraph Mobile Device (Android)
-        FCM_SDK[FCM SDK] -->|Wakes Up| Service[FirebaseMessagingService]
-        Service -->|1. HTTP GET| CDN[(Image CDN)]
-        CDN --> Service
-        Service -->|2. Build| NotificationManager[Android NotificationManager]
-    end
-    
-    subgraph Backend
-        Campaign[Marketing Tool] -->|Trigger| Sender[Push Microservice]
-        Sender -->|Batch Post| Google[Google FCM Server]
-        Google -.->|TCP Keep-Alive| FCM_SDK
-    end
-    
-    App_Startup -->|Sync Token| Sender
+## 2. Clarifying Questions (~3 min)
+
+| Question | Why it matters |
+|---|---|
+| FCM only or also vendor pushes (HMS for Huawei)? | Token model, sender abstraction |
+| Notification content sensitivity? | Lock-screen visibility per channel |
+| Are notifications also visible in an in-app inbox? | Need a Room mirror |
+| Localization done server-side or client-side? | Payload size, dynamic strings |
+| Need direct reply (chat)? | `RemoteInput` integration |
+| Android API floor (esp. 13+ for `POST_NOTIFICATIONS`)? | Permission rationale UX |
+| OEM markets of concern? | Vendor-specific guides to whitelist |
+
+> **Candidate:** "FCM only for now; client-side localization; in-app inbox mirror; Android 9-14; direct reply for chat; emerging markets including India + LatAm."
+
+---
+
+## 3. High-Level Diagram (~10 min)
+
+```
+   Server ──► FCM (Google) ──► Device ──► FirebaseMessagingService
+                                                       │
+                                                       ├─► Foreground? render in-app banner
+                                                       │
+                                                       └─► Background/killed:
+                                                            ├─► WorkManager handoff
+                                                            └─► NotificationManagerCompat.notify
+                                                                       │
+                                                                       ▼
+                                                                  Tap → deep link
 ```
 
-## 3. The Core Flows (Deep Dive)
+**Components:**
+- **`FcmTokenService`** — fetches and uploads FCM token to BFF; handles rotation.
+- **`AppFcmMessagingService`** — extends `FirebaseMessagingService`; receives data messages.
+- **`PushDispatcher`** — decides foreground vs background; chooses worker or direct notify.
+- **`NotificationFactory`** — builds `Notification` with style, actions, deep-link `PendingIntent`.
+- **`InboxRepository`** — mirrors notifications to Room for in-app inbox.
 
-### Flow 1: Device Token Management (The "New Phone" Problem)
-*Interviewer:* "The user deletes your app. A month later, they buy a new phone and install it. How does your backend know where to send the notifications?"
+---
 
-**Staff Answer:**
-"Push Notifications rely on an **FCM Registration Token** (a unique String identifying that specific installation on that specific device).
-1. When the app launches, it asks the FCM SDK for its token.
-2. The app sends `POST /users/me/device-tokens` with the token.
-3. The backend stores this in a `user_device_tokens` table. (1 User -> N Devices).
-4. **The Stale Token Problem:** When a user uninstalls the app, the token dies. When the backend tries to send a push to that dead token, Google FCM replies with a `NotRegistered` error. The backend MUST immediately delete that token from the database.
-5. When the user installs on the new phone, FCM generates a *new* token, the app syncs it, and the backend routes pushes correctly."
+## 4. API Contract
 
-### Flow 2: Data Payloads vs Notification Payloads
-*Interviewer:* "You send a Flash Sale notification. You want the app to download a picture of the shoes and show it in the notification. But when the app is in the background, the notification just shows text and your code never runs. Why?"
+### FCM token registration
 
-**Staff Answer:**
-"You sent an FCM **Notification Payload**.
-If the JSON contains the `"notification"` key, the Android OS intercepts it. If the app is in the background, the OS displays the text instantly and *never* wakes up the app's code.
-**The Fix:** The backend must send a **Data Payload** (JSON containing only the `"data"` key).
+```http
+POST /v1/devices
+Authorization: Bearer …
+{ "fcmToken": "ey…", "platform": "android", "appVersion": "4.12.1",
+  "locale": "en-IN", "tz": "Asia/Kolkata" }
+
+200 OK
+{ "deviceId": "d_42" }
+```
+
+> Token uploaded on (a) first sign-in, (b) `onNewToken`, (c) every fresh launch (cheap idempotent confirm).
+
+### Data message (server → FCM → app)
+
 ```json
 {
-  "to": "device_token",
+  "to": "<fcm-token>",
+  "priority": "high",
   "data": {
-    "title": "Flash Sale!",
-    "image_url": "https://cdn.com/shoes.jpg"
+    "type": "chat.message",
+    "convId": "c_42",
+    "serverId": "m_991",
+    "sender": "Sam",
+    "previewBody": "yo",
+    "deepLink": "myapp://chat/c_42?message=m_991"
   }
 }
 ```
-When a Data Payload arrives, the OS wakes up the app's `FirebaseMessagingService.onMessageReceived()`. We now have ~10 seconds of background execution time. We use `Coil/Glide` to download the image, construct a custom `NotificationCompat.Builder`, set the `LargeIcon` and `BigPictureStyle`, and manually trigger the `NotificationManager.notify()`."
 
-### Flow 3: The Thundering Herd (The 10 Million User DDoS)
-*Interviewer:* "You send the Flash Sale push to 10 million users instantly. 10 million Android phones wake up in the background at the exact same second. They all execute `onMessageReceived` and fire an HTTP GET to download `shoes.jpg`. Your servers catch on fire."
+> **We send `data` messages, not `notification` messages.** The client decides whether and how to show a notification (mute settings, in-app banner, etc.).
 
-**Staff Answer:**
-"This is a self-inflicted DDoS attack.
-1.  **The Backend Fix (Jitter & Spreading):** The backend must *never* send 10 million pushes at once. It must 'smear' the sends over a 15-minute window (e.g., sending 10,000 per second).
-2.  **The CDN Fix:** The `image_url` must point to an Edge CDN (Cloudflare), absolutely never to the core AWS S3 bucket. The CDN will cache `shoes.jpg` at the edge, trivially absorbing millions of requests without hitting the origin.
-3.  **The Client Fix:** The Android app must implement a short timeout (e.g., 3 seconds) on the image download. If the image fails to download, it catches the exception and displays a text-only notification as a fallback. It must *never* retry in an infinite loop."
+### Categories → channels
 
-## 4. Failure Modes & Bottlenecks
+| Category | Channel ID | Default importance |
+|---|---|---|
+| Chat — DM | `chat_dm` | HIGH (sound + heads-up) |
+| Chat — group | `chat_group` | DEFAULT |
+| Promotion | `promo` | LOW (silent) |
+| Account / security | `account_security` | HIGH (cannot be silenced) |
+| Order update | `order_update` | DEFAULT |
 
-### Bottleneck: Doze Mode & Battery Restrictions
-*Interviewer:* "The user puts their phone on their desk for 4 hours. It goes into deep Doze Mode. Your backend sends a critical 'Order Delivered' push notification. It doesn't arrive until the user turns their screen on 2 hours later."
+---
 
-**Staff Answer:**
-"FCM categorizes pushes into two priorities: **Normal** and **High**.
-By default, Data payloads are `Normal` priority. The OS will batch them and hold them until a maintenance window to save battery.
-If the notification is critical (e.g., Chat Message, Delivery Alert), the backend must add `"priority": "high"` to the FCM JSON. This breaks through Doze Mode and wakes the device instantly. However, if you abuse High Priority for marketing spam, Google will throttle your app's pushes back to Normal priority as a penalty."
+## 5. Mobile App Architecture
 
-### Bottleneck: Notification Channels (Android 8.0+)
-*Interviewer:* "A user gets annoyed by your daily 'Flash Sale' pushes. They go to OS settings and block notifications for your app. Now they can't receive 'Order Shipped' notifications. They call customer support angry."
+### Module structure
 
-**Staff Answer:**
-"This happens when you dump all pushes into a single channel.
-Android 8.0 introduced **Notification Channels**. We must create semantic channels:
-1. `Channel ID: marketing` (Name: "Promotions & Sales")
-2. `Channel ID: transactional` (Name: "Order Updates") - *Critical Priority*
-When we build the notification in `onMessageReceived`, we assign it to the correct channel. The user can now navigate to the OS settings and turn off 'Promotions' while keeping 'Order Updates' turned on. We respect their intent without breaking core app functionality."
+```
+:app                         ← registers FCM service in manifest
+:core:notifications          ← service, dispatcher, factory, channels
+:core:network                ← device registration API
+:core:work                   ← workers for decrypt/fetch flows
+:feature:inbox               ← in-app notification list
+:data:notifications          ← Room mirror
+```
 
-## 5. Staff Engineer Thinking: Silent Pushes for Sync
+### Layered diagram
 
-A Staff Engineer knows Push Notifications aren't just for UI. They are the ultimate trigger for **Offline-First Synchronization**.
+```
+   FCM ─► AppFcmMessagingService.onMessageReceived
+                          │
+                          ▼
+                  PushDispatcher.handle
+                          │
+              ┌───────────┼────────────┐
+              ▼           ▼            ▼
+        foreground?   needs work    just notify
+        in-app banner  → enqueue    → NotificationFactory
+                       Worker        → NotificationManagerCompat.notify
+                          │
+                          ▼
+                  Inbox repo mirror (Room)
+```
 
-If the backend database updates (e.g., the user's friend changes their profile picture), the backend sends a *Silent* Data Payload to the device (`"type": "sync_request"`). 
-The `FirebaseMessagingService` wakes up in the background. It does *not* show a UI notification. Instead, it triggers the Room Database to sync with the server. When the user eventually opens the app 3 hours later, the new profile picture is already on disk, rendering instantly. 
-*(Note: Android severely limits background execution time. For long syncs, the Push must delegate the work to Android's `WorkManager`.)*
+### Key class signatures
 
-## 6. Probing Questions (For Practice)
+```kotlin
+class AppFcmMessagingService : FirebaseMessagingService() {
+    @Inject lateinit var dispatcher: PushDispatcher
 
-1.  Explain the fundamental difference in Android OS behavior between receiving an FCM "Notification Payload" versus a "Data Payload".
-2.  Describe the exact steps an Android app must take to display an image inside a notification when it receives a Data Payload in the background.
-3.  How does a backend handle the "Stale Token Problem" when a user uninstalls the app and FCM returns a `NotRegistered` error?
-4.  Why must an E-Commerce backend "smear" or add jitter to a 10-million user broadcast campaign rather than submitting them to Google all at once?
-5.  Explain how Android Doze Mode impacts FCM delivery. What is the difference between `Normal` and `High` priority, and what happens if you abuse High priority?
-6.  Walk through the implementation of Android Notification Channels. How do they prevent users from blanket-blocking all notifications from your app?
-7.  Describe the concept of a "Silent Push" (Tickle Push). How can it be used to keep a local SQLite database perfectly synchronized with the cloud?
-8.  If `onMessageReceived` is executing in the background and the image download takes 15 seconds, what will the Android OS do to your app? How do you fix it?
-9.  Why is it crucial that the CDN URL provided in the push payload includes standard HTTP Cache-Control headers?
-10. If a user owns a Phone and a Tablet, explain the database schema the backend requires to ensure both devices receive the notification.
+    override fun onMessageReceived(message: RemoteMessage) {
+        dispatcher.handle(message.data)
+    }
 
-## Further Reading
+    override fun onNewToken(token: String) {
+        FcmTokenRegistrar.uploadAsync(token)
+    }
+}
 
-- [`offline-sync.md`](offline-sync.md) — How Silent Pushes trigger background synchronization.
-- [`battery-optimizations.md`](../android/concurrency/battery-optimizations.md) — Deep dive into Doze Mode and `WorkManager` handoffs.
-- [`caching.md`](../engineering-fundamentals/caching.md) — How Edge CDNs absorb the image download Thundering Herd.
+interface PushDispatcher {
+    fun handle(data: Map<String, String>)
+}
+```
+
+---
+
+## 6. Local Storage (Inbox mirror)
+
+```kotlin
+@Entity(tableName = "inbox_items")
+data class InboxItem(
+    @PrimaryKey val id: String,        // server message id
+    val type: String, val title: String, val body: String,
+    val deepLink: String?, val imageUrl: String?,
+    val receivedAt: Long, val readAt: Long?,
+    val payloadJson: String
+)
+```
+
+The inbox is for an in-app "Notifications" screen. The OS notification shade is the OS's view; the inbox is *our* view, and they're synced via this Room mirror.
+
+---
+
+## 7. Deep Dive: Receive Pipeline (~15 min)
+
+> *I'd pick this as the deep dive because it covers: data-vs-notification choice, foreground vs background routing, lifecycle constraints on `FirebaseMessagingService`, WorkManager handoff for non-trivial work, MessagingStyle assembly, and deep-link integrity.*
+
+### `FirebaseMessagingService` lifecycle
+
+- Called on a background thread.
+- Has ~10 seconds before Android can kill it.
+- Cannot do long work (decrypt + network fetch + image download in 10s on a cold start? Risky).
+- **Pattern:** offload to `WorkManager` immediately; service returns fast.
+
+```kotlin
+class AppFcmMessagingService : FirebaseMessagingService() {
+    @Inject lateinit var dispatcher: PushDispatcher
+    override fun onMessageReceived(message: RemoteMessage) {
+        dispatcher.handle(message.data)
+    }
+}
+```
+
+### Dispatcher
+
+```kotlin
+class DefaultPushDispatcher @Inject constructor(
+    private val workManager: WorkManager,
+    private val notifier: SimpleNotifier,
+    private val foreground: ForegroundObserver,
+) : PushDispatcher {
+
+    override fun handle(data: Map<String, String>) {
+        val type = data["type"] ?: return
+        val needsWork = type in setOf("chat.message", "order.update")    // needs fetch/decrypt
+        if (foreground.isAppInForeground() && type == "chat.message") {
+            inAppBus.publish(data)   // in-app banner; no system notification
+            return
+        }
+        if (needsWork) {
+            workManager.enqueue(
+                OneTimeWorkRequestBuilder<DecryptAndNotifyWorker>()
+                    .setInputData(workDataOf("data" to data.toJson()))
+                    .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                    .build()
+            )
+        } else {
+            notifier.notifySimple(data)
+        }
+    }
+}
+```
+
+### Worker (heavy lifting)
+
+```kotlin
+@HiltWorker
+class DecryptAndNotifyWorker @AssistedInject constructor(
+    @Assisted ctx: Context, @Assisted params: WorkerParameters,
+    private val chatRepo: ChatRepository,
+    private val factory: NotificationFactory,
+    private val inboxRepo: InboxRepository,
+) : CoroutineWorker(ctx, params) {
+
+    override suspend fun doWork(): Result {
+        val data = inputData.getString("data")?.fromJson<Map<String, String>>()
+            ?: return Result.failure()
+        val decrypted = chatRepo.decryptIncoming(data)
+        chatRepo.persist(decrypted)             // Room write → UI updates if foreground
+        inboxRepo.insert(decrypted.toInbox())
+        val notification = factory.buildChat(decrypted)
+        NotificationManagerCompat.from(applicationContext)
+            .notify(decrypted.notificationTag(), CHAT_NOTIF_ID, notification)
+        return Result.success()
+    }
+}
+```
+
+### MessagingStyle for chat
+
+```kotlin
+fun NotificationFactory.buildChat(msg: ChatMessage): Notification {
+    val person = Person.Builder().setName(msg.senderName).build()
+    val style = NotificationCompat.MessagingStyle(person)
+        .addMessage(msg.text, msg.timestamp, person)
+
+    val replyIntent = ReplyReceiver.intentFor(applicationContext, msg.convId)
+    val reply = NotificationCompat.Action.Builder(
+        R.drawable.ic_send, "Reply",
+        PendingIntent.getBroadcast(applicationContext, msg.convId.hashCode(), replyIntent,
+            PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+    )
+        .addRemoteInput(RemoteInput.Builder(KEY_REPLY).setLabel("Message").build())
+        .setAllowGeneratedReplies(true)
+        .build()
+
+    return NotificationCompat.Builder(applicationContext, Channels.CHAT_DM)
+        .setSmallIcon(R.drawable.ic_chat)
+        .setStyle(style)
+        .setContentIntent(deepLinkPendingIntent(msg))
+        .addAction(reply)
+        .setAutoCancel(true)
+        .build()
+}
+```
+
+### Deep-link `PendingIntent`
+
+```kotlin
+fun deepLinkPendingIntent(msg: ChatMessage): PendingIntent {
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(msg.deepLink)).apply {
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+    }
+    return PendingIntent.getActivity(
+        applicationContext, msg.id.hashCode(),
+        intent,
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+    )
+}
+```
+
+> `FLAG_IMMUTABLE` is mandatory on Android 12+.
+
+### Channel registration (one-time, idempotent)
+
+```kotlin
+class NotificationChannels @Inject constructor(@ApplicationContext ctx: Context) {
+    init {
+        val mgr = ctx.getSystemService(NotificationManager::class.java)
+        listOf(
+            channel(CHAT_DM, "Direct messages", IMPORTANCE_HIGH),
+            channel(ORDER_UPDATE, "Order updates", IMPORTANCE_DEFAULT),
+            channel(PROMO, "Promotions", IMPORTANCE_LOW),
+        ).forEach(mgr::createNotificationChannel)
+    }
+}
+```
+
+### Permission flow (Android 13+)
+
+```kotlin
+val launcher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+    analytics.log("notif_permission_${if (granted) "granted" else "denied"}")
+}
+LaunchedEffect(Unit) {
+    if (Build.VERSION.SDK_INT >= 33 &&
+        ContextCompat.checkSelfPermission(ctx, POST_NOTIFICATIONS) != PERMISSION_GRANTED) {
+        // Show rationale first, then request
+        if (shouldShowRationale) showRationale()
+        launcher.launch(POST_NOTIFICATIONS)
+    }
+}
+```
+
+### Failure modes
+
+| What breaks | Behavior |
+|---|---|
+| App killed by OEM | FCM still delivers (mostly); WorkManager picks up |
+| Token rotated | `onNewToken` re-uploads |
+| Notification disabled by user | App still receives data; in-app inbox stays in sync |
+| User taps notification while app is killed | Cold-start with deep-link Intent; nav graph resolves |
+| Direct reply over flaky network | `Reply` worker queues; outbox covers send |
+| Notification arrives but image download fails | Notification shown without large image; retry on next fetch |
+
+---
+
+## 8. Trade-offs
+
+### Data vs notification message
+
+| Type | When server controls display | When client controls display | Verdict |
+|---|---|---|---|
+| `notification` | Yes (auto-shown when backgrounded) | No (no `onMessageReceived` when backgrounded) | Skip for any rich logic |
+| **`data`** | No | Yes (always reaches the service) | Pick — total control |
+
+### Service work pattern
+
+| Option | Verdict |
+|---|---|
+| All work in `onMessageReceived` | Risky — 10s limit |
+| **Handoff to `WorkManager`** | Pick — survives, can be expedited |
+| Foreground service for heavy decrypt | Overkill; risks `ForegroundServiceStartNotAllowedException` |
+
+### Backend transport
+
+| Choice | Pick | Reason |
+|---|---|---|
+| **FCM HTTP v1** | Yes | Modern, scoped tokens |
+| Legacy FCM | No | Deprecated |
+| Self-hosted MQTT | Skip | Loses background delivery |
+| HMS (Huawei) | Add if you ship to Huawei devices |
+
+### Channel granularity
+
+| Strategy | Verdict |
+|---|---|
+| **One channel per user-meaningful category** | Pick — clean settings UI |
+| One channel total | User can't mute categories |
+| One channel per conversation | OS limit + user overload |
+
+### Notification UX
+
+| Element | Pick |
+|---|---|
+| Style for chat | `MessagingStyle` |
+| Style for media | `BigPictureStyle` |
+| Style for text | `BigTextStyle` |
+| Action button | `Reply` (RemoteInput), `Snooze`, `Mark Read` |
+
+---
+
+## 9. Major Concerns
+
+- **OEM kill.** Aggressive battery savers on Xiaomi/OPPO/Vivo kill the app and may not wake on FCM. Document; provide in-app "trust this app" guide; consider HMS push on Huawei.
+- **Token rotation.** `onNewToken` fires; re-upload immediately. Backend keeps multiple tokens per user (one per device).
+- **Privacy.** `setVisibility(VISIBILITY_PRIVATE)` for sensitive content; provide a per-channel visibility override.
+- **Permission UX.** Don't request on first launch. Request when user has done something meaningful (subscribed, opted into chat).
+- **Channels are forever.** Once created, the user controls them. Don't proliferate channels you can't justify.
+- **Deep link integrity.** Validate the deep link target before nav. Don't trust the FCM payload blindly (server signed payloads if security matters).
+- **Battery.** No background polling, no socket. FCM is the entire transport.
+- **Inbox sync.** Notification dismissals don't sync to the inbox; users may see dupes. Provide explicit "mark read" actions.
+
+---
+
+## 10. Follow-up Questions
+
+> **Q: User signs out — what happens to the FCM token?**
+> Call `FirebaseMessaging.deleteToken()`. Server-side, remove the device row. New sign-in fetches a fresh token (and a new server `deviceId`).
+
+> **Q: Notification delivered while app is foreground — do we show a heads-up?**
+> No. Suppress system notification, render in-app banner instead. Avoids redundant noise.
+
+> **Q: What if the user enables battery optimisation for our app?**
+> FCM high-priority data messages bypass Doze (with quota). Document the limitation. Build a settings nudge for users in critical flows.
+
+> **Q: How does this interact with Android Auto / wearables?**
+> `Notification.CarExtender` for Auto; `NotificationCompat.WearableExtender` for Wear. Reuse the same channel. Reply actions surface as voice on Wear.
+
+> **Q: How do you test push end-to-end?**
+> Firebase Console "Send test message" with a real device token. Integration test: fake `FirebaseMessagingService` shim that dispatches a `RemoteMessage` directly; assert notification was posted via `NotificationManagerCompat`.
+
+> **Q: User uninstalls — what about the token?**
+> FCM eventually returns `UNREGISTERED` to the server, which then prunes the row. We don't get a callback.
+
+---
+
+## 11. Out of Scope (defended)
+
+- **Server delivery fan-out** — see `notification-system.md`.
+- **iOS / web push** — different transports.
+- **In-app messages** — Braze/Iterable-style overlays, separate SDK pattern.
+- **Notification analytics dashboards** — observability concern.
+- **HMS / vendor pushes** — slot-in via a `PushTransport` interface; not architectural.
+
+---
+
+## 12. Further Reading
+
+- [Android Developers — Notifications overview](https://developer.android.com/develop/ui/views/notifications) — official guide.
+- [Firebase Cloud Messaging — Android setup](https://firebase.google.com/docs/cloud-messaging/android/client) — service registration, token lifecycle.
+- [Android Developers — MessagingStyle + RemoteInput](https://developer.android.com/develop/ui/views/notifications/build-notification) — direct reply patterns.
+- [Don't kill my app](https://dontkillmyapp.com/) — OEM behavior catalog.
+- [Android Developers — POST_NOTIFICATIONS permission](https://developer.android.com/develop/ui/views/notifications/notification-permission) — Android 13+ runtime permission.
+
+---
+
+> **Closing in the interview:** "Receive pipeline was my deep dive because the service-lifecycle constraint and the WorkManager handoff are where novice implementations fail. Happy to dig into the inbox/notification reconciliation, OEM workarounds, or direct-reply send flow next."
