@@ -1,147 +1,468 @@
-# Platform Design: Feature Flags & Remote Config
+# Feature Flags & Remote Config
 
-## The Prompt
+> A 45-60 minute mobile system-design walkthrough for the feature-flag + remote-config subsystem of an Android app: kill switches, server-driven config, evaluation rules, fetch lifecycle, fallback for offline. A/B experimentation builds on top (next file).
 
-*"Design the internal Feature Flag architecture for a 100+ engineer mobile team. The system must allow Product Managers to instantly turn features on/off for millions of users without an App Store update, support targeted rollouts (e.g., '10% of users in Canada'), and guarantee the app will not crash if the network fails during startup."*
+---
 
-## 1. Requirements & Clarification (RADIO Framework)
+## 1. Gathering Requirements (~5 min)
+
+> **Interviewer:** "Design a feature-flag and remote-config system for a mobile app."
+> **Candidate:** "Three core problems: (1) evaluate consistently when the same user opens the app twice, (2) fetch reliably without blocking startup, (3) survive offline. I'll deep-dive the evaluation + fetch cycle."
 
 ### Functional Requirements
-- Evaluate boolean flags (`is_new_checkout_enabled`).
-- Evaluate string/integer configs (`checkout_timeout_seconds = 15`).
-- Target flags based on user properties (Geography, App Version, OS, User ID).
+- **Boolean flags** (kill switch).
+- **String / number config values** (e.g., button text, retry count).
+- **Variant flags** (control / B / C) — same primitive used by experimentation.
+- **Targeting rules** (by app version, country, locale, device tier).
+- **Type-safe access** at call sites.
 
-### Non-Functional Requirements (NFRs)
-- **Zero Startup Blocking (Priority 0):** The app must *never* block the user on a loading screen while waiting for feature flags to download.
-- **Consistency:** If a user opens the app and sees the "New Checkout" UI, they cannot suddenly see the "Old Checkout" UI 5 seconds later because the network request finally finished. (No UI flashing).
-- **Scale:** 100 million Daily Active Users querying flags simultaneously.
+### Non-Functional Requirements
+- **Synchronous reads** — `flag("feature_x").bool` returns from memory.
+- **Fetch never blocks UI**.
+- **Stable** for the session — flag doesn't flip mid-session unless explicitly opted in.
+- **Offline safe** — last good values served from disk.
+- **Auditable** — every evaluation can be logged.
 
-## 2. High-Level Architecture (Client-Side Evaluation)
+### Out of Scope
+- Statistical analysis of variants (see `a-b-testing-infrastructure.md`)
+- Multi-armed bandit assignment (see `experimentation-platform.md`)
+- Server-side flag UI / changeflow (out of mobile scope)
+- Encryption at rest of flag values (handled by EncryptedSharedPrefs if sensitive)
 
-A Junior engineer designs a system where the app sends `userId=99` to the server, and the server replies `{"is_new_checkout": true}`.
-A Staff engineer knows this **Server-Side Evaluation** fails on mobile. It requires a network request for every session, breaks offline, and causes the UI to flash.
+---
 
-We use **Client-Side Evaluation** (The LaunchDarkly / Firebase Remote Config approach).
+## 2. Clarifying Questions (~3 min)
 
-```mermaid
-graph TD
-    subgraph Mobile App (Android)
-        Disk[(SharedPreferences / DB)]
-        Engine[Flag Engine]
-        UI[App UI]
-    end
-    
-    subgraph Backend
-        ConfigSvc[Remote Config API]
-        CDN[(Global CDN)]
-        Rules[(Targeting Rules DB)]
-    end
-    
-    ProductManager -->|Updates Rule| Rules
-    Rules -->|Bakes to JSON| CDN
-    
-    Engine -->|1. Read INSTANTLY| Disk
-    Disk --> UI
-    
-    Engine -.->|2. Async Fetch| CDN
-    CDN -.->|3. Save for NEXT launch| Disk
+| Question | Why it matters |
+|---|---|
+| Who owns flags (eng, PM, both)? | UX of config editing |
+| How many flags total? | Payload size, evaluation cost |
+| Targeting granularity (country, version)? | Rule engine complexity |
+| Need server-side evaluation? | Some flags must not be guessable client-side |
+| Refresh cadence? | Periodic vs on-launch |
+| Default for unknown flag? | Safe-default policy |
+| Need sticky bucketing per user? | User-id hash routing |
+
+> **Candidate:** "Mixed ownership, ~200 flags, targeting by version/country/locale/tier, sticky bucketing by user id, refresh on launch + every 4 hours, default-on or default-off per flag, single-tenant."
+
+---
+
+## 3. High-Level Diagram (~10 min)
+
+```
+   App startup ──► FlagsRepository.bootstrap()
+                            │
+                            ▼
+                  Load cached config from disk (DataStore)
+                            │
+                            ▼
+                  Expose StateFlow<FlagSet> to app
+                            │
+                            ▼
+                  Background fetch (/v1/flags) and persist
+                            │
+                            ▼
+                  Apply policy: "next session" vs "live update"
+
+   Caller code: flags.bool("feature_x") returns from in-memory snapshot
 ```
 
-## 3. The Core Flows (Deep Dive)
+**Components:**
+- **`FlagsRepository`** — bootstraps, fetches, persists.
+- **`Evaluator`** — applies targeting rules; produces a `FlagSet`.
+- **`FlagSet`** — immutable snapshot read by the rest of the app.
+- **`FlagFetcher`** — REST client for `/v1/flags`.
+- **`FlagsStore`** — DataStore-backed persistence (JSON).
 
-### Flow 1: The "Next Launch" Sync Strategy (Preventing UI Flashing)
-*Interviewer:* "The user opens the app. The old UI renders. 2 seconds later, the feature flags download. The app suddenly switches to the new UI. The user gets confused and taps the wrong button. Fix it."
+---
 
-**Staff Answer:**
-"We must completely divorce the network fetch from the UI evaluation.
-1. When the app launches, the `FlagEngine` reads the flags from the local disk cache (which takes 2ms). The UI renders immediately based on these cached flags.
-2. In the background, the `FlagEngine` fires an async HTTP request to fetch the newest flags from the CDN.
-3. When the network request returns 2 seconds later, we save the new flags to disk, but we **DO NOT** notify the UI. We intentionally ignore the new flags for the current session.
-4. The next time the user kills and restarts the app, the UI will read the new flags from disk and render the new UI instantly.
-This guarantees 0ms latency and mathematically prevents UI flashing mid-session."
+## 4. API Contract
 
-### Flow 2: Client-Side Targeting (The Rule Engine)
-*Interviewer:* "We want to enable a feature for '10% of users in Canada on Android 14'. If the server doesn't evaluate the rules, how does the app know if it is part of the 10%?"
+### Server payload
 
-**Staff Answer:**
-"The backend does not send the final boolean. The backend sends the **Ruleset**.
-The CDN hosts a static JSON file that contains the logic:
 ```json
+GET /v1/flags?appVer=4.12.1&os=14&country=IN&locale=en-IN&deviceTier=mid
+200 OK
 {
-  "is_new_checkout": {
-    "default": false,
-    "rules": [
-      {
-        "conditions": {
-          "country": "CA",
-          "os_version": ">=14"
-        },
-        "rollout_percentage": 10,
-        "value": true
-      }
-    ]
-  }
+  "flags": {
+    "new_checkout": { "type": "bool", "value": true },
+    "max_retry": { "type": "int", "value": 5 },
+    "feed_layout": { "type": "string", "value": "grid", "variant": "B" }
+  },
+  "evaluatedAt": 1750000000,
+  "stickyBucketSeed": "u_42"     // for client-side sticky bucketing of new flags
 }
 ```
-The Android SDK downloads this JSON. When the UI asks `FlagEngine.getBoolean("is_new_checkout")`:
-1. The SDK checks the local device's Locale (`CA`) and OS version (`14`).
-2. It matches the rule.
-3. It performs a **Deterministic Hash** to calculate the 10% rollout (see Flow 3).
-The evaluation happens in microseconds on the CPU, with zero network calls."
 
-### Flow 3: Deterministic Rollouts (MurmurHash)
-*Interviewer:* "How do you ensure that if User A is in the 10% rollout group today, they are still in the 10% group tomorrow? You can't use `Math.random()`, because they might flip to the 90% group on the next launch."
+### Caller API (typed)
 
-**Staff Answer:**
-"We use a fast, deterministic hashing algorithm, like **MurmurHash3**.
-1. We concatenate the User's ID and the Flag Key: `hash("user123_is_new_checkout")`.
-2. The hash produces a massive integer.
-3. We take the modulo: `hash % 100`.
-4. This yields a number between 0 and 99.
-5. If the number is `< 10`, they get the feature.
-Because the User ID and Flag Key never change, the hash is mathematically permanent. User A will always fall into the exact same bucket. We do not need the server to remember who is in the 10%."
+```kotlin
+object Flags {
+    val newCheckout: BooleanFlag = bool("new_checkout", default = false)
+    val maxRetry: IntFlag = int("max_retry", default = 3, range = 1..10)
+    val feedLayout: VariantFlag = variant("feed_layout", default = "control", values = listOf("control", "A", "B"))
+}
 
-## 4. Failure Modes & Bottlenecks
+// Usage:
+if (Flags.newCheckout()) { ... }
+val retries = Flags.maxRetry()
+```
 
-### Bottleneck: CDN Thundering Herd
-*Interviewer:* "You send a Push Notification to 50 million users. They all open the app. The app instantly requests the latest Feature Flag JSON. Your API Gateway is annihilated. How do you survive?"
+### Exposure event (analytics piggyback)
 
-**Staff Answer:**
-"Feature Flags must never hit a dynamic API Gateway.
-1. The ruleset is compiled into a static JSON file and hosted on a massive Edge CDN (Cloudflare/Fastly). The CDN absorbs the 50 million requests.
-2. We configure the Android client to respect HTTP `Cache-Control` headers (e.g., `max-age=3600`).
-3. We implement **Client-Side Jitter**. If the cache expires, the app waits a random delay `(0 to 60 seconds)` before requesting the CDN. This smears the 50 million requests over a full minute."
+```json
+{
+  "event": "flag_exposed",
+  "flag": "new_checkout",
+  "value": true,
+  "variant": null,
+  "evaluatedAt": ...
+}
+```
 
-### Bottleneck: Technical Debt (The Dead Flag Graveyard)
-*Interviewer:* "After 2 years, your codebase has 500 `if(FlagEngine.getBoolean("is_holiday_sale"))` statements scattered everywhere. Half of them are for features that launched a year ago. The code is unmaintainable."
+> Exposure events are only fired when a flag is actually read (lazy), not on fetch.
 
-**Staff Answer:**
-"Feature Flags incur massive technical debt. A Staff Engineer implements process controls:
-1. **Mandatory Expiration:** When a PM creates a flag, they must set an expiration date (e.g., 90 days). After 90 days, the backend forcibly disables the flag, forcing the team to make a permanent decision.
-2. **Linting Rules:** I will write a custom Detekt/Lint rule. If an engineer references a Flag Key in the codebase that has been marked 'Expired' in our flag registry, the CI build breaks. You cannot merge PRs until you delete the dead `if/else` block."
+---
 
-## 5. Staff Engineer Thinking: Configuration vs Architecture
+## 5. Mobile App Architecture
 
-A Junior engineer uses Remote Config for *everything* (e.g., trying to use it as a real-time database to push Chat Messages).
-A Staff engineer fiercely defends the boundaries of Remote Config.
-- **Acceptable:** Toggling UI variations, changing timeout integers, enabling new API endpoints.
-- **Unacceptable:** Sending PII, sending secrets/API keys (the JSON is readable by anyone who inspects the network traffic), or sending massive arrays of data (e.g., the list of 50,000 cities for a search bar). Remote Config JSON must stay under ~100KB to ensure fast parsing.
+### Module structure
 
-## 6. Probing Questions (For Practice)
+```
+:lib:flags
+    flags-api          ← public typed Flags object
+    flags-core         ← FlagsRepository, evaluator, store
+    flags-codegen      ← optional KSP for typed accessors
+```
 
-1.  Explain why "Server-Side Evaluation" of feature flags causes catastrophic user experience issues (UI flashing, offline failures) on mobile devices.
-2.  Describe the "Next Launch" sync strategy. Why must the Android app explicitly ignore newly downloaded flags until the user restarts the app?
-3.  Walk through the concept of "Client-Side Evaluation". How does the Android app determine if it is part of a 10% Canadian rollout without asking the server?
-4.  Explain why `Math.random()` cannot be used for percentage rollouts, and exactly how MurmurHash provides deterministic bucket targeting.
-5.  Why must the Feature Flag ruleset be hosted as a static JSON file on an Edge CDN rather than evaluated by a dynamic backend microservice?
-6.  Describe the "Thundering Herd" problem when 50 million users open a Push Notification. How does Client-Side Jitter mitigate it?
-7.  How does a custom Detekt/Lint rule prevent a multi-year codebase from turning into an unmaintainable graveyard of dead `if/else` feature flag statements?
-8.  Why is it a critical security vulnerability to put third-party API Keys (e.g., a Stripe Secret Key) into a Firebase Remote Config JSON payload?
-9.  If a Product Manager wants to immediately disable a broken feature and demands the change happens *mid-session* without waiting for a restart, how do you handle the architectural compromise?
-10. Differentiate between a Feature Flag (Boolean toggle) and a Remote Config (String/Int payload). Why should a Remote Config payload never be used to deliver large datasets (like an entire application's translation strings)?
+### Layered diagram
 
-## Further Reading
+```
+   Application.onCreate
+        │
+        ▼
+   FlagsRepository.bootstrap()
+        ├─► load disk snapshot   (sync, fast)
+        ├─► expose StateFlow<FlagSet>
+        └─► launch backgroundRefresh()
+                  │
+                  ▼
+           /v1/flags POST → persist → maybe atomic swap
+                                        ▲
+                                        │
+                                policy: stable vs live
+```
 
-- [`staged-rollouts.md`](../release-engineering/staged-rollouts.md) — How Feature Flags integrate with Play Store rollouts.
-- [`caching-library.md`](caching-library.md) — The caching strategies used to store the ruleset JSON offline.
-- [`a-b-testing-infrastructure.md`](a-b-testing-infrastructure.md) — How the Deterministic Hashing extends into Experimentation.
+### Key class signatures
+
+```kotlin
+class FlagsRepository @Inject constructor(
+    private val fetcher: FlagsFetcher,
+    private val store: FlagsStore,
+    private val evaluator: Evaluator,
+    private val exposureSink: ExposureSink,
+) {
+    val flags: StateFlow<FlagSet>                       // immutable snapshot
+    suspend fun bootstrap()                              // load disk + start refresh
+    suspend fun refresh()                                // explicit refresh
+}
+
+class FlagSet internal constructor(private val raw: Map<String, RawFlag>) {
+    fun bool(key: String, default: Boolean): Boolean
+    fun int(key: String, default: Int): Int
+    fun string(key: String, default: String): String
+    fun variant(key: String, default: String): String
+}
+```
+
+---
+
+## 6. Local Storage
+
+Use DataStore (Proto for typed, Preferences for simple):
+
+```kotlin
+// Snapshot serialized via kotlinx.serialization
+@Serializable
+data class FlagsSnapshot(val flags: Map<String, RawFlag>, val fetchedAt: Long)
+
+@Serializable
+data class RawFlag(val type: String, val value: JsonElement, val variant: String?)
+```
+
+Saved atomically via DataStore's `updateData { it.copy(...) }`. No partial writes.
+
+---
+
+## 7. Deep Dive: Evaluation + Fetch Cycle (~15 min)
+
+> *I'd pick this as the deep dive because it covers: synchronous read API, async refresh, atomic apply policy, offline fallback, exposure tracking, and the type-safety story — the parts that decide whether the system is usable.*
+
+### Bootstrap (on app start)
+
+```kotlin
+class DefaultFlagsRepository @Inject constructor(
+    private val store: FlagsStore,
+    private val fetcher: FlagsFetcher,
+    private val evaluator: Evaluator,
+    private val context: ContextProvider,
+    private val scope: CoroutineScope,
+) : FlagsRepository {
+
+    private val _flags = MutableStateFlow(FlagSet.EMPTY)
+    override val flags = _flags.asStateFlow()
+
+    override suspend fun bootstrap() {
+        // Phase 1: synchronous-from-disk
+        val disk = store.read()
+        _flags.value = evaluator.evaluate(disk, context.snapshot())
+
+        // Phase 2: async refresh (does not block bootstrap)
+        scope.launch { refresh() }
+    }
+
+    override suspend fun refresh() {
+        runCatching { fetcher.fetch(context.snapshot()) }
+            .onSuccess { resp ->
+                store.write(FlagsSnapshot(resp.flags, resp.evaluatedAt))
+                // POLICY: don't swap mid-session
+                pendingSnapshot.value = FlagsSnapshot(resp.flags, resp.evaluatedAt)
+            }
+            .onFailure { /* log, keep current */ }
+    }
+
+    fun onAppForegrounded() {
+        // Apply pending snapshot at session boundary
+        pendingSnapshot.value?.let {
+            _flags.value = evaluator.evaluate(it, context.snapshot())
+            pendingSnapshot.value = null
+        }
+    }
+}
+```
+
+### Apply policy
+
+| Policy | When to apply |
+|---|---|
+| **Next session** (default) | Most flags — stable user experience, no surprise toggling mid-flow |
+| **Next launch (cold)** | Big changes — wait for cold start to fully take effect |
+| **Live update** | Kill switches only — must propagate immediately |
+
+Encoded in the flag definition itself:
+
+```kotlin
+val killUploadDirty = bool("kill_upload_dirty", default = false, applyPolicy = ApplyPolicy.LIVE)
+```
+
+When a live flag's value changes mid-session, `_flags` updates immediately; otherwise we hold the snapshot until the next session boundary.
+
+### Evaluator
+
+```kotlin
+class Evaluator @Inject constructor() {
+    fun evaluate(snapshot: FlagsSnapshot, ctx: EvaluationContext): FlagSet {
+        // Server is the primary evaluator; the client mostly enforces targeting that came pre-filtered.
+        // For client-side sticky bucketing of variants without server round-trip:
+        val resolved = snapshot.flags.mapValues { (key, raw) ->
+            if (raw.type == "variant" && raw.variant == null) {
+                val bucket = stickyBucket(key, ctx.userId)
+                raw.copy(variant = pickVariant(key, bucket))
+            } else raw
+        }
+        return FlagSet(resolved)
+    }
+
+    private fun stickyBucket(flagKey: String, userId: String): Int {
+        val hash = Hashing.sha256().hashString("$flagKey|$userId", Charsets.UTF_8).asLong()
+        return ((hash % 10_000) + 10_000) % 10_000
+    }
+}
+```
+
+> **Sticky bucketing** ensures the same user lands in the same bucket across sessions, even if the server didn't include `variant` (e.g., for backward-compat).
+
+### FlagSet (the read surface)
+
+```kotlin
+class FlagSet internal constructor(private val raw: Map<String, RawFlag>) {
+    fun bool(key: String, default: Boolean): Boolean {
+        val r = raw[key] ?: return default
+        if (r.type != "bool") return default
+        ExposureSink.lazyLog(key, r.value)
+        return r.value.jsonPrimitive.boolean
+    }
+    // ... int, string, variant
+}
+```
+
+`ExposureSink.lazyLog` debounces: only logs each `(flagKey, sessionId)` pair once per session.
+
+### Typed accessors (codegen)
+
+A KSP processor reads a YAML or JSON schema and generates the `Flags` object:
+
+```yaml
+# flags.yaml
+new_checkout:
+  type: bool
+  default: false
+  applyPolicy: NEXT_SESSION
+max_retry:
+  type: int
+  default: 3
+  range: [1, 10]
+```
+
+Generates:
+
+```kotlin
+object Flags {
+    val newCheckout: BooleanFlag = BooleanFlag("new_checkout", default = false)
+    val maxRetry: IntFlag = IntFlag("max_retry", default = 3, range = 1..10)
+}
+```
+
+### Default-safety
+
+```kotlin
+fun safeFlag(name: String, default: Boolean, callerContext: String = ""): Boolean {
+    return runCatching { flags.value.bool(name, default) }
+        .getOrElse {
+            Telemetry.captureException(it)
+            default
+        }
+}
+```
+
+Defaults are not "what we want" but "what's safest if the network/disk fails." Default-on if the feature is critical; default-off if it's risky.
+
+### Fetch lifecycle
+
+```
+App start
+  │
+  ├── Disk snapshot loaded sync (< 5ms) — ready
+  │
+  ├── Background fetch (< 1s typically)
+  │       │
+  │       └── On success: persist + (live: swap now / non-live: queue)
+  │
+  └── Foreground after background (> 4h):
+          └── If stale, re-fetch
+```
+
+### Failure modes
+
+| What breaks | Behavior |
+|---|---|
+| First-ever launch (no disk) | All defaults; fetch races to load before user interacts |
+| Network down on launch | Last-good disk values used; refresh deferred |
+| Server returns malformed JSON | Drop response, keep current; log |
+| Disk file corrupted | Drop, use defaults; let fetch repair |
+| Schema mismatch (new field) | Ignore unknown fields, use defaults |
+| Two `refresh()` calls race | Single-flight in repository |
+
+---
+
+## 8. Trade-offs
+
+### Storage
+
+| Option | Pros | Cons | Verdict |
+|---|---|---|---|
+| **DataStore (Proto/Preferences)** | Coroutine-native, atomic | Slight ceremony | Pick this |
+| EncryptedSharedPrefs | Use only if values are sensitive | Slower writes | Niche |
+| Room | Overkill for ~200 keys | Slower reads | Skip |
+| Plain SharedPrefs | Old | Synchronous main-thread danger | Skip |
+
+### Fetch transport
+
+| Option | Verdict |
+|---|---|
+| **REST GET** | Pick — cacheable, simple |
+| WebSocket subscription | Real-time but heavy | Use only for kill switches |
+| FCM hint to re-fetch | Pick — instant updates without polling |
+
+### Variant assignment
+
+| Where? | Verdict |
+|---|---|
+| **Server** | Pick — central control, multi-platform parity |
+| **Client (sticky bucketing)** | Use as fallback / offline path |
+| Hybrid (server primary, client fallback) | Default |
+
+### Apply policy
+
+| Default | Verdict |
+|---|---|
+| **Next session** | Pick — stable user experience |
+| Immediate | Confusing mid-flow; use only for kill switches |
+| Next cold start | Safest; conservative |
+
+### Codegen
+
+| Option | Verdict |
+|---|---|
+| **KSP-generated typed accessors** | Pick — compile-time guarantees |
+| Reflective `getFlag(name)` | Stringly-typed, error-prone |
+| Hand-written wrappers | Toil; gets stale |
+
+---
+
+## 9. Major Concerns
+
+- **Performance.** Reads are O(1) map lookups from in-memory snapshot. Never block on disk or network at call site.
+- **Defaults matter.** Pick a safe default per flag. Imagine the flag service is down forever — does the app still work correctly?
+- **Apply policy.** Don't flip flags mid-flow. Use "next session" by default. Live updates only for true kill switches.
+- **Privacy.** No PII in the targeting context. Country/locale/version only. User id is hashed for bucketing.
+- **Auditability.** Exposure events log which flag the user saw, exactly once per session. Drives A/B analysis later.
+- **Sticky bucketing.** Hash by `(flagKey, userId)` so the same user is always in the same bucket, even if the server doesn't pre-assign.
+- **Backward compatibility.** Old app versions must safely ignore new flag schemas. Forward compat: server only sends what the app version supports.
+- **Killswitch coverage.** Every risky launch should have a corresponding kill switch. Treat them as table stakes for ship-readiness.
+
+---
+
+## 10. Follow-up Questions
+
+> **Q: User opens the app, fetches new flags, presses Back, opens again — what flag values do they see?**
+> Old values (the session is still active). Pending snapshot is queued and applied on a true session boundary (e.g., > 30s background). This prevents flickering UX mid-flow.
+
+> **Q: How do you handle a kill switch needing to propagate in seconds?**
+> Live-apply policy + an FCM data push that triggers a foreground refresh. Latency from "flip in dashboard" to "live on device" can be < 30s.
+
+> **Q: How is the flag schema versioned?**
+> The flag definition lives in a single YAML in the repo, generated into typed accessors. New flags can be added without server change (server returns unknown safely). Removed flags need a deprecation period (the YAML keeps them as "deprecated: true" for one release).
+
+> **Q: How does multi-platform stay in sync?**
+> Server is the source of truth for evaluation. iOS, Android, web all hit the same `/v1/flags` with their own context. Variant assignment is server-side so all platforms see the same bucket for the same user.
+
+> **Q: How do you debug a "the flag isn't working" report?**
+> Debug overlay (debug build only) showing every flag's current value and source (disk / server / default). Optionally a developer menu to override a flag locally.
+
+> **Q: How is this tested?**
+> Inject a fake `FlagsStore` and `FlagsFetcher`. Tests assert read values, apply-policy behavior, exposure logging. UI tests use a `TestFlagsRepository` that returns pre-set values.
+
+---
+
+## 11. Out of Scope (defended)
+
+- **Statistical analysis** — `a-b-testing-infrastructure.md`.
+- **Multi-armed bandits** — `experimentation-platform.md`.
+- **Server-side flag UI** — admin tool, not mobile.
+- **Encryption** — flags aren't sensitive in our model; if they were, EncryptedSharedPrefs path.
+- **Cross-app flag sharing** — separate problem.
+
+---
+
+## 12. Further Reading
+
+- [GrowthBook](https://www.growthbook.io/) — open-source flag/experimentation platform with mobile SDK.
+- [Firebase Remote Config](https://firebase.google.com/docs/remote-config) — vendor reference.
+- [Statsig SDK design](https://docs.statsig.com/) — modern vendor.
+- [LaunchDarkly mobile patterns](https://launchdarkly.com/blog/) — apply-policy and offline considerations.
+- [Martin Fowler — Feature Toggles](https://martinfowler.com/articles/feature-toggles.html) — taxonomy: release, ops, experiment, permission toggles.
+
+---
+
+> **Closing in the interview:** "I anchored on the evaluation + fetch cycle because the apply-policy decision determines whether the system feels stable or chaotic. Happy to dig into typed-accessor codegen, kill-switch propagation, or the debug overlay next."
