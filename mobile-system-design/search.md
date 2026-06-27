@@ -1,119 +1,415 @@
-# System Design: Search (Typeahead / Autocomplete)
+# Search Experience (Mobile)
 
-## The Prompt
+> A 45-60 minute mobile system-design walkthrough for the *main search experience* in an app (results screen, filters, history, recents). Typeahead/autocomplete is the separate `typeahead-autocomplete-search.md` file.
 
-*"Design the Global Search feature for a massive E-Commerce app (like Amazon). As the user types into the search bar, the app must show instant autocomplete suggestions ('lap' -> 'laptop', 'lapel pin'). The results must be lightning-fast, and the app must not accidentally DDoS the backend or show stale data."*
+---
 
-## 1. Requirements & Clarification (RADIO Framework)
+## 1. Gathering Requirements (~5 min)
+
+> **Interviewer:** "Design search for a mobile app."
+> **Candidate:** "Two screens really: the search entry (typeahead) and the results screen. I'll scope this to the results experience — query submission, paging through results, filters, history. I'll deep-dive the query → results lifecycle."
 
 ### Functional Requirements
-- Typeahead / Autocomplete: Show suggestions *while* the user types.
-- Full Search: Show the actual product list when the user hits 'Enter'.
-- Offline Support: Minimal (can show recent searches), but real search requires a network.
+- **Submit a query** and render ranked results (mixed types if needed).
+- **Filters / facets** (e.g., type, price, distance).
+- **Sort options**.
+- **Search history** (recent + saved).
+- **Pull-to-refresh, infinite scroll**.
 
-### Non-Functional Requirements (NFRs)
-- **Latency (Priority 0):** Autocomplete suggestions must appear in < 100ms. If it takes 1 second, the user will have already finished typing the word.
-- **Server Load (Priority 1):** We cannot fire an HTTP request for every single keystroke of 100 million users. The backend API Gateway will melt.
-- **Data Consistency (Race Conditions):** If I type 'S' (Request A) and then 'H' (Request B), Request B might return from the server *before* Request A. The UI must not show results for 'S' after the user has typed 'SH'.
+### Non-Functional Requirements
+- **Fast first paint** — show cached state immediately, refresh in background.
+- **Cancelable** — typing a new query aborts the previous request.
+- **Cellular-aware** — small page size, defer images on metered networks.
+- **Offline tolerance** — show last results + history when offline.
+- **Telemetry** — every query, result tap, dwell time logged.
 
-## 2. High-Level Architecture
+### Out of Scope
+- Typeahead suggestion engine (see `typeahead-autocomplete-search.md`)
+- Ranking model internals (server)
+- Voice search (separate stack)
+- Image search / OCR
+- Personalization model internals
 
-The Search architecture is an exercise in **Stream Throttling**. The user's keystrokes are a hyper-fast stream of data that must be filtered and delayed before hitting the network.
+---
 
-```mermaid
-graph TD
-    Input[Search EditText] -->|Keystroke Stream| VM[ViewModel]
-    
-    subgraph Stream Processing (Coroutines/Flow)
-        VM -->|Debounce (300ms)| Debouncer
-        Debouncer -->|Filter Empty| Filter
-        Filter -->|Distinct Until Changed| Distinct
-    end
-    
-    Distinct -->|Cleaned Query| Network[Search API]
-    Network -->|Results| VM
-    
-    subgraph Backend
-        Network --> Redis[(Redis Cache)]
-        Redis -- Miss --> ElasticSearch[(ElasticSearch Index)]
-    end
+## 2. Clarifying Questions (~3 min)
+
+| Question | Why it matters |
+|---|---|
+| Domains (products, users, content)? | Mixed result rendering |
+| Filter taxonomy depth? | Filter UI complexity |
+| Server-side facets or client-derived? | API surface |
+| Personalized results? | Cache invalidation rules |
+| Offline expectations? | Local index or just last-results cache |
+| Avg results per query? | Page size, prefetch |
+| Latency target? | Local cache strategy |
+
+> **Candidate:** "Single domain (e.g., products), server-side facets, personalized, ~30 results per page, cache last 5 queries for offline, target < 400 ms p95 result render."
+
+---
+
+## 3. High-Level Diagram (~10 min)
+
+```
+   SearchBar ──► SearchViewModel ──► SearchRepository
+                                          │
+                                          ├─► Pager (Paging 3)
+                                          │      └─► RemoteMediator → /v1/search
+                                          ├─► Room (recents, last results cache)
+                                          └─► HistoryRepository (saved searches)
+
+   Server: /v1/search → Search Service (ranking, faceting)  ← black box
 ```
 
-## 3. The Core Flows (Deep Dive)
+**Components:**
+- **`SearchRepository`** — query orchestration, result paging.
+- **`HistoryRepository`** — recents + saved.
+- **`RemoteMediator`** — drives network paging.
+- **`SearchSession`** — debounce + cancellation for the active query.
 
-### Flow 1: Debouncing (Protecting the Server)
-*Interviewer:* "A user types 'M', 'A', 'C'. They type 3 keys in 100 milliseconds. Your app fires 3 HTTP requests: `/search?q=m`, `/search?q=ma`, `/search?q=mac`. You just tripled your AWS bill. Fix it."
+---
 
-**Staff Answer:**
-"I will apply a **Debounce** operator to the keystroke stream using Kotlin Flows.
+## 4. API Contract
+
+### Query
+
+```http
+GET /v1/search?q=running+shoes&filters=brand:nike,size:9&sort=relevance&cursor=&limit=30
+{
+  "items": [ { "id": "p_1", "title": "...", "price": ..., "imageUrl": "..." }, ... ],
+  "facets": {
+    "brand": [ { "value": "nike", "count": 142 }, { "value": "adidas", "count": 89 } ],
+    "color": [ { "value": "black", "count": 220 }, ... ]
+  },
+  "nextCursor": "eyJvIjozMH0=",
+  "queryId": "q_abc",
+  "totalEstimate": 1240
+}
+```
+
+### Click logging (analytics)
+
+```json
+POST /v1/search/click
+{ "queryId": "q_abc", "itemId": "p_1", "position": 3, "ts": ... }
+```
+
+> `queryId` ties subsequent clicks back to the query for ranking telemetry.
+
+---
+
+## 5. Mobile App Architecture
+
+### Module structure
+
+```
+:feature:search           ← SearchScreen, FiltersSheet, ResultRow
+:domain:search            ← Query, Filter, Result models
+:data:search              ← Repository, RemoteMediator, history DAO
+:core:network
+:core:database
+```
+
+### Layered diagram
+
+```
+   Compose UI ──► SearchViewModel
+                       │
+                       ├─► query: StateFlow<Query>   (debounced)
+                       │
+                       └─► results: Flow<PagingData<Result>> = repo.search(query)
+                                                     │
+                                                     ▼
+                                                  Pager
+                                                     │
+                                                     ├─► PagingSource (Room cache)
+                                                     └─► RemoteMediator (network)
+```
+
+### Key class signatures
+
 ```kotlin
-val searchQuery = MutableStateFlow("")
+data class Query(val text: String, val filters: Filters, val sort: Sort, val ts: Long)
 
-searchQuery
-    .debounce(300L) // Wait 300ms after the LAST keystroke before continuing
-    .filter { it.isNotBlank() } // Don't search for empty strings
-    .distinctUntilChanged() // If user types 'A', deletes it, types 'A' within 300ms, ignore it
-    .flatMapLatest { query -> 
-        api.search(query) // Fire network request
-    }
+interface SearchRepository {
+    fun search(query: Query): Flow<PagingData<Result>>
+    fun lastResults(): Flow<List<Result>>          // offline fallback
+    fun facets(queryId: String): Flow<Facets?>
+}
+
+interface HistoryRepository {
+    fun recents(): Flow<List<RecentQuery>>
+    suspend fun rememberQuery(q: Query)
+    suspend fun clear()
+}
 ```
-If the user types 'M', 'A', 'C' rapidly, the 300ms timer resets on every key. The app only fires ONE network request for 'mac' after the user pauses typing for 300ms. This reduces server load by 80%."
 
-### Flow 2: The Race Condition (`flatMapLatest`)
-*Interviewer:* "The user types 'P'. Request A is sent. It hits a slow backend pod and takes 2 seconds. The user types 'I' (forming 'PI'). Request B is sent. It hits a fast pod and takes 50ms. Request B returns, showing 'Pizza'. Then Request A returns, overwriting the UI with 'Pants'. The user searched for 'PI' but sees results for 'P'. Fix it."
+---
 
-**Staff Answer:**
-"This is a classic Out-Of-Order execution bug. 
-In RxJava, we solve this with `switchMap`. In Kotlin Coroutines, we use **`flatMapLatest`**.
-When the user types 'PI' and Request B is initiated, `flatMapLatest` instantly **cancels** the ongoing Coroutine Job for Request A. The `OkHttp` socket for Request A is severed. Request A's results will never reach the UI. The UI is guaranteed to only show the results of the most recent query."
+## 6. Local Storage
 
-### Flow 3: The Caching Layer (Latency)
-*Interviewer:* "Even with Debounce, the API takes 200ms. We want it faster. Users often search for the same things. How do we drop latency to 0ms?"
+```kotlin
+@Entity(tableName = "search_recents")
+data class RecentQuery(
+    @PrimaryKey val text: String,
+    val filtersJson: String, val lastUsedAt: Long, val useCount: Int
+)
 
-**Staff Answer:**
-"We implement an aggressive, short-lived **L1 Memory Cache** on the device.
-When the user searches for 'mac', we save the JSON response in a local `LruCache<String, List<Result>>` (Key: 'mac').
-If the user deletes a letter (backspaces to 'ma') and then types 'c' again (forming 'mac'), the `ViewModel` checks the LruCache first. It finds 'mac', completely skips the network request, and updates the UI in 0 milliseconds."
+@Entity(tableName = "search_results_cache")
+data class CachedResult(
+    @PrimaryKey val itemId: String,
+    val queryKey: String,          // hash of (text + filters + sort)
+    val rank: Int, val payloadJson: String, val fetchedAt: Long
+)
+```
 
-## 4. The Backend Constraint (Why ElasticSearch?)
+> **Probing Q:** "Why cache results?" For the "user types a query, taps a result, comes back" flow. Re-running the search wastes a network call; if the cache is < 5 min old we render it immediately.
 
-A Staff Mobile Engineer must understand *why* the backend is built a certain way to design the mobile client correctly.
+---
 
-If the backend team tries to implement Global Search using a standard SQL database (`SELECT * FROM products WHERE name LIKE '%mac%'`), the query will take 5 seconds on a 10-million row table. `LIKE` queries cannot use standard B-Tree indexes effectively.
+## 7. Deep Dive: Query → Results Lifecycle (~15 min)
 
-The backend MUST use an Inverted Index engine like **ElasticSearch** or **Apache Solr**. These engines break words into tokens and map them instantly to document IDs, providing <20ms search times. The mobile engineer should explicitly confirm with the interviewer that the backend is using a proper search engine, otherwise, the 100ms latency NFR is impossible.
+> *I'd pick this as the deep dive because it covers debounce, cancellation, paging, history persistence, and the offline fallback — the whole journey of a single query.*
 
-## 5. Failure Modes & Bottlenecks
+### Debounce + cancellation
 
-### Bottleneck: Keyboard Thrashing
-*Interviewer:* "The user taps the search bar. The keyboard slides up. The `RecyclerView` is resized. The UI stutters massively. Why?"
+```kotlin
+@HiltViewModel
+class SearchViewModel @Inject constructor(
+    private val repo: SearchRepository,
+    private val history: HistoryRepository,
+    savedState: SavedStateHandle,
+) : ViewModel() {
 
-**Staff Answer:**
-"Keyboard animations are notoriously heavy in Android. If the `RecyclerView` is recalculating its layout while the keyboard is animating up, you drop frames.
-**The Fix:** I will use `WindowInsetsCompat` to detect the keyboard animation. I will defer any heavy UI updates (like rendering the search history list) until *after* the keyboard animation completes, ensuring 60fps smoothness."
+    val text = savedState.getStateFlow("text", "")
+    val filters = savedState.getStateFlow("filters", Filters.EMPTY)
+    val sort = savedState.getStateFlow("sort", Sort.RELEVANCE)
 
-### Bottleneck: Stale Cache Data
-*Interviewer:* "You cached 'macbook' in your `LruCache`. The price is $1000. Tomorrow, the price drops to $900. The user searches 'macbook' again and sees $1000. They buy it, and are charged $900. They are confused."
+    private val query: Flow<Query> = combine(text, filters, sort) { t, f, s ->
+        Query(t.trim(), f, s, clock.now())
+    }
+        .debounce(250.milliseconds)
+        .distinctUntilChanged()
+        .filter { it.text.isNotBlank() }
 
-**Staff Answer:**
-"Typeahead/Autocomplete results should strictly be for *Navigation*, not for *Transaction*. The autocomplete JSON payload should only contain the `id`, `name`, and an `icon`. It should NOT contain volatile data like `price` or `inventory_count`. 
-When the user clicks the autocomplete suggestion, it navigates to the Product Detail Screen, which makes a fresh, un-cached `GET /products/{id}` request to fetch the real-time price."
+    val results: Flow<PagingData<Result>> = query
+        .flatMapLatest { q ->
+            viewModelScope.launch { history.rememberQuery(q) }
+            repo.search(q)
+        }
+        .cachedIn(viewModelScope)
+}
+```
 
-## 6. Probing Questions (For Practice)
+`flatMapLatest` automatically cancels the previous query when a new one arrives.
 
-1.  Explain why firing an HTTP request for every single keystroke is considered a catastrophic failure in System Design for a massive application.
-2.  Describe how the `debounce` operator works mathematically, and why 300ms is a common standard for human typing speeds.
-3.  Walk through the Race Condition where an older network request returns *after* a newer network request. How does `flatMapLatest` (or `switchMap`) permanently prevent this?
-4.  Why is an LruCache (Memory Cache) appropriate for caching search results during a single app session, rather than a SQLite database (Disk Cache)?
-5.  Explain the architectural difference between a standard SQL database (using `LIKE '%query%'`) and an Inverted Index (like ElasticSearch) regarding search latency.
-6.  Describe the "Stale Cache" problem. Why must the JSON payload for Autocomplete suggestions exclude highly volatile data like Prices or Inventory counts?
-7.  How does the `distinctUntilChanged` operator protect the network if a user rapidly types a character and then immediately deletes it?
-8.  Why is the Android Soft Keyboard animation a major source of UI Jank on search screens, and how do you mitigate it?
-9.  Explain the tradeoff between a short Debounce time (e.g., 50ms) and a long Debounce time (e.g., 600ms) regarding User Experience vs Server Load.
-10. If an application requires offline search capabilities (e.g., a dictionary app), how does the architecture shift from querying a backend ElasticSearch to querying a local device database?
+### RemoteMediator
 
-## Further Reading
+```kotlin
+class SearchRemoteMediator(
+    private val api: SearchApi,
+    private val db: AppDatabase,
+    private val query: Query,
+) : RemoteMediator<Int, CachedResult>() {
 
-- [`flow.md`](../android/architecture/flow.md) — The deep dive into Kotlin Flow operators like `debounce` and `flatMapLatest`.
-- [`jank.md`](../android/performance/jank.md) — How the keyboard animation causes dropped frames.
-- [`caching.md`](../engineering-fundamentals/caching.md) — The fundamental rules of LruCache implementation.
+    override suspend fun load(loadType: LoadType, state: PagingState<...>): MediatorResult {
+        val cursor = when (loadType) {
+            LoadType.REFRESH -> null
+            LoadType.PREPEND -> return MediatorResult.Success(true)
+            LoadType.APPEND -> state.lastItemOrNull()?.let { /* derive cursor */ } ?: return MediatorResult.Success(true)
+        }
+        return try {
+            val resp = api.search(query.text, query.filters.toQueryString(), query.sort, cursor, PAGE)
+            db.withTransaction {
+                if (loadType == LoadType.REFRESH) db.cachedResultsDao().clearForKey(query.key())
+                resp.items.forEachIndexed { i, item ->
+                    db.cachedResultsDao().insert(item.toCached(queryKey = query.key(), rank = i))
+                }
+                db.facetsDao().upsert(resp.queryId, resp.facets)
+            }
+            MediatorResult.Success(endOfPaginationReached = resp.nextCursor == null)
+        } catch (t: Throwable) {
+            MediatorResult.Error(t)
+        }
+    }
+}
+```
+
+### Compose UI
+
+```kotlin
+@Composable
+fun SearchScreen(vm: SearchViewModel = hiltViewModel()) {
+    val text by vm.text.collectAsStateWithLifecycle()
+    val items = vm.results.collectAsLazyPagingItems()
+    val recents by vm.recents.collectAsStateWithLifecycle()
+
+    Column {
+        SearchBar(
+            text = text,
+            onTextChange = { vm.text.value = it },
+            onSubmit = { vm.submit() }
+        )
+        when {
+            text.isBlank() -> RecentsList(recents, onTap = { vm.text.value = it.text })
+            items.itemCount == 0 && items.loadState.refresh is LoadState.Loading -> ResultsSkeleton()
+            items.itemCount == 0 -> EmptyState(text)
+            else -> ResultsList(items)
+        }
+    }
+}
+```
+
+### Filters sheet
+
+```kotlin
+@Composable
+fun FiltersSheet(currentFilters: Filters, facets: Facets, onApply: (Filters) -> Unit) {
+    var draft by remember { mutableStateOf(currentFilters) }
+    LazyColumn {
+        facets.brand.let { items ->
+            item { Section("Brand") }
+            items(items) { facet ->
+                FacetRow(facet, checked = facet.value in draft.brand,
+                    onToggle = { draft = draft.copy(brand = draft.brand.toggle(facet.value)) })
+            }
+        }
+    }
+    Button(onClick = { onApply(draft) }) { Text("Apply") }
+}
+```
+
+Applying filters updates `vm.filters`, the combined `query` flow re-emits, paging resets via `flatMapLatest`.
+
+### Offline fallback
+
+```kotlin
+fun search(query: Query): Flow<PagingData<Result>> = flow {
+    val pager = Pager(
+        config = PagingConfig(pageSize = 30, prefetchDistance = 10, enablePlaceholders = false),
+        remoteMediator = SearchRemoteMediator(api, db, query),
+        pagingSourceFactory = { db.cachedResultsDao().pagingSource(queryKey = query.key()) }
+    )
+    emitAll(pager.flow)
+}
+```
+
+If the network is dead, `RemoteMediator` returns `Error`. The `PagingSource` still serves whatever was cached for that query key — usually the last successful results.
+
+### Click telemetry
+
+```kotlin
+fun onResultClicked(result: Result, position: Int) {
+    analytics.log(
+        SearchClickEvent(queryId = lastQueryId, itemId = result.id, position = position)
+    )
+    navigator.go(Route.Product(result.id))
+}
+```
+
+### Failure modes
+
+| What breaks | Behavior |
+|---|---|
+| Network fail mid-query | Last cached results render; "Couldn't refresh" toast |
+| User types fast | `debounce + flatMapLatest` cancels mid-flight |
+| Server returns 0 results | Empty state, suggest spelling correction |
+| Process death | Query text + filters in `SavedStateHandle`; restore on resume |
+| Stale cache (item deleted server-side) | Tap → product screen handles "not found" |
+| Filters with no facet results | Show greyed-out option (count=0) |
+
+---
+
+## 8. Trade-offs
+
+### Cancellation
+
+| Option | Pros | Cons | Verdict |
+|---|---|---|---|
+| **`flatMapLatest`** | Cancels previous on new emission | Need to scope `viewModelScope` correctly | Pick this |
+| `combine + Pager` invalidation | More control | More wiring | Skip unless `flatMapLatest` doesn't fit |
+| Manual `Job.cancel` per query | Verbose | Easy to leak | Skip |
+
+### Caching
+
+| Option | Pros | Cons | Verdict |
+|---|---|---|---|
+| **Per-query-key Room cache** | Offline + back-stack reuse | Storage cost | Pick this |
+| Memory-only cache | Fast; lost on death | Bad UX after kill | Skip |
+| HTTP-cache only (OkHttp) | Zero code | No per-query keys, less flexible | Acceptable as supplement |
+
+### Filters UX
+
+| Option | Verdict |
+|---|---|
+| **Bottom sheet** | Pick — mobile-native |
+| Side drawer | Tablet/landscape only |
+| Inline chips | Good for 2-3 filters, not 20 |
+
+### Recents
+
+| Option | Verdict |
+|---|---|
+| **On-device Room** | Pick — privacy + offline |
+| Server-synced recents | Better cross-device, more complexity, privacy review |
+| No recents | Easier; users miss them |
+
+---
+
+## 9. Major Concerns
+
+- **Cancellation correctness.** Every keystroke fires a query? No — `debounce(250ms)`. Every new query cancels the previous? Yes — `flatMapLatest`.
+- **Cellular cost.** Page size 30, image lazy-loaded via Coil with low-quality variant on metered networks.
+- **Process death.** Query text + filters in `SavedStateHandle`. Last results cached in Room. Restored seamlessly.
+- **Empty state.** Don't show a blank screen. Skeleton during load, "No results" with suggested terms or popular queries when truly empty.
+- **Personalization.** Results may differ per user — don't share cache across accounts (namespace the queryKey by user id).
+- **History privacy.** Provide "Clear search history" in settings; honour incognito mode if app has one.
+- **Telemetry.** Log query + facet selections + click positions. `queryId` ties them together for ranking.
+- **Accessibility.** Results list must have proper semantics; filter sheet announces selections.
+- **Latency budget.** First paint < 200 ms (cached); fresh results < 400 ms p95.
+
+---
+
+## 10. Follow-up Questions
+
+> **Q: User types "shoes" then "shoes red" rapidly — what's emitted?**
+> Debounce drops intermediate. Only "shoes" (after 250ms) and "shoes red" (after 250ms) fire if the user paused. If they type continuously, only the final state debounces. `distinctUntilChanged` prevents identical re-fetches.
+
+> **Q: How are facets refreshed when filters change?**
+> Facets are part of the same response (`/v1/search`). When filters change, the query key changes, RemoteMediator resets, new facets arrive.
+
+> **Q: How do you handle the "did you mean..." flow?**
+> Server returns a `corrected` field when confidence is high. Client renders "Showing results for 'shoes' — search instead for 'shoees'" as a banner above the results list.
+
+> **Q: What about search-as-you-type results (no submit needed)?**
+> That's typeahead/autocomplete; see the separate file. The submit flow here is the full results experience with filters and ranking.
+
+> **Q: How is ranking measured client-side?**
+> Click position + dwell time on the result are sent back as feedback. Server uses for offline ranking model training. Client only collects.
+
+> **Q: How would you A/B test a new ranker?**
+> Server-side assignment. Client passes `experimentId` along with each query (already part of the auth/headers). Server returns the variant's results; analytics tags exposure.
+
+---
+
+## 11. Out of Scope (defended)
+
+- **Typeahead suggestions** — `typeahead-autocomplete-search.md`.
+- **Voice search** — different stack (Speech-to-text + intent classifier).
+- **Image search / OCR** — uploading + server-side model.
+- **Personalization internals** — server's job; client uses results as-is.
+- **Ranking model internals** — black box for the client.
+
+---
+
+## 12. Further Reading
+
+- [Android Developers — Paging 3 with network and DB](https://developer.android.com/topic/libraries/architecture/paging/v3-network-db) — official guide.
+- [Compose docs — collectAsLazyPagingItems](https://developer.android.com/jetpack/compose/libraries) — Compose integration.
+- [Kotlin Flow — flatMapLatest](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flat-map-latest.html) — cancellation semantics.
+- [Elastic — Designing relevance feedback](https://www.elastic.co/blog/) — vendor blog on click feedback loop.
+- [Mobile UX search patterns](https://www.nngroup.com/articles/mobile-ux/) — Nielsen Norman Group.
+
+---
+
+> **Closing in the interview:** "I anchored on the query→results lifecycle because that's where cancellation and caching collide. Happy to dig into facet rendering, the click-feedback pipeline, or offline-cache eviction next."

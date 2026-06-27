@@ -1,137 +1,439 @@
-# System Design: Offline Typeahead & Autocomplete
+# Typeahead / Autocomplete
 
-## The Prompt
+> A 45-60 minute mobile system-design walkthrough for the typeahead component (search-as-you-type). The main results experience is the separate `search.md` file.
 
-*"Design an ultra-fast Typeahead/Autocomplete system for a mobile app. The user is searching through a list of 50,000 known entities (e.g., all Cities in the US, or all of their Contacts). The search must work completely offline and provide suggestions instantly (<16ms) as the user types each character."*
+---
 
-*(Note: For network-based API throttling and debouncing, see [Global Search](search.md). This document focuses on offline, in-memory algorithmic search).*
+## 1. Gathering Requirements (~5 min)
 
-## 1. Requirements & Clarification (RADIO Framework)
+> **Interviewer:** "Design search-as-you-type / typeahead."
+> **Candidate:** "Typeahead is its own problem: high request rate, low payload, perceived snappiness, sometimes offline. I'll deep-dive the suggestion request pipeline (debounce, cancellation, local trie fallback)."
 
 ### Functional Requirements
-- As the user types 'San', the app instantly suggests 'San Francisco', 'San Diego', 'San Antonio'.
-- Works 100% offline.
+- **Suggest as you type** — < 100 ms perceived latency.
+- **Highlight matched portion** of each suggestion.
+- **Tap to fill the search bar** and submit.
+- **Show recent queries** when input is empty.
+- **Offline** fallback to a local index of recents + popular.
 
-### Non-Functional Requirements (NFRs)
-- **Latency (Priority 0):** Must return results in < 16ms to maintain 60 FPS while the user is rapidly typing.
-- **Memory:** We cannot load a 50MB database into active RAM arrays just to search it.
-- **Accuracy:** Must support prefix matching (typing 'York' should ideally find 'New York', though strict prefix finds 'Yorktown').
+### Non-Functional Requirements
+- **Cancel in-flight on each keystroke** beyond debounce.
+- **Bound network rate** — don't hammer the server.
+- **Cellular-aware** — same UX, smaller payloads.
+- **Battery-aware** — no background work.
+- **Privacy** — local recents not synced unless user opts in.
 
-## 2. High-Level Architecture (The Trie)
+### Out of Scope
+- Main results screen (`search.md`)
+- Spelling correction model (server-side)
+- Voice / OCR input
+- Cross-device recent sync
+- Predictive ML model training
 
-A Junior engineer loads 50,000 strings into a `List<String>`, and every time the user types a key, they run `list.filter { it.startsWith(query) }`.
-This is an `O(N * M)` operation (where N is 50,000 strings, and M is the length of the string). It will freeze the UI thread on older phones.
+---
 
-A Staff engineer uses a **Trie (Prefix Tree)**.
+## 2. Clarifying Questions (~3 min)
 
-```mermaid
-graph TD
-    Root((Root)) --> S((S))
-    S --> A((A))
-    A --> N((N))
-    
-    N --> Space(( ))
-    Space --> F((F... Francisco))
-    Space --> D((D... Diego))
-    Space --> A2((A... Antonio))
+| Question | Why it matters |
+|---|---|
+| Suggestion sources (popular, history, ML-personalized)? | API surface |
+| How many suggestions to show? | UI density, payload size |
+| Server latency target? | Debounce sizing |
+| Offline support needed? | Local index decision |
+| Show highlights on the matched substring? | UI rendering |
+| Domain-specific (product names, city names)? | Local trie viability |
+| Multilingual? | Tokenization + transliteration |
+
+> **Candidate:** "5-7 suggestions, mix of recent + popular + matched items, server p95 < 80 ms, offline shows recents only, highlight substring, single language, Android 9+."
+
+---
+
+## 3. High-Level Diagram (~10 min)
+
+```
+   SearchBar.onTextChange  ──► TypeaheadViewModel
+                                      │
+                                      ▼
+                              Query text Flow
+                                      │
+                          debounce(120ms) + distinct
+                                      │
+                                      ▼
+                            TypeaheadRepository.suggest(q)
+                                      │
+                          ┌───────────┼────────────┐
+                          ▼           ▼            ▼
+                     Remote API   Local Trie   Recent Queries (Room)
+                                      │
+                                      ▼
+                              ranked + deduped list
+                                      │
+                                      ▼
+                                  UI render
 ```
 
-## 3. Data Model: Building the Trie
+**Components:**
+- **`TypeaheadRepository`** — orchestrates remote + local; ranks.
+- **`LocalTrie`** — for fast prefix lookups on popular/recents.
+- **`RemoteSuggestApi`** — `/v1/suggest?q=...`.
+- **`RecentsStore`** — Room DAO of historical queries.
 
-A Trie is a tree data structure where each node represents a single character.
+---
 
-### The Node Structure
-```kotlin
-class TrieNode {
-    val children = HashMap<Char, TrieNode>()
-    var isWord: Boolean = false
-    
-    // Optimization: Cache the top 5 results passing through this node
-    // so we don't have to traverse the entire subtree to find suggestions.
-    val topSuggestions = mutableListOf<String>()
+## 4. API Contract
+
+```http
+GET /v1/suggest?q=run&limit=7
+{
+  "suggestions": [
+    { "type": "query", "text": "running shoes", "highlightStart": 0, "highlightLen": 3 },
+    { "type": "entity", "text": "Roger Federer", "entityId": "u_555", "imageUrl": "...",
+      "highlightStart": 0, "highlightLen": 1 },
+    { "type": "recent", "text": "rugby balls", "highlightStart": 0, "highlightLen": 3 }
+  ]
 }
 ```
 
-### The Search Algorithm: O(K) Time Complexity
-When the user types 'San' (length K = 3):
-1. Start at Root.
-2. Go to 'S'. (O(1) Hashmap lookup)
-3. Go to 'a'. (O(1) Hashmap lookup)
-4. Go to 'n'. (O(1) Hashmap lookup)
-5. Return the `topSuggestions` stored at node 'n'.
+Each suggestion has a type so the UI can render with appropriate icon / styling.
 
-The time complexity is exactly `O(K)`. It takes 3 operations to find the results, regardless of whether the database has 50,000 cities or 5 Billion cities. It is infinitely scalable in terms of speed.
+### Click feedback
 
-## 4. The Core Flows (Deep Dive)
+```json
+POST /v1/suggest/click
+{ "q": "run", "selected": "running shoes", "position": 0, "ts": ... }
+```
 
-### Flow 1: Memory Optimization (The Graph vs The String)
-*Interviewer:* "Storing 50,000 strings in a Kotlin `List` takes 5MB of RAM. If you convert them into a Trie with HashMaps for every character, your memory overhead explodes due to Java Object allocation. The Trie takes 50MB of RAM. How do you fix this?"
+---
 
-**Staff Answer:**
-"The standard Object-based Trie is too heavy for mobile RAM. We must use an **Array-Backed Trie** (or a flat memory buffer).
-Instead of creating a `TrieNode` object, we represent the tree in a massive 1D integer array, where the index implies the character and the value points to the next child array. 
-Alternatively, we abandon the in-memory Trie and use **SQLite FTS (Full-Text Search)**. We insert the 50,000 cities into a Room database with an FTS4/FTS5 virtual table. SQLite uses an optimized, highly-compressed on-disk index (a B-Tree or specialized Trie) that requires near-zero RAM, and executes `SELECT * FROM cities WHERE name MATCH 'San*'` in milliseconds."
+## 5. Mobile App Architecture
 
-### Flow 2: The Typo Problem (Fuzzy Matching)
-*Interviewer:* "The user meant to type 'San Francisco', but they made a typo and typed 'Sam Francisco'. Your Trie goes Root -> 'S' -> 'a' -> 'm'. There are no children. It returns 0 results. How do you handle typos?"
+### Module structure
 
-**Staff Answer:**
-"A standard Trie cannot handle typos. We must implement **Levenshtein Distance** (Edit Distance) algorithms, or use SQLite FTS with spellfix.
-However, calculating Levenshtein Distance across a whole Trie is incredibly slow.
-A common Staff-level optimization is **Double Metaphone** or Soundex encoding.
-1. When inserting 'San Francisco' into the database, we also calculate its phonetic Soundex hash (e.g., `S516`).
-2. When the user types 'Sam Francisco', we calculate the hash of their input (`S516`).
-3. The hashes match! We suggest 'San Francisco'. 
-This allows us to find results that *sound* the same, fixing typos instantly without expensive graph traversals."
+```
+:feature:search           ← SearchBar + TypeaheadSheet share module
+:domain:typeahead
+:data:typeahead           ← repo, RecentsDao, LocalTrie
+:core:network
+```
 
-### Flow 3: Ranking and Sorting (The "Top Suggestions" Cache)
-*Interviewer:* "The user types 'A'. There are 4,000 cities that start with 'A'. The screen can only show 5. How do you decide which 5 to show without sorting 4,000 strings on every keystroke?"
+### Layered diagram
 
-**Staff Answer:**
-"We pre-calculate the ranking.
-When building the Trie (or when inserting into the SQLite DB), every city has a `weight` (e.g., Population).
-New York has a weight of 8,000,000.
-As we insert 'New York' into the Trie, we update the `topSuggestions` list of every node we pass through (Root, 'N', 'e', 'w'...). We sort that list of 5 items *once* during insertion.
-When the user types 'N', we jump to the 'N' node and instantly return its pre-sorted list of 5 cities. The sort time at read-time is literally 0ms."
+```
+   Compose SearchBar
+        │
+        ▼
+   TypeaheadViewModel
+        │ debounce(120ms) + flatMapLatest
+        ▼
+   TypeaheadRepository
+        │
+        ├─► /v1/suggest
+        ├─► LocalTrie.prefixSearch
+        └─► RecentsDao
+        │
+        ▼
+   merged + ranked → StateFlow<List<Suggestion>>
+        │
+        ▼
+   LazyColumn renders rows
+```
 
-## 5. Failure Modes & Bottlenecks
+### Key class signatures
 
-### Bottleneck: Database Ingestion (The UI Freeze)
-*Interviewer:* "You download a JSON file with 50,000 contacts. You build the Trie on the phone. It takes 4 seconds. The user is staring at a loading screen."
+```kotlin
+sealed class Suggestion {
+    data class Query(val text: String, val highlight: IntRange) : Suggestion()
+    data class Entity(val text: String, val id: String, val imageUrl: String?, val highlight: IntRange) : Suggestion()
+    data class Recent(val text: String, val highlight: IntRange) : Suggestion()
+}
 
-**Staff Answer:**
-"Trie construction is CPU intensive.
-**The Fix:** Never build massive Tries on the mobile device. The Backend should pre-build the Trie and serialize it into a binary file format, or pre-populate an SQLite file. The mobile app simply downloads the `.db` or binary file, saves it to disk, and immediately begins reading from it. We offload the compute cost to the cloud."
+interface TypeaheadRepository {
+    fun suggest(prefix: String): Flow<List<Suggestion>>
+    suspend fun rememberSelection(prefix: String, selected: Suggestion, position: Int)
+}
+```
 
-### Bottleneck: Prefix vs Infix (The 'York' problem)
-*Interviewer:* "The user types 'York'. A standard Trie starts at the Root, goes to 'Y'. It will never find 'New York' because 'New York' starts with 'N'."
+---
 
-**Staff Answer:**
-"A standard Trie only supports Prefix matching. To support Infix matching ('York' -> 'New York'), we must build a **Suffix Tree** or use SQLite FTS.
-With SQLite FTS, the engine automatically tokenizes the string into ['New', 'York']. A query for `MATCH 'York*'` will instantly find the row, because the inverted index tracks every word independently, not just the first letter of the string."
+## 6. Local Storage
 
-## 6. Staff Engineer Thinking: Stop Inventing Data Structures
+```kotlin
+@Entity(tableName = "typeahead_recents")
+data class RecentRow(
+    @PrimaryKey val text: String,
+    val lastUsedAt: Long, val useCount: Int
+)
 
-A Junior engineer loves writing Tries because it feels like a LeetCode problem.
-A Staff Engineer knows that maintaining a custom in-memory Trie in Kotlin is a liability. It will leak memory, it won't persist across app restarts, and it requires writing custom synchronization code.
+@Entity(tableName = "typeahead_popular")
+data class PopularRow(
+    @PrimaryKey val text: String,
+    val rank: Int, val fetchedAt: Long
+)
+```
 
-**The Staff Decision:** Unless there is a hyper-specific reason to hold a Trie in RAM (like a real-time gaming engine), a Staff Engineer will rely entirely on **Room + SQLite FTS4/FTS5**. SQLite has spent 20 years perfecting Full Text Search. It handles tokenization, memory mapping, and persistence perfectly. Let SQLite do the work.
+`popular` is periodically refreshed from `/v1/popular-queries` (cached for 7 days). `recents` is purely on-device.
 
-## 7. Probing Questions (For Practice)
+> **Probing Q:** "Why a separate trie?" Because Room `LIKE 'prefix%'` is fine for a small set; for larger local data (e.g., 50K product names cached for offline) a trie is O(prefix length) vs O(n).
 
-1.  Explain the mathematical Time Complexity difference between filtering a `List<String>` and traversing a `Trie` when searching for a 5-letter word in a dataset of 1 million words.
-2.  Describe the memory overhead explosion that occurs when building a Trie using standard Java/Kotlin Objects (`class TrieNode`) compared to a flat array.
-3.  How does caching the `topSuggestions` directly inside the Trie Nodes convert a slow sorting operation into an `O(1)` read?
-4.  Explain the "Typo Problem" in a standard Trie, and how phonetic hashing (like Soundex) can provide instant fuzzy-matching.
-5.  Why is a standard Trie incapable of finding "New York" if the user types "York"? 
-6.  Describe how SQLite FTS (Full Text Search) tokenizes strings and builds an inverted index to solve the "Infix" matching problem.
-7.  Why should an Android application avoid parsing a massive JSON array and building a Trie in-memory during application startup?
-8.  Walk through the architectural alternative of having the Backend pre-compute the Trie/SQLite database and shipping the raw binary file to the Android client.
-9.  If a user types 10 characters a second, explain why an in-memory Trie might still require a Kotlin Flow `debounce` operator to prevent UI stuttering during the `RecyclerView` rendering phase.
-10. Justify the Staff Engineer decision to use Room + SQLite FTS5 instead of building a custom Trie in Kotlin for a standard E-Commerce app.
+---
 
-## Further Reading
+## 7. Deep Dive: Suggestion Pipeline (~15 min)
 
-- [`search.md`](search.md) — The network-layer design for Global Search (Debounce, flatMapLatest).
-- [`trees.md`](../computer-science/trees.md) — The fundamental computer science behind Tries and B-Trees.
-- [`caching-library.md`](caching-library.md) — Why loading 50MB of data into RAM is dangerous.
+> *I'd pick this as the deep dive because it covers keystroke handling, debounce, cancellation, request rate limiting, the local fallback merge, and result ranking — the entire snappiness story.*
+
+### ViewModel
+
+```kotlin
+@HiltViewModel
+class TypeaheadViewModel @Inject constructor(
+    private val repo: TypeaheadRepository,
+    savedState: SavedStateHandle,
+) : ViewModel() {
+
+    val text = savedState.getStateFlow("text", "")
+
+    val suggestions: StateFlow<List<Suggestion>> = text
+        .debounce(120.milliseconds)
+        .distinctUntilChanged()
+        .flatMapLatest { prefix ->
+            if (prefix.isBlank()) flowOf(emptyList())
+            else repo.suggest(prefix)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun onSelect(s: Suggestion, position: Int) {
+        viewModelScope.launch {
+            repo.rememberSelection(text.value, s, position)
+            text.value = s.text
+            submit()    // dispatches main search
+        }
+    }
+}
+```
+
+### Repository: orchestrate remote + local
+
+```kotlin
+class DefaultTypeaheadRepository @Inject constructor(
+    private val api: SuggestApi,
+    private val recentsDao: RecentsDao,
+    private val popularDao: PopularDao,
+    private val trie: LocalTrie,
+    private val connectivity: Connectivity,
+) : TypeaheadRepository {
+
+    override fun suggest(prefix: String): Flow<List<Suggestion>> = flow {
+        // 1. Local first — instant
+        emit(localSuggestions(prefix))
+
+        // 2. If online, fetch remote and merge
+        if (connectivity.isOnline()) {
+            runCatching { api.suggest(prefix, limit = 7) }
+                .onSuccess { resp ->
+                    emit(mergeAndRank(resp.suggestions.toDomain(), localSuggestions(prefix), prefix))
+                }
+                .onFailure { /* keep local; log */ }
+        }
+    }
+        .flowOn(Dispatchers.IO)
+
+    private suspend fun localSuggestions(prefix: String): List<Suggestion> {
+        val recents = recentsDao.byPrefix(prefix, limit = 3).map { Suggestion.Recent(it.text, prefix.range()) }
+        val popular = trie.prefixSearch(prefix, limit = 5).map { Suggestion.Query(it, prefix.range()) }
+        return (recents + popular).distinctBy { it.text }.take(7)
+    }
+
+    private fun mergeAndRank(remote: List<Suggestion>, local: List<Suggestion>, prefix: String): List<Suggestion> {
+        // Server suggestions take precedence; pad with locals not already present.
+        val seen = mutableSetOf<String>()
+        return (remote + local).filter { seen.add(it.text.lowercase()) }.take(7)
+    }
+}
+```
+
+### Cancellation guarantee
+
+`flatMapLatest` cancels the previous `suggest(prefix)` flow when a new `prefix` arrives. The OkHttp call in flight is cancelled (cooperative cancellation; OkHttp interceptor responds to coroutine cancel).
+
+### Debounce sizing
+
+| Sizing | Pro | Con |
+|---|---|---|
+| 80-120 ms | Snappy | More requests, higher cancellation rate |
+| 200-300 ms | Fewer requests | User sees lag |
+| 0 (no debounce) | Fastest | Server hammered |
+
+For typeahead, 120 ms is a sweet spot: fast typists trigger only at pauses; slow typists feel real-time.
+
+### Rate limiting
+
+Even with debounce, a fast typist generates 5-10 req/sec. Limit at the OkHttp level with a token bucket interceptor:
+
+```kotlin
+class RateLimitInterceptor(private val limiter: RateLimiter) : Interceptor {
+    override fun intercept(chain: Chain): Response {
+        if (!limiter.tryAcquire()) {
+            return Response.Builder()
+                .request(chain.request()).protocol(Protocol.HTTP_1_1)
+                .code(429).message("Local rate limit").body("".toResponseBody()).build()
+        }
+        return chain.proceed(chain.request())
+    }
+}
+```
+
+### UI with highlight
+
+```kotlin
+@Composable
+fun SuggestionRow(s: Suggestion, onTap: () -> Unit) {
+    val annotated = buildAnnotatedString {
+        append(s.text)
+        addStyle(SpanStyle(fontWeight = FontWeight.Bold), s.highlight.first, s.highlight.last + 1)
+    }
+    Row(Modifier.fillMaxWidth().clickable(onClick = onTap).padding(16.dp)) {
+        SuggestionIcon(s.type)
+        Text(annotated, modifier = Modifier.padding(start = 12.dp))
+    }
+}
+```
+
+### Recents persistence
+
+```kotlin
+override suspend fun rememberSelection(prefix: String, selected: Suggestion, position: Int) {
+    recentsDao.bump(selected.text, clock.now())
+    analytics.log(TypeaheadClickEvent(prefix, selected.text, position))
+    runCatching { api.click(prefix, selected.text, position) }   // fire-and-forget
+}
+```
+
+### Local trie
+
+For offline catalogs (e.g., a list of all city names), the local trie is built once and serialized:
+
+```kotlin
+class LocalTrie {
+    private val root = TrieNode()
+
+    fun insert(word: String) { /* O(L) */ }
+    fun prefixSearch(prefix: String, limit: Int): List<String> { /* DFS from prefix node */ }
+}
+```
+
+Persist as a compact byte format on first launch (e.g., DAWG); reload into memory on app start. For small sets (< 5K entries), Room `LIKE 'prefix%'` is fine.
+
+### Failure modes
+
+| What breaks | Behavior |
+|---|---|
+| Server slow / 500 | Local suggestions still rendered; no error UI |
+| Rate limiter trips | Skip the request; rely on local |
+| User offline | Local-only; "Showing offline suggestions" subtle badge |
+| Process death mid-type | Text in SavedStateHandle; suggestions re-fetch on resume |
+| Stale popular list | Background refresh; old list still works |
+| User selects a suggestion that's been deleted | Main search handles "no results" |
+
+---
+
+## 8. Trade-offs
+
+### Debounce strategy
+
+| Option | Pros | Cons | Verdict |
+|---|---|---|---|
+| **Fixed 120 ms debounce** | Predictable | Doesn't adapt to typing speed | Pick this |
+| Adaptive (faster → longer debounce) | Smarter | Complex; small payoff | Skip |
+| No debounce, server-side dedupe | Simplest client | Wastes network + battery | Skip |
+
+### Local fallback
+
+| Option | When |
+|---|---|
+| **Recents + Popular DAO** | All apps |
+| **Trie for large catalog** | Offline-heavy or finite-domain (cities, products) |
+| No local fallback | OK if always-online (rare) |
+
+### Suggestion sources
+
+| Option | Verdict |
+|---|---|
+| **Server-side personalized + popular** | Pick — best ranking |
+| Local-only | Privacy win; weaker ranking |
+| Both, merged | Default |
+
+### Highlight rendering
+
+| Option | Verdict |
+|---|---|
+| **AnnotatedString in Compose** | Pick — Compose-native |
+| `Spannable` in View | Legacy |
+| HTML | Don't |
+
+### Rate limiting
+
+| Option | Verdict |
+|---|---|
+| **Token-bucket interceptor** | Pick — bounded request rate |
+| Just `debounce` | Sometimes still hammers |
+| Backoff after 429 | Server-side rate-limit response |
+
+---
+
+## 9. Major Concerns
+
+- **Snappiness.** Local first, remote second. Never block local on remote.
+- **Cancellation.** `flatMapLatest` is the foundation. Don't manually manage `Job`s.
+- **Privacy.** Recents are local-only by default. Cross-device sync requires opt-in (consent banner).
+- **Cellular cost.** Payloads are small (a few KB), but request count can spike. Rate limiter caps it.
+- **Battery.** No background work. Typeahead lives only while the user is typing.
+- **Personalization.** If server personalizes, include user id in headers; cache per-user.
+- **Accessibility.** Suggestions list is a `LazyColumn` with proper semantics; TalkBack reads each row including type.
+- **Process death.** Text in `SavedStateHandle`. Local fallback always works on restart.
+- **Localization.** Tokenize by Unicode word boundary; honour locale.
+
+---
+
+## 10. Follow-up Questions
+
+> **Q: How is the local trie kept up to date?**
+> Server endpoint `/v1/popular-queries?limit=5000` cached weekly. App downloads on first launch + once a week. For domains like city names, ship the trie as an asset and version it.
+
+> **Q: Why not always go remote for the freshest suggestions?**
+> Latency. Local-first ensures < 50 ms perceived latency even on cold network. Remote refines in the background; the merge updates the list.
+
+> **Q: How do you avoid jank when the list shrinks?**
+> `LazyColumn` with stable keys + `AnimatedVisibility` per row. Or `crossfade` between snapshots. Don't `clear()` then `addAll()`.
+
+> **Q: How is the highlight computed if the server highlights at byte indices and Compose needs char indices?**
+> Server returns char indices for the substring match. If multiple matches, pick the earliest. Localization matters: Unicode-aware indexing in Kotlin (`String` is UTF-16; works for BMP characters).
+
+> **Q: Spelling correction?**
+> Out of scope here. Typically server-side: returns a `correction` suggestion with `type: correction`. Client renders it inline; if user taps, replace the query and submit.
+
+> **Q: How do you avoid showing recent queries to other users on a shared device?**
+> Multi-user apps: namespace recents by account id. Opt-out: incognito mode that bypasses both reads and writes.
+
+---
+
+## 11. Out of Scope (defended)
+
+- **Main results screen** — `search.md`.
+- **Voice / OCR** — different input modalities.
+- **Server-side ranker** — black box.
+- **Cross-device recent sync** — privacy review; opt-in only.
+- **Spelling-correction model internals** — server's domain.
+
+---
+
+## 12. Further Reading
+
+- [Kotlin Flow operators — debounce, flatMapLatest](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/) — official.
+- [Android Developers — Compose AnnotatedString](https://developer.android.com/jetpack/compose/text) — highlighting.
+- [Android Developers — Room queries](https://developer.android.com/training/data-storage/room/accessing-data) — `LIKE 'prefix%'` patterns.
+- [Trie data structure](https://en.wikipedia.org/wiki/Trie) — for local prefix search at scale.
+- [Material Design — Search](https://m3.material.io/components/search/overview) — design patterns.
+
+---
+
+> **Closing in the interview:** "I anchored on the suggestion pipeline because debounce + cancellation + local fallback is where snappiness lives or dies. Happy to dig into the trie persistence format, rate-limit tuning, or click-feedback loop next."

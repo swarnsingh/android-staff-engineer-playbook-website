@@ -1,127 +1,485 @@
-# Platform Design: Telemetry SDK (Crash & Performance)
+# Telemetry SDK (Crash + Performance)
 
-## The Prompt
+> A 45-60 minute mobile system-design walkthrough for a crash + performance telemetry SDK on Android: uncaught exception capture, ANR detection, frame metrics, network timing, durable upload. Product analytics is the previous file (`analytics-sdk.md`).
 
-*"Design a Telemetry SDK (like Crashlytics or New Relic) that will be embedded into thousands of third-party Android apps. It must capture unhandled exceptions, ANRs (Application Not Responding), and network performance. It must run silently in the background, consume near-zero battery, and never cause the host application to crash."*
+---
 
-## 1. Requirements & Clarification (RADIO Framework)
+## 1. Gathering Requirements (~5 min)
+
+> **Interviewer:** "Design a telemetry SDK like Firebase Crashlytics + perf monitoring."
+> **Candidate:** "Two beasts in one box: crashes (one-shot, low volume, high value, can't fail) and perf metrics (high volume, statistical, OK to sample). I'll deep-dive crash capture + delivery because that's the highest-stakes path."
 
 ### Functional Requirements
-- **Crash Reporting:** Intercept unhandled exceptions (Java/Kotlin) and Native crashes (C++).
-- **ANR Detection:** Detect when the Main Thread is blocked for > 5 seconds.
-- **Network Interception:** Automatically track HTTP request latency and status codes.
+- **Capture uncaught JVM exceptions** (Kotlin throws, Java errors).
+- **Capture native crashes** (signal handler → minidump).
+- **Detect ANR** (main thread blocked > 5s).
+- **Frame metrics** (jank frames per session).
+- **Startup time** (cold / warm / hot, time to first frame).
+- **Network timing** (per request, via OkHttp event listener).
 
-### Non-Functional Requirements (NFRs)
-- **Safety (Priority 0):** The SDK code MUST NOT throw exceptions that crash the host app. If the Telemetry SDK crashes, you destroy the customer's business.
-- **Battery/Network:** Do not fire an HTTP request for every single event. Batch and compress.
-- **Initialization:** Must initialize instantly (< 5ms) without the host developer writing complex setup code.
+### Non-Functional Requirements
+- **Crash report MUST persist** before the process exits.
+- **Low overhead** — perf monitoring shouldn't cause jank itself.
+- **Battery-conscious** — perf events bundle and flush like analytics.
+- **Privacy-aware** — no PII; symbolicate stack traces server-side.
+- **Compatible with proguard / R8** mapping files.
 
-## 2. High-Level Architecture (The Silent Observer)
+### Out of Scope
+- Product events (see `analytics-sdk.md`)
+- Real-time monitoring dashboard
+- Symbol server / dSYM management
+- Heap dumps on OOM (separate, heavy)
+- Distributed tracing across server boundaries (see OpenTelemetry separately)
 
-A Junior engineer designs an SDK that forces the host developer to call `Telemetry.logEvent()` everywhere.
-A Staff engineer designs an **Auto-Instrumenting SDK** that hooks into the Android OS lifecycle silently.
+---
 
-```mermaid
-graph TD
-    subgraph Host Application (Android)
-        App[Host Code]
-        
-        subgraph Telemetry SDK
-            CrashHook[UncaughtExceptionHandler]
-            ANRHook[Choreographer/Watchdog]
-            NetHook[OkHttp Interceptor]
-            
-            Buffer[(Disk Buffer - SQLite)]
-            Sender[Transmission Engine]
-        end
-    end
-    
-    App -- Crashes --> CrashHook
-    CrashHook -->|Synchronous Write| Buffer
-    
-    App -- Blocked Main Thread --> ANRHook
-    ANRHook -->|Stack Trace| Buffer
-    
-    App -- HTTP Request --> NetHook
-    NetHook -->|Metrics| Buffer
-    
-    Sender -->|Batched GZIP Upload| Backend[Ingestion Gateway]
+## 2. Clarifying Questions (~3 min)
+
+| Question | Why it matters |
+|---|---|
+| In-house or wrap Crashlytics/Sentry? | Architecture vs SDK adapter |
+| Native crashes in scope? | Need NDK signal handler |
+| Sampling acceptable for perf? | Network volume, storage |
+| Privacy / GDPR for crash payloads? | What to redact |
+| Multi-tenant (in-house multiple apps)? | Endpoint routing |
+| Android API floor? | FrameMetrics API availability, ANR APIs |
+| Symbolication strategy? | Send mapping at upload-time vs server-resolved |
+
+> **Candidate:** "In-house; JVM + native crashes; perf with 10% sampling; PII-scrubbed bodies; single app; Android 9+; server-side symbolication."
+
+---
+
+## 3. High-Level Diagram (~10 min)
+
+```
+   JVM Thread.UncaughtExceptionHandler  ─┐
+   Signal handler (sigsegv etc.)        ─┤
+   ANR watchdog                         ─┤
+   FrameMetrics listener                ─┼─► EventBuffer (split: critical vs sampled)
+   OkHttp EventListener                 ─┤                         │
+   Startup tracer                       ─┘                         ▼
+                                                            FlushScheduler
+                                                                    │
+                                                                    ▼
+                                                            FlushWorker (WorkManager)
+                                                                    │
+                                                                    ▼
+                                                            /v1/telemetry POST
 ```
 
-## 3. The Core Flows (Deep Dive)
+**Components:**
+- **`CrashCapture`** — `Thread.setDefaultUncaughtExceptionHandler` + NDK.
+- **`AnrWatchdog`** — separate thread monitoring main responsiveness.
+- **`PerformanceMonitor`** — `FrameMetrics`, startup, network.
+- **`TelemetryQueue`** — Room-backed; crashes are persisted *synchronously*.
+- **`FlushWorker`** — same shape as analytics, dedicated channel.
 
-### Flow 1: Intercepting Crashes (The Final Will & Testament)
-*Interviewer:* "The host app throws a `NullPointerException`. The OS is about to terminate the process and erase all memory. How does your SDK catch it and save the stack trace?"
+---
 
-**Staff Answer:**
-"I must replace the JVM's default crash handler.
-1. During SDK initialization, I call `Thread.setDefaultUncaughtExceptionHandler(myCustomHandler)`.
-2. When the NPE occurs, the JVM pauses the crash and calls my handler.
-3. **CRITICAL:** I have milliseconds before the OS forcefully kills the process. I cannot make a network request. I cannot allocate massive amounts of memory (if it's an OOM crash). I must write the StackTrace synchronously to a flat file on disk (or a pre-allocated memory-mapped file).
-4. Finally, I *must* call the original `UncaughtExceptionHandler` that I replaced, so the OS can finish the crash process normally (showing the 'App has stopped' dialog). If I don't, the app freezes in a zombie state."
+## 4. API Contract
 
-### Flow 2: ANR Detection (The Watchdog Thread)
-*Interviewer:* "The Main Thread is blocked in an infinite `while` loop. The app is completely frozen. How does your SDK detect this?"
+### Crash payload
 
-**Staff Answer:**
-"I cannot rely on the Main Thread to report its own death. I must spawn a background **Watchdog Thread**.
-1. The Watchdog Thread wakes up every 5 seconds.
-2. It posts a simple `Runnable` to the Main Thread's `Looper`. The `Runnable` just increments a counter.
-3. The Watchdog goes to sleep for 5 seconds.
-4. When it wakes up, it checks the counter. If the counter did *not* increment, it means the Main Thread was too blocked to execute the tiny `Runnable`. We have an ANR!
-5. The Watchdog Thread immediately calls `Looper.getMainLooper().thread.stackTrace` to grab the frozen thread's stack trace and writes it to disk."
+```json
+{
+  "type": "crash",
+  "exception": "java.lang.NullPointerException",
+  "message": "...",
+  "thread": "main",
+  "stackTrace": ["com.app.Foo.bar(Foo.kt:42)", "..."],
+  "threads": { /* other thread states */ },
+  "context": {
+    "appVer": "4.12.1", "os": "Android 14", "device": "Pixel 7",
+    "memoryMb": 4096, "diskFreeMb": 12000, "batteryPct": 47, "locale": "en-IN"
+  },
+  "breadcrumbs": [
+    {"ts": 1750000000, "category": "nav", "msg": "screen=home"},
+    {"ts": 1750000010, "category": "network", "msg": "GET /v1/feed 200 132ms"}
+  ],
+  "userId": "u_42", "anonId": "a_abc", "sessionId": "s_111",
+  "buildId": "f3a2c9", "ts": 1750000020, "crashId": "c_uuid"
+}
+```
 
-### Flow 3: Auto-Instrumentation (Bytecode Manipulation)
-*Interviewer:* "You want to track every HTTP request made by `OkHttp` or `Retrofit`. But you cannot force the host developer to manually add your Interceptor to their `OkHttpClient.Builder()`. How do you inject it automatically?"
+### Perf payload
 
-**Staff Answer:**
-"This requires a **Gradle Plugin** performing Bytecode Manipulation (via ASM or Transform API).
-1. When the host developer compiles their app, my Gradle Plugin intercepts the `.class` files before they are converted to `.dex`.
-2. The plugin searches the bytecode for `new OkHttpClient.Builder()`.
-3. It rewrites the bytecode on the fly to inject `.addInterceptor(new TelemetryInterceptor())`.
-4. At runtime, the app behaves as if the developer typed the code themselves. This provides zero-touch integration."
+```json
+{
+  "type": "perf",
+  "metric": "frame_jank",
+  "value": { "jankFrames": 14, "totalFrames": 1024, "p90Ms": 18.4 },
+  "screen": "feed", "sessionId": "s_111", "ts": ...
+}
+```
 
-## 4. Failure Modes & Bottlenecks
+### Network event (via OkHttp listener)
 
-### Bottleneck: The Transmission Storm (Battery Drain)
-*Interviewer:* "Your SDK records 5,000 UI click events, 20 network requests, and 3 handled exceptions in a 10-minute session. Do you send 5,023 HTTP POST requests to your backend?"
+```json
+{
+  "type": "net",
+  "url": "/v1/feed",            // scrubbed (no PII)
+  "method": "GET", "code": 200,
+  "tNetMs": 92, "tTotalMs": 132,
+  "ts": ...
+}
+```
 
-**Staff Answer:**
-"Absolutely not. That would destroy the battery and saturate the network.
-1.  **Disk Buffering:** Every event is serialized (preferably to Protobuf) and written to SQLite or a flat file.
-2.  **Batching:** We only upload when the buffer reaches a size threshold (e.g., 50KB), or when the app is backgrounded (`onStop`).
-3.  **Compression:** The batched payload MUST be compressed using GZIP before transmission. Text logs achieve 80-90% compression ratios, drastically saving cellular data."
+---
 
-### Bottleneck: The Infinite Recursion Crash
-*Interviewer:* "Your Telemetry SDK's network upload code throws an `IOException`. Your SDK catches its own exception and tries to log it. The logging code throws an exception, which logs it again. The app crashes with a `StackOverflowError`."
+## 5. Mobile App Architecture
 
-**Staff Answer:**
-"This is the most dangerous bug in a Telemetry SDK. The SDK must have a strict **Internal Boundary**.
-1. All SDK code must be wrapped in global `try-catch (Throwable t)` blocks.
-2. If an exception occurs *inside* the SDK namespace (e.g., `com.telemetry.*`), we increment a silent counter and immediately abort the logging attempt. We **never** route SDK-internal exceptions back through the public event pipeline."
+### Module structure
 
-## 5. Staff Engineer Thinking: SDK Integration Friction
+```
+:lib:telemetry
+    telemetry-api          ← Telemetry, Breadcrumbs
+    telemetry-crash        ← CrashCapture, ANR watchdog
+    telemetry-perf         ← FrameMetrics, network listener, startup
+    telemetry-core         ← queue, scheduler, worker
+```
 
-A Staff Engineer understands that developers hate integrating SDKs. If it takes more than 1 line of code, they won't use it.
+### Layered diagram
 
-- **The Old Way:** The developer adds `Telemetry.initialize(context, "API_KEY")` in their `Application.onCreate()`. This slows down app startup.
-- **The Modern Way (ContentProvider):** I will declare an empty `ContentProvider` in my SDK's `AndroidManifest.xml`. The Android OS automatically initializes all `ContentProviders` *before* it calls `Application.onCreate()`. My `ContentProvider` extracts the API Key from the manifest metadata and initializes the SDK completely silently. The developer literally only has to add `implementation 'com.telemetry:sdk'` to their `build.gradle`, and the SDK works instantly. (Note: Jetpack App Startup does exactly this under the hood).
+```
+   ┌─ JVM uncaught ─┐
+   │                 │
+   │ Signal handler ─┤
+   │                 │
+   │ ANR watchdog   ─┼─► CrashSink ─► Room (sync write)
+   │                 │
+   │ App code .leaveBreadcrumb()
+   └─────────────────┘                       │
+                                              ▼
+                                       BreadcrumbBuffer (in-memory ring, 100)
+                                              │ snapshot on crash
+                                              ▼
+   FrameMetrics ──► PerfSink ──► Room (async, sampled)
+   OkHttp listener ──┘
+                                              │
+                                              ▼
+                                       FlushScheduler
+                                              │
+                                              ▼
+                                       FlushWorker → /v1/telemetry
+```
 
-## 6. Probing Questions (For Practice)
+### Key class signatures
 
-1.  Explain why a Telemetry SDK must never throw an unhandled exception back to the host application, and how you ensure a strict internal boundary.
-2.  Walk through the precise mechanism of replacing the JVM's `UncaughtExceptionHandler`. Why must you execute your logic in milliseconds before the OS terminates the process?
-3.  Describe the "Watchdog Thread" architecture for detecting ANRs (Application Not Responding). Why must the detection logic live on a background thread?
-4.  How does a Gradle Plugin use Bytecode Manipulation (ASM) to auto-instrument network calls without requiring the host developer to modify their code?
-5.  Why is it an architectural failure to send a network request for every individual telemetry event? Detail the Batching and GZIP compression strategy.
-6.  Explain the "Infinite Recursion Crash" inside a logging SDK and the mathematical safeguard required to prevent a `StackOverflowError`.
-7.  Describe how an empty `ContentProvider` allows an SDK to initialize automatically without the host developer writing `Telemetry.init()` in their Application class.
-8.  If the host application throws a fatal `OutOfMemoryError` (OOM), why might your Crash Hook fail to write the stack trace to a SQLite database, and how do you mitigate this?
-9.  Explain why a Telemetry SDK must permanently store its collected data on Disk (SQLite/Files) rather than holding it in a RAM buffer before batch uploading.
-10. If the user is on an unreliable cellular network and the batched payload upload fails, how does the SDK ensure those logs are not lost while preventing duplicate uploads?
+```kotlin
+object Telemetry {
+    fun init(context: Context, config: TelemetryConfig)
+    fun leaveBreadcrumb(category: String, message: String, data: Map<String, Any> = emptyMap())
+    fun captureMessage(message: String, level: Level = Level.WARN)
+    fun captureException(t: Throwable, level: Level = Level.ERROR)
+    fun startTrace(name: String): Trace
+    fun setUser(userId: String?)
+}
 
-## Further Reading
+interface Trace {
+    fun stop()
+    fun addAttribute(key: String, value: String)
+}
+```
 
-- [`anrs.md`](../android/performance/anrs.md) — The deep dive into what actually blocks the Main Thread.
-- [`app-startup.md`](app-startup.md) — How the `ContentProvider` trick impacts cold start times.
-- [`gradle-and-build-systems.md`](../android/os-internals/gradle-and-build-systems.md) — The fundamentals of Bytecode Manipulation via Gradle.
+---
+
+## 6. Local Storage
+
+```kotlin
+@Entity(tableName = "telemetry_events", indices = [Index("priority", "ts")])
+data class TelemetryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val type: String,            // crash, anr, perf, net
+    val priority: Int,           // 0 = critical (crash), 1 = high (anr), 2 = normal
+    val payloadJson: String,
+    val ts: Long
+)
+```
+
+Crashes are written with a **synchronous** Room transaction in the uncaught handler — we have ~milliseconds before process death.
+
+---
+
+## 7. Deep Dive: Crash Capture + Delivery (~15 min)
+
+> *I'd pick this as the deep dive because crash capture is binary: it works or it doesn't. Sampling doesn't apply; lost crashes hide bugs in production.*
+
+### JVM crash capture
+
+```kotlin
+class CrashCapture(private val context: Context, private val sink: CrashSink) {
+    private val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+
+    fun install() {
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            try {
+                sink.capture(
+                    CrashEvent(
+                        throwable = throwable,
+                        thread = thread.name,
+                        breadcrumbs = BreadcrumbBuffer.snapshot(),
+                        context = currentContext()
+                    )
+                )
+            } catch (e: Throwable) {
+                // never throw inside the handler
+            } finally {
+                defaultHandler?.uncaughtException(thread, throwable)
+            }
+        }
+    }
+}
+```
+
+`CrashSink.capture` writes synchronously to Room *and* a fallback flat file (in case Room is mid-migration or holding a lock).
+
+### CrashSink (sync write)
+
+```kotlin
+class CrashSink @Inject constructor(
+    private val db: TelemetryDatabase,
+    private val fileSink: FileCrashSink,
+) {
+    fun capture(event: CrashEvent) {
+        val json = serializer.encodeToString(event.toWire())
+        // Best-effort: Room first, file as fallback. Either is acceptable.
+        runCatching {
+            // Synchronous write; we may have milliseconds left.
+            db.runInTransaction {
+                db.telemetryDao().insertCriticalSync(TelemetryEntity(
+                    type = "crash", priority = 0, payloadJson = json, ts = clock.now()
+                ))
+            }
+        }.onFailure {
+            fileSink.append(json)   // raw file in app's filesDir/crashes/
+        }
+    }
+}
+```
+
+> The flat-file path is the safety net. On next app start, the SDK scans `filesDir/crashes/` and migrates entries into Room.
+
+### Breadcrumbs (in-memory ring buffer)
+
+```kotlin
+object BreadcrumbBuffer {
+    private const val CAPACITY = 100
+    private val ring = ArrayDeque<Breadcrumb>(CAPACITY)
+    private val lock = ReentrantLock()
+
+    fun add(b: Breadcrumb) = lock.withLock {
+        if (ring.size == CAPACITY) ring.removeFirst()
+        ring.addLast(b)
+    }
+    fun snapshot(): List<Breadcrumb> = lock.withLock { ring.toList() }
+}
+```
+
+Auto-breadcrumbs: nav, network (via OkHttp listener), screen lifecycle. App code adds custom ones with `Telemetry.leaveBreadcrumb`.
+
+### ANR watchdog
+
+```kotlin
+class AnrWatchdog(private val threshold: Long = 5_000) : Thread() {
+    private val handler = Handler(Looper.getMainLooper())
+    override fun run() {
+        while (!interrupted()) {
+            val ack = AtomicBoolean(false)
+            handler.post { ack.set(true) }
+            sleep(threshold)
+            if (!ack.get()) {
+                val mainStack = Looper.getMainLooper().thread.stackTrace
+                Telemetry.captureException(AnrException("Main blocked ${threshold}ms", mainStack))
+            }
+        }
+    }
+}
+```
+
+> Android 11+ exposes `ApplicationExitInfo` with `REASON_ANR`. Read on next launch as confirmation; the watchdog catches in-process; `ApplicationExitInfo` catches the system's view.
+
+### Native crash capture (NDK)
+
+Out of detailed scope here, but pattern: install a SIGSEGV/SIGBUS handler in JNI, write a minidump to `filesDir/native_crashes/`. JVM SDK reads these on launch. Tools: `breakpad`, `crashpad`, or Sentry's NDK.
+
+### Delivery on next launch
+
+```kotlin
+class TelemetryDeliveryBootstrapper @Inject constructor(
+    private val migrator: FileToRoomMigrator,
+    private val workManager: WorkManager,
+) {
+    fun onAppStart() {
+        migrator.migratePending()         // flat files → Room
+        workManager.enqueueUniqueWork(
+            "telemetry-flush", ExistingWorkPolicy.KEEP,
+            OneTimeWorkRequestBuilder<FlushWorker>()
+                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+                .build()
+        )
+    }
+}
+```
+
+### Flush worker (prioritizes crashes)
+
+```kotlin
+@HiltWorker
+class FlushWorker @AssistedInject constructor(...) : CoroutineWorker(ctx, params) {
+    override suspend fun doWork(): Result {
+        // 1. Critical first (priority=0)
+        flushBatch(dao.takeByPriority(0, limit = 50))?.let { if (!it.isSuccess) return it }
+        // 2. High (ANR)
+        flushBatch(dao.takeByPriority(1, limit = 50))?.let { if (!it.isSuccess) return it }
+        // 3. Normal (perf, net)
+        flushBatch(dao.takeByPriority(2, limit = 200))?.let { if (!it.isSuccess) return it }
+        return Result.success()
+    }
+}
+```
+
+### Performance traces
+
+```kotlin
+class FrameMetricsCapture(activity: Activity) {
+    init {
+        activity.window.addOnFrameMetricsAvailableListener({ _, fm, _ ->
+            val totalNs = fm.getMetric(FrameMetrics.TOTAL_DURATION)
+            if (totalNs > 16_700_000) {     // > 16.7ms = jank at 60Hz
+                PerfBuffer.addJank(totalNs)
+            }
+        }, Handler(Looper.getMainLooper()))
+    }
+}
+```
+
+Sample at 10% of sessions; aggregate per-screen at session end; flush.
+
+### Network timing (OkHttp event listener)
+
+```kotlin
+class NetTelemetryListener : EventListener() {
+    private val timers = ConcurrentHashMap<Call, Long>()
+    override fun callStart(call: Call) { timers[call] = clock.now() }
+    override fun callEnd(call: Call) {
+        val start = timers.remove(call) ?: return
+        Telemetry.recordNet(call.request().url, clock.now() - start, code = lastCode)
+    }
+}
+```
+
+### Failure modes
+
+| What breaks | Behavior |
+|---|---|
+| Process dies before Room write | File-sink fallback catches it |
+| Room is corrupted | File-sink only |
+| Network unavailable on next launch | Worker retries indefinitely with backoff |
+| Server returns 400 | Drop offender (bad schema); continue |
+| Disk full | Trim oldest perf; never trim crashes |
+| Mapping file mismatch | Server symbolicates with whatever buildId is sent; may show obfuscated names |
+
+---
+
+## 8. Trade-offs
+
+### In-house vs vendor (Crashlytics, Sentry)
+
+| Option | Pros | Cons | Verdict |
+|---|---|---|---|
+| **In-house** | Privacy, custom routing, control | Build + maintain | Pick if scale + privacy demand it |
+| **Crashlytics** | Free, integrated with Firebase | Vendor lock, limited custom fields | Default for small teams |
+| **Sentry** | Best-in-class, OSS option | Cost at scale | Pick for mid-size teams |
+
+### Storage for crashes
+
+| Option | Verdict |
+|---|---|
+| **Room with sync transaction + file fallback** | Pick — safest |
+| Files only | Loses transactional semantics for the rest of the queue |
+| Room only | Risky if DB is locked at crash time |
+
+### Symbolication
+
+| Option | Verdict |
+|---|---|
+| **Server-side with uploaded mapping** | Pick — keeps client small |
+| Client-side symbolication | Wastes battery, requires mapping on device (security risk) |
+| No symbolication | Useless |
+
+### Perf sampling
+
+| Option | Verdict |
+|---|---|
+| **10% session sampling** | Pick — bounded volume |
+| Per-event sampling | Less statistical signal |
+| 100% perf events | Overkill, expensive |
+
+### Frame metrics
+
+| Source | Verdict |
+|---|---|
+| **`FrameMetrics` API** | Pick — official, accurate |
+| `Choreographer` callback | DIY; reinvents wheel |
+| `JankStats` (AndroidX) | Pick — wraps the above, easier |
+
+---
+
+## 9. Major Concerns
+
+- **Crash atomicity.** Must persist before exit. File fallback covers the Room-locked edge.
+- **Reentrancy.** Uncaught handler must never throw — guard with `runCatching`.
+- **Privacy.** Strip query parameters from URLs; redact known PII keys in breadcrumbs.
+- **Mapping.** Upload R8 / ProGuard mapping per release. Server stores by `buildId`.
+- **NDK crashes.** Need a signal handler installed; not in this code but architecturally a peer to JVM capture.
+- **ANR vs slow operation.** 5s is a hard ANR threshold; we want to capture before the system dialog.
+- **Battery.** Perf monitoring should be opt-in or sampled. Don't always-on.
+- **Stack trace integrity.** Server must store mapping for at least N versions back (last 12 months typical).
+- **Compliance.** "Right to be forgotten" — delete by `userId` server-side.
+
+---
+
+## 10. Follow-up Questions
+
+> **Q: How are crashes deduped?**
+> Server fingerprint = SHA-256(class + top frame + message). Crashes with the same fingerprint group into an "issue". Counts + affected users update per issue.
+
+> **Q: What about OOM that kill the process suddenly?**
+> JVM `OutOfMemoryError` is an exception → caught. Native OOM (Low Memory Killer) is silent; we detect on next launch via `ApplicationExitInfo` (Android 11+).
+
+> **Q: How do you avoid losing a crash if the app crashes again during write?**
+> File sink is append-only — partial writes are recoverable by skipping malformed JSON lines.
+
+> **Q: What's the perceived impact on app size?**
+> Telemetry SDK ~150 KB stripped (JVM-only). With NDK signal handler, +250 KB. Crashlytics is ~600 KB; in-house can be leaner.
+
+> **Q: How do you test crash capture?**
+> `throw RuntimeException("test")` from a debug button. Verify Room row appears post-restart. CI: instrumented test that triggers a crash and checks the persisted artifact.
+
+> **Q: Can the telemetry SDK report on itself?**
+> Yes — internal "self-monitoring" events (worker failures, queue overflow) emit as `type=telemetry_internal`. Watch them carefully; they predict outages.
+
+---
+
+## 11. Out of Scope (defended)
+
+- **Product events** — `analytics-sdk.md`.
+- **Heap dumps** — heavy, requires symbolication of memory addresses.
+- **Distributed tracing** — server domain.
+- **Real-time dashboards** — telemetry consumer side.
+- **Vendor SDK adapter** — pattern: thin wrapper, route events to chosen vendor.
+
+---
+
+## 12. Further Reading
+
+- [Android Developers — JankStats library](https://developer.android.com/topic/performance/jankstats) — official frame-metrics wrapper.
+- [Android Developers — ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo) — system-level exit reasons (API 30+).
+- [Crashlytics Android docs](https://firebase.google.com/docs/crashlytics) — reference implementation.
+- [Sentry Android SDK](https://docs.sentry.io/platforms/android/) — open-source alternative.
+- [Microsoft AppCenter mobile diagnostics](https://learn.microsoft.com/appcenter/diagnostics/) — for comparison.
+
+---
+
+> **Closing in the interview:** "I anchored on crash capture because zero data loss is the SDK's job-one promise. Happy to dig into NDK signal handlers, perf-sampling strategies, or the symbolication pipeline next."
