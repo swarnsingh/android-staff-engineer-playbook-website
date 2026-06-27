@@ -1,162 +1,333 @@
-# System Design: Caching Library
+# Caching Library
 
-## The Prompt
+> A 45-60 minute mobile system-design walkthrough for designing a generic in-process caching library on Android. Think `LruCache` + disk fallback + invalidation: the kind of building block image loaders, network layers, and feature flag systems use underneath.
 
-*"Design a generic caching library for Android. It must cache HTTP JSON responses to disk so the app works offline. It must automatically expire stale data, prevent OutOfMemory errors, and be thread-safe when 5 different background Coroutines try to read/write the same cache key simultaneously."*
+---
 
-## 1. Requirements & Clarification (RADIO Framework)
+## 1. Gathering Requirements (~5 min)
+
+> **Interviewer:** "Design a caching library for a mobile app."
+> **Candidate:** "Lots of products use a tiered memory + disk cache. The interesting tradeoffs are eviction policy, atomic disk writes, and how clients invalidate. I'll deep-dive the read/write path with both tiers."
 
 ### Functional Requirements
-- Store and retrieve key-value pairs (String -> JSON).
-- Configure TTL (Time-To-Live) for automatic data expiration.
-- Memory caching (L1) and Disk caching (L2).
+- **Two-tier**: in-memory + on-disk.
+- **Generic types** via `Cache<K, V>` with a pluggable serializer.
+- **TTL** per entry; expired reads return `null`.
+- **Manual invalidate** by key and by predicate.
+- **Bounded** by size (memory) and bytes (disk).
 
-### Non-Functional Requirements (NFRs)
-- **Thread Safety (Priority 0):** If Coroutine A is writing to key "user_99" and Coroutine B tries to read "user_99" at the exact same millisecond, the app must not crash with a `ConcurrentModificationException`.
-- **Memory Footprint:** The Memory Cache must never trigger an OOM.
-- **Disk I/O:** Reading from the Disk Cache must never freeze the UI thread.
+### Non-Functional Requirements
+- **Thread-safe** (concurrent read/write).
+- **Bounded** memory + disk; deterministic eviction.
+- **Atomic disk writes** (no torn files on crash).
+- **Trivial to test** — in-memory variant + fake clock.
+- **No reflection at runtime** for performance.
 
-## 2. High-Level Architecture (The Interceptor Pattern)
+### Out of Scope
+- Distributed / cross-process cache (use `ContentProvider` if needed)
+- Encryption at rest (delegate to consumer — they can wrap the serializer)
+- Push-driven invalidation (server-driven; caller's problem)
+- HTTP cache semantics (handled by OkHttp)
 
-A Junior engineer implements caching by writing `if (db.hasData()) return db.getData() else fetchNetwork()` in every single ViewModel.
-A Staff engineer builds caching as an **OkHttp Interceptor**, completely decoupling it from the business logic.
+---
 
-```mermaid
-graph TD
-    App[Repository / Retrofit] -->|1. Request /users| OkHttp[OkHttp Client]
-    
-    OkHttp -->|2. Intercept| CacheInterceptor[Cache Interceptor]
-    
-    CacheInterceptor -->|3. Check Memory| MemCache[L1: LruCache]
-    MemCache -- Miss --> DiskCache[L2: DiskLruCache]
-    DiskCache -- Miss --> Network[Network Backend]
-    
-    Network -->|4. Save| DiskCache
-    DiskCache -->|5. Save| MemCache
-    MemCache -->|6. Return| App
+## 2. Clarifying Questions (~3 min)
+
+| Question | Why it matters |
+|---|---|
+| What's the dominant access pattern (read-heavy, write-heavy)? | Eviction policy tradeoff |
+| Median value size? | Disk format choice; memory budget |
+| Acceptable cold read latency? | Sync vs async disk reads |
+| Need observability (hit rate)? | Built-in metrics counter |
+| Will it be used from multiple processes? | Lock model |
+| Android API floor? | `LruCache` (4+), `DiskLruCache` (Jake Wharton fork or own) |
+| Value types primitive or POJO? | Serializer interface |
+
+> **Candidate:** "Assume single-process, read-heavy (~10:1), avg value 1-50 KB, sync API with coroutine wrappers, single-process, Android 9+."
+
+---
+
+## 3. High-Level Diagram (~10 min)
+
+```
+                   Cache<K, V>
+                       │
+              ┌────────┴────────┐
+              ▼                 ▼
+      MemoryCache (LRU)   DiskCache (bytes)
+           |                 |
+         maxSize           maxBytes
+           |                 |
+      LinkedHashMap     atomic write
+                        + index file
 ```
 
-## 3. Data Model & Components
+**Layers (named for context):**
+- **`Cache<K, V>`** — public API; orchestrates memory + disk; handles TTL.
+- **`MemoryCache`** — `LruCache`-backed, hot tier.
+- **`DiskCache`** — atomic writes, an index for O(1) lookup, byte-budget eviction.
+- **`Serializer<V>`** — converts to/from `ByteArray` (default: `kotlinx.serialization`).
+- **`Clock`** — injectable for tests.
 
-### 1. The L1 Memory Cache (LruCache)
-We use the Android `LruCache` class. It manages eviction automatically.
+---
+
+## 4. API Contract
+
 ```kotlin
-// Maximum 10 Megabytes of JSON in RAM
-val maxMemory = (Runtime.getRuntime().maxMemory() / 1024).toInt()
-val cacheSize = maxMemory / 8 // 1/8th of available RAM
+interface Cache<K : Any, V : Any> {
+    suspend fun get(key: K): V?
+    suspend fun put(key: K, value: V, ttl: Duration = Duration.INFINITE)
+    suspend fun invalidate(key: K)
+    suspend fun invalidateWhere(predicate: (K) -> Boolean)
+    suspend fun clear()
+    val stats: StateFlow<CacheStats>
+}
 
-val memoryCache = object : LruCache<String, String>(cacheSize) {
-    override fun sizeOf(key: String, value: String): Int {
-        // Measure size in bytes, not item count
-        return value.toByteArray(Charsets.UTF_8).size / 1024
+data class CacheStats(
+    val hits: Long, val misses: Long, val evictions: Long,
+    val memoryBytes: Long, val diskBytes: Long,
+)
+```
+
+### Builder
+
+```kotlin
+val cache = CacheBuilder<String, User>()
+    .memorySize(maxEntries = 200)
+    .diskSize(maxBytes = 50 * MB)
+    .diskDir(context.cacheDir.resolve("user-cache"))
+    .serializer(KotlinSerializer(User.serializer()))
+    .ttl(default = 1.hours)
+    .clock(SystemClock)
+    .build()
+```
+
+---
+
+## 5. Mobile App Architecture
+
+### Module structure
+
+```
+:lib:cache
+    cache-api          ← Cache interface, models
+    cache-memory       ← MemoryCache impl
+    cache-disk         ← DiskCache impl
+    cache-default      ← composed Cache<K, V>
+```
+
+> Splitting the impls lets callers swap in a memory-only variant for tests without pulling the disk dependency.
+
+### Layered diagram
+
+```
+              get(K)
+               │
+               ▼
+       MemoryCache.get(K)  ── hit ──► return
+               │
+               miss
+               ▼
+        DiskCache.get(K)   ── hit ──► hydrate Memory, return
+               │
+               miss
+               ▼
+              null
+```
+
+---
+
+## 6. Local Storage (Disk format)
+
+Each entry is one file in the cache dir:
+
+```
+cacheDir/
+├── index.bin                     ← (key → file, expiresAt, sizeBytes)
+└── entries/
+    ├── 8f7a...uuid
+    └── ...
+```
+
+`index.bin` is rewritten atomically on flush. Entry files are written `.tmp` → `fsync` → `rename` for atomicity.
+
+```kotlin
+internal data class IndexRow(val key: String, val file: String,
+                              val expiresAt: Long, val sizeBytes: Long)
+```
+
+> **Probing Q:** "Why not use Room?" Because the value is opaque bytes. Room is for queryable structured data. A bytes cache is simpler as files + an index.
+
+---
+
+## 7. Deep Dive: Read/Write Path with Two Tiers (~15 min)
+
+> *I'd pick this as the deep dive because it covers the core orchestration: hit/miss propagation, eviction, atomic disk I/O, and TTL — the bits that decide whether the library is reliable.*
+
+### Get path
+
+```kotlin
+override suspend fun get(key: K): V? {
+    val stringKey = key.toString()
+    memory.get(stringKey)?.let {
+        if (it.notExpired(clock)) { stats.recordHit(); return it.value }
+        memory.remove(stringKey)                // expired
     }
+    val bytes = diskMutex.withLock { disk.get(stringKey) } ?: run {
+        stats.recordMiss(); return null
+    }
+    if (bytes.isExpired(clock)) {
+        diskMutex.withLock { disk.remove(stringKey) }
+        stats.recordMiss(); return null
+    }
+    val value = serializer.deserialize(bytes.payload)
+    memory.put(stringKey, MemoryEntry(value, bytes.expiresAt))   // promote
+    stats.recordHit()
+    return value
 }
 ```
 
-### 2. The L2 Disk Cache (DiskLruCache)
-We use Jake Wharton's `DiskLruCache` (or OkHttp's built-in `Cache`).
+### Put path
+
 ```kotlin
-// Maximum 50 Megabytes on Disk
-val diskCache = Cache(context.cacheDir, 50L * 1024L * 1024L)
-```
-
-### 3. The Threading Mutex
-To solve the concurrency problem, we must lock specific keys, not the whole database.
-```kotlin
-// A map of Mutexes per key
-val mutexMap = ConcurrentHashMap<String, Mutex>()
-```
-
-## 4. The Core Flows (Deep Dive)
-
-### Flow 1: HTTP Cache-Control (The Standard Way)
-*Interviewer:* "How do you tell the cache that a specific JSON response is valid for 5 minutes, but another response is valid for 1 year?"
-
-**Staff Answer:**
-"I will not invent a custom TTL system. I will rely on standard **HTTP Cache-Control Headers**.
-When the backend sends the JSON, it includes the header: `Cache-Control: max-age=300` (5 minutes).
-OkHttp's built-in caching engine automatically reads this header. If the mobile app requests the same URL within 5 minutes, OkHttp intercepts the request, blocks the network call, and returns the JSON directly from the local Disk Cache. If 5 minutes have passed, OkHttp automatically fires the network request to fetch fresh data. The backend dictates the TTL, not the mobile client."
-
-### Flow 2: Offline Fallback (Stale-While-Revalidate)
-*Interviewer:* "The user opens the app in Airplane mode. The `max-age` of the JSON was 5 minutes, and it has been 6 minutes. The data is officially 'stale'. OkHttp will try to fetch the network, fail, and throw an Exception. The app shows a blank screen. How do you show the stale data instead?"
-
-**Staff Answer:**
-"I will configure the `Cache-Control` header with `stale-if-error` or write a custom **Offline Interceptor**.
-```kotlin
-class OfflineCacheInterceptor(val context: Context) : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        var request = chain.request()
-        if (!hasNetwork(context)) {
-            // Force OkHttp to read from cache, even if the data is 7 days stale
-            val cacheControl = CacheControl.Builder()
-                .maxStale(7, TimeUnit.DAYS)
-                .build()
-            request = request.newBuilder().cacheControl(cacheControl).build()
+override suspend fun put(key: K, value: V, ttl: Duration) {
+    val stringKey = key.toString()
+    val expiresAt = if (ttl == Duration.INFINITE) Long.MAX_VALUE
+                    else clock.now() + ttl.inWholeMilliseconds
+    memory.put(stringKey, MemoryEntry(value, expiresAt))
+    diskScope.launch {                              // off the caller's coroutine
+        val bytes = serializer.serialize(value)
+        diskMutex.withLock {
+            disk.put(stringKey, DiskEntry(bytes, expiresAt))
+            disk.evictIfOverBudget()
         }
-        return chain.proceed(request)
     }
 }
 ```
-If there is no network, this Interceptor modifies the outgoing request to explicitly accept highly stale data. The app displays the 6-minute-old JSON instead of a crash."
 
-### Flow 3: The Cache Stampede (Concurrency)
-*Interviewer:* "The user opens the 'Dashboard' screen. The Dashboard contains 5 different widgets. All 5 widgets simultaneously request `GET /user/profile`. The cache is empty. Your app fires 5 identical HTTP requests to the backend at the exact same millisecond. Fix it."
+> Disk write happens off the caller's coroutine. Reads see the value immediately via memory. If the process dies before the disk flush, we lose the cache entry — that's *acceptable* for a cache.
 
-**Staff Answer:**
-"This is the **Cache Stampede** (or Thundering Herd) problem.
-To fix this, I must implement **Request De-duplication** using Kotlin Coroutine `Mutex` locking per-key.
-1. Widget 1 requests `/user/profile`.
-2. The caching library checks `mutexMap["/user/profile"]`. It doesn't exist, so it creates a `Mutex` and locks it.
-3. Widget 1 proceeds to fetch from the network.
-4. Widgets 2, 3, 4, and 5 request `/user/profile`.
-5. They encounter the locked `Mutex`. They are suspended (they wait).
-6. Widget 1 finishes the network request and writes the JSON to the Memory Cache. Widget 1 releases the `Mutex`.
-7. Widgets 2, 3, 4, and 5 immediately resume. They check the Memory Cache again. The data is now there! They return the cached data.
-Only ONE network request is fired, saving backend resources and mobile battery."
+### Atomic disk write
 
-## 5. Failure Modes & Bottlenecks
-
-### Bottleneck: Disk I/O Blocking the Main Thread
-A junior developer checks the Disk Cache synchronously:
 ```kotlin
-fun getUser(): User {
-    return diskCache.get("user") ?: api.fetchUser()
+internal fun writeAtomic(file: File, bytes: ByteArray) {
+    val tmp = File(file.parentFile, "${file.name}.tmp")
+    tmp.outputStream().use { it.write(bytes); it.fd.sync() }
+    if (!tmp.renameTo(file)) error("rename failed")
 }
 ```
-If the UI thread calls this, the app freezes for 50ms while flash storage is read.
-*(Fix: The caching library API must *force* asynchronous access, e.g., returning a `suspend` function or a `Flow`. Disk cache lookups must strictly happen on `Dispatchers.IO`).*
 
-### Bottleneck: PII Leakage (Security)
-*Interviewer:* "Your app caches the `GET /bank/balance` response to disk. The user logs out. The user sells their phone. The new owner roots the phone, opens the DiskCache directory, and reads the previous owner's bank balance. Why?"
+### Eviction policies
 
-**Staff Answer:**
-"The Disk Cache writes raw plaintext bytes to the file system. 
-**The Fix:**
-1. **Clear on Logout:** The `AuthManager` must explicitly call `okHttpClient.cache?.evictAll()` the moment the user taps Logout.
-2. **No-Store:** The backend must explicitly send `Cache-Control: no-store` for highly sensitive endpoints (like Bank Balances). This mathematically prevents OkHttp from ever writing the JSON to disk, forcing it to only ever exist in volatile RAM."
+| Tier | Policy | Why |
+|---|---|---|
+| Memory | LRU (LinkedHashMap accessOrder) | `LruCache` is built-in; predictable |
+| Disk | Byte-budget LRU via index `lastAccessedAt` | Simple, deterministic; FIFO is too crude |
 
-## 6. Staff Engineer Thinking: Invalidation is Hard
+### TTL handling
 
-The famous quote: *"There are only two hard things in Computer Science: cache invalidation and naming things."*
+- Entries carry `expiresAt` absolute timestamp.
+- Checked on every read; expired entries removed lazily (cheap).
+- No background sweeper — adds wakeups for no benefit.
 
-A Staff Engineer minimizes cache invalidation logic on the mobile client. If you try to manually delete cache keys (e.g., `cache.remove("user_profile")` when the user updates their name), you will eventually create a bug where stale data persists forever. 
-Instead, lean entirely on the HTTP protocol (`ETag`, `Last-Modified`, and `max-age`). Let the backend tell the mobile app exactly when data should die.
+### Concurrency
 
-## 7. Probing Questions (For Practice)
+- `MemoryCache` is `LruCache` (synchronized).
+- `DiskCache` is guarded by a `Mutex` (one writer at a time).
+- Reads from disk parallelize via a coroutine dispatcher.
 
-1.  Explain why building a caching layer using OkHttp Interceptors is architecturally superior to placing caching logic inside a ViewModel or Repository.
-2.  Describe the "Cache Stampede" problem and walk through exactly how a Kotlin `Mutex` (locked per-URL) prevents it.
-3.  Why must an `LruCache` sizing function measure the size of the objects in Bytes, rather than simply limiting the cache to a specific number of items (e.g., 100 items)?
-4.  Explain the HTTP `Cache-Control: max-age` header. How does this allow the backend to control the mobile application's cache expiration?
-5.  What is the "Stale-While-Revalidate" pattern? How can an Offline Interceptor force the app to display expired data when the cellular network drops?
-6.  Describe the security vulnerability of caching Personally Identifiable Information (PII) to disk, and how the `Cache-Control: no-store` header prevents it.
-7.  Why is it critical that all reads from a `DiskLruCache` happen on a background thread (e.g., `Dispatchers.IO`), and what happens if this rule is violated?
-8.  Explain why a Staff Engineer prefers to rely on HTTP standard headers (`ETag`, `Last-Modified`) rather than writing custom cache invalidation logic on the Android client.
-9.  If two independent coroutines attempt to read the exact same file from the Disk Cache simultaneously, what OS-level mechanism prevents a crash or corrupted read?
-10. Walk through the architecture of a Two-Tier Cache (L1 Memory + L2 Disk). Why is the L1 Memory cache necessary if we already have a fast SSD Disk Cache?
+---
 
-## Further Reading
+## 8. Trade-offs
 
-- [`caching.md`](../engineering-fundamentals/caching.md) — The fundamental principles of caching, LRU, and TTls.
-- [`retrofit-and-okhttp.md`](../android/networking-and-security/retrofit-and-okhttp.md) — How to implement Interceptors in OkHttp.
-- [`security-and-privacy.md`](../mobile-system-design/security-and-privacy.md) — The dangers of storing PII in plaintext on disk.
+### Memory tier impl
+
+| Option | Pros | Cons | Verdict |
+|---|---|---|---|
+| **AndroidX `LruCache`** | Built-in, mature | Synchronized (lock contention) | Pick this |
+| Caffeine | Best policies (TinyLfu) | JVM-heavy; KMP unfriendly | Skip for mobile |
+| Custom LinkedHashMap | Total control | Reinvents `LruCache` | Skip |
+
+### Disk tier impl
+
+| Option | Pros | Cons | Verdict |
+|---|---|---|---|
+| **File per entry + index** | Simple, debuggable | Many small files (FS inode pressure) | Pick this |
+| `DiskLruCache` (JW) | Battle-tested in OkHttp | Stale lib, key constraints | Acceptable |
+| SQLite blob table | Atomic, transactional | Schema overhead for bytes | Skip |
+| MMKV (Tencent) | Fast, mmap-based | Native lib; key-value only | Niche |
+
+### Serializer
+
+| Option | Pros | Cons | Verdict |
+|---|---|---|---|
+| **`kotlinx.serialization`** | Code-gen, KMP, fast | Caller must annotate | Pick (default) |
+| Moshi/Gson | Familiar | Reflection or codegen, JVM only | Acceptable |
+| Custom | Total control | Caller-burden | Always allowed via interface |
+
+### Async model
+
+| Option | Pros | Cons | Verdict |
+|---|---|---|---|
+| **`suspend` API** | Coroutine-native, structured concurrency | Caller must scope | Pick this |
+| `Flow<V>` for reactive | Live updates | Overhead for one-shot reads | Use only for `stats` |
+| Callbacks | Old habits | Manual cancellation | Skip |
+
+---
+
+## 9. Major Concerns
+
+- **Crash safety.** Atomic rename for entries. Index rewrite is `tmp + rename`. Lose at most the last in-flight write.
+- **OOM risk.** Memory tier uses `LruCache` with a *count* budget; size budget if values are large/heterogeneous. Don't unbound the memory tier.
+- **Disk pressure.** Byte budget (e.g., 50 MB). Evict from oldest `lastAccessedAt`. Compact index on threshold.
+- **Cold start.** Don't load the index on app launch synchronously. Lazy-load on first cache touch.
+- **Serializer drift.** Versioned envelope: `{ "v": 2, "payload": ... }`. Unknown version → cache miss (don't crash).
+- **Privacy.** Caller is responsible for not putting sensitive values; offer an encrypted serializer adapter (`EncryptedFileSerializer`).
+- **Testing.** Inject `Clock`; use `MemoryCache` only in tests; assert hit rates.
+- **Observability.** `CacheStats` `StateFlow` exposes hits/misses/evictions. Caller wires into telemetry SDK.
+
+---
+
+## 10. Follow-up Questions
+
+> **Q: How do you handle a write while a read is in flight for the same key?**
+> Memory `put` is atomic on `LruCache`. The disk write happens on a dispatched coroutine; if a read fires before the disk write completes, it gets the memory-tier value (which is newer). After the disk write, future cold reads see the new value.
+
+> **Q: What about multi-process access?**
+> Out of scope. If needed: switch the disk index to a `ContentProvider`-fronted SQLite table, or use MMKV with file locks. Don't bolt cross-process onto a single-process design.
+
+> **Q: How do you avoid stampedes (many threads fetching the same missing key)?**
+> Out of the library's scope, but recommend caller pattern: `coalesce` via a `Map<K, Deferred<V>>` so only one fetch happens per key. Optional helper utility ships in `cache-default`.
+
+> **Q: TTL precision?**
+> Millisecond. We don't try to wake at expiry — entries expire lazily on read. Background sweeper would burn battery; not worth it.
+
+> **Q: How big should defaults be?**
+> Memory: 1/8 of `Runtime.maxMemory()` if values are bitmaps; smaller (200 entries) for POJOs. Disk: 50 MB. Always overridable.
+
+> **Q: How would Coil's image cache compare?**
+> Coil uses the same shape — in-memory bitmap pool + disk bytes — but with bitmap-aware eviction (`sizeOf` per bitmap) and the Coil `MemoryCache.Builder().maxSizePercent(context, 0.25)` helper. Same architecture, image-specialised.
+
+---
+
+## 11. Out of Scope (defended)
+
+- **Cross-process** — adds lock/IPC complexity; few apps need it.
+- **Encryption at rest** — caller can wrap the serializer.
+- **Distributed cache** — that's a server problem.
+- **Push invalidation** — caller's domain event.
+- **HTTP semantics** (`Cache-Control`, `Vary`, conditional requests) — OkHttp's cache exists for this.
+
+---
+
+## 12. Further Reading
+
+- [weeeBox/mobile-system-design — caching-library](https://github.com/weeeBox/mobile-system-design/blob/master/exercises/caching-library.md) — reference format.
+- [Android Developers — LruCache](https://developer.android.com/reference/kotlin/androidx/collection/LruCache) — canonical in-memory cache.
+- [Jake Wharton — DiskLruCache](https://github.com/JakeWharton/DiskLruCache) — reference for the atomic-rename disk pattern.
+- [Coil 3 — MemoryCache and DiskCache](https://coil-kt.github.io/coil/getting_started/) — image-loader take on the same shape.
+- [Caffeine paper — Window TinyLfu](https://arxiv.org/abs/1512.00727) — for when LRU isn't enough.
+
+---
+
+> **Closing in the interview:** "I anchored on the get/put orchestration because the rest of the library is just policy. Happy to dig into stampede coalescing, the index rewrite scheme, or an MMKV variant next."

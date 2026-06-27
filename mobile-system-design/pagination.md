@@ -1,124 +1,400 @@
-# System Design: Pagination
+# Pagination Library
 
-## The Prompt
+> A 45-60 minute mobile system-design walkthrough for a pagination library/component on Android. Cursor vs offset, prefetch radius, RemoteMediator, error/retry UX, scroll restoration. Think Paging 3's design problem.
 
-*"Design the data loading mechanism for a social media feed like Instagram or a massive E-commerce search result. The backend database has 10 million items. The Android client must display them in an infinite scrolling list without crashing the app, running out of memory, or showing duplicate items."*
+---
 
-## 1. Requirements & Clarification (RADIO Framework)
+## 1. Gathering Requirements (~5 min)
+
+> **Interviewer:** "Design a pagination library for a long list."
+> **Candidate:** "The interesting questions are which pagination model to use, how to coordinate network + local cache, and how scroll position survives all the things that can kill it. I'll deep-dive the load orchestration."
 
 ### Functional Requirements
-- Infinite scrolling list.
-- Pull-to-refresh to get the latest items.
-- Handle insertion/deletion of items mid-scroll.
+- **Forward pagination** ("load more" as user scrolls).
+- **Pull-to-refresh** ("reset and reload").
+- **Local cache** — render from disk while network loads.
+- **Error + retry** UX per page.
+- **Stable item identity** so the list animates correctly.
 
-### Non-Functional Requirements (NFRs)
-- **Memory (RAM) Limit:** The app cannot hold 10,000 items in memory. It will trigger an `OutOfMemoryError` (OOM).
-- **Performance (Jank):** Scrolling must maintain 60fps. Database queries and JSON parsing must occur on background threads.
-- **Data Integrity:** No duplicated items and no skipped items, even if the underlying database is constantly changing.
+### Non-Functional Requirements
+- **Stable across inserts** (new items don't cause dupes).
+- **Scroll restoration** across config change + process death.
+- **Cellular-aware** (prefetch only on Wi-Fi if configured).
+- **Coroutine-native** API.
+- **Testable** without a real network.
 
-## 2. High-Level Architecture (The Paging Layer)
+### Out of Scope
+- Bidirectional pagination (older + newer in same list — rare)
+- Realtime push (use a separate stream that invalidates pages)
+- Sectioned / grouped lists (Pager doesn't know about sections; consumer composes)
+- Sort/filter (consumer's domain)
 
-A Junior engineer downloads 500 items into a giant `List<Item>`, puts it in a `RecyclerView`, and hopes for the best.
-A Staff engineer builds a **Paging Pipeline** connecting the Network, the Disk (Room), and the UI in chunks.
+---
 
-```mermaid
-graph TD
-    UI[Jetpack Compose / RecyclerView] <-->|Observe Flow<PagingData>| Repo[Paging Repository]
-    
-    subgraph Paging Boundary (Paging 3)
-        Repo -->|1. Query Page| DB[(Room DB)]
-        Repo -->|2. Trigger Load| RemoteMediator[RemoteMediator]
-    end
-    
-    RemoteMediator -->|3. Fetch Next Page| Network[Backend API]
-    Network -->|4. Save to Disk| DB
+## 2. Clarifying Questions (~3 min)
+
+| Question | Why it matters |
+|---|---|
+| Server supports cursors? | Cursor (good) vs offset (fragile) |
+| Page size expectation? | Network round trips vs perceived smoothness |
+| Personalised order (re-ranks per session)? | Cache invalidation rules |
+| Local SSOT or network-only? | RemoteMediator vs PagingSource |
+| Compose or View? | API shape (`LazyPagingItems` vs `PagedListAdapter`) |
+| Bidirectional? | Hugely complicates; rarely needed |
+| Strict order or "near-real-time"? | Tolerance for shifting indices |
+
+> **Candidate:** "Cursor-paginated, page size 20-50, local cache as SSOT, Compose-first, forward-only, Android 9+."
+
+---
+
+## 3. High-Level Diagram (~10 min)
+
+```
+       LazyColumn (Compose)
+              │
+              ▼
+       LazyPagingItems
+              │
+              ▼
+            Pager
+              │
+       ┌──────┴──────┐
+       ▼             ▼
+   PagingSource   RemoteMediator
+   (Room DAO)     (network ↔ Room)
+                       │
+                       ▼
+                  HTTP /v1/...?cursor=…
 ```
 
-*Staff Architecture:* The UI never talks to the Network. The UI asks Room for Page 1. When the user scrolls near the bottom, the `RemoteMediator` detects it, fetches Page 2 from the Network, saves it to Room, and Room automatically emits the new items to the UI.
+**Components:**
+- **`Pager`** — config: page size, prefetch distance, max in-memory pages.
+- **`PagingSource`** — reads from local store; the Pager invalidates this on RemoteMediator events.
+- **`RemoteMediator`** — fetches network pages, writes to local store, signals end-of-pagination.
+- **`LazyPagingItems` (Compose)** — composable consumer; surfaces `LoadState`.
 
-## 3. The API Contract: Offset vs Cursor
+---
 
-This is the most critical decision in Pagination design.
+## 4. API Contract
 
-### The Junior Way: Offset/Limit Pagination
-```http
-GET /feed?offset=0&limit=20   // Page 1
-GET /feed?offset=20&limit=20  // Page 2
+### Builder / configuration
+
+```kotlin
+val pager = Pager(
+    config = PagingConfig(
+        pageSize = 30,
+        prefetchDistance = 10,
+        initialLoadSize = 60,
+        enablePlaceholders = false,
+        maxSize = 300,
+    ),
+    initialKey = null,
+    remoteMediator = FeedRemoteMediator(api, db),
+    pagingSourceFactory = { db.feedDao().pagingSource() },
+).flow.cachedIn(viewModelScope)
 ```
-**The Flaw (The Duplicate Problem):**
-1. User loads Page 1 (Items 1-20).
-2. While the user is reading, someone posts a *new* item at the top of the feed (Item 0).
-3. All items shift down by 1 in the database.
-4. User scrolls down and requests Page 2 (`offset=20`).
-5. Because everything shifted down, the item that used to be at index 19 is now at index 20. The server returns Item 19 again. The user sees a duplicate item in their feed.
 
-### The Staff Way: Cursor Pagination
-A Cursor is a unique, immutable pointer to a specific row in the database.
-```http
-GET /feed?limit=20                  // Page 1 (Returns items + next_cursor="xyz")
-GET /feed?limit=20&after="xyz"      // Page 2
+### Network page contract
+
+```json
+GET /v1/items?cursor=eyJvIjozMH0=&limit=30
+{
+  "items": [ { "id": "i_991", ... }, ... ],
+  "nextCursor": "eyJvIjo2MH0=",   // null = end of pagination
+  "sessionId": "s_abc"            // optional: stabilises cursor for the session
+}
 ```
-**The Solution:**
-Even if 50 new items are inserted at the top of the feed, the `after="xyz"` cursor still points to the exact same item. The database just fetches the 20 items immediately following "xyz". No duplicates, no skipped items.
 
-## 4. Internal Mechanics: Android Paging 3
+### LoadState surface
 
-Google's `Paging 3` library is the industry standard for handling the extreme complexity of asynchronous chunk loading.
+```kotlin
+sealed class LoadState {
+    object NotLoading : LoadState()
+    object Loading : LoadState()
+    data class Error(val throwable: Throwable) : LoadState()
+}
 
-### 1. PagingSource
-The component that knows how to load chunks of data from a single source (usually Room). It handles the `load(params)` function and returns `LoadResult.Page` containing the data, the `prevKey`, and the `nextKey`.
+// items.loadState.refresh, items.loadState.append, items.loadState.prepend
+```
 
-### 2. RemoteMediator
-The architectural bridge used in an **Offline-First** design. It listens to the `PagingSource` (Room). When Room runs out of data (e.g., the user scrolled to the end of the cached data), the `RemoteMediator` fires a network request, fetches the next JSON chunk, and saves it into Room.
+---
 
-### 3. PagingData & cachedIn
-The `ViewModel` exposes a `Flow<PagingData<Item>>`. 
-*Staff Rule:* You MUST call `.cachedIn(viewModelScope)` on this Flow. If the user rotates the phone (Activity recreation), the `PagingData` is held in memory by the ViewModel, preventing a redundant network request and a reset of the scroll position.
+## 5. Mobile App Architecture
 
-## 5. Failure Modes & Bottlenecks
+### Module structure
 
-### Bottleneck: The Memory Leak (Infinite Scroll)
-*Interviewer:* "The user scrolls down 10,000 items. Your `PagingSource` keeps appending chunks to the Flow. The UI is now holding 10,000 items in RAM. The app crashes with OOM. How do you prevent this?"
+```
+:lib:paging
+    paging-core            ← Pager, PagingSource, RemoteMediator (or use AndroidX Paging 3)
+    paging-compose         ← LazyPagingItems integration
+:domain:<feature>
+:data:<feature>            ← Pager + RemoteMediator wired
+```
 
-**Staff Answer:**
-"Paging 3 supports **Page Dropping** (Max Size). 
-When I configure the `Pager`, I set `maxSize = 100`. As the user scrolls down and loads Page 4, the Paging library automatically *drops* Page 1 from memory. If the user scrolls back up, it re-fetches Page 1 from the local Room database. This caps the memory footprint strictly to the `maxSize`, mathematically preventing OOMs regardless of infinite scrolling."
+> In practice, prefer AndroidX Paging 3 over hand-rolling. This file's "library" framing is for understanding the design; in production we lean on the AndroidX library.
 
-### Bottleneck: Database Tombstones
-*Interviewer:* "Users are swiping to delete items from the feed. You issue `DELETE` statements in Room. After a week, the app gets incredibly slow when scrolling."
+### Layered diagram
 
-**Staff Answer:**
-"When you delete items in SQLite, it leaves 'Tombstones' (empty spaces). If a user deletes 5,000 items, and you query `SELECT * FROM items LIMIT 20 OFFSET 5000`, SQLite has to scan past 5,000 tombstones before finding active data. 
-**The Fix:** I must implement a Database Vacuuming strategy, or rely strictly on Cursor-based pagination in SQLite (querying by indexed IDs) rather than `OFFSET`, ensuring read times remain `O(1)` regardless of deleted rows."
+```
+   Compose UI
+       │ collectAsLazyPagingItems()
+       ▼
+   ViewModel.pager  (Flow<PagingData<T>>)
+       │
+       ▼
+   Pager → RemoteMediator (network + write to Room)
+       │
+       ▼
+   PagingSource (Room DAO)
+       │
+       ▼
+   Compose renders items + LoadState (loading/error)
+```
 
-### Bottleneck: The Spinner Flash
-*Interviewer:* "When the user scrolls to the bottom, they see a loading spinner for 500ms before the next items appear. It breaks the illusion of an infinite feed."
+---
 
-**Staff Answer:**
-"We must configure the **Prefetch Distance**. 
-In the `PagingConfig`, I will set `prefetchDistance = 10` (if `pageSize = 20`). 
-When the user scrolls and reaches the 10th item from the bottom of the list, the Paging library will silently trigger the network request for the *next* page in the background. By the time the user's thumb actually reaches the bottom, the data is already in Room and rendered, completely eliminating the loading spinner."
+## 6. Local Storage
 
-## 6. Staff Engineer Thinking: Tradeoffs
+```kotlin
+@Entity(tableName = "feed_pages")
+data class PageEntity(
+    @PrimaryKey val itemId: String,
+    val payloadJson: String,
+    val pageIndex: Int,
+    val insertedAt: Long
+)
 
-1.  **Offset vs Cursor Constraints:** I always advocate for Cursor pagination. However, if the Product Manager says "Users must be able to jump directly to Page 50," Cursor pagination fails (you can only go to the *next* page, you cannot skip). In that specific case, I must fallback to Offset pagination and accept the risk of duplicates, explicitly stating the tradeoff.
-2.  **Pull-to-Refresh vs Caching:** If a user pulls to refresh, what happens to the cached data? A naive approach deletes the entire Room table and re-fetches. This causes a massive white flash on the UI. A Staff approach uses a Diffing algorithm (like `RemoteMediator` handling `REFRESH` load types) to upsert the new items at the top of the cache, allowing `DiffUtil` to smoothly animate the new items in without clearing the screen.
+@Entity(tableName = "remote_keys")
+data class RemoteKey(
+    @PrimaryKey val itemId: String,
+    val prevCursor: String?, val nextCursor: String?
+)
+```
 
-## 7. Probing Questions (For Practice)
+> The `remote_keys` table is the bridge between item id and its page cursor — without it, you can't resume pagination from any given item.
 
-1.  Explain the fundamental flaw of Offset/Limit pagination in a highly active feed (like Twitter) and how it causes duplicate items on the client.
-2.  Describe how Cursor pagination solves the duplication problem using an immutable database pointer.
-3.  Why is an Offline-First pagination architecture (using a `RemoteMediator` and a Local Database) superior to paginating directly from the Network?
-4.  Explain the concept of "Page Dropping" (`maxSize`) and how it mathematically prevents OutOfMemory (OOM) errors during infinite scrolling.
-5.  What is "Prefetch Distance," and how does it create the illusion of an infinitely loading list without loading spinners?
-6.  Describe the severe UI bug that occurs if a developer forgets to call `.cachedIn(viewModelScope)` on a `PagingData` Flow and the user rotates their phone.
-7.  If a Product Requirement mandates that a user can "Jump directly to Page 100," why must an engineering team abandon Cursor Pagination?
-8.  Explain the performance impact of SQLite "Tombstones" when using `OFFSET` queries in a local Room database after thousands of items have been deleted.
-9.  How does `DiffUtil` (or Compose's lazy list diffing) work in conjunction with Paging to prevent UI flashes when new data arrives?
-10. If the backend API changes the sorting order of the feed (e.g., from Chronological to Algorithmic), how does this break Cursor pagination if the cursor was previously based on a timestamp?
+---
 
-## Further Reading
+## 7. Deep Dive: Load Orchestration with RemoteMediator (~15 min)
 
-- [`jank.md`](../android/performance/jank.md) — How massive lists cause UI stuttering if not paginated.
-- [`offline-first-app.md`](../reference-architectures/offline-first-app.md) — The reference architecture for the `RemoteMediator` pattern.
-- [`memory-management-and-leaks.md`](../android/performance/memory-management-and-leaks.md) — Why holding 10,000 objects in a `List` causes OOMs.
+> *I'd pick this as the deep dive because it covers the dance between network and local cache: how REFRESH, APPEND, PREPEND map to HTTP calls, when to invalidate, and how errors surface to the UI.*
+
+### RemoteMediator core
+
+```kotlin
+@OptIn(ExperimentalPagingApi::class)
+class FeedRemoteMediator(
+    private val api: FeedApi,
+    private val db: AppDatabase,
+) : RemoteMediator<Int, PageEntity>() {
+
+    override suspend fun initialize() = InitializeAction.LAUNCH_INITIAL_REFRESH
+
+    override suspend fun load(
+        loadType: LoadType,
+        state: PagingState<Int, PageEntity>,
+    ): MediatorResult {
+        val cursor = when (loadType) {
+            LoadType.REFRESH -> null
+            LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
+            LoadType.APPEND  -> {
+                val lastItem = state.lastItemOrNull()
+                    ?: return MediatorResult.Success(endOfPaginationReached = true)
+                db.remoteKeysDao().get(lastItem.itemId).nextCursor
+                    ?: return MediatorResult.Success(endOfPaginationReached = true)
+            }
+        }
+        return try {
+            val resp = api.feed(cursor, limit = state.config.pageSize)
+            db.withTransaction {
+                if (loadType == LoadType.REFRESH) {
+                    db.feedDao().clear()
+                    db.remoteKeysDao().clear()
+                }
+                val items = resp.items.toEntities(loadType)
+                val keys = resp.items.map { RemoteKey(it.id, prevCursor = cursor, nextCursor = resp.nextCursor) }
+                db.feedDao().insertAll(items)
+                db.remoteKeysDao().insertAll(keys)
+            }
+            MediatorResult.Success(endOfPaginationReached = resp.nextCursor == null)
+        } catch (t: Throwable) {
+            MediatorResult.Error(t)
+        }
+    }
+}
+```
+
+### Compose UI consumer
+
+```kotlin
+@Composable
+fun FeedScreen(vm: FeedViewModel = hiltViewModel()) {
+    val items = vm.feed.collectAsLazyPagingItems()
+    val state = rememberLazyListState()
+
+    LazyColumn(state = state) {
+        items(items.itemCount, key = items.itemKey { it.id }) { i ->
+            items[i]?.let { ItemCard(it) }
+        }
+        when (val s = items.loadState.append) {
+            is LoadState.Loading -> item { Spinner() }
+            is LoadState.Error   -> item { RetryChip { items.retry() } }
+            is LoadState.NotLoading -> Unit
+        }
+    }
+
+    when (val s = items.loadState.refresh) {
+        is LoadState.Loading -> if (items.itemCount == 0) FullScreenLoader()
+        is LoadState.Error   -> if (items.itemCount == 0) FullScreenError { items.refresh() }
+        is LoadState.NotLoading -> if (items.itemCount == 0) EmptyState()
+    }
+}
+```
+
+### Prefetch + max-size
+
+- `prefetchDistance = 10` triggers `APPEND` when the user is 10 items from the end.
+- `maxSize = 300` drops oldest pages from memory once exceeded — prevents OOM on long scrolls. Items stay in Room.
+- On scroll-back beyond memory, `PagingSource` re-reads from Room (cheap).
+
+### Scroll restoration
+
+```kotlin
+// ViewModel
+val firstVisible: StateFlow<Int> = savedState.getStateFlow("firstVisible", 0)
+fun onScroll(i: Int) { savedState["firstVisible"] = i }
+
+// Compose
+val state = rememberLazyListState(initialFirstVisibleItemIndex = vm.firstVisible.collectAsStateWithLifecycle().value)
+LaunchedEffect(state) {
+    snapshotFlow { state.firstVisibleItemIndex }.collect { vm.onScroll(it) }
+}
+```
+
+### Pull-to-refresh
+
+```kotlin
+PullToRefreshBox(
+    isRefreshing = items.loadState.refresh is LoadState.Loading,
+    onRefresh = { items.refresh() }
+) {
+    LazyColumn(...) { ... }
+}
+```
+
+`refresh()` triggers REFRESH on the mediator, which clears Room + reloads.
+
+### Failure modes
+
+| What breaks | Behavior |
+|---|---|
+| First load fails | `LoadState.Error` on `refresh`; full-screen error with retry |
+| Append fails | Inline retry chip at bottom |
+| Token expired (401) | Mediator can short-circuit on caller's interceptor; UI shows generic error or triggers re-auth |
+| Server returns dupes | DAO `OnConflictStrategy.REPLACE` upserts by id |
+| Cursor invalidated | Mediator forces a REFRESH |
+| Process death mid-load | Pager re-issues from the last known cursor on relaunch |
+
+---
+
+## 8. Trade-offs
+
+### Pagination scheme
+
+| Option | Pros | Cons | Verdict |
+|---|---|---|---|
+| **Cursor** | Stable across inserts; opaque to client | Server must generate cursors | Pick this |
+| Offset | Trivial | Breaks when items shift; wasteful | Skip |
+| Keyset (e.g., `id > last`) | Efficient | Exposes ordering implementation | Acceptable |
+| Time-bucketed (`?before=ts`) | Natural for timelines | Ties to time-ordered data | Acceptable if monotonic |
+
+### Cache strategy
+
+| Option | Verdict |
+|---|---|
+| **PagingSource on Room + RemoteMediator** | Pick — Local SSOT, offline cache, RemoteMediator drives network |
+| `PagingSource` from network directly | OK for stateless lookup (e.g., search results) |
+| In-memory only | Loses state across process death |
+
+### Page sizing
+
+| Strategy | Reason |
+|---|---|
+| `pageSize = 30, initialLoadSize = 60` | First paint feels full without over-fetching |
+| `prefetchDistance = 10` | Fetch next page before user reaches end |
+| `maxSize = 9× pageSize` | Bound memory; Room is the backup |
+
+### UI
+
+| Option | Verdict |
+|---|---|
+| **Compose `LazyPagingItems` + `LazyColumn`** | Pick — Compose-native |
+| RecyclerView `PagingDataAdapter` | Legacy XML; still supported |
+| Hand-rolled scroll listener | Skip; reinventing |
+
+### Error UX
+
+| Pattern | When |
+|---|---|
+| Full-screen error | First load fails AND no cached data |
+| Inline retry chip | Append/Prepend fails after some items exist |
+| Snackbar | Pull-to-refresh fails but old data is fine |
+
+---
+
+## 9. Major Concerns
+
+- **Stable keys.** `items.itemKey { it.id }`. Without keys, scroll + animations break on insert.
+- **Memory.** Cap `maxSize` so we don't OOM on long scrolls. Room is cheap; memory pages are not.
+- **Bandwidth.** Don't double-fetch: `cachedIn(viewModelScope)` keeps the Flow alive across config changes.
+- **Cellular.** `RemoteMediator` can check `ConnectivityManager.isActiveNetworkMetered` and skip APPEND prefetch.
+- **Reactive updates.** If the underlying Room data changes, `PagingSource.invalidate()` triggers reload. Pattern: a `Flow<Unit>` invalidation bus.
+- **Process death.** Scroll index in `SavedStateHandle`. Pager re-fetches the cursor for the visible page.
+- **Testing.** Use `Pager.flow.asSnapshot { }` (Paging test library). Fake API returning scripted pages.
+- **Error visibility.** `LoadState` is the single source of truth. Don't try to manage your own "isLoading" boolean in parallel.
+
+---
+
+## 10. Follow-up Questions
+
+> **Q: User likes an item — do we re-fetch the page?**
+> No. Like is a Room write to the same row; `Flow` from `PagingSource` emits the updated row. Pager picks it up. Server reconciliation happens on next REFRESH (eventual).
+
+> **Q: New items arrive (e.g., new posts at top of a feed) — how to signal?**
+> Either: a separate WebSocket/FCM "new posts available" channel that the UI shows as a banner; tapping banner triggers `items.refresh()`. Or: a PREPEND mediator that fetches forward. The former is simpler and standard.
+
+> **Q: How big is each page in bytes?**
+> Depends on the item. Rule of thumb: keep a page under 100 KB on average. If items are heavy (images embedded), reduce `pageSize` or fetch URLs only and lazy-load media.
+
+> **Q: How do you avoid the empty-list flash?**
+> Cached pages render immediately; `LoadState.Loading` on refresh doesn't block the existing list. Show a refresh indicator at the top, not a full-screen loader.
+
+> **Q: Why both PagingSource and RemoteMediator?**
+> `PagingSource` is the read source (where items come from). `RemoteMediator` is the write source (when to fetch from network and persist to local). Splitting them lets you mix and match: in-memory list + network mediator, Room list + network mediator, network-only list with no mediator.
+
+> **Q: How do you handle a user signing out?**
+> Clear Room data for that user's namespace; invalidate the PagingSource. New Pager instance binds to the next user.
+
+---
+
+## 11. Out of Scope (defended)
+
+- **Bidirectional pagination** — rare in practice; complicates indexing significantly.
+- **Realtime push** — use a separate channel that invalidates pages.
+- **Section headers / grouping** — caller composes around `PagingData`.
+- **Optimistic insertion** — write to Room first; `Flow` emits.
+- **Sort/filter** — separate Pager per sort key; not a paging concern.
+
+---
+
+## 12. Further Reading
+
+- [Android Developers — Paging 3 overview](https://developer.android.com/topic/libraries/architecture/paging/v3-overview) — official guide.
+- [Android Developers — Paging with network and database](https://developer.android.com/topic/libraries/architecture/paging/v3-network-db) — RemoteMediator walk-through.
+- [Now in Android sample](https://github.com/android/nowinandroid) — production Pager + Compose feed.
+- [Paging test guide](https://developer.android.com/topic/libraries/architecture/paging/test) — `asSnapshot` and fakes.
+- [Cursor pagination explained](https://shopify.engineering/pagination-relative-cursors) — Shopify engineering blog on cursor schemes.
+
+---
+
+> **Closing in the interview:** "Load orchestration was my deep dive because RemoteMediator is where novices get confused. Happy to go into the invalidation bus, the cursor stabilisation pattern, or how a 'new items' banner integrates next."

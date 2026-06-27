@@ -1,121 +1,379 @@
-# System Design: Image Loading Library (Glide / Coil)
+# Image Loading Library (Coil / Glide-style)
 
-## The Prompt
+> A 45-60 minute mobile system-design walkthrough for an image-loading library. The interview classic: how does `Coil.load("https://…")` actually work? Three-tier cache, request pipeline, lifecycle awareness, bitmap pooling.
 
-*"Design an Image Loading Library for Android (similar to Glide, Picasso, or Coil). It must fetch images from the network, cache them efficiently, decode them without freezing the UI, and bind them to a `RecyclerView` or Compose `LazyColumn` without OOM (Out of Memory) errors during fast scrolling."*
+---
 
-## 1. Requirements & Clarification (RADIO Framework)
+## 1. Gathering Requirements (~5 min)
+
+> **Interviewer:** "Design an image-loading library like Glide or Coil."
+> **Candidate:** "Three things make this interesting: the three-tier cache, the request pipeline, and lifecycle-aware cancellation. I'll deep-dive the request pipeline."
 
 ### Functional Requirements
-- Fetch images via HTTP URL.
-- Display the image in an `ImageView` or Compose `Image`.
-- Support placeholders (while loading) and error images.
+- **Load from URL** into an `ImageView` or Compose `AsyncImage`.
+- **In-memory + disk + (origin) cache**, with hit/miss propagation.
+- **Cancellation** when the target detaches or the composable leaves.
+- **Transformations** (resize, crop, blur).
+- **Placeholders, errors, fallbacks**.
 
-### Non-Functional Requirements (NFRs)
-- **Memory (Priority 0):** Prevent `OutOfMemoryError` (OOM). Android has a strict Heap limit per app (e.g., 256MB). A 4K uncompressed image can consume 50MB of RAM.
-- **Performance (Jank):** Scrolling a list of 100 images must maintain 60 FPS (16.6ms per frame). Decoding must happen in the background.
-- **Network/Battery:** Minimize redundant network calls. Aggressive caching is mandatory.
+### Non-Functional Requirements
+- **Smooth scroll** — don't decode on the main thread.
+- **Bounded memory** — bitmaps dominate; cap at ~25% of heap.
+- **Cellular-aware** — request smaller variant on metered networks.
+- **No leaks** — cancel requests when `Activity`/`Composable` dies.
+- **Kotlin/coroutine-native** for new APIs.
 
-## 2. High-Level Architecture (The 3-Tier Cache)
+### Out of Scope
+- GIF / video frame decoding (delegate to platform / Media3)
+- DRM-protected content
+- Server-side image transformations (assume CDN supports `?w=`)
+- Vector / SVG (separate decoder)
+- Augmented-reality overlays
 
-The core architecture of an Image Loader is the **Pipeline**. A request flows through three distinct layers before hitting the network.
+---
 
-```mermaid
-graph TD
-    UI[UI Component] -->|1. Request URL| Engine[Image Loader Engine]
-    
-    Engine -->|2. Check Active| Active[Active Resources]
-    Active -- Miss --> MemCache[Memory Cache - L1]
-    MemCache -- Miss --> DiskCache[Disk Cache - L2]
-    DiskCache -- Miss --> Network[Network Fetcher]
-    
-    Network -->|3. Save Stream| DiskCache
-    DiskCache -->|4. Decode Bitmap| MemCache
-    MemCache -->|5. Retain| Active
-    Active -->|6. Render| UI
+## 2. Clarifying Questions (~3 min)
+
+| Question | Why it matters |
+|---|---|
+| Compose-first or View-first? | API surface (`AsyncImage` vs target-based) |
+| Median image size? | Disk budget, decoder choice |
+| Source mix (network, file, content URI)? | Fetcher abstraction |
+| Need to support custom decoders (HEIF, AVIF, animated WebP)? | Decoder registry |
+| Cellular vs Wi-Fi behavior? | Variant selection, low-data mode |
+| Memory class targets? | Cache budget heuristics |
+| Android API floor? | Hardware bitmaps (8+), `ImageDecoder` (9+) |
+
+> **Candidate:** "Compose-first, network + local URIs, default decoders only, Android 9+, target Pixel 6a baseline."
+
+---
+
+## 3. High-Level Diagram (~10 min)
+
+```
+        load("https://...")  ──►  ImageRequest
+                                       │
+                                       ▼
+                              MemoryCache.get
+                                  ▲   │
+                              miss │   │ hit
+                                       ▼
+                              DiskCache.get
+                                  ▲   │
+                              miss │   │ hit ──► decode ──► render
+                                       ▼
+                                  Fetcher
+                                       │
+                                       ▼
+                                  Decoder
+                                       │
+                                       ▼
+                              Transformation chain
+                                       │
+                                       ▼
+                              memory + disk write
+                                       │
+                                       ▼
+                                   Target
 ```
 
-## 3. Data Model & Components
+**Components (named):**
+- **`ImageLoader`** — root orchestrator, owns caches and dispatchers.
+- **`Fetcher`** — produces a `Source` from a `Uri` (HTTP, file, content://).
+- **`Decoder`** — turns a `Source` into a `Bitmap` or `Drawable`.
+- **`MemoryCache`** — `LruCache<Key, Bitmap>` keyed by URL + transforms + size.
+- **`DiskCache`** — bytes, on disk, atomic.
+- **`Transformation`** — chain of bitmap-bitmap functions.
+- **`Target`** — receives the result (`ImageView`, Compose painter).
 
-### Component 1: The Memory Cache (L1)
-Uses an **LRU (Least Recently Used)** Cache algorithm. 
-- **Size:** Typically 1/8th or 1/7th of the available device RAM (e.g., `Runtime.getRuntime().maxMemory() / 8`).
-- **Key:** The URL + the requested dimensions (e.g., `https://img.com/cat.jpg_200x200`).
-- **Value:** The physical `Bitmap` object in RAM.
+---
 
-### Component 2: The Disk Cache (L2)
-Uses a **DiskLruCache**.
-- **Size:** Hardcoded limit (e.g., 250MB).
-- **Key:** A cryptographic hash (SHA-256) of the URL (because URLs have illegal characters for filenames).
-- **Value:** The raw compressed bytes (`.jpg` or `.webp`) exactly as they came from the network.
+## 4. API Contract
 
-### Component 3: The Bitmap Decoder
-The most dangerous component. It converts a `.jpg` on disk into a pixel-grid `Bitmap` in RAM.
+### Compose
 
-## 4. The Core Flows (Deep Dive)
+```kotlin
+AsyncImage(
+    model = ImageRequest.Builder(LocalContext.current)
+        .data("https://cdn/.../foo.jpg")
+        .size(Size.Px(640))
+        .crossfade(true)
+        .placeholder(R.drawable.skel)
+        .error(R.drawable.broken)
+        .build(),
+    contentDescription = "foo",
+)
+```
 
-### Flow 1: Preventing OOM (Downsampling)
-*Interviewer:* "The network returns a 4K image (3840x2160). The user's avatar view is only 100x100 pixels. If you load the 4K image into RAM, it takes 32MB. How do you prevent this?"
+### View-based
 
-**Staff Answer:**
-"I will use **Bitmap Downsampling** via `BitmapFactory.Options.inSampleSize`.
-1. I first read the image bounds from the disk *without* allocating memory for the pixels (`inJustDecodeBounds = true`).
-2. I calculate the target ratio. If the image is 4000px wide, and the UI view is 100px wide, the ratio is 40.
-3. I set `inSampleSize = 32` (power of 2). 
-4. I decode the image again (`inJustDecodeBounds = false`). The OS will only allocate a 125x125 pixel Bitmap in RAM, consuming a few Kilobytes instead of 32 Megabytes. This mathematically guarantees we will never OOM on large images."
+```kotlin
+imageView.load("https://cdn/.../foo.jpg") {
+    crossfade(true)
+    transformations(CircleCropTransformation())
+    listener(onError = { _, _ -> /* log */ })
+}
+```
 
-### Flow 2: Preventing Garbage Collection Thrashing (Bitmap Pooling)
-*Interviewer:* "The user is scrolling rapidly. You are creating 100x100 Bitmaps and discarding them as they scroll off-screen. The Garbage Collector (GC) panics and freezes the UI (Jank). How do you fix this?"
+### Builder
 
-**Staff Answer:**
-"I will implement a **Bitmap Pool**.
-In older Android versions (pre-Android 8), allocating and destroying Bitmaps triggered massive GC pauses. 
-Instead of letting the GC destroy old Bitmaps, when an image scrolls off-screen, I move its `Bitmap` object into a 'Reusable Pool'. 
-When the *next* image comes from the network, I pass the old `Bitmap` object to `BitmapFactory.Options.inBitmap`. The OS will overwrite the existing memory address with the new pixels instead of allocating new memory. Zero allocation means zero Garbage Collection, resulting in butter-smooth 60fps scrolling."
+```kotlin
+val loader = ImageLoader.Builder(context)
+    .memoryCache { MemoryCache.Builder().maxSizePercent(0.25).build() }
+    .diskCache { DiskCache.Builder().directory(cacheDir).maxSizeBytes(200 * MB).build() }
+    .crossfade(true)
+    .build()
+```
 
-### Flow 3: Cancelling Stale Requests (RecyclerView)
-*Interviewer:* "The user scrolls down 50 items very fast. 50 network requests are fired. The user is now looking at Item 50, but Items 1-49 are still downloading, clogging the network. Item 50 won't load until they finish. How do you fix this?"
+---
 
-**Staff Answer:**
-"I must implement **Request Cancellation** bound to the View Lifecycle.
-If using `RecyclerView`, when `onViewRecycled` is called, I intercept the View, find its associated network request Job, and cancel it immediately. 
-If using Jetpack Compose, the `AsyncImage` composable automatically cancels its underlying Coroutine when it leaves the Composition tree. This frees up the TCP connection pool for the images the user is actually looking at."
+## 5. Mobile App Architecture
 
-## 5. Failure Modes & Bottlenecks
+### Module structure
 
-### Bottleneck: The Disk I/O UI Freeze
-A junior developer checks the Disk Cache on the Main Thread. Disk I/O on cheap Android phones can take 100ms. The UI drops 6 frames.
-*(Fix: The pipeline must strictly enforce that L2 Disk Cache lookups happen on a background thread (`Dispatchers.IO`). Only the L1 Memory Cache can be checked synchronously on the Main Thread).*
+```
+:lib:image-loader
+    image-loader-core          ← ImageLoader, request pipeline
+    image-loader-network       ← HTTP fetcher (OkHttp/Ktor adapter)
+    image-loader-compose       ← AsyncImage, painter integration
+    image-loader-decoders      ← jpeg/png/webp/heif via ImageDecoder
+    image-loader-transformations
+```
 
-### Bottleneck: Context Leaks
-A junior developer passes an `Activity` context into the Image Loader singleton. The network request takes 10 seconds. The user rotates the phone, destroying the `Activity`. The Image Loader holds the reference, causing a massive memory leak.
-*(Fix: The Image Loader must use the `ApplicationContext` for global singletons, and tie specific requests to a `LifecycleOwner` so they auto-cancel).*
+### Request pipeline (each request)
 
-## 6. Staff Engineer Thinking: Evolution of Image Loading
+```
+Request
+  │
+  ├─► EventListener.onStart
+  │
+  ├─► MemoryCache.get(key)            (sync)
+  │      └─ hit → success
+  │
+  ├─► DiskCache.openSnapshot(key)     (off main)
+  │      └─ hit → decode → transform → write memory → success
+  │
+  ├─► Fetcher.fetch(uri)              (off main)
+  │      └─► Source / InputStream
+  │
+  ├─► Decoder.decode(source, size)    (off main)
+  │      └─► Bitmap (sampled to requested size)
+  │
+  ├─► Transformations.apply(bitmap)   (off main)
+  │
+  ├─► write memory + disk
+  │
+  └─► EventListener.onSuccess → Target.set(drawable)
+```
 
-When asked to design this today, a Staff Engineer acknowledges the history of the platform.
+---
 
-1.  **Picasso (The Pioneer):** Relied heavily on the OS GC. Simple, but caused Jank on Dalvik.
-2.  **Glide (The Workhorse):** Introduced aggressive Bitmap Pooling, fixing the GC problem. Incredibly complex, relies on Annotation Processors.
-3.  **Coil (The Modern Standard):** "Coroutine Image Loader". Built completely in Kotlin. It delegates memory management back to the OS (since Android 8+ moved Bitmaps off the Dalvik heap and into native memory, Bitmap Pooling is no longer strictly necessary). Coil is vastly simpler because it leans on modern OS optimizations and Coroutines.
+## 6. Local Storage
 
-*My Recommendation:* "If designing this library for modern Android (API 26+), I would design it like Coil. I would discard the Bitmap Pool entirely to simplify the architecture, rely on Coroutines for request cancellation, and use `OkHttp` for the HTTP layer to automatically leverage HTTP/2 multiplexing."
+**Memory cache** keyed by a derived key:
+```kotlin
+data class MemoryKey(
+    val data: String,                // URL
+    val transformations: List<String>,
+    val targetSize: Size,
+    val colorSpace: ColorSpace,
+)
+```
 
-## 7. Probing Questions (For Practice)
+**Disk cache** is bytes, atomic write, byte-budget LRU. Same shape as the generic caching library; in fact, reuses `cache-disk` module.
 
-1.  Explain the mathematical formula used to calculate how many bytes a Bitmap consumes in RAM (e.g., ARGB_8888).
-2.  Describe the three-tier cache architecture (Active, Memory, Disk) and why "Active Resources" are separated from the LRU Memory Cache.
-3.  How does `inSampleSize` prevent an `OutOfMemoryError` when a user attempts to load a 10-Megapixel photo into a 50dp x 50dp thumbnail View?
-4.  Explain the concept of Bitmap Pooling (`inBitmap`) and specifically how it prevents Garbage Collection (GC) pauses during fast scrolling.
-5.  Why is the Disk Cache keyed by a cryptographic hash (like SHA-256) of the URL rather than the URL itself?
-6.  Describe the exact lifecycle hook in a `RecyclerView.Adapter` where you must cancel an ongoing Image Network Request to prevent network clogging.
-7.  If a user rotates their phone while a large image is downloading, how do you prevent the `Activity` from leaking in memory?
-8.  Why is it safe to check an LRU Memory Cache on the Android Main Thread, but architectural malpractice to check a DiskLruCache on the Main Thread?
-9.  Explain why modern Image Loading libraries (like Coil) no longer strictly require Bitmap Pooling on Android 8.0 (API 26) and above.
-10. If an app needs to load 100 images simultaneously, why is relying on `OkHttp`'s connection pool and HTTP/2 multiplexing critical for the Image Loader's performance?
+---
 
-## Further Reading
+## 7. Deep Dive: Request Pipeline (~15 min)
 
-- [`jank.md`](../android/performance/jank.md) — How GC pauses from Bitmap allocations destroy frame rates.
-- [`memory-management-and-leaks.md`](../android/performance/memory-management-and-leaks.md) — Deep dive into the Dalvik vs Native heap allocation for Bitmaps.
-- [`coroutines-under-the-hood.md`](../android/concurrency/coroutines-under-the-hood.md) — How Jetpack Compose automatically cancels Coroutine Image requests.
+> *I'd pick this as the deep dive because everything else is policy. The pipeline is where lifecycle, cancellation, decoding, and cache writes all interact.*
+
+### Engine
+
+```kotlin
+class ImageEngine(
+    private val memory: MemoryCache,
+    private val disk: DiskCache,
+    private val fetcherRegistry: FetcherRegistry,
+    private val decoderRegistry: DecoderRegistry,
+    private val dispatchers: ImageDispatchers,
+) {
+    suspend fun execute(req: ImageRequest): ImageResult = withContext(dispatchers.main) {
+        memory[req.memoryKey()]?.let { return@withContext SuccessResult(it, DataSource.MEMORY) }
+
+        withContext(dispatchers.decode) {
+            disk.openSnapshot(req.diskKey())?.use { snap ->
+                val bitmap = decoderRegistry.decode(snap.source(), req.size)
+                val final = req.transformations.fold(bitmap) { b, t -> t.transform(b) }
+                memory.put(req.memoryKey(), final)
+                return@withContext SuccessResult(final, DataSource.DISK)
+            }
+
+            val fetched = fetcherRegistry.fetch(req.data, req.options)
+                .also { disk.write(req.diskKey(), it.source) }
+            val bitmap = decoderRegistry.decode(fetched.source, req.size)
+            val final = req.transformations.fold(bitmap) { b, t -> t.transform(b) }
+            memory.put(req.memoryKey(), final)
+            SuccessResult(final, DataSource.NETWORK)
+        }
+    }
+}
+```
+
+### Lifecycle-aware cancellation
+
+```kotlin
+@Composable
+fun rememberAsyncImagePainter(model: Any): AsyncImagePainter {
+    val scope = rememberCoroutineScope()
+    val painter = remember(model) { AsyncImagePainter(model) }
+    DisposableEffect(painter) {
+        val job = scope.launch { painter.execute() }
+        onDispose { job.cancel() }
+    }
+    return painter
+}
+```
+
+For Views, the loader keeps a `ViewTargetDisposable`; on `onViewDetachedFromWindow` it cancels the job.
+
+### Size resolution
+
+```kotlin
+when (val s = req.size) {
+    is Size.Px        -> s.value
+    is Size.Original  -> null  // decode at original
+    is Size.Resolve   -> awaitView { view.width to view.height }   // ViewTarget
+}
+```
+
+`ImageDecoder.setTargetSize(width, height)` samples down at decode time — half the memory of decoding then resizing.
+
+### Bitmap pooling
+
+Modern Android (API 28+) supports `Bitmap.reconfigure` only for limited cases. Glide-style pooling is less critical post-API 28 because the platform allocator improved. Coil opts for an `LruCache` of `Bitmap`s with `inBitmap` hints when the decoder is `BitmapFactory` (legacy path). Default: rely on `ImageDecoder` + GC.
+
+### Transformations chain
+
+```kotlin
+interface Transformation {
+    val cacheKey: String
+    suspend fun transform(input: Bitmap, size: Size): Bitmap
+}
+```
+
+Each transformation contributes to the memory key — `crop(50)` and `crop(80)` cache as separate entries.
+
+### Crossfade
+
+`CrossfadeDrawable` is the result `Drawable` wrapping previous + current. Compose uses `Crossfade()` between the loading state and the loaded `Painter`.
+
+### Failure modes
+
+| What breaks | Behavior |
+|---|---|
+| Network 4xx | Surface `ErrorResult`; show `error` drawable |
+| Decode fails | Surface `ErrorResult`; don't crash the app |
+| OOM during decode | Catch + retry at smaller size; surface error if it still fails |
+| Target dies mid-request | Cancel the job; drop the bitmap |
+| Disk write fails | Continue (memory still has it); log |
+
+---
+
+## 8. Trade-offs
+
+### Pipeline structure
+
+| Option | Pros | Cons | Verdict |
+|---|---|---|---|
+| **Suspend functions on dispatchers** | Coroutine cancellation, KMP-ready | Caller must know dispatcher model | Pick this |
+| Callbacks | Familiar | Manual cancellation, leaks | Skip |
+| RxJava | Mature | Heavy, fading in Android | Skip for new code |
+
+### Bitmap memory
+
+| Option | Pros | Cons | Verdict |
+|---|---|---|---|
+| **`Bitmap.Config.ARGB_8888`** | Quality | 4 bytes/pixel | Default |
+| `RGB_565` | Half memory | No alpha, banding | Opt-in for thumbnails |
+| Hardware bitmap (API 26+) | Zero JVM heap | Can't sample/transform after creation | Use for terminal display only |
+
+### Decoders
+
+| Option | Verdict |
+|---|---|
+| **`ImageDecoder`** (API 28+) | Pick — animated WebP/HEIF, sampling at decode |
+| `BitmapFactory` | Fallback for old APIs |
+| Custom (libwebp, libjpeg-turbo) | Only if measured win on target devices |
+
+### Disk format
+
+Same as the caching library: file-per-entry with atomic rename + index. Reuses `cache-disk`.
+
+### Network fetcher
+
+| Option | Verdict |
+|---|---|
+| **OkHttp** | Pick — battle-tested cache, interceptors |
+| Ktor 3 | Acceptable, KMP wins |
+| Custom HTTP | Don't |
+
+---
+
+## 9. Major Concerns
+
+- **OOM.** Memory cache cap at 25% of heap; size each entry by bitmap byte count, not entry count.
+- **Main-thread.** All I/O and decode off-main. Only `Target.set` runs on main.
+- **Leaks.** Targets hold weak refs to views; coroutines tied to lifecycle. Composables cancel on dispose.
+- **Cellular cost.** Honour `ConnectivityManager.isActiveNetworkMetered`; default to lower-quality CDN variant.
+- **Process death.** Memory cache is lost (acceptable). Disk survives.
+- **Crash safety.** Atomic disk writes; bad-byte entries skipped on read.
+- **Animated content.** Animated WebPs go to `ImageDecoder.decodeDrawable` → `AnimatedImageDrawable`. Caller's job to `start()`/`stop()` with lifecycle.
+- **Privacy.** Don't cache images from credentialed URLs without an opt-in flag.
+- **Observability.** `EventListener` hooks at every stage; caller wires hit/miss/error to analytics.
+
+---
+
+## 10. Follow-up Questions
+
+> **Q: How is cache key derived for the same URL with different sizes?**
+> The key includes URL + targetSize + transformations + colorSpace. So 240×240 and 480×480 of the same URL are two memory entries. Disk stores one source; memory stores variants.
+
+> **Q: How does crossfade not flicker on a scrolled-back item?**
+> If memory hits, skip crossfade (zero-latency). Crossfade triggers only on first paint of a new request.
+
+> **Q: How do you avoid re-decoding the same image when scrolling fast?**
+> Memory cache returns synchronously. Pipeline jobs are de-duplicated by `MemoryKey` — a second request for the same key joins the in-flight job rather than starting a second.
+
+> **Q: How do you handle a URL that returns 304 Not Modified?**
+> OkHttp's cache handles that. The fetcher uses OkHttp + `OkHttpClient.cache`. 304 is transparent; the conditional request saves bytes.
+
+> **Q: Memory cache vs Glide's `BitmapPool`?**
+> Pre-Android-O `BitmapPool` was critical (decoded bitmaps could reuse pooled memory via `inBitmap`). Post-O, the platform allocator handles this better. Coil dropped explicit pooling; we follow.
+
+> **Q: How do you test this?**
+> Inject a fake `Fetcher` returning a known byte stream. Run pipeline against an in-memory `MemoryCache` and `tempDir` disk cache. Assert decoded bitmap dimensions. Robolectric for the View target path; Compose preview / instrumented for `AsyncImage`.
+
+---
+
+## 11. Out of Scope (defended)
+
+- **GIF / animated decoding** — pluggable via decoder registry; not the main architectural problem.
+- **DRM** — different protocol stack.
+- **SVG / vector** — separate decoder; the architecture absorbs it.
+- **Server-side transforms** — caller can build query params; not the library's concern.
+- **AI super-resolution** — separate concern; would slot in as a transformation.
+
+---
+
+## 12. Further Reading
+
+- [weeeBox/mobile-system-design — image-library](https://github.com/weeeBox/mobile-system-design/blob/master/exercises/image-library.md) — reference format.
+- [Coil 3 documentation](https://coil-kt.github.io/coil/) — production-grade Compose-native loader.
+- [Glide architecture](https://bumptech.github.io/glide/doc/configuration.html) — for the legacy bitmap-pool perspective.
+- [Android Developers — ImageDecoder](https://developer.android.com/reference/android/graphics/ImageDecoder) — modern decode API.
+- [Coil 3 internals talk](https://coil-kt.github.io/coil/upgrading_to_coil3/) — Coil 3 architectural decisions.
+
+---
+
+> **Closing in the interview:** "I anchored on the pipeline because that's where lifecycle, decoding, and caching interact. Happy to dig into bitmap pooling, the OkHttp 304 path, or how Compose `AsyncImage` integrates with the painter."

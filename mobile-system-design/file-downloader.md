@@ -1,185 +1,459 @@
-# System Design: File Downloader
+# File Downloader Library
 
-## The Prompt
+> A 45-60 minute mobile system-design walkthrough for a robust file-downloader library. Think podcasts, offline video, attachments: chunked, resumable, parallel, lifecycle-aware.
 
-*"Design a robust File Downloader library for Android. It must be capable of downloading massive files (e.g., 2GB movies or 500MB map datasets). It must survive process death, handle network drops gracefully without restarting the download from 0%, and provide real-time progress to the UI without blocking the Main Thread."*
+---
 
-## 1. Requirements & Clarification (RADIO Framework)
+## 1. Gathering Requirements (~5 min)
+
+> **Interviewer:** "Design a file-downloader library."
+> **Candidate:** "The classic problems are resumability across flaky networks, parallel chunks for speed, and surviving process death. I'll deep-dive the chunked download + resume path."
 
 ### Functional Requirements
-- Download files via HTTP/HTTPS given a URL.
-- Pause, Resume, and Cancel functionality.
-- Provide UI progress updates (0% to 100%).
+- **Queue arbitrary downloads** identified by URL + destination.
+- **Resumable** after pause / network loss / process death.
+- **Progress updates** to the UI.
+- **Concurrency control** — N parallel downloads, M parallel chunks per download.
+- **Priority levels** (foreground user-initiated vs background prefetch).
 
-### Non-Functional Requirements (NFRs)
-- **Resilience (Priority 0):** Must survive Android OS Process Death. If the user swipes the app away, the 2GB download must continue or pause gracefully.
-- **Network Efficiency:** Must support **Resumable Downloads**. If the network drops at 99%, the app must only download the remaining 1%, not restart the 2GB file.
-- **Memory (RAM) Footprint:** Must not load the file into RAM. A 2GB file will instantly crash a phone with an `OutOfMemoryError`. Must stream directly to Disk.
+### Non-Functional Requirements
+- **Survives process death** (durable queue, partial files preserved).
+- **Battery-conscious** (no Wi-Fi-blocking unless requested).
+- **Resilient to network drops** (auto-retry with backoff).
+- **Composable observation** (Flow-based progress).
+- **Storage-aware** (low-storage handling).
 
-## 2. High-Level Architecture
+### Out of Scope
+- DRM / encrypted streams (delegate to ExoPlayer's DRM session)
+- Peer-to-peer downloads
+- Cross-process queue sharing
+- Background upload (separate concern — see media upload patterns)
+- HTTPS pinning details (caller wires OkHttp)
 
-The architecture separates the UI (which can die at any moment) from the actual download engine (which must be managed by the OS).
+---
 
-```mermaid
-graph TD
-    subgraph UI Layer
-        VM[ViewModel]
-        UI[Jetpack Compose]
-    end
-    
-    subgraph Execution Layer
-        WM[WorkManager / DownloadWorker]
-        DB[(Room DB - Sync State)]
-    end
-    
-    subgraph Network & Storage
-        OkHttp[OkHttp Client]
-        Disk[(File System)]
-        CDN[(Cloud Storage)]
-    end
-    
-    UI -->|Start/Pause/Cancel| VM
-    VM -->|Enqueue Work| WM
-    WM -->|Update Progress| DB
-    DB -->|Flow Observe| VM
-    
-    WM -->|HTTP GET Range| OkHttp
-    OkHttp <-->|Stream Bytes| CDN
-    OkHttp -->|Write to Disk| Disk
+## 2. Clarifying Questions (~3 min)
+
+| Question | Why it matters |
+|---|---|
+| Largest file size? | Chunking strategy, disk pre-allocation |
+| Server supports HTTP `Range` requests? | Resumable + parallel chunks |
+| Wi-Fi-only requirement? | WorkManager constraint vs Foreground service |
+| Foreground-only downloads or also background? | Notification + service decision |
+| Android API floor? | `setExpedited`, FGS rules |
+| Need cellular data warnings? | `ConnectivityManager.isActiveNetworkMetered` |
+| Acceptable resume granularity? | Block size for the partial file ledger |
+
+> **Candidate:** "Files 1 MB-500 MB, server supports `Range`, mostly Wi-Fi but cellular allowed with consent, foreground + background, Android 9+, resume at chunk boundaries."
+
+---
+
+## 3. High-Level Diagram (~10 min)
+
+```
+   App ──► DownloadManager (Kotlin API)
+                  │
+                  ▼
+            Download queue (Room)
+                  │
+                  ▼
+       DownloadWorker(s) (WorkManager)
+              │       │
+              ▼       ▼
+        ChunkFetcher(s) (HTTP Range, OkHttp)
+                  │
+                  ▼
+            partial files + ledger
+                  │
+                  ▼
+            final assembled file
 ```
 
-## 3. Data Model & API
+**Components:**
+- **`DownloadManager`** — public API; enqueue, observe, pause, cancel.
+- **`Queue (Room)`** — durable queue + chunk ledger.
+- **`DownloadWorker`** — `@HiltWorker` per download; orchestrates chunks.
+- **`ChunkFetcher`** — single chunk request via OkHttp `Range`.
+- **`Assembler`** — concatenates chunks into the final file on completion.
 
-### The Local Database (Room)
+---
 
-To survive process death and communicate progress to the UI safely, the `DownloadWorker` writes state to a local Room database. The UI observes a `Flow` from this database.
+## 4. API Contract
+
+```kotlin
+interface DownloadManager {
+    suspend fun enqueue(req: DownloadRequest): DownloadId
+    suspend fun pause(id: DownloadId)
+    suspend fun resume(id: DownloadId)
+    suspend fun cancel(id: DownloadId)
+    fun observe(id: DownloadId): Flow<DownloadState>
+    fun observeAll(): Flow<List<DownloadState>>
+}
+
+data class DownloadRequest(
+    val url: String,
+    val destFile: File,
+    val constraints: Constraints = Constraints(),
+    val priority: Priority = Priority.NORMAL,
+    val headers: Map<String, String> = emptyMap(),
+    val expectedSize: Long? = null,
+    val checksum: Checksum? = null,
+)
+
+sealed class DownloadState {
+    object Queued : DownloadState()
+    data class Running(val downloadedBytes: Long, val totalBytes: Long?, val bytesPerSecond: Long) : DownloadState()
+    object Paused : DownloadState()
+    data class Failed(val reason: Throwable, val canResume: Boolean) : DownloadState()
+    data class Completed(val file: File) : DownloadState()
+}
+```
+
+---
+
+## 5. Mobile App Architecture
+
+### Module structure
+
+```
+:lib:download
+    download-api          ← public interface, models
+    download-core         ← queue, worker, scheduler
+    download-okhttp       ← OkHttp adapter
+    download-ktor         ← optional Ktor adapter
+```
+
+### Layered diagram
+
+```
+   Caller ──► DownloadManager ──► Room queue
+                                       │
+                                       ▼
+                               WorkManager schedules
+                                       │
+                                       ▼
+                              DownloadWorker (per download)
+                                       │
+                            ┌──────────┼──────────┐
+                            ▼          ▼          ▼
+                       Chunk 0     Chunk 1     Chunk 2
+                            └──── parallel ─────┘
+                                       │
+                                       ▼
+                                  Assembler
+                                       │
+                                       ▼
+                                  Final file
+```
+
+---
+
+## 6. Local Storage (Room as ledger)
 
 ```kotlin
 @Entity(tableName = "downloads")
 data class DownloadEntity(
-    @PrimaryKey val id: String, // UUID
-    val url: String,
-    val destinationPath: String,
-    val status: DownloadStatus, // QUEUED, DOWNLOADING, PAUSED, COMPLETED, FAILED
-    val totalBytes: Long,
-    val downloadedBytes: Long,
-    val errorMessage: String?
+    @PrimaryKey val id: String,
+    val url: String, val destPath: String,
+    val state: DownloadStateCode,
+    val totalBytes: Long?, val downloadedBytes: Long,
+    val priority: Int, val constraintsJson: String,
+    val createdAt: Long, val updatedAt: Long,
+    val checksumExpected: String?, val checksumAlgo: String?
+)
+
+@Entity(tableName = "chunks",
+    primaryKeys = ["downloadId", "index"],
+    foreignKeys = [ForeignKey(DownloadEntity::class, ["id"], ["downloadId"], onDelete = CASCADE)])
+data class ChunkEntity(
+    val downloadId: String, val index: Int,
+    val startByte: Long, val endByte: Long,    // inclusive
+    val state: ChunkState                       // PENDING, IN_PROGRESS, DONE
 )
 ```
 
-### The API Contract (HTTP Range Requests)
+> **Probing Q:** "Why a chunk ledger separate from the file?" Because the partial file might be truncated by the OS or contain incomplete chunks. The ledger is the truth — on resume we re-issue any chunk not marked `DONE`.
 
-To support Resumable Downloads, the server *must* support the HTTP `Range` header.
+---
 
-```http
-// Client asks for the file, starting at byte 1,000,000 (because it already has the first MB)
-GET /movie.mp4 HTTP/1.1
-Host: cdn.example.com
-Range: bytes=1000000-
+## 7. Deep Dive: Chunked Resumable Download (~15 min)
 
-// Server replies with Partial Content (206)
-HTTP/1.1 206 Partial Content
-Content-Range: bytes 1000000-2000000/2000000
-Content-Length: 1000000
-```
+> *I'd pick this as the deep dive because it covers HTTP `Range`, parallelism, partial-file management, and resume-after-crash — the whole reason this library exists.*
 
-*Staff Note:* In a system design interview, you must explicitly state: *"I am assuming the backend CDN supports `Accept-Ranges: bytes`. If it does not, resumable downloads are mathematically impossible, and the architecture must fallback to downloading the entire file from 0% upon failure."*
-
-## 4. The Core Flows (Deep Dive)
-
-### Flow 1: Streaming to Disk (Preventing OOM)
-
-A Junior engineer downloads a file like this:
-```kotlin
-// FATAL: Loads 2GB into RAM. App instantly crashes.
-val responseBytes = okHttpClient.newCall(request).execute().body?.bytes()
-file.writeBytes(responseBytes)
-```
-
-A Staff engineer uses **Input/Output Streams** to route the bytes directly from the network antenna to the physical flash storage, using a tiny 8KB buffer in RAM.
+### Enqueue
 
 ```kotlin
-// Safe: Streams directly to disk using an 8KB RAM buffer
-val response = okHttpClient.newCall(request).execute()
-val inputStream = response.body?.byteStream()
-val outputStream = FileOutputStream(destinationFile, true) // 'true' for appending
+suspend fun enqueue(req: DownloadRequest): DownloadId {
+    val id = UUID.randomUUID().toString()
+    db.withTransaction {
+        downloadDao.insert(DownloadEntity(id, req.url, req.destFile.path, ...))
+        // chunk planning happens after HEAD request inside the worker
+    }
+    workManager.enqueueUniqueWork(
+        "download-$id",
+        ExistingWorkPolicy.KEEP,
+        OneTimeWorkRequestBuilder<DownloadWorker>()
+            .setConstraints(req.constraints.toAndroidx())
+            .setInputData(workDataOf("id" to id))
+            .build()
+    )
+    return DownloadId(id)
+}
+```
 
-val buffer = ByteArray(8 * 1024) // 8KB Buffer
-var bytesRead: Int
+### Worker
 
-while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-    outputStream.write(buffer, 0, bytesRead)
-    downloadedBytes += bytesRead
-    
-    // Throttle DB updates to avoid thrashing (e.g., update every 1 second)
-    if (shouldUpdateDb()) {
-        db.updateProgress(downloadedBytes)
+```kotlin
+@HiltWorker
+class DownloadWorker @AssistedInject constructor(
+    @Assisted ctx: Context, @Assisted params: WorkerParameters,
+    private val client: OkHttpClient,
+    private val dao: DownloadDao,
+    private val chunkDao: ChunkDao,
+) : CoroutineWorker(ctx, params) {
+
+    override suspend fun doWork(): Result {
+        val id = inputData.getString("id") ?: return Result.failure()
+        val entity = dao.get(id) ?: return Result.failure()
+
+        // 1) HEAD to learn content-length + accept-ranges
+        val head = client.headOrNull(entity.url) ?: return Result.retry()
+        val totalBytes = head.contentLength()
+        val supportsRange = head.acceptsRanges()
+        dao.updateMeta(id, totalBytes, supportsRange)
+
+        // 2) Plan chunks (one-time, idempotent)
+        if (chunkDao.countFor(id) == 0) {
+            planChunks(id, totalBytes, supportsRange)
+        }
+
+        // 3) Run parallel chunks
+        return runChunks(id, entity)
     }
 }
 ```
 
-### Flow 2: Surviving Process Death
+### Chunk planning
 
-1. User taps "Download 2GB Game".
-2. `ViewModel` enqueues a `OneTimeWorkRequest` to Android `WorkManager`.
-3. `WorkManager` spins up the `DownloadWorker`.
-4. User swipes the app away (Process Death).
-5. The Android OS sees the `WorkManager` job. It re-spawns the app process in the background.
-6. The `DownloadWorker` resumes execution.
-7. To prevent the OS from killing the background work to save battery (Doze Mode), the `Worker` must call `setForegroundAsync()`. This binds the Worker to a visible System Notification, proving to the OS that the user is aware of the background battery usage.
+```kotlin
+private suspend fun planChunks(id: String, total: Long?, supportsRange: Boolean) {
+    if (total == null || !supportsRange) {
+        chunkDao.insert(ChunkEntity(id, 0, 0, Long.MAX_VALUE, ChunkState.PENDING))   // one-shot
+        return
+    }
+    val chunkSize = pickChunkSize(total)        // 1-8 MB based on file size
+    val chunks = (0 until ceil(total / chunkSize.toDouble()).toInt()).map { i ->
+        val start = i * chunkSize.toLong()
+        val end = minOf(start + chunkSize - 1, total - 1)
+        ChunkEntity(id, i, start, end, ChunkState.PENDING)
+    }
+    chunkDao.insertAll(chunks)
+}
+```
 
-## 5. Failure Modes & Bottlenecks
+### Chunk runner (parallel)
 
-### Bottleneck: Database Thrashing
-*Interviewer:* "Your 8KB buffer fills up and writes to disk 10,000 times a second on a fast 5G network. You are updating the Room database 10,000 times a second. Your app completely freezes."
+```kotlin
+private suspend fun runChunks(id: String, entity: DownloadEntity): Result = coroutineScope {
+    val maxParallel = 3
+    val sem = Semaphore(maxParallel)
+    val pending = chunkDao.notDoneFor(id)
+    val jobs = pending.map { chunk ->
+        async {
+            sem.withPermit { fetchChunk(id, chunk, entity) }
+        }
+    }
+    val results = jobs.awaitAll()
+    when {
+        results.all { it is FetchResult.Ok } -> {
+            assemble(id, entity.destPath)
+            verifyChecksum(entity)?.let { return@coroutineScope Result.failure() }
+            dao.markCompleted(id)
+            Result.success()
+        }
+        results.any { it is FetchResult.NetworkError } -> Result.retry()
+        else -> Result.failure()
+    }
+}
+```
 
-**Staff Answer:**
-"We cannot update the database (and therefore the UI) on every buffer read. I will implement a **Throttler**. I will only write the `downloadedBytes` to the Room database if 1 second has elapsed since the last update, or if the download jumps by a significant chunk (e.g., 1%). This drops database writes from 10,000/sec down to 1/sec, completely solving the UI freeze, while still looking perfectly smooth to the user."
+### Single chunk fetch
 
-### Bottleneck: Corrupted Partial Downloads
-*Interviewer:* "The network drops at 50%. You have 1GB on disk. The user resumes. But the file on the CDN was updated 5 minutes ago. You append the new file's bytes to the old file's bytes. The MP4 is permanently corrupted."
+```kotlin
+private suspend fun fetchChunk(id: String, chunk: ChunkEntity, entity: DownloadEntity): FetchResult {
+    val partFile = File("${entity.destPath}.part.${chunk.index}")
+    val alreadyWritten = if (partFile.exists()) partFile.length() else 0L
+    val effectiveStart = chunk.startByte + alreadyWritten
+    if (effectiveStart > chunk.endByte) {
+        chunkDao.update(chunk.copy(state = ChunkState.DONE))
+        return FetchResult.Ok
+    }
+    val request = Request.Builder()
+        .url(entity.url)
+        .header("Range", "bytes=$effectiveStart-${chunk.endByte}")
+        .build()
+    return runCatching {
+        client.newCall(request).execute().use { resp ->
+            if (resp.code !in setOf(200, 206)) return FetchResult.HttpError(resp.code)
+            partFile.appendingSink().buffer().use { sink ->
+                resp.body!!.source().use { src ->
+                    while (true) {
+                        val read = src.read(sink.buffer, BUFFER)
+                        if (read == -1L) break
+                        sink.emitCompleteSegments()
+                        progressBus.publish(id, read)
+                    }
+                }
+            }
+            chunkDao.update(chunk.copy(state = ChunkState.DONE))
+            FetchResult.Ok
+        }
+    }.getOrElse { FetchResult.NetworkError(it) }
+}
+```
 
-**Staff Answer:**
-"When performing an HTTP Range request, I must validate the `ETag` (Entity Tag) or `Last-Modified` header. 
-When the download first starts, I save the server's `ETag` into the Room database.
-When I attempt to resume the download, I send the `If-Match: <Old ETag>` header. 
-If the server returns `412 Precondition Failed`, it means the file on the server has changed. I must delete my 1GB local partial file, reset `downloadedBytes` to 0 in the database, and restart the download from scratch to prevent corruption."
+### Assemble
 
-### Bottleneck: File System Verification
-*Interviewer:* "The download reaches 100%. How do you prove the file is actually correct and not maliciously intercepted or corrupted by packet loss?"
+```kotlin
+private fun assemble(id: String, destPath: String) {
+    val dest = File("$destPath.tmp")
+    dest.outputStream().use { out ->
+        chunkDao.allFor(id).sortedBy { it.index }.forEach { ck ->
+            File("$destPath.part.${ck.index}").inputStream().use { it.copyTo(out) }
+        }
+    }
+    if (!dest.renameTo(File(destPath))) error("rename failed")
+    chunkDao.deleteAllFor(id)        // tidy up partial files
+}
+```
 
-**Staff Answer:**
-"I require the backend API to provide a cryptographic hash (e.g., SHA-256 or MD5) of the complete file before the download starts. 
-When the `DownloadWorker` hits 100%, I will stream the local file through a `MessageDigest` hasher. If my local hash matches the server's hash, I mark the database `status = COMPLETED`. If it fails, I delete the file and mark it `FAILED`. I never trust the `Content-Length` header alone."
+### Progress aggregation
 
-## 6. Staff Engineer Thinking: Why not `DownloadManager`?
+```kotlin
+object progressBus {
+    private val flow = MutableSharedFlow<Pair<String, Long>>(extraBufferCapacity = 256)
+    fun publish(id: String, bytes: Long) { flow.tryEmit(id to bytes) }
+    fun observe(id: String): Flow<Long> = flow
+        .filter { it.first == id }
+        .map { it.second }
+        .scan(0L) { acc, v -> acc + v }
+        .sample(250.milliseconds)        // UI updates 4x/sec, not 60x
+}
+```
 
-Android provides a built-in system service called `DownloadManager`. 
-A Junior engineer says: "I'll just use `DownloadManager`, it handles everything."
+### Failure modes
 
-A Staff engineer refuses to use `DownloadManager` for critical business flows.
-*Why?*
-1.  **Black Box:** `DownloadManager` behaves differently across Samsung, Xiaomi, and Pixel devices. OEMs aggressively kill it to save battery.
-2.  **Auth Headers:** Passing complex, rotating OAuth tokens into `DownloadManager` is incredibly brittle.
-3.  **UI Sync:** Querying `DownloadManager` for progress is slow (Cursor-based IPC) and difficult to bind to a modern Compose `Flow`.
+| What breaks | Behavior |
+|---|---|
+| Network drop mid-chunk | Worker returns `Result.retry()`; partial file kept; resume from byte offset |
+| Server returns 200 not 206 | Server ignored Range; restart chunk from start |
+| Server returns 416 | Range invalid; re-plan (file size may have changed) |
+| Process killed | Ledger persists; new worker invocation re-runs `notDoneFor(id)` |
+| Disk full | Worker fails permanently; surface to user |
+| Checksum mismatch | Delete file; mark failed; do not retry automatically |
 
-*Decision:* A Staff Engineer builds a bespoke downloader using `WorkManager` + `OkHttp` to maintain 100% control over the lifecycle, authentication, and error handling.
+---
 
-## 7. Probing Questions (For Practice)
+## 8. Trade-offs
 
-1.  Explain why reading an HTTP response body directly into a `ByteArray` is a fatal architecture flaw for a File Downloader.
-2.  Describe the HTTP `Range` header and how it mechanically enables resumable downloads.
-3.  How does `WorkManager.setForegroundAsync()` protect a long-running download from being killed by the Android OS's Doze Mode?
-4.  Explain the "Database Thrashing" failure mode and how time-based or percentage-based throttling solves it.
-5.  What is the purpose of the HTTP `ETag` header, and how does it prevent a resumable download from corrupting a file if the server updates the file mid-download?
-6.  Describe why a Staff Engineer might choose to build a custom `WorkManager` download engine instead of relying on the built-in Android `DownloadManager` service.
-7.  How does cryptographic hashing (e.g., SHA-256) protect the integrity of a downloaded file better than relying on the HTTP `Content-Length` header?
-8.  Walk through the Single Source of Truth architecture for updating a Jetpack Compose progress bar based on a background download. Why does the `Worker` not communicate directly with the `ViewModel`?
-9.  If a user's device runs out of physical storage space (Disk Full) at 99%, how should the architecture gracefully handle the `IOException`?
-10. Describe the `File(path, append = true)` parameter in Java/Kotlin I/O. Why is it absolutely critical for resumable downloads?
+### Background scheduler
 
-## Further Reading
+| Option | Use |
+|---|---|
+| **WorkManager** | Pick — survives reboot, constraints, retry, backoff |
+| Foreground service | Add when user expects continuous progress with notification |
+| AlarmManager | Lower-level; no constraints |
+| `JobScheduler` (raw) | `WorkManager` wraps this; no benefit to use directly |
 
-- [`workmanager.md`](../android/concurrency/workmanager.md) — The deep dive into how WorkManager survives process death.
-- [`retrofit-and-okhttp.md`](../android/networking-and-security/retrofit-and-okhttp.md) — How OkHttp streams bytes.
-- [`jank.md`](../android/performance/jank.md) — Why Database Thrashing causes the UI to drop frames.
+### Concurrency
+
+| Choice | Pick |
+|---|---|
+| Parallel chunks per download | **3 (network dispatcher capped)** |
+| Parallel downloads | **2 default, tunable** |
+| Total HTTP connections | OkHttp `connectionPool` defaults are fine |
+
+### Resume granularity
+
+| Option | Verdict |
+|---|---|
+| **Chunk-level (file-per-chunk)** | Pick — easy ledger, easy resume |
+| Byte-level append to one file | Possible but fragile if assembly truncates |
+| Restart from zero | Awful UX for big files |
+
+### HTTP client
+
+| Option | Verdict |
+|---|---|
+| **OkHttp** | Pick — `Range`, connection pool, interceptors |
+| Ktor 3 | Acceptable, KMP-friendly |
+| Cronet | Faster on bad networks (Google's QUIC); heavier integration |
+| `HttpURLConnection` | Don't |
+
+### Storage
+
+| Option | Use |
+|---|---|
+| App-private (`context.filesDir`) | Cache / non-user-visible |
+| Scoped storage (Downloads collection) | User-visible files (`MediaStore`) |
+| Pre-allocate with `setLength()` | Avoid file-system fragmentation on large files |
+
+---
+
+## 9. Major Concerns
+
+- **Process death.** Ledger in Room is the truth. Worker invocation replays remaining chunks. No state in memory.
+- **Disk space.** Check `StatFs.getAvailableBytes()` before starting; fail fast if not enough. Pre-allocate large files with `setLength()` for predictability.
+- **Battery.** Use WorkManager constraints (`NetworkType.UNMETERED` for Wi-Fi-only). Foreground service only when user expects active progress.
+- **Throttling.** Cellular: throttle to N MB/s if needed; surface a "downloading on cellular" banner.
+- **OEM kill.** WorkManager survives. For user-initiated downloads use `setExpedited`; for prefetch use defaults.
+- **Network changes.** `OkHttp` `connectionSpec` handles renegotiation; restart in-flight chunks if the local IP changes mid-stream.
+- **Checksum.** SHA-256 verify on completion (optional). Mismatch = delete + fail.
+- **Privacy.** Don't log URLs with auth tokens; redact in error reports.
+- **Observability.** Total bytes, throughput, retry count surfaced via the same `EventListener` pattern.
+
+---
+
+## 10. Follow-up Questions
+
+> **Q: How do you know the server supports Range?**
+> HEAD request; check `Accept-Ranges: bytes`. If absent, fall back to single-chunk download.
+
+> **Q: What if the user starts a 1 GB download and switches to cellular mid-stream?**
+> Honour constraints: if `NetworkType.UNMETERED` was set, worker pauses (`Result.retry()` until constraint satisfied). Without constraint, continue but emit a warning event.
+
+> **Q: How would you support a "pause" button?**
+> `pause(id)` writes a flag in `DownloadEntity` + cancels the work. The worker checks the flag on each chunk boundary. Resume = new `WorkManager` enqueue with the same id; chunks not marked `DONE` re-fetch with their byte offsets.
+
+> **Q: What about HTTPS without pinning?**
+> Caller configures the OkHttp client. The library accepts a `Client` adapter; pinning, interceptors, timeouts are caller's concern.
+
+> **Q: Memory footprint during download?**
+> Streaming via Okio's `BufferedSource` / `BufferedSink`. No full-file in memory. Each chunk is a sequential write to its part file.
+
+> **Q: How do you test this without a server?**
+> `MockWebServer` from OkHttp; scripted responses (200, 206, 416, 5xx). Property-based test: any sequence of (network drop, resume) eventually produces a file matching the source bytes.
+
+---
+
+## 11. Out of Scope (defended)
+
+- **DRM** — Widevine integration is its own world; ExoPlayer handles for streaming.
+- **P2P** — different protocol stack entirely.
+- **Cross-process queue** — single-app assumption.
+- **Background upload** — symmetric but different concerns (chunked PUT, multipart).
+- **Real-time mirroring** (a-la `rsync`) — out of mobile scope.
+
+---
+
+## 12. Further Reading
+
+- [weeeBox/mobile-system-design — file-downloader-library](https://github.com/weeeBox/mobile-system-design/blob/master/exercises/file-downloader-library.md) — reference format.
+- [Android Developers — WorkManager](https://developer.android.com/topic/libraries/architecture/workmanager) — official guide, expedited + constraints.
+- [OkHttp recipes — Range requests](https://square.github.io/okhttp/recipes/) — `Range` header usage.
+- [Cronet / QUIC for Android](https://developer.android.com/develop/connectivity/cronet) — for next-gen transport.
+- [Android Developers — Foreground services](https://developer.android.com/develop/background-work/services/foreground-services) — when to escalate from worker.
+
+---
+
+> **Closing in the interview:** "I anchored on the chunked resumable path because it's where every bug lives. Happy to dig into the pause/resume race, the checksum verification flow, or how priority preemption would work next."
