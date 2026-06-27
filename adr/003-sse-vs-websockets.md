@@ -1,4 +1,4 @@
-# ADR 003 — SSE vs WebSockets for AirBridge Progress Streams
+# ADR 003 — SSE vs WebSockets for Progress Streams
 
 **Status:** Accepted
 **Date:** *TODO: actual decision date*
@@ -8,9 +8,9 @@
 
 ## Context
 
-AirBridge's upload pipeline (see [`../airbridge/upload-state-machine.md`](../airbridge/upload-state-machine.md)) needs server-driven progress updates pushed to the mobile client during the `Uploading` state. Updates include per-chunk acknowledgments, server-side processing milestones, and final completion. The client never needs to *push* progress upstream; the client already knows what it has uploaded. The data flow is strictly one-way: server → client.
+The upload pipeline needs server-driven progress updates pushed to the mobile client during the `Uploading` state. Updates include per-chunk acknowledgments, server-side processing milestones, and final completion. The client never needs to *push* progress upstream; the client already knows what it has uploaded. The data flow is strictly one-way: server → client.
 
-The pipeline already uses POST-per-chunk for the upload itself (see [`002-post-vs-websockets.md`](002-post-vs-websockets.md)). Progress transport is a separate decision because progress arrives during the upload, on a different channel than the chunk PUTs themselves.
+The pipeline already uses POST-per-chunk for the upload itself. Progress transport is a separate decision because progress arrives during the upload, on a different channel than the chunk PUTs themselves.
 
 The relevant constraints:
 
@@ -112,6 +112,4 @@ Re-open this decision if any of the following becomes true:
 
 ## Related
 
-- [`002-post-vs-websockets.md`](002-post-vs-websockets.md) — the upload transport decision; explains why uploads use POST per chunk rather than a single long-lived connection.
-- [`../airbridge/upload-state-machine.md`](../airbridge/upload-state-machine.md) — the consumer of this decision.
 - [`../backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md`](../backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md) — canonical comparison of all four transports.
