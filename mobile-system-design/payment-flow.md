@@ -1,760 +1,424 @@
-# Payment Flow System Design
+# Payment Flow (Card Checkout)
 
-> Interview-style deep dive on designing mobile payment processing (Stripe / Adyen / Braintree / Razorpay / PayPal integrations). Covers PCI DSS scope reduction via tokenization, the full payment lifecycle from card capture to settlement, idempotency for double-charge prevention, 3D Secure (PSD2 SCA), Strong Customer Authentication challenge flow, Apple Pay / Google Pay integration, webhooks, refunds and chargebacks, fraud signals, and the regulatory landscape (PCI DSS, PSD2, GDPR, country-specific schemes).
+> A 45-60 minute mobile system-design walkthrough for an in-app card payment flow (Stripe/Adyen/Razorpay integration). The PSP, vault, and acquiring stack are server concerns — the bulk of this file is how the *Android app* tokenizes, never double-charges, handles 3DS, and survives network drops.
 
 ---
 
-## 1. Problem Statement
+## 1. Gathering Requirements (~5 min)
 
-Design the payment system for a mobile commerce app where users can:
-
-- Save and re-use payment methods (cards, Apple Pay, Google Pay, bank accounts).
-- Complete one-tap purchases (card-on-file).
-- Pay via 3DS challenge when issuer requires SCA.
-- Receive instant confirmation or "pending" status.
-- View receipts, request refunds.
-- Handle declines gracefully with clear messaging.
+> **Interviewer:** "Design the checkout flow for paying with a card."
+> **Candidate:** "The two things that ruin payments are double-charges and ambiguous outcomes after a flaky network. I'll center the deep dive on idempotent submission and the 3DS challenge round-trip."
 
 ### Functional Requirements
-
-- Card tokenization (no raw PAN ever touches your server).
-- Multiple payment methods per user (cards, wallets).
-- One-time and recurring payments.
-- 3D Secure 2 authentication flow with frictionless and challenge variants.
-- Idempotent charge requests.
-- Refunds (full and partial).
-- Webhooks from payment provider for async status updates.
-- Multi-currency support.
-- Payment dispute handling.
+- **Card entry** (number, expiry, CVC) with PAN never leaving the PSP SDK's surface.
+- **Save card** for future use (with explicit consent).
+- **Confirm and pay** for an order with biometric gate.
+- **3DS challenge** handling for SCA (PSD2).
+- **Show clear success / failure / retry** states.
 
 ### Non-Functional Requirements
+- **No double-charges**, ever, under any retry path.
+- **PCI scope reduction** — app never sees the raw PAN; SDK fields only.
+- **Resilient to network drop** between confirm and acknowledgement.
+- **Accessible** — TalkBack on every field, error association.
+- **Auditable** — every state transition logged.
 
-| Concern | Target |
-|---|---|
-| Charge confirmation latency | p95 < 3s including 3DS frictionless |
-| 3DS challenge wait | Acceptable up to 30s (user interaction) |
-| Idempotency window | 24h minimum |
-| Webhook delivery reliability | At-least-once; client must handle duplicates |
-| Refund latency | < 5 business days reflecting on customer card |
-| PCI DSS scope | SAQ A (smallest scope) via hosted fields |
-| Storage durability | 11 nines, immutable audit log |
-| Availability | 99.99% during business hours |
-
-### Scale Assumptions
-
-For a mid-large e-commerce app (~10M users, 1M DAU):
-
-| Quantity | Estimate |
-|---|---|
-| Payments per day | 200K |
-| Peak payments per second | 50 |
-| Saved payment methods per user | 1.5 avg |
-| Refund rate | 1-3% |
-| Chargeback rate | < 0.1% |
-| Fraud-flagged transactions | 0.5-2% |
+### Out of Scope
+- Refunds, chargebacks, dispute UX
+- Card-on-file management screens (CRUD)
+- Recurring subscription billing
+- Apple Pay / Google Pay — separate file if needed
+- Anti-fraud rules (server-side)
+- Real PSP onboarding (we use one — Stripe/Adyen — as a black box)
 
 ---
 
-## 2. PCI DSS Scope & Tokenization
+## 2. Clarifying Questions (~3 min)
 
-### 2.1 Why scope matters
+| Question | Why it matters |
+|---|---|
+| Which PSP / region? | SDK choice, SCA requirements |
+| Geographic markets? | PSD2 (EU), 3DS variants, alternative payment methods |
+| Guest checkout or signed-in only? | Save-card flow, token lifetime |
+| Median order value? | Risk thresholds for SCA exemption |
+| Currencies / FX handling? | Display rules, server-side conversion |
+| Save card by default or opt-in? | GDPR / consent UX |
+| Android API floor? | Biometric APIs, Autofill |
+| Webhook timeliness expectations? | Polling vs FCM for the final status |
 
-If your servers ever **see** raw card numbers (PAN — Primary Account Number), you fall under PCI DSS Level 1, requiring:
+> **Candidate:** "Assume signed-in users only, Stripe PaymentSheet on Android, EUR/USD/GBP, PSD2 in scope, Android 9+, biometric required > €30."
 
-- Quarterly external vulnerability scans.
-- Annual penetration test.
-- Network segmentation.
-- Logging, encryption, key management.
-- A Qualified Security Assessor (QSA) audit.
-- ~$50K-200K/year operational cost.
+---
 
-If your servers **never see** PAN, you can qualify for SAQ A — much smaller scope, mostly self-attested.
+## 3. High-Level Diagram (~10 min)
 
-### 2.2 Tokenization architecture
-
-Provider (Stripe, Adyen, Braintree) gives you SDKs that capture card data **directly from device to provider**, returning a token:
-
-```mermaid
-sequenceDiagram
-    participant App as Mobile App
-    participant SDK as Provider SDK
-    participant Provider as Provider Vault
-    participant Server as Your Server
-
-    App->>SDK: collect card details (PaymentSheet)
-    SDK->>Provider: POST card details over TLS
-    Provider->>Provider: store PAN in vault; mint token
-    Provider-->>SDK: { payment_method_id: "pm_xxx" }
-    SDK-->>App: token
-    App->>Server: POST /payments { token, amount }
-    Server->>Provider: charge with token
+```
+       ┌────────────────────┐
+       │  Android Client    │
+       │  + Stripe SDK      │
+       │   (this talk)      │
+       └─────────┬──────────┘
+                 │ HTTPS (no raw PAN)
+                 ▼
+   ┌──────────────────────────────┐
+   │      BFF / Order API         │
+   │ (creates PaymentIntent)      │
+   └──┬─────────────────────┬─────┘
+      │                     │
+ ┌────▼────┐         ┌──────▼─────┐
+ │   PSP   │         │  Webhook   │
+ │ (Stripe)│◄────────┤  Receiver  │
+ └─────────┘         └────────────┘
+      │
+ ┌────▼────────┐
+ │  Acquirers, │  ← black box
+ │  schemes,   │
+ │  banks      │
+ └─────────────┘
 ```
 
-Your server only sees the **token** (an opaque string). The card data goes provider→vault, never touching your servers. Your PCI scope reduces to SAQ A.
+**Server-side (named, not designed):**
+- **BFF / Order API** — creates a `PaymentIntent` on the PSP, holds the secret, exposes a `clientSecret` to the app.
+- **PSP** — Stripe-like service that talks to schemes and acquirers.
+- **Webhook Receiver** — listens for `payment_intent.succeeded` / `.failed` / `.requires_action` events.
 
-### 2.3 SDK integration
+> The Android app never touches raw cards. It exchanges a `clientSecret` with the PSP SDK, gets a `paymentMethodId`, and confirms.
 
-Stripe Android example:
+---
+
+## 4. API Contract
+
+### Create PaymentIntent (server-side)
+
+```json
+POST /v1/payments/intent
+{ "orderId": "o_42", "amount": 4999, "currency": "EUR" }
+
+200 OK
+{
+  "intentId": "pi_abc",
+  "clientSecret": "pi_abc_secret_xyz",   // passed to SDK; never logged
+  "amount": 4999, "currency": "EUR",
+  "requiresAction": false
+}
+```
+
+### Confirm result (server-side, after PSP webhook)
+
+```json
+GET /v1/payments/intent/{intentId}
+{ "intentId": "pi_abc", "status": "SUCCEEDED",
+  "paymentMethodId": "pm_111", "chargeId": "ch_555", "lastUpdated": ... }
+```
+
+### Idempotency
+- The **order ID** is the natural idempotency key. The BFF reuses the same `PaymentIntent` for the same `orderId` across retries.
+- The PSP's `clientSecret` is single-use per intent; multiple confirms with the same secret are idempotent.
+- The app sends an `Idempotency-Key` header on `/v1/payments/intent` to prevent the BFF from creating two intents for the same order.
+
+### Status mapping
+
+| PSP state | Client state | UX |
+|---|---|---|
+| `requires_payment_method` | NEEDS_INPUT | Show form |
+| `requires_action` | NEEDS_3DS | Open challenge flow |
+| `processing` | PROCESSING | Spinner; poll/await webhook |
+| `succeeded` | SUCCESS | Receipt screen |
+| `requires_capture` | AUTHORIZED | Awaiting capture (if used) |
+| `canceled` | CANCELED | Show reason |
+
+---
+
+## 5. Mobile App Architecture (~10 min)
+
+### Module structure
+
+```
+:app
+:feature:checkout       ← entry + review + confirm screens
+:feature:receipt
+:core:network           ← Retrofit + OkHttp
+:core:secure            ← Keystore, biometric prompts
+:core:psp               ← Stripe SDK wrapper (single integration point)
+:core:work              ← StatusPollWorker (rarely; webhook usually wins)
+:domain:checkout
+:data:checkout
+```
+
+### Layered diagram
+
+```
+   Compose UI ──► CheckoutViewModel ──► CheckoutRepository
+                                            │
+                                            ├─► OrderApi (Retrofit, idempotency-key)
+                                            ├─► PspGateway (Stripe SDK)
+                                            ├─► BiometricPromptManager
+                                            └─► Room (intent state log)
+```
+
+### Key class signatures
 
 ```kotlin
-class CheckoutActivity : ComponentActivity() {
-    private lateinit var paymentSheet: PaymentSheet
+interface CheckoutRepository {
+    suspend fun createIntent(orderId: String): IntentDescriptor
+    suspend fun confirm(intent: IntentDescriptor, method: PaymentMethod): ConfirmResult
+    suspend fun pollStatus(intentId: String): PaymentStatus
+    fun observeStatus(intentId: String): Flow<PaymentStatus>
+}
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        PaymentConfiguration.init(applicationContext, BuildConfig.STRIPE_PUBLISHABLE_KEY)
-        paymentSheet = PaymentSheet(this, ::onPaymentResult)
-        setContent { CheckoutScreen { presentPaymentSheet(it) } }
-    }
+sealed class ConfirmResult {
+    data class Success(val chargeId: String) : ConfirmResult()
+    data class NeedsAction(val redirect: ChallengeRequest) : ConfirmResult()
+    data class Failed(val reason: ReasonCode) : ConfirmResult()
+}
+```
 
-    private fun presentPaymentSheet(clientSecret: String) {
-        paymentSheet.presentWithPaymentIntent(
-            paymentIntentClientSecret = clientSecret,
-            configuration = PaymentSheet.Configuration(merchantDisplayName = "MyShop")
-        )
-    }
+> **Boundary discipline:** Only `:core:psp` imports the PSP SDK. The rest of the app deals in domain types (`PaymentMethod`, `ConfirmResult`). Swapping PSPs becomes one module change.
 
-    private fun onPaymentResult(result: PaymentSheetResult) {
-        when (result) {
-            is PaymentSheetResult.Completed -> showSuccess()
-            is PaymentSheetResult.Canceled -> showCancel()
-            is PaymentSheetResult.Failed -> showError(result.error.message)
+---
+
+## 6. Local Storage (Room as audit log)
+
+```kotlin
+@Entity(tableName = "payment_intents")
+data class PaymentIntentEntity(
+    @PrimaryKey val intentId: String,
+    val orderId: String, val amount: Long, val currency: String,
+    val status: PaymentStatus,           // CREATED, CONFIRMING, REQUIRES_ACTION, PROCESSING, SUCCEEDED, FAILED
+    val lastEventAt: Long,
+    val clientReference: String          // Idempotency-Key
+)
+```
+
+> We don't store PANs, CVCs, or `clientSecret`s. The Room row exists for: (a) on-launch reconciliation, (b) UX state restoration, (c) audit if a user disputes.
+
+---
+
+## 7. Deep Dive: Payment Submission Flow (~15 min)
+
+> *I'd pick this as the deep dive because it covers idempotency, the 3DS challenge round-trip, biometric gating, and the network-drop-after-confirm scenario — the parts most likely to ruin trust.*
+
+### Happy path
+
+```
+User taps "Pay"
+  │
+  ▼
+Biometric prompt (if amount > threshold)
+  │ approved
+  ▼
+CheckoutVM.confirm()
+  │
+  ▼
+CheckoutRepo.createIntent(orderId, Idempotency-Key = orderId-v1)
+  │   ← server returns clientSecret + intentId
+  ▼
+Room INSERT (status=CREATED)
+  │
+  ▼
+PspGateway.confirm(clientSecret, paymentMethod)
+  │
+  ├─► returns Success → Room UPDATE (SUCCEEDED) → Receipt
+  ├─► returns NeedsAction → launch ChallengeActivity → resume on result
+  └─► throws Network → Room UPDATE (CONFIRMING) → trigger StatusPollWorker
+```
+
+### Idempotency in detail
+
+```kotlin
+suspend fun confirm(orderId: String, method: PaymentMethod): ConfirmResult {
+    val key = "$orderId-v1"
+    val descriptor = api.createIntent(
+        idempotencyKey = key,
+        body = CreateIntent(orderId)
+    ).also { dao.upsert(PaymentIntentEntity(it.intentId, orderId, ..., status = CREATED, clientReference = key)) }
+
+    return runCatching {
+        psp.confirm(descriptor.clientSecret, method)
+    }.fold(
+        onSuccess = { handle(it, descriptor.intentId) },
+        onFailure = { t ->
+            if (t.isNetworkError) {
+                dao.update(descriptor.intentId, status = CONFIRMING)
+                workManager.enqueueUniqueWork("poll-$intentId", REPLACE, pollWork(descriptor.intentId))
+                ConfirmResult.Failed(ReasonCode.NETWORK_UNCERTAIN)
+            } else throw t
         }
-    }
-}
-```
-
-The PaymentSheet UI is rendered by Stripe's SDK. Card fields are protected by Stripe — your code never receives them. The client uses the `clientSecret` (created server-side) to confirm.
-
-### 2.4 Wallet integration
-
-Apple Pay / Google Pay further reduce scope. The wallet returns a **payment token** containing a network-encrypted single-use credential. The provider decrypts on its side; the user's actual card number never leaves the device.
-
-```kotlin
-fun isReadyToPay(client: PaymentsClient, onReady: (Boolean) -> Unit) {
-    val request = IsReadyToPayRequest.fromJson(buildIsReadyJson().toString())
-    client.isReadyToPay(request).addOnCompleteListener { task ->
-        onReady(task.isSuccessful && task.result == true)
-    }
-}
-
-fun launchGooglePay(client: PaymentsClient, amount: Long, currency: String, launcher: ActivityResultLauncher<IntentSenderRequest>) {
-    val paymentDataRequestJson = buildPaymentDataRequestJson(amount, currency)
-    val request = PaymentDataRequest.fromJson(paymentDataRequestJson.toString())
-    val task = client.loadPaymentData(request)
-    task.addOnSuccessListener { /* sent via launcher */ }
-}
-```
-
----
-
-## 3. High-Level Architecture
-
-```mermaid
-flowchart TB
-    subgraph Client["Mobile App"]
-        UI[Checkout UI]
-        Sdk[Stripe / Adyen SDK]
-    end
-
-    subgraph Server["Your Server"]
-        OrderSvc[Order Service]
-        PaymentSvc[Payment Service]
-        WebhookSvc[Webhook Handler]
-        Idem[Idempotency Store<br/>Redis]
-        Audit[(Payment Audit Log)]
-        OrderDB[(Order DB)]
-    end
-
-    subgraph Provider["Payment Provider"]
-        Vault[Card Vault]
-        Engine[Charge Engine]
-        Network[Card Networks<br/>Visa, Mastercard]
-        Issuer[Card Issuer Bank]
-        Acquirer[Acquirer Bank]
-    end
-
-    UI --> Sdk
-    Sdk -->|tokenize| Vault
-    Vault --> Sdk
-    UI -->|order + payment_method_id| OrderSvc
-    OrderSvc --> PaymentSvc
-    PaymentSvc --> Idem
-    PaymentSvc -->|charge| Engine
-    Engine --> Network
-    Network --> Issuer
-    Issuer --> Network
-    Network --> Acquirer
-    Engine -->|webhook| WebhookSvc
-    WebhookSvc --> PaymentSvc
-    PaymentSvc --> OrderDB
-    PaymentSvc --> Audit
-```
-
-### Tier responsibilities
-
-- **Provider SDK** runs in the mobile app, hosts card-input UI in a separate process / WebView, and submits card details to the provider's vault.
-- **Your Order Service** owns the cart, totals, and order lifecycle.
-- **Payment Service** orchestrates the charge: builds a `PaymentIntent`, confirms with the provider, handles 3DS, listens for webhooks.
-- **Idempotency Store** (Redis with TTL) keys client-supplied idempotency keys to results.
-- **Audit Log** is immutable, append-only, for compliance and reconciliation.
-
----
-
-## 4. Payment Lifecycle
-
-### 4.1 State machine
-
-```mermaid
-stateDiagram-v2
-    [*] --> CREATED: PaymentIntent created
-    CREATED --> REQUIRES_PAYMENT_METHOD: server returned clientSecret
-    REQUIRES_PAYMENT_METHOD --> REQUIRES_CONFIRMATION: user attaches payment method
-    REQUIRES_CONFIRMATION --> REQUIRES_ACTION: 3DS challenge required
-    REQUIRES_CONFIRMATION --> PROCESSING: frictionless flow
-    REQUIRES_ACTION --> PROCESSING: user passed 3DS
-    REQUIRES_ACTION --> CANCELED: user abandoned
-    PROCESSING --> SUCCEEDED: issuer approved
-    PROCESSING --> FAILED: declined
-    SUCCEEDED --> REFUNDED: refund issued
-    SUCCEEDED --> DISPUTED: chargeback opened
-    FAILED --> [*]
-    CANCELED --> [*]
-    REFUNDED --> [*]
-    DISPUTED --> [*]
-```
-
-### 4.2 PaymentIntent pattern
-
-Stripe's PaymentIntent (or Adyen's equivalent) is a server-side object representing the lifecycle of a single payment attempt:
-
-```kotlin
-// Server: create PaymentIntent
-suspend fun createPaymentIntent(order: Order, customerId: String, idemKey: String): PaymentIntent {
-    return stripe.paymentIntents.create(
-        PaymentIntentCreateParams.builder()
-            .setAmount(order.totalCents)
-            .setCurrency(order.currency.code)
-            .setCustomer(customerId)
-            .setAutomaticPaymentMethods(
-                PaymentIntentCreateParams.AutomaticPaymentMethods.builder()
-                    .setEnabled(true).build()
-            )
-            .setMetadata(mapOf("order_id" to order.id))
-            .build(),
-        RequestOptions.builder().setIdempotencyKey(idemKey).build()
     )
 }
 ```
 
-The server returns `client_secret` to the app. The app uses Stripe SDK to confirm:
+**Why this is safe:** even if the SDK call times out, the server's PSP did or didn't charge. We never call `confirm` twice with a different intent — the same `clientSecret` is reused, and the same `Idempotency-Key` is sent. The truth is recovered by polling the intent status, not by guessing.
+
+### 3DS / SCA challenge
 
 ```kotlin
-val params = ConfirmPaymentIntentParams.createWithPaymentMethodId(
-    paymentMethodId = paymentMethodId,
-    clientSecret = clientSecret
-)
-stripe.confirmPayment(this, params)
-```
-
----
-
-## 5. Idempotency
-
-### 5.1 The risk
-
-Without idempotency:
-
-1. User taps Pay. App fires `POST /payments`.
-2. Network blip. App retries.
-3. Server charged twice.
-
-### 5.2 Solution
-
-Client generates a UUID per payment intent (per checkout tap). Server stores `{ idempotency_key → result }` for ≥ 24h.
-
-```kotlin
-suspend fun charge(req: ChargeRequest): ChargeResult {
-    val key = req.idempotencyKey
-    val cached = idempotencyStore.get(key)
-    if (cached != null) {
-        if (cached.requestHash != hash(req)) {
-            throw IdempotencyConflictException("Same key, different body")
-        }
-        return cached.response
-    }
-    val response = providerClient.charge(req)
-    idempotencyStore.set(key, IdempotencyEntry(hash(req), response), ttl = 24.hours)
-    return response
+sealed class ChallengeRequest {
+    data class Redirect(val url: Uri) : ChallengeRequest()
+    data class InlineSdk(val challengePayload: ByteArray) : ChallengeRequest()
 }
-```
 
-Critical: the cached result must include the **same** response, even if the underlying provider call returned errors. A retried "card declined" must consistently return declined.
-
-The provider (Stripe, Adyen) itself implements idempotency — but you should also implement it locally because:
-- Provider rate limits.
-- Network conditions between you and provider.
-- Audit trail completeness.
-
-### 5.3 Client-side mechanics
-
-```kotlin
-class CheckoutViewModel(...) : ViewModel() {
-    private val idemKey = UUID.randomUUID().toString()    // generated once per checkout
-
-    fun submit(paymentMethodId: String) {
-        viewModelScope.launch {
-            val result = withRetry(maxAttempts = 3) {
-                api.charge(ChargeRequest(
-                    orderId = orderId,
-                    paymentMethodId = paymentMethodId,
-                    idempotencyKey = idemKey
-                ))
-            }
-            handle(result)
-        }
-    }
-}
-```
-
-The `idemKey` is created once when the user enters checkout. Every retry of the same checkout uses the same key. New checkout (back, retry, etc.) generates new key.
-
----
-
-## 6. 3D Secure 2 (PSD2 SCA)
-
-### 6.1 Why 3DS
-
-PSD2 (EU regulation) mandates **Strong Customer Authentication** for card transactions. Two factors required:
-- Knowledge (PIN, password).
-- Possession (phone, device).
-- Inherence (biometric).
-
-3DS 2 satisfies this by adding an authentication step with the issuer bank.
-
-### 6.2 Frictionless vs Challenge flow
-
-```mermaid
-sequenceDiagram
-    participant App as Mobile App
-    participant SDK as Provider SDK
-    participant Provider as Provider
-    participant Issuer as Issuer Bank
-
-    App->>SDK: confirm payment
-    SDK->>Provider: confirmPayment
-    Provider->>Issuer: 3DS2 authentication request<br/>(device fingerprint, transaction details)
-    Issuer->>Issuer: risk analysis
-
-    alt Low risk — frictionless
-        Issuer-->>Provider: authenticated
-        Provider-->>SDK: success
-        SDK-->>App: success
-    else High risk — challenge
-        Issuer-->>Provider: challenge required
-        Provider-->>SDK: requires_action
-        SDK->>App: show 3DS challenge UI (WebView or native)
-        App->>Issuer: biometric / OTP
-        Issuer-->>App: authenticated
-        App->>SDK: handleNextAction
-        SDK->>Provider: confirmPayment retry
-        Provider-->>SDK: success
-        SDK-->>App: success
-    end
-```
-
-The frictionless flow (~70% of EU transactions) completes in <1s with no user interaction. The challenge flow (~30%) presents a screen requiring biometric / OTP / passkey.
-
-### 6.3 Liability shift
-
-Successful 3DS2 authentication shifts liability for fraudulent chargebacks **from merchant to issuer**. This is the major business reason to enable 3DS even where not strictly required.
-
-### 6.4 Mobile UX
-
-```kotlin
-private fun onPaymentResult(result: PaymentSheetResult) {
+// Launched as ActivityResultContract — survives process death
+val challengeLauncher = registerForActivityResult(ThreeDsContract()) { result ->
     when (result) {
-        is PaymentSheetResult.Completed -> {
-            // success — even after 3DS challenge
-        }
-        is PaymentSheetResult.Failed -> {
-            when (result.error) {
-                is StripeException -> handleStripeError(result.error)
-                else -> showGenericError()
-            }
-        }
+        is ChallengeResult.Completed -> vm.onChallengeCompleted(result.intentId)
+        is ChallengeResult.Cancelled -> vm.onChallengeCancelled()
     }
 }
 ```
 
-The PaymentSheet handles the 3DS UI internally. For custom UI, the SDK's `handleNextAction` triggers WebView or Custom Tabs presentation of the issuer's authentication page.
+The challenge runs in a dedicated Activity (Stripe SDK does this internally) — if the user is killed mid-challenge by Doze or returns from a banking app, the SDK resumes the flow via `onNewIntent`.
 
----
-
-## 7. Webhooks
-
-The provider sends webhooks to confirm events asynchronously:
-
-| Event | When |
-|---|---|
-| `payment_intent.succeeded` | charge approved |
-| `payment_intent.payment_failed` | charge declined |
-| `charge.refunded` | refund processed |
-| `charge.dispute.created` | chargeback opened |
-| `payment_method.attached` | new payment method saved |
-| `customer.subscription.created` | subscription started |
-
-### 7.1 Webhook security
-
-Each webhook is signed with a shared secret. Verify before processing:
+### Reconciliation on resume
 
 ```kotlin
-@PostMapping("/v1/webhooks/stripe")
-fun handleStripeWebhook(
-    @RequestBody payload: String,
-    @RequestHeader("Stripe-Signature") signature: String
-): ResponseEntity<Void> {
-    val event = try {
-        Webhook.constructEvent(payload, signature, webhookSecret)
-    } catch (e: SignatureVerificationException) {
-        return ResponseEntity.status(400).build()
-    }
-    eventProcessor.handle(event)
-    return ResponseEntity.ok().build()
+override fun onResume() {
+    super.onResume()
+    vm.reconcileInFlight()    // any CONFIRMING/REQUIRES_ACTION row → poll
 }
-```
 
-### 7.2 Idempotency
-
-Webhooks may be delivered multiple times. Store the event_id; skip duplicates:
-
-```kotlin
-fun handle(event: StripeEvent) {
-    val eventId = event.id
-    if (processedEventDao.exists(eventId)) return
-    processInTransaction(event) {
-        processedEventDao.insert(eventId)
+suspend fun reconcileInFlight() {
+    dao.inFlightIntents().forEach { entity ->
+        val status = repo.pollStatus(entity.intentId)
+        dao.update(entity.intentId, status = status)
+        if (status == SUCCEEDED) navigate(to = Receipt(entity.orderId))
     }
 }
 ```
 
-### 7.3 Reconciliation
-
-Even with webhooks, periodically reconcile by polling provider's API for state. Webhooks can be missed (your server down, network failure); reconciliation catches gaps.
-
----
-
-## 8. Refunds & Chargebacks
-
-### 8.1 Refunds
-
-Initiated by your business or customer service:
+### Biometric gate
 
 ```kotlin
-suspend fun refund(paymentId: String, amount: Long?, reason: RefundReason): Refund {
-    val params = RefundCreateParams.builder()
-        .setPaymentIntent(paymentId)
-        .apply { amount?.let { setAmount(it) } }
-        .setReason(reason.toProviderReason())
-        .build()
-    return stripe.refunds.create(params)
-}
-```
-
-Refunds typically settle to customer's card in 5-10 business days. The webhook `charge.refunded` confirms; your UI updates the order to "refunded."
-
-### 8.2 Chargebacks
-
-The customer disputes the charge with their bank:
-1. Bank issues chargeback.
-2. Provider sends `charge.dispute.created` webhook.
-3. Funds are held / withdrawn from your account.
-4. You can challenge with evidence (delivery confirmation, signed receipt).
-5. After dispute resolves, funds return or stay withdrawn.
-
-Mitigation: 3DS shifts liability. Fraud signals (velocity checks, device fingerprinting) prevent disputes. Customer-friendly refund policies prevent friendly fraud.
-
----
-
-## 9. Recurring Payments / Subscriptions
-
-For subscriptions (Netflix, SaaS), the saved payment method is charged automatically:
-
-```kotlin
-suspend fun createSubscription(customerId: String, planId: String): Subscription {
-    return stripe.subscriptions.create(
-        SubscriptionCreateParams.builder()
-            .setCustomer(customerId)
-            .addItem(SubscriptionCreateParams.Item.builder().setPlan(planId).build())
-            .setPaymentBehavior(SubscriptionCreateParams.PaymentBehavior.DEFAULT_INCOMPLETE)
-            .setPaymentSettings(
-                SubscriptionCreateParams.PaymentSettings.builder()
-                    .setSaveDefaultPaymentMethod(SubscriptionCreateParams.PaymentSettings.SaveDefaultPaymentMethod.ON_SUBSCRIPTION).build()
-            )
-            .build()
-    )
-}
-```
-
-The first charge confirms with 3DS if needed; subsequent charges use the saved method off-session.
-
-### 9.1 Off-session payments
-
-When the user isn't actively in the app:
-
-```kotlin
-val params = PaymentIntentCreateParams.builder()
-    .setAmount(amountCents)
-    .setCurrency(currency)
-    .setCustomer(customerId)
-    .setPaymentMethod(paymentMethodId)
-    .setOffSession(true)
-    .setConfirm(true)
-    .build()
-```
-
-If the issuer requires SCA, the off-session attempt fails with `authentication_required`. You notify the user via email/push, they return to the app, and you retry on-session with 3DS.
-
-### 9.2 Dunning & retries
-
-Failed recurring charges retry on a schedule (Stripe Smart Retries: try at 1d, 3d, 7d). Track:
-- Past-due subscriptions.
-- Customer notification cadence.
-- Cancellation after N failed attempts.
-
----
-
-## 10. Fraud & Risk
-
-### 10.1 Signals
-
-| Signal | What it indicates |
-|---|---|
-| Multiple cards on one device | Account selling |
-| One card on many devices | Stolen card |
-| IP geolocation vs billing address mismatch | High risk |
-| Velocity (N charges in last hour) | Card testing |
-| BIN range (issuer country) vs IP country | Cross-border fraud |
-| Device fingerprint changed | Suspicious |
-| Previous chargebacks on this card | Decline |
-
-Providers (Stripe Radar, Adyen RevenueProtect) score risk; you can set thresholds for auto-decline or manual review.
-
-### 10.2 Play Integrity / DeviceCheck
-
-Anti-bot attestation prevents emulators / rooted devices from carding attacks:
-
-```kotlin
-val integrityManager = IntegrityManagerFactory.create(applicationContext)
-val tokenResponse = integrityManager.requestIntegrityToken(
-    IntegrityTokenRequest.builder().setNonce(nonce).build()
-).await()
-val token = tokenResponse.token()
-// Send token to server; server verifies with Google Play Integrity API
-```
-
-### 10.3 FLAG_SECURE for screen captures
-
-```kotlin
-class CheckoutActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE,
-                        WindowManager.LayoutParams.FLAG_SECURE)
-        // Now system screenshots and screen recording disabled
+class BiometricPromptManager @Inject constructor() {
+    suspend fun require(activity: FragmentActivity, title: String): BiometricResult = suspendCancellableCoroutine { cont ->
+        val prompt = BiometricPrompt(activity, ContextCompat.getMainExecutor(activity),
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: AuthenticationResult) {
+                    cont.resume(BiometricResult.Ok)
+                }
+                override fun onAuthenticationError(code: Int, msg: CharSequence) {
+                    cont.resume(BiometricResult.Failed(code))
+                }
+            })
+        prompt.authenticate(promptInfo(title))
     }
 }
 ```
 
----
+Triggered only when amount > threshold OR risk score from PSP is elevated.
 
-## 11. Mobile Client Architecture
+### Failure modes
 
-### 11.1 Checkout flow
-
-```mermaid
-sequenceDiagram
-    participant App as App
-    participant Order as Your Order Svc
-    participant Pay as Your Payment Svc
-    participant Sdk as Provider SDK
-    participant Provider as Provider
-
-    App->>Order: create order (cart, address)
-    Order-->>App: order_id, total
-    App->>Pay: POST /v1/checkout/intent {order_id, idem_key}
-    Pay->>Provider: PaymentIntent.create
-    Provider-->>Pay: client_secret
-    Pay-->>App: client_secret + supported payment methods
-
-    App->>Sdk: presentPaymentSheet(client_secret)
-    Sdk->>Provider: tokenize new card OR use saved method
-    Sdk->>Provider: confirmPaymentIntent
-
-    alt 3DS challenge
-        Sdk->>App: show issuer challenge
-        App->>Provider: user authenticates
-    end
-
-    Provider-->>Sdk: succeeded / failed
-    Sdk-->>App: result
-
-    Provider->>Pay: webhook payment_intent.succeeded
-    Pay->>Order: mark order PAID
-    Pay-->>App: confirmed
-```
-
-### 11.2 Saved payment methods UI
-
-```kotlin
-class WalletViewModel(val paymentsRepository: PaymentsRepository) : ViewModel() {
-    val methods: StateFlow<List<PaymentMethod>> = paymentsRepository.observeMethods()
-
-    fun setDefault(id: String) { viewModelScope.launch { paymentsRepository.setDefault(id) } }
-    fun delete(id: String) { viewModelScope.launch { paymentsRepository.delete(id) } }
-    fun addNew() { /* trigger SetupIntent flow */ }
-}
-```
-
-For adding a method without making a payment, use `SetupIntent`:
-
-```kotlin
-val setupIntentResult = stripe.confirmSetupIntent(
-    activity,
-    ConfirmSetupIntentParams.create(paymentMethodId, clientSecret)
-)
-```
-
-This tokenizes + saves to the customer; 3DS may still trigger to verify "this user actually owns this card."
-
-### 11.3 Loading and error states
-
-```kotlin
-sealed class CheckoutState {
-    object Idle : CheckoutState()
-    object PreparingPayment : CheckoutState()        // creating intent
-    object AwaitingUserAction : CheckoutState()      // 3DS challenge active
-    object Processing : CheckoutState()              // provider working
-    data class Succeeded(val orderId: String) : CheckoutState()
-    data class Failed(val message: String, val retryable: Boolean) : CheckoutState()
-}
-```
-
-The UI maps state to UX:
-- `PreparingPayment` → button shows spinner.
-- `AwaitingUserAction` → modal indicates "complete verification."
-- `Failed` → human-readable message; "Try a different card" if retryable.
-
----
-
-## 12. Failure Modes
-
-**Network drop during charge.** Idempotency key + retry retrieves the original result.
-
-**User abandons 3DS.** Provider returns `requires_action` indefinitely; PaymentIntent times out after ~24h. App should poll status or rely on webhook.
-
-**Provider outage.** Show "payment temporarily unavailable" with retry; do not allow order completion. Consider fallback provider for critical flows (rare).
-
-**Card declined for non-fraud reason.** Surface specific provider decline code (insufficient funds, expired). Suggest "use a different card." Don't lose the cart.
-
-**Charge succeeded but webhook never arrives.** Reconciliation job polls provider for charges in last 24h; finds the success; updates order. UI hopefully showed success already.
-
-**Refund failed.** Refund itself can fail (closed card). Provider returns failure; your UI shows "refund pending" until resolved. Manual intervention may be required.
-
-**Race: webhook arrives before client-side confirmation.** Your server-side state is already PAID; client sees confirmation. Handle out-of-order arrival via state machine.
-
-**Subscription card expired.** Off-session charge fails; notify customer; pause subscription; collect new card on-session.
-
-**SCA challenge on saved card off-session.** The off-session attempt fails; you must notify customer (email/push) and walk them through on-session re-authentication.
-
-**Currency mismatch.** User in UK, card in USD. Provider can charge or decline; surface clearly.
-
-**Duplicate webhook.** Idempotency on event_id prevents double-processing.
-
-**FX rate fluctuation between intent creation and confirmation.** Stripe locks rate at intent creation; gap is fine.
-
----
-
-## 13. Tradeoffs
-
-**Provider hosted UI vs custom UI**
-
-| Hosted (PaymentSheet) | Custom (Elements) |
+| What breaks | Behavior |
 |---|---|
-| Less work | More design control |
-| SAQ A scope | SAQ A-EP scope |
-| Provider styling constraints | Your brand |
-
-**3DS2 always vs dynamic**
-
-| Always | Dynamic (only when issuer requires) |
-|---|---|
-| Liability shift on all | Smooth UX for low-risk |
-| Higher friction | Some risk on missed challenges |
-
-**Save card by default vs opt-in**
-
-| Default | Opt-in |
-|---|---|
-| Smoother re-purchase | Privacy preference |
-| GDPR considerations | More taps next time |
-
-**One provider vs multi-provider**
-
-| Single | Multi |
-|---|---|
-| Simpler | Resilient (failover) |
-| Better support | Higher complexity, multiple PCI scopes |
+| Network drops after SDK confirm | Status moves to `CONFIRMING`; poll worker resolves |
+| User backgrounds during 3DS | SDK resumes via `onNewIntent`; reconcile on resume |
+| User taps Pay twice fast | Single-click guard in VM; `Idempotency-Key` covers the network race |
+| Process killed mid-confirm | Room row in `CONFIRMING`; reconcile on next launch |
+| PSP returns `requires_action` after we showed success | Cannot happen if VM waits for terminal status; assert with tests |
+| Webhook lags | Poll backoff up to 30 s; show "We're confirming your payment…" |
 
 ---
 
-## 14. Probing Questions
+## 8. Trade-offs
 
-1. Walk through why PCI DSS scope matters and how tokenization keeps you in SAQ A.
-2. Idempotency keys: explain the bug they prevent, where they're generated, and what TTL is appropriate.
-3. Frictionless vs challenge 3DS2: walk through both end-to-end and when each happens.
-4. A webhook arrives twice for the same `payment_intent.succeeded`. What's your dedup strategy?
-5. The provider returns "requires_action" — what's required, and how does the mobile SDK present it?
-6. A user is charged twice for one tap. Walk through how this happened and how you prevent it.
-7. The user enters checkout, completes 3DS, but the network drops before the SDK reports success. What's the next-time flow?
-8. Saved card off-session subscription renewal. Card was issued in a country requiring SCA. What happens?
-9. Apple Pay / Google Pay return a payment token. How does it differ from a regular Stripe `payment_method_id`?
-10. Chargeback prevention: list five technical signals and how each helps.
-11. Webhook signature verification: walk through the algorithm and what happens if it fails.
-12. The customer disputes a charge with their bank. Walk through the next 60 days.
-13. Reconciliation job: what does it do, when does it run, and what discrepancies does it catch?
-14. Multi-currency: user has USD card; merchant settles in EUR. Where's the FX done and locked?
-15. FLAG_SECURE: what does it prevent, and what are the gaps?
-16. Provider outage: design a fallback that still allows the user to complete an order.
-17. Subscription dunning: design the retry schedule and notification cadence.
-18. Card-on-file UI: how do you confirm "this is really the user's card" before charging it again?
-19. PCI DSS Level 1 vs SAQ A: what's the cost difference and what causes the jump?
-20. A high-value transaction. What additional signals do you check before submitting the charge?
+### Where to put card capture
+
+| Option | Verdict |
+|---|---|
+| **PSP SDK fields (Stripe PaymentSheet)** | Pick — PCI scope = SAQ-A, no PAN in app |
+| Custom UI + PSP token API | Possible but raises PCI scope; rarely worth it |
+| WebView checkout | Bad UX, deep linking complexity |
+
+### Idempotency mechanism
+
+| Option | Pros | Cons | Verdict |
+|---|---|---|---|
+| **Order-ID-derived key** | Stable across retries | Need to rotate on user-initiated retry | Pick this |
+| Random UUID per attempt | Trivial | Same retry creates two intents | Skip |
+| Server-generated key | Single source of truth | Race during creation | Server still validates |
+
+### Confirm transport
+
+| Option | Verdict |
+|---|---|
+| **PSP SDK (direct)** | Pick — SDK handles 3DS, retries, PCI boundary |
+| Our BFF acts as proxy | Adds latency, doesn't gain anything; PCI scope grows |
+| Webhook-only | App can't show realtime status; only as backup signal |
+
+### State tracking
+
+| Option | Use |
+|---|---|
+| **Room intent log** | Source of truth for client state, reconciliation |
+| In-memory ViewModel only | Lost on process death |
+| DataStore | Wrong shape for tabular history |
+
+### Biometric
+
+| Option | Verdict |
+|---|---|
+| **BiometricPrompt + AndroidX** | Pick — class-3 (strong) where available |
+| FingerprintManager (deprecated) | Skip |
+| No biometric | Acceptable below threshold; required above |
 
 ---
 
-## 15. Further Reading
+## 9. Major Concerns
 
-In this repository:
+- **Double-charge prevention.** Same `Idempotency-Key` for the same logical attempt. Server's PSP integration dedupes. Client never re-creates an intent for the same order.
+- **PCI scope.** Stay in SAQ-A: use PSP SDK fields. Never log card data, even masked, even in debug.
+- **Network-uncertain state.** "Did it go through?" must be resolvable: poll the intent status until terminal. Never assume failure on timeout.
+- **Process death during 3DS.** Activity result + Room state must survive. SDK handles its own resume; you reconcile from your log.
+- **Webhook lag.** Build the UI assuming up to 30s delay. Spinner with explanatory text > false success.
+- **Security.** `FLAG_SECURE` on checkout screens. TLS 1.3 + cert pinning. Tokens only in Keystore-wrapped storage. No payment data in screenshots or recents.
+- **Replay attack.** PSP SDK uses single-use `clientSecret`. Don't echo it to logs. Rotate on retry.
+- **Accessibility.** TalkBack on every error. Don't rely on color alone.
+- **Geo edge.** PSD2 mandates SCA above thresholds; show challenge clearly; don't silently fail for low-friction users in non-EU regions where exemptions apply.
 
-- [`authentication.md`](authentication.md) — auth tokens for API calls.
-- [`security-and-privacy.md`](security-and-privacy.md) — Keystore, biometrics, FLAG_SECURE.
-- [`push-notifications.md`](push-notifications.md) — confirmation pushes.
-- [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md) — idempotency keys.
-- [`../distributed-systems/delivery-semantics.md`](../distributed-systems/delivery-semantics.md) — webhook delivery guarantees.
-- [`../engineering-fundamentals/state-machines.md`](../engineering-fundamentals/state-machines.md) — PaymentIntent state machine.
-- [`../android/networking-and-security/security-and-keystore.md`](../android/networking-and-security/security-and-keystore.md) — Hardware-backed key storage for tokens.
+---
 
-External:
+## 10. Follow-up Questions
 
-- [Stripe System Design](https://grokkingthesystemdesign.com/guides/stripe-system-design/) — interview-level Stripe walkthrough.
-- [What is PCI DSS compliance? — Stripe](https://stripe.com/guides/pci-compliance) — official PCI scope guide.
-- [Adyen 3D Secure 2 documentation](https://docs.adyen.com/online-payments/3d-secure) — definitive 3DS2 reference.
-- [PSD2 and Strong Customer Authentication — Chargebee](https://www.chargebee.com/docs/payments/2.0/psd2-sca.html) — PSD2 SCA exhaustive guide.
-- [Designing a Payment Processing System](https://dev.to/matt_frank_usa/designing-a-payment-processing-system-stripe-architecture-3i06) — Stripe-style architecture analysis.
-- [PCI DSS Compliance for Mobile Payment Apps](https://www.decryptcode.com/blog/pci-dss-mobile-payment-app/) — mobile-specific PCI scope.
-- [Stripe Mobile SDKs (Android)](https://stripe.com/docs/payments/quickstart) — official Android integration docs.
-- [Google Pay API for Android](https://developers.google.com/pay/api/android) — Google Pay integration.
-- [Apple Pay on the Web / Native](https://developer.apple.com/apple-pay/) — Apple Pay reference.
-- *Payment Systems in the U.S.* by Carol Coye Benson — accessible book on payment ecosystems.
-- *Mastering Stripe* by Justin Tan — engineering-focused Stripe practices.
+> **Q: User taps Pay, sees "no internet" — they walk away, come back, what now?**
+> On resume, reconcile any `CONFIRMING` rows by polling `/v1/payments/intent/{id}`. If `SUCCEEDED`, navigate to receipt — they paid. If `FAILED`, allow retry. The bank already decided; we only display the truth.
+
+> **Q: How do you prevent the user paying twice by tapping fast?**
+> ViewModel-level single-flight guard (`MutableStateFlow<Boolean>` for `inFlight`). Compose disables the button while `inFlight`. The idempotency key covers the network race even if the button somehow fires twice.
+
+> **Q: Saving cards — where does the token live?**
+> The PSP returns a `paymentMethodId`. We store it server-side, scoped to the user. On future checkouts, the app passes `paymentMethodId` instead of fresh card details. The token is not sensitive on its own; it's only useful via your account.
+
+> **Q: How is 3DS tested?**
+> PSP sandbox provides test cards that always trigger challenge, succeed, or fail. End-to-end tests with the SDK mocked to return each `ConfirmResult` variant. Manual smoke tests on real devices for the actual web challenge handoff.
+
+> **Q: Apple Pay / Google Pay — how does it slot in?**
+> Same `CheckoutRepository.confirm` API; the `PaymentMethod` source is GooglePayLauncher instead of card fields. The PSP SDK returns the same `ConfirmResult`. Architecture absorbs it cleanly.
+
+> **Q: Refunds?**
+> Out of scope here, but architecturally: a different screen, server-side reverse charge, no biometric required, optimistic UI not needed (rare action). Bank notification arrives via webhook.
+
+---
+
+## 11. Out of Scope (defended)
+
+- **Refunds and chargebacks** — separate flow, different threat model.
+- **Card management CRUD** — list/delete/set-default screens.
+- **Subscriptions / recurring billing** — different lifecycle entirely.
+- **Apple Pay / Google Pay** — one slot-in component; not the architectural core.
+- **Anti-fraud rules** — server-side risk engine; client just shows challenges.
+- **PSP onboarding** — that's the merchant team's problem.
+
+---
+
+## 12. Further Reading
+
+- [weeeBox/mobile-system-design](https://github.com/weeeBox/mobile-system-design) — reference format.
+- [Stripe — Idempotent Requests](https://stripe.com/docs/api/idempotent_requests) — canonical idempotency-key pattern.
+- [Stripe Android SDK — PaymentSheet](https://stripe.com/docs/payments/accept-a-payment?platform=android) — PCI-reducing card capture.
+- [PSD2 / SCA — what it means for mobile](https://stripe.com/guides/strong-customer-authentication) — challenge flow design.
+- [Android Developers — BiometricPrompt](https://developer.android.com/training/sign-in/biometric-auth) — class-3 biometric integration.
+
+---
+
+> **Closing in the interview:** "Idempotent confirm and the reconciliation pattern were my deep dive because that's where money goes missing. Happy to dig into Google Pay slot-in, the biometric class story, or the receipt screen reliability next."
