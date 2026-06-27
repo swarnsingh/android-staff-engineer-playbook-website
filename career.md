@@ -14,4 +14,8 @@ Most engineers don't get to Staff by being better at coding. They get there by c
 
 ## Topics
 
-> *No canonical topics enumerated in the spec yet.*
+- [Senior to Staff Progression](career/senior-to-staff-progression.md)
+- [Scope and Ambiguity](career/scope-and-ambiguity.md)
+- [Technical Leadership](career/technical-leadership.md)
+- [Writing Technical Documents (RFCs)](career/writing-rfcs.md)
+- [Performance Reviews & Promotion](career/performance-reviews-and-promotion.md)

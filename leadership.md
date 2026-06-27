@@ -14,6 +14,8 @@ Staff is partly a leadership role. How you behave during incidents, how you run 
 
 ## Topics
 
-- [Incident Response / On-Call](leadership/incident-response-on-call.md)
-
-> *Additional leadership topics (technical leadership, influence without authority, retrospectives, RFC review culture) to be added.*
+- [Incident Response & On-Call](leadership/incident-response-on-call.md)
+- [Running a Design Review (RFCs)](leadership/running-a-design-review.md)
+- [Influence Without Authority](leadership/influence-without-authority.md)
+- [Technical Mentorship](leadership/technical-mentorship.md)
+- [Escalation & Decision Making](leadership/escalation-and-decision-making.md)
