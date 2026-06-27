@@ -34,6 +34,3 @@ Design patterns first (the classics), then resilience patterns (the production-e
 - [Retry](patterns/retry.md)
 - [Saga](patterns/saga.md)
 
-## Wiring Example
-
-AirBridge → State (state machine) + Retry + Circuit Breaker + Observer (progress).

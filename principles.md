@@ -27,5 +27,5 @@ The simplest first — Simplicity, Single Responsibility, Composition over Inher
 - [Locality of Reference](principles/locality-of-reference.md)
 - [Optimize for Change](principles/optimize-for-change.md)
 - [Design for Failure](principles/design-for-failure.md)
-- [Determinism](principles/determinism.md) — referenced from `airbridge/deterministic-resume.md`, `distributed-systems/idempotency.md`, `mobile-system-design/offline-sync.md`
+- [Determinism](principles/determinism.md) — referenced from `distributed-systems/idempotency.md`, `mobile-system-design/offline-sync.md`
 - [Progressive Disclosure](principles/progressive-disclosure.md)
