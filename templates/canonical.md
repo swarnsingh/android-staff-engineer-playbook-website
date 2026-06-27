@@ -74,17 +74,6 @@ Explain how Android implements this.
 
 ---
 
-## AirBridge Example  *(optional — omit if not applicable)*
-
-Connect the topic to AirBridge when it genuinely applies. Prefer omission to filler.
-
----
-
-## BizBrew Example  *(optional — omit if not applicable)*
-
-Connect the topic to BizBrew when it genuinely applies. Prefer omission to filler.
-
----
 
 ## Tradeoffs
 

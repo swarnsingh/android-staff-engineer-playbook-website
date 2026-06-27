@@ -34,7 +34,7 @@ Every file is exactly one of four kinds. Each kind has its own template in [`tem
 | Kind | What it is | Example | Template |
 |---|---|---|---|
 | **Canonical** | The single source of truth for a concept | `distributed-systems/idempotency.md` | [`templates/canonical.md`](templates/canonical.md) |
-| **Application** | Applies a canonical concept to a concrete system | `airbridge/deterministic-resume.md` | [`templates/application.md`](templates/application.md) |
+| **Application** | Applies a canonical concept to a concrete system | `mobile-system-design/offline-sync.md` | [`templates/application.md`](templates/application.md) |
 | **Decision** | A recorded tradeoff and choice (ADR) | `adr/003-sse-vs-websockets.md` | [`templates/decision.md`](templates/decision.md) |
 | **Blueprint** | A complete end-to-end system reference | `reference-architectures/ecommerce-app.md` | [`templates/blueprint.md`](templates/blueprint.md) |
 
@@ -50,7 +50,6 @@ Two rules govern the whole repo. Both live in [`CONTRIBUTING.md`](CONTRIBUTING.m
 - New to the repo? Read [`CONTRIBUTING.md`](CONTRIBUTING.md) first — it's short and explains how files relate.
 - Looking for a study sequence? See [`learning-paths.md`](learning-paths.md).
 - Need a term defined? See [`glossary.md`](glossary.md).
-- Want to see the anchor systems? See [`airbridge.md`](airbridge.md) and [`bizbrew.md`](bizbrew.md). Most concepts ground out in one of these two.
 
 ## The Knowledge Trees
 
@@ -82,10 +81,6 @@ Each top-level file is a table of contents for its tree. Start with whichever ma
 - [`leadership.md`](leadership.md) — incident response, technical leadership
 - [`career.md`](career.md) — senior → staff progression
 - [`adr/`](adr/) — Architecture Decision Records
-
-**Anchors**
-- [`airbridge.md`](airbridge.md) — file transfer / data sync anchor system
-- [`bizbrew.md`](bizbrew.md) — multi-tenant Android anchor system
 
 ---
 

@@ -13,7 +13,7 @@ Every file is exactly one of:
 | Kind | Purpose | Template |
 |---|---|---|
 | **Canonical** | The single source of truth for a concept | [`templates/canonical.md`](templates/canonical.md) |
-| **Application** | Applies a canonical concept to a concrete system (AirBridge, BizBrew, etc.) | [`templates/application.md`](templates/application.md) |
+| **Application** | Applies a canonical concept to a concrete system | [`templates/application.md`](templates/application.md) |
 | **Decision** | An ADR — recorded tradeoff and choice | [`templates/decision.md`](templates/decision.md) |
 | **Blueprint** | A complete end-to-end reference architecture | [`templates/blueprint.md`](templates/blueprint.md) |
 
@@ -36,7 +36,7 @@ Canonical owner:
 Referenced from:
   mobile-system-design/offline-sync.md
   mobile-system-design/file-downloader.md
-  airbridge/deterministic-resume.md
+  mobile-system-design/offline-sync.md
 ```
 
 When writing an application file, if you find yourself explaining what a concept *is*, stop and link to the canonical owner instead.
@@ -77,7 +77,7 @@ When the same word could plausibly live in multiple trees, this table pins the s
 | State machines — pattern | `patterns/state.md` | Cross-link both ways |
 | Observability concepts | `observability/` tree | `android/observability/` is application-only |
 | Distributed tracing | `observability/distributed-tracing.md` | `distributed-systems/distributed-tracing.md` (stub) |
-| Idempotency | `distributed-systems/idempotency.md` | `airbridge/`, `mobile-system-design/` |
+| Idempotency | `distributed-systems/idempotency.md` | `mobile-system-design/` |
 | Determinism — heuristic | `principles/determinism.md` | Cross-link to mechanics |
 | Determinism — mechanics | `engineering-fundamentals/` | Cross-link to principle |
 
@@ -88,7 +88,7 @@ When a word could live in multiple trees:
 - **Fundamental** = mechanics (how it works, the substrate)
 - **Pattern** = implementation (a reusable shape that solves a class of problems)
 - **Principle** = decision heuristic (what a Staff engineer reaches for when choosing)
-- **Application** = a specific use in AirBridge, BizBrew, or another concrete system
+- **Application** = a specific use in a concrete system
 
 Same concept, multiple angles — link between them, never duplicate.
 
@@ -106,7 +106,6 @@ Same concept, multiple angles — link between them, never duplicate.
 
 - Inter-file links are **relative paths**, GitHub-rendered
 - Examples:
-  - From `airbridge/deterministic-resume.md` → `../distributed-systems/idempotency.md`
   - From `mobile-system-design/offline-sync.md` → `../engineering-fundamentals/state-machines.md`
 - Section anchors use GitHub's auto-generated kebab-case slugs: `../patterns/retry.md#exponential-backoff`
 - Never use absolute URLs to point inside the repo
