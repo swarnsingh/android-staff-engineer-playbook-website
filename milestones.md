@@ -45,7 +45,7 @@ These are the constraints every milestone is shaped by. If a future session forg
 | `distributed-systems/crdts.md` | canonical | M2 session |
 | `distributed-systems/consensus-basics.md` | canonical | M2 session |
 
-Plus: README, CONTRIBUTING, 4 templates, 17 tree-level TOCs, anchor definitions (placeholder), 207 stubs.
+Plus: README, CONTRIBUTING, 4 templates, 17 tree-level TOCs, 207 stubs.
 
 ---
 
@@ -200,9 +200,9 @@ Variables, functions, extensions, jvm-interop, bytecode can land in a smaller fo
 
 - ~~consumer-app, merchant-app, banking-app, e-commerce-app, ride-hailing-app, social-media-app, video-streaming-app~~
 
-### M20 — ADRs (non-anchor) ✅
+### M20 — ADRs ✅
 
-5 ADRs that don't depend on anchor systems being stable.
+5 generally-applicable ADRs.
 
 - ~~001 — MVVM vs MVI~~
 - ~~004 — Room vs DataStore~~

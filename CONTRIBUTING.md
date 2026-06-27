@@ -137,7 +137,7 @@ If a canonical file finds itself naming a specific version, that detail belongs 
 2. **Find the canonical owner.** Use the Canonical Ownership Map above. If you're adding the canonical, make sure no other file is already claiming the role.
 3. **Copy the template** from `templates/` into the right folder.
 4. **Rename** the file in kebab-case.
-5. **Fill it in.** For canonical files, follow all relevant sections (omit the optional anchor-example sections if not applicable). For application files, link to the canonical owner instead of redefining.
+5. **Fill it in.** For canonical files, follow all relevant sections. For application files, link to the canonical owner instead of redefining.
 6. **Cross-reference.** Add links from related files to the new one, and vice versa.
 7. **Update the top-level TOC** for the tree the file belongs to.
 
