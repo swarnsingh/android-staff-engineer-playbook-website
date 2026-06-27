@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The contract between mobile clients and the services they call — BFFs, transport protocols, push vs poll. The push-vs-poll-vs-SSE topic is directly AirBridge-relevant (SSE-based progress).
+The contract between mobile clients and the services they call — BFFs, transport protocols, push vs poll.
 
 ## Why It Matters
 
@@ -17,6 +17,6 @@ BFF pattern and API design first (the shape), then transport protocols (the wire
 - [BFF Pattern](backend-for-mobile/bff-pattern.md)
 - [API Design for Mobile](backend-for-mobile/api-design-for-mobile.md)
 - [Transport Protocols (REST / gRPC / GraphQL)](backend-for-mobile/transport-protocols.md)
-- [Push vs Poll vs SSE vs WebSockets](backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md) — directly relevant to AirBridge's SSE progress
+- [Push vs Poll vs SSE vs WebSockets](backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md)
 - [Rate Limiting](backend-for-mobile/rate-limiting.md)
 - [Data Formats (JSON / Protobuf)](backend-for-mobile/data-formats.md)
