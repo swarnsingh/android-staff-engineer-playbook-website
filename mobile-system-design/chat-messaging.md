@@ -1,1075 +1,1479 @@
 # Chat / Messaging System Design
 
-> Interview-style deep dive on designing a chat platform (WhatsApp / Signal / Telegram / Messenger). Covers high-level architecture, low-level data flows, end-to-end encryption, group fan-out at scale, read receipts, multi-device sync, and the mobile-specific concerns that distinguish a real production chat system from a textbook example.
+> Interview-style deep dive on designing a chat client for an Android engineer (WhatsApp / Signal / Telegram / Messenger from the device side). The backend is treated as a black-box contract — one HLD diagram, one paragraph, the wire format, and the idempotency mechanism are enough. The rest of the file is **how you build the Android app**: layered architecture, Room as single source of truth, Compose UI, ViewModels with SavedStateHandle, WebSocket lifecycle, FCM data pushes, WorkManager for the outbox, MessagingStyle notifications, E2EE integration via libsignal, media handling, battery, process death, and the failure modes you actually debug as a mobile developer.
 
 ---
 
 ## 1. Problem Statement
 
-Design a real-time chat application supporting:
+Design the **Android client** for a chat platform supporting:
 
-- **1-on-1 messaging** (text, images, video, voice notes, files, location).
-- **Group chats** ranging from 2 to ~1,000 members (WhatsApp's current limit; some platforms go to 100K+ with channels).
-- **Delivery and read receipts** (single check, double check, blue check).
-- **Presence** (online, typing, last seen).
-- **Offline support** — queue messages without connectivity, deliver when network returns.
-- **Multi-device** — a user has phone + tablet + web simultaneously.
-- **End-to-end encryption (E2EE)** — even the server cannot read message content.
-- **Notifications** when the app is in the background.
-- **Reliability** — no lost messages; exactly-once delivery to user.
+- 1-on-1 and group conversations (up to ~1,024 members per group).
+- Text, images, video, voice notes, file attachments, location.
+- Delivery and read receipts; presence (online, typing, last seen).
+- Offline send + receive — queue while disconnected; deliver and sync when network returns.
+- Multi-device per user (phone + tablet + web run independently).
+- End-to-end encryption — the server cannot read message bodies.
+- Notifications when the app is backgrounded or killed.
+- Process death recovery — kill the app and the user finds everything intact.
 
-### Non-Functional Requirements
+### Non-Functional Requirements (mobile-facing)
 
-| Concern | Target | Why |
+| Concern | Target | Why it shapes client design |
 |---|---|---|
-| Message delivery latency (online) | p99 < 200ms | UX threshold for "instant" |
-| Message delivery (E2EE overhead) | +20ms p99 | Crypto budget |
-| Availability | 99.95% | Industry baseline; 4hr/year downtime |
-| Durability | 11 nines (eventually deleted) | No message lost during in-transit storage |
-| Battery | < 2% per hour foreground active chat | Mobile-critical |
-| Cold start to ready | < 1.5s | Conversation list usable |
-| Group size | Up to 1,024 (configurable) | Architecture must scale |
+| Cold start to chat list visible | < 1.5s | Read from Room first; backend fetch in parallel |
+| Time to first message in a conversation | < 200ms | Conversation history lives in Room; sync is incremental |
+| Send-to-ack p95 (online) | < 500ms | WebSocket open in foreground; HTTP fallback for outbox |
+| Message delivery latency (online) | < 200ms | WebSocket inbound; FCM only when killed |
+| Battery foreground (active chat) | < 2%/hr | Heartbeat every 30-45s; conflate UI updates |
+| Battery background | negligible | Disconnect WebSocket; rely on FCM data pushes |
+| Storage budget | < 250MB for typical user | Prune old media; keep text indefinitely |
+| Offline correctness | No data loss; no duplicates | Client UUID per message; Room is SSOT |
 
-### Scale Assumptions (Back-of-Envelope)
+### Scale Assumptions (as inputs to client decisions)
 
-For a 1B user, 500M DAU service:
+For a 500M-DAU app, the client-side implications:
 
-| Quantity | Estimate | Derivation |
-|---|---|---|
-| Messages per day | 100B | 200 msg/user/day avg |
-| Messages per second (peak) | 2M | 100B / 86,400 × 1.7 peak factor |
-| New media uploads per second | 200K | 10% of messages contain media |
-| Concurrent WebSocket connections | 200M | ~40% of DAU connected at any moment |
-| Storage growth | 50 TB/day (text) + 5 PB/day (media) | 500B compressed text + 5MB avg media |
-| Bandwidth (egress, text channel) | 200 Gbps peak | 2M msg/s × 100KB envelope (rare) |
+| Backend scale | Client implication |
+|---|---|
+| 100B messages/day fan out to recipients | Server pushes; client never polls. WebSocket + FCM. |
+| Avg user reads ~50 messages/day | Local DB queries dominate; ~95% of UI reads never touch network. |
+| Avg media uploaded ~3/day | Pre-signed S3 uploads; client compresses before send. |
+| ~5% messages cause delivery/read receipts | Bulk-coalesce read receipts before sending (1 ack per 10-20 messages). |
+| Avg group size 12, P99 ~150 | Receipt-row count is bounded; UI shows aggregate "12 read" not per-member. |
 
-These numbers shape every architectural decision: you can't keep 200M sockets on one server, can't dump 100B rows/day in one DB, and can't fan out 1,000-member groups synchronously.
+The backend handles scale. The client's job is to behave correctly under varying network and lifecycle conditions.
 
 ---
 
-## 2. High-Level Architecture
+## 2. High-Level Architecture (One Diagram, One Paragraph)
 
 ```mermaid
 flowchart TB
-    subgraph Clients["Clients"]
-        AndroidApp[Android App]
-        iOSApp[iOS App]
-        WebApp[Web App]
+    subgraph Mobile["Mobile Client"]
+        App[Android App]
     end
 
-    subgraph Edge["Edge Tier"]
-        LB[L4 Load Balancer<br/>NLB / haproxy / nginx]
-        Gateway[WebSocket Gateway<br/>stateless connection mgr]
-        Push[Push Service<br/>FCM/APNs proxy]
+    subgraph Backend["Backend (black box)"]
+        Edge[Edge: LB + WebSocket Gateway + REST Gateway]
+        Core[Core: Chat Service / Group Service /<br/>Media Service / Key Service / Receipt Service]
+        Push[Push Service → FCM]
+        Storage[(Message Store, Inbox, Blob CDN)]
     end
 
-    subgraph Services["Application Tier"]
-        Chat[Chat Service<br/>Erlang-style actor model]
-        Presence[Presence Service]
-        Group[Group Service]
-        Media[Media Service]
-        Key[Key Distribution Service<br/>prekey bundles]
-        ReadReceipt[Read Receipt Service]
-    end
-
-    subgraph Async["Async Tier"]
-        MQ[Message Queue<br/>Kafka / Pulsar]
-        FanoutWorker[Fan-out Workers]
-    end
-
-    subgraph Storage["Storage Tier"]
-        MetaDB[(User / Group Metadata<br/>PostgreSQL)]
-        MsgDB[(Message Store<br/>Cassandra / ScyllaDB)]
-        InboxDB[(Per-user Inbox<br/>Redis Cluster / KV)]
-        Blob[(Media Blob Store<br/>S3 + CDN)]
-        KeyStore[(Prekey Bundles<br/>HSM-backed KV)]
-    end
-
-    Clients <-->|TLS WebSocket| LB
-    Clients -->|HTTPS REST| LB
-    LB --> Gateway
-    LB --> Media
-    LB --> Key
-    Gateway <--> Chat
-    Chat --> MQ
-    Chat --> Presence
-    Chat --> Group
-    MQ --> FanoutWorker
-    FanoutWorker --> Gateway
-    FanoutWorker --> Push
-    Chat --> MsgDB
-    Chat --> InboxDB
-    Group --> MetaDB
-    Key --> KeyStore
-    Media --> Blob
-    Push -.->|wakeup| Clients
-    ReadReceipt --> MQ
+    App <-->|WSS| Edge
+    App -->|HTTPS REST| Edge
+    Edge --> Core
+    Core --> Storage
+    Core --> Push
+    Push -.->|FCM data push| App
 ```
 
-### Why these tiers exist
-
-**Edge tier (stateless):** the load balancer terminates TLS and routes raw connections. The Gateway holds the WebSocket on behalf of one user — it owns no business logic. Why split LB and Gateway? Because L4 balancers (NLB) can shed millions of connections cheaply but can't run application logic. The Gateway is the application-aware proxy that translates WebSocket frames to internal RPCs.
-
-**Application tier (stateless wherever possible):** Chat Service handles message routing, ordering, persistence. Presence Service tracks online/typing. Group Service owns membership and broadcasts. Media Service handles uploads. Key Service distributes encryption keys.
-
-**Async tier:** for any fan-out larger than ~50 recipients, synchronous loops in the request path don't scale. Push events into Kafka, let fan-out workers handle delivery asynchronously. This is where you absorb bursty load.
-
-**Storage tier:** the message log is the heart. Cassandra/ScyllaDB chosen for write-throughput (LSM tree) and horizontal scaling. A small relational DB (Postgres) holds metadata that needs joins (users, groups). Redis/KV holds the per-user "inbox" for fast retrieval of recent messages. S3 + CDN for blobs.
+**What the backend does (this is all an Android engineer needs to know):** the **Edge tier** terminates TLS WebSockets and REST requests. The **Core services** route messages, manage groups, mediate media uploads via pre-signed URLs, distribute prekey bundles for E2EE, and track delivery/read receipts. The **Push Service** delivers FCM data pushes when the app isn't connected. The **storage tier** persists messages, per-user inboxes, and media blobs. For the rest of this file, treat the backend as a contract: it accepts our requests, it pushes us events, it tells us idempotency conflicts. How it's sharded internally doesn't matter to the client.
 
 ---
 
-## 3. Low-Level Component Design
+## 3. API Contract / Wire Format
 
-### 3.1 WebSocket Gateway
+The client integrates against a small contract — one persistent WebSocket and a handful of REST endpoints.
 
-```
-Responsibilities
-- Accept TLS WebSocket connections from clients
-- Authenticate (via JWT in upgrade headers, or post-handshake auth message)
-- Map user_id → connection (and maintain a connection registry)
-- Forward inbound frames to Chat Service via internal RPC
-- Forward outbound events (from message queue) to the right user's socket
-- Heartbeat (PING/PONG every 30s) to detect dead connections
-- Graceful drain on deploy (drain mode → reject new connections, finish in-flight)
-```
+### 3.1 WebSocket envelope
 
-A single Gateway instance handles ~50K-200K concurrent connections on modern hardware. Each connection is a tiny coroutine/fiber (Erlang process, Go goroutine, Java virtual thread). Memory per connection: ~16-32 KB.
+All real-time traffic is a typed envelope, JSON for readability but ideally Protobuf in production:
 
-To find which Gateway holds a given user's connection, two patterns:
+```kotlin
+@Serializable
+sealed class WsFrame {
+    abstract val v: Int
+    abstract val ts: Long
 
-1. **Consistent hashing on user_id** → all Gateways agree on routing. Used by Slack, Discord.
-2. **Sticky session via routing table** (Redis cluster `user_id → gateway_instance_id`). Used by WhatsApp's Mnesia-backed approach.
+    @Serializable @SerialName("AUTH")
+    data class Auth(val jwt: String, override val v: Int = 1, override val ts: Long) : WsFrame()
 
-Pattern 1 is simpler; pattern 2 supports better multi-device routing (user on phone + tablet → two entries).
+    @Serializable @SerialName("MESSAGE_SEND")
+    data class MessageSend(
+        val msgId: String,                // client UUID — idempotency key
+        val conversationId: String,
+        val ciphertext: String,           // base64
+        val mediaRef: String? = null,
+        override val v: Int = 1,
+        override val ts: Long
+    ) : WsFrame()
 
-### 3.2 Chat Service (the message router)
+    @Serializable @SerialName("MESSAGE_ACK")
+    data class MessageAck(val msgId: String, val serverTs: Long, val status: String,
+                          override val v: Int = 1, override val ts: Long) : WsFrame()
 
-```
-Responsibilities
-- Validate sender (is the user authorized to send to this conversation?)
-- Generate server message_id (or accept client UUID for idempotency)
-- Persist to message store
-- Determine recipients (1:1 = the other party; group = lookup membership)
-- Enqueue fan-out work
-- Update per-conversation last-message metadata
-- Update read receipt state machine
-```
+    @Serializable @SerialName("MESSAGE_INCOMING")
+    data class MessageIncoming(val msgId: String, val conversationId: String, val senderId: String,
+                               val ciphertext: String, val serverTs: Long,
+                               override val v: Int = 1, override val ts: Long) : WsFrame()
 
-WhatsApp's choice: Erlang. One Erlang process per connection, lightweight (microseconds to spawn, ~2KB memory). A single physical server holds 2-3 million connections. The actor model makes message-routing trivially safe: each conversation is itself an actor, mailbox-serialized, no locks.
+    @Serializable @SerialName("MESSAGE_DELIVERED")
+    data class MessageDelivered(val msgId: String, val conversationId: String, val recipientId: String,
+                                override val v: Int = 1, override val ts: Long) : WsFrame()
 
-A modern alternative: Go or Java virtual threads (Project Loom). Similar coroutine economics, broader hiring pool.
+    @Serializable @SerialName("MESSAGE_READ")
+    data class MessageRead(val msgIds: List<String>, val conversationId: String, val readerId: String,
+                           override val v: Int = 1, override val ts: Long) : WsFrame()
 
-### 3.3 Message Store (Cassandra / ScyllaDB)
+    @Serializable @SerialName("TYPING")
+    data class Typing(val conversationId: String, val userId: String, val isTyping: Boolean,
+                      override val v: Int = 1, override val ts: Long) : WsFrame()
 
-Schema (Cassandra):
+    @Serializable @SerialName("PRESENCE")
+    data class Presence(val userId: String, val status: String, val lastSeen: Long,
+                        override val v: Int = 1, override val ts: Long) : WsFrame()
 
-```cql
-CREATE TABLE messages_by_conversation (
-    conversation_id UUID,
-    bucket INT,                  -- time-based bucket: floor(timestamp / 1day)
-    message_id TIMEUUID,         -- v1 UUID = sortable by time
-    sender_id UUID,
-    payload BLOB,                -- encrypted ciphertext
-    msg_type TINYINT,            -- 0=text, 1=image, 2=video, 3=system
-    server_timestamp BIGINT,
-    PRIMARY KEY ((conversation_id, bucket), message_id)
-) WITH CLUSTERING ORDER BY (message_id DESC);
-```
+    @Serializable @SerialName("SYNC_REQUEST")
+    data class SyncRequest(val sinceServerTs: Long, override val v: Int = 1, override val ts: Long) : WsFrame()
 
-The composite partition key `(conversation_id, bucket)` distributes load: hot conversations don't all land on one node, and time bucketing prevents partitions from growing unbounded.
+    @Serializable @SerialName("SYNC_RESPONSE")
+    data class SyncResponse(val messages: List<MessageIncoming>, val newCursor: Long,
+                            override val v: Int = 1, override val ts: Long) : WsFrame()
 
-Reading the last 50 messages in a conversation:
-
-```cql
-SELECT * FROM messages_by_conversation
-WHERE conversation_id = ? AND bucket = ?
-ORDER BY message_id DESC LIMIT 50;
-```
-
-Scrolling back fetches earlier buckets. With buckets sized at ~1 day, even very active conversations stay well under Cassandra's recommended 100MB per partition.
-
-### 3.4 Per-user Inbox (Redis Cluster)
-
-Reading from `messages_by_conversation` for every conversation a user has open is too many queries. The inbox is a per-user secondary index of "recent activity":
-
-```
-Redis key: inbox:{user_id}
-Type: Sorted Set
-Score: server_timestamp
-Member: {conversation_id}:{message_id}
-
-ZADD inbox:user-99 1719500000 "conv-7:msg-abc"
-
-# Fetch 50 most recent conversation events
-ZREVRANGE inbox:user-99 0 49
-```
-
-On reconnect, the client sends `since={last_seen_message_id}`, the inbox returns conversation_id + message_id pairs newer than that, and the client backfills from `messages_by_conversation`.
-
-### 3.5 Group Service
-
-```
-group_metadata: { group_id, name, avatar_url, created_at, settings }
-group_members:  { group_id, user_id, role (admin/member), joined_at }
-```
-
-For groups under ~200 members, membership fits in a single row/cache lookup. For larger groups, members are sharded by `(group_id, user_id_hash % 16)` so lookups parallelize across shards.
-
-### 3.6 Presence Service
-
-```
-presence:{user_id} → { status: ONLINE|TYPING|OFFLINE, since: timestamp, last_seen: timestamp }
-TTL: 60s (re-asserted by heartbeat)
-```
-
-Redis-backed. Reads are cheap. Updates are throttled (typing pings every 5s while typing, not per keystroke). For groups, "is anyone typing?" is a `MGET` of all member presence keys.
-
----
-
-## 4. Wire Format & APIs
-
-### 4.1 WebSocket envelope
-
-The WebSocket frame carries a typed JSON envelope (Protobuf in production for size):
-
-```json
-{
-  "v": 1,
-  "type": "MESSAGE_SEND",
-  "msg_id": "client-generated-uuid",
-  "ts": 1719500000000,
-  "body": { /* type-specific */ }
+    @Serializable @SerialName("PING") data class Ping(override val v: Int = 1, override val ts: Long) : WsFrame()
+    @Serializable @SerialName("PONG") data class Pong(override val v: Int = 1, override val ts: Long) : WsFrame()
 }
 ```
 
-Common types:
-
-| Type | Direction | Body |
-|---|---|---|
-| `AUTH` | C→S | `{ jwt }` |
-| `MESSAGE_SEND` | C→S | `{ conversation_id, ciphertext, content_type, ratchet_index }` |
-| `MESSAGE_ACK` | S→C | `{ msg_id, server_ts, status }` |
-| `MESSAGE_DELIVERED` | S→C | `{ conversation_id, msg_id, recipient_id, ts }` |
-| `MESSAGE_READ` | S→C | `{ conversation_id, msg_id, reader_id, ts }` |
-| `MESSAGE_INCOMING` | S→C | `{ conversation_id, msg_id, sender_id, ciphertext, ts }` |
-| `TYPING` | C→S, S→C | `{ conversation_id, user_id, is_typing }` |
-| `PRESENCE` | S→C | `{ user_id, status, last_seen }` |
-| `SYNC_REQUEST` | C→S | `{ since_msg_id }` |
-| `SYNC_RESPONSE` | S→C | `{ messages: [...] }` |
-| `PING` / `PONG` | both | `{}` |
-
-Protobuf shrinks the typical envelope from ~250 bytes (JSON) to ~80 bytes (Protobuf), and parsing is 5-10x faster. For 2M msg/s, the bandwidth saving is significant.
-
-### 4.2 REST endpoints
+### 3.2 REST endpoints
 
 | Endpoint | Purpose |
 |---|---|
-| `POST /v1/media/upload` | Multipart upload, returns blob_id + temporary CDN URL |
-| `GET /v1/keys/prekey-bundle/{user_id}` | Fetch identity key + signed prekey + one-time prekey for X3DH |
-| `POST /v1/keys/upload-prekeys` | Client uploads new one-time prekey bundles |
-| `GET /v1/conversations/{id}/history?before={msg_id}&limit=50` | Backfill old messages |
-| `POST /v1/groups` / `PATCH /v1/groups/{id}/members` | Group management |
-| `POST /v1/devices/register` | Register a new device under existing identity |
-| `POST /v1/auth/login` | Phone/email + 2FA → JWT |
+| `POST /v1/auth/login` | Phone/email + 2FA → JWT (refresh token mechanism in [`authentication.md`](authentication.md)) |
+| `POST /v1/media/init` | Get pre-signed S3 upload URL + media_id |
+| `GET /v1/conversations` | Initial conversation list (used on first install) |
+| `GET /v1/conversations/{id}/history?before={msgId}&limit=50` | Backfill older messages (Paging 3 calls this) |
+| `POST /v1/outbox/flush` | Batch upload pending messages (WebSocket alternative on reconnect) |
+| `GET /v1/keys/prekey-bundle/{userId}` | Fetch peer's prekey for libsignal X3DH |
+| `POST /v1/keys/upload-prekeys` | Replenish our one-time prekeys |
+| `POST /v1/devices/register` | New device pairing |
+
+### 3.3 Idempotency
+
+Every message carries a **client-generated UUID** (`msgId`). The server treats it as the idempotency key:
+
+- First time seen → process and ACK.
+- Subsequent times → return cached ACK; do not re-process.
+
+This is the foundation that makes retries safe — duplicated network attempts cannot deliver the message twice to recipients.
 
 ---
 
-## 5. Core Flows
+## 4. Mobile App Architecture
 
-### 5.1 Sending a 1:1 message (happy path)
+### 4.1 Module structure (multi-module Gradle)
 
-```mermaid
-sequenceDiagram
-    participant A as Sender App
-    participant LocalA as Local Room DB
-    participant GW as Gateway
-    participant Chat as Chat Service
-    participant MQ as Kafka
-    participant DB as Cassandra
-    participant Inbox as Redis Inbox
-    participant Fan as Fan-out Worker
-    participant GW2 as Gateway (B's)
-    participant B as Receiver App
-
-    A->>LocalA: insert msg (status=PENDING, client UUID)
-    A->>A: render optimistically with 🕒
-    A->>GW: WS frame MESSAGE_SEND {msg_id, ciphertext}
-    GW->>Chat: rpcSend(msg)
-    Chat->>DB: write to messages_by_conversation
-    Chat->>Inbox: ZADD inbox:A, inbox:B
-    Chat->>MQ: publish to topic "fanout"
-    Chat-->>GW: ACK {msg_id, server_ts}
-    GW-->>A: WS frame MESSAGE_ACK
-    A->>LocalA: update status=SENT (✓)
-
-    MQ->>Fan: deliver fanout event
-    Fan->>GW2: deliverToUser(B, msg)
-    GW2->>B: WS frame MESSAGE_INCOMING
-    B->>B: decrypt with Double Ratchet
-    B->>B: render
-    B->>GW2: WS frame MESSAGE_DELIVERED {msg_id}
-    GW2->>Chat: rpcUpdateDelivery
-    Chat->>MQ: publish delivery event
-    MQ->>Fan: route to A
-    Fan->>GW: deliverToUser(A, delivery event)
-    GW->>A: WS frame MESSAGE_DELIVERED
-    A->>LocalA: update status=DELIVERED (✓✓)
+```text
+:app                              // Application class, navigation, DI graph
+:feature:chat                     // ConversationList, ChatScreen, Composer; Compose UI + ViewModels
+:feature:settings                 // unrelated, here for context
+:core:designsystem                // theme, typography, atoms
+:core:ui                          // shared Composables
+:core:data                        // ChatRepository, OutboxRepository, KeyRepository
+:core:database                    // Room: entities, DAOs, AppDatabase, migrations
+:core:network                     // Retrofit interfaces, WebSocket client, JSON config
+:core:notification                // FCM service, MessagingStyle builders
+:core:media                       // Image/video/voice helpers
+:core:crypto                      // libsignal wrappers, Keystore identity
 ```
 
-Key properties:
+Feature modules depend only on `:core:*`. Reverse direction is forbidden — enforced via Konsist or ArchUnit (see [`../principles/locality-of-reference.md`](../principles/locality-of-reference.md)).
 
-- **Client-generated msg_id (UUID)** — the message has an identity before the server sees it. Enables optimistic UI and idempotent retry.
-- **Cassandra write before fan-out** — durability before delivery. If we fan out first and the server crashes before persisting, the message is lost.
-- **Inbox update is async** — included in the same transactional path (or eventually-consistent via outbox). The inbox is a denormalized read-index.
-- **Fan-out via MQ** — even for 1:1, going through the queue means a Chat Service crash doesn't lose the in-flight delivery; another worker picks it up.
-
-### 5.2 Offline send (subway tunnel)
-
-```mermaid
-sequenceDiagram
-    participant U as User Action
-    participant App as App
-    participant Local as Room DB
-    participant WM as WorkManager
-    participant Net as Network
-    participant Chat as Chat Service
-
-    U->>App: tap "Send"
-    App->>Local: insert msg (status=PENDING)
-    App->>App: render with 🕒
-    App->>Net: WS send
-    Net-->>App: SocketException
-    App->>WM: enqueue OutboxFlushWorker (constraint: CONNECTED)
-
-    Note over App,Net: 10 minutes later, network returns
-
-    Net->>WM: constraint satisfied
-    WM->>App: run OutboxFlushWorker
-    App->>Local: SELECT * WHERE status=PENDING
-    App->>Chat: POST /v1/outbox/flush {msgs}
-    Chat-->>App: 200 OK, [acks]
-    App->>Local: update status=SENT
-```
-
-The outbox table:
-
-```kotlin
-@Entity(tableName = "outbox")
-data class OutboxMessage(
-    @PrimaryKey val msgId: String,         // client UUID
-    val conversationId: String,
-    val ciphertext: ByteArray,
-    val createdAt: Long,
-    val attemptCount: Int = 0,
-    val nextAttemptAt: Long = 0
-)
-```
-
-Backoff is exponential with jitter: `nextAttempt = now + 2^attempt * 1000ms + random(±500ms)`. After 100 attempts (~1 day), the message is marked permanently failed and the UI shows a retry button.
-
-REST flush vs WebSocket reconnect:
-
-- **WebSocket-only**: requires the socket to reconnect before flushing. Reconnect takes 2-10s depending on network. Many small sends each wait for the socket.
-- **REST flush** (recommended): a single `POST /v1/outbox/flush` batches all pending messages into one HTTP request. Fast, simple, retryable.
-
-### 5.3 Receiving a message (online & background)
-
-```mermaid
-sequenceDiagram
-    participant Chat as Chat Service
-    participant MQ as Kafka
-    participant Fan as Fan-out Worker
-    participant GW as Gateway
-    participant App as Receiver App<br/>(foreground)
-    participant FCM as FCM
-    participant App2 as Receiver App<br/>(background)
-
-    Chat->>MQ: msg event
-    MQ->>Fan: pickup
-    Fan->>GW: lookup user's gateway
-    alt user is connected
-        GW->>App: WS MESSAGE_INCOMING
-        App->>App: decrypt, render, write Room
-    else user is offline / background
-        Fan->>FCM: send data payload
-        FCM->>App2: wake (high priority data push)
-        App2->>App2: decrypt, store in Room, post notification
-    end
-```
-
-**FCM data push details:**
-- `priority: high` ensures wake under Doze (up to N pushes per day per app).
-- Payload is the ciphertext + sender + msg_id (≤ 4KB FCM limit; larger messages send only a "you have a message" notice and the app fetches the body on wake).
-- The push handler is a `BroadcastReceiver` → enqueues a `WorkManager` job for actual decryption + DB write to avoid blocking the FCM thread.
-
-### 5.4 Read receipts state machine
-
-```mermaid
-stateDiagram-v2
-    [*] --> CREATED: client UUID
-    CREATED --> SENT: server ACK
-    SENT --> DELIVERED: recipient app received
-    DELIVERED --> READ: recipient app viewed
-    SENT --> FAILED: max retries exceeded
-    READ --> [*]
-```
-
-State transitions are events on the message, persisted in Cassandra:
-
-```cql
-CREATE TABLE message_receipts (
-    conversation_id UUID,
-    message_id TIMEUUID,
-    recipient_id UUID,
-    delivered_at BIGINT,
-    read_at BIGINT,
-    PRIMARY KEY ((conversation_id, message_id), recipient_id)
-);
-```
-
-For 1:1, "delivered" and "read" are atomic events.
-
-For groups, the same row exists per recipient. "Delivered to 47 of 50" / "Read by 12 of 50" — UI sums the receipt rows. This is why group read receipts are sometimes hidden or aggregated: showing per-member status in a 200-member group spams the UI.
-
-Privacy-aware read receipts: a per-user setting can suppress sending the `READ` event. The receiver still tracks locally; the sender just doesn't see the blue check.
-
-### 5.5 Multi-device sync
-
-A user has phone + tablet + web simultaneously. All must show the same conversation state.
-
-Approach 1: **Server as source of truth** (Slack, Telegram).
-- Every device opens its own WebSocket, identified by `device_id`.
-- Server fans out every message to every device of the user.
-- Each device confirms delivery.
-- Read receipt: when the user reads on phone, phone sends `READ`, server fans out a `MESSAGE_READ` event to tablet and web so they too mark the message read.
-
-Approach 2: **Primary device + companion** (WhatsApp's old model).
-- Phone is the "owner" of the user's chat history.
-- Other devices (web, desktop) pair with phone, sync via phone.
-- Phone must be online for companions to work.
-
-Modern WhatsApp uses a hybrid where each device has its own key but the server still distributes ciphertext. The Signal Protocol's per-device sessions handle this — each device has its own Double Ratchet state.
-
-E2EE complication: the sender must encrypt the message N times, once per recipient device. A 4-device group of 5 members = 20 encryptions per send. This is why E2EE scales worse than plaintext for large groups (more on this in §7).
-
----
-
-## 6. Group Messaging at Scale
-
-### 6.1 Fan-out strategies by group size
-
-| Group size | Strategy | Why |
-|---|---|---|
-| 2 | Direct routing | Trivially the recipient's gateway |
-| 3-200 | Synchronous fan-out on send | Chat Service writes once, loops recipients, returns ACK |
-| 200-1,000 | Async fan-out via MQ | Send returns immediately; workers fan out |
-| 1,000-100K | Sharded fan-out workers | Partition members; multiple workers parallel-deliver |
-| 100K+ | "Channels" — pull-based | Receiver pulls from a topic on demand |
-
-### 6.2 Small-group fan-out (≤200 members)
-
-```kotlin
-// Pseudocode in Chat Service
-fun handleGroupMessage(msg: Message) {
-    persistToCassandra(msg)
-    val members = groupService.members(msg.conversationId)  // cached
-    for (m in members) {
-        if (m.userId == msg.senderId) continue
-        outbound.enqueue(deliverEvent(m.userId, msg))
-        receiptDb.markPending(msg, m)
-    }
-    ack(msg.senderId, msg.id)
-}
-```
-
-Direct loop. For 200 members and ~1ms per enqueue, ACK to sender within 200ms — within budget.
-
-### 6.3 Large-group fan-out (≥1,000)
-
-```mermaid
-sequenceDiagram
-    participant App as Sender
-    participant Chat as Chat Service
-    participant DB as Cassandra
-    participant MQ as Kafka<br/>(group_id partition)
-    participant W1 as Worker 1
-    participant W2 as Worker 2
-    participant GW as Gateways
-
-    App->>Chat: send
-    Chat->>DB: persist
-    Chat->>MQ: publish fanout event {msg, group_id}
-    Chat-->>App: ACK (immediate)
-
-    MQ->>W1: claim partition slice (members 0-499)
-    MQ->>W2: claim partition slice (members 500-999)
-    par
-        W1->>GW: deliver to members[0..499]
-    and
-        W2->>GW: deliver to members[500..999]
-    end
-```
-
-Worker partitioning: members are sharded into batches of ~500. Each worker handles one batch independently. With 10 workers, a 5,000-member group fans out in ~100ms instead of seconds.
-
-### 6.4 Membership changes
-
-Adding/removing a member is a privileged event:
-
-```kotlin
-data class GroupEvent(
-    val eventType: GroupEventType,   // ADD_MEMBER, REMOVE_MEMBER, CHANGE_ADMIN, CHANGE_NAME
-    val actor: UserId,
-    val target: UserId?,
-    val timestamp: Long
-)
-```
-
-Events flow through the same message channel as text. Each member's app processes the event, updates local Room, re-renders. Encryption keys rotate on membership change (see §7.4) to prevent removed members from reading future messages.
-
----
-
-## 7. End-to-End Encryption (Signal Protocol Deep Dive)
-
-E2EE means **the server cannot read message contents**, even with full DB access. Signal Protocol (used by Signal, WhatsApp, Messenger, Google Messages RCS) achieves this with two components:
-
-1. **X3DH (Extended Triple Diffie-Hellman)** — initial key agreement when two parties first message.
-2. **Double Ratchet** — forward-secret encryption for ongoing conversation.
-
-### 7.1 X3DH: starting a conversation
-
-Each user uploads a **prekey bundle** to the server when registering:
-
-```
-Identity Key (IK):              long-lived; ed25519 signing key, x25519 derive key
-Signed Prekey (SPK):            rotated every few weeks; signed by IK
-Signed Prekey Signature:        proof SPK comes from IK's owner
-One-Time Prekeys (OPK):         batches of ~100; consumed once each
-```
-
-When Alice wants to start a chat with Bob:
-
-```mermaid
-sequenceDiagram
-    participant A as Alice
-    participant S as Server
-    participant B as Bob
-
-    A->>S: GET /keys/prekey-bundle/bob
-    S-->>A: { IK_B, SPK_B, sig, OPK_B }
-    Note over A: Verify sig(SPK_B) using IK_B
-    A->>A: Generate ephemeral key EK_A
-    A->>A: Compute SK = KDF(<br/>DH(IK_A, SPK_B)<br/>+ DH(EK_A, IK_B)<br/>+ DH(EK_A, SPK_B)<br/>+ DH(EK_A, OPK_B))
-    A->>A: encrypt(msg, SK) → ciphertext + initial Ratchet state
-    A->>S: send { ciphertext, IK_A, EK_A, OPK_id }
-    S->>B: deliver
-    B->>B: Compute same SK using IK_A, EK_A
-    B->>B: decrypt, initialize Ratchet with SK
-```
-
-The four Diffie-Hellman computations bind: Alice's identity, Bob's identity, Alice's ephemeral, Bob's signed prekey, and Bob's one-time prekey. The result is a 256-bit shared secret known only to Alice and Bob. The OPK (one-time) provides **forward secrecy for the first message** — even if Bob's IK is later compromised, that one message is safe.
-
-### 7.2 Double Ratchet: ongoing messages
-
-After X3DH, both parties share a 256-bit root key. The Double Ratchet derives per-message keys with two combined mechanisms:
-
-**Symmetric ratchet (per message):** each message advances a chain key via HKDF. The message key is derived from the chain key. Used → discarded.
-
-```
-chain_key_n = HKDF(chain_key_{n-1}, "Constant")
-message_key_n = HKDF(chain_key_n, "MessageKey")
-```
-
-This gives **forward secrecy**: stealing the current state can't decrypt past messages.
-
-**DH ratchet (per session round-trip):** each time the conversation direction changes, a new DH key pair is generated and exchanged. The root key advances by `KDF(old_root, DH(new_pair))`.
-
-```
-root_key_new = HKDF(root_key_old, DH(my_new_dh_priv, their_new_dh_pub))
-```
-
-This gives **post-compromise security** ("future secrecy"): if the state leaks at time T, a single round-trip exchange re-secures the conversation by T+1.
-
-```mermaid
-sequenceDiagram
-    participant A as Alice
-    participant B as Bob
-
-    Note over A,B: After X3DH; root_key = SK
-    A->>A: gen DH_A1
-    A->>B: msg1 {ciphertext, DH_A1_pub}
-    B->>B: root_key = KDF(root_key, DH(DH_B_init, DH_A1_pub))
-    B->>B: decrypt with first chain_key from new root
-    B->>B: gen DH_B1
-    B->>A: msg2 {ciphertext, DH_B1_pub}
-    A->>A: root_key = KDF(root_key, DH(DH_A1_priv, DH_B1_pub))
-    Note over A,B: Each direction-change rotates root key
-```
-
-The actual implementation has more — handling out-of-order messages, retaining a small window of past keys, etc. — but this is the core.
-
-### 7.3 Android implementation outline
-
-```kotlin
-// Using libsignal (org.signal:libsignal-client)
-
-class SignalSession(
-    private val store: SignalProtocolStore,    // wraps Room + Keystore
-    private val recipientAddress: SignalProtocolAddress
-) {
-    suspend fun encrypt(plaintext: ByteArray): CiphertextMessage = withContext(Dispatchers.Default) {
-        val cipher = SessionCipher(store, recipientAddress)
-        cipher.encrypt(plaintext)
-    }
-
-    suspend fun decrypt(ciphertext: CiphertextMessage): ByteArray = withContext(Dispatchers.Default) {
-        val cipher = SessionCipher(store, recipientAddress)
-        when (ciphertext.type) {
-            CiphertextMessage.PREKEY_TYPE -> cipher.decrypt(ciphertext as PreKeySignalMessage)
-            CiphertextMessage.WHISPER_TYPE -> cipher.decrypt(ciphertext as SignalMessage)
-            else -> error("Unknown ciphertext type")
-        }
-    }
-}
-```
-
-The `SignalProtocolStore` persists:
-- Identity key pair (in Android Keystore, hardware-backed where available)
-- Signed prekey rotations
-- One-time prekeys (consumed on use)
-- Per-session state (Double Ratchet root key, sending/receiving chain keys, DH pairs)
-- Identity verification fingerprints for known peers
-
-Storage layout:
-
-```kotlin
-@Entity(tableName = "signal_sessions")
-data class SignalSessionRow(
-    @PrimaryKey val addressAndDevice: String,  // "+15551234567:1"
-    val sessionStructure: ByteArray             // Protobuf-encoded Double Ratchet state
-)
-```
-
-The Double Ratchet state is opaque to the app; libsignal manages it.
-
-### 7.4 Group encryption: Sender Keys vs MLS
-
-**The naïve approach**: encrypt the message N times (once per recipient using their pairwise Double Ratchet). This is what's used for small groups. For 1,000 members, this is 1,000 encryptions per send — expensive.
-
-**Sender Keys (WhatsApp's old approach):**
-- Each sender generates a per-group sender key.
-- Distributes it via the pairwise Double Ratchet to each member (still N pairwise messages, but only on first message).
-- Subsequent group messages: encrypt once with the sender key, broadcast to all.
-- Membership changes: rotate sender key.
-
-**MLS (Messaging Layer Security, IETF RFC 9420, 2023):**
-- Tree-based key agreement, similar to TreeKEM.
-- Adding/removing a member updates O(log N) nodes in the tree instead of O(N).
-- One ciphertext per message regardless of group size.
-- Forward secrecy and post-compromise security maintained across the group.
-- Now standardized; Signal, Wire, and others have adopted or are adopting it.
+### 4.2 Layered architecture inside :feature:chat
 
 ```mermaid
 flowchart TB
-    subgraph Tree["MLS Ratchet Tree"]
-        Root[Root key]
-        Mid1[Internal node]
-        Mid2[Internal node]
-        L1[Leaf: Member A]
-        L2[Leaf: Member B]
-        L3[Leaf: Member C]
-        L4[Leaf: Member D]
-        Root --> Mid1
-        Root --> Mid2
-        Mid1 --> L1
-        Mid1 --> L2
-        Mid2 --> L3
-        Mid2 --> L4
-    end
+    UI["Compose UI<br/>ConversationListScreen, ChatScreen, Composer"]
+    VM["ViewModels<br/>ConversationListVM, ChatVM, ComposerVM"]
+    Repo["Repository (Domain boundary)<br/>ChatRepository, ConversationRepository"]
+    Sources["Data sources"]
+    Room["Room (Single Source of Truth)"]
+    WS["WebSocket client"]
+    REST["Retrofit (REST + media)"]
+    FCM["FCM Service"]
+    Crypto["libsignal + Keystore"]
+
+    UI <--> VM
+    VM <--> Repo
+    Repo --> Sources
+    Sources --> Room
+    Sources --> WS
+    Sources --> REST
+    Sources --> FCM
+    Sources --> Crypto
+
+    UI -.->|observes Flow from Room| Room
 ```
 
-A member can derive the root key from its leaf + the public path to root. Updating one leaf changes only the path's keys — log(N) operations.
-
-For a Staff-level chat design, MLS is the future-facing default for new builds. WhatsApp's existing Sender Keys are entrenched and remain correct.
-
-### 7.5 Identity verification (safety numbers)
-
-After X3DH, both Alice and Bob can compute a deterministic 60-digit "safety number" from `IK_A || IK_B`. Comparing it (in-person or via screenshot over another channel) confirms there was no MITM at session start. The UI prompts users to verify; once verified, the contact gets a checkmark.
-
-If either user's identity key changes (reinstall, new device without backup), the session resets — and the UI surfaces a security warning ("Bob's safety number changed").
+**Key rule**: the UI reads from Room via Flow. It never reads directly from the network. Networking writes into Room; Room re-emits; UI recomposes. This makes offline-first work automatically — when the network is absent, the UI keeps showing cached data; when it returns, Room updates and the UI smoothly refreshes.
 
 ---
 
-## 8. Connection Management & Mobile Constraints
+## 5. Local Storage — Room (Single Source of Truth)
 
-### 8.1 Foreground WebSocket lifecycle
+### 5.1 Schema
 
 ```kotlin
-class ChatSocket(
-    private val tokenProvider: TokenProvider,
-    private val scope: CoroutineScope
-) {
-    private var socket: WebSocket? = null
-    private val reconnectBackoff = ExponentialBackoff(initial = 1.seconds, max = 30.seconds, jitter = 0.5)
-
-    fun connect() {
-        val request = Request.Builder()
-            .url("wss://chat.example.com/v1/socket")
-            .header("Authorization", "Bearer ${tokenProvider.current()}")
-            .build()
-        socket = client.newWebSocket(request, object : WebSocketListener() {
-            override fun onOpen(ws: WebSocket, resp: Response) {
-                reconnectBackoff.reset()
-                send(buildAuthMessage())
-                startHeartbeat()
-                drainOutbox()
-                sendSyncRequest()
-            }
-            override fun onMessage(ws: WebSocket, text: String) {
-                handleFrame(text)
-            }
-            override fun onClosed(ws: WebSocket, code: Int, reason: String) {
-                scheduleReconnect()
-            }
-            override fun onFailure(ws: WebSocket, t: Throwable, resp: Response?) {
-                scheduleReconnect()
-            }
-        })
-    }
-
-    private fun scheduleReconnect() {
-        scope.launch {
-            delay(reconnectBackoff.next())
-            connect()
-        }
-    }
-
-    private fun startHeartbeat() {
-        scope.launch {
-            while (isActive) {
-                delay(30.seconds)
-                socket?.send("""{"type":"PING"}""")
-            }
-        }
-    }
-}
-```
-
-Reconnect with exponential backoff + jitter is critical: when a load balancer fails and 1M clients disconnect, naïve "reconnect immediately" creates a thundering herd that prevents the LB from recovering. Jitter spreads attempts across a window.
-
-### 8.2 Background — FCM data pushes
-
-When the user backgrounds the app:
-
-1. `onStop()` → after a brief grace period (~30s in case they come back), disconnect the WebSocket.
-2. Server marks the user offline; future messages route via FCM.
-3. New message → server builds FCM data payload `{ msg_id, sender, ciphertext, msg_type }` → FCM delivers to device.
-4. App's `FirebaseMessagingService` receives the payload, hands it to a `WorkManager` job.
-5. Job decrypts (Double Ratchet state available in Keystore-protected Room), writes to local DB, posts a notification.
-
-FCM data pushes with `priority: high` bypass Doze mode. There are quotas (Android 9+: ~20-50 high-priority pushes per app per day, more if user engages with notifications). Strategy: every message is a data push, but the *content* is the ciphertext; if the message is too large for FCM's 4KB limit, push a "you have a message" notice and the app fetches the body on wake.
-
-### 8.3 Connection multiplexing for multi-device
-
-A user with phone + tablet + web means three sockets per user. The server's connection registry:
-
-```
-sockets:{user_id} → set { device_id → gateway_instance }
-
-User_99:
-  device_iphone_a1b2c3 → gw-7
-  device_ipad_d4e5f6  → gw-12
-  device_web_browser  → gw-3
-```
-
-Outgoing fan-out iterates this set. A message to user_99 fans out to all three. Each device has its own E2EE session, so each receives its own ciphertext.
-
-### 8.4 Network classification & adaptive behavior
-
-On the client:
-
-```kotlin
-when (networkType) {
-    WIFI -> {
-        wsHeartbeat = 30.seconds
-        mediaQuality = ORIGINAL
-        preconnect = true
-    }
-    CELLULAR_4G_OR_BETTER -> {
-        wsHeartbeat = 45.seconds       // longer to save battery
-        mediaQuality = HIGH
-    }
-    CELLULAR_3G_OR_WORSE -> {
-        wsHeartbeat = 60.seconds
-        mediaQuality = LOW
-        useRestFallback = true          // WebSocket may be unstable
-    }
-    NONE -> {
-        disconnect = true
-        outboxOnly = true
-    }
-}
-```
-
----
-
-## 9. Media (Images, Video, Voice Notes)
-
-### 9.1 Upload flow
-
-```mermaid
-sequenceDiagram
-    participant A as App
-    participant Media as Media Service
-    participant Blob as S3
-    participant CDN as CDN
-    participant Chat as Chat Service
-
-    A->>A: compress image (5MB → 200KB WebP / HEIC)
-    A->>A: derive media_id = sha256(bytes)
-    A->>Media: POST /v1/media/init {media_id, mime_type, size}
-    Media-->>A: { upload_url (presigned S3), download_url }
-    A->>Blob: PUT upload_url, encrypted bytes
-    Blob-->>A: 200 OK
-    A->>Chat: send message {type=IMAGE, media_id, ciphertext_meta}
-    Chat->>Chat: normal flow
-    Note over A: Recipients fetch via CDN, decrypt locally
-```
-
-### 9.2 E2EE for media
-
-Plain media URLs would leak. Instead:
-
-1. Client generates a random 256-bit key `K`.
-2. Encrypts media bytes with `AES-GCM(K)`.
-3. Uploads encrypted bytes to S3 — server only sees ciphertext.
-4. Sends `K` (along with `media_id`, mime, dimensions) inside the chat message ciphertext — so only recipients see it.
-5. Recipient downloads from CDN, decrypts with `K`.
-
-Server-side: never sees plaintext media. CDN caches encrypted bytes; cache hits across users without leakage.
-
-### 9.3 Adaptive media
-
-- **Thumbnail** (small, blurhash placeholder) embedded directly in message — visible immediately.
-- **Full media** downloaded on tap (or auto on Wi-Fi).
-- **Voice notes**: encoded as Opus at ~32 kbps; a 10s note is ~40 KB.
-- **Video**: HLS-style chunked streaming via signed CDN URLs; entire file rarely downloaded.
-
----
-
-## 10. Failure Modes & Bottlenecks
-
-### 10.1 Thundering herd reconnect
-
-**Scenario:** A Gateway crashes; 100K sockets simultaneously try to reconnect.
-
-**Defense:**
-- Client backoff with jitter (described above).
-- Server: rate-limit per source IP at LB.
-- Server: queue overflow → return 503 Retry-After.
-- Capacity: provision Gateway pool with N+2 redundancy so any single crash absorbed by neighbors.
-
-### 10.2 Hot conversation (celebrity / public chat)
-
-**Scenario:** A 1,000-member group where one person posts and thousands read.
-
-**Defense:**
-- Cassandra partition key includes time bucket so hot conversation distributes across days.
-- Use of `(conversation_id, bucket)` partition key avoids hotspot.
-- Read amplification: cache recent N messages in Redis with TTL.
-- Group fan-out: parallel workers as in §6.3.
-
-### 10.3 Message ordering across multiple senders in a group
-
-**Problem:** Alice and Bob both send to the same group simultaneously. Different fan-out workers handle them. Members receive in different orders.
-
-**Defense:**
-- Server assigns monotonically increasing message IDs per conversation (Snowflake-style or Cassandra TIMEUUID).
-- Clients display sorted by server message ID, not client timestamp.
-- A late-arriving message is inserted in its correct position, not appended.
-
-### 10.4 Out-of-order in Double Ratchet
-
-**Problem:** Alice sends msg 5, 6, 7. Bob receives 7, 5, 6 due to network reorder. Double Ratchet's chain key advances per message — msg 7 expects to be msg 5's successor.
-
-**Defense:** libsignal retains a skipped-message-keys cache (~1,000 entries). Each message header includes its chain index; out-of-order arrivals look up the right key.
-
-### 10.5 Lost message — exactly-once delivery
-
-**Truth:** TCP, Kafka, and the app layer are not exactly-once. They're at-least-once or at-most-once. We achieve exactly-once *to user* via:
-
-- Client UUID idempotency at send side.
-- Server-side `INSERT IF NOT EXISTS` keyed on `(conversation_id, message_id)`.
-- Client-side dedup on receive (Room's PK is `message_id`; second insert is a no-op).
-
-### 10.6 Battery drain
-
-**Defense:**
-- Disconnect WebSocket on background.
-- Batch FCM-triggered DB writes.
-- Throttle typing indicators (max 1 update per 5s while typing).
-- Coalesce read receipts (send "read up to msg_id X" instead of N individual events).
-
-### 10.7 Encryption key rotation lag
-
-**Problem:** Bob hasn't connected in 30 days. His signed prekey expired. New messages from Alice can't initialize a session.
-
-**Defense:**
-- Server returns SPK + cached OPK; Alice uses old SPK as long as the bundle exists.
-- Bob's reconnect uploads new SPK and OPKs immediately.
-- Acceptable security: SPK rotation is *added* security; using an older SPK temporarily is OK as long as identity key hasn't changed.
-
----
-
-## 11. Storage & Retention
-
-### 11.1 Server-side retention policy
-
-- **Undelivered messages**: stored until delivered or TTL (~30 days) expires.
-- **Delivered messages**: optional retention. Pure E2EE platforms (Signal) often delete server-side immediately after delivery. WhatsApp keeps server backup until all devices ACK delivery.
-- **Read messages**: client-side only (server has done its job).
-- **Media blobs**: TTL ~30 days unencrypted access; encrypted blobs may persist longer for backup.
-
-### 11.2 Client-side storage
-
-```kotlin
-@Entity(tableName = "messages",
-    indices = [Index("conversationId"), Index("timestamp")])
-data class Message(
+@Entity(tableName = "conversations",
+    indices = [Index("lastMessageAt")])
+data class ConversationEntity(
     @PrimaryKey val id: String,
+    val title: String?,                          // null for 1:1; group name otherwise
+    val type: String,                            // "DIRECT" | "GROUP"
+    val avatarRef: String?,
+    val lastMessagePreview: String?,
+    val lastMessageAt: Long,
+    val unreadCount: Int,
+    val isMuted: Boolean,
+    val draftText: String?,                      // composer draft survives kill
+    val syncCursor: Long                          // last serverTs we've synced
+)
+
+@Entity(tableName = "messages",
+    indices = [Index("conversationId", "serverTs"), Index("status")],
+    foreignKeys = [ForeignKey(entity = ConversationEntity::class,
+        parentColumns = ["id"], childColumns = ["conversationId"],
+        onDelete = ForeignKey.CASCADE)])
+data class MessageEntity(
+    @PrimaryKey val id: String,                  // client UUID (also idempotency key)
     val conversationId: String,
     val senderId: String,
-    val plaintext: String?,        // decrypted, in-memory or in Keystore-encrypted Room
+    val plaintext: String?,                      // decrypted body; null if not yet decrypted
     val mediaRef: String?,
-    val timestamp: Long,
-    val sendStatus: SendStatus,
-    val deliveryStatus: DeliveryStatus,
-    val readStatus: ReadStatus,
+    val type: String,                            // "TEXT" | "IMAGE" | "VIDEO" | "VOICE" | "FILE" | "SYSTEM"
     val replyToId: String? = null,
+    val status: String,                          // "PENDING" | "SENDING" | "SENT" | "DELIVERED" | "READ" | "FAILED"
+    val createdAt: Long,                         // client-side wall clock at compose
+    val serverTs: Long? = null,                  // server-assigned monotonic order
     val edited: Boolean = false
+)
+
+@Entity(tableName = "outbox",
+    indices = [Index("state"), Index("nextAttemptAt")])
+data class OutboxEntry(
+    @PrimaryKey val msgId: String,               // == MessageEntity.id
+    val conversationId: String,
+    val ciphertext: ByteArray,                   // already encrypted, ready to send
+    val mediaRef: String? = null,
+    val attemptCount: Int = 0,
+    val nextAttemptAt: Long = 0,
+    val state: String                            // "PENDING" | "IN_FLIGHT" | "FAILED_PERMANENT"
+)
+
+@Entity(tableName = "signal_sessions")
+data class SignalSessionEntity(
+    @PrimaryKey val addressAndDevice: String,    // "user_id:device_id"
+    val sessionBytes: ByteArray                  // opaque libsignal session
+)
+
+@Entity(tableName = "media_cache",
+    indices = [Index("lastAccessedAt")])
+data class MediaCacheEntry(
+    @PrimaryKey val mediaRef: String,
+    val localPath: String,
+    val mimeType: String,
+    val sizeBytes: Long,
+    val lastAccessedAt: Long
 )
 ```
 
-For privacy: Room database is encrypted via SQLCipher (key in Android Keystore). Even with root, the DB file is opaque.
+### 5.2 DAOs and Flow exposure
 
-Storage budget: 1KB per message × 100K messages = 100MB. Acceptable.
+```kotlin
+@Dao
+interface MessageDao {
+    @Query("""
+        SELECT * FROM messages
+        WHERE conversationId = :conversationId
+        ORDER BY COALESCE(serverTs, createdAt) DESC
+    """)
+    fun pagingSource(conversationId: String): PagingSource<Int, MessageEntity>
 
-Pruning: optional, user-driven ("Clear conversation history older than 6 months").
+    @Query("SELECT * FROM messages WHERE conversationId = :id ORDER BY COALESCE(serverTs, createdAt) DESC LIMIT 1")
+    fun lastMessage(id: String): Flow<MessageEntity?>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)   // PK is client UUID → idempotent insert
+    suspend fun insert(msg: MessageEntity): Long
+
+    @Update suspend fun update(msg: MessageEntity)
+
+    @Query("UPDATE messages SET status = :status WHERE id = :id")
+    suspend fun setStatus(id: String, status: String)
+
+    @Transaction
+    suspend fun upsertFromServer(msg: MessageEntity) {
+        val existing = getById(msg.id)
+        if (existing == null) insert(msg)
+        else if (existing.serverTs == null) update(msg)   // we sent it, now we have serverTs
+        // else: keep existing (already authoritative)
+    }
+
+    @Query("SELECT * FROM messages WHERE id = :id")
+    suspend fun getById(id: String): MessageEntity?
+}
+
+@Dao
+interface ConversationDao {
+    @Query("SELECT * FROM conversations ORDER BY lastMessageAt DESC")
+    fun pagingSource(): PagingSource<Int, ConversationEntity>
+
+    @Query("SELECT * FROM conversations WHERE id = :id")
+    fun observe(id: String): Flow<ConversationEntity?>
+
+    @Query("UPDATE conversations SET draftText = :draft WHERE id = :id")
+    suspend fun saveDraft(id: String, draft: String?)
+}
+```
+
+`Flow` return types let the UI subscribe. Any insert/update triggers re-emission; Compose recomposes.
+
+### 5.3 Encryption at rest
+
+```kotlin
+@Database(
+    entities = [
+        ConversationEntity::class, MessageEntity::class,
+        OutboxEntry::class, SignalSessionEntity::class, MediaCacheEntry::class
+    ],
+    version = 7,
+    autoMigrations = [AutoMigration(from = 6, to = 7)]
+)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun messageDao(): MessageDao
+    abstract fun conversationDao(): ConversationDao
+    abstract fun outboxDao(): OutboxDao
+    abstract fun signalDao(): SignalSessionDao
+}
+
+@Module @InstallIn(SingletonComponent::class)
+object DatabaseModule {
+    @Provides @Singleton
+    fun provideDatabase(@ApplicationContext ctx: Context, keyProvider: SqlCipherKeyProvider): AppDatabase {
+        val passphrase: ByteArray = keyProvider.passphrase()    // sourced from Android Keystore
+        val factory = SupportFactory(passphrase)
+        return Room.databaseBuilder(ctx, AppDatabase::class.java, "chat.db")
+            .openHelperFactory(factory)
+            .addMigrations(...)
+            .build()
+    }
+}
+```
+
+The DB passphrase is wrapped by a hardware-backed key in the Android Keystore. Even with root, the DB file is opaque AES-encrypted ciphertext.
 
 ---
 
-## 12. Mobile-Specific Concerns
+## 6. UI Layer — Compose
 
-| Concern | Strategy |
+### 6.1 Conversation list
+
+```kotlin
+@Composable
+fun ConversationListScreen(
+    viewModel: ConversationListViewModel = hiltViewModel(),
+    onConversationClick: (String) -> Unit
+) {
+    val items = viewModel.conversations.collectAsLazyPagingItems()
+    val connectionStatus by viewModel.connectionStatus.collectAsStateWithLifecycle()
+
+    Column(Modifier.fillMaxSize()) {
+        ConnectionBanner(connectionStatus)
+        LazyColumn(Modifier.fillMaxSize()) {
+            items(items.itemCount, key = items.itemKey { it.id }) { i ->
+                val convo = items[i] ?: return@items
+                ConversationRow(
+                    title = convo.title ?: convo.id,
+                    preview = convo.lastMessagePreview ?: "",
+                    timestamp = convo.lastMessageAt.toDisplayTime(),
+                    unreadCount = convo.unreadCount,
+                    onClick = { onConversationClick(convo.id) }
+                )
+            }
+        }
+    }
+}
+```
+
+`collectAsLazyPagingItems()` ties Paging 3 to Compose. Each new conversation update flows through Room → ViewModel → UI without manual list management.
+
+### 6.2 Chat screen with reverse-layout LazyColumn
+
+```kotlin
+@Composable
+fun ChatScreen(
+    viewModel: ChatViewModel = hiltViewModel(),
+    onBack: () -> Unit
+) {
+    val messages = viewModel.messages.collectAsLazyPagingItems()
+    val composerState by viewModel.composerState.collectAsStateWithLifecycle()
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(messages.itemCount) {
+        // Smooth scroll to bottom when a new message arrives if user is at bottom
+        if (listState.firstVisibleItemIndex == 0) {
+            listState.animateScrollToItem(0)
+        }
+    }
+
+    Scaffold(
+        topBar = { ChatTopBar(viewModel.title, viewModel.presence, onBack) },
+        bottomBar = {
+            Composer(
+                state = composerState,
+                onTextChange = viewModel::onComposerTextChange,
+                onSend = viewModel::send,
+                onAttachMedia = viewModel::onAttachMedia
+            )
+        }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.padding(padding).fillMaxSize(),
+            state = listState,
+            reverseLayout = true        // newest at bottom
+        ) {
+            items(messages.itemCount, key = messages.itemKey { it.id }) { i ->
+                val msg = messages[i] ?: return@items
+                MessageBubble(
+                    text = msg.plaintext ?: "[encrypted]",
+                    status = msg.status,
+                    isFromMe = msg.senderId == viewModel.myUserId,
+                    serverTs = msg.serverTs,
+                    media = msg.mediaRef?.let { MediaRef(it) }
+                )
+            }
+        }
+    }
+}
+```
+
+**Why `reverseLayout = true`**: it inverts the layout direction so item index 0 is at the *bottom*. New incoming messages can be prepended (index 0) and Compose automatically holds the user's scroll position rather than shifting content. The mental model is "scroll up to see history."
+
+### 6.3 Composer with media + typing
+
+```kotlin
+@Composable
+fun Composer(
+    state: ComposerState,
+    onTextChange: (String) -> Unit,
+    onSend: () -> Unit,
+    onAttachMedia: (Uri) -> Unit
+) {
+    val pickMedia = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri -> uri?.let(onAttachMedia) }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = {
+            pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
+        }) { Icon(Icons.Default.AttachFile, null) }
+
+        TextField(
+            value = state.text,
+            onValueChange = onTextChange,
+            modifier = Modifier.weight(1f),
+            placeholder = { Text("Type a message") }
+        )
+
+        IconButton(onClick = onSend, enabled = state.canSend) {
+            Icon(Icons.Default.Send, null)
+        }
+    }
+}
+```
+
+### 6.4 Lifecycle-aware collectors
+
+Always use `collectAsStateWithLifecycle()`, not `collectAsState()`. The lifecycle-aware variant stops collecting when the screen goes to STOPPED and resumes when it returns. This saves CPU and avoids race conditions where backgrounded screens consume updates they don't need.
+
+---
+
+## 7. ViewModels
+
+### 7.1 ConversationListViewModel
+
+```kotlin
+@HiltViewModel
+class ConversationListViewModel @Inject constructor(
+    private val conversationRepository: ConversationRepository,
+    private val connectionStatusObserver: ConnectionStatusObserver,
+    private val syncManager: SyncManager
+) : ViewModel() {
+    val conversations: Flow<PagingData<ConversationEntity>> =
+        conversationRepository.pagingConversations()
+            .cachedIn(viewModelScope)
+
+    val connectionStatus: StateFlow<ConnectionStatus> = connectionStatusObserver.status
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ConnectionStatus.Unknown)
+
+    init { viewModelScope.launch { syncManager.requestSync() } }
+}
+```
+
+### 7.2 ChatViewModel with SavedStateHandle
+
+```kotlin
+@HiltViewModel
+class ChatViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
+    private val chatRepository: ChatRepository,
+    private val conversationRepository: ConversationRepository,
+    private val mediaUploader: MediaUploader,
+    @Authenticated val myUserId: String
+) : ViewModel() {
+    private val conversationId: String = checkNotNull(savedStateHandle["conversationId"])
+
+    val title = conversationRepository.observe(conversationId).map { it?.title ?: "" }
+    val presence = chatRepository.observePresence(conversationId)
+
+    val messages: Flow<PagingData<MessageEntity>> =
+        chatRepository.pagingMessages(conversationId).cachedIn(viewModelScope)
+
+    // Composer text survives configuration change AND process death via SavedStateHandle
+    private val composerText: StateFlow<String> =
+        savedStateHandle.getStateFlow("composerText", "")
+
+    val composerState: StateFlow<ComposerState> = composerText
+        .map { text -> ComposerState(text = text, canSend = text.isNotBlank()) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ComposerState.empty())
+
+    fun onComposerTextChange(text: String) {
+        savedStateHandle["composerText"] = text
+        viewModelScope.launch { conversationRepository.saveDraft(conversationId, text.takeIf { it.isNotBlank() }) }
+    }
+
+    fun send() {
+        val text = composerText.value
+        if (text.isBlank()) return
+        viewModelScope.launch {
+            chatRepository.send(conversationId, text)
+            savedStateHandle["composerText"] = ""
+        }
+    }
+
+    fun onAttachMedia(uri: Uri) {
+        viewModelScope.launch {
+            val mediaRef = mediaUploader.upload(uri)
+            chatRepository.sendMedia(conversationId, mediaRef)
+        }
+    }
+}
+```
+
+**Why `SavedStateHandle` for composer text**: a `var draft by remember { mutableStateOf("") }` survives only configuration changes. `SavedStateHandle` survives **process death** — if Android kills the app while the user has half-typed a message, they find their draft intact on restart. The same draft is also persisted to Room (longer-term) so it survives across app launches.
+
+### 7.3 State & events
+
+```kotlin
+data class ComposerState(val text: String, val canSend: Boolean) {
+    companion object { fun empty() = ComposerState("", false) }
+}
+
+sealed interface ChatEvent {
+    data class ShowError(val message: String) : ChatEvent
+    data class NavigateToMedia(val mediaRef: String) : ChatEvent
+    data object MessageSent : ChatEvent
+}
+
+// Inside ChatViewModel:
+private val _events = MutableSharedFlow<ChatEvent>(extraBufferCapacity = 8)
+val events: SharedFlow<ChatEvent> = _events.asSharedFlow()
+```
+
+`StateFlow` for UI state (current values). `SharedFlow` for one-shot events (snackbar, navigation). The screen collects events with `repeatOnLifecycle(Lifecycle.State.STARTED)`.
+
+---
+
+## 8. Networking Layer
+
+### 8.1 WebSocket client
+
+```kotlin
+@Singleton
+class ChatWebSocket @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val tokenProvider: TokenProvider,
+    private val json: Json,
+    private val scope: ApplicationScope                 // backed by ProcessLifecycleOwner
+) {
+    private val client = OkHttpClient.Builder()
+        .pingInterval(30, TimeUnit.SECONDS)             // OkHttp sends WS PING frames
+        .readTimeout(0, TimeUnit.SECONDS)               // long-lived
+        .build()
+
+    private var socket: WebSocket? = null
+    private val backoff = ExponentialBackoff(initialMs = 1000, maxMs = 30_000, jitter = 0.5)
+
+    private val _frames = MutableSharedFlow<WsFrame>(extraBufferCapacity = 64)
+    val frames: SharedFlow<WsFrame> = _frames.asSharedFlow()
+
+    private val _state = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
+    val state: StateFlow<ConnectionState> = _state.asStateFlow()
+
+    fun connect() {
+        scope.launch {
+            while (currentCoroutineContext().isActive) {
+                val token = tokenProvider.fetchValidToken()
+                val req = Request.Builder()
+                    .url("wss://chat.example.com/v1/socket")
+                    .header("Authorization", "Bearer $token")
+                    .build()
+                _state.value = ConnectionState.Connecting
+                socket = client.newWebSocket(req, listener)
+                val outcome = awaitClosed()                     // suspends until socket dies
+                _state.value = ConnectionState.Disconnected
+                val delayMs = backoff.next()
+                delay(delayMs)
+            }
+        }
+    }
+
+    fun send(frame: WsFrame): Boolean = socket?.send(json.encodeToString(WsFrame.serializer(), frame)) ?: false
+
+    fun disconnect() {
+        socket?.close(1000, "client requested")
+        socket = null
+        _state.value = ConnectionState.Disconnected
+    }
+
+    private val listener = object : WebSocketListener() {
+        override fun onOpen(ws: WebSocket, response: Response) {
+            backoff.reset()
+            _state.value = ConnectionState.Connected
+        }
+        override fun onMessage(ws: WebSocket, text: String) {
+            scope.launch { _frames.emit(json.decodeFromString(WsFrame.serializer(), text)) }
+        }
+        override fun onClosing(ws: WebSocket, code: Int, reason: String) { ws.close(code, reason) }
+        override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
+            _state.value = ConnectionState.Disconnected
+        }
+    }
+}
+```
+
+`ExponentialBackoff` with jitter is essential — a thundering herd of 1M reconnects after a backend blip melts the load balancer. Add `± 50%` jitter per attempt.
+
+### 8.2 Lifecycle-aware connection policy
+
+```kotlin
+class ChatSocketLifecycleObserver @Inject constructor(
+    private val socket: ChatWebSocket,
+    private val backgroundDisconnectDelay: Duration = 30.seconds
+) : DefaultLifecycleObserver {
+    private var disconnectJob: Job? = null
+
+    override fun onStart(owner: LifecycleOwner) {
+        disconnectJob?.cancel()
+        socket.connect()
+    }
+
+    override fun onStop(owner: LifecycleOwner) {
+        // Brief grace so quick app-switch doesn't churn the socket
+        disconnectJob = ProcessLifecycleOwner.get().lifecycleScope.launch {
+            delay(backgroundDisconnectDelay)
+            socket.disconnect()
+        }
+    }
+}
+
+// In Application class:
+class ChatApp : Application() {
+    @Inject lateinit var socketLifecycleObserver: ChatSocketLifecycleObserver
+    override fun onCreate() {
+        super.onCreate()
+        ProcessLifecycleOwner.get().lifecycle.addObserver(socketLifecycleObserver)
+    }
+}
+```
+
+Foreground → socket open. Background for >30s → socket closes; we rely on FCM until next foregrounding.
+
+### 8.3 FCM data push handler
+
+```kotlin
+@AndroidEntryPoint
+class ChatFcmService : FirebaseMessagingService() {
+    @Inject lateinit var chatRepository: ChatRepository
+    @Inject lateinit var workManager: WorkManager
+    @Inject lateinit var notificationFactory: ChatNotificationFactory
+
+    override fun onMessageReceived(message: RemoteMessage) {
+        val type = message.data["type"] ?: return
+        when (type) {
+            "MSG" -> handleIncomingMessage(message.data)
+            "SYNC_HINT" -> requestImmediateSync()
+            else -> {}
+        }
+    }
+
+    private fun handleIncomingMessage(data: Map<String, String>) {
+        // Light work here; offload to WorkManager because FCM thread is brief
+        val input = workDataOf(
+            "msgId" to data["msgId"],
+            "conversationId" to data["conversationId"],
+            "ciphertext" to data["ciphertext"]
+        )
+        workManager.enqueueUniqueWork(
+            "decrypt-${data["msgId"]}",
+            ExistingWorkPolicy.KEEP,
+            OneTimeWorkRequestBuilder<DecryptAndNotifyWorker>()
+                .setInputData(input)
+                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                .build()
+        )
+    }
+
+    override fun onNewToken(token: String) {
+        // Push new token to backend; user's device registration
+        scope.launch { tokenSyncRepository.upload(token) }
+    }
+}
+```
+
+`FirebaseMessagingService` runs on a brief background thread; never block. Hand off to WorkManager for the decrypt + DB write + notification post.
+
+### 8.4 Connection state observable
+
+```kotlin
+@Singleton
+class ConnectionStatusObserver @Inject constructor(
+    private val socket: ChatWebSocket,
+    @ApplicationContext private val context: Context
+) {
+    val status: Flow<ConnectionStatus> = combine(
+        socket.state,
+        context.networkConnectivityFlow()
+    ) { sock, net ->
+        when {
+            net == NetworkAvailability.None -> ConnectionStatus.Offline
+            sock is ConnectionState.Connected -> ConnectionStatus.Online
+            sock is ConnectionState.Connecting -> ConnectionStatus.Reconnecting
+            else -> ConnectionStatus.Offline
+        }
+    }
+}
+```
+
+The UI shows a banner ("Waiting for network", "Reconnecting…") driven by this combined Flow. Single source of truth for the user's perception of connectivity.
+
+---
+
+## 9. Background Work — WorkManager
+
+### 9.1 Outbox flush worker
+
+```kotlin
+@HiltWorker
+class OutboxFlushWorker @AssistedInject constructor(
+    @Assisted appContext: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val outboxRepository: OutboxRepository,
+    private val chatApi: ChatApi
+) : CoroutineWorker(appContext, workerParams) {
+
+    override suspend fun doWork(): Result {
+        val pending = outboxRepository.getPending(limit = 50)
+        if (pending.isEmpty()) return Result.success()
+
+        return try {
+            val response = chatApi.flushOutbox(pending.toRequest())
+            outboxRepository.markSent(response.ackedIds)
+            outboxRepository.markFailed(response.failedIds)
+            if (outboxRepository.hasPending()) Result.retry() else Result.success()
+        } catch (e: IOException) {
+            Result.retry()
+        }
+    }
+}
+
+@Module @InstallIn(SingletonComponent::class)
+object WorkModule {
+    fun scheduleOutboxFlush(workManager: WorkManager) {
+        val request = OneTimeWorkRequestBuilder<OutboxFlushWorker>()
+            .setConstraints(Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build())
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10.seconds.inWholeMilliseconds, TimeUnit.MILLISECONDS)
+            .build()
+        workManager.enqueueUniqueWork("outbox-flush", ExistingWorkPolicy.KEEP, request)
+    }
+}
+```
+
+Called when:
+- A new message is sent and WebSocket is down.
+- The app starts and `outbox` has pending rows.
+- The user reconnects to network.
+
+`ExistingWorkPolicy.KEEP` prevents duplicate workers stacking up.
+
+### 9.2 Periodic sync worker
+
+```kotlin
+@HiltWorker
+class PeriodicSyncWorker @AssistedInject constructor(
+    @Assisted ctx: Context,
+    @Assisted params: WorkerParameters,
+    private val syncManager: SyncManager
+) : CoroutineWorker(ctx, params) {
+    override suspend fun doWork(): Result {
+        return try {
+            syncManager.syncAll()
+            Result.success()
+        } catch (e: Exception) {
+            Result.retry()
+        }
+    }
+}
+
+// Schedule at app start:
+val periodic = PeriodicWorkRequestBuilder<PeriodicSyncWorker>(15.minutes.toJavaDuration())
+    .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+    .build()
+WorkManager.getInstance(ctx).enqueueUniquePeriodicWork(
+    "periodic-sync", ExistingPeriodicWorkPolicy.KEEP, periodic
+)
+```
+
+Periodic 15-minute sync catches the rare case of missed FCM pushes (FCM has quotas; deep Doze on some OEM ROMs).
+
+---
+
+## 10. Send Message Flow (Client-Side End-to-End)
+
+```mermaid
+sequenceDiagram
+    participant UI as Compose UI
+    participant VM as ChatViewModel
+    participant Repo as ChatRepository
+    participant Room as Room
+    participant Crypto as libsignal
+    participant Out as OutboxRepo
+    participant WS as WebSocket
+    participant WM as WorkManager
+
+    UI->>VM: onSendClick(text)
+    VM->>Repo: send(conversationId, text)
+    Repo->>Crypto: encrypt(text, conversationId)
+    Crypto-->>Repo: ciphertext
+    Repo->>Room: insert MessageEntity(status=PENDING, clientUuid)
+    Note over Room: UI Flow re-emits<br/>bubble appears with 🕒
+    Repo->>Out: enqueue OutboxEntry(ciphertext)
+    Repo->>WS: send MessageSend frame
+
+    alt WS connected
+        WS->>WS: write frame
+        WS-->>Repo: MessageAck inbound
+        Repo->>Room: update status=SENT
+        Repo->>Out: remove
+        Note over Room: UI shows ✓
+    else WS disconnected
+        WS-->>Repo: send failed
+        Repo->>WM: enqueue OutboxFlushWorker
+        Note over WM: runs when network available
+        WM->>Repo: flush()
+        Repo->>Room: update status=SENT for acked
+    end
+```
+
+Key correctness properties:
+
+- **Idempotent insert**: `MessageEntity` PK is the client UUID. Reinserting after a server echo is a no-op via `OnConflictStrategy.IGNORE`.
+- **Optimistic UI**: the bubble appears the instant Room is written (microseconds), not after the server ACKs.
+- **No data loss**: the outbox entry is persisted to disk *before* attempting send. App killed mid-send → resumed on next launch.
+- **Conflated send attempts**: if the user retries by tapping, the UUID dedups on the server.
+
+### 10.1 ChatRepository.send()
+
+```kotlin
+@Singleton
+class ChatRepository @Inject constructor(
+    private val database: AppDatabase,
+    private val crypto: SignalEncrypter,
+    private val socket: ChatWebSocket,
+    private val outboxRepository: OutboxRepository,
+    private val clock: Clock,
+    @Authenticated private val myUserId: String,
+    private val workManager: WorkManager
+) {
+    suspend fun send(conversationId: String, text: String) {
+        val msgId = UUID.randomUUID().toString()
+        val ciphertext = crypto.encryptForConversation(conversationId, text.toByteArray())
+
+        database.withTransaction {
+            database.messageDao().insert(MessageEntity(
+                id = msgId,
+                conversationId = conversationId,
+                senderId = myUserId,
+                plaintext = text,
+                mediaRef = null,
+                type = "TEXT",
+                status = "PENDING",
+                createdAt = clock.millis(),
+                serverTs = null
+            ))
+            outboxRepository.enqueue(OutboxEntry(
+                msgId = msgId,
+                conversationId = conversationId,
+                ciphertext = ciphertext,
+                attemptCount = 0,
+                nextAttemptAt = clock.millis(),
+                state = "PENDING"
+            ))
+        }
+
+        // Try immediate send via WS; failure falls through to WorkManager
+        val sent = socket.send(WsFrame.MessageSend(
+            msgId = msgId, conversationId = conversationId,
+            ciphertext = Base64.encodeToString(ciphertext, Base64.NO_WRAP),
+            ts = clock.millis()
+        ))
+        if (!sent) scheduleOutboxFlush(workManager)
+    }
+}
+```
+
+---
+
+## 11. Receive Message Flow
+
+### 11.1 Foreground (WebSocket inbound)
+
+```kotlin
+@Singleton
+class IncomingFrameRouter @Inject constructor(
+    private val socket: ChatWebSocket,
+    private val chatRepository: ChatRepository,
+    private val scope: ApplicationScope
+) {
+    init {
+        scope.launch {
+            socket.frames.collect { frame ->
+                when (frame) {
+                    is WsFrame.MessageIncoming -> chatRepository.onIncomingMessage(frame)
+                    is WsFrame.MessageAck -> chatRepository.onAck(frame)
+                    is WsFrame.MessageDelivered -> chatRepository.onDelivered(frame)
+                    is WsFrame.MessageRead -> chatRepository.onRead(frame)
+                    is WsFrame.Typing -> chatRepository.onTyping(frame)
+                    is WsFrame.Presence -> chatRepository.onPresence(frame)
+                    is WsFrame.SyncResponse -> chatRepository.onSyncResponse(frame)
+                    else -> {}
+                }
+            }
+        }
+    }
+}
+
+suspend fun ChatRepository.onIncomingMessage(frame: WsFrame.MessageIncoming) {
+    val ciphertext = Base64.decode(frame.ciphertext, Base64.NO_WRAP)
+    val plaintext = try {
+        crypto.decrypt(frame.senderId, ciphertext).toString(Charsets.UTF_8)
+    } catch (e: Exception) {
+        null    // store ciphertext; let user retry decrypt later
+    }
+    database.messageDao().upsertFromServer(MessageEntity(
+        id = frame.msgId,
+        conversationId = frame.conversationId,
+        senderId = frame.senderId,
+        plaintext = plaintext,
+        mediaRef = null,
+        type = "TEXT",
+        status = "DELIVERED",
+        createdAt = frame.serverTs,
+        serverTs = frame.serverTs
+    ))
+    // Send DELIVERED ack back to server
+    socket.send(WsFrame.MessageDelivered(frame.msgId, frame.conversationId, myUserId, ts = clock.millis()))
+}
+```
+
+### 11.2 Background (FCM data push → decrypt + notify)
+
+```kotlin
+@HiltWorker
+class DecryptAndNotifyWorker @AssistedInject constructor(
+    @Assisted ctx: Context,
+    @Assisted params: WorkerParameters,
+    private val chatRepository: ChatRepository,
+    private val notificationFactory: ChatNotificationFactory
+) : CoroutineWorker(ctx, params) {
+
+    override suspend fun doWork(): Result {
+        val msgId = inputData.getString("msgId") ?: return Result.failure()
+        val convId = inputData.getString("conversationId") ?: return Result.failure()
+        val ctxt = inputData.getString("ciphertext") ?: return Result.failure()
+
+        val incomingFrame = WsFrame.MessageIncoming(
+            msgId = msgId, conversationId = convId, senderId = inputData.getString("senderId") ?: "",
+            ciphertext = ctxt, serverTs = System.currentTimeMillis(), ts = System.currentTimeMillis()
+        )
+        chatRepository.onIncomingMessage(incomingFrame)
+
+        notificationFactory.postIncoming(msgId, convId)
+        return Result.success()
+    }
+}
+```
+
+The notification factory uses `MessagingStyle` for grouping:
+
+```kotlin
+class ChatNotificationFactory @Inject constructor(
+    @ApplicationContext private val ctx: Context,
+    private val conversationDao: ConversationDao,
+    private val messageDao: MessageDao
+) {
+    suspend fun postIncoming(msgId: String, convId: String) {
+        val convo = conversationDao.observe(convId).first() ?: return
+        val recent = messageDao.recentForConversation(convId, limit = 7)
+        val personMe = Person.Builder().setName("You").setKey("me").build()
+        val style = NotificationCompat.MessagingStyle(personMe)
+            .setConversationTitle(convo.title)
+            .also { mss ->
+                recent.reversed().forEach { msg ->
+                    val sender = Person.Builder().setName(msg.senderId).setKey(msg.senderId).build()
+                    mss.addMessage(NotificationCompat.MessagingStyle.Message(
+                        msg.plaintext ?: "[encrypted]",
+                        msg.serverTs ?: msg.createdAt,
+                        if (msg.senderId == /* myUserId */ "me") null else sender
+                    ))
+                }
+            }
+
+        val replyIntent = PendingIntent.getBroadcast(
+            ctx, convId.hashCode(),
+            Intent(ctx, ReplyReceiver::class.java).apply {
+                putExtra("conversationId", convId)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        )
+        val remoteInput = RemoteInput.Builder("reply_text").setLabel("Reply").build()
+        val replyAction = NotificationCompat.Action.Builder(
+            R.drawable.ic_reply, "Reply", replyIntent
+        ).addRemoteInput(remoteInput).build()
+
+        val n = NotificationCompat.Builder(ctx, "chat-messages")
+            .setSmallIcon(R.drawable.ic_chat)
+            .setStyle(style)
+            .setContentIntent(deepLinkToChat(convId))
+            .addAction(replyAction)
+            .setAutoCancel(true)
+            .build()
+        NotificationManagerCompat.from(ctx).notify(convId.hashCode(), n)
+    }
+}
+```
+
+`MessagingStyle` is the canonical Android pattern for chat — it groups messages, shows sender avatars, supports inline reply, and integrates with Wear OS / cars.
+
+---
+
+## 12. Offline Behavior & Optimistic UI
+
+The pattern is straightforward once Room is the single source of truth:
+
+| User action | Without network | With network |
+|---|---|---|
+| Open conversation list | Renders from Room | Same; sync in background |
+| Open a conversation | Renders cached messages | Same; sync new messages in background |
+| Send a message | Inserted as PENDING; queued in outbox; bubble shows 🕒 | Same plus immediate WS send → ACK → ✓ |
+| Receive a message | Will arrive on next sync (push or pull) | Arrives via WS or FCM |
+| Edit a draft | Saved to SavedStateHandle + Room | Same |
+
+The UI logic is identical online and offline. The only difference users see is the message status icon (clock vs single check vs double check) and a "Reconnecting…" banner if the connection drops.
+
+---
+
+## 13. Process Death & State Restoration
+
+```mermaid
+sequenceDiagram
+    participant OS as Android OS
+    participant App as Chat App
+    participant SSH as SavedStateHandle
+    participant Room as Room
+    participant Sync as SyncManager
+
+    OS->>App: process killed (low memory)
+    App->>App: dies; SavedStateHandle persisted to disk
+
+    Note over App: ...time passes...
+    OS->>App: restart from saved state (deep link or warm launch)
+    App->>SSH: restore composer text, scroll position, selected conversation
+    App->>Room: render messages from Room (already on disk)
+    App->>Sync: requestSync()
+    Sync->>Sync: read syncCursor from Room
+    Sync->>Sync: GET /sync since=cursor
+    Sync->>Room: insert missed messages
+    Room->>App: Flow re-emits; UI shows new messages
+```
+
+Three things survive process death:
+
+1. **Room** — every cached message, the outbox, the draft saved to `conversations.draftText`.
+2. **`SavedStateHandle`** — the ViewModel's transient state (current scroll position, current composer text, selected media).
+3. **WorkManager** — outbox flush jobs and periodic sync.
+
+What does **not** survive:
+
+- The WebSocket — it must be re-established on restart.
+- In-memory caches outside Room — they rebuild from Room.
+
+The recovery routine is fully deterministic: open the DB, restore state handle, reconnect socket, request sync since the saved cursor.
+
+---
+
+## 14. E2EE Integration on Mobile
+
+The backend can't read messages — the cryptographic guarantee comes from libsignal. As an Android engineer, your job is to integrate the library correctly, not to implement the protocol.
+
+### 14.1 Library: `libsignal-client`
+
+```kotlin
+// build.gradle.kts
+implementation("org.signal:libsignal-client:0.62.0")
+```
+
+### 14.2 Identity key in Android Keystore
+
+```kotlin
+class SignalIdentityProvider @Inject constructor(
+    @ApplicationContext private val ctx: Context,
+    private val signalDao: SignalSessionDao
+) {
+    private val keystoreAlias = "signal-identity-key"
+
+    fun getOrCreateIdentityKeyPair(): IdentityKeyPair {
+        val cached = signalDao.getIdentity()
+        if (cached != null) return IdentityKeyPair(cached.bytes)
+
+        val pair = IdentityKeyPair.generate()
+        val wrapped = wrapWithKeystore(pair.serialize())
+        signalDao.setIdentity(IdentityRow(bytes = wrapped))
+        return pair
+    }
+
+    private fun wrapWithKeystore(plaintext: ByteArray): ByteArray {
+        val keystore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        if (!keystore.containsAlias(keystoreAlias)) generateKeystoreKey()
+        val key = keystore.getKey(keystoreAlias, null) as SecretKey
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply { init(Cipher.ENCRYPT_MODE, key) }
+        val ciphertext = cipher.doFinal(plaintext)
+        return cipher.iv + ciphertext
+    }
+
+    private fun generateKeystoreKey() {
+        val kg = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
+        kg.init(KeyGenParameterSpec.Builder(keystoreAlias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+            .setUserAuthenticationRequired(false)        // background decryption must work
+            .build())
+        kg.generateKey()
+    }
+}
+```
+
+The library's protocol implementation (X3DH key agreement, Double Ratchet message keys, optional MLS for groups) is intentionally **not** your problem. Trust the library; integrate the storage; verify safety numbers in the UI.
+
+### 14.3 Encrypt / decrypt boundary
+
+```kotlin
+@Singleton
+class SignalEncrypter @Inject constructor(
+    private val sessionStore: SignalSessionStore,    // wraps Room
+    private val identityKeyStore: SignalIdentityKeyStore,
+    private val preKeyStore: PreKeyStore,
+    private val signedPreKeyStore: SignedPreKeyStore
+) {
+    suspend fun encryptForConversation(conversationId: String, plaintext: ByteArray): ByteArray =
+        withContext(Dispatchers.Default) {
+            val address = SignalProtocolAddress(conversationId, 1)
+            val cipher = SessionCipher(sessionStore, preKeyStore, signedPreKeyStore, identityKeyStore, address)
+            cipher.encrypt(plaintext).serialize()
+        }
+
+    suspend fun decrypt(senderId: String, ciphertext: ByteArray): ByteArray =
+        withContext(Dispatchers.Default) {
+            val address = SignalProtocolAddress(senderId, 1)
+            val cipher = SessionCipher(sessionStore, preKeyStore, signedPreKeyStore, identityKeyStore, address)
+            cipher.decrypt(SignalMessage(ciphertext))
+        }
+}
+```
+
+`Dispatchers.Default` because crypto is CPU-bound. Never on `Dispatchers.Main`.
+
+### 14.4 Safety number verification UI
+
+```kotlin
+@Composable
+fun SafetyNumberScreen(viewModel: SafetyNumberViewModel = hiltViewModel()) {
+    val safetyNumber by viewModel.safetyNumber.collectAsStateWithLifecycle()
+    Column {
+        Text("Verify Bob's safety number")
+        SafetyNumberDigits(digits = safetyNumber.digits)
+        QrCodeImage(payload = safetyNumber.qrPayload)
+        Button(onClick = viewModel::markVerified) { Text("Mark as verified") }
+    }
+}
+```
+
+The screen displays a 60-digit number that both users compare in-person or via a separate channel. Marking verified writes a flag in Room; the UI later shows a checkmark next to the contact.
+
+---
+
+## 15. Media Handling
+
+### 15.1 Image: pick, compress, encrypt, upload
+
+```kotlin
+class MediaUploader @Inject constructor(
+    @ApplicationContext private val ctx: Context,
+    private val mediaApi: MediaApi,
+    private val crypto: BlobEncrypter,
+    private val mediaCacheDao: MediaCacheDao
+) {
+    suspend fun upload(uri: Uri): String = withContext(Dispatchers.IO) {
+        val original = ctx.contentResolver.openInputStream(uri)!!.use { it.readBytes() }
+        val compressed = compressImage(original, targetMaxKb = 250)
+        val (encryptedBytes, key) = crypto.encrypt(compressed)
+        val initResp = mediaApi.init(MediaInitRequest(
+            sha256 = sha256(encryptedBytes).hex(),
+            sizeBytes = encryptedBytes.size.toLong(),
+            mimeType = "image/jpeg"
+        ))
+        if (!initResp.exists) {
+            val client = OkHttpClient()
+            val req = Request.Builder().url(initResp.uploadUrl)
+                .put(encryptedBytes.toRequestBody("application/octet-stream".toMediaType()))
+                .build()
+            client.newCall(req).execute().use { check(it.isSuccessful) }
+        }
+        // Cache locally to avoid re-downloading on render
+        val localPath = saveToCache(initResp.mediaRef, compressed)
+        mediaCacheDao.insert(MediaCacheEntry(
+            mediaRef = initResp.mediaRef,
+            localPath = localPath,
+            mimeType = "image/jpeg",
+            sizeBytes = compressed.size.toLong(),
+            lastAccessedAt = System.currentTimeMillis()
+        ))
+        // Return mediaRef + key (key goes in the encrypted message body to recipient)
+        "${initResp.mediaRef}#${Base64.encodeToString(key, Base64.URL_SAFE or Base64.NO_WRAP)}"
+    }
+
+    private fun compressImage(bytes: ByteArray, targetMaxKb: Int): ByteArray {
+        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        val scaled = bitmap.scaledTo(maxDimen = 1280)
+        var quality = 85
+        var out: ByteArray
+        do {
+            out = ByteArrayOutputStream().apply {
+                scaled.compress(Bitmap.CompressFormat.JPEG, quality, this)
+            }.toByteArray()
+            quality -= 10
+        } while (out.size > targetMaxKb * 1024 && quality > 30)
+        return out
+    }
+}
+```
+
+### 15.2 Voice notes with MediaRecorder + Opus
+
+```kotlin
+class VoiceRecorder @Inject constructor(@ApplicationContext private val ctx: Context) {
+    private var recorder: MediaRecorder? = null
+    private var outputFile: File? = null
+
+    fun start(): File {
+        outputFile = File(ctx.cacheDir, "voice-${UUID.randomUUID()}.ogg").also { file ->
+            recorder = MediaRecorder(ctx).apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.OGG)
+                setAudioEncoder(MediaRecorder.AudioEncoder.OPUS)
+                setAudioEncodingBitRate(32_000)
+                setOutputFile(file.absolutePath)
+                prepare()
+                start()
+            }
+        }
+        return outputFile!!
+    }
+
+    fun stop(): File {
+        recorder?.apply { stop(); release() }
+        recorder = null
+        return outputFile!!
+    }
+}
+```
+
+A 30-second voice note at 32 kbps is ~120 KB. Cheap on cellular.
+
+### 15.3 Video playback with ExoPlayer
+
+```kotlin
+@Composable
+fun MediaPlayer(mediaRef: String) {
+    val context = LocalContext.current
+    val exoPlayer = remember(mediaRef) {
+        ExoPlayer.Builder(context).build().apply {
+            setMediaItem(MediaItem.fromUri(mediaRef.toCdnUri()))
+            prepare()
+            playWhenReady = false
+        }
+    }
+    AndroidView(
+        factory = { ctx -> PlayerView(ctx).apply { player = exoPlayer } },
+        modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)
+    )
+    DisposableEffect(exoPlayer) { onDispose { exoPlayer.release() } }
+}
+```
+
+For lists of videos (Reels-style), use an `ExoPlayerPool` that recycles a small set of players across viewport items. See [`youtube-video-streaming.md`](youtube-video-streaming.md) for the pool implementation.
+
+---
+
+## 16. Battery & Performance
+
+| Lever | Setting | Why |
+|---|---|---|
+| WebSocket heartbeat | 30s foreground, off in background | Cellular keep-alive without burning radio |
+| FCM priority | `priority: high` for messages | Wakes app from Doze; low-priority for typing |
+| Typing indicator throttle | 1 update / 3s while typing, 1 stop on idle 1s | Avoid spamming presence |
+| Read receipts | Coalesce: send "read up to msg N" not per-message | One frame instead of dozens |
+| Image rendering | Coil with disk + memory cache | Decoded once per session |
+| Decoder strategy | Hardware acceleration for video; sw fallback only on old devices | Battery + thermal |
+| List rendering | Stable keys + `@Immutable` data classes | Compose recomposition skipping |
+
+```kotlin
+data class TypingThrottle(val scope: CoroutineScope, val send: (Boolean) -> Unit) {
+    private val state = MutableStateFlow(false)
+    private val job = scope.launch {
+        state.debounce(3.seconds).distinctUntilChanged().collect(send)
+    }
+    fun onUserTyping() { state.value = true }
+    fun onStopTyping() { state.value = false }
+}
+```
+
+---
+
+## 17. Failure Modes (Mobile Perspective)
+
+**Process killed mid-send.** The outbox row was written before the WS attempt; on next launch, `OutboxFlushWorker` retries with the same UUID. Server dedups. No loss, no duplicate.
+
+**Decrypt fails (wrong session key).** The message is stored with `plaintext = null`; UI shows a placeholder "Decryption failed; tap to retry." On retry, attempt re-sync of session state (Signal sessions can drift if a peer reinstalls).
+
+**Migration on app update.** A new `messages` column. Use Room `AutoMigration` for additive changes; manual `Migration` for renames. Always test migrations with `MigrationTestHelper`.
+
+**FCM not delivered (OEM kills, Doze).** Periodic 15-min `WorkManager` sync catches missed messages. UI shows correct state once the app reopens.
+
+**WebSocket can't connect because clock is wrong.** TLS rejects certs. Mitigation: fall back to REST polling for sync; show "Check your device time" toast.
+
+**Notification not posted (channel disabled by user).** Honor the user's choice; surface a Settings prompt only after several missed messages.
+
+**SQLCipher passphrase corruption.** Recovery: prompt re-auth; rebuild DB; sync history from server (text only — media is restored via CDN). Painful but recoverable.
+
+**WorkManager job stuck in queue (constraints never met).** Use `setExpedited()` with `OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST` for time-sensitive sends.
+
+**ANR during message render.** Heavy synchronous work on main thread (parsing large emoji list, regex over body). Move to `Dispatchers.Default`; render with `derivedStateOf` to avoid re-running.
+
+**Out-of-order message arrival.** Server `serverTs` is monotonic per conversation; sort by `serverTs ?: createdAt DESC` in Room queries. Re-render reorders correctly.
+
+**Self-message echo loop.** Server echoes our sent messages so other devices receive them. Local dedup: PK on client UUID; `OnConflictStrategy.IGNORE`.
+
+---
+
+## 18. Tradeoffs
+
+**WebSocket vs polling vs FCM**
+
+| | WebSocket | Polling | FCM data push |
+|---|---|---|---|
+| Latency | low | high | low (when delivered) |
+| Battery foreground | ok | bad | n/a (not used) |
+| Battery background | bad | bad | great |
+| Reliability under Doze | bad | bad | great |
+| Use | foreground active chat | last-resort fallback | background delivery |
+
+The production answer is "WebSocket foreground + FCM background." Polling shows up only when both fail (OEM-killed FCM on some Chinese ROMs).
+
+**Room SSOT vs network-first**
+
+| Room SSOT | Network-first |
 |---|---|
-| Cold start time | Open WebSocket lazily after UI renders; show cached conversations immediately from Room. |
-| Notification reliability | High-priority FCM; fallback to silent sync on app open. |
-| Doze mode | Use FCM not WorkManager for time-sensitive arrival. |
-| Multi-device key sync | Out-of-band QR code for pairing; device-specific Signal session. |
-| Backup & restore | Encrypted backup to Google Drive / iCloud with user-provided passphrase; never the server. |
-| Offline-first UX | Optimistic UI (status=PENDING); read from Room not from network. |
-| Audio call interop | WebRTC for media; signaling over chat WebSocket. |
-| Network changes (WiFi → cellular) | Detect via ConnectivityManager; reconnect WebSocket on new network. |
-| Battery analytics | Track WebSocket uptime, FCM delivery vs WebSocket delivery, msg/min/W. |
+| Offline works | Always shows latest |
+| Instant UI from cache | Loading spinner on every open |
+| Sync logic explicit | "Just retry" simpler |
+| Used by | every successful chat app |
+
+**MessagingStyle vs custom notification**
+
+`MessagingStyle` is more work upfront but gives you grouping, direct reply, Wear OS integration, and Android Auto. Custom notifications miss all of those.
+
+**Bundled libsignal vs roll-your-own**
+
+Don't roll your own. The library is audited, performance-optimized, and updated as the protocol evolves. Implementation bugs in crypto are catastrophic.
 
 ---
 
-## 13. Tradeoffs
+## 19. Probing Questions (Mobile-Engineer Focused)
 
-**WebSocket vs HTTP polling vs SSE**
-
-| Transport | Pros | Cons |
-|---|---|---|
-| WebSocket | Bidirectional, low latency, persistent | Battery cost, NAT timeouts, complex reconnect |
-| SSE | Simpler, HTTP-native, auto-reconnect | One-way, no send channel |
-| HTTP polling | Trivial, survives any network | 30s+ latency, battery via radio wake |
-| FCM/APNs | Background works, OS-managed | Vendor lock, payload size limits, not for high frequency |
-
-Production answer: WebSocket foreground + FCM background.
-
-**Fan-out on write vs read**
-
-| Strategy | Best for | Trade |
-|---|---|---|
-| Write fan-out | Small groups, latency-critical | Write amplification |
-| Read fan-out (pull) | Large channels (10K+) | Higher read load, possibly stale |
-| Hybrid | Most production systems | Operational complexity |
-
-**E2EE vs server-readable**
-
-| Model | Pros | Cons |
-|---|---|---|
-| E2EE (Signal/WhatsApp) | Privacy, regulatory, brand | No server-side search, harder spam filtering, complex multi-device, no message-content analytics |
-| Server-readable (Slack, Teams) | Search, retention, compliance, spam ML | Less private; subject to lawful access |
-
-**Per-message vs sender-key E2EE for groups**
-
-| Scheme | Pros | Cons |
-|---|---|---|
-| Per-recipient | Simple, no group state | O(N) encryption per send |
-| Sender Keys | O(1) per send | Pairwise distribution still O(N) on first send / membership change |
-| MLS | O(log N) for everything | New standard, fewer libraries |
+1. The user types a message and taps Send while in airplane mode. Walk through the path from `onSendClick` to the bubble appearing with a clock icon. Which layer writes to disk, and at what point?
+2. Explain why we use `OnConflictStrategy.IGNORE` for the messages table primary key. What bug would `REPLACE` cause?
+3. The app is killed by Android. The user reopens it 10 minutes later. List, in order, what runs to restore them to "instant chat, with intervening messages visible."
+4. Why is `SavedStateHandle` the right place for composer text, but Room is the right place for the *draft* of a conversation? Are they redundant?
+5. `reverseLayout = true` in the messages LazyColumn. What does it solve, and what would break if you flipped it off?
+6. Walk through the lifecycle observer logic. Why do we wait 30 seconds before disconnecting the WebSocket on background?
+7. Compose your own `MessagingStyle` notification for a 1-on-1 message. What does `Person` contain, and what fails if you skip it?
+8. The `OutboxFlushWorker` is in the queue. The user opens the app and triggers a manual send. Race condition? Walk through what prevents double-send.
+9. We use FCM `priority: high` for incoming messages. What's the quota concern, and what behavior change does the OS impose if we exceed it?
+10. A user reports "my drafts disappear when I switch apps." Walk through the debugging path — which layers persist drafts, and how do they interact?
+11. WebSocket reconnect backoff. Explain why pure exponential backoff isn't enough, and what jitter accomplishes.
+12. The libsignal session for a peer becomes corrupted (their device wiped). What's the user-visible failure, and how does the app recover?
+13. Room migration: you add an `editedAt` column to `messages`. Walk through the `AutoMigration` annotation and what would happen without it.
+14. Why must the encryption / decryption happen on `Dispatchers.Default` and never on `Dispatchers.Main`?
+15. Compose recomposition: the chat list is laggy when scrolling. The profiler shows the row recomposing on every state change. What stabilization patterns apply?
+16. Voice note recording: explain why `MediaRecorder.OutputFormat.OGG` + `OPUS` is chosen over `AAC + MP4`.
+17. The user takes a photo, attaches it, and immediately sends another text message before the photo upload completes. How does the outbox keep them in the correct order?
+18. Read receipts: explain why we coalesce ("read up to msg N") instead of per-message acks. What's the cost of doing per-message in a busy group?
+19. Process death wipes in-memory caches. What rebuilds them on the next launch, and from what source?
+20. A multi-module Konsist test fails: `:feature:chat` is depending on `:feature:settings`. Why is this banned, and what fix do you propose?
 
 ---
 
-## 14. Probing Questions
-
-1. Walk through the X3DH handshake. What does each Diffie-Hellman computation prove, and what would break if you omitted the one-time prekey?
-2. Explain forward secrecy vs post-compromise security in Double Ratchet. Which mechanism provides each?
-3. A user sends a message from their phone and reads it on tablet. Trace the events showing how the tablet learns the message was read.
-4. Cassandra partition keys for chat messages. Why `(conversation_id, bucket)` instead of just `conversation_id`?
-5. WebSocket disconnects in background. Why does the server keep the user "online" in presence for ~30s after the disconnect?
-6. A 5,000-member group fan-out. Walk through how you partition the work and the expected latency.
-7. Idempotency keys prevent dup messages. Walk through the bug if the server-side dedup uses only client-side timestamp instead of UUID.
-8. WhatsApp's old Sender Keys vs MLS. What's the asymptotic improvement and how does it work?
-9. Read receipts have a privacy toggle. Walk through how the system enforces it both client-side and server-side without leaking timing info.
-10. A typing indicator at 100 keystrokes per minute. How do you throttle without making it feel laggy?
-11. Cold start time budget is 1.5s. What loads from disk, what loads from network, what loads after first paint?
-12. Server learns Alice's identity key from her client. What attack does the safety-number verification prevent that an unverified user is vulnerable to?
-13. Media is uploaded encrypted. How does the recipient know which key to use to decrypt?
-14. Out-of-order Double Ratchet messages: Bob receives msg 7 before msg 5. How does libsignal recover, and what's the limit?
-15. Group membership changes — adding a new user. Walk through what happens in plaintext vs E2EE.
-16. Battery cost of holding a WebSocket alive in foreground. Compute approximate radio-on time per hour for heartbeat-only.
-17. Multi-device backup. The user reinstalls. How do they recover history without breaking E2EE?
-18. Spam at scale. Without server-side message reading, how do you fight spam?
-19. Compliance & lawful intercept. What can a court compel from an E2EE provider?
-20. Voice / video calling adds signaling. Where does the signaling go, and how is media encrypted differently?
-
----
-
-## 15. Further Reading
+## 20. Further Reading
 
 In this repository:
 
-- [`offline-sync.md`](offline-sync.md) — the offline-first storage pattern.
-- [`push-notifications.md`](push-notifications.md) — FCM/APNs deep dive.
-- [`../backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md`](../backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md) — transport comparison.
-- [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md) — exactly-once via client UUIDs.
-- [`../distributed-systems/delivery-semantics.md`](../distributed-systems/delivery-semantics.md) — at-least-once and exactly-once.
-- [`../distributed-systems/consensus-basics.md`](../distributed-systems/consensus-basics.md) — quorum for ordered delivery.
-- [`../adr/008-lww-vs-crdt.md`](../adr/008-lww-vs-crdt.md) — conflict resolution choices.
-- [`../android/concurrency/workmanager.md`](../android/concurrency/workmanager.md) — outbox queue mechanics.
-- [`../android/networking-and-security/security-and-keystore.md`](../android/networking-and-security/security-and-keystore.md) — Keystore-backed identity storage.
+- [`offline-sync.md`](offline-sync.md) — sync cursor and conflict resolution patterns.
+- [`push-notifications.md`](push-notifications.md) — FCM data pushes and quotas.
+- [`pagination.md`](pagination.md) — Paging 3 with Room as the source.
+- [`image-loading.md`](image-loading.md) — Coil/Glide pipeline.
+- [`youtube-video-streaming.md`](youtube-video-streaming.md) — ExoPlayer pool for chat video previews.
+- [`authentication.md`](authentication.md) — JWT acquisition + refresh.
+- [`../backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md`](../backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md) — transport tradeoffs.
+- [`../android/architecture/viewmodel.md`](../android/architecture/viewmodel.md) — ViewModel + SavedStateHandle mechanics.
+- [`../android/architecture/process-death-and-state-restoration.md`](../android/architecture/process-death-and-state-restoration.md) — survival patterns.
+- [`../android/architecture/flow.md`](../android/architecture/flow.md) — StateFlow/SharedFlow patterns.
+- [`../android/concurrency/workmanager.md`](../android/concurrency/workmanager.md) — WorkManager constraints and expedited jobs.
+- [`../android/concurrency/coroutines-under-the-hood.md`](../android/concurrency/coroutines-under-the-hood.md) — what dispatcher choice actually does.
+- [`../android/data-and-di/room.md`](../android/data-and-di/room.md) — Room internals and migration.
+- [`../android/networking-and-security/security-and-keystore.md`](../android/networking-and-security/security-and-keystore.md) — Keystore-wrapped identity keys.
+- [`../android/compose/recomposition-and-state.md`](../android/compose/recomposition-and-state.md) — stability and skip optimization.
 
 External:
 
-- *The Signal Protocol*, [signal.org/docs](https://signal.org/docs/) — canonical X3DH and Double Ratchet specifications.
-- Trevor Perrin & Moxie Marlinspike, *"The X3DH Key Agreement Protocol"* — original spec.
-- Trevor Perrin & Moxie Marlinspike, *"The Double Ratchet Algorithm"* — original spec.
-- IETF RFC 9420, *"The Messaging Layer Security (MLS) Protocol"* (2023).
-- [WhatsApp Engineering blog](https://engineering.fb.com/category/whatsapp/) — public deep dives on scale.
-- Rick Reed (WhatsApp), *"That's Not My Bug"* (Erlang Factory 2013) — original scaling story.
-- *Designing Data-Intensive Applications* by Martin Kleppmann — distributed messaging fundamentals.
-- *High Performance Browser Networking* by Ilya Grigorik, Chapter 17 — WebSocket performance.
-- [libsignal-client GitHub](https://github.com/signalapp/libsignal) — production Signal Protocol implementation used by Signal, WhatsApp, etc.
-
----
-
-Sources I drew on for current best practices:
-
-- [Inside the Signal Protocol's Security Architecture](https://profincognito.me/blog/security/signal-security-architecture/) — Double Ratchet, X3DH, and the 2024-2025 evolution including SPQR (post-quantum).
-- [How WhatsApp Works — Architecture Deep Dive on 100 Billion Messages](https://getstream.io/blog/whatsapp-works/) — Erlang, Ejabberd, Mnesia scaling story.
-- [WhatsApp's Architecture: A Deep Dive Into Its Distributed Messaging System](https://undercodetesting.com/whatsapps-architecture-a-deep-dive-into-its-distributed-messaging-system/) — group fan-out and parallel delivery.
-- [Group Chat Architecture: Fan-out & Message Routing](https://wittycoder.in/courses/chat-system/group-chat) — size-based fan-out strategies and tradeoffs.
-- [Design a Chat System — Complete Walkthrough](https://www.codelit.io/blog/design-a-chat-system) — production patterns for delivery, presence, and consistency.
-- [IETF RFC 9420 — Messaging Layer Security](https://datatracker.ietf.org/doc/html/rfc9420) — modern group E2EE standard replacing Sender Keys.
+- Android Developers, [WorkManager guide](https://developer.android.com/guide/background/persistent) — official background-work bible.
+- Android Developers, [`NotificationCompat.MessagingStyle`](https://developer.android.com/reference/androidx/core/app/NotificationCompat.MessagingStyle) — chat notification canonical reference.
+- Android Developers, [FCM advanced options](https://firebase.google.com/docs/cloud-messaging/concept-options) — priority, delivery, Doze interaction.
+- [libsignal-client Android](https://github.com/signalapp/libsignal) — the library you actually integrate.
+- Yigit Boyar, [Paging 3 architecture](https://developer.android.com/topic/libraries/architecture/paging/v3-overview) — the paging story.
+- [SQLCipher for Android](https://www.zetetic.net/sqlcipher/sqlcipher-for-android/) — encrypting Room at rest.
+- Chris Banes, [Compose performance](https://chrisbanes.me/posts/compose-performance/) — recomposition skipping in practice.
+- Romain Guy, [Practical Tradeoffs in Android Performance](https://www.youtube.com/c/RomainGuy) — depth on rendering and memory.
