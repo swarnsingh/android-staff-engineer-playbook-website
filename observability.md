@@ -27,4 +27,4 @@ Logging and structured logging first (the lowest layer), then metrics and tracin
 
 ## Application Files
 
-[`android/observability/`](android.md#observability-application-files) holds the Android-specific implementations (New Relic, crash monitoring, logging). Those are application files that link back here.
+[`android/observability/`](observability.md) holds the Android-specific implementations (New Relic, crash monitoring, logging). Those are application files that link back here.
