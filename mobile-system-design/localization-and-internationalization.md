@@ -1,143 +1,307 @@
-# Localization & Internationalization (L10n / I18n)
+# Localization & Internationalization (L10n / i18n)
 
-## Overview
+> A 45-60 minute mobile system-design walkthrough for the i18n + L10n posture of an Android app: string management, locale-aware formatting, RTL, pluralisation, on-device language switch, server-side localised content.
 
-A Junior Engineer thinks "Localization" just means creating a `strings.xml (es)` file and translating "Hello" to "Hola".
+---
 
-A Staff Engineer understands that text translation is merely 10% of the problem. **Internationalization (i18n)** is the architectural preparation of the codebase to support multiple regions. **Localization (l10n)** is the actual implementation of regional data. 
+## 1. Gathering Requirements (~5 min)
 
-If your app is hardcoded to assume that names are always `First Last`, that dates are always `MM/DD/YYYY`, that text always reads Left-To-Right (LTR), and that a string's length is constant, your UI will shatter into a thousand pieces the moment a user in Dubai or Tokyo opens it.
+> **Interviewer:** "Design i18n for an app shipping to 30 markets."
+> **Candidate:** "i18n is about *architecture* — string IDs not hard-coded text, locale-aware formatting, RTL by default. L10n is the *content* — translations, region-specific business rules. I'll deep-dive translation workflow + RTL layout."
 
-## Why It Matters
+### Functional Requirements
+- **30 locales** with translated strings.
+- **Date / number / currency** formatted per locale.
+- **Plural rules** correctly handled per language.
+- **RTL** support for Arabic, Hebrew, Urdu, Farsi.
+- **In-app language switch** without restart.
 
-Imagine launching your E-Commerce app in the Middle East to capture a new $100M market.
-- **The Date Crash:** Your backend sends `12/01/2025` (Dec 1). The Android phone in the UK parses it as `12/01/2025` (Jan 12). Users miss their deliveries by 11 months.
-- **The RTL Disaster:** Arabic is a Right-To-Left language. Your custom UI navigation drawer (which you hardcoded to swipe from the left) is now invisible or unusable.
-- **The German Text Overflow:** You built a beautiful, perfectly symmetrical "Submit" button. When translated to German, the word expands to 30 characters and breaks out of the button boundaries, rendering it un-clickable.
+### Non-Functional Requirements
+- **Translatable from day 1** — no hard-coded English in production code.
+- **CI gate** — missing translations fail builds.
+- **Performance**: locale switch < 1s, no app restart.
+- **Storage**: translations bundle in APK or download per locale.
+- **Compliance**: country-specific data (currency, units, addresses).
 
-You didn't just fail to translate the app; you failed to architect it for global constraints.
+### Out of Scope
+- Translation vendor selection (Lokalise, Crowdin, in-house)
+- Live machine translation (separate vendor SDK)
+- Per-region legal copy (legal team owns)
+- Voice / TTS in multiple languages (separate, see `google-maps-location-system.md`)
 
-## First Principles
+---
 
-1.  **I18n (Internationalization):** The foundational engineering work. Using relative layouts (Start/End instead of Left/Right), extracting hardcoded strings, and using standard Date/Currency formatters.
-2.  **L10n (Localization):** The actual translations, localized assets, and regional legal compliance.
-3.  **Locale:** A combination of Language and Region (e.g., `en-US` vs `en-GB`). British English spells it "Colour", American English spells it "Color".
-4.  **RTL (Right-To-Left):** Languages like Arabic, Hebrew, and Persian. The entire UI must mirror itself perfectly.
-5.  **Pluralization (Quantity Strings):** Handling how different languages count. English has two states (1 Apple, 2 Apples). Arabic has six distinct grammatical states for quantities (0, 1, 2, 3-10, 11-99, 100+).
+## 2. Clarifying Questions (~3 min)
 
-## Mental Model
+| Question | Why it matters |
+|---|---|
+| How many locales? | Strings bundle size |
+| Per-locale APK or in-app downloads? | Storage strategy |
+| RTL markets? | Layout audit |
+| User-overridable language? | In-app picker |
+| Locale-specific currency? | Number formatting |
+| Server-side content (vs UI strings)? | Translation pipeline split |
+| Asia: CJK character display? | Font fallback |
 
-Think of your App as an **Empty Picture Frame**.
-- The Frame is your **I18n Architecture**. It must be resizable, flexible, and capable of hanging upside down or mirrored.
-- The Picture inside is the **L10n Data**. 
-- If you build a rigid 5x7 inch frame (hardcoded width), and someone tries to put an 8x10 picture (German text) inside it, the glass shatters.
+> **Candidate:** "30 locales, per-locale bundles via App Bundle splits, RTL in 4, user can override, currency by region, server returns localized content via Accept-Language, CJK fonts via system fallback."
 
-## Internal Mechanics
+---
 
-### 1. Left/Right vs Start/End
+## 3. The i18n Stack on Android
 
-The most critical UI rule in Android: **Never use Left or Right.**
+```
+String IDs (English source of truth)
+        │
+        ├── res/values/strings.xml         ← en (source)
+        ├── res/values-es/strings.xml      ← Spanish
+        ├── res/values-ar/strings.xml      ← Arabic (RTL)
+        ├── res/values-fr/strings.xml      ← French
+        └── ...
+        │
+        ▼
+Translation pipeline (Lokalise / Crowdin)
+        │
+        ▼
+Updated XML committed via PR
+        │
+        ▼
+App Bundle splits per locale → Play delivers correct set per device
+```
+
+---
+
+## 4. Strings.xml Discipline
 
 ```xml
-<!-- DANGEROUS: Will break in Arabic (RTL) -->
-<TextView
-    android:layout_marginLeft="16dp"
-    app:layout_constraintLeft_toLeftOf="parent" />
+<!-- values/strings.xml (en, source) -->
+<resources>
+    <string name="checkout_button">Place Order</string>
 
-<!-- SAFE: Will automatically mirror in Arabic -->
-<TextView
-    android:layout_marginStart="16dp"
-    app:layout_constraintStart_toStartOf="parent" />
+    <plurals name="cart_items">
+        <item quantity="one">1 item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
+
+    <string name="price_with_currency">Price: %1$s</string>
+    <string name="greet_user">Hi, %1$s!</string>
+</resources>
 ```
 
-In Jetpack Compose, this is handled natively via `Modifier.padding(start = 16.dp)` and `Row` scopes which automatically reverse their drawing order when the system Locale is RTL.
+### Rules
 
-### 2. Timezones and Unix Epoch
+- **No hard-coded strings in Kotlin/Compose.** Lint rule + CI gate.
+- **Use placeholders** (`%1$s`) — never concatenate localised strings.
+- **Plurals via `<plurals>`** — never `if (count == 1) "item" else "items"` (other languages have many plural forms).
+- **Comments for translators** in source XML:
+  ```xml
+  <!-- Button on the checkout screen. Action: confirms the order. -->
+  <string name="checkout_button">Place Order</string>
+  ```
 
-Never send human-readable dates over an API.
-```json
-// DANGEROUS API
-{ "sale_ends": "2025-10-31 15:00:00" } // Is this UTC? PST? Tokyo time?
+---
 
-// SAFE API (Unix Epoch Milliseconds)
-{ "sale_ends": 1761922800000 } 
-```
-
-The Backend stores and sends the absolute Unix Timestamp (which is universally true across the galaxy). The Android client uses `java.time.Instant` and `DateTimeFormatter` to convert that timestamp into whatever timezone and visual format the user's phone is currently set to.
-
-### 3. Pluralization (Quantity Strings)
-
-Never use `if/else` logic to concatenate plurals.
+## 5. Compose / Code Usage
 
 ```kotlin
-// DANGEROUS KOTLIN
-val text = if (count == 1) "You have $count message" else "You have $count messages"
+@Composable
+fun CartScreen(cart: Cart) {
+    Text(text = pluralStringResource(R.plurals.cart_items, cart.itemCount, cart.itemCount))
+    Text(text = stringResource(R.string.price_with_currency, format(cart.total, cart.currency)))
+    Button(onClick = { ... }) { Text(stringResource(R.string.checkout_button)) }
+}
 ```
-This fails instantly in Russian, which has different words for ending in 1, ending in 2-4, and ending in 5-9.
 
-You must use Android's `plurals` resource system:
+For ViewModel-formatted strings:
+
+```kotlin
+@HiltViewModel
+class CartViewModel @Inject constructor(
+    @ApplicationContext private val ctx: Context,
+    ...
+) : ViewModel() {
+    val itemCountLabel: StateFlow<String> = itemCount.map { count ->
+        ctx.resources.getQuantityString(R.plurals.cart_items, count, count)
+    }.stateIn(...)
+}
+```
+
+> **Anti-pattern:** passing `Context` into ViewModel just for strings. Prefer string IDs + format args, resolved in the Composable. (`ctx` here is `@ApplicationContext` — survives config changes, but still avoid where you can.)
+
+---
+
+## 6. Number / Date / Currency Formatting
+
+```kotlin
+import java.text.NumberFormat
+import java.text.DateFormat
+import java.util.Locale
+
+fun formatCurrency(amount: Double, currency: String): String {
+    val format = NumberFormat.getCurrencyInstance(Locale.getDefault())
+    format.currency = java.util.Currency.getInstance(currency)
+    return format.format(amount)
+}
+
+fun formatDate(ts: Long): String =
+    DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault()).format(Date(ts))
+
+// Better: java.time + formatters for everything > Java 8
+import java.time.format.DateTimeFormatter
+
+fun formatDate(ts: Long): String =
+    Instant.ofEpochMilli(ts)
+        .atZone(ZoneId.systemDefault())
+        .format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))
+```
+
+Don't hand-format. Always use `NumberFormat` / `DateTimeFormatter` with `Locale.getDefault()`.
+
+---
+
+## 7. RTL (Right-to-Left)
+
 ```xml
-<!-- strings.xml -->
-<plurals name="messages">
-    <item quantity="one">You have %d message</item>
-    <item quantity="other">You have %d messages</item>
-</plurals>
-```
-The OS automatically applies the complex grammatical rules of the user's language at runtime.
-
-## Tradeoffs
-
-**String Formatting vs Translation Context**
-
-- **Concatenation (Bad):** `"Hello " + name + ", you are " + age + " years old."`
-- **Formatting (Better):** `getString(R.string.hello_age, name, age)` -> `"Hello %1$s, you are %2$d years old."`
-
-The tradeoff here is context for the Translator. The person translating this string in France has no idea what `%1$s` is. Is it a person? A dog? A city?
-*Staff Decision:* You must use XML `xliff:g` tags (or equivalent TMS systems) to provide strict context to translators, preventing embarrassing grammatical errors.
-
-```xml
-<string name="hello_age">Hello <xliff:g id="name" example="John">%1$s</xliff:g>, you are <xliff:g id="age" example="25">%2$d</xliff:g> years old.</string>
+<!-- AndroidManifest.xml -->
+<application android:supportsRtl="true">
 ```
 
-## Failure Modes
+```kotlin
+// Use start/end, not left/right
+Modifier.padding(start = 16.dp, end = 8.dp)
+Modifier.align(Alignment.Start)
 
-- **The German Expansion:**
-  A developer hardcodes a button width to `100dp` because the English word "Submit" fits perfectly. In German, it translates to "Einreichen," which truncates to "Einreic...".
-  *(Fix: UI components must always use `wrap_content`, `weight`, or Compose `Modifier.weight()` / `fillMaxWidth()` to dynamically expand to fit the localized string).*
-- **The Pseudo-Localization Blindspot:**
-  Developers only test their app in English. They ship an update, and it crashes on startup for users in France because a `String.format()` placeholder was mismatched in the French `strings.xml`.
-  *(Fix: A Staff Engineer mandates **Pseudo-Localization** in Debug builds. The Android OS automatically replaces all English text with bizarre, accented, massively long characters (e.g., `[Þîš îš å ƒåké šţřîñĝ ţéšţ]`). This instantly exposes hardcoded strings and UI overflow issues during daily development before it ever reaches QA).*
-- **Assuming `String.toUpperCase()` is safe:**
-  In English, `i.toUpperCase()` is `I`. In Turkish, `i.toUpperCase()` is `İ` (with a dot). If you use `toUpperCase()` to generate a database key or API parameter, it will silently fail for millions of users.
-  *(Fix: Always pass the `Locale.US` or `Locale.ROOT` explicit parameter when doing programmatic string manipulation that isn't meant for human eyes).*
+// Icons that have directional meaning auto-flip when locale is RTL
+// Use vector drawables with `android:autoMirrored="true"`
+```
 
-## Staff Engineer Thinking
+**Audit checklist for RTL:**
+- Text alignment: `textAlign = TextAlign.Start`, never `Left`.
+- Padding/margin: `start`/`end`, never `left`/`right`.
+- Vector drawables: `autoMirrored="true"` for arrows, chevrons.
+- Numbers and dates: Western digits in mixed-script contexts.
+- Layout direction: `LocalLayoutDirection.current` for custom drawing.
 
-When reviewing an architecture for Global Scale, a Staff engineer focuses on the physical boundaries between systems.
+---
 
-1.  **Currency is Not a Float:** If I see `val price: Float = 10.99`, I reject the PR. Floating point math is imprecise, and currency symbols vary wildly ($10, 10€, 10 ₪). Currency must be passed from the Backend as an Integer/Long of the smallest denomination (e.g., `1099` cents) along with a strict ISO Currency Code (`USD`, `EUR`). The Android client uses `NumberFormat.getCurrencyInstance()` to safely format it.
-2.  **RTL Mirroring of Assets:** A back arrow `<--` makes sense in LTR. In RTL, the user expects the back arrow to point right `-->`. I ensure that our SVGs/VectorDrawables utilize the `android:autoMirrored="true"` flag so the OS flips them automatically, preventing us from having to maintain two sets of icons.
-3.  **Over-The-Air (OTA) Translations:** I do not rely on releasing a new APK just to fix a typo in Spanish. I architect the app to integrate with a Translation Management System (TMS) SDK (like Lokalise or Phrase). The app downloads the latest translation files on startup, allowing Product teams to fix translations instantly without Engineering involvement.
+## 8. Locale Switching at Runtime
 
-## Common Misconceptions
+Android 13+ provides per-app language preferences:
 
-- **"UTF-8 solves all character encoding problems."** While UTF-8 allows you to store emojis and Arabic text, it does not solve font rendering. If the Android device does not have a specific language font installed (common on cheap OEM devices), the text renders as empty squares (Tofu). You may need to bundle specific fonts or use Google's Noto (No Tofu) fonts.
-- **"Just use Google Translate for strings."** An absolute disaster. Machine translation fails entirely at context. The English word "Book" can mean a noun (a novel) or a verb (to reserve a hotel). A machine will pick the wrong one, breaking the UX. Human context is mandatory.
+```kotlin
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 
-## Probing Questions
+fun setAppLanguage(language: String) {
+    val locales = LocaleListCompat.forLanguageTags(language)
+    AppCompatDelegate.setApplicationLocales(locales)
+}
 
-1.  Explain the fundamental difference between Internationalization (i18n) and Localization (l10n).
-2.  Why is it an architectural requirement in Android to use `Start/End` constraints instead of `Left/Right` constraints?
-3.  Describe the "German Expansion" failure mode, and how a developer must architect their UI layouts to prevent it.
-4.  Why is passing human-readable dates (e.g., `2024-10-31 15:00`) from an API dangerous, and what is the universally accepted solution?
-5.  Explain why simple `if/else` logic fails for pluralizing nouns globally, and how Android's `<plurals>` resource solves the problem.
-6.  What is "Pseudo-Localization," and how does enabling it during the Debug phase prevent production bugs?
-7.  Why is calling `String.toUpperCase()` without a specified `Locale` dangerous for background data processing or API routing?
-8.  Describe the architectural rule for transmitting Currency across a network boundary (e.g., Backend to Mobile) to prevent floating-point errors and formatting bugs.
-9.  Why might a Staff Engineer integrate an Over-The-Air (OTA) Translation Management SDK rather than relying entirely on `strings.xml` bundled inside the APK?
-10. How does the concept of "Context" in translation (e.g., the word "Book") necessitate the use of strict `xliff:g` tags for translators?
+// On Android 13+, this triggers a system-managed Activity recreation with new resources.
+```
 
-## Further Reading
+For older Android versions, the same API backports via AndroidX AppCompat (with manual `recreate()`).
 
-- [`api-design-for-mobile.md`](../backend-for-mobile/api-design-for-mobile.md) — Why Unix Epoch timestamps are the only safe way to transmit dates.
-- [`design-framework.md`](design-framework.md) — Defining the target geographical markets (NFRs) before writing code.
+In Compose, all `stringResource(...)` calls re-resolve on recreation. No additional work.
+
+---
+
+## 9. Server-Side Localised Content
+
+```http
+GET /v1/feed
+Accept-Language: es-MX,es;q=0.9,en;q=0.5
+{
+  "items": [{ "title": "Bienvenido", ... }]
+}
+```
+
+Server picks based on `Accept-Language`. Fallback chain: `es-MX → es → en (default)`.
+
+For user-generated content (chat, posts), don't translate by default. Optionally offer "Translate" button that calls a translation API.
+
+---
+
+## 10. Translation Workflow
+
+```
+1. Engineer adds new string with name + English text + translator comment.
+2. CI checks: every string must exist in en source.
+3. Translation vendor (Lokalise, Crowdin) pulls strings.xml from main daily.
+4. Translators provide values; vendor PRs them back.
+5. CI checks: every (string, locale) translated before release.
+6. Release ships per-locale splits via App Bundle.
+```
+
+CI lint:
+
+```kotlin
+// Custom Detekt or Lint rule
+class HardcodedStringDetector : Detector(...) {
+    override fun visitMethod(...) {
+        // Flag any `Text("literal")` that's not a stringResource
+    }
+}
+```
+
+---
+
+## 11. Storage: App Bundle Splits
+
+```kotlin
+// build.gradle.kts
+android {
+    bundle {
+        language { enableSplit = true }    // one APK per locale on device
+    }
+}
+```
+
+Play Store delivers only the user's locale's strings. Saves ~5-10 MB on multilingual apps.
+
+For markets where users switch languages frequently, opt out of language splits and ship all locales (`enableSplit = false`).
+
+---
+
+## 12. Common Misses
+
+| Miss | Fix |
+|---|---|
+| Hard-coded English in Kotlin | Lint rule + CI |
+| `if (count == 1) "item" else "items"` | `<plurals>` (handles Polish, Arabic plural forms) |
+| `"Price: $" + amount` | `getString(R.string.price_with_currency, format(amount))` |
+| `Modifier.padding(left = 16.dp)` | `start = 16.dp` |
+| Locale-sensitive sort with `String.compareTo` | `Collator.getInstance(locale)` |
+| Storing dates in local time | Always UTC server-side; format on display |
+| English-only error messages from server | Server respects `Accept-Language` |
+| Fonts that don't cover CJK | System fallback or per-locale font res |
+| Right-to-left numeric tables | Test in `ar` locale; layout breaks reveal themselves |
+| Translator comments missing | Every string has a comment for the translator |
+
+---
+
+## 13. Testing
+
+### Manual
+
+- `adb shell am start -a android.intent.action.SET_LOCALE --es lang ar` for RTL test.
+- Pseudo-locale (`Settings → Developer options → Pseudo-locale`) to detect non-localised strings (English ones appear as `[Lōñgēr ëxāmplē tēxt]`).
+
+### Automated
+
+- **Lint rule**: hardcoded string detector.
+- **CI script**: parse all `R.string.*` references; ensure every `name=` in `values-*/strings.xml` exists.
+- **Screenshot tests** per locale (Paparazzi / Compose Preview snapshots).
+
+---
+
+## 14. Further Reading
+
+- [Android Developers — Localize your app](https://developer.android.com/guide/topics/resources/localization) — official.
+- [Android Developers — RTL guidelines](https://developer.android.com/training/basics/supporting-devices/languages#rtl) — bidi support.
+- [Android Developers — Per-app language preferences](https://developer.android.com/guide/topics/resources/app-languages) — Android 13+ runtime switch.
+- [Unicode CLDR — plural rules](https://cldr.unicode.org/index/cldr-spec/plural-rules) — what plural forms exist per language.
+- [App Bundle — language splits](https://developer.android.com/guide/app-bundle/configure-base) — per-locale delivery.
+
+---
+
+> **In short:** i18n is architectural discipline (no hard-coded strings, locale-aware formatting, start/end paddings, plural-aware quantities). L10n is content workflow (vendor pipeline, CI gates, comments for translators). Both must be in place from day 1.

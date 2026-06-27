@@ -1,169 +1,254 @@
-# Mobile System Design Framework
+# Mobile System Design Framework (Interview Approach)
 
-## Overview
-
-A Junior Engineer approaches a System Design problem by immediately drawing boxes for `Retrofit`, `Room`, and `Jetpack Compose`. They jump straight into implementation details before understanding the scale or constraints of the system.
-
-A Staff Engineer understands that System Design is not about writing code; it is about **managing tradeoffs under strict constraints**. Before a single architectural box is drawn, you must extract the exact requirements, calculate the boundaries of the system, and establish the structural framework.
-
-The **Mobile System Design Framework** (often referred to as the "RADIO" framework or similar variants) is a structured, repeatable methodology for breaking down massive, ambiguous problems (e.g., "Design WhatsApp") into solvable technical decisions.
-
-## Why It Matters
-
-If you are asked to "Design a Photo Sharing App," the correct architecture depends entirely on context:
-- Is this for 100 photographers sharing massive 50MB RAW files?
-- Is this for 1 billion teenagers sharing 50KB heavily compressed JPEGs?
-- Is this for doctors sharing X-Rays in a hospital with no cellular service?
-
-If you jump to "I'll use Glide to load the images," you have failed. The framework forces you to ask the right questions so you solve the correct problem.
-
-## The Framework (RADIO)
-
-The canonical framework for tackling any Mobile System Design problem consists of 5 phases:
-
-1.  **R**equirements & Clarification
-2.  **A**rchitecture (High Level)
-3.  **D**ata Model & API
-4.  **I**nterfaces & UI State
-5.  **O**ptimization & Deep Dives (NFRs)
+> A meta-file: how to approach any mobile system design interview using the 12-section structure used throughout this folder. Inspired by [weeeBox/mobile-system-design](https://github.com/weeeBox/mobile-system-design) but tuned for Android-first interviews.
 
 ---
 
-### Phase 1: Requirements & Clarification (5-10 mins)
+## 1. The 45-60 Minute Interview Structure
 
-The goal here is to shrink the infinite scope of "Design WhatsApp" down to a Minimum Viable Product (MVP) that can be discussed in 45 minutes.
+| Phase | Duration | What you do | What's being assessed |
+|---|---|---|---|
+| Introductions | 2-5 min | Brief background, set scope | Communication style |
+| Requirements | 5-7 min | Functional, non-functional, out-of-scope | Scoping; restraint |
+| Clarifying questions | 3-5 min | Ask the interviewer key questions | Curiosity; awareness of unknowns |
+| High-level diagram | 8-10 min | One server-side sketch + paragraph | Big-picture understanding |
+| Mobile architecture | 10-15 min | Modules, layers, key types | Mobile expertise |
+| Deep dive | 15-20 min | One feature with code-level detail | Depth on hard problem |
+| Trade-offs + concerns | 5-10 min | Tables, key tensions | Tradeoff awareness |
+| Wrap | 2-5 min | Out-of-scope defended, follow-ups suggested | Self-awareness; signaling |
 
-#### Functional Requirements (What does it do?)
-- *You:* "Does the chat app support group chats, or just 1-on-1?"
-- *Interviewer:* "Just 1-on-1 for now."
-- *You:* "Does it support sending photos and videos, or just text?"
-- *Interviewer:* "Text and photos."
-- *You:* "Are read receipts required?"
-- *Interviewer:* "Yes."
-
-#### Non-Functional Requirements / NFRs (How well does it do it?)
-This is where Staff Engineers shine. You must define the physical constraints. (See [Non-Functional Requirements](non-functional-requirements.md)).
-- *You:* "Does this app need to work fully offline (e.g., drafting messages on an airplane)?"
-- *You:* "What is the expected latency for a message delivery? Sub-100ms, or is 2 seconds acceptable?"
-- *You:* "Are we targeting global emerging markets (low-end devices, 3G) or just flagship 5G devices?"
-
-*Staff Artifact:* Write down exactly 3-4 bullet points. "We are designing a 1-on-1 text/photo chat app, with offline queuing, targeting 100ms latency on 4G networks."
+**Rule of thumb:** if you're 25 minutes in and haven't started coding/deep-diving, you're over-scoping.
 
 ---
 
-### Phase 2: High-Level Architecture (10 mins)
+## 2. The 12-Section Template
 
-Draw the massive structural blocks. Do not mention `RxJava` or `Coroutines`. Think in physical boundaries.
+This is the structure every file in this folder follows. Use it as your interview playbook:
 
-1.  **The Client:** The Android App.
-2.  **The Network Boundary:** The API Gateway, [Load Balancers](../distributed-systems/cap-theorem.md), or [BFF (Backend-For-Frontend)](../backend-for-mobile/bff-pattern.md).
-3.  **The Transports:** How does data cross the boundary? Are we using [REST, WebSockets, or Server-Sent Events](../backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md)?
-4.  **The Backend Services:** Identify the necessary microservices (e.g., `AuthService`, `ChatService`, `MediaStorageService`).
-5.  **The CDN (Content Delivery Network):** Where do photos live?
-
-*Example output:* "The Android client will use a WebSocket connection to the `ChatService` for real-time text, and standard HTTP REST multipart uploads to an S3 bucket via the `MediaService` for photos. The CDN will distribute the photos globally."
+1. **Gathering Requirements**
+2. **Clarifying Questions**
+3. **High-Level Diagram** (one ASCII or sketch + one paragraph naming services)
+4. **API Contract** (endpoints, JSON shape, idempotency mechanism)
+5. **Mobile App Architecture** (module structure + layered diagram + class signatures)
+6. **Local Storage** (one entity shown; rest summarised)
+7. **Deep Dive: ONE Feature** (code only for the interesting parts)
+8. **Trade-offs** (comparison tables, not paragraphs)
+9. **Major Concerns** (bullets with one-sentence rationale)
+10. **Follow-up Questions** (anticipate what the interviewer asks next)
+11. **Out of Scope (defended)** (what you cut and why)
+12. **Further Reading** (3-5 links)
 
 ---
 
-### Phase 3: Data Model & API Contract (10-15 mins)
+## 3. Section-by-Section Playbook
 
-Now you design the exact shape of the data moving through the system and resting on the device.
+### 1. Gathering Requirements
 
-#### 1. Local Storage (SQLite / Room)
-Design the Entity-Relationship (ER) diagram for the local cache.
-- `UserTable`: `id`, `name`, `avatar_url`
-- `MessageTable`: `id`, `sender_id`, `recipient_id`, `text`, `timestamp`, `sync_status (PENDING, SENT, FAILED)`
+> "Before I draw anything, let me agree on scope so I don't drift into a 3-hour answer."
 
-#### 2. The API Contract
-Design the exact JSON or Protobuf payload. Focus heavily on [Idempotency](../distributed-systems/idempotency.md) and [Pagination](../mobile-system-design/pagination.md).
+- **3-5 functional requirements** — the core happy-path features.
+- **3-4 non-functional requirements** — see `non-functional-requirements.md` for the menu.
+- **Explicit "out of scope"** — list 4-6 things you're cutting and why.
+
+Tone: confident scoping, not feature dumping. If the interviewer wants more, they'll pull it back in.
+
+### 2. Clarifying Questions
+
+> "A few questions before I commit to an architecture."
+
+Pick the 3-5 most architecturally-load-bearing questions:
+
+- **Scale** (DAU, peak, geography) → drives transport choice, cache sizing.
+- **Real-time vs eventual** → drives WS vs polling.
+- **Offline expectations** → drives Room SSOT decisions.
+- **API floor** → drives WorkManager features.
+- **Cross-platform** → drives wire format / shared definitions.
+
+End by stating assumptions: "I'll assume X, Y, Z."
+
+### 3. High-Level Diagram
+
+**ONE** ASCII or whiteboard diagram. Name the server-side components in a paragraph. Don't design the server.
+
+```
+            ┌────────────────┐
+            │  Android Client│
+            │   (this talk)  │
+            └────────┬───────┘
+                     │ WSS / HTTPS
+                     ▼
+       ┌──────────────────────────┐
+       │       BFF / Gateway      │
+       └──┬──────────┬──────┬─────┘
+          │          │      │
+       services... (black box)
+```
+
+### 4. API Contract
+
+JSON example payloads. Endpoint table. Idempotency mechanism. The "contract between us and the server."
 
 ```json
-// POST /messages
-{
-  "idempotency_key": "UUID-123",
-  "recipient_id": "991",
-  "payload_type": "TEXT",
-  "content": "Hello World"
-}
+POST /v1/<resource>
+Idempotency-Key: ...
+{ ... }
 ```
 
-*Staff Check:* Did you remember to add `sync_status` to your local database? If not, how will you show the user a red exclamation mark when the network fails? Did you use an `idempotency_key` in your API? If not, the user will send duplicate messages when they drive into a tunnel.
+### 5. Mobile App Architecture
 
----
-
-### Phase 4: Interfaces & UI State (5 mins)
-
-Connect the Data to the Screen using modern Android architectural patterns (MVVM/MVI, Unidirectional Data Flow).
-
-- **The Repository:** Acts as the Single Source of Truth. It merges the WebSocket stream and the Room database.
-- **The ViewModel:** Exposes a `StateFlow<ChatUiState>`.
-- **The UI:** Jetpack Compose function that blindly renders the `ChatUiState`.
+- Module tree (multi-module Gradle).
+- Layered diagram (UI → ViewModel → Repository → Data).
+- Key interface signatures (not implementations).
 
 ```kotlin
-sealed class ChatUiState {
-    object Loading : ChatUiState()
-    data class Success(val messages: List<MessageUI>) : ChatUiState()
-    data class Error(val reason: String) : ChatUiState()
+interface Repository {
+    fun observeFoo(): Flow<Foo>
+    suspend fun doBar(...)
 }
 ```
 
+### 6. Local Storage
+
+ONE entity shown in full. Mention the rest exist. SQLCipher / EncryptedSharedPrefs if data is sensitive.
+
+### 7. Deep Dive: ONE Feature
+
+**Pick the most representative feature.** Cover with code snippets only for the interesting parts (state machine, lifecycle, idempotency). Use:
+
+- Sequence diagrams or numbered steps.
+- 1-2 Kotlin snippets focused on the trick.
+- A failure-mode table.
+
+The deep dive is what differentiates senior from junior — depth on one thing > shallow on many.
+
+### 8. Trade-offs
+
+Tables. Not paragraphs.
+
+| Option | Pros | Cons | Verdict |
+|---|---|---|---|
+
+The "Verdict" column shows you can decide.
+
+### 9. Major Concerns
+
+Bullets with 1-2 sentence rationale each. Pick 6-10 mobile-specific concerns: battery, process death, OEM kill, Doze, memory, schema migration, etc.
+
+### 10. Follow-up Questions
+
+Anticipate what the interviewer would push on. Format:
+
+> **Q: How does X handle Y?**
+> [1-paragraph answer]
+
+This shows you've thought one layer deeper.
+
+### 11. Out of Scope (defended)
+
+For each cut item, one-line justification:
+
+- **Group chats** — fan-out, per-member receipts; ~1 hour on its own.
+- **E2EE protocol math** — integrate `libsignal-client` SDK as a black box.
+
+### 12. Further Reading
+
+3-5 links. Mix of official Android docs, open-source samples, and one industry blog post.
+
 ---
 
-### Phase 5: Optimization & Deep Dives (10 mins)
+## 4. Common Mistakes (and how to avoid them)
 
-This is the most critical phase for a Staff Engineer. The Interviewer will point to a box on your diagram and say, "Break this." You must identify the bottlenecks and propose solutions.
+| Mistake | Symptom | Fix |
+|---|---|---|
+| Over-scoping | "I'd build X, Y, Z, also AR mode, also..." | Practice cutting scope; explicit out-of-scope list |
+| Designing the backend | Long Kafka/Cassandra explanations | Backend = black box; one HLD + paragraph |
+| Show-off code | Full Kotlin classes everywhere | Class signatures + 1-2 snippets for the trick only |
+| Forgetting NFRs | Only happy-path | Use the NFR checklist (`non-functional-requirements.md`) |
+| Skipping trade-offs | "We'll use Room" | Comparison tables: "Why Room over X, Y" |
+| No deep dive | Shallow on everything | Pick one feature and go deep; signal you have more |
+| No process death story | Forgets `SavedStateHandle`, durable queues | Add to every interview answer |
+| No OEM-kill mention | Forgets Xiaomi/OPPO | Mention in major concerns |
+| No testing story | Skips `JankStats`, `Macrobenchmark` | Show observability + CI gates |
+| Defensive about cuts | "I can't do that in 45 min" | Confident scoping: "Out of scope here because..." |
 
-- **Bottleneck:** "If a user receives 10,000 messages in a massive group chat, your `RecyclerView` will stutter when Room emits the new list."
-- **Staff Solution:** "I will implement `Paging 3` to only load 50 messages into RAM at a time. I will use `DiffUtil` on a background thread to calculate the delta."
-- **Bottleneck:** "If the user is on a slow 3G network, uploading a 10MB photo will fail 90% of the time."
-- **Staff Solution:** "I will use Android's `WorkManager` for background execution with network constraints. Before uploading, I will compress the Bitmap to WebP format, reducing it to 500KB. If it fails, `WorkManager` will handle the Exponential Backoff."
+---
 
-## Tradeoffs
+## 5. Signals You're Doing Well
 
-**Perfect Architecture vs Time to Market**
+- You **state assumptions** before drawing.
+- You **separate** functional from non-functional.
+- You **mention process death** without prompting.
+- You **draw one diagram**, not five.
+- You **defer** to libraries (`Coil 3`, `Media3`, `libsignal SDK`).
+- You **trade off explicitly** ("Cursor pagination over offset because...").
+- You **anticipate follow-ups** ("If you ask about X, my answer is Y").
+- You **defend cuts** ("Group chats are out of scope because...").
+- You're **comfortable saying "I don't know"** for genuinely unknown things.
 
-During a System Design discussion, you must constantly weigh perfection against reality.
+---
 
-- *Perfection:* "We will use gRPC Bidirectional Streams for chat, backed by a CRDT (Conflict-Free Replicated Data Type) database for perfect offline sync resolution."
-- *Reality:* "While CRDTs are mathematically perfect, they are incredibly complex to implement. Given our 3-month timeline, we will use a standard 'Last-Write-Wins' timestamp resolution in SQLite and WebSockets. We accept a 0.1% edge-case conflict rate to hit our launch date."
+## 6. Sample Opening
 
-*Staff Decision:* A Staff Engineer knows the complex theoretical solutions, but often recommends the pragmatic, simpler solution, explicitly stating the tradeoffs they are accepting.
+> "Let me start by agreeing on scope. The product is X — I'll focus on the Y feature, scoping out Z because it's a separate hour-long design. For non-functional: I'll prioritise offline tolerance, process-death resilience, and battery, because those are usually where mobile designs fail. I'll plan to draw a single HLD, then go deeper on the mobile architecture, then deep-dive the send/receive (or equivalent) flow because that's where most of the interesting decisions live. Sound good? Let me ask a few clarifying questions first."
 
-## Failure Modes
+This sets:
+- Scope discipline
+- NFR awareness
+- Plan for the next 45 minutes
+- Invitation for collaboration
 
-- **The Solution Searching for a Problem:**
-  A developer says, "I will use Kotlin Multiplatform, GraphQL, and Realm." The interviewer asks, "Why?" The developer replies, "Because they are modern." 
-  *(Failure: You have failed the interview. Technologies are chosen to solve specific problems defined in Phase 1. If you don't define the constraints, you cannot justify the technology).*
-- **Ignoring the Network:**
-  Designing a system that assumes every API call returns `HTTP 200 OK` in 50ms.
-  *(Failure: You must actively design for `SocketTimeoutException`, HTTP 500s, and 3G packet loss. This means local caching, optimistic UI updates, and retry queues are mandatory).*
-- **Boiling the Ocean:**
-  Trying to design the entire microservice backend architecture (Kubernetes scaling, Cassandra partitioning) when applying for a Mobile role.
-  *(Failure: While you must understand the API boundary and basic server concepts like Load Balancing, your primary focus must remain on the client-side constraints: Battery, RAM, OS Lifecycles, and SQLite).*
+---
 
-## Staff Engineer Thinking
+## 7. What to Default To (the libraries you'll mention)
 
-When I enter a System Design discussion, my primary weapon is the word **"Why."**
+| Concern | Default library |
+|---|---|
+| UI | Jetpack Compose |
+| Compose state | `collectAsStateWithLifecycle` |
+| Navigation | Compose Navigation |
+| DI | Hilt |
+| Network | OkHttp + Retrofit (or Ktor 3 if KMP) |
+| WebSocket | OkHttp WebSocket |
+| Persistence | Room 2.7+ |
+| Encrypted persistence | EncryptedSharedPrefs or DataStore + Tink |
+| DB encryption | SQLCipher |
+| Image loading | Coil 3 |
+| Video | Media3 (ExoPlayer) |
+| Background work | WorkManager 2.10+ |
+| Pagination | Paging 3 + RemoteMediator |
+| Location | FusedLocationProvider |
+| Push | FirebaseMessaging |
+| JSON | kotlinx.serialization |
+| Concurrency | Coroutines + Flow |
+| Logging | Timber or stdlib |
+| Crash | Crashlytics or Sentry |
+| Perf | `JankStats`, `Macrobenchmark`, Baseline Profile |
+| E2EE | libsignal SDK (as a black box) |
+| Maps | Google Maps SDK / Mapbox |
+| Auth | AppAuth (OAuth + PKCE) |
 
-1.  **Challenge the Prompt:** If asked to design a "Video Streaming App," I immediately ask, "Is it live-streaming (Twitch) or Video-on-Demand (Netflix)?" The entire architecture (HLS vs WebRTC) pivots on this answer.
-2.  **State the Invariants:** I verbally lock in my assumptions. "I am assuming users will have spotty network connections. Therefore, I am designing this as an Offline-First application with a local SQLite cache as the absolute Single Source of Truth."
-3.  **The "What If" Game:** I pre-emptively attack my own design. "My current API design works for 1,000 friends. However, if a user has 1,000,000 friends, this JSON payload will cause an `OutOfMemoryError` on parse. To fix this, I would need to introduce cursor-based pagination here."
+State these confidently; if the interviewer pushes, defend the choice with tradeoffs.
 
-## Probing Questions
+---
 
-1.  Explain why jumping straight to choosing libraries (e.g., Retrofit vs Ktor) is a failure of the System Design framework.
-2.  What is the difference between a Functional Requirement and a Non-Functional Requirement (NFR) in the context of mobile applications?
-3.  During Phase 2 (High-Level Architecture), why is it critical to explicitly define the boundaries between the Client, the Transport Layer, and the Server?
-4.  Why must an Entity-Relationship (ER) diagram for a local SQLite database include synchronization state columns (e.g., `sync_status`) in addition to the standard business data?
-5.  Explain the concept of an "Optimistic UI Update" and how it masks network latency in a Chat application.
-6.  If an interviewer asks you to design a system for uploading massive 4K videos, why is Android's `WorkManager` a better choice than a standard Kotlin Coroutine?
-7.  Describe a scenario where choosing a "mathematically perfect" architecture (like CRDTs) might be the wrong engineering decision.
-8.  How do you prevent a massive list of data (e.g., 50,000 chat messages) from causing UI stuttering and OutOfMemory errors on an Android device?
-9.  Why is it crucial to clarify the target demographic's network quality (e.g., 5G in Seoul vs 3G in rural India) during the Requirements phase?
-10. Describe the "Single Source of Truth" pattern when merging real-time WebSocket data with historical data loaded from a REST API.
+## 8. Practice Recommendations
 
-## Further Reading
+1. **Pick one file in this folder per week.** Read it. Talk through it out loud as if you're in the interview.
+2. **Whiteboard the HLD from memory.** If you can't draw it without referring to the file, you don't know it yet.
+3. **Time yourself.** 45 minutes per file end-to-end. Slow down if you're rushing; speed up if you're padding.
+4. **Pair with someone.** Have them probe with the "Follow-up Questions" section.
+5. **Reverse the deep dive.** What if the interviewer picks a different feature to deep-dive? Practice 2-3 deep dives per problem.
 
-- [`non-functional-requirements.md`](non-functional-requirements.md) — Deep dive into the constraints (Battery, CPU, Network) that shape every mobile design.
-- [`offline-first-app.md`](../reference-architectures/offline-first-app.md) — The reference architecture that implements the "Single Source of Truth" local caching pattern.
-- [`idempotency.md`](../distributed-systems/idempotency.md) — The mathematical proof required for safe network retries.
+---
+
+## 9. Further Reading
+
+- [weeeBox/mobile-system-design](https://github.com/weeeBox/mobile-system-design) — the reference framework this folder is modeled on.
+- [Common interview mistakes](https://github.com/weeeBox/mobile-system-design/blob/master/common-interview-mistakes.md) — anti-patterns to avoid.
+- [Now in Android sample](https://github.com/android/nowinandroid) — production-grade Android architecture.
+- [Android Developers — Architecture guide](https://developer.android.com/topic/architecture) — official UI/Domain/Data layering.
+- [System Design Interview — Vol 2](https://www.amazon.com/System-Design-Interview-Insiders-Guide/dp/1736049119) — Alex Xu (server-side; useful for the HLD muscle).
+
+---
+
+> **In short:** the framework is requirements → questions → HLD → API → mobile architecture → storage → ONE deep dive → tradeoffs → concerns → follow-ups → out-of-scope → further reading. Pace yourself, scope aggressively, go deep on one thing, signal you have more.

@@ -1,133 +1,453 @@
-# Security & Privacy (System Design NFRs)
+# Security & Privacy (Android Mobile)
 
-## Overview
+> A 45-60 minute mobile system-design walkthrough for the security & privacy posture of an Android app: TLS + pinning, Keystore, biometric, screen capture, root/rebrand detection, PII handling, GDPR. A horizontal concern referenced across every other file.
 
-A Junior Engineer thinks security means adding an "S" to HTTP and hiding the API key in `strings.xml`.
+---
 
-A Staff Engineer assumes the physical device is already compromised. They assume the user is on a malicious Wi-Fi network, the device is rooted, and an attacker has full access to the file system. In Mobile System Design, **Security & Privacy** are not features; they are foundational Non-Functional Requirements (NFRs) that dictate how data rests, how data travels, and how the company avoids devastating GDPR/CCPA fines.
+## 1. Gathering Requirements (~5 min)
 
-## Why It Matters
+> **Interviewer:** "Walk me through the security and privacy decisions for a mobile app."
+> **Candidate:** "Security breaks down into transport, storage, app integrity, and runtime. Privacy is about minimisation, consent, and compliance. I'll cover both and deep-dive Keystore-wrapped credential storage."
 
-If you are asked to design a "Banking App" or a "Medical App", Security is the *only* NFR that truly matters.
-- If you save an authentication token to `SharedPreferences` in plain text on a rooted device, another app can read it, steal the session, and drain the user's bank account.
-- If you use standard HTTPS but fail to pin the certificate, a malicious Corporate Firewall can perform a Man-In-The-Middle (MITM) attack and intercept passwords.
-- If you log the user's GPS coordinates to Firebase Analytics, you might violate the EU's GDPR laws, resulting in a fine of up to 4% of your company's global revenue.
+### Functional Requirements
+- **TLS 1.3** for all network traffic.
+- **Certificate pinning** in production builds.
+- **Token storage** in Keystore-wrapped storage.
+- **Biometric** for high-stakes actions.
+- **PII redaction** in logs and analytics.
+- **GDPR / CCPA** compliance: consent + delete-my-data.
 
-## First Principles
+### Non-Functional Requirements
+- **Defense in depth** — multiple layers; no single point of failure.
+- **No surprises** — security choices documented in code.
+- **Compatible** with security review processes.
+- **Tested**: pen-tested annually; regression caught in CI.
+- **Failures don't crash** — graceful degradation.
 
-1.  **Data at Rest:** Data physically written to the Android flash storage (SQLite, SharedPreferences, Files). It must be encrypted.
-2.  **Data in Transit:** Data moving through the air to the cell tower or Wi-Fi router. It must be encrypted (TLS) and verified.
-3.  **PII (Personally Identifiable Information):** Any data that can identify a specific human (Email, Phone, GPS, IP Address). It must be aggressively redacted from logs.
-4.  **Hardware-Backed Security:** The Android Keystore (TEE/Secure Element). A physical chip on the phone that holds cryptographic keys. Even the Android OS cannot extract the private key from this chip.
-5.  **Root / Jailbreak:** When a user intentionally breaks the OS Sandbox, giving all apps Administrator (`su`) access to the entire file system.
+### Out of Scope
+- Server-side security (separate domain)
+- Anti-fraud ML (server)
+- App Store distribution security (Play handles signing, downloads)
+- Hardware-level attestation deep dive (touched lightly)
+- Compliance audits (legal team)
 
-## Mental Model
+---
 
-Think of your app's data as **Cash in a Briefcase**.
-- **Data in Transit:** You (the app) walking down the street to the Bank (Server). You don't use a clear plastic bag; you use a locked metal briefcase (HTTPS/TLS).
-- **Certificate Pinning:** When you get to the Bank, you don't just hand the briefcase to anyone in a suit. You ask to see their specific Employee ID Badge to prove they actually work there.
-- **Data at Rest:** When you get home, you don't leave the briefcase on the kitchen counter (Plaintext SQLite). You put it in a massive steel safe bolted to the floor (Encrypted Local Storage).
-- **Android Keystore:** The combination to that safe is locked inside a titanium puzzle box (The Keystore Chip) that even you cannot open; you can only ask the box to lock or unlock things for you.
+## 2. Clarifying Questions (~3 min)
 
-## Internal Mechanics
+| Question | Why it matters |
+|---|---|
+| Domain (banking, social, retail)? | Threat model intensity |
+| Tokens (JWT, session)? | Storage strategy |
+| Biometric tier (Class 3 required)? | Keystore binding |
+| Markets (GDPR, CCPA, COPPA)? | Consent flow |
+| OS floor? | Keystore features, biometric APIs |
+| Anti-tamper requirements? | Root detection, Play Integrity |
+| Network certificate rotation cadence? | Pinning UX |
 
-### 1. Securing Data at Rest (The Keystore)
+> **Candidate:** "Retail with payments; JWT access + rotating refresh; Class-3 biometric on transactions > €30; GDPR + CCPA + COPPA; Android 9+; Play Integrity for high-risk actions; pinning rotation every 6 months with overlap."
 
-Never save sensitive data in plain text.
-```kotlin
-// DANGEROUS: Anyone with a rooted phone can read this XML file.
-sharedPreferences.edit().putString("auth_token", "secret_123").apply()
+---
+
+## 3. The Security Stack on Android
+
+```
+   ┌─────────────────────────────────────┐
+   │ Transport                            │   TLS 1.3, pinning, HTTPS
+   ├─────────────────────────────────────┤
+   │ Storage                              │   Keystore, EncryptedSharedPrefs, SQLCipher
+   ├─────────────────────────────────────┤
+   │ App integrity                        │   Play App Signing, Play Integrity, SafetyNet
+   ├─────────────────────────────────────┤
+   │ Runtime                              │   Biometric, FLAG_SECURE, deep-link validation
+   ├─────────────────────────────────────┤
+   │ Code                                 │   R8 obfuscation, R8 shrinking, native lib protection
+   └─────────────────────────────────────┘
 ```
 
-A Staff Engineer uses `EncryptedSharedPreferences` (part of AndroidX Security).
-Under the hood, this library:
-1. Generates a random AES-256 Symmetric Key.
-2. Uses that AES key to encrypt the data.
-3. Takes the AES key, and encrypts it using an RSA Asymmetric Master Key that lives inside the physical **Android Keystore** hardware chip.
-4. Saves the encrypted AES key and the encrypted data to disk.
+---
 
-Even if an attacker rips the flash storage out of the phone, they cannot decrypt the data because the Master Key is permanently fused into the separate Keystore chip.
+## 4. Transport (TLS + Pinning)
 
-*(For massive databases, use `SQLCipher` which operates on the same principles for Room/SQLite).*
-
-### 2. Securing Data in Transit (Certificate Pinning)
-
-HTTPS encrypts the data. But how do you know you are talking to `api.yourbank.com` and not a hacker router pretending to be your bank?
-
-The OS checks the server's TLS Certificate against a list of hundreds of "Trusted Root Certificate Authorities (CAs)" pre-installed on the phone. If a hacker compromises *just one* of those CAs, or if a user installs a malicious profile, the hacker can intercept your HTTPS traffic (Man-In-The-Middle).
-
-**Certificate Pinning** solves this. The app hardcodes the exact cryptographic hash of the server's certificate.
+### Strict TLS
 
 ```kotlin
-// OkHttp Certificate Pinning
-val certificatePinner = CertificatePinner.Builder()
-    .add("api.yourbank.com", "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
-    .build()
-
-val client = OkHttpClient.Builder()
-    .certificatePinner(certificatePinner)
+val okHttp = OkHttpClient.Builder()
+    .connectionSpecs(listOf(
+        ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+            .tlsVersions(TlsVersion.TLS_1_3, TlsVersion.TLS_1_2)
+            .cipherSuites(*MODERN_CIPHERS)
+            .build()
+    ))
     .build()
 ```
 
-If the hashes don't match, `OkHttp` instantly severs the connection, protecting the user.
+Disable plaintext via `network_security_config.xml`:
 
-### 3. Biometric Authentication
+```xml
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <domain-config>
+        <domain includeSubdomains="true">api.example.com</domain>
+        <pin-set expiration="2026-12-31">
+            <pin digest="SHA-256">primaryPinBase64==</pin>
+            <pin digest="SHA-256">backupPinBase64==</pin>
+        </pin-set>
+    </domain-config>
+</network-security-config>
+```
 
-To prove the human holding the phone is the owner, you use `BiometricPrompt` (Fingerprint / FaceID).
+### Pinning ops
 
-Crucially, a Staff Engineer knows you do *not* just ask the OS "Is this the user?" (a boolean response can be hacked on a rooted device). Instead, you ask the OS to **Unlock a Cryptographic Key**.
-When the user successfully authenticates via fingerprint, the hardware Keystore unlocks a specific private key. You use that key to decrypt the authentication token. If the biometric prompt is bypassed by a hacker, they still don't have the decrypted token, so the app remains secure.
+- **Always have a backup pin** — primary pin compromise without backup = bricked app.
+- **Rotate with overlap** — add new pin before retiring old.
+- **Expire annually** — forces rotation cadence.
+- **Pin only your domains** — don't pin third-party APIs.
+- **Have a kill switch** — flag to disable pinning in case of emergency (review carefully).
 
-## Tradeoffs
+### Cleartext blocker
 
-**Certificate Pinning vs Operational Agility**
+```xml
+<application android:usesCleartextTraffic="false">
+```
 
-- **Certificate Pinning:**
-    - *Pros:* Absolute protection against MITM attacks. Mandatory for banking apps.
-    - *Cons:* If the backend DevOps team accidentally rotates the server's TLS certificate without coordinating with the Mobile team, **every single Android app in the world will instantly crash and go offline.** The app is permanently bricked until the user updates from the Play Store.
+Hard fail if any code path tries `http://`.
 
-*Staff Decision:* You never pin to the "Leaf" (the final certificate). You pin to the Intermediate CA or the Root CA. You also mandate the implementation of "Backup Pins" in the code, so if the primary cert expires, the app gracefully falls back to the new one.
+---
 
-## Failure Modes
+## 5. Storage (Keystore, EncryptedSharedPrefs, SQLCipher)
 
-- **The APM Leak (PII Violation):**
-  A developer writes `Timber.d("Login failed for user: ${user.email}")`. This log is uploaded to Firebase Crashlytics or New Relic.
-  *(Failure: You have just violated GDPR. You leaked Personally Identifiable Information into a 3rd party database. You must now purge the entire Crashlytics index, and notify your legal department. Fix: Mandate strict Lint rules banning PII logging).*
-- **The Clipboard Attack:**
-  Users copy their 2FA codes or passwords. Android 12+ shows a toast when an app accesses the clipboard. Malicious background apps constantly poll the clipboard to steal passwords.
-  *(Fix: If your app generates sensitive data (like a crypto recovery phrase), you must use the `ClipData.newPlainText()` API and flag it as sensitive so the OS hides it from other apps).*
-- **Screen Recording / Screenshot Stealing:**
-  Malicious apps can take screenshots of your app while it is in the background, stealing account balances or messages.
-  *(Fix: For highly sensitive screens, set `WindowManager.LayoutParams.FLAG_SECURE`. This physically turns the screen black if a screenshot is taken or if the screen is recorded).*
+### Token storage
 
-## Staff Engineer Thinking
+```kotlin
+val masterKey = MasterKey.Builder(context)
+    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+    .build()
 
-When reviewing an architecture for Security, a Staff engineer adopts an adversarial mindset (Red Teaming).
+val prefs = EncryptedSharedPreferences.create(
+    context,
+    "secure-tokens",
+    masterKey,
+    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+)
 
-1.  **Assume the Device is Hostile:** I do not trust the Android OS. I assume the device is rooted. I assume `SharedPreferences` is a public bulletin board. Therefore, I mandate `EncryptedSharedPreferences` and `SQLCipher` for all session data.
-2.  **Stateless Backends:** I advocate for JWTs (JSON Web Tokens) with very short lifespans (e.g., 15 minutes). If a token is stolen from the device, it becomes useless quickly. The app uses a long-lived, securely encrypted Refresh Token to silently fetch new JWTs in the background.
-3.  **App Attestation (Play Integrity API):** For high-security endpoints (e.g., transferring money), I integrate the Play Integrity API. Before the backend executes the transfer, the Android app asks Google Play for a cryptographic token proving that: 1. The app is a genuine binary installed from the Play Store (not a modded APK), and 2. The Android OS is pristine (not rooted). The backend verifies this token before moving the money.
+prefs.edit().putString("access_token", token).apply()
+```
 
-## Common Misconceptions
+The master key lives in Android Keystore. The actual prefs values are encrypted with that key. Keystore keys cannot be extracted (even with root on most devices).
 
-- **"Base64 is encryption."** Terrifyingly false. Base64 is *encoding*. It takes 2 seconds to decode. It provides zero security.
-- **"ProGuard / R8 hides my API keys."** False. ProGuard shrinks and obfuscates class names (`UserRepository` becomes `a.b.c`). It does *not* encrypt String literals. Anyone can decompile your APK using `apktool` and extract your API keys via `grep`. Never put secret keys (like an AWS secret or a Stripe secret) in the Android app. The Mobile App only holds public keys; secrets live on your Backend.
+### Room with SQLCipher
 
-## Probing Questions
+```kotlin
+val passphrase = SQLiteDatabase.getBytes(keystoreWrappedPassphrase)
+val factory = SupportFactory(passphrase)
+val db = Room.databaseBuilder(context, AppDatabase::class.java, "app.db")
+    .openHelperFactory(factory)
+    .build()
+```
 
-1.  Explain the architectural difference between saving an API key in `SharedPreferences` versus `EncryptedSharedPreferences` on a rooted Android device.
-2.  What is a Man-In-The-Middle (MITM) attack, and how does Certificate Pinning prevent it?
-3.  Describe the catastrophic failure mode of Certificate Pinning if the backend team rotates the server's TLS certificate without coordinating with the mobile team.
-4.  Why is relying on the boolean result of a `BiometricPrompt` (e.g., `if (success)`) inherently insecure on a compromised device, and what is the cryptographic alternative?
-5.  What is Personally Identifiable Information (PII), and how does accidentally logging it to an APM tool violate GDPR/CCPA regulations?
-6.  Explain the purpose of `WindowManager.LayoutParams.FLAG_SECURE` in the context of banking or medical applications.
-7.  Why is it an architectural failure to bundle a private backend secret key (e.g., an AWS Secret Access Key) directly into the Android APK, even if the code is obfuscated by R8?
-8.  Describe how a Staff Engineer utilizes the Google Play Integrity API to prove to a backend server that the Android device has not been rooted or compromised.
-9.  How does an attacker utilize the Android Clipboard to steal user data, and how can an application defend against it?
-10. Explain the role of the physical Android Keystore (Trusted Execution Environment) in encrypting local SQLite databases via `SQLCipher`.
+The passphrase is generated once, wrapped by a Keystore AES key, stored in EncryptedSharedPrefs.
 
-## Further Reading
+### Keystore-bound biometric key
 
-- [`security-and-keystore.md`](../android/networking-and-security/security-and-keystore.md) — Deep dive into the physical hardware chip (TEE) that enables this security.
-- [`non-functional-requirements.md`](non-functional-requirements.md) — The framework that dictates Security as a core design constraint.
-- [`crash-monitoring.md`](../android/observability/crash-monitoring.md) — How APM tools can accidentally leak PII if not tightly controlled.
+```kotlin
+val keyGen = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
+keyGen.init(
+    KeyGenParameterSpec.Builder("biometric_key",
+        KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+        .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+        .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+        .setUserAuthenticationRequired(true)
+        .setUserAuthenticationParameters(0, KeyProperties.AUTH_BIOMETRIC_STRONG)
+        .build()
+)
+```
+
+Using this key requires fresh biometric authentication. Decrypting a stored token = biometric prompt.
+
+---
+
+## 6. App Integrity (Play Integrity)
+
+```kotlin
+val integrityManager = IntegrityManagerFactory.create(context)
+val request = IntegrityTokenRequest.builder()
+    .setNonce(serverProvidedNonce)
+    .build()
+integrityManager.requestIntegrityToken(request)
+    .addOnSuccessListener { response ->
+        // Send response.token() to your server for verification
+    }
+```
+
+Server-side verification confirms: app is unmodified, signed by you, installed from Play (not sideloaded), running on a real device.
+
+Use for: high-value actions (transfers, account changes). Not for ordinary reads.
+
+---
+
+## 7. Runtime Protections
+
+### Screen capture / overlays
+
+```kotlin
+class PaymentActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+    }
+}
+```
+
+- Blocks screenshots of this activity.
+- Hides from screen recording.
+- Blacks out content in app switcher.
+
+Use on: payment screens, security setup, sensitive content (medical, legal).
+
+### Deep-link validation
+
+```kotlin
+fun handleDeepLink(uri: Uri): Boolean {
+    if (uri.scheme != "https" || uri.host != "example.com") return false
+    val path = uri.pathSegments
+    // ... parse safely; never `eval` URI fragments
+}
+```
+
+App Links + Digital Asset Links verification (see `deep-links-and-universal-links.md`).
+
+### Tap-jacking
+
+```kotlin
+Button(modifier = Modifier.systemGestureExclusion()) { ... }
+
+// Manifest:
+android:filterTouchesWhenObscured="true"
+```
+
+Blocks malicious overlays from capturing taps.
+
+---
+
+## 8. Code Obfuscation & Shrinking
+
+```kotlin
+// build.gradle.kts
+buildTypes {
+    release {
+        isMinifyEnabled = true
+        isShrinkResources = true
+        proguardFiles(
+            getDefaultProguardFile("proguard-android-optimize.txt"),
+            "proguard-rules.pro"
+        )
+    }
+}
+```
+
+R8 obfuscates class/method names — raises the bar for reverse engineering. Doesn't stop a determined attacker but stops casual decompilation.
+
+For sensitive constants:
+- API keys: never in code. Inject via build config, server-driven if possible.
+- Crypto secrets: never embed; derive from user input or server.
+
+---
+
+## 9. Deep Dive: Token Storage with Keystore Wrap (~15 min)
+
+> *I'd pick this as the deep dive because token storage is the most-attacked surface — credentials live forever and unlock everything else.*
+
+### Why Keystore?
+
+A token stored in `SharedPreferences` is a plain file. On a rooted device, anyone can read it. Keystore-wrapped storage means: even root + adb can't read the value without invoking the Keystore, and Keystore can be configured to require biometric/PIN to release the key.
+
+### The layering
+
+```
+User token (string)
+    ↓ encrypted with
+EncryptedSharedPreferences value key (AES-GCM)
+    ↓ key encrypted with
+MasterKey (Keystore-resident AES)
+    ↓ key protected by
+Android Keystore (StrongBox-backed where available)
+```
+
+### Master key creation
+
+```kotlin
+val masterKey = MasterKey.Builder(context, "app-master-key")
+    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+    .setUserAuthenticationRequired(false)        // true for biometric-required apps
+    .setRequestStrongBoxBacked(true)              // dedicated security chip if available
+    .build()
+```
+
+`setRequestStrongBoxBacked(true)` requests Titan-class hardware on Pixel, Knox on Samsung. Falls back to TEE elsewhere.
+
+### Reading the token
+
+```kotlin
+class KeystoreTokenVault @Inject constructor(@ApplicationContext ctx: Context) : TokenVault {
+    private val prefs by lazy {
+        val key = MasterKey.Builder(ctx).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
+        EncryptedSharedPreferences.create(
+            ctx, "tokens", key,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    }
+
+    override suspend fun load(): Tokens? = withContext(Dispatchers.IO) {
+        prefs.getString("tokens", null)?.let { json.decodeFromString<Tokens>(it) }
+    }
+
+    override suspend fun save(tokens: Tokens) = withContext(Dispatchers.IO) {
+        prefs.edit().putString("tokens", json.encodeToString(tokens)).apply()
+    }
+}
+```
+
+### Biometric-bound variant
+
+For apps where credentials must be biometric-gated on each use (e.g., banking):
+
+```kotlin
+suspend fun loadTokenWithBiometric(activity: FragmentActivity): String? {
+    val cipher = createCipherForKeystoreKey("biometric-key")
+    val ok = biometricPrompt.authenticate(activity, BiometricPrompt.CryptoObject(cipher))
+    if (!ok) return null
+    val encrypted = prefs.getString("encrypted-token", null) ?: return null
+    return cipher.doFinal(Base64.decode(encrypted, Base64.NO_WRAP)).toString(Charsets.UTF_8)
+}
+```
+
+Without successful biometric auth, the cipher can't decrypt. The token is inaccessible.
+
+### Backup exclusion
+
+```xml
+<application android:allowBackup="false"
+             android:fullBackupContent="@xml/backup_rules">
+```
+
+```xml
+<!-- backup_rules.xml -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="tokens.xml" />
+    <exclude domain="sharedpref" path="secure-tokens.xml" />
+</full-backup-content>
+```
+
+Don't let Google Drive auto-backup carry tokens to other devices.
+
+### Rotation on suspicion
+
+If you detect a security event (failed biometric attempts, suspicious geo, server alert), force a token rotation:
+
+```kotlin
+suspend fun forceRotate() {
+    vault.clear()
+    navigator.replaceWithLogin(reason = ReAuthReason.SECURITY_EVENT)
+}
+```
+
+---
+
+## 10. Privacy & Compliance
+
+### Minimisation
+
+- Don't collect what you don't need.
+- Aggregate locations to H3 cell, not raw lat/lng.
+- Redact PII in logs and crash reports.
+
+```kotlin
+class PiiRedactor {
+    private val patterns = mapOf(
+        "email" to "[REDACTED_EMAIL]",
+        "phone" to "[REDACTED_PHONE]",
+        "card" to "[REDACTED_CARD]",
+    )
+    fun redact(message: String): String = patterns.entries.fold(message) { msg, (key, replacement) ->
+        msg.replace(key.toRegex(), replacement)
+    }
+}
+```
+
+### Consent
+
+```kotlin
+data class Consent(val analytics: Boolean, val marketing: Boolean, val crashReporting: Boolean)
+```
+
+Gate every category through `Consent`. Default `false` for non-essential.
+
+### Delete-my-data
+
+```kotlin
+suspend fun handleDeleteRequest() {
+    api.deleteAccount()                    // server cascade
+    db.clearAllTables()                    // local Room
+    EncryptedSharedPreferences.clear()    // local secrets
+    notifierClear.cancelAll()              // active notifications
+    workManager.cancelAllWork()            // pending workers
+    auth.signOut()                          // session
+}
+```
+
+Document this flow. Audit annually. Reach for the same code path as the GDPR delete endpoint.
+
+### Lock-screen visibility
+
+```kotlin
+NotificationCompat.Builder(ctx, CHANNEL_SENSITIVE)
+    .setVisibility(NotificationCompat.VISIBILITY_SECRET)    // hide content on lock screen
+    ...
+```
+
+---
+
+## 11. Common Misses
+
+| Miss | Fix |
+|---|---|
+| Token in plain `SharedPreferences` | EncryptedSharedPreferences |
+| No pinning | Network Security Config + pin set |
+| `usesCleartextTraffic=true` | Set to false |
+| `allowBackup=true` carrying tokens | Exclude in backup rules |
+| Logging tokens in OkHttp interceptor | Redact `Authorization` header |
+| Screenshots possible on payment screen | `FLAG_SECURE` |
+| Hardcoded API keys | BuildConfig + server-driven where possible |
+| Wide-open deep link parser | Validate scheme + host |
+| `runBlocking` on main exposing IO | Move to dispatcher |
+| Storing biometric template (you can't) | Use Keystore-bound key + BiometricPrompt instead |
+
+---
+
+## 12. Testing & Audits
+
+- **Static**: `Detekt`, `Lint`, OWASP Mobile checks in CI.
+- **Dynamic**: Mob-SF (Mobile Security Framework), Frida-based runtime tests.
+- **Pen-test**: annual by an external firm; high-stakes products quarterly.
+- **Dependency scan**: `OWASP Dependency-Check`, `Snyk`, `Dependabot`.
+
+---
+
+## 13. Further Reading
+
+- [Android Developers — Security best practices](https://developer.android.com/topic/security/best-practices) — official baseline.
+- [Android Keystore system](https://developer.android.com/training/articles/keystore) — key storage internals.
+- [Network Security Configuration](https://developer.android.com/training/articles/security-config) — pinning + TLS.
+- [Play Integrity API](https://developer.android.com/google/play/integrity) — integrity verification.
+- [OWASP Mobile Top 10](https://owasp.org/www-project-mobile-top-10/) — vulnerability checklist.
+
+---
+
+> **In short:** security is defense in depth — TLS + pinning, Keystore-wrapped storage, biometric for sensitive actions, FLAG_SECURE on payment, R8 obfuscation, Play Integrity for high-stakes flows, consent gates everywhere. Privacy is minimisation + redaction + a delete path. Test annually; gate in CI; never log credentials.

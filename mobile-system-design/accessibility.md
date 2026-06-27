@@ -1,126 +1,304 @@
-# Accessibility (a11y)
+# Accessibility (a11y) for Android
 
-## Overview
+> A 45-60 minute mobile system-design walkthrough for the accessibility posture of an Android app: TalkBack semantics, touch targets, text scaling, color contrast, motion reduction. Less of an "interview problem" and more of a horizontal concern that's tested in any of the other files.
 
-A Junior Engineer views Accessibility (often abbreviated as **a11y**, because there are 11 letters between 'a' and 'y') as a chore. They add `contentDescription = null` to silence the compiler warnings and assume their job is done because the app looks pretty to them.
+---
 
-A Staff Engineer understands that Accessibility is a fundamental Non-Functional Requirement (NFR). It is not just about empathy; it is about severe legal compliance (ADA lawsuits), massive market expansion (15% of the global population experiences some form of disability), and designing robust UI architectures. If your app cannot be navigated by a screen reader, your UI tree is mathematically broken.
+## 1. Gathering Requirements (~5 min)
 
-## Why It Matters
+> **Interviewer:** "Walk me through how you'd make this app accessible."
+> **Candidate:** "Accessibility has three axes: sensory (screen reader, contrast), motor (touch targets, focus), and cognitive (clear copy, predictable nav). I'll cover all three with checkpoints, then deep-dive Compose semantics + TalkBack."
 
-Imagine a blind user using your E-commerce app to buy a gift. They rely on Android's **TalkBack** screen reader.
-- **Bad App:** TalkBack reads: *"Image... Button... Button... Text."* The user has no idea what they are buying or how to check out. They leave.
-- **Staff App:** TalkBack reads: *"Product image, red running shoes... Add to cart, Button... Cart contains 1 item... Checkout, Button."* The user buys the item seamlessly.
+### Functional Requirements (what to support)
+- **Screen reader** (TalkBack) — every interactive element has a meaningful label.
+- **Large text** — UI doesn't break at 200% font scale.
+- **High contrast** — text passes WCAG AA 4.5:1.
+- **Touch targets** ≥ 48 dp.
+- **Reduce motion** — animations honour the system setting.
+- **Captions** for media.
 
-Beyond screen readers, accessibility covers users with motor impairments (needing larger tap targets), color blindness (needing high contrast ratios), and cognitive impairments (needing clear, predictable navigation).
+### Non-Functional Requirements
+- **No regression** — a11y tested in CI.
+- **Compliant** with WCAG 2.2 AA where reasonable.
+- **Localized** — labels translate.
+- **Inclusive** — designed with disabled users, not for them.
 
-## First Principles
+### Out of Scope
+- Switch / external input devices (specialist)
+- Braille displays (handled by TalkBack)
+- AT/Voice Access deep customisation
+- Legal compliance audits (separate)
+- Hearing aid integration (system-level)
 
-1.  **Semantic Meaning vs Visual Representation:** A red circle on the screen means nothing to the OS. The OS needs to know it is a `Button` that signifies `Delete`. The Semantic Tree is a hidden layer parallel to your UI tree that the OS uses for accessibility.
-2.  **TalkBack:** Google's screen reader included on Android devices. It gives spoken feedback so that users can use their device without looking at the screen.
-3.  **Switch Access:** Allows users with severe motor impairments to interact with the Android device using one or more switches (e.g., a physical button mounted on a wheelchair).
-4.  **Scaling (SP vs DP):** Android allows users to increase the system font size. If you hardcode text sizes in `dp` (Density-independent Pixels) instead of `sp` (Scale-independent Pixels), the text will not grow, breaking the UI for visually impaired users.
+---
 
-## Mental Model
+## 2. Clarifying Questions (~3 min)
 
-Think of your UI as a **Comic Book**.
-- A sighted user can look at the comic book and instantly understand the story from the pictures and layout (Visual UI).
-- A blind user needs an audiobook version (Semantic Tree).
-- If your UI components don't have `contentDescriptions`, it's like handing them a comic book with blank word bubbles and saying, "Figure it out." You must write the audiobook script for the OS to read.
+| Question | Why it matters |
+|---|---|
+| Compose-first or View-first? | API surface (`Modifier.semantics` vs `contentDescription`) |
+| Target WCAG level (A / AA / AAA)? | Contrast + text-resize standards |
+| Markets with strong a11y laws (US, EU)? | Legal exposure |
+| Audio/video content frequency? | Caption strategy |
+| Custom views in use? | Manual `AccessibilityDelegate` |
+| Animation-heavy product? | Reduce motion integration |
+| Localized to RTL languages? | TalkBack reading order verification |
 
-## Internal Mechanics
+> **Candidate:** "Compose-first, WCAG AA target, US/EU markets, mix of static + media content, no custom canvas views, reduce-motion respected, en/es/ar/he locales."
 
-### 1. The Semantic Tree (Jetpack Compose)
+---
 
-In Legacy XML, accessibility was bolted on via `android:contentDescription`. In Jetpack Compose, Accessibility is a first-class citizen using `Semantics`.
+## 3. The a11y Stack on Android
 
-When you write Compose code, you are actually building two trees simultaneously:
-1. The **Layout Tree** (used by the GPU to draw pixels).
-2. The **Semantics Tree** (used by TalkBack, Automator Tests, and Autofill).
+```
+User
+  │
+  ▼
+Accessibility Service (TalkBack, Switch Access, etc.)
+  │
+  ▼
+AccessibilityNodeInfo tree (built by framework)
+  │
+  ▼
+View / Composable announces semantics
+  │
+  ├── Compose: Modifier.semantics { contentDescription, role, ... }
+  └── View: android:contentDescription, setAccessibilityDelegate
+```
+
+---
+
+## 4. Compose Semantics
 
 ```kotlin
-// A visually correct, but Semantically broken Compose button
-Box(
-    modifier = Modifier
-        .background(Color.Red)
-        .clickable { deleteItem() }
-) {
-    Text("X") // TalkBack will just read "X". 
-}
+// Good
+Icon(
+    imageVector = Icons.Default.Favorite,
+    contentDescription = "Like this post",   // not "heart icon"
+    modifier = Modifier.size(48.dp).clickable { onLike() }
+)
 
-// A Staff-level Semantically correct Compose button
-Button(
-    onClick = { deleteItem() },
-    modifier = Modifier.semantics { 
-        contentDescription = "Delete item" 
-        role = Role.Button
-    }
+// Better: combine semantics
+Row(
+    modifier = Modifier
+        .semantics(mergeDescendants = true) {
+            contentDescription = "Sam, 4 minutes ago. Has 3 unread messages."
+            role = Role.Button
+        }
+        .clickable { openChat() }
 ) {
-    Icon(imageVector = Icons.Default.Delete, contentDescription = null) // We null the icon because the parent handles the description
+    Avatar(user = sam)
+    Column { Text(sam.name); Text("4 min ago") }
+    UnreadBadge(count = 3)
 }
 ```
 
-### 2. Touch Target Size
+`mergeDescendants = true` collapses children into one announcement — TalkBack speaks the row as one element, not five.
 
-A user with motor tremors cannot tap a 16x16 pixel icon. Material Design strictly mandates a minimum touch target size of **48x48 dp**.
+---
 
-In Compose, the `Modifier.clickable()` automatically expands the touch target to 48dp, even if the visual icon is only 24dp. A Staff Engineer ensures that custom UI components never bypass this critical safety net.
+## 5. Touch Targets
 
-### 3. Traversal Order
+```kotlin
+IconButton(onClick = { ... }, modifier = Modifier.size(48.dp)) {
+    Icon(Icons.Default.MoreVert, contentDescription = "More options")
+}
+```
 
-TalkBack reads the screen linearly (usually top-to-bottom, left-to-right). Sometimes, visual layouts make the linear reading order confusing (e.g., reading a price before the item name in a complex grid).
+`IconButton` defaults to 48 dp touch target even if the icon is 24 dp. Don't override smaller.
 
-A Staff Engineer uses `Modifier.semantics { traversalIndex = ... }` or `isTraversalGroup = true` to force TalkBack to read logically related elements together, regardless of their visual placement.
+For dense lists (e.g., chat input toolbar), use `Modifier.minimumInteractiveComponentSize()`.
 
-## Tradeoffs
+---
 
-**Information Density vs Cognitive Load**
+## 6. Text Scaling
 
-- **High Density:** You pack the screen with tiny text, complex graphs, and 15 small buttons. Sighted power users love the efficiency.
-- **Cognitive/Visual Overload:** Visually impaired users are overwhelmed. Users with motor tremors mis-click the tiny buttons. TalkBack takes 3 minutes to read the entire screen.
+```kotlin
+// Use sp for text, dp for everything else
+Text("Hello", style = TextStyle(fontSize = 16.sp))    // scales with system
 
-*Staff Decision:* You often have to compromise the visual "sleekness" of a design. If a Designer hands me a mockup with 24dp touch targets because "it looks cleaner," I will reject the design and mandate 48dp minimums, explicitly citing ADA compliance and Material Design standards.
+// Test at 200% font scale
+// adb shell settings put system font_scale 2.0
+```
 
-## Failure Modes
+Layouts must handle:
+- Wrapping (don't truncate)
+- Larger button heights
+- Multi-line headings
 
-- **The Redundant Description:**
-  Adding `contentDescription = "Profile Image"` to a decorative image. TalkBack will read "Profile Image, Image." This adds zero value to the user and slows them down.
-  *(Fix: Decorative images used purely for visual flair must have `contentDescription = null` (or `clearAndSetSemantics` in Compose) so the screen reader ignores them completely).*
-- **Hardcoding `dp` for Text:**
-  A developer uses `fontSize = 16.dp` because they want the layout to look perfectly aligned on every phone.
-  *(Failure: When a visually impaired user goes into Android OS Settings and scales their system font by 200%, the text in your app remains tiny. The app is unusable. You must always use `sp` (Scale-independent Pixels) and ensure your layouts can flexibly scroll or wrap when the text doubles in size).*
-- **State Change Blindness:**
-  A user clicks a "Favorite" heart icon. It visually turns from gray to red. But the developer forgot to update the semantic state. TalkBack still reads "Add to favorites."
-  *(Fix: Use `Modifier.semantics { stateDescription = if (isFavorite) "Favorited" else "Not favorited" }`).*
+`SubcomposeLayout` and `BoxWithConstraints` let layouts adapt to actual measured size.
 
-## Staff Engineer Thinking
+---
 
-When reviewing a UI architecture, a Staff engineer treats Accessibility as a core testing vector.
+## 7. Color Contrast
 
-1.  **Automated Semantic Testing:** I don't rely on manual testing for a11y. Because Jetpack Compose uses the Semantics tree for both Accessibility *and* UI Testing (`ComposeTestRule`), if a developer fails to add proper semantic labels, their automated UI tests will fail to find the button. Good accessibility forces good testability.
-2.  **The "Eyes Closed" Test:** During feature review, I turn on TalkBack, close my eyes, and attempt to complete the core user journey (e.g., buying an item). If I get stuck, the PR is rejected.
-3.  **Color Contrast Enforcement:** I implement custom Lint rules or CI checks that scan our Design System colors. If a designer uses light gray text on a white background (Contrast Ratio < 4.5:1), the build fails. We do not rely on human reviewers to catch contrast violations.
+| Foreground / Background | Min ratio (WCAG AA) |
+|---|---|
+| Body text on background | 4.5 : 1 |
+| Large text (18 pt+) on background | 3 : 1 |
+| Icons + UI components | 3 : 1 |
 
-## Common Misconceptions
+Tools: **Accessibility Scanner** (Android), **Stark** (Figma), **WebAIM contrast checker**.
 
-- **"Accessibility is only for blind users."** False. It is for users with broken thumbs, users holding a baby in one hand, users in bright sunlight (needing high contrast), and older users needing large text. Designing for accessibility improves the UX for *everyone*.
-- **"Adding `contentDescription` everywhere means my app is accessible."** Dangerously false. Over-describing the UI creates extreme cognitive load for screen reader users. The goal is a concise, logical narrative, not a dictionary reading of every pixel.
+Design tokens enforce contrast:
 
-## Probing Questions
+```kotlin
+object AppTheme {
+    val Colors = ColorScheme(
+        primary = Color(0xFF1A56DB),         // 7.1:1 on white
+        onPrimary = Color.White,
+        background = Color.White,
+        onBackground = Color(0xFF111827),    // 16.9:1 on white
+        // ...
+    )
+}
+```
 
-1.  Explain the difference between the Visual Layout Tree and the Semantics Tree in modern Android UI development.
-2.  Why is it an architectural failure to use `dp` instead of `sp` for font sizes in Android?
-3.  Describe a scenario where setting `contentDescription = null` is actually the correct and most accessible action to take.
-4.  What is the minimum recommended touch target size in Android, and why is it critical for users with motor impairments?
-5.  Explain how a Staff Engineer can use Semantic Grouping (`isTraversalGroup`) to fix a confusing TalkBack reading order.
-6.  How does enforcing good Accessibility (Semantics) directly improve the reliability of Automated UI Testing (Espresso/ComposeTestRule)?
-7.  Describe the "State Change Blindness" failure mode and how to solve it when a button visually changes state (e.g., Play to Pause).
-8.  Why might a Staff Engineer reject a Designer's sleek, low-contrast UI mockup on the grounds of mathematical contrast ratios?
-9.  Explain why "Over-describing" every single visual element on the screen is detrimental to a TalkBack user's experience.
-10. How does a Staff Engineer balance the competing NFRs of "High Information Density" and "Accessibility"?
+---
 
-## Further Reading
+## 8. Motion & Animation
 
-- [`non-functional-requirements.md`](non-functional-requirements.md) — The parent framework that defines Accessibility as a core constraint.
-- [`modifiers-and-layout.md`](../android/compose/modifiers-and-layout.md) — How the Compose Modifier chain integrates the `semantics` modifier into the node tree.
-- [Google: Accessibility for Android Developers](https://developer.android.com/guide/topics/ui/accessibility)
+```kotlin
+val reduceMotion = LocalAccessibilityManager.current.isReduceMotionEnabled
+
+AnimatedVisibility(
+    visible = expanded,
+    enter = if (reduceMotion) EnterTransition.None else slideInVertically(),
+    exit  = if (reduceMotion) ExitTransition.None else slideOutVertically(),
+) { ... }
+```
+
+Audit:
+- Spring/decay animations have no skip
+- Auto-playing video has pause
+- Parallax / flash effects respect reduce-motion
+
+---
+
+## 9. Forms
+
+```kotlin
+TextField(
+    value = email, onValueChange = { email = it },
+    label = { Text("Email") },                  // associates label
+    isError = emailError != null,
+    supportingText = { emailError?.let { Text(it) } },
+    modifier = Modifier.semantics {
+        if (emailError != null) error(emailError)
+    }
+)
+```
+
+TalkBack announces: "Email, edit box, [content], error: must be a valid email."
+
+---
+
+## 10. Media Captions
+
+```kotlin
+val player = remember { ExoPlayer.Builder(context).build() }
+val mediaItem = MediaItem.Builder()
+    .setUri(videoUri)
+    .setSubtitleConfigurations(listOf(
+        SubtitleConfiguration.Builder(captionsUri)
+            .setMimeType(MimeTypes.TEXT_VTT).setLanguage("en")
+            .setSelectionFlags(C.SELECTION_FLAG_DEFAULT).build()
+    ))
+    .build()
+```
+
+Honour system caption settings: font size, color, edge style. Media3 picks these up automatically when subtitle tracks are present.
+
+---
+
+## 11. Testing
+
+### Manual
+
+- Enable TalkBack: Settings → Accessibility → TalkBack.
+- Navigate every screen with swipe-right (next element).
+- Verify nothing unreachable, nothing un-named.
+- Toggle reduce-motion and large text; verify layouts.
+
+### Automated
+
+```kotlin
+@Test
+fun feedScreen_hasContentDescriptions() {
+    composeRule.setContent { FeedScreen() }
+    composeRule.onAllNodesWithRole(Role.Button).assertAll(hasContentDescription())
+}
+```
+
+Espresso has `AccessibilityChecks.enable()` which runs checks on every interaction. Compose's `composeRule` integrates similarly via `accessibility-test-framework`.
+
+CI gate: Accessibility Scanner via `ATF` (Accessibility Test Framework).
+
+---
+
+## 12. Cross-Cutting Patterns
+
+### Headings + landmarks
+
+```kotlin
+Text("Recent activity", modifier = Modifier.semantics { heading() }, style = ...)
+```
+
+TalkBack lets users navigate by heading. Mark them.
+
+### Live regions
+
+```kotlin
+Text(unreadCount.toString(),
+    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+```
+
+Announced when value changes without focus moving.
+
+### Custom actions
+
+```kotlin
+Modifier.semantics {
+    customActions = listOf(
+        CustomAccessibilityAction("Delete") { onDelete(); true },
+        CustomAccessibilityAction("Archive") { onArchive(); true },
+    )
+}
+```
+
+Replaces swipe-to-delete gestures for screen reader users.
+
+### Container semantics
+
+For a list cell that's clickable, the cell itself owns the click (not nested children). One announce, one action.
+
+---
+
+## 13. Common Misses
+
+| Miss | Fix |
+|---|---|
+| Icon-only button with no description | Add `contentDescription` |
+| Tiny touch target | `Modifier.size(48.dp)` |
+| `Image` with `null` description but it's not decorative | Add a real description |
+| Tab-order wrong in custom layouts | `Modifier.semantics { traversalIndex }` |
+| Color-only error state | Add icon + supporting text |
+| Animation that can't be paused | Honour reduce-motion |
+| Toast as primary feedback | Use accessible `Snackbar` |
+| Custom slider without semantics | `Modifier.semantics { stateDescription = ... }` |
+| Form labels not associated | Use `TextField(label = ...)` |
+| Tooltip-only labels | Tooltip is fine; label must also exist |
+
+---
+
+## 14. Further Reading
+
+- [Android Developers — Accessibility overview](https://developer.android.com/guide/topics/ui/accessibility) — official.
+- [Material Design — Accessibility](https://m3.material.io/foundations/accessible-design) — patterns and tokens.
+- [WCAG 2.2 quick reference](https://www.w3.org/WAI/WCAG22/quickref/) — standard.
+- [Compose Semantics docs](https://developer.android.com/jetpack/compose/semantics) — Compose-native a11y.
+- [Accessibility Scanner](https://play.google.com/store/apps/details?id=com.google.android.apps.accessibility.auditor) — automated audits.
+
+---
+
+> **In short:** a11y is a non-negotiable. Bake into design tokens (contrast), into Compose primitives (semantics), into CI (accessibility checks), and into review (manual TalkBack pass). Every feature in this folder should pass its own a11y pass before shipping.
