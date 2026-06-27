@@ -32,6 +32,5 @@ Start with the building blocks (complexity, sync vs async, latency vs throughput
 
 - Coroutines → Sync vs Async
 - Flow → Backpressure
-- AirBridge → State Machines
 - Offline Sync → Fault Tolerance
 - Feature Flags → Event-Driven Architecture

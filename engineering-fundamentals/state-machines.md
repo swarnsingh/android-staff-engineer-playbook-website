@@ -179,40 +179,7 @@ Android exposes state machines at multiple layers. Knowing this changes what cod
 
 Idiomatic Android uses these state machines instead of fighting them. Most Android bugs that survive review are caused by treating these as flag bags.
 
----
 
-## AirBridge Example
-
-AirBridge's upload pipeline is the canonical FSM in this repo. The full machine is documented in [`../airbridge/upload-state-machine.md`](../airbridge/upload-state-machine.md); the high-level shape:
-
-```text
-Idle → Discovering → Preparing → Uploading → Completed
-                                    │
-                                    ├──▶ Paused ──▶ Uploading (resume)
-                                    └──▶ Retrying ──▶ Uploading
-                                              │
-                                              └──▶ Failed
-```
-
-Three properties of this machine matter:
-
-1. **Persistence.** Every transition is written to disk before any side effect runs. Process death between transitions is recoverable: on relaunch, we read the persisted state and re-enter it.
-2. **Idempotency.** The side effects (chunk uploads, server commits) are idempotent — see [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md). Re-entering `Uploading` after a process restart cannot double-upload.
-3. **Determinism.** Given the same persisted state and the same network response, the next transition is fully determined. No timers, no clocks, no environment. This is why the system has a [deterministic resume](../airbridge/deterministic-resume.md) story — see also [`../principles/determinism.md`](../principles/determinism.md).
-
-This file (state machines) is the mechanics; the AirBridge file is the application. They are deliberately separate.
-
----
-
-## BizBrew Example
-
-BizBrew uses state machines in two places that are worth naming.
-
-**Tenant onboarding.** When a new merchant brand is provisioned, they move through `Created → Configured → Themed → Verified → Live`. Each state has a definition of "done" expressed as data invariants, and the transitions are guarded by them. The state is server-side; the Android client renders the current state but does not own the transitions.
-
-**Per-tenant feature flag rollout.** A feature flag for a specific tenant moves through `Off → BetaTenants → AllTenants → Permanent` (or `→ Killed`). This is a state machine because the transitions have *gates*: crash rate, opt-in count, business sign-off. Modeling it as flags would let invalid combinations exist (e.g., "Killed but still BetaTenants"); the state machine makes those unrepresentable.
-
----
 
 ## Tradeoffs
 
@@ -270,7 +237,7 @@ State machines are cheap. The transition function is a `when` expression; it run
 
 ## Reliability Considerations
 
-State machines are a reliability *strategy*, not just a code pattern. The reliability story for AirBridge's upload pipeline is the state machine.
+State machines are a reliability *strategy*, not just a code pattern. The reliability story for any upload pipeline, sync engine, or payment flow is the state machine.
 
 - **Retries.** Belong in the state machine, not in callers. The `Retrying` state encapsulates exponential backoff (see [`../patterns/retry.md`](../patterns/retry.md)) and clearly bounds when retry happens.
 - **Backoff.** State transitions are guarded by timers in retry states. Persist the next-retry-at timestamp; on recovery, resume the timer.
@@ -346,7 +313,7 @@ Questions a Staff engineer should be able to answer cold about state machines:
 4. How do you migrate a persisted state machine when you add a new state? Remove one? Rename one?
 5. What is the difference between a Mealy and a Moore machine, and when does it matter in practice?
 6. How do parallel regions compose? What new failure mode do they introduce that a flat machine doesn't have?
-7. AirBridge's upload pipeline persists state on every transition. What property must the side effects have for this to be safe?
+7. A file-upload pipeline persists state on every transition. What property must the side effects have for this to be safe?
 8. If your `Retrying` state has a 30-second backoff and the process dies after 5 seconds, what's the correct behavior on restart?
 9. Show me three real systems in this repo (or in your work) whose behavior is best modeled as a state machine and explain why.
 10. When is a state machine the *wrong* abstraction? Give a concrete example.
@@ -362,7 +329,6 @@ In this repository:
 - [`../principles/determinism.md`](../principles/determinism.md) — the decision heuristic that pushes you toward state machines in the first place.
 - [`../patterns/retry.md`](../patterns/retry.md) — retries are themselves a small state machine; this file shows the canonical retry shape.
 - [`../patterns/circuit-breaker.md`](../patterns/circuit-breaker.md) — a three-state machine, often composed with larger machines.
-- [`../airbridge/upload-state-machine.md`](../airbridge/upload-state-machine.md) — AirBridge's full pipeline as the worked application.
 - [`../mobile-system-design/offline-sync.md`](../mobile-system-design/offline-sync.md) — sync as an FSM.
 
 External:
