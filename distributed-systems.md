@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The theory underneath every multi-device, multi-server system the mobile client talks to. AirBridge's deterministic resume is an idempotency-and-consistency story — this tree is what makes that story coherent.
+The theory underneath every multi-device, multi-server system the mobile client talks to.
 
 ## Why It Matters
 
@@ -16,13 +16,10 @@ CAP and consistency models first (the framing), then idempotency and delivery se
 
 - [CAP Theorem](distributed-systems/cap-theorem.md)
 - [Consistency Models](distributed-systems/consistency-models.md)
-- [Idempotency](distributed-systems/idempotency.md) — canonical; cross-referenced from AirBridge and Offline Sync
+- [Idempotency](distributed-systems/idempotency.md) — canonical; cross-referenced from Offline Sync
 - [Delivery Semantics (at-least-once vs exactly-once)](distributed-systems/delivery-semantics.md)
 - [Vector Clocks](distributed-systems/vector-clocks.md)
 - [CRDTs](distributed-systems/crdts.md)
 - [Consensus Basics](distributed-systems/consensus-basics.md)
 - [Distributed Tracing](distributed-systems/distributed-tracing.md) — short stub; canonical is [`observability/distributed-tracing.md`](observability/distributed-tracing.md)
 
-## Anchor
-
-[AirBridge](airbridge.md)'s deterministic resume cross-links heavily into this tree.

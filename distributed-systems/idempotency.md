@@ -193,26 +193,6 @@ For operations that persist their state (background uploads, scheduled tasks), t
 
 ---
 
-## AirBridge Example
-
-AirBridge's upload pipeline (see [`../airbridge/upload-state-machine.md`](../airbridge/upload-state-machine.md)) depends on per-chunk idempotency.
-
-Each chunk PUT carries a client-generated UUID in a header. The server deduplicates on that UUID — receiving the same chunk twice produces exactly one stored chunk and one acknowledgment.
-
-This is what makes the upload state machine's persistence-before-effects rule safe. After process death and recovery, the state says "we were uploading chunk 42, midway." Recovery re-runs the chunk-42 PUT. The server sees the same idempotency key as the original attempt and deduplicates — either because the chunk was already stored (and the server returns the original ack) or because the original attempt never reached the server (and the chunk is stored now).
-
-Without per-chunk idempotency, deterministic resume would not be possible. The deduplication is the load-bearing property; the state machine is the consumer.
-
-See also [`../airbridge/deterministic-resume.md`](../airbridge/deterministic-resume.md) for the full resume story.
-
----
-
-## BizBrew Example
-
-*(Omitted — BizBrew's multi-tenant Android platform doesn't exercise idempotency as a defining property. Tenant provisioning operations are idempotent by construction at the database level, but that's a routine application of the concept, not a worked example worth detailing here.)*
-
----
-
 ## Tradeoffs
 
 **Advantages**
@@ -365,8 +345,6 @@ In this repository:
 - [`../patterns/saga.md`](../patterns/saga.md) — compensating actions are idempotent.
 - [`../engineering-fundamentals/state-machines.md`](../engineering-fundamentals/state-machines.md) — persisted state machines rely on idempotent effects for recovery.
 - [`../principles/determinism.md`](../principles/determinism.md) — determinism is the heuristic; idempotency is one of its mechanical consequences.
-- [`../airbridge/upload-state-machine.md`](../airbridge/upload-state-machine.md) — per-chunk idempotency in action.
-- [`../airbridge/deterministic-resume.md`](../airbridge/deterministic-resume.md) — the full resume story this concept enables.
 - [`../mobile-system-design/offline-sync.md`](../mobile-system-design/offline-sync.md) — sync depends on idempotent operations on both sides.
 - [`../mobile-system-design/payment-flow.md`](../mobile-system-design/payment-flow.md) — payments are the canonical idempotent-API example.
 
