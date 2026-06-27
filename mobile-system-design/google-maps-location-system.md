@@ -1,136 +1,453 @@
-# System Design: Location Tracking System (Google Maps / Uber)
+# Maps + Location System (Google Maps-style)
 
-## The Prompt
+> A 45-60 minute mobile system-design walkthrough for a maps + location app (Google Maps, Apple Maps): map rendering, location streaming, search, turn-by-turn nav. The tile server and routing engine are server problems — bulk is on-device.
 
-*"Design the continuous location tracking system for a Ride-Hailing app (Uber Driver) or a Navigation app (Google Maps). The app must transmit the driver's location to the backend in real-time so the rider can see the car moving on a map. The system must not drain the driver's battery in 2 hours, and it must survive network dropouts (tunnels, rural areas)."*
+---
 
-## 1. Requirements & Clarification (RADIO Framework)
+## 1. Gathering Requirements (~5 min)
+
+> **Interviewer:** "Design a Maps + Location app."
+> **Candidate:** "The interesting mobile problems are: continuous location with battery discipline, map tile cache, offline maps, and turn-by-turn navigation lifecycle. I'll deep-dive turn-by-turn nav."
 
 ### Functional Requirements
-- Capture device GPS coordinates continuously.
-- Transmit coordinates to the backend in real-time (visible movement).
-- Cache coordinates offline during network dropouts and upload them in bulk when reconnected.
+- **Show user's location** on a map with accuracy halo.
+- **Search for places** (POIs).
+- **Routes** (driving, walking, transit).
+- **Turn-by-turn nav** with voice + visual cues.
+- **Offline maps** for a downloaded region.
 
-### Non-Functional Requirements (NFRs)
-- **Battery Life (Priority 0):** Polling the GPS hardware is the #2 biggest battery drain on a phone (behind the Screen). Polling the cellular radio is #3. The architecture must minimize both.
-- **Data Integrity:** The backend needs the full path for accurate billing/routing. If the network drops for 5 minutes, we cannot lose 5 minutes of distance data.
-- **Latency:** The rider must see the driver's location update with < 2 seconds of latency to feel "real-time".
+### Non-Functional Requirements
+- **Battery**: nav can run for hours; don't drain phone.
+- **Accuracy** under 50 m city, 100 m highway.
+- **Offline tolerance** — downloaded region works without signal.
+- **Smooth pan/zoom** — 60 Hz interaction.
+- **Privacy** — location only when needed; surface why.
 
-## 2. High-Level Architecture
+### Out of Scope
+- Tile server / map data ingestion
+- Routing algorithm internals (server)
+- POI data freshness pipeline
+- Reviews / ratings UX
+- Local guide / contributor flows
+- AR walking nav (Live View)
 
-The architecture separates the **Hardware Poller** (getting location from satellite) from the **Network Transmitter** (sending to the server).
+---
 
-```mermaid
-graph TD
-    subgraph Android OS
-        GPS[GPS Chip / FusedLocationProvider]
-    end
-    
-    subgraph Driver App (Foreground Service)
-        LocService[Location Tracking Service]
-        Buffer[(In-Memory Buffer / Room)]
-        NetworkEngine[Transmission Engine]
-    end
-    
-    subgraph Backend
-        WebSocket[WebSocket Gateway]
-        Kafka[Kafka Stream]
-        Redis[(Redis - Last Known Loc)]
-        Cassandra[(Cassandra - Path History)]
-    end
-    
-    GPS -->|1Hz Update| LocService
-    LocService -->|Save| Buffer
-    Buffer -->|Batch Send Every 5s| NetworkEngine
-    NetworkEngine <-->|WebSocket| WebSocket
-    WebSocket --> Kafka
+## 2. Clarifying Questions (~3 min)
+
+| Question | Why it matters |
+|---|---|
+| Map SDK (Google, Mapbox, HERE)? | Architecture choices |
+| Offline map size budget? | Disk strategy, format |
+| Voice nav languages? | TTS engine selection |
+| Background nav (driving over screen-off)? | Foreground service required |
+| Battery target during nav (% per hour)? | Sampling cadence |
+| Lane guidance / AR? | UI complexity |
+| Wear / Auto / CarPlay? | Multi-surface architecture |
+
+> **Candidate:** "Google Maps SDK, 1-2 GB offline regions, multilingual TTS, background nav supported, < 8% battery/hour, no AR, Auto considered."
+
+---
+
+## 3. High-Level Diagram (~10 min)
+
+```
+        Mobile Client (this talk)
+   ┌──────────────────────────────────┐
+   │  MapView + render layers         │
+   │  LocationSource (Fused)          │
+   │  Offline tile cache              │
+   │  NavSession (turn-by-turn)       │
+   │  TTS engine                      │
+   └──────────────┬───────────────────┘
+                  │ HTTPS
+                  ▼
+   ┌──────────────────────────────────┐
+   │ BFF / Routing API (black box)    │
+   │  /tiles, /search, /directions    │
+   └──────────────────────────────────┘
 ```
 
-## 3. The Core Flows (Deep Dive)
+**Components:**
+- **`MapView`** — SDK-provided; we control layers, markers, polylines.
+- **`LocationSource`** — Fused; same as `ride-hailing.md`.
+- **`OfflineTileCache`** — pre-downloaded regions; disk-backed.
+- **`NavSession`** — state machine for an active route.
+- **`TTS`** — `TextToSpeech` for spoken cues.
 
-### Flow 1: Bypassing OS Restrictions (Foreground Services)
-*Interviewer:* "In Android 8.0+, if the user backgrounds your app to check a text message, the OS will kill your background location tracking within 1 minute. The rider will see the driver freeze. How do you prevent this?"
+---
 
-**Staff Answer:**
-"Continuous tracking is impossible in a standard background thread on modern Android. I must launch a **Foreground Service**.
-1. The app calls `startForegroundService()`.
-2. Within 5 seconds, the service must call `startForeground(ID, Notification)`.
-3. This places a permanent, un-dismissible notification in the user's status bar (e.g., 'Uber Driver is tracking your location').
-4. The OS recognizes this as a user-aware action and exempts the app from background execution limits, allowing the GPS to poll indefinitely."
+## 4. API Contract
 
-*(Staff Note: On Android 10+, you also strictly need the `ACCESS_BACKGROUND_LOCATION` permission, and on Android 14+, you must declare the Foreground Service Type as `location` in the AndroidManifest).*
+### Search
 
-### Flow 2: The Hardware Poller (Battery Optimization)
-*Interviewer:* "You are polling the GPS every 1 second (1Hz). The driver's battery dies in 2 hours. How do you optimize the hardware usage?"
+```http
+GET /v1/search?q=coffee&lat=37.77&lng=-122.42&radius=2000
+{ "places": [ { "id": "p_1", "name": "Blue Bottle", "lat": ..., "lng": ..., "rating": 4.5 } ] }
+```
 
-**Staff Answer:**
-"I will use Google's **FusedLocationProviderClient**. It intelligently combines GPS, Wi-Fi, and Cellular triangulation.
-1.  **Adaptive Accuracy:** If the driver is on the highway going 60mph, I use `PRIORITY_HIGH_ACCURACY` (GPS). If they are stuck in traffic for 10 minutes, I degrade to `PRIORITY_BALANCED_POWER_ACCURACY` (Cellular/Wi-Fi).
-2.  **Displacement:** I configure `setSmallestDisplacement(10f)`. The OS will *only* wake up my app if the driver physically moves more than 10 meters. If they are parked at a red light for 2 minutes, the GPS sleeps, saving massive amounts of battery."
+### Directions
 
-### Flow 3: The Network Transmitter (Batching & WebSockets)
-*Interviewer:* "You are sending an HTTP POST request to the backend every 1 second. The overhead of establishing the TCP/TLS connection 60 times a minute drains the battery and melts the API Gateway. Fix it."
+```http
+POST /v1/directions
+{ "from": {"lat": 37.77, "lng": -122.42}, "to": {"lat": 37.79, "lng": -122.40}, "mode": "driving" }
 
-**Staff Answer:**
-"We decouple the GPS hardware from the Network.
-1.  **The Transport:** We use a persistent **WebSocket** (or gRPC stream). The TCP/TLS handshake happens exactly once.
-2.  **The Batching Algorithm:** The GPS polls every 1 second. We do *not* send every 1 second. We buffer the coordinates in an array. Every 4 or 5 seconds, we send the array of the last 5 coordinates over the WebSocket.
-3.  **The Interpolation:** The backend receives the batch. To make it look 'real-time' to the Rider, the Rider's app uses **Linear Interpolation**. It receives the coordinates and smoothly animates the car icon from Point A to Point B over the next 4 seconds. The human eye perceives real-time movement, but the network is only used every 5 seconds."
+{
+  "routes": [{
+    "polyline": "encoded:abc123...",
+    "distanceMeters": 3420, "durationSec": 540,
+    "steps": [
+      { "instruction": "Head north on Main St", "polyline": "...", "distanceM": 120, "maneuver": "STRAIGHT" },
+      ...
+    ],
+    "warnings": [], "trafficSummary": "Light"
+  }]
+}
+```
 
-### Flow 4: The Tunnel (Network Dropouts)
-*Interviewer:* "The driver enters a tunnel for 5 minutes. The WebSocket disconnects. The GPS still works (or the FusedProvider uses dead reckoning). When they exit the tunnel, how do you prevent losing that 5-minute route?"
+### Tile download (offline region)
 
-**Staff Answer:**
-"The In-Memory Buffer is upgraded to a local SQLite database (Room).
-1. Every GPS point is written to Room.
-2. The Transmission Engine reads from Room, sends over the WebSocket, and upon receiving an `ACK` from the server, deletes the points from Room.
-3. When the tunnel disconnects the WebSocket, the GPS points simply accumulate in Room.
-4. When the WebSocket reconnects, the app performs a **Bulk Upload** of all accumulated points in Room. The backend calculates the accurate route distance, and the driver is paid correctly for the tunnel distance."
+```http
+GET /v1/tiles/download?bbox=...&zoomRange=10-17
+{ "bundleUrl": "https://cdn/.../tiles_8f7a.mbtiles", "sizeBytes": 248_000_000 }
+```
 
-## 4. The Backend Constraint (Why Kafka & Redis?)
+---
 
-A Staff Mobile Engineer must know where their data goes.
-If 1 Million Uber drivers send a location update every 5 seconds, that is 200,000 writes per second.
-- A standard PostgreSQL database will instantly crash.
-- The WebSocket gateway dumps the raw coordinate stream into **Kafka**.
-- Kafka acts as a shock absorber.
-- A consumer reads from Kafka and updates **Redis** with the driver's *current* location (for the Rider to query).
-- Another consumer reads from Kafka and batches the writes into **Cassandra** (for the historical trip receipt and billing).
+## 5. Mobile App Architecture
 
-## 5. Failure Modes & Bottlenecks
+### Module structure
 
-### Bottleneck: Location Spoofing (Fraud)
-*Interviewer:* "A driver uses a Fake GPS app to spoof their location, making it look like they drove 50 miles, and charges the rider $100. How do you detect this on the client?"
+```
+:app
+:feature:map
+:feature:nav
+:feature:offline-maps
+:core:network
+:core:database
+:core:location           ← from ride-hailing.md
+:core:tts
+:data:directions
+:data:tiles
+```
 
-**Staff Answer:**
-"Android provides tools to detect spoofing.
-1. In the `Location` object, I check `location.isFromMockProvider()`. If true, I flag the data.
-2. I cross-reference the GPS speed with the device's physical sensors (Accelerometer/Gyroscope). If the GPS says the car is moving 60mph, but the Accelerometer shows zero vibration (the phone is sitting on a desk), it is fraud.
-3. I send the raw sensor data alongside the GPS coordinates, and the Backend Machine Learning fraud detection models analyze it."
+### Layered diagram
 
-### Bottleneck: The Zig-Zag Path (Inaccurate GPS)
-*Interviewer:* "In downtown Manhattan, the GPS bounces off skyscrapers (Urban Canyon effect). The reported coordinates zig-zag across city blocks. The calculated distance is 15 miles instead of 2 miles."
+```
+   MapScreen (Compose) ──► MapViewModel
+                                 │
+                                 ├─► LocationSource (Fused stream)
+                                 ├─► DirectionsRepo (REST)
+                                 ├─► OfflineRegionsRepo (DAO + download manager)
+                                 └─► NavSession (state)
+                                          │
+                                          ├─► TtsEngine (announcer)
+                                          ├─► RerouteController
+                                          └─► ForegroundService (when actively navigating)
+```
 
-**Staff Answer:**
-"Client-side smoothing is required.
-1.  **Kalman Filtering:** I apply a Kalman filter algorithm on the Android client. It uses the device's current velocity and trajectory to predict where the car *should* be, and smooths out wild GPS anomalies.
-2.  **Snap-to-Road:** The raw coordinates are sent to the backend. The backend uses Google Maps APIs to 'Snap' the raw, zig-zagging points to the actual physical road vectors before calculating the billing distance."
+### Key class signatures
 
-## 6. Probing Questions (For Practice)
+```kotlin
+class NavSession(private val route: Route, private val location: LocationSource, ...) {
+    val state: StateFlow<NavState>
+    fun start()
+    fun stop()
+    fun onLocation(loc: Location)
+}
 
-1.  Explain why a standard background coroutine or thread will fail to track location continuously on modern Android, and detail the OS mechanics of a Foreground Service.
-2.  Describe the exact steps required to launch a Foreground Service, including the user-facing Notification and AndroidManifest requirements.
-3.  Why is the `FusedLocationProviderClient` fundamentally superior to the raw `LocationManager` for battery optimization?
-4.  Explain the concept of `setSmallestDisplacement()` and how it mathematically prevents battery drain when a vehicle is stopped in traffic.
-5.  Walk through the architecture of "Decoupling Hardware from Network". Why is batching coordinates and sending every 5 seconds superior to sending every 1 second?
-6.  Describe the "Interpolation" technique used on the Rider's application to make a 5-second batched update look perfectly smooth and real-time.
-7.  How does writing coordinates to a local Room database prevent data loss and ensure accurate billing when a driver enters a 5-minute cellular dead zone?
-8.  Explain why the backend must use Kafka and Redis to handle the incoming coordinate stream, rather than writing directly to a relational SQL database.
-9.  Describe the "Urban Canyon" effect and how a Kalman filter or "Snap-to-Road" algorithm mitigates the zig-zagging path problem.
-10. How does a Staff Engineer prevent location fraud using `isFromMockProvider()` and physical device sensors (Accelerometer)?
+sealed class NavState {
+    object Idle : NavState()
+    data class Navigating(val currentStepIndex: Int, val distanceToTurnM: Float, val etaSec: Int) : NavState()
+    data class Rerouting(val reason: RerouteReason) : NavState()
+    data class Arrived(val arrivedAt: Long) : NavState()
+}
+```
 
-## Further Reading
+---
 
-- [`battery-optimizations.md`](../android/concurrency/battery-optimizations.md) — Deep dive into Doze Mode and Foreground Services.
-- [`push-vs-poll-vs-sse-vs-websockets.md`](../backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md) — The cost of TLS handshakes and why WebSockets are mandatory here.
-- [`offline-first-app.md`](../reference-architectures/offline-first-app.md) — The architecture for the local Room buffer.
+## 6. Local Storage
+
+```kotlin
+@Entity(tableName = "offline_regions")
+data class OfflineRegion(
+    @PrimaryKey val id: String, val name: String,
+    val bboxJson: String, val zoomMin: Int, val zoomMax: Int,
+    val sizeBytes: Long, val downloadedAt: Long, val ttlDays: Int = 90
+)
+
+@Entity(tableName = "recent_places")
+data class RecentPlace(@PrimaryKey val id: String, val name: String, val lat: Double, val lng: Double, val lastUsedAt: Long)
+
+@Entity(tableName = "saved_places")
+data class SavedPlace(@PrimaryKey val id: String, val label: String, val name: String, val lat: Double, val lng: Double)
+```
+
+Tiles themselves live in an MBTiles / SQLite file outside Room, in `filesDir/offline/<regionId>.mbtiles`.
+
+---
+
+## 7. Deep Dive: Turn-by-Turn Navigation (~15 min)
+
+> *I'd pick this as the deep dive because nav combines location streaming, route progress, TTS announcements, reroute logic, and foreground-service discipline — almost every mobile concern in one feature.*
+
+### NavSession state machine
+
+```kotlin
+class NavSession @Inject constructor(
+    private val ttsEngine: TtsEngine,
+    private val location: LocationSource,
+    private val routing: DirectionsRepository,
+) {
+    private val _state = MutableStateFlow<NavState>(NavState.Idle)
+    val state = _state.asStateFlow()
+
+    private var activeRoute: Route? = null
+    private var currentStep = 0
+
+    suspend fun start(route: Route) {
+        activeRoute = route
+        currentStep = 0
+        _state.value = NavState.Navigating(0, distanceToTurnM = route.steps[0].distanceM.toFloat(), etaSec = route.durationSec)
+        location.stream(intervalMs = 1_000, accuracy = Priority.HIGH_ACCURACY)
+            .collect { loc -> onLocation(loc) }
+    }
+
+    fun onLocation(loc: Location) {
+        val route = activeRoute ?: return
+        val step = route.steps[currentStep]
+        val distanceToTurn = step.distanceFromCurrentPosition(loc)
+
+        if (distanceToTurn < ARRIVAL_THRESHOLD_M && currentStep == route.steps.size - 1) {
+            _state.value = NavState.Arrived(clock.now())
+            return
+        }
+
+        if (distanceToTurn < ADVANCE_TO_NEXT_STEP_M) {
+            currentStep++
+            announce(route.steps[currentStep].instruction)
+        } else if (distanceToTurn < UPCOMING_ANNOUNCE_M && !announcedUpcoming) {
+            announce("In ${(distanceToTurn / 100).roundToInt() * 100} meters, ${step.instruction}")
+            announcedUpcoming = true
+        }
+
+        if (loc.distanceTo(route.expectedPosition(currentStep)) > OFF_ROUTE_THRESHOLD_M) {
+            triggerReroute(loc, route.destination)
+            return
+        }
+
+        _state.value = NavState.Navigating(currentStep, distanceToTurn, recomputeEta(route, currentStep, loc))
+    }
+
+    private suspend fun triggerReroute(loc: Location, destination: LatLng) {
+        _state.value = NavState.Rerouting(RerouteReason.OFF_ROUTE)
+        val new = routing.directions(from = loc.toLatLng(), to = destination)
+        activeRoute = new
+        currentStep = 0
+        _state.value = NavState.Navigating(0, ..., ...)
+    }
+}
+```
+
+### Foreground service (driving over screen-off)
+
+```kotlin
+class NavForegroundService : LifecycleService() {
+
+    @Inject lateinit var session: NavSession
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        ServiceCompat.startForeground(
+            this, NOTIF_ID,
+            buildNavNotification(session.state.value),
+            FOREGROUND_SERVICE_TYPE_LOCATION
+        )
+        lifecycleScope.launch {
+            session.state.collect { state ->
+                NotificationManagerCompat.from(this@NavForegroundService).notify(NOTIF_ID, buildNavNotification(state))
+                if (state is NavState.Arrived) stopSelf()
+            }
+        }
+        return START_REDELIVER_INTENT
+    }
+}
+```
+
+Persistent notification with current instruction + distance. User can return to nav from any screen.
+
+### TTS announcements
+
+```kotlin
+class TtsEngine @Inject constructor(@ApplicationContext ctx: Context) {
+    private val tts = TextToSpeech(ctx, ::onInit)
+    private val queue = MutableSharedFlow<String>(replay = 0, extraBufferCapacity = 32)
+
+    private fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            tts.language = Locale.getDefault()
+            tts.setSpeechRate(1.0f)
+        }
+    }
+
+    fun speak(text: String, priority: Priority = Priority.NORMAL) {
+        tts.speak(text, if (priority == Priority.HIGH) QUEUE_FLUSH else QUEUE_ADD, null, text.hashCode().toString())
+    }
+}
+```
+
+Voice ducking: lower music volume during announcement via `AudioFocusRequest`.
+
+### Map rendering
+
+The SDK does most of the lifting. We overlay:
+- Current location marker (animated rotation by `bearing`).
+- Route polyline (decoded from server response).
+- Step markers at each maneuver.
+- ETA / instruction card pinned at top.
+
+### Battery discipline
+
+- Adaptive location interval: 1s while approaching turn, 4s straight road, 10s stationary.
+- TTS only at announcement points, not continuous.
+- Don't redraw polyline every location update; animate marker only.
+
+### Offline regions
+
+```kotlin
+class OfflineRegionsRepository @Inject constructor(
+    private val workManager: WorkManager,
+    private val dao: OfflineRegionDao,
+    private val downloader: DownloadManager,
+) {
+    suspend fun downloadRegion(bbox: BoundingBox, name: String, zoomRange: IntRange) {
+        val regionId = UUID.randomUUID().toString()
+        dao.insert(OfflineRegion(regionId, name, bbox.toJson(), zoomRange.first, zoomRange.last, sizeBytes = 0, downloadedAt = 0))
+        val descriptor = api.requestOfflineBundle(bbox, zoomRange)
+        downloader.enqueue(DownloadRequest(
+            url = descriptor.bundleUrl,
+            destFile = File(filesDir, "offline/$regionId.mbtiles"),
+            constraints = Constraints(networkType = NetworkType.UNMETERED, requiresStorageNotLow = true),
+        ))
+    }
+}
+```
+
+Reuses the `file-downloader.md` library.
+
+### Failure modes
+
+| What breaks | Behavior |
+|---|---|
+| Tunnel / no GPS | Last known location dimmed; "GPS lost" badge; nav pauses until signal back |
+| Off route | Reroute triggers; "Recalculating" announcement |
+| TTS engine unavailable | Visual cues only; haptic at turns |
+| Foreground service killed by OEM | Persistent notification + STIRR; user warned in onboarding |
+| Offline region expired (TTL) | Show "update available"; downgrade quality if missing tiles |
+| Routing API down | Use cached recent route to destination if available; otherwise error |
+| Battery critical | Reduce location frequency; warn user |
+
+---
+
+## 8. Trade-offs
+
+### Map SDK
+
+| Option | Pros | Cons | Verdict |
+|---|---|---|---|
+| **Google Maps SDK** | Comprehensive; navigation toolkit | Cost at scale; GMS dependency | Pick for most apps |
+| Mapbox | Customizable styling; offline support | Cost; smaller ecosystem | Strong alternative |
+| HERE Maps | Enterprise / fleet | License complexity | Niche |
+| OSMDroid | OSS; OSM data | Limited polish | When GMS unavailable |
+
+### Offline format
+
+| Option | Verdict |
+|---|---|
+| **MBTiles (SQLite)** | Pick — single file, transactional |
+| Individual PNG tiles | Many small files; FS pressure |
+| Vector tiles (`.pbf`) | Better; supported by Mapbox |
+
+### Location stream
+
+| Sampling | When |
+|---|---|
+| 1 s, HIGH_ACCURACY | Active nav, approaching turn |
+| 4 s, HIGH_ACCURACY | Active nav, straight road |
+| 10 s, BALANCED | Stationary detected |
+| One-shot | Search results, "my location" button |
+
+### Foreground service vs background nav
+
+| Option | Verdict |
+|---|---|
+| **Foreground service while nav active** | Pick — required for reliable background updates |
+| Plain background | OS will kill, especially on aggressive OEMs |
+| Wake-locks | Don't; FGS handles wake correctly |
+
+### Routing transport
+
+| Option | Verdict |
+|---|---|
+| **REST polling for reroute** | Pick — simple |
+| WebSocket for live traffic | Use only if features warrant |
+| Local routing | Possible offline; usually too large to ship |
+
+---
+
+## 9. Major Concerns
+
+- **Battery during nav.** Adaptive intervals, no wakelocks, FGS only when needed. Target < 8%/hour.
+- **Permission UX.** ACCESS_FINE_LOCATION + ACCESS_BACKGROUND_LOCATION explained separately. Honour "approximate only" by degrading accuracy.
+- **OEM kill.** FGS + persistent notification + `FOREGROUND_SERVICE_TYPE_LOCATION` minimize. Educate user during onboarding.
+- **TTS robustness.** Honour audio focus; duck music; handle missing voices gracefully.
+- **Privacy.** Location only while nav active. Don't log raw lat/lng; aggregate to H3 cell.
+- **Process death.** Nav session state in Room; resume on foreground service restart.
+- **Offline expiration.** Auto-prompt to refresh expired regions when on Wi-Fi.
+- **Accessibility.** Voice cues + haptics for vision-impaired drivers; large buttons; readable in glance.
+- **Data usage.** Tile prefetch only on Wi-Fi by default; user-overridable.
+
+---
+
+## 10. Follow-up Questions
+
+> **Q: User goes into a long tunnel mid-nav — what happens?**
+> Location stream stalls; UI shows "GPS lost" but doesn't say "rerouting". Nav state stays at current step. On exit, location resumes, distance-to-turn recalculates, nav continues seamlessly. Announce nothing during the gap to avoid confusion.
+
+> **Q: How is "you're off route" detected?**
+> Project current location onto the route polyline; compute perpendicular distance. If > threshold (e.g., 50 m) for > 5 s, trigger reroute. Don't fire on a single bad GPS sample.
+
+> **Q: How do you handle multi-screen (phone + Android Auto)?**
+> Auto has its own `CarAppService` + `TemplateAPI`. NavSession is the model; both UIs subscribe. Phone-side notification mirrors what Auto shows.
+
+> **Q: How are voice prompts kept reasonable?**
+> Distance-based: "In 500 m, turn left" → "In 200 m, turn left" → "Turn left now." Don't repeat the current step. Pause music with audio ducking, not stopping.
+
+> **Q: What about lane guidance and complex intersections?**
+> Server returns per-step `lanes` (array of preferred lanes). UI renders chevrons. Out of detailed scope here.
+
+> **Q: How are routes cached for offline reuse?**
+> Last 3 routes per destination cached for 24h. If the user starts the same route while offline, we use the cached polyline + steps. Reroute won't work without network.
+
+---
+
+## 11. Out of Scope (defended)
+
+- **Tile server / data pipeline** — backend.
+- **Routing algorithm internals** — server (graph search, traffic-weighted edges).
+- **POI freshness** — data engineering side.
+- **AR navigation (Live View)** — separate stack.
+- **Reviews / ratings UX** — separate feature.
+
+---
+
+## 12. Further Reading
+
+- [Google Maps SDK for Android](https://developers.google.com/maps/documentation/android-sdk/overview) — official.
+- [Mapbox Maps SDK Android](https://docs.mapbox.com/android/maps/guides/) — alternative SDK.
+- [FusedLocationProvider best practices](https://developer.android.com/develop/sensors-and-location/location) — battery-aware location.
+- [MBTiles spec](https://github.com/mapbox/mbtiles-spec) — offline tile format.
+- [Android Developers — Android Auto](https://developer.android.com/training/cars) — multi-surface nav.
+
+---
+
+> **Closing in the interview:** "Turn-by-turn was my deep dive because it stitches together location, route, TTS, and foreground service discipline. Happy to dig into offline-region downloads, Auto integration, or the reroute heuristic next."

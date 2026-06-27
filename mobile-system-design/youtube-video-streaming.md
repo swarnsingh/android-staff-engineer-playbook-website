@@ -1,129 +1,469 @@
-# System Design: Video Streaming (YouTube / Netflix)
+# Video Streaming (YouTube / Netflix-style)
 
-## The Prompt
+> A 45-60 minute mobile system-design walkthrough for a video-streaming client (YouTube, Netflix, Prime Video) on Android. CDN, ABR ladder, DRM internals are server problems — bulk is on-device: player lifecycle, ABR client behaviour, offline downloads, picture-in-picture.
 
-*"Design a mobile video streaming application like YouTube. Users must be able to upload large video files from their phone. Other users must be able to stream those videos instantly, with the video quality dynamically adapting to their cellular network speed to prevent buffering."*
+---
 
-## 1. Requirements & Clarification (RADIO Framework)
+## 1. Gathering Requirements (~5 min)
+
+> **Interviewer:** "Design a video-streaming app like YouTube."
+> **Candidate:** "The interesting mobile problems are player lifecycle, adaptive bitrate selection, offline downloads, and battery/data discipline. I'll deep-dive the player + ABR client."
 
 ### Functional Requirements
-- **Upload:** Users can upload raw video files (MP4, MOV) from their camera roll.
-- **Playback:** Users can stream videos smoothly.
-- **Adaptive Bitrate:** The video must drop to 480p on 3G, and jump to 4K on Wi-Fi automatically.
+- **Play HLS / DASH video** with multiple quality tiers.
+- **Offline downloads** for paid / subscription content.
+- **Picture-in-picture** when user backgrounds.
+- **Background audio** when user locks screen.
+- **Cast** to TV / Chromecast.
 
-### Non-Functional Requirements (NFRs)
-- **Bandwidth Efficiency (Priority 0):** You cannot force a user on a 3G network to download a 4K video. It will buffer infinitely.
-- **Upload Reliability:** If an upload drops at 99%, the user must not have to restart the 2GB upload.
-- **Storage:** The backend cannot store raw uncompressed 4K files indefinitely.
+### Non-Functional Requirements
+- **Time-to-first-frame** (TTFF) < 1.5s on a good network.
+- **No buffer underruns** under network variance (ABR).
+- **Battery** — efficient codec selection.
+- **Cellular-aware** — default to lower bitrate; warn before HD on cellular.
+- **DRM** — Widevine for protected content.
 
-## 2. High-Level Architecture (The Transcoding Pipeline)
+### Out of Scope
+- Encoding / packaging pipeline (server)
+- CDN / edge selection (server)
+- Recommendation algorithm (server, returns video list)
+- Live streaming ingestion (separate stack)
+- AR / VR video
 
-A Junior engineer uploads an MP4 to an S3 bucket and sends the S3 URL to the mobile app for playback. This is catastrophically wrong.
-A Staff engineer designs an asynchronous **Transcoding Pipeline**. The raw file is never sent to the viewer.
+---
 
-```mermaid
-graph TD
-    Uploader[Creator Android App] -->|1. Resumable Upload| Ingest[(Raw S3 Bucket)]
-    
-    Ingest -->|2. S3 Trigger| Lambda[AWS Lambda]
-    Lambda -->|3. Job Queue| Transcoder[MediaConvert / FFMPEG]
-    
-    Transcoder -->|4. Split into chunks| CDN_1080p[(CDN - 1080p chunks)]
-    Transcoder -->|4. Split into chunks| CDN_720p[(CDN - 720p chunks)]
-    Transcoder -->|4. Split into chunks| CDN_480p[(CDN - 480p chunks)]
-    
-    Viewer[Viewer Android App] <-->|5. ExoPlayer requests chunks| CDN_1080p
+## 2. Clarifying Questions (~3 min)
+
+| Question | Why it matters |
+|---|---|
+| Protocol (HLS, DASH)? | Player + CDN setup |
+| DRM (Widevine L1/L3)? | Hardware requirements |
+| Offline / save-for-later? | Downloader + storage |
+| Live in scope? | Different latency profile |
+| Cast / external playback? | Media3 Cast extension |
+| Cellular auto-quality? | ABR default |
+| Audio-only background? | MediaSessionService |
+
+> **Candidate:** "Both HLS + DASH, Widevine L1 where available, offline yes, live out of scope, Cast supported, cellular auto-LD, audio background supported."
+
+---
+
+## 3. High-Level Diagram (~10 min)
+
+```
+        Mobile Client (this talk)
+   ┌─────────────────────────────────┐
+   │ Compose UI                      │
+   │   ├─ VideoSurface (PlayerView)  │
+   │   ├─ Controls (play, scrub)     │
+   │   └─ Quality / captions menu    │
+   │                                  │
+   │ MediaSessionService             │
+   │   ├─ ExoPlayer (Media3)         │
+   │   ├─ ABR (auto bitrate)         │
+   │   └─ DRM session (Widevine)     │
+   │                                  │
+   │ DownloadService (Media3)        │
+   │   └─ DASH/HLS segment downloader│
+   └──────────────┬──────────────────┘
+                  │ HTTPS
+                  ▼
+   ┌─────────────────────────────────┐
+   │  CDN + Manifest API + Licence   │  ← black box
+   │     (Akamai/Fastly + DRM)       │
+   └─────────────────────────────────┘
 ```
 
-## 3. The Core Flows (Deep Dive)
+**Components:**
+- **`ExoPlayer`** (Media3) — playback engine.
+- **`MediaSessionService`** — owns the player; survives backgrounding.
+- **`DownloadService`** — for offline.
+- **`DrmSessionManager`** — Widevine key exchange.
+- **`CastSession`** — Media3 Cast extension.
 
-### Flow 1: Resumable Video Uploads
-*Interviewer:* "The user is uploading a 2GB 4K video from their phone. At 99%, they drive into a tunnel. The network drops. When they exit the tunnel, how do you prevent restarting?"
+---
 
-**Staff Answer:**
-"I must implement **Chunked Resumable Uploads**.
-1. The Android app does *not* send a single 2GB HTTP POST.
-2. The app reads the file from the local `MediaStore` using an `InputStream`.
-3. It slices the bytes into 5MB chunks.
-4. It uploads Chunk 1, Chunk 2, Chunk 3 sequentially using HTTP `PUT` requests (or AWS S3 Multipart Upload APIs).
-5. If the network drops at Chunk 400 (out of 400), the app simply retries Chunk 400 when the network returns. The backend re-assembles the 400 chunks into the final MP4."
+## 4. API Contract
 
-### Flow 2: Adaptive Bitrate Streaming (HLS / DASH)
-*Interviewer:* "How exactly does the video 'magically' switch from 480p to 1080p mid-stream without interrupting the playback?"
+### Manifest URL (per video)
 
-**Staff Answer:**
-"This relies on **HLS (HTTP Live Streaming)** or **MPEG-DASH**. 
-The backend Transcoder does two things:
-1. It creates 3 different resolutions of the video (1080p, 720p, 480p).
-2. It slices *every* resolution into 3-second `.ts` (Transport Stream) chunks.
-
-The backend generates a `.m3u8` Manifest File:
-```text
-#EXTM3U
-#EXT-X-STREAM-INF:BANDWIDTH=5000000,RESOLUTION=1920x1080
-http://cdn.com/1080p.m3u8
-#EXT-X-STREAM-INF:BANDWIDTH=2500000,RESOLUTION=1280x720
-http://cdn.com/720p.m3u8
-#EXT-X-STREAM-INF:BANDWIDTH=800000,RESOLUTION=854x480
-http://cdn.com/480p.m3u8
+```http
+GET /v1/videos/{id}/playback
+Authorization: Bearer ...
+{
+  "videoId": "v_42",
+  "manifests": {
+    "dash": "https://cdn.../v_42.mpd",
+    "hls":  "https://cdn.../v_42.m3u8"
+  },
+  "licenseUrl": "https://drm.../widevine",
+  "drmType": "WIDEVINE",
+  "thumbnails": "https://cdn.../v_42-thumbs.vtt",
+  "captions": [
+    { "lang": "en", "url": "https://cdn.../v_42-en.vtt", "kind": "subtitles" }
+  ],
+  "expiresAt": 1750003600
+}
 ```
 
-**The Android Client (ExoPlayer):**
-1. `ExoPlayer` downloads the Manifest file.
-2. `ExoPlayer` measures the current TCP connection bandwidth. (e.g., Oh, we have 6 Megabits/sec).
-3. It selects the 1080p stream. It requests `1080p_chunk_1.ts`.
-4. Mid-playback, the user goes into an elevator. Bandwidth drops to 1 Megabit/sec.
-5. `ExoPlayer` detects the drop. For the *next* chunk, it seamlessly switches to requesting `480p_chunk_2.ts`. 
-The video quality blurs, but it never buffers."
+### Offline download request
 
-### Flow 3: Preventing UI Thread Freezes (SurfaceView)
-*Interviewer:* "When the video plays, your app's UI becomes incredibly sluggish. Scrolling the comment section below the video drops to 15 frames per second."
+```http
+POST /v1/videos/{id}/license/offline
+{
+  "deviceId": "d_abc",
+  "expectedDurationDays": 30
+}
+{ "offlineLicenseKey": "...bytes-base64..." }
+```
 
-**Staff Answer:**
-"If the video is being drawn onto a standard `TextureView`, every frame of the video has to pass through the Android View Hierarchy's rendering pipeline. A 60fps video will absolutely choke the Main Thread.
-**The Fix:** I must explicitly configure `ExoPlayer` to use a `SurfaceView`. A `SurfaceView` punches a literal hole through the Android UI window, allowing the hardware video decoder chip to render pixels directly to the screen's memory buffer, completely bypassing the UI thread. The comment section will now scroll at a perfect 60fps."
+---
 
-## 4. Failure Modes & Bottlenecks
+## 5. Mobile App Architecture
 
-### Bottleneck: Battery Drain
-*Interviewer:* "Users report their phone gets incredibly hot and the battery dies in 1 hour when watching videos."
+### Module structure
 
-**Staff Answer:**
-"This happens when the device falls back to **Software Decoding**.
-If the backend encodes the video in a cutting-edge codec (like AV1) that the 4-year-old Android hardware doesn't natively support, the CPU is forced to decode the video mathematically. This melts the battery.
-**The Fix:** The Manifest file must offer standard, globally hardware-accelerated codecs (like H.264 / AVC). `ExoPlayer` must query `MediaCodecList` to ensure a hardware decoder exists for the stream before playing it."
+```
+:app
+:feature:player        ← PlayerScreen, controls
+:feature:downloads     ← downloads list, manage
+:feature:cast          ← Cast UI
+:core:network
+:core:database         ← downloads metadata
+:core:media            ← Media3 wrapper
+:data:videos
+```
 
-### Bottleneck: Cold Start Buffering
-*Interviewer:* "When the user taps the video, they stare at a black loading screen for 3 seconds while it starts. How do we make it start instantly?"
+### Layered diagram
 
-**Staff Answer:**
-"We must implement **Pre-fetching** and prioritize the lowest bitrate.
-1. When the user is scrolling the feed, and the video thumbnail comes into view, the app silently downloads the `.m3u8` Manifest and exactly *one* chunk of the 480p stream into the local disk cache.
-2. When the user taps the video, `ExoPlayer` plays that local 480p chunk instantly (0ms latency).
-3. While the 480p chunk is playing, `ExoPlayer` establishes the network connection and ramps up to 1080p for the second chunk."
+```
+   PlayerScreen ──► PlayerViewModel ──► VideoRepository
+                                              │
+                                              ├─► PlaybackApi (manifest, license)
+                                              └─► DownloadRepository (Room + Media3 DownloadService)
 
-## 5. Staff Engineer Thinking: CDN Economics
+   VideoRepository ──► binds ExoPlayer to MediaSession
+                                              │
+                                              ▼
+                                MediaSessionService (foreground)
+                                              │
+                                              ▼
+                                      ExoPlayer (Media3)
+                                              │
+                                ABR + DRM + Track selection
+```
 
-A Staff Engineer knows that Video Streaming is primarily an economics problem, not just a technical one.
+### Key class signatures
 
-Serving 1 Petabyte of video from AWS S3 costs ~$90,000. Serving it from a CDN (Cloudflare/Fastly) costs ~$5,000. 
-The mobile app *must never* request video chunks directly from the core backend or S3. The URLs provided in the manifest must point to Edge CDN nodes. The app relies on the CDN to cache the chunks physically close to the user (e.g., caching the video in a data center in Mumbai for an Indian user, instead of streaming it from Virginia).
+```kotlin
+interface VideoRepository {
+    suspend fun getPlaybackInfo(videoId: String): PlaybackInfo
+    suspend fun downloadForOffline(videoId: String)
+    fun observeDownloads(): Flow<List<Download>>
+}
 
-## 6. Probing Questions (For Practice)
+class PlayerHolder @Inject constructor(@ApplicationContext ctx: Context, ...) {
+    val player: ExoPlayer = ExoPlayer.Builder(ctx)
+        .setMediaSourceFactory(buildMediaSourceFactory())
+        .setTrackSelector(buildTrackSelector())
+        .setLoadControl(buildLoadControl())
+        .build()
+}
+```
 
-1.  Explain why serving a raw, uncompressed MP4 directly from an AWS S3 bucket to a mobile app is an architectural failure for a global user base.
-2.  Describe the fundamental difference between downloading a video file and Adaptive Bitrate Streaming (HLS/DASH).
-3.  Walk through the structure of an HLS `.m3u8` manifest file. How does it allow `ExoPlayer` to seamlessly switch resolutions?
-4.  Explain how Chunked Multipart Uploads protect a 2GB video upload from being completely lost if the user's network connection drops at 99%.
-5.  Why does rendering a video onto a `TextureView` cause massive UI stuttering when scrolling a layout, and how does a `SurfaceView` fix it?
-6.  Describe the difference between Hardware Decoding and Software Decoding. Why does playing an unsupported codec (like AV1 on an old phone) destroy battery life?
-7.  How does pre-fetching the Manifest and the first 3-second chunk of a 480p stream solve the "Cold Start Buffering" problem?
-8.  Explain the economic necessity of using a Content Delivery Network (CDN) for video streaming compared to streaming directly from core cloud storage.
-9.  If `ExoPlayer` is playing a 1080p stream and the user enters an elevator, lowering bandwidth, describe exactly what `ExoPlayer` does to prevent the video from pausing to buffer.
-10. Why must the Android client read the raw video file via an `InputStream` from the `MediaStore` rather than loading the entire `ByteArray` into memory before initiating an upload?
+---
 
-## Further Reading
+## 6. Local Storage
 
-- [`file-downloader.md`](file-downloader.md) — The mechanics of chunked network transfers.
-- [`jank.md`](../android/performance/jank.md) — The difference between `SurfaceView` and `TextureView` regarding the Main Thread.
-- [`caching.md`](../engineering-fundamentals/caching.md) — The mechanics of Edge CDNs.
+```kotlin
+@Entity(tableName = "downloads")
+data class DownloadEntity(
+    @PrimaryKey val videoId: String,
+    val title: String, val durationMs: Long, val sizeBytes: Long,
+    val state: DownloadState,       // QUEUED, DOWNLOADING, COMPLETED, FAILED, EXPIRED
+    val downloadedAt: Long?, val licenseExpiresAt: Long?
+)
+```
+
+Actual video bytes are managed by Media3's `DownloadIndex` + a `Cache` on disk — not directly in Room. Room only tracks metadata for UI.
+
+---
+
+## 7. Deep Dive: Player + ABR Client (~15 min)
+
+> *I'd pick this as the deep dive because player lifecycle + ABR is where most subtle bugs and bad UX live — pre-buffering, quality switches, network changes, app backgrounding.*
+
+### MediaSessionService
+
+```kotlin
+class VideoPlaybackService : MediaSessionService() {
+
+    @Inject lateinit var playerHolder: PlayerHolder
+    private var session: MediaSession? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        session = MediaSession.Builder(this, playerHolder.player).build()
+    }
+
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        // User swiped the app — stop playback (or continue if audio mode)
+        if (!playerHolder.player.playWhenReady) stopSelf()
+    }
+
+    override fun onDestroy() {
+        session?.run { player.release(); release() }
+        super.onDestroy()
+    }
+}
+```
+
+The MediaSessionService gets a foreground notification automatically when playback starts. System surfaces the player on lock screen, Bluetooth, Android Auto, Wear.
+
+### ABR (adaptive bitrate)
+
+```kotlin
+private fun buildTrackSelector(): DefaultTrackSelector {
+    val parameters = DefaultTrackSelector.Parameters.Builder(context)
+        .setMaxVideoSize(width = 1920, height = 1080)
+        .setMaxVideoBitrate(8_000_000)
+        .setForceLowestBitrate(false)
+        .build()
+    return DefaultTrackSelector(context).apply { setParameters(parameters) }
+}
+```
+
+Constrain on cellular:
+
+```kotlin
+fun applyCellularConstraints() {
+    if (connectivity.isActiveNetworkMetered) {
+        trackSelector.setParameters(trackSelector.buildUponParameters()
+            .setMaxVideoSize(854, 480)
+            .setMaxVideoBitrate(1_500_000)
+            .build())
+    }
+}
+```
+
+ExoPlayer's built-in `AdaptiveTrackSelection` picks bitrate within constraints based on bandwidth estimate; it switches up after stable throughput, down on stalls.
+
+### Custom `LoadControl`
+
+```kotlin
+private fun buildLoadControl(): LoadControl {
+    return DefaultLoadControl.Builder()
+        .setBufferDurationsMs(
+            /* minBufferMs = */ 15_000,
+            /* maxBufferMs = */ 50_000,
+            /* bufferForPlaybackMs = */ 1_000,           // start playing quickly
+            /* bufferForPlaybackAfterRebufferMs = */ 2_000
+        )
+        .setPrioritizeTimeOverSizeThresholds(true)
+        .build()
+}
+```
+
+Aggressive `bufferForPlaybackMs` favors TTFF; user expects video to start fast. The 50s max buffer cap balances memory + responsive seeks.
+
+### Picture-in-picture
+
+```kotlin
+class PlayerActivity : ComponentActivity() {
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (player.isPlaying && supportsPip()) {
+            val ratio = Rational(player.videoSize.width, player.videoSize.height)
+            enterPictureInPictureMode(PictureInPictureParams.Builder()
+                .setAspectRatio(ratio).build())
+        }
+    }
+}
+```
+
+`onUserLeaveHint` fires when the user presses Home. PiP keeps playback going in a floating window.
+
+### Background audio
+
+When the user locks the screen during a music-style video, MediaSessionService keeps playback alive. The `MediaSession` projects controls to lock screen / Bluetooth.
+
+### DRM (Widevine)
+
+```kotlin
+fun buildMediaItem(info: PlaybackInfo): MediaItem {
+    val drmConfig = MediaItem.DrmConfiguration.Builder(C.WIDEVINE_UUID)
+        .setLicenseUri(info.licenseUrl)
+        .setMultiSession(false)
+        .build()
+    return MediaItem.Builder()
+        .setUri(info.manifests.dash)
+        .setMimeType(MimeTypes.APPLICATION_MPD)
+        .setDrmConfiguration(drmConfig)
+        .build()
+}
+```
+
+ExoPlayer handles the Widevine key exchange. On L1 devices, decrypted frames stay in TEE; we never see plaintext. On L3 (no Trusted Execution), client-side software decryption is used; only SD content typically.
+
+### Network change handling
+
+```kotlin
+class NetworkChangeListener(...) : ConnectivityManager.NetworkCallback() {
+    override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
+        if (caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
+            playerHolder.applyCellularConstraints()
+        } else {
+            playerHolder.clearConstraints()
+        }
+    }
+}
+```
+
+When user switches from Wi-Fi to cellular mid-playback, we tighten quality immediately — avoid a surprise data spike.
+
+### Offline downloads (Media3)
+
+```kotlin
+class VideoDownloadService : DownloadService(
+    /* notificationId = */ 1001,
+    /* foregroundNotificationUpdateInterval = */ 1_000L,
+    /* channelId = */ "downloads",
+    /* channelNameResourceId = */ R.string.download_channel,
+    /* channelDescriptionResourceId = */ 0,
+) {
+    override fun getDownloadManager(): DownloadManager = appDownloadManager
+    override fun getForegroundNotification(downloads: List<Download>, notMetRequirements: Int): Notification = ...
+    override fun getScheduler(): Scheduler = PlatformScheduler(this, JOB_ID)
+}
+```
+
+Media3's `DownloadService` manages segment download, retry, persistence. For DRM content, we also call `OfflineLicenseHelper` to download a long-lived license.
+
+### Failure modes
+
+| What breaks | Behavior |
+|---|---|
+| Network drops mid-playback | ExoPlayer rebuffers; ABR may step down; resume on reconnect |
+| Manifest URL expires | `expiresAt` triggers re-fetch before next segment |
+| DRM license expires | Fetch new license; retry segment |
+| Foreground service killed by OEM | MediaSessionService restarts via WorkManager fallback |
+| Disk full during download | Download fails; surface error; partial cleanup |
+| Codec unsupported | Track selector picks alternate; if none, show error |
+| Cast disconnects | Resume on phone; preserve position |
+
+---
+
+## 8. Trade-offs
+
+### Protocol
+
+| Option | Pros | Cons | Verdict |
+|---|---|---|---|
+| **DASH (MPD)** | Widely supported; good ABR | Slightly more complex setup | Pick for new |
+| **HLS (m3u8)** | Apple-native; ubiquitous | Less granular ABR | Always also expose for iOS / Safari parity |
+| Smooth Streaming | Legacy Microsoft | Niche | Skip |
+
+### Player
+
+| Option | Verdict |
+|---|---|
+| **ExoPlayer (Media3)** | Pick — official, ABR + DRM + Cast |
+| `MediaPlayer` | Skip — limited; no ABR |
+| Custom (libavformat) | Don't — vast scope |
+
+### DRM tier
+
+| Tier | When |
+|---|---|
+| **L1 (hardware TEE)** | Required for HD on protected content |
+| **L3 (software)** | SD only; older / cheaper devices |
+| No DRM | UGC; free content |
+
+### Background playback model
+
+| Option | Verdict |
+|---|---|
+| **MediaSessionService** | Pick — official, integrates with system |
+| Plain foreground service | More work; reinvents MediaSession |
+| Audio-only library (e.g., AVPlayer-style) | Doesn't cover video PiP |
+
+### ABR sizing
+
+| Quality | Bitrate | When |
+|---|---|---|
+| 240p | 200 kbps | Slow cellular |
+| 480p | 700 kbps | Cellular auto |
+| 720p | 1.5 Mbps | Wi-Fi default |
+| 1080p | 4 Mbps | Wi-Fi + supported device |
+| 4K | 15 Mbps | Premium tier, Wi-Fi only |
+
+### Cellular default
+
+| Option | Verdict |
+|---|---|
+| **Auto-lower on cellular** | Pick — saves data without surprise |
+| Same quality | Risks bill shock |
+| Pause / require user opt-in | Annoying UX |
+
+---
+
+## 9. Major Concerns
+
+- **TTFF.** `bufferForPlaybackMs` low; prefetch via small initial segments.
+- **Cellular spend.** Auto-cap on metered networks. Warn before HD.
+- **Battery.** Hardware decode (codec2/MediaCodec) is far more efficient than software fallback.
+- **Memory.** Cap buffer to 50s; release player aggressively on dispose.
+- **DRM.** L1 required for HD on protected content; surface "best quality on this device" honestly.
+- **Lifecycle.** `MediaSessionService` for background; PiP for "leave the app but keep playing"; surface release on dispose.
+- **Cast.** Media3 Cast extension; preserve position when handing off.
+- **Captions / accessibility.** Always offer captions; honour system caption settings.
+- **Privacy.** Don't log full URLs (signed CDN URLs may include user tokens). Redact.
+
+---
+
+## 10. Follow-up Questions
+
+> **Q: User starts a video on Wi-Fi, walks outside losing Wi-Fi mid-playback — what happens?**
+> `ConnectivityManager` callback fires. We re-apply cellular constraints (`MaxVideoBitrate=1.5Mbps`). ExoPlayer's `BandwidthMeter` reads the new throughput; ABR steps down. If buffer underruns, brief rebuffer; otherwise seamless.
+
+> **Q: User scrubs to 50% on a long video — what's the latency target?**
+> Seek to keyframe near target. With segmented streaming (DASH), we fetch the segment containing that position (~few seconds). `bufferForPlaybackAfterRebufferMs = 2000` means ~2s before playback resumes. UI shows scrubbing thumbnail (from thumbnails VTT) during the seek.
+
+> **Q: How do you support background audio for a music video?**
+> MediaSessionService + a foreground notification with `MediaStyle`. The user can lock the screen and audio continues. We mark the session as `MediaSession.Builder.setPlaybackState(PLAYING)` so lock-screen controls work.
+
+> **Q: How are downloads expired?**
+> Each offline license has `expiresAt`. A periodic `WorkManager` job checks expiries and either re-requests a new license (if user is still entitled) or marks the download EXPIRED and deletes bytes after a grace period.
+
+> **Q: Cast handoff — what happens to local player?**
+> When `CastSession` connects, the local player is paused. We pass the current position to Cast (`CastPlayer.setMediaItem(item, currentPosition)`). When the user disconnects, we read position back and resume locally.
+
+> **Q: How is this tested?**
+> Media3 sample apps + Cast emulator. Unit tests for ABR constraints. Integration tests on real devices for DRM (sandbox license server). Manual smoke for network-change scenarios.
+
+---
+
+## 11. Out of Scope (defended)
+
+- **Encoding / packaging** — server pipeline.
+- **CDN / edge selection** — backend.
+- **Recommendation algorithm** — black box; returns video list.
+- **Live streaming** — different latency profile; separate stack.
+- **AR / VR video** — separate.
+
+---
+
+## 12. Further Reading
+
+- [Android Developers — Media3 overview](https://developer.android.com/media/media3) — official docs.
+- [ExoPlayer DRM guide](https://developer.android.com/media/media3/exoplayer/drm) — Widevine integration.
+- [Bitmovin — Adaptive Streaming primer](https://bitmovin.com/) — ABR fundamentals.
+- [Cast SDK for Android](https://developers.google.com/cast/docs/android_sender) — sender app integration.
+- [HLS spec (RFC 8216)](https://datatracker.ietf.org/doc/html/rfc8216) — for HLS internals.
+
+---
+
+> **Closing in the interview:** "I anchored on player + ABR because that's where all the lifecycle, DRM, and network-change concerns intersect. Happy to dig into offline-license renewal, the Cast handoff, or PiP transitions next."
