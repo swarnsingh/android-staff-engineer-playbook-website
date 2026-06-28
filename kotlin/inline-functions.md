@@ -107,6 +107,49 @@ graph TD
     end
 ```
 
+## Bytecode Evidence
+
+Showing decompiled Java is one level of evidence; reading actual JVM bytecode is another. Compile both versions and run `javap -c -p`:
+
+**Without `inline`** — `calculate()` allocates a `Function2` object on every call:
+
+```
+public final void calculate();
+  Code:
+     0: aload_0
+     1: iconst_5                                              // push 5
+     2: bipush        10                                      // push 10
+     4: new           #15  // class CalcKt$calculate$1        // ALLOCATE new lambda
+     7: dup
+     8: invokespecial #19  // CalcKt$calculate$1."<init>":()V // construct it
+    11: checkcast     #21  // kotlin/jvm/functions/Function2
+    14: invokevirtual #25  // Method doMath:(IILkotlin/jvm/functions/Function2;)I
+    17: istore_1                                              // result -> local 1
+    18: return
+```
+
+The `new #15` + `dup` + `invokespecial #19` triplet is the JVM allocating + initializing a brand-new `Function2` object every invocation. In a 60Hz scroll loop, that's 60 allocations per second → GC churn → jank.
+
+**With `inline`** — the lambda body is pasted into the caller. No allocation:
+
+```
+public final void calculate();
+  Code:
+     0: iconst_5                                              // push 5
+     1: istore_1                                              // a -> local 1
+     2: bipush        10                                      // push 10
+     4: istore_2                                              // b -> local 2
+     5: iload_1                                               // push a
+     6: iload_2                                               // push b
+     7: iadd                                                  // add (the lambda body!)
+     8: istore_3                                              // result -> local 3
+     9: return
+```
+
+Zero `new` opcodes, zero `invokevirtual` on a lambda interface, zero `Function2` reference anywhere. The math (`iadd`) happens directly in the caller's frame.
+
+**The diff matters per call site.** If `doMath` is called 1,000 times in a scroll, the inlined version produces 8,000 stack ops total; the non-inlined version produces 1,000 heap allocations + 1,000 virtual dispatches. R8 + ART will optimize some away — but you've removed the regression entirely at the source instead of hoping.
+
 ## Production Example
 
 **The Kotlin Standard Library**

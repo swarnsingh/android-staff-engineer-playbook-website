@@ -72,6 +72,41 @@ public final void test() {
 }
 ```
 
+## Bytecode Evidence
+
+The decompiled Java says "instanceof String," but is that actually true in the bytecode, or is the decompiler reconstructing it from generics metadata? Run `javap -c -p`:
+
+```
+public final void test();
+  Code:
+     0: bipush        123
+     2: invokestatic  #15 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;
+     5: astore_1                                              // Any item = 123 (boxed)
+     6: aload_1                                               // push item
+     7: instanceof    #17 // class java/lang/String           // <-- HARDCODED String
+    10: istore_2                                              // boolean result
+    11: return
+```
+
+The constant pool entry at #17 reads:
+
+```
+#17 = Class              #18  // java/lang/String
+#18 = Utf8               java/lang/String
+```
+
+There is no `T` anywhere. No `TypeToken<T>`, no `Class<T>` parameter, no `kotlin.reflect.KClass`. The class `java/lang/String` is hardcoded into the bytecode of `test()`. The compiler resolved `T = String` at compile time and emitted `instanceof java/lang/String` directly.
+
+Now compile a second call site: `isType<Int>(123)`. You'll get a separate `test2()` method with:
+
+```
+     7: instanceof    #19 // class java/lang/Integer
+```
+
+Same `isType<>` source function, two different bytecode call sites, two different hardcoded class references. The "function" doesn't exist at runtime; only its specialised copies do.
+
+**This is what makes `reified` impossible without `inline`.** A normal function compiles to one method body shared across all type parameters. The JVM can't preserve `T` for that single body — type erasure. With `inline`, there is no shared body; every call site gets its own bytecode with `T` already substituted. The JVM never has to "remember" `T` because the compiler already wrote it down.
+
 ## Production Example
 
 **JSON Parsing and Intent Routing**
