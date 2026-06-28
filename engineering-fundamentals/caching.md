@@ -363,7 +363,7 @@ In this repository:
 - [`../patterns/circuit-breaker.md`](../patterns/circuit-breaker.md) — protect downstream sources from cache-miss stampedes.
 - [`../mobile-system-design/caching-library.md`](../mobile-system-design/caching-library.md) — designing a caching library, end-to-end.
 - [`../mobile-system-design/image-loading.md`](../mobile-system-design/image-loading.md) — image caching, the classic mobile case study.
-- [`../android/room.md`](../android/room.md) — Room as the canonical mobile data cache.
+- [`../android/data-and-di/room.md`](../android/data-and-di/room.md) — Room as the canonical mobile data cache.
 
 External:
 

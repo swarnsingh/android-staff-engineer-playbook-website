@@ -25,7 +25,7 @@ Language basics → type system depth (generics, variance) → metaprogramming (
 - [Reified Types](kotlin/reified-types.md)
 - [Generics](kotlin/generics.md)
 - [Variance](kotlin/variance.md)
-- [Coroutines](kotlin/coroutines.md) — canonical owner; [`android/coroutines.md`](android/coroutines.md) is the application file
+- [Coroutines](kotlin/coroutines.md) — canonical owner; platform application lives in [`android/concurrency/coroutines-under-the-hood.md`](android/concurrency/coroutines-under-the-hood.md)
 - [Memory Model](kotlin/memory-model.md)
 - [JVM Interop](kotlin/jvm-interop.md)
 - [Bytecode](kotlin/bytecode.md)

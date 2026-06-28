@@ -132,7 +132,7 @@ The function "returns" three times and "resumes" twice. Between resumes, the cal
 
 ### Why "structured concurrency" matters
 
-Plain async lets you fire-and-forget work that outlives its caller. That is almost always a bug — orphaned work that runs after its purpose has expired (the user navigated away, the request was cancelled, the parent operation failed). Structured concurrency (Kotlin's `coroutineScope`, Java's structured task scopes) ties child coroutines to their parent's lifetime. When the parent ends, children are cancelled. See [`../android/structured-concurrency.md`](../android/structured-concurrency.md).
+Plain async lets you fire-and-forget work that outlives its caller. That is almost always a bug — orphaned work that runs after its purpose has expired (the user navigated away, the request was cancelled, the parent operation failed). Structured concurrency (Kotlin's `coroutineScope`, Java's structured task scopes) ties child coroutines to their parent's lifetime. When the parent ends, children are cancelled. See [`../android/architecture/structured-concurrency.md`](../android/architecture/structured-concurrency.md).
 
 ---
 
@@ -185,7 +185,7 @@ The shared observation: at scale, async wins on throughput per machine, and the 
 
 ## Android Example
 
-On Android, the main thread is the UI thread — it must never block. Any blocking call on the main thread (network, disk, slow computation) produces an Application Not Responding (ANR) dialog after about 5 seconds. See [`../android/anrs.md`](../android/anrs.md).
+On Android, the main thread is the UI thread — it must never block. Any blocking call on the main thread (network, disk, slow computation) produces an Application Not Responding (ANR) dialog after about 5 seconds. See [`../android/performance/anrs.md`](../android/performance/anrs.md).
 
 The idiomatic pattern:
 
@@ -346,8 +346,8 @@ In this repository:
 - [`backpressure.md`](backpressure.md) — what async systems do when producers outrun consumers.
 - [`../patterns/retry.md`](../patterns/retry.md), [`../patterns/circuit-breaker.md`](../patterns/circuit-breaker.md) — resilience patterns native to async.
 - [`../kotlin/coroutines.md`](../kotlin/coroutines.md) — Kotlin-specific mechanics.
-- [`../android/structured-concurrency.md`](../android/structured-concurrency.md) — tying coroutine lifetimes to Android lifecycles.
-- [`../android/anrs.md`](../android/anrs.md) — what happens when async goes wrong on Android.
+- [`../android/architecture/structured-concurrency.md`](../android/architecture/structured-concurrency.md) — tying coroutine lifetimes to Android lifecycles.
+- [`../android/performance/anrs.md`](../android/performance/anrs.md) — what happens when async goes wrong on Android.
 
 External:
 

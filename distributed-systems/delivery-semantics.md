@@ -299,7 +299,7 @@ class PaymentRepository(
 
 The key Android-specific concern: **process death between send and ack**. If the app sends a payment request, the process dies before the ack arrives, and the app restarts and retries, the retry must carry the same idempotency key. This means the key must be persisted *before* the first send — not generated in-memory.
 
-See [`../android/workmanager-and-background-execution-constraints.md`](../android/workmanager-and-background-execution-constraints.md) for WorkManager's retry semantics.
+See [`../android/concurrency/workmanager.md`](../android/concurrency/workmanager.md) for WorkManager's retry semantics.
 
 ---
 

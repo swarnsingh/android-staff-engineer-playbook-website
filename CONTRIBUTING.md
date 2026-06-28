@@ -68,9 +68,8 @@ When the same word could plausibly live in multiple trees, this table pins the s
 | Concept | Canonical owner | Cross-references from |
 |---|---|---|
 | Complexity analysis / Big-O | `engineering-fundamentals/complexity-analysis.md` | `computer-science/big-o.md` (short stub linking back) |
-| Coroutines — language mechanics | `kotlin/coroutines.md` | `android/coroutines.md` |
-| Coroutines — Android platform usage | `android/coroutines.md` (application file) | All Android topics referencing async |
-| App Bundles & Dynamic Delivery | `release-engineering/app-bundles.md` | `android/app-bundles.md` (short stub) |
+| Coroutines — language mechanics | `kotlin/coroutines.md` | `android/concurrency/coroutines-under-the-hood.md` (platform application) |
+| App Bundles & Dynamic Delivery | `release-engineering/app-bundles.md` | (cross-referenced from `android.md` index) |
 | Release strategy | `release-engineering/release-strategy.md` | `mobile-system-design.md` cross-links |
 | Image loading | `mobile-system-design/image-loading.md` (single entry) | — |
 | State machines — mechanics | `engineering-fundamentals/state-machines.md` | All application FSMs link here |

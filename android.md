@@ -16,80 +16,60 @@ Architecture and lifecycle first (you cannot reason about anything else without 
 
 ### Architecture
 
-- [Activity](android/activity.md)
-- [Fragment](android/fragment.md)
-- [ViewModel](android/viewmodel.md)
-- [Navigation](android/navigation.md)
-- [SavedStateHandle](android/savedstatehandle.md)
-- [Process Death & State Restoration](android/process-death-and-state-restoration.md)
+- [Activity](android/architecture/activity.md)
+- [Fragment](android/architecture/fragment.md)
+- [ViewModel](android/architecture/viewmodel.md)
+- [Navigation](android/architecture/navigation.md)
+- [SavedStateHandle](android/architecture/savedstatehandle.md)
+- [Process Death & State Restoration](android/architecture/process-death-and-state-restoration.md)
+- [Structured Concurrency](android/architecture/structured-concurrency.md)
+- [Flow](android/architecture/flow.md)
 
 ### Compose
 
-- [Compose Runtime](android/compose-runtime.md)
-- [Recomposition](android/recomposition.md)
-- [Stability](android/stability.md)
-- [Snapshot System](android/snapshot-system.md)
-- [Side Effects](android/side-effects.md)
-- [State Management](android/state-management.md)
+- [Compose Navigation](android/compose/compose-navigation.md)
+- [Modifiers & Layout](android/compose/modifiers-and-layout.md)
+- [Recomposition & State](android/compose/recomposition-and-state.md)
+- [Side Effects](android/compose/side-effects.md)
 
 ### Concurrency
 
-- [Coroutines](android/coroutines.md) — application file; canonical is [`kotlin/coroutines.md`](kotlin/coroutines.md)
-- [Structured Concurrency](android/structured-concurrency.md)
-- [Flow](android/flow.md)
-- [SharedFlow](android/shared-flow.md)
-- [StateFlow](android/state-flow.md)
+- Coroutines language mechanics: [`kotlin/coroutines.md`](kotlin/coroutines.md)
+- [Coroutines Under the Hood](android/concurrency/coroutines-under-the-hood.md)
+- [Threads & Looper](android/concurrency/threads-and-looper.md)
+- [SharedFlow & StateFlow](android/concurrency/shared-flow-and-state-flow.md)
+- [Synchronization & Mutex](android/concurrency/synchronization-and-mutex.md)
+- [Services](android/concurrency/services.md)
+- [WorkManager](android/concurrency/workmanager.md)
+- [Battery Optimizations (Doze, App Standby)](android/concurrency/battery-optimizations.md)
 
 ### Performance
 
-- [Jank](android/jank.md)
-- [ANRs](android/anrs.md)
-- [Baseline Profiles](android/baseline-profiles.md)
-- [Startup](android/startup.md)
-- [Rendering](android/rendering.md)
-- [Memory Management & Leak Detection](android/memory-management-and-leak-detection.md)
+- [Jank](android/performance/jank.md)
+- [ANRs](android/performance/anrs.md)
+- [Baseline Profiles](android/performance/baseline-profiles.md)
+- [Memory Management & Leaks](android/performance/memory-management-and-leaks.md)
+- [App Size & R8](android/performance/app-size-and-r8.md)
 
-### Lifecycle & Background Execution
+### Data & DI
 
-- [WorkManager & Background Execution Constraints](android/workmanager-and-background-execution-constraints.md)
-- [Doze, App Standby & Battery Optimization](android/doze-app-standby-and-battery-optimization.md)
+- [Room](android/data-and-di/room.md)
+- [Paging](android/data-and-di/paging.md)
+- [DataStore](android/data-and-di/datastore.md)
+- [Dependency Injection (Hilt)](android/data-and-di/dependency-injection.md)
 
-### Data
+### Networking & Security
 
-- [Room](android/room.md)
-- [Paging](android/paging.md)
-- [DataStore](android/datastore.md)
-
-### Dependency Injection
-
-- [Hilt](android/hilt.md)
-- [Scopes](android/scopes.md)
-- [Components](android/components.md)
-
-### Networking
-
-- [Retrofit](android/retrofit.md)
-- [OkHttp](android/okhttp.md)
-- [GraphQL](android/graphql.md)
-
-### Testing
-
-- [Unit Testing](android/unit-testing.md)
-- [UI Testing](android/ui-testing.md)
-- [Journey Testing](android/journey-testing.md)
-
-### Build Systems
-
-- [Gradle](android/gradle.md)
-- [KSP](android/ksp.md)
-- [Convention Plugins](android/convention-plugins.md)
-- [Multi-module](android/multi-module.md)
-- [R8 / ProGuard](android/r8-proguard.md)
-- [App Bundles & Dynamic Feature Delivery](android/app-bundles.md) — stub; canonical is [`release-engineering/app-bundles.md`](release-engineering/app-bundles.md)
+- [Retrofit & OkHttp](android/networking-and-security/retrofit-and-okhttp.md)
+- [GraphQL](android/networking-and-security/graphql.md)
+- [Security & Keystore](android/networking-and-security/security-and-keystore.md)
 
 ### System Internals
 
-- [Binder & IPC](android/binder-and-ipc.md)
+- [Binder](android/os-internals/the-binder.md)
+- [Zygote](android/os-internals/the-zygote.md)
+- [ART & Dalvik](android/os-internals/art-and-dalvik.md)
+- [Gradle & Build Systems](android/os-internals/gradle-and-build-systems.md)
 
 ### Observability (Application Files)
 
@@ -98,3 +78,9 @@ Canonical observability concepts live in [`observability/`](observability.md). T
 - [New Relic](android/observability/new-relic.md)
 - [Crash Monitoring](android/observability/crash-monitoring.md)
 - [Logging](android/observability/logging.md)
+
+### Cross-References (Topics Owned Elsewhere)
+
+- App Bundles & Dynamic Feature Delivery → [`release-engineering/app-bundles.md`](release-engineering/app-bundles.md)
+- App Startup → [`mobile-system-design/app-startup.md`](mobile-system-design/app-startup.md)
+- Performance horizontal view → [`mobile-system-design/performance.md`](mobile-system-design/performance.md)

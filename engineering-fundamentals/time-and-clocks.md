@@ -335,7 +335,7 @@ val skew = response.serverTimeMs - System.currentTimeMillis()
 // Use skew to adjust local timestamps when comparing with server events
 ```
 
-See [`../android/doze-app-standby-and-battery-optimization.md`](../android/doze-app-standby-and-battery-optimization.md) for how deep sleep affects clocks.
+See [`../android/concurrency/battery-optimizations.md`](../android/concurrency/battery-optimizations.md) for how deep sleep affects clocks.
 
 ---
 

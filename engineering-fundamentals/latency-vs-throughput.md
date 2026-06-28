@@ -207,7 +207,7 @@ suspend fun uploadAllPhotos(photos: List<Photo>) {
 
 The optimization for each path is different. The first must be O(1) and allocation-free; the second can be O(N) with batching.
 
-See [`../android/jank.md`](../android/jank.md), [`../android/startup.md`](../android/startup.md), [`../android/workmanager-and-background-execution-constraints.md`](../android/workmanager-and-background-execution-constraints.md).
+See [`../android/performance/jank.md`](../android/performance/jank.md), [`../mobile-system-design/app-startup.md`](../mobile-system-design/app-startup.md), [`../android/concurrency/workmanager.md`](../android/concurrency/workmanager.md).
 
 ---
 
@@ -347,7 +347,7 @@ In this repository:
 - [`queues.md`](queues.md) — queues smooth throughput at the cost of latency.
 - [`../observability/slis.md`](../observability/slis.md), [`../observability/slos.md`](../observability/slos.md) — formal latency and throughput objectives.
 - [`../observability/metrics.md`](../observability/metrics.md) — how to measure both correctly.
-- [`../android/jank.md`](../android/jank.md), [`../android/startup.md`](../android/startup.md) — latency on the client.
+- [`../android/performance/jank.md`](../android/performance/jank.md), [`../mobile-system-design/app-startup.md`](../mobile-system-design/app-startup.md) — latency on the client.
 
 External:
 

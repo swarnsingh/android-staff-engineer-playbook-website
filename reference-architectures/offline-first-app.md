@@ -12,7 +12,7 @@ This blueprint describes the architectural shape of an app designed to function 
 - All write operations must succeed without network access. Mutations queue locally and reconcile when connectivity returns.
 - Data created on multiple devices for the same user must converge to a single consistent state, deterministically.
 - The user must not be able to observe a difference in behavior between online and offline operation in the read path. The write path may surface "syncing" indicators but must not block the UI.
-- Background sync must respect platform constraints (Doze, App Standby). See [`../android/doze-app-standby-and-battery-optimization.md`](../android/doze-app-standby-and-battery-optimization.md).
+- Background sync must respect platform constraints (Doze, App Standby). See [`../android/concurrency/battery-optimizations.md`](../android/concurrency/battery-optimizations.md).
 
 ### Non-functional
 
@@ -20,7 +20,7 @@ This blueprint describes the architectural shape of an app designed to function 
 - **Write latency:** sub-frame for the local write. Server-side acknowledgment is asynchronous.
 - **Sync convergence:** eventual, bounded by *TODO: target convergence window — typically minutes when online*.
 - **Storage:** the full user-relevant data set must fit on-device. Partial datasets are a different architecture (offline-tolerant, not offline-first).
-- **Battery:** background sync must not drain the device. Use [WorkManager](../android/workmanager-and-background-execution-constraints.md) constraints (charging, unmetered network) where appropriate.
+- **Battery:** background sync must not drain the device. Use [WorkManager](../android/concurrency/workmanager.md) constraints (charging, unmetered network) where appropriate.
 - **Conflict semantics:** deterministic. See *Sync Strategy* below.
 
 ---
@@ -55,12 +55,12 @@ Reads from the repository; never reads from the network. Renders local state. Wr
 
 Single entry point for the UI. Owns the policy that the UI doesn't see the network. Internally:
 
-- For reads: returns from the local DB (often as a [Flow](../android/flow.md) that emits when underlying data changes).
+- For reads: returns from the local DB (often as a [Flow](../android/architecture/flow.md) that emits when underlying data changes).
 - For writes: writes to the local DB AND enqueues an outbox entry in a single transaction.
 
 ### Local DB
 
-Source of truth from the UI's perspective. [Room](../android/room.md) is the typical choice on Android. Schema includes:
+Source of truth from the UI's perspective. [Room](../android/data-and-di/room.md) is the typical choice on Android. Schema includes:
 
 - The application's data tables.
 - An *outbox* table listing pending mutations that haven't been acknowledged by the server.
@@ -79,7 +79,7 @@ The outbox is the bridge between UI writes and server sync. Without it, you have
 
 ### Sync Engine
 
-The component that moves data between local and remote. Runs as a background service ([WorkManager](../android/workmanager-and-background-execution-constraints.md)) or as a long-lived foreground service for active sync.
+The component that moves data between local and remote. Runs as a background service ([WorkManager](../android/concurrency/workmanager.md)) or as a long-lived foreground service for active sync.
 
 Three responsibilities:
 
@@ -216,7 +216,7 @@ The choice is recorded in an ADR (e.g., [`../adr/008-lww-vs-crdt.md`](../adr/008
 ### Scaling up (more data per user)
 
 - Partition the local DB by recency or by entity type; load only the working set into memory. Most reads should be hot-set.
-- Use [Paging](../android/paging.md) for large lists.
+- Use [Paging](../android/data-and-di/paging.md) for large lists.
 - Push older data to a cold tier (still on-device but not eagerly loaded) when the working set exceeds *TODO: threshold*.
 
 ### Scaling out (more users)

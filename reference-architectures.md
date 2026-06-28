@@ -24,4 +24,3 @@ Each file follows the [blueprint template](templates/blueprint.md).
 - [Ride-Hailing App](reference-architectures/ride-hailing-app.md)
 - [Social Media App](reference-architectures/social-media-app.md)
 - [Video Streaming App](reference-architectures/video-streaming-app.md)
-- [Multi-Tenant App](reference-architectures/multi-tenant-app.md)

@@ -227,7 +227,7 @@ val uploadQueue = MutableSharedFlow<UploadJob>(
 
 The `SUSPEND` overflow strategy implements true backpressure — the caller of `emit()` is suspended until space is available. This is the right choice when *every* item must reach the consumer.
 
-See [`../android/flow.md`](../android/flow.md), [`../android/shared-flow.md`](../android/shared-flow.md), [`../android/state-flow.md`](../android/state-flow.md).
+See [`../android/architecture/flow.md`](../android/architecture/flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md).
 
 ---
 
@@ -374,7 +374,7 @@ In this repository:
 - [`latency-vs-throughput.md`](latency-vs-throughput.md) — backpressure trades throughput for stability.
 - [`fault-tolerance.md`](fault-tolerance.md) — backpressure is a fault-tolerance technique.
 - [`../patterns/circuit-breaker.md`](../patterns/circuit-breaker.md) — the breaker is triggered by upstream backpressure signals.
-- [`../android/flow.md`](../android/flow.md), [`../android/shared-flow.md`](../android/shared-flow.md), [`../android/state-flow.md`](../android/state-flow.md) — Android-specific Flow operators.
+- [`../android/architecture/flow.md`](../android/architecture/flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md) — Android-specific Flow operators.
 - [`../mobile-system-design/telemetry-sdk.md`](../mobile-system-design/telemetry-sdk.md) — designing a telemetry SDK around backpressure.
 
 External:

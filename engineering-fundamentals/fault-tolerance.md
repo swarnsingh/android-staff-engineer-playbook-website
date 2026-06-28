@@ -259,7 +259,7 @@ Specific mobile fault-tolerance patterns:
 - **Idempotency-aware retries.** See [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md). Retrying non-idempotent operations is worse than failing.
 - **Graceful UI degradation.** A failed image load shows a placeholder, not a crash. A failed network call shows cached data, not a blank screen.
 
-See [`../android/anrs.md`](../android/anrs.md), [`../android/process-death-and-state-restoration.md`](../android/process-death-and-state-restoration.md).
+See [`../android/performance/anrs.md`](../android/performance/anrs.md), [`../android/architecture/process-death-and-state-restoration.md`](../android/architecture/process-death-and-state-restoration.md).
 
 ---
 
