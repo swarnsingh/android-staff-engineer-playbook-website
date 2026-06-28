@@ -1,33 +1,190 @@
-# Leadership: Running a Design Review (RFCs)
+# Leadership: Running a Design Review
 
-## The Theory
-A Senior Engineer writes excellent code. A Staff Engineer ensures the *right* code is written before a single pull request is opened. The mechanism for this is the **Request for Comments (RFC)** or Technical Design Document, culminating in a formal Design Review meeting.
-If 10 engineers start writing code without a unified architectural vision, they will build 10 incompatible micro-systems. The Design Review prevents this.
+> The design review is where RFCs go from "draft someone wrote alone" to "decision the team owns." A good design review surfaces non-obvious problems in 45 minutes; a bad one wastes the time of 8 people and produces no decision. The Staff engineer's job is to *facilitate* the review, not to defend the proposal.
 
-## Staff-Level Application in Mobile
+---
 
-### 1. The Anatomy of an RFC Document
-A Staff Engineer does not write an RFC by simply pasting a UML diagram. The document must be structured to guide decision-making.
--   **Context & Problem Statement:** Why are we doing this? (e.g., "The current monolithic `api` module increases build times by 4 minutes per PR.")
--   **Goals & Non-Goals:** Explicitly stating what the project will *not* do is crucial to prevent scope creep.
--   **Proposed Solution:** The actual architecture. API contracts, data models, state flow.
--   **Alternatives Considered:** This is the most important section. A Staff Engineer must steelman the opposing arguments. Why *didn't* we choose Koin over Hilt? Documenting the rejected paths prevents the team from revisiting the same arguments 6 months later.
--   **Rollout & Rollback Plan:** How do we safely deploy this to 10 million users, and how do we revert it if it crashes?
+## Why Design Reviews Exist
 
-### 2. Preparing for the Review
-A Design Review meeting should never be a surprise.
--   **Pre-Reads:** The RFC document must be circulated at least 48 hours before the meeting. If you try to read a 10-page architecture document live on a Zoom call, the feedback will be superficial (grammar corrections) rather than structural (flaws in the database schema).
--   **Asynchronous Feedback First:** Encourage engineers to leave comments directly on the Google Doc or Confluence page before the meeting. The Staff author should resolve the simple disagreements asynchronously. The synchronous meeting is reserved *only* for the highly contested architectural trade-offs.
+Every non-trivial architectural decision has multiple right answers and many wrong ones. You can't tell which is which by yourself — your brain is the one that built the proposal. Other brains will see things you can't.
 
-### 3. Facilitating the Meeting (The Staff Role)
-When running the meeting, the Staff Engineer acts as a facilitator, not a dictator.
--   **Foster Psychological Safety:** If a junior engineer asks a seemingly simple question ("Why aren't we just using SharedPreferences?"), a Staff engineer does not shut them down. They use it as a teaching moment ("Great question. We considered that in the 'Alternatives' section, but because of the ANR risk on the main thread, we decided on DataStore.").
--   **Park the Bikeshedding:** Engineers love to argue about trivial details (e.g., naming conventions or folder structures)—this is called "Bikeshedding" (Parkinson's Law of Triviality). The Staff Engineer must ruthlessly identify these debates and "park" them. ("Let's take the naming of the DTO classes offline. We need to focus on the offline-sync conflict resolution strategy today.")
--   **Drive to Consensus (or Commit):** The goal of the meeting is a decision. If the room is split 50/50 on an architecture choice, the Staff Engineer must synthesize the arguments and make a binding decision, or use the "Disagree and Commit" framework to move the project forward.
+A design review trades meeting time for decision quality. The cheap path (skip the review, ship the design, discover problems in production) costs orders of magnitude more than the 45 minutes.
 
-### 4. The Output: The ADR
-Once the Design Review is complete and the path is chosen, the final decision must be permanently recorded as an **Architecture Decision Record (ADR)** in the Git repository (see the `adr/` folder). This ensures the context of *why* the decision was made survives even if the original Staff Engineer leaves the company.
+The Staff engineer often *runs* the review, even when they're not the RFC author. The author is too close to the proposal to facilitate fairly.
 
-## Common Pitfalls
--   **The "Big Reveal":** Working on an architecture document in secret for 3 weeks and surprising the team in the meeting. The team will feel lack of ownership and will naturally resist the design. Build consensus iteratively by consulting key stakeholders *while* writing the document.
--   **Designing in the Meeting:** A Design Review is for *reviewing* a design, not *creating* one. If the meeting devolves into 5 engineers whiteboarding completely new architectures from scratch, the meeting has failed. The author must take the feedback offline, redesign the RFC, and schedule a follow-up.
+---
+
+## Async vs Synchronous
+
+Most of the review should be **async**. The synchronous meeting is for the unresolved 10%.
+
+| Phase | Time | What happens |
+|---|---|---|
+| **Async draft** | Author writes draft | RFC posted in folder + Slack channel; status DRAFT |
+| **Async comments** | 3-5 business days | Reviewers comment inline; author replies and revises |
+| **Sync meeting** | 45-60 min | Discuss unresolved threads only; make decisions |
+| **Async wrap-up** | 1-2 days | Author updates RFC with meeting outcomes; status APPROVED |
+
+If 90% of comments can be resolved async, the meeting is for the hard 10%. If everyone shows up to the meeting having not read the RFC, you're doing it wrong. *Cancel the meeting* until people have read it.
+
+---
+
+## Before The Meeting: The Pre-Review Checklist
+
+The Staff engineer (as facilitator) ensures:
+
+- [ ] RFC posted at least 3 business days before the meeting.
+- [ ] Posted to the right Slack channel + the right reviewers tagged.
+- [ ] Reviewers know it's their *job* to read it before the meeting.
+- [ ] Author has responded to all async comments (resolved or escalated to the meeting).
+- [ ] Agenda for the meeting is published 24h before: "Open thread 1: X. Open thread 2: Y. Decision needed: Z."
+- [ ] DACI roles are clear: who's Driver, Approver, Contributors, Informed (see [`escalation-and-decision-making.md`](escalation-and-decision-making.md)).
+- [ ] If the Approver can't make the meeting, *postpone* — there's no point in a review without the decision-maker.
+
+If any of these are missing, push back on the author. Better to delay a week than to run a useless meeting.
+
+---
+
+## During The Meeting: The Facilitator's Toolkit
+
+### Open with the agenda
+
+> "We have 45 minutes. Today's open threads are 1, 2, 3. By the end of this meeting we want a decision on whether to proceed with X. The Approver is <name>. Author is <name>; everyone else is a Contributor or Informed. Let's start with thread 1."
+
+This sets expectations. People know what success looks like. The author isn't ambushed; the Approver isn't asked to make a surprise decision.
+
+### Time-box ruthlessly
+
+If a thread has been discussed for 10 minutes and isn't converging, *park it*:
+
+> "We've spent 10 min on this; we're not converging. Let me note this as an open thread; let's continue async after the meeting. <Author>, please add a paragraph to the RFC summarizing the discussion and the open question."
+
+A meeting that produces 3 decisions and 2 parked threads is more useful than one that produces 0 decisions and 5 discussed threads.
+
+### Surface the silent
+
+The loudest reviewer dominates by default. The facilitator counters:
+
+> "We've heard from <loud reviewer>; <quiet reviewer>, what's your take? You've worked on a similar problem before."
+
+Make space for the quiet. They often have the most-considered views.
+
+### Re-route when the conversation drifts
+
+> "We've drifted into bikeshedding on naming. Let me park that — naming is a follow-up decision for the implementer. Back to the architectural question: <restate>."
+
+Bikeshedding kills design reviews. The facilitator's job is to keep the conversation on the highest-value question.
+
+### Force the decision
+
+If the conversation has reached natural resolution:
+
+> "Sounds like we're aligned on X. <Approver>, do you want to confirm: we're going with X. Are there any blocking concerns?"
+
+A design review without a decision is a discussion. Force the decision before time runs out, even if "the decision is: defer for 2 weeks pending more data."
+
+---
+
+## The Three Outcomes Of A Design Review
+
+Every review should end in one of three states:
+
+1. **APPROVED.** Author proceeds; status APPROVED on the RFC. Approver and key reviewers sign.
+2. **NEEDS REVISION.** Approver is willing to approve after specific changes; author revises and re-circulates async.
+3. **REJECTED / RECONSIDER.** Approver is not approving in the current form; either back to the drawing board or escalated.
+
+If you end without one of these, you have a fourth (bad) state: **AMBIGUOUS**. Author doesn't know what to do; another meeting is needed; the proposal stalls. Avoid this at all costs.
+
+---
+
+## After The Meeting: The Wrap-Up
+
+Within 24 hours:
+
+- Author updates the RFC with the meeting's decisions and open threads.
+- Author posts in the Slack channel: "Design review complete. Decision: X. Open threads parked for async: Y, Z. Status: <APPROVED / NEEDS REVISION / REJECTED>. Thanks <attendees>."
+- If APPROVED: author writes an ADR if the decision is Type 1 (one-way door, see [`escalation-and-decision-making.md`](escalation-and-decision-making.md)).
+- If NEEDS REVISION: author commits to a re-circulation date.
+- Facilitator (if different from author) writes a 1-paragraph "lessons learned" note for the team: "What worked in this review? What should we do differently next time?"
+
+The post-meeting wrap-up makes the meeting's value durable.
+
+---
+
+## Common Review Anti-Patterns
+
+### From the author's side
+
+- **Defending instead of listening.** A reviewer raises a concern; author immediately argues against it. The reviewer feels unheard; future reviews from them are perfunctory.
+- **The "I already considered that" deflection.** Even if you did, the reviewer didn't see your consideration. Walk through it again.
+- **Surprise scope changes mid-meeting.** "Actually, I also want to discuss Y." NO — Y goes to a separate review.
+- **Skipping the alternatives section.** Reviewers must understand what you rejected and why.
+- **Showing up without having read your own RFC.** Sounds absurd; happens. Always re-read your own RFC the morning of the review.
+
+### From the reviewer's side
+
+- **Showing up unprepared.** Hasn't read the RFC; asks questions answered in section 2. Cost: the rest of the meeting wasted.
+- **The bikeshedder.** Spending 20 minutes on what to name the variable while the actual architecture goes undiscussed.
+- **The "what about X?" hostage-taker.** Every meeting, a new tangential concern that prevents the decision. Force them to bound their concerns.
+- **The silent disagree-and-don't-commit.** Says nothing in the meeting; complains in Slack the next day. Address it directly: "I'd rather hear concerns now than next week."
+- **The veto from on high.** A senior reviewer who shows up only to issue a no without engaging. Address it: "Can you walk us through what would need to change for you to approve?"
+
+### From the facilitator's side
+
+- **Letting the loudest reviewer dominate.** Quiet reviewers tune out.
+- **Not enforcing the agenda.** Meeting drifts; nothing decided.
+- **Not time-boxing.** 90-min meeting that should have been 45.
+- **Not forcing a decision.** Meeting ends in "let's think about it more."
+- **Defending the author instead of facilitating.** The author should defend themselves; the facilitator stays neutral.
+
+---
+
+## Variations By RFC Type
+
+| RFC type | Review intensity | Typical attendees | Duration |
+|---|---|---|---|
+| New module / small feature | Light (async only often) | Author + 1-2 reviewers | — |
+| Cross-team architectural change | Standard async + sync | Author + 4-6 reviewers (incl. peer team leads) | 45 min |
+| Platform-level change | Heavy | Author + 6-10 reviewers (incl. multiple teams) | 60-90 min |
+| Vendor / dependency decision | Standard + procurement | Author + tech leads + EM + procurement | 45 min |
+| Security / compliance | Heavy | Author + 3-5 + InfoSec + EM | 60 min |
+
+Match the review intensity to the decision's blast radius. Don't run a 60-minute meeting for a single-module decision; don't run a 30-minute meeting for an architectural one.
+
+---
+
+## Hosting Recurring Design Reviews
+
+For teams that ship many RFCs (most healthy mobile teams), running a recurring "RFC Review" meeting is more efficient than scheduling per-RFC:
+
+- Weekly or biweekly, 60 min.
+- Async queue of RFCs (everyone reads in the week before).
+- Live meeting walks through 2-3 RFCs; 15-20 min each.
+- Facilitator rotates.
+
+This trades scheduling friction for cadence. The team gets used to the rhythm; RFCs don't pile up; junior engineers get exposure to design discussions even if they're not the author.
+
+---
+
+## Probing Questions
+
+1. Why is async review usually more valuable than the sync meeting?
+2. What's the right time-box for a design review? When would you go longer or shorter?
+3. As facilitator, how do you handle a reviewer who hasn't read the RFC?
+4. The Approver can't attend the scheduled meeting. What do you do?
+5. The author keeps defending instead of listening. How do you intervene without humiliating them?
+6. The meeting ends with no decision. What's the cost? How do you avoid it next time?
+7. A senior reviewer vetoes the proposal but won't explain why. How do you handle it?
+8. Walk through what you'd do in the first 5 minutes of a design review you're facilitating.
+
+---
+
+## Further Reading
+
+- [`escalation-and-decision-making.md`](escalation-and-decision-making.md) — DACI roles in the review.
+- [`influence-without-authority.md`](influence-without-authority.md) — pre-review relationship building.
+- [`technical-mentorship.md`](technical-mentorship.md) — letting a junior facilitate as practice.
+- [`../career/writing-rfcs.md`](../career/writing-rfcs.md) — what gets reviewed.
+- [Google eng-practices — Design Doc Reviews](https://google.github.io/eng-practices/) — practical examples.
+- [Lara Hogan — Resilient Management](https://larahogan.me/blog/) — meeting facilitation patterns.
+- [Stripe — Working Backwards from Decisions](https://stripe.com/blog/) — decision-process patterns.
