@@ -133,8 +133,44 @@ When setting up SRE practices, a Staff engineer asks:
 9.  Explain the relationship between raw Metrics (Counters, Histograms) and SLIs.
 10. Describe a scenario where backend SLIs are green (100% success), but mobile SLIs are red (0% success). What could cause this?
 
+## Mobile Implementation (Android)
+
+The canonical mobile SLIs map roughly to Play's "bad behavior" metrics plus a few you define per-product:
+
+| SLI | Definition | Source | Why mobile |
+|---|---|---|---|
+| **Crash-free users** | `1 - (users_with_crash / DAU)` per version | Crashlytics / Android Vitals | Direct user experience |
+| **ANR-free users** | `1 - (users_with_ANR / DAU)` | Android Vitals | Play's distribution gate |
+| **Cold start TTID** | p95 milliseconds | `JankStats`, `ReportFullyDrawn`, Vitals | First-impression latency |
+| **Frame jank rate** | `janky_frames / total_frames` | `JankStats` | Scroll smoothness perception |
+| **Network success rate** | `non_5xx_responses / total` per endpoint, **on-device measured** | OkHttp listener + telemetry SDK | Backend SLI is wrong-end measurement |
+| **Critical-flow success** | e.g., `checkout_succeeded / checkout_started` | Custom analytics | Domain-specific |
+| **Sync recovery** | `synced_within_5min / outbox_writes_offline` | Telemetry | Offline-first apps |
+
+```kotlin
+// SLI: critical-flow checkout success
+class CheckoutSliRecorder @Inject constructor(private val telemetry: TelemetryClient) {
+    fun started(orderId: String) {
+        telemetry.counter("sli.checkout.attempted").increment()
+    }
+    fun succeeded(orderId: String) {
+        telemetry.counter("sli.checkout.succeeded").increment()
+    }
+}
+```
+
+Mobile-distinct rules:
+
+1. **Measure on the device, not the server.** A backend that returns 200 means the bytes left the server. The user might have lost connection between BFF and device. The mobile SLI counts *received-and-rendered*, not server-side success.
+2. **Slice by foreground vs background.** A network call timing in the background fights Doze; expecting the same p95 as foreground is wrong.
+3. **Slice by device tier.** A flagship's cold-start budget and a low-tier emerging-market budget cannot be the same SLI.
+4. **Don't aggregate frame jank globally.** A heavy carousel might be janky by design (expected); a settings page should never be. Per-screen SLIs.
+5. **Cumulative ANRs vs user-perceived ANRs.** Play distinguishes; you should too. User-perceived (within an interactive session) is the stricter measure.
+
 ## Further Reading
 
 - [`slos.md`](slos.md) — How to set targets for your SLIs.
 - [`metrics.md`](metrics.md) — The raw data from which SLIs are calculated.
-- [Google SRE Book: Service Level Objectives](https://sre.google/sre-book/service-level-objectives/)
+- [Google SRE Book: Service Level Objectives](https://sre.google/sre-book/service-level-objectives/) — the theory.
+- [Android Vitals](https://developer.android.com/topic/performance/vitals) — the SLIs Play measures for you.
+- [`mobile-system-design/telemetry-sdk.md`](../mobile-system-design/telemetry-sdk.md) — the on-device pipeline.

@@ -113,6 +113,40 @@ When reviewing observability posture, a Staff engineer focuses on curation and l
 9.  Why should a Staff Engineer aggressively delete dashboards that haven't been viewed recently?
 10. Describe the visual layout differences between a dashboard designed for an Executive (Product/Business) vs a dashboard designed for an On-Call Engineer.
 
+## Mobile Implementation (Android)
+
+The dashboards a mobile release manager actually lives in:
+
+| Dashboard | Source | What it answers |
+|---|---|---|
+| **Play Console — Android Vitals** | Play | Crash rate, ANR rate, slow start, slow render — per version |
+| **Play Console — Statistics** | Play | Installs/uninstalls, country, device, retention — per version |
+| **Firebase Crashlytics** | Crashlytics | Crash detail, affected devices, stack traces |
+| **Firebase Performance** | Performance Monitoring | Trace breakdown, network latency, screen rendering |
+| **Custom Grafana via BigQuery export** | Crashlytics + Analytics BQ | Cohort-sliced views (country, OEM, device tier, version) |
+| **In-house telemetry RUM** | Your SDK | Domain SLIs (checkout success, sync latency, custom flows) |
+| **PagerDuty / OpsGenie** | Wired alerts | Active incidents + current rollout posture |
+
+Each one answers a specific question:
+
+```
+"Are we shipping safely right now?"        → Vitals (crash, ANR per version)
+"What broke in v2.0.1?"                    → Crashlytics issue list, filtered to version
+"Which devices are crashing the most?"     → BQ + Grafana, OEM cohort breakdown
+"Did our checkout flow regress?"           → Custom dashboard for `sli.checkout.*`
+"Why is the feed slow today?"              → Firebase Performance, network trace breakdown
+"Is the rollout fraction climbing?"        → Play Console Statistics
+```
+
+Mobile-distinct dashboarding principles:
+
+1. **Per-version, always.** Aggregating across versions hides regressions in new releases. Default every panel to "by versionCode."
+2. **Cohort by what you can't control.** Country, OEM, API level, device tier, network class. These are the dimensions Vitals can't (or won't) slice for you.
+3. **One dashboard per role.** Release manager wants rollout + crash gates; on-call wants alerts + service health; feature owner wants their flow's metrics. Don't make everyone hunt.
+4. **No averages.** P50/P95/P99 only. The mean of (1ms, 1ms, 60s) is comforting and wrong.
+5. **Day-of-week and time-of-day.** Mobile traffic is cyclical. A baseline that doesn't show 7d-over-7d comparison misleads.
+6. **Link to runbooks.** Every alert chart links to the runbook for "what to do at 3 AM when this fires."
+
 ## Further Reading
 
 - [`alerting.md`](alerting.md) — The system that drives humans to look at the dashboard.

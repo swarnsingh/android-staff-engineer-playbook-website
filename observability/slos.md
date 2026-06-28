@@ -127,6 +127,49 @@ When negotiating an SLO with Product Management, a Staff engineer asks:
 9.  Why should SLOs only be applied to Critical User Journeys (CUJs) rather than every single screen in the app?
 10. If an internal engineering team consistently violates their SLO, but users aren't complaining and revenue is up, what does that tell you about the SLO?
 
+## Mobile Implementation (Android)
+
+Mobile SLOs anchor on Play's actual distribution thresholds plus market-specific tightening:
+
+| SLO | Floor (Play penalises below) | Target (good) | Excellent |
+|---|---|---|---|
+| **Crash-free users** | 99.0% | 99.5% | 99.8% |
+| **ANR rate** | < 0.47% sessions | < 0.30% | < 0.20% |
+| **User-perceived ANR rate** | (Play's UX-ANR) | < 0.20% | < 0.10% |
+| **Cold start p95** (mid-tier) | < 5s | < 1.5s | < 1.0s |
+| **Frame jank rate** | < 5% | < 2% | < 1% |
+| **Network success p95** | (varies by endpoint) | 99% | 99.9% |
+| **Checkout success** | 95% | 98% | 99.5% |
+
+Play's threshold for "bad behavior" (ANR > 0.47%, crash > 1.09%) leads to reduced distribution and Search demotion. Treat those as the absolute floors. Your SLO target sits well above.
+
+```kotlin
+// SLO check: gate a staged rollout on SLOs being met
+data class SloCheck(
+    val crashFreeUsers: Double,
+    val anrRate: Double,
+    val ttidP95Ms: Long,
+    val checkoutSuccess: Double,
+)
+
+fun shouldPromoteRollout(check: SloCheck, prev: SloCheck): PromoteDecision {
+    if (check.crashFreeUsers < 0.99) return PromoteDecision.HaltCritical
+    if (check.anrRate > 0.30) return PromoteDecision.HaltCritical
+    if (check.crashFreeUsers < prev.crashFreeUsers - 0.005) return PromoteDecision.HaltRegression
+    if (check.ttidP95Ms > prev.ttidP95Ms * 1.10) return PromoteDecision.Hold
+    if (check.checkoutSuccess < 0.98) return PromoteDecision.Hold
+    return PromoteDecision.PromoteEligible
+}
+```
+
+Mobile-distinct:
+
+1. **SLOs are per-version, not per-app.** A new version with a regression is a separate measurement; staged rollout exists for this reason.
+2. **The "good enough" threshold is Android Vitals' thresholds.** Below them, Play actively hurts you. Above them, your SLOs are aspirational.
+3. **SLOs differ by device tier.** A 1.5s cold-start target is a flagship goal. Apply tier-specific SLOs or you'll over-promise on emerging markets.
+4. **Battery is an SLO too.** "< 5% battery / active hour" for a streaming feature. Measure via in-app telemetry; Play doesn't surface this.
+5. **OEM cohort SLOs.** Samsung A series sometimes hits ANRs that Pixel doesn't; track separately and degrade gracefully on outliers.
+
 ## Further Reading
 
 - [`slis.md`](slis.md) — The metrics that the SLO is measuring.

@@ -134,8 +134,50 @@ When reviewing a PR, a Staff engineer asks:
 9.  How can you configure ProGuard/R8 to automatically strip `Log.d` statements from a production release build?
 10. Describe a scenario where an over-zealous logging strategy could actually cause an app to crash with an `OutOfMemoryError` or `IOException`.
 
+## Mobile Implementation (Android)
+
+Logs on mobile aren't logs the way servers do them. There's no `tail -f`. The user's device emits to logcat (visible only during USB debug), and a curated subset is mirrored to a remote sink (Crashlytics breadcrumbs, in-house telemetry, or vendor RUM).
+
+| Sink | When |
+|---|---|
+| `Log.d/i/w/e` → logcat | Local dev only |
+| **Timber** | Wrapped logging; auto-disabled in release |
+| **Crashlytics breadcrumbs** | Up to 64 KB of recent events attached to next crash |
+| **In-house telemetry SDK** | Domain log events shipped per `analytics-sdk.md` |
+
+```kotlin
+// Timber tree: dev uses debug; release routes warnings/errors to Crashlytics
+class CrashlyticsTree : Timber.Tree() {
+    override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
+        if (priority < Log.WARN) return
+        FirebaseCrashlytics.getInstance().run {
+            log("[$tag] ${PiiRedactor.redact(message)}")
+            t?.let { recordException(it) }
+        }
+    }
+}
+
+class App : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        if (BuildConfig.DEBUG) Timber.plant(Timber.DebugTree())
+        else Timber.plant(CrashlyticsTree())
+    }
+}
+```
+
+Three mobile-specific rules:
+
+1. **Redact PII at the log call site.** Logcat is readable by adjacent OEM apps on some devices, and crash reports may include logged messages. `PiiRedactor` strips emails, phone numbers, card patterns before the message ever leaves the process. See `mobile-system-design/security-and-privacy.md`.
+2. **Strip in release.** R8 doesn't remove `Log.d` calls by default — the strings still compile in. Either wrap in `if (BuildConfig.DEBUG)` (R8 elides the block), or use Timber with a no-op release tree.
+3. **Don't log identifiers that survive uninstall.** Even hashed `userId` lets adversaries correlate; if it's needed for cross-session debugging, use a session-scoped UUID with TTL.
+
+Mobile logs are a forensic trail attached to a crash, not a stream you watch. Engineer for the autopsy, not the live feed.
+
 ## Further Reading
 
 - [`structured-logging.md`](structured-logging.md) — The evolution of raw text logs into queryable JSON.
 - [`metrics.md`](metrics.md) — Why you shouldn't use logs to count things.
 - [`tracing.md`](tracing.md) — How to connect isolated logs across multiple asynchronous operations.
+- [Timber](https://github.com/JakeWharton/timber) — the conventional Android logging wrapper.
+- [Crashlytics breadcrumbs / custom keys](https://firebase.google.com/docs/crashlytics/customize-crash-reports) — context attached to crash reports.

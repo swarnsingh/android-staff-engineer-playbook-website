@@ -166,8 +166,54 @@ When setting up a logging architecture, a Staff engineer asks:
 9.  Why does structured logging push the responsibility of data formatting from the backend (Logstash) to the client (Mobile App)?
 10. If an app crashes, how does having the `app_version` and `os_version` explicitly structured as keys in the JSON help triage the issue faster than if they were embedded in a text sentence?
 
+## Mobile Implementation (Android)
+
+On Android, structured logs are typed payloads that flow through the analytics SDK rather than being printed. The "structure" is the `AnalyticsEvent` shape, serialized via `kotlinx.serialization` and batched via the durable queue.
+
+```kotlin
+@Serializable
+data class CheckoutEvent(
+    val orderId: String,
+    val amountMinor: Long,
+    val currency: String,
+    val paymentMethod: String,
+    val durationMs: Long,
+    val outcome: String,                       // succeeded | failed | cancelled
+    val failureCode: String? = null,
+)
+
+fun trackCheckout(event: CheckoutEvent) {
+    Analytics.track(
+        AnalyticsEvent(
+            name = "checkout_completed",
+            properties = event.toPropertyMap(),
+            category = Category.PRODUCT,
+        )
+    )
+}
+```
+
+Crashlytics gets the same structure as **custom keys**, attached to whatever crash happens next:
+
+```kotlin
+FirebaseCrashlytics.getInstance().apply {
+    setCustomKey("checkout.orderId", event.orderId)
+    setCustomKey("checkout.amountMinor", event.amountMinor)
+    setCustomKey("checkout.paymentMethod", event.paymentMethod)
+    setCustomKey("checkout.outcome", event.outcome)
+}
+```
+
+Three mobile-distinct considerations:
+
+1. **Schema enforcement at build time.** Use a KSP processor or a typed-event builder so `checkout_completed` always carries the same fields. Server-side schema registry validates. See `mobile-system-design/analytics-sdk.md`.
+2. **Bounded payload size.** FCM has a 4 KB ceiling; Crashlytics custom keys cap individual values at 1 KB. Truncate long fields explicitly rather than relying on the SDK to do it silently.
+3. **Locale/timezone matter.** Use `Instant` for absolute time; never `LocalDateTime` from `Date()` (which is in device-local TZ). All server-correlated timestamps are UTC milliseconds since epoch.
+
 ## Further Reading
 
 - [`logging.md`](logging.md) — The foundation upon which structured logging is built.
 - [`metrics.md`](metrics.md) — If you are using structured logs just to count things, you should be using metrics instead.
 - [The 12-Factor App: Logs](https://12factor.net/logs)
+- [Crashlytics custom keys](https://firebase.google.com/docs/crashlytics/customize-crash-reports) — structured context per crash.
+- [`mobile-system-design/analytics-sdk.md`](../mobile-system-design/analytics-sdk.md) — the typed event pipeline.

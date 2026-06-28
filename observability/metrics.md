@@ -163,8 +163,57 @@ When designing a telemetry strategy, a Staff engineer applies the rule: **"Metri
 9.  Describe a scenario where a Gauge metric is more appropriate than a Counter metric.
 10. If a metric tells you that P99 checkout latency has spiked to 15 seconds, but the logs show no errors, what is the next Observability tool you need to find the bottleneck? (Hint: Tracing).
 
+## Mobile Implementation (Android)
+
+The metric-pipeline shape on Android pulls from three sources:
+
+| Source | What it measures | How |
+|---|---|---|
+| **Android Vitals** | Crash-free rate, ANR, slow start, slow render | Auto-collected by Play Services on every Play-installed device |
+| **Firebase Crashlytics** | Custom non-fatal counters, breadcrumbs | SDK call sites in your code |
+| **In-house telemetry SDK** | Domain metrics (cart_started, payment_succeeded), perf (frame jank) | See `mobile-system-design/telemetry-sdk.md` |
+
+Foreground/background is the canonical mobile dimension every metric should carry. Battery saver state, network class (Wi-Fi / cellular / metered), Android API level, OEM (Samsung / Xiaomi / Pixel / etc.), and country are the next-most-load-bearing. **Never** tag with `userId`, `deviceId`, or `sessionId` — cardinality bombs.
+
+```kotlin
+// Tagging a histogram with mobile-specific dimensions
+class HistogramRecorder @Inject constructor(
+    private val tags: MobileTagsProvider,
+) {
+    fun record(name: String, valueMs: Long, extra: Map<String, String> = emptyMap()) {
+        telemetry.histogram(
+            name = name,
+            value = valueMs,
+            tags = tags.snapshot() + extra,
+        )
+    }
+}
+
+class MobileTagsProvider @Inject constructor(
+    @ApplicationContext private val ctx: Context,
+    private val foreground: ForegroundObserver,
+) {
+    fun snapshot(): Map<String, String> = mapOf(
+        "app_version" to BuildConfig.VERSION_NAME,
+        "android_api" to Build.VERSION.SDK_INT.toString(),
+        "oem" to Build.MANUFACTURER.lowercase(),
+        "device_tier" to DeviceClass.tier().name.lowercase(),  // low / mid / flagship
+        "network_class" to networkClass(ctx),                   // wifi / cellular / none
+        "metered" to networkMetered(ctx).toString(),
+        "fg_state" to if (foreground.isAppInForeground()) "fg" else "bg",
+        "battery_saver" to powerSaver(ctx).toString(),
+    )
+}
+```
+
+Mobile-distinctive metrics worth instrumenting from day one: cold-start TTID/TTFD (via `JankStats` + `ReportFullyDrawn`), jank frames per session (`JankStats`), network call duration broken down by `network_class`, crash-free sessions (Crashlytics), unhandled-exception rate (uncaught handler + Crashlytics), engagement (DAU/MAU as gauges).
+
+Push cadence: aggregate in-memory in the SDK; flush every 30-60 seconds OR on transition to background (`ProcessLifecycleOwner.onStop`). Never push per-event — battery + bandwidth catastrophe.
+
 ## Further Reading
 
 - [`structured-logging.md`](structured-logging.md) — Why you shouldn't use logs to count things.
 - [`tracing.md`](tracing.md) — The tool used to find *where* the latency reported by a metric is actually occurring.
 - [`slis.md`](slis.md) — How metrics are formulated into contractual promises of reliability.
+- [Android Vitals](https://developer.android.com/topic/performance/vitals) — Play Console's auto-collected metrics.
+- [JankStats](https://developer.android.com/topic/performance/jankstats) — frame-jank RUM library.

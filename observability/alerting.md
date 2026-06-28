@@ -139,8 +139,80 @@ When auditing an on-call rotation, a Staff engineer focuses on the human cost:
 9.  If an alert fires, wakes an engineer up, and resolves itself 2 minutes later, what architectural changes should you make to the alert definition?
 10. If an engineer is paged at 2:00 AM because a feature is crashing, what is usually their primary goal: fixing the code bug, or mitigating the user impact (e.g., via Remote Config)?
 
+## Mobile Implementation (Android)
+
+Mobile alerts have a different shape than server alerts because the mitigation toolbox is different. You can't restart a server; you can flip a flag, halt a rollout, or hotfix-and-wait.
+
+```
+Alert chain:
+  Vitals / Crashlytics / In-house telemetry
+        │
+        ▼
+  PagerDuty / OpsGenie (with runbook URL)
+        │
+        ▼
+  Releng on-call
+        │
+   ┌────┴────┬────────────┬─────────────────┐
+   ▼         ▼            ▼                 ▼
+  Halt    Kill switch    Rollback to       Hotfix +
+rollout    via flags      previous AAB      release
+                          (Play promo
+                           older version)
+```
+
+Concrete alert configs that matter:
+
+| Alert | Source | Threshold | First action |
+|---|---|---|---|
+| Crash rate spike | Vitals/Crashlytics | > baseline + 0.5pp | Halt rollout |
+| ANR rate spike | Vitals | > 0.30% sessions | Halt + investigate stack traces |
+| Critical-flow drop | Custom (checkout success) | > 2pp drop vs prev version | Flip flag if isolable feature |
+| Network 5xx spike (BFF) | RUM | > 3% over 5 min | Coordinate with BFF on-call |
+| Cohort-specific crash | Cohort-filtered Vitals | Samsung A series > 5% crash | Cohort kill switch |
+| Slow start regression | Vitals | p95 > 1.5x baseline | Hold rollout; not page-worthy |
+| Pin expiration ≤ 30 days | Build-time check | (calendar) | Schedule release |
+| Play distribution paused | Play API | Status changed | Investigate Console |
+
+```yaml
+# Datadog monitor (or Grafana alert) for crash regression
+name: "Android crash rate regression — v2.0.0 production"
+type: metric alert
+query: |
+  avg(last_30m):
+    avg:android.crash_free_users.rate{version:2.0.0, env:production}
+  < 0.99
+message: |
+  Crash-free users below 99% for v2.0.0 production rollout.
+
+  Runbook: https://wiki/runbooks/android-crash-regression
+  Halt: https://github.com/example/app/actions/workflows/halt.yml
+  Slack: #android-release
+  PagerDuty: android-releng-oncall
+
+  @pagerduty-android-releng-oncall
+tags:
+  - team:android-platform
+  - severity:high
+options:
+  thresholds:
+    critical: 0.99
+    warning: 0.995
+  evaluation_delay: 60
+```
+
+Mobile-distinct:
+
+1. **No instant rollback.** Halting a Play rollout stops *new* installs of the bad version; existing affected users stay broken until the hotfix ships. Always pair "halt" with "kill switch" — server-side disable of the offending feature.
+2. **Alert latency tolerance.** Vitals data lags by 6-24h. Your in-house telemetry is faster but smaller sample size. Alert on the union; investigate with both.
+3. **Cohort alerts.** A 95% crash-free rate globally hides a 70% on Samsung A series. Define cohort-specific alerts for the top 5 OEM-API combinations.
+4. **Don't alert on cold-start regressions like crashes.** Slow start is "hold," not "page." Page only on user-perceived outage.
+5. **Auto-resolve.** When the rollout halts and the next refresh shows healthy, auto-resolve the alert. Don't make on-call hunt for the silence button.
+
 ## Further Reading
 
 - [`error-budgets.md`](error-budgets.md) — The math that determines when an alert should fire (Burn Rates).
 - [`dashboards.md`](dashboards.md) — Where the engineer goes after reading the Runbook to visualize the outage.
-- [Google SRE: Alerting on SLOs](https://sre.google/workbook/alerting-on-slos/)
+- [Google SRE: Alerting on SLOs](https://sre.google/workbook/alerting-on-slos/) — multi-window burn rate alerts.
+- [`release-engineering/crash-rate-gating.md`](../release-engineering/crash-rate-gating.md) — automated halt on regression.
+- [`release-engineering/kill-switches.md`](../release-engineering/kill-switches.md) — server-side mitigation.

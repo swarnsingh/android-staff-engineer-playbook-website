@@ -147,8 +147,60 @@ When pushing for Distributed Tracing, a Staff engineer focuses on organizational
 9.  Why is 100% trace sampling impossible for a mobile application with millions of Daily Active Users (DAU)?
 10. Describe the visual difference in a Gantt chart between a "broken" trace (where the header was dropped) and a "successful" trace.
 
+## Mobile Implementation (Android)
+
+The W3C Trace Context handoff from device to BFF is a one-line OkHttp interceptor. The wire spec uses two headers: `traceparent` (mandatory) and optional `tracestate`.
+
+```kotlin
+class TracePropagationInterceptor(
+    private val tracer: Tracer,
+) : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val span = tracer.spanBuilder("http.${chain.request().method}")
+            .setSpanKind(SpanKind.CLIENT)
+            .setAttribute("http.url", chain.request().url.toString().scrub())
+            .startSpan()
+
+        return try {
+            val requestWithTrace = chain.request().newBuilder().apply {
+                // Inject W3C traceparent
+                val ctx = Context.current().with(span)
+                W3CTraceContextPropagator.getInstance().inject(ctx, this) { builder, key, value ->
+                    builder.header(key, value)
+                }
+            }.build()
+
+            val response = chain.proceed(requestWithTrace)
+            span.setAttribute("http.status_code", response.code.toLong())
+            response
+        } catch (t: Throwable) {
+            span.setStatus(StatusCode.ERROR)
+            span.recordException(t)
+            throw t
+        } finally {
+            span.end()
+        }
+    }
+}
+
+private fun String.scrub(): String =
+    this.replace(Regex("(token|secret|api_key)=[^&]*"), "$1=REDACTED")
+```
+
+The BFF reads `traceparent`, continues the trace, propagates downstream. Your Tempo/Jaeger/Honeycomb dashboard now shows: `client.startSpan` (Android) → `bff.handle_request` (server) → `db.query` (server) — one waterfall, one trace ID.
+
+Mobile-distinct concerns:
+
+1. **Sampling on the device.** Decide on-device whether to sample at the `spanBuilder.setSampler` step; transmitting full traces for every request is bandwidth- and battery-prohibitive. Head-based sampling (e.g., 10% of sessions full-trace, 90% sample only errors).
+2. **Offline traces.** A trace started while offline persists locally and ships when network returns. Implement the SDK to back the span exporter with a Room queue, drained by `WorkManager`.
+3. **Trace ID survives process death.** Persist the active session's trace ID to `SavedStateHandle` so a relaunched user's first request resumes the same trace.
+4. **Cellular header overhead.** `traceparent` adds ~60 bytes per request. Negligible per call; relevant if you're polling at high frequency.
+5. **Cross-device debugging.** The same user on phone + tablet generates distinct traces. Link via shared `user_id` attribute in the BFF span.
+
 ## Further Reading
 
 - [`tracing.md`](tracing.md) — The foundation of creating local Spans before they cross the network boundary.
 - [`structured-logging.md`](structured-logging.md) — How to embed the Trace ID into logs as a fallback mechanism.
-- [W3C Trace Context Specification](https://www.w3.org/TR/trace-context/)
+- [W3C Trace Context Specification](https://www.w3.org/TR/trace-context/) — the wire format.
+- [OpenTelemetry Android SDK](https://github.com/open-telemetry/opentelemetry-android) — exporters, sampling, instrumentation.
+- [OkHttp interceptors](https://square.github.io/okhttp/features/interceptors/) — where to inject `traceparent`.

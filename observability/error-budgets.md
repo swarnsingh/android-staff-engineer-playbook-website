@@ -132,6 +132,51 @@ When reviewing SRE policies, a Staff engineer asks:
 9.  Why is punishing an engineering team for blowing an Error Budget considered a toxic management practice?
 10. If an Error Budget is completely depleted on Day 5 of a 30-day window, what must the engineering team do for the remaining 25 days?
 
+## Mobile Implementation (Android)
+
+On mobile the error budget translates directly into rollout cadence and kill-switch authority:
+
+```
+SLO: 99.5% crash-free users on production version v2.0.0
+Budget: 0.5% = 5,000 crashing users per 1M DAU per 30 days
+```
+
+If you've burned 80% of that in week one, the release-train tightens:
+- **No new feature merges into the train.** Only fixes.
+- **Kill switches flip on for risky launches.** Conserve the budget.
+- **Staged rollout pauses.** No further fraction increases.
+- **Post-mortem is mandatory.** Even without an outage.
+
+```kotlin
+// Budget tracking: how much of the SLO have we burned?
+data class BudgetState(
+    val sloTargetCrashFree: Double = 0.995,
+    val periodDays: Int = 30,
+    val totalUsers: Long,
+    val crashingUsers: Long,
+) {
+    val errorBudget: Double = (1.0 - sloTargetCrashFree) * totalUsers   // allowed crashes
+    val burned: Double = crashingUsers.toDouble()
+    val burnedFraction: Double = burned / errorBudget
+    val remainingDays: Double = (1.0 - burnedFraction) * periodDays
+}
+
+fun decideOnReleaseAction(state: BudgetState): ReleaseAction = when {
+    state.burnedFraction >= 1.0 -> ReleaseAction.FreezeNewWork
+    state.burnedFraction >= 0.80 -> ReleaseAction.PauseRiskyLaunches
+    state.burnedFraction >= 0.50 -> ReleaseAction.IncreaseScrutiny
+    else -> ReleaseAction.NormalOperation
+}
+```
+
+Mobile-distinct:
+
+1. **The budget covers all live versions.** Every install on `v1.9.x` still emitting crashes burns the budget for the org's reliability target.
+2. **Hotfixes don't reset the budget.** A user who hit a crash before the hotfix shipped is still a "crashing user" for the period.
+3. **Old API floors are budget drains.** Supporting Android 8 means more vendor-specific crashes; consider whether the budget allows.
+4. **Background work errors can be silent budget burns.** A failing WorkManager flush rarely surfaces to the user, but if it corrupts state, the next crash counts. Track WorkManager retry-exhaustion rates.
+5. **Wipe-and-reinstall users.** A user uninstalling because of crashes ≠ a user who stayed and complained. The latter shows in Vitals; the former shows in Play Console "uninstalls following crash" — also part of your budget.
+
 ## Further Reading
 
 - [`slos.md`](slos.md) — The target that defines the size of the budget.

@@ -201,8 +201,50 @@ When evaluating performance issues, a Staff engineer uses Tracing as a scalpel:
 9.  What is a "Waterfall" in the context of a Trace visualization, and how do you fix it in Kotlin?
 10. Why is injecting the `Trace ID` into your Structured Logging payload (MDC) so critical for debugging?
 
+## Mobile Implementation (Android)
+
+The two canonical tracing surfaces on Android:
+
+| Source | What it traces | When |
+|---|---|---|
+| **Firebase Performance Monitoring** | Auto: app start, network calls (OkHttp), custom traces | Default first instinct |
+| **OpenTelemetry Android SDK** | Full OTel-compatible spans, manual instrumentation, exportable | When you self-host the backend |
+
+```kotlin
+// Firebase Performance custom trace + sub-spans
+val checkout = FirebasePerformance.getInstance().newTrace("checkout_flow").apply {
+    putAttribute("payment_method", "card")
+    putAttribute("network_class", networkClass())
+    start()
+}
+
+try {
+    val validation = checkout.newMetric("validation_ms")
+    val ms = measureTimeMillis { validateCart() }
+    validation.setValue(ms)
+
+    val authMs = measureTimeMillis { authorizePayment() }
+    checkout.putMetric("authorize_ms", authMs)
+
+    val captureMs = measureTimeMillis { capturePayment() }
+    checkout.putMetric("capture_ms", captureMs)
+} finally {
+    checkout.stop()
+}
+```
+
+The mobile-distinct concerns:
+
+1. **Span granularity vs battery.** A span per HTTP call is reasonable; a span per Compose recomposition is not. Sample.
+2. **Foreground/background boundary.** A span open when the app backgrounds gets paused (or worse, abandoned). Either close before `onStop` or accept that long-tail traces will be incomplete.
+3. **Process death.** A span in progress when the process is killed is lost. Mitigate by writing partial trace data to Room before suspending high-stakes operations.
+4. **Cellular variance.** A 200 ms span on Wi-Fi is fine; on a 3G connection in a tunnel it's 8 seconds. Tag with `network_class` and slice dashboards accordingly.
+5. **JankStats integration.** `JankStats` reports per-frame durations; treat each janky frame as a synthetic span attached to the current screen for "where did the jank happen" forensics.
+
 ## Further Reading
 
 - [`distributed-tracing.md`](distributed-tracing.md) — How to pass the Trace ID from the mobile device to the backend server.
 - [`structured-logging.md`](structured-logging.md) — How to embed the Trace ID into every log.
-- [OpenTelemetry Android](https://opentelemetry.io/docs/instrumentation/android/)
+- [OpenTelemetry Android](https://opentelemetry.io/docs/instrumentation/android/) — full OTel SDK for mobile.
+- [Firebase Performance Monitoring](https://firebase.google.com/docs/perf-mon) — auto-instrumented spans + custom traces.
+- [JankStats](https://developer.android.com/topic/performance/jankstats) — frame-level perf events.
