@@ -1,126 +1,327 @@
 # Release Engineering: Staged Rollouts
 
-## The Prompt
+> Never ship to 100% of users at once. Use Play's staged rollout API to grow the audience gradually, monitor crash/ANR rate per stage, and pull the release if numbers degrade.
 
-*"A Junior engineer presses the 'Publish' button on the Google Play Store, sending the new App Update (v2.0) to 10 million users instantly. The update contains a fatal crash on startup. 10 million users are locked out of their bank accounts. Design the Staged Rollout process that prevents this."*
+---
 
-## 1. Requirements & Clarification (RADIO Framework)
+## 1. The Stage Model
 
-### Functional Requirements
-- Distribute app updates gradually to a percentage of users.
-- Halt distribution automatically if metrics degrade.
-- Provide a mechanism to rollback or fix the issue.
-
-### Non-Functional Requirements (NFRs)
-- **Safety (Priority 0):** A fatal crash should never affect more than 1% of the active user base.
-- **Monitoring:** The rollout process must be tightly coupled to the Telemetry SDK (Crash-Free Sessions).
-- **Speed:** The rollout must not take 6 months. It must balance safety with feature delivery velocity.
-
-## 2. High-Level Architecture (The Phased Release)
-
-Mobile releases are fundamentally different from Backend deployments.
-If you deploy a broken backend server, you rollback the Docker container in 3 seconds.
-If you deploy a broken Mobile App, the broken binary is physically installed on the user's phone. You **cannot** delete it from their phone. You must submit a new version to Google, wait 2 days for review, and pray the user connects to Wi-Fi to download it.
-
-We use **Staged Rollouts** to limit the blast radius.
-
-```mermaid
-graph TD
-    CI[CI/CD Pipeline] -->|Uploads AAB| PlayStore[Google Play Console]
-    
-    subgraph Staged Rollout Strategy
-        PlayStore -->|Day 1| 1Percent(1% of Users)
-        PlayStore -->|Day 2| 5Percent(5% of Users)
-        PlayStore -->|Day 4| 20Percent(20% of Users)
-        PlayStore -->|Day 7| 100Percent(100% of Users)
-    end
-    
-    1Percent -->|Crash Data| Telemetry[Crashlytics]
-    5Percent -->|Crash Data| Telemetry
-    
-    Telemetry -->|Alert: Spike Detected| ReleaseManager[Release Manager]
-    ReleaseManager -->|Halt Rollout| PlayStore
+```
+v2.0.0 submitted
+    │
+    ▼
+Internal Test Track (employees, 100%)
+    │ (24h soak; engineers can use the app like users)
+    ▼
+Closed Test Track (alpha, ~500 trusted users)
+    │ (3-7 days; rich crash/perf telemetry)
+    ▼
+Open Test Track (beta, opt-in users)
+    │ (7 days)
+    ▼
+Production: 1% → 5% → 10% → 25% → 50% → 100%
+    (24h between stages; auto-halt on regression)
 ```
 
-## 3. The Core Flows (Deep Dive)
+A safer cadence costs a week of latency but turns a "30% crash rate disaster" into "we saw it at 1% and rolled back."
 
-### Flow 1: The 1% Bake Period (The Canary)
-*Interviewer:* "Why start at 1%? Why not 10%?"
+---
 
-**Staff Answer:**
-"For an app with 10 million daily active users, 1% is 100,000 users. That is easily enough statistical volume to detect fatal crashes, API mismatches, or infinite loops within a few hours.
-If we push a fatal crash to 1%, 100,000 users are angry, but our customer support center can handle it. If we push to 10%, 1 million users are locked out of their bank accounts, causing a national PR disaster and crashing our phone lines."
+## 2. Promoting Between Stages With Triple-T
 
-### Flow 2: Evaluating the Gate (Crash-Free Users vs Sessions)
-*Interviewer:* "Before moving from 1% to 5%, what exact metric are you looking at to approve the promotion?"
+```kotlin
+// app/build.gradle.kts
+plugins {
+    id("com.github.triplet.play") version "3.11.0"
+}
 
-**Staff Answer:**
-"We evaluate **Crash-Free Users**, not Crash-Free Sessions.
-- If 1 user opens the app 100 times and it crashes every time, that is 100 crashed sessions. It makes the 'Crash-Free Session' metric look like the app is completely broken globally.
-- But it's only 1 user. Maybe their device is rooted, or they have a corrupted SQLite database from 2018.
-By measuring 'Crash-Free Users' (which must remain > 99.9%), we see the true blast radius. If the metric is healthy after 24 hours, the Release Manager promotes the rollout to 5%."
+play {
+    serviceAccountCredentials.set(file(System.getenv("PLAY_SERVICE_ACCOUNT")))
+    track.set("internal")
+    defaultToAppBundles.set(true)
+    releaseStatus.set(ReleaseStatus.COMPLETED)
+    updatePriority.set(2)
+    artifactDir.set(file("build/outputs/bundle/release"))
+}
+```
 
-### Flow 3: The Halt & Hotfix (The Rollback Myth)
-*Interviewer:* "At 20%, the app starts crashing because a new database migration fails on Samsung devices. What is your immediate action, and how do you 'rollback'?"
+```bash
+# Upload to internal
+./gradlew :app:publishReleaseBundle --track=internal
 
-**Staff Answer:**
-"First, I immediately click **Halt Rollout** in the Play Store. The remaining 80% of users are now safe. They will remain on Version 1.0.
-Second, I must acknowledge a painful reality: **There is no Rollback on Android.** Google Play does not allow you to un-publish v2.0 and force the 20% of users back to v1.0.
-1. I must cut a **Hotfix branch** from the v2.0 release tag.
-2. The team fixes the database migration.
-3. We increment the `versionCode` to v2.0.1.
-4. We build a new AAB and submit it to the Play Store.
-5. We push v2.0.1 directly to 20% (to overwrite the broken users) or 100% (if we are completely confident in the fix)."
+# Promote internal → alpha
+./gradlew :app:promoteArtifact --from-track=internal --promote-track=alpha
 
-## 4. Failure Modes & Bottlenecks
+# Promote alpha → beta
+./gradlew :app:promoteArtifact --from-track=alpha --promote-track=beta
 
-### Bottleneck: Feature Flags vs App Updates
-*Interviewer:* "A Staged Rollout takes 7 days to reach 100%. The Marketing team wants a new banner to appear for everyone on Black Friday. Your staged rollout won't finish in time. How do you solve this?"
+# Production at 1% rollout (staged)
+./gradlew :app:promoteArtifact \
+    --from-track=beta \
+    --promote-track=production \
+    --release-status=inProgress \
+    --user-fraction=0.01
+```
 
-**Staff Answer:**
-"We decouple **Binary Release** from **Feature Release**.
-1. We merge the new Black Friday banner code into the app.
-2. We wrap it in a Feature Flag: `if (FlagEngine.isBlackFridayEnabled)`.
-3. We start the Staged Rollout on November 1st. By November 10th, the app is on 100% of devices.
-4. The banner is dormant (invisible) because the flag is off.
-5. On Black Friday (Nov 24), the PM clicks a button in the Remote Config dashboard. The flag flips to `true` globally. 100% of users see the banner instantly.
-App Updates are for delivering code safely over 7 days. Feature Flags are for delivering experiences instantly."
+The Play API supports incremental `userFraction`. Each promotion increases it.
 
-### Bottleneck: The API Contract Break
-*Interviewer:* "The mobile app v2.0 is at 50% rollout. The Backend team deletes an old API endpoint (`/v1/login`) and replaces it with `/v2/login`. Suddenly, 50% of your users can't log in."
+---
 
-**Staff Answer:**
-"The Backend team violated the **Forward Compatibility Rule**.
-Because mobile rollouts are staged (and some users turn off auto-updates entirely), there are always multiple versions of the mobile app running simultaneously in the wild.
-**The Fix:** The Backend must *never* delete or make breaking changes to an API endpoint while older mobile clients are still generating traffic. They must support both `/v1/` and `/v2/` simultaneously until the metrics show that traffic to `/v1/` has reached near zero (usually weeks or months later)."
+## 3. Direct Play Developer API (When You Need More)
 
-## 5. Staff Engineer Thinking: Force Updating (The Nuclear Option)
+For automation outside Triple-T's coverage, use the Play Developer Publishing API directly. JWT-based service account auth:
 
-A Staff Engineer knows that some users will refuse to update their app for years.
-If the backend fundamentally changes its security model, the old apps become a massive security liability.
-We must build a **Force Update Mechanism** into the architecture from Day 1.
+```python
+# scripts/promote.py
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+import sys, json, os
 
-1. The Android app hits a `GET /app-config` endpoint on startup.
-2. The response contains `"min_required_version": 150`.
-3. If the user's app is `versionCode 140`, the app intercepts this and immediately launches a full-screen, un-dismissible Activity.
-4. The Activity says: "This version is no longer supported. Please update to continue." It provides a button linking directly to the Play Store `market://` URL.
-5. This is the only way to surgically kill off ancient app versions that are polluting the backend.
+SCOPES = ['https://www.googleapis.com/auth/androidpublisher']
+PACKAGE = 'com.example.app'
 
-## 6. Probing Questions (For Practice)
+def main(track: str, fraction: float):
+    creds = service_account.Credentials.from_service_account_file(
+        os.environ['PLAY_SERVICE_ACCOUNT'], scopes=SCOPES
+    )
+    service = build('androidpublisher', 'v3', credentials=creds)
 
-1.  Explain the fundamental difference between rolling back a backend microservice and attempting to "roll back" a mobile application.
-2.  Walk through a standard 7-day Staged Rollout schedule (e.g., 1%, 5%, 20%, 100%). Why is 1% chosen as the initial Canary phase?
-3.  Why is "Crash-Free Users" a vastly superior metric to "Crash-Free Sessions" when deciding whether to promote a staged rollout?
-4.  Describe the immediate actions a Release Manager must take if a fatal crash is discovered when the rollout reaches 20%.
-5.  How do you overwrite the broken app on the devices of the 20% of users who already downloaded it?
-6.  Explain the concept of decoupling the "Binary Release" from the "Feature Release" using Feature Flags.
-7.  Why does a Staged Rollout fundamentally break the assumption that the Backend and Frontend are perfectly synchronized?
-8.  Describe the "Forward Compatibility Rule" for API development. Why must the backend support both `/v1/login` and `/v2/login` for months?
-9.  What is a Force Update Mechanism, and why is it architecturally mandatory for long-term backend health and security?
-10. If the Play Store takes 24 to 48 hours to review an app update, how does this impact the Mean Time To Recovery (MTTR) for a mobile hotfix compared to a web hotfix?
+    edits = service.edits()
+    edit = edits.insert(packageName=PACKAGE, body={}).execute()
+    edit_id = edit['id']
 
-## Further Reading
+    current = edits.tracks().get(packageName=PACKAGE, editId=edit_id, track=track).execute()
+    release = current['releases'][0]
 
-- [`feature-flags-and-remote-config.md`](../mobile-system-design/feature-flags-and-remote-config.md) — How to bypass app store delays for feature releases.
-- [`versioning-and-backward-compatibility.md`](../mobile-system-design/versioning-and-backward-compatibility.md) — How the backend manages the multiple active mobile versions.
-- [`telemetry-sdk.md`](../mobile-system-design/telemetry-sdk.md) — How the crash metrics are gathered.
+    release['status'] = 'inProgress' if fraction < 1.0 else 'completed'
+    release['userFraction'] = fraction if fraction < 1.0 else None
+
+    edits.tracks().update(
+        packageName=PACKAGE, editId=edit_id, track=track,
+        body={'releases': [release]}
+    ).execute()
+
+    edits.commit(packageName=PACKAGE, editId=edit_id).execute()
+    print(f"Promoted {track} to fraction={fraction}")
+
+if __name__ == '__main__':
+    main(sys.argv[1], float(sys.argv[2]))
+```
+
+```yaml
+# .github/workflows/promote.yml
+on:
+  workflow_dispatch:
+    inputs:
+      track: { description: 'Track (production)', required: true, default: 'production' }
+      fraction: { description: 'User fraction (0.01-1.0)', required: true, default: '0.05' }
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    environment: production-promote
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install google-api-python-client google-auth
+      - run: python scripts/promote.py "${{ inputs.track }}" "${{ inputs.fraction }}"
+        env:
+          PLAY_SERVICE_ACCOUNT: ${{ secrets.PLAY_PUBLISHER_SA_JSON }}
+```
+
+Wrap in `environment: production-promote` so a separate set of reviewers must approve each promotion.
+
+---
+
+## 4. Halting A Bad Release
+
+```python
+# scripts/halt.py
+release['status'] = 'halted'
+# userFraction stays where it was; no new users get the update
+# Existing affected users keep the broken version (a Play limitation)
+```
+
+When you halt:
+- New users on the previous fraction stop receiving the new version.
+- Users who already updated stay on the new version.
+
+For users already on the bad release, kill switches (see `kill-switches.md`) disable the offending feature. Halting is the supply-side fix; kill switches are the demand-side fix.
+
+---
+
+## 5. Automated Stage Promotion With Crash-Rate Gates
+
+```yaml
+# .github/workflows/auto-promote.yml
+on:
+  schedule:
+    - cron: '0 14 * * *'   # 14:00 UTC daily check
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch current Play release status
+        id: status
+        run: python scripts/play_status.py > status.json
+        env: { PLAY_SERVICE_ACCOUNT: ${{ secrets.PLAY_PUBLISHER_SA_JSON }} }
+
+      - name: Read crash rate from Firebase Crashlytics
+        id: crash
+        run: python scripts/crashlytics_rate.py --version "$(jq -r .versionName status.json)" > crash.json
+        env: { FIREBASE_SA: ${{ secrets.FIREBASE_SA_JSON }} }
+
+      - name: Decide next fraction
+        id: decide
+        run: |
+          rate=$(jq -r .crashFreeUsersPercent crash.json)
+          baseline=$(jq -r .baselinePercent crash.json)
+          delta=$(python -c "print($baseline - $rate)")
+          if (( $(python -c "print(int($delta > 0.5))") )); then
+            echo "action=halt" >> $GITHUB_OUTPUT
+          elif (( $(python -c "print(int($delta < 0.1))") )); then
+            current=$(jq -r .userFraction status.json)
+            next=$(python -c "print(min(1.0, $current * 2))")
+            echo "action=promote" >> $GITHUB_OUTPUT
+            echo "fraction=$next" >> $GITHUB_OUTPUT
+          else
+            echo "action=hold" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Apply decision
+        run: |
+          case "${{ steps.decide.outputs.action }}" in
+            halt) python scripts/halt.py "production" ;;
+            promote) python scripts/promote.py "production" "${{ steps.decide.outputs.fraction }}" ;;
+            hold) echo "Holding; reviewing tomorrow" ;;
+          esac
+        env: { PLAY_SERVICE_ACCOUNT: ${{ secrets.PLAY_PUBLISHER_SA_JSON }} }
+```
+
+Decision rules (tune to your risk profile):
+
+| Crash-free Δ vs baseline | Action |
+|---|---|
+| Worse by > 0.5 pp | Halt + Slack-alert release manager |
+| Worse by 0.1 to 0.5 pp | Hold at current fraction, alert team |
+| Within 0.1 pp | Double the fraction |
+| Better than baseline | Double the fraction |
+
+See `crash-rate-gating.md` for the metric source details.
+
+---
+
+## 6. Per-Country & Per-Device Staging
+
+Play lets you stage by country:
+
+```bash
+# Promote to production at 5% globally, but 50% only in NZ (low-volume canary)
+./gradlew :app:promoteArtifact \
+  --promote-track=production \
+  --user-fraction=0.05
+
+# Then via Play Console UI: target country override for NZ to 50%
+```
+
+For per-device-class staging (e.g., "exclude Samsung Galaxy A series this release"), use Play's device catalog exclusion in Console. Useful when a known bug only affects certain chipsets.
+
+---
+
+## 7. Update Priority And In-App Updates
+
+```kotlin
+play {
+    updatePriority.set(2)        // 0 = silent, 5 = critical
+}
+```
+
+The priority is read by the In-App Updates API:
+
+```kotlin
+class InAppUpdateChecker @Inject constructor(
+    @ApplicationContext private val context: Context,
+) {
+    private val manager = AppUpdateManagerFactory.create(context)
+
+    suspend fun check(): UpdateAction {
+        val info = manager.appUpdateInfo.await()
+        return when {
+            info.updateAvailability() != UpdateAvailability.UPDATE_AVAILABLE -> UpdateAction.None
+            info.updatePriority() >= 4 -> UpdateAction.Immediate(info)
+            info.updatePriority() >= 2 -> UpdateAction.Flexible(info)
+            else -> UpdateAction.None
+        }
+    }
+}
+
+sealed class UpdateAction {
+    object None : UpdateAction()
+    data class Flexible(val info: AppUpdateInfo) : UpdateAction()
+    data class Immediate(val info: AppUpdateInfo) : UpdateAction()
+}
+```
+
+| Priority | UX |
+|---|---|
+| 0-1 | Update silently next time Play decides |
+| 2-3 | Flexible: background download + restart prompt |
+| 4-5 | Immediate: blocking full-screen update dialog |
+
+Reserve 4-5 for security-critical releases. Most go at 2-3.
+
+---
+
+## 8. Staged Rollout Diagram (Audit Trail)
+
+Maintain a simple status log in CI artifacts:
+
+```json
+{
+  "version": "2.0.0",
+  "versionCode": 12340,
+  "stages": [
+    {"track": "internal", "promotedAt": "2026-06-15T10:00:00Z", "fraction": 1.0, "crashFree": 99.8},
+    {"track": "alpha",    "promotedAt": "2026-06-16T10:00:00Z", "fraction": 1.0, "crashFree": 99.7},
+    {"track": "beta",     "promotedAt": "2026-06-19T10:00:00Z", "fraction": 1.0, "crashFree": 99.6},
+    {"track": "production","promotedAt": "2026-06-26T14:00:00Z", "fraction": 0.01, "crashFree": 99.5},
+    {"track": "production","promotedAt": "2026-06-27T14:00:00Z", "fraction": 0.05, "crashFree": 99.5},
+    {"track": "production","promotedAt": "2026-06-28T14:00:00Z", "fraction": 0.10, "crashFree": 99.5}
+  ]
+}
+```
+
+Stored as a build artifact + appended to a release-history file. Post-mortems reference this when reconstructing "what we knew and when."
+
+---
+
+## 9. Common Pitfalls
+
+- **Going from 1% → 100% in one step.** Defeats the purpose.
+- **Skipping the alpha/beta tracks.** Production is not where you find bugs.
+- **No country-specific monitoring.** A bug only in India is invisible if your dashboard aggregates globally.
+- **Halting without kill-switching the feature.** Users on the bad version remain affected.
+- **Promoting on weekends.** No one is watching. Promote in business hours.
+- **No environment protection on the promote workflow.** Anyone with `write` can ship to production.
+- **Trusting Play's "% adopted" without independent measurement.** Play's number lags by hours; your Crashlytics by minutes.
+- **Forgetting `releaseStatus = inProgress`.** Default in some Triple-T configs is `completed`, which bypasses staging.
+- **Mixed-version mayhem on the backend.** A staged rollout means N versions live simultaneously. Your API must support all of them.
+- **Forgetting to clean up halted releases in Play Console.** Sticky halts confuse the next release.
+
+---
+
+## 10. Further Reading
+
+- [Triple-T Gradle Play Publisher](https://github.com/Triple-T/gradle-play-publisher) — promotion + rollout commands.
+- [Play Developer API — Edits and Releases](https://developers.google.com/android-publisher/api-ref/rest/v3/edits.tracks) — official.
+- [In-App Updates API](https://developer.android.com/guide/playcore/in-app-updates) — flexible vs immediate.
+- [Android Vitals](https://developer.android.com/topic/performance/vitals) — Play Console's crash & ANR metrics.
+- [Staged rollout in Play Console](https://support.google.com/googleplay/android-developer/answer/6346149) — Play UX walkthrough.
+
+---
+
+> **In short:** internal → alpha → beta → 1/5/10/25/50/100% production with 24h between stages. Automate promotion via Play Developer API; gate each step on crash-free rate. Halt fast; kill-switch in parallel. Audit every promotion.

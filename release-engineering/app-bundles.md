@@ -1,127 +1,334 @@
-# Release Engineering: App Bundles (.aab) & Dynamic Delivery
+# Release Engineering: Android App Bundles (AAB)
 
-## The Prompt
+> Why Play accepts `.aab` not `.apk`, what splits Play generates from the bundle, and how to ship dynamic delivery without breaking offline installs or testing.
 
-*"Your E-Commerce app has grown to 150MB because it includes a 50MB Augmented Reality (AR) shoe-fitting feature. Users in emerging markets are refusing to download it over expensive cellular connections. Design a release architecture that reduces the initial download size to 20MB, without removing the AR feature from the codebase."*
+---
 
-## 1. Requirements & Clarification (RADIO Framework)
+## 1. AAB vs APK
 
-### Functional Requirements
-- Reduce the initial install size of the application.
-- Support downloading heavy features (like AR) only when the user explicitly requests them.
-- Support different hardware configurations (CPU architectures, screen densities, languages).
+An `.apk` is the final installer: code + resources for a specific ABI, screen density, and language. An `.aab` is your bundle of all of those — Play uses it to *generate* per-device APKs at download time.
 
-### Non-Functional Requirements (NFRs)
-- **App Size:** Must stay under Google Play's 150MB initial limit (though 20MB is the target).
-- **Complexity:** The solution must not require building 50 different APKs manually in CI.
+| Aspect | APK | AAB |
+|---|---|---|
+| Contains | Per-device build | All variants in one |
+| Distributed to user | Yes (directly) | Never (Play generates per-device APK from it) |
+| Size on download | Full APK | Only what device needs (40-60% smaller typical) |
+| Signing | You sign final APK | You sign bundle; Play re-signs the generated APK |
+| Required by Play | No | Yes (since Aug 2021 for new apps) |
+| Side-loadable | Yes | No (via `bundletool` only) |
 
-## 2. High-Level Architecture (Android App Bundles)
+The size win is the main pitch. A "universal" APK with all densities, ABIs, and languages might be 80 MB; the AAB-generated device-specific APK is 30-50 MB.
 
-A Junior engineer tries to write a custom Bash script in CI that builds `apk-arm64-english.apk`, `apk-x86-spanish.apk`, etc. This creates dozens of files to manage and inevitably fails.
-A Staff engineer uses the **Android App Bundle (.aab)** and **Dynamic Delivery**.
+---
 
-```mermaid
-graph TD
-    CI[CI Pipeline] -->|Builds .aab (150MB)| PlayConsole[Google Play Console]
-    
-    subgraph Google Play Server (Dynamic Generation)
-        PlayConsole --> SplitEngine[APK Generation Engine]
-        SplitEngine -->|Slices by ABI| ABI[arm64, x86]
-        SplitEngine -->|Slices by DPI| DPI[hdpi, xxhdpi]
-        SplitEngine -->|Slices by Lang| Lang[en, es, fr]
-    end
-    
-    subgraph User A (Pixel 7, English)
-        PlayStoreA[Play Store App] -->|Requests App| SplitEngine
-        SplitEngine -->|Delivers Base + arm64 + xxhdpi + en| PhoneA[20MB Install]
-    end
-    
-    subgraph User B (Samsung S8, Spanish)
-        PlayStoreB[Play Store App] -->|Requests App| SplitEngine
-        SplitEngine -->|Delivers Base + arm32 + hdpi + es| PhoneB[18MB Install]
-    end
+## 2. Building An AAB
+
+```kotlin
+// app/build.gradle.kts
+android {
+    bundle {
+        language { enableSplit = true }    // one locale per device
+        density  { enableSplit = true }    // one density per device
+        abi      { enableSplit = true }    // one ABI per device
+    }
+}
 ```
 
-## 3. The Core Flows (Deep Dive)
+```bash
+./gradlew :app:bundleRelease
+# Output: app/build/outputs/bundle/release/app-release.aab
+```
 
-### Flow 1: The Death of the 'Fat APK'
-*Interviewer:* "Historically, an APK was 100MB. Why was it so big, and how does the `.aab` format mathematically reduce it?"
+The AAB is a ZIP-like format containing:
 
-**Staff Answer:**
-"The old 'Fat APK' contained *everything*. It had the C++ libraries for `arm64`, `arm32`, `x86`. It had image resources for `mdpi`, `hdpi`, `xxhdpi`. It had strings for 50 languages.
-An Android App Bundle (`.aab`) is not an installable file. It is a publishing format. 
-1. We upload the 150MB `.aab` to Google Play.
-2. When a user with a Pixel 7 (English, `xxhdpi`, `arm64`) taps Install, Google Play dynamically generates a specialized set of **Split APKs**.
-3. It creates a `Base APK` (the core code), plus a `Language APK` (English only), a `Density APK` (xxhdpi only), and an `ABI APK` (arm64 only).
-4. The user's phone downloads these Split APKs. The Android OS installs them together as a single logical app.
-The user never downloads the Spanish strings or the x86 binaries, dropping the download size from 150MB to 20MB automatically."
+```
+app-release.aab
+├── base/                   ← always installed
+│   ├── manifest/AndroidManifest.xml
+│   ├── dex/
+│   ├── res/
+│   ├── lib/{abi}/
+│   └── assets/
+├── dynamic-feature-foo/    ← dynamic feature module (optional)
+└── BundleConfig.pb         ← split configuration
+```
 
-### Flow 2: Dynamic Feature Modules (On-Demand Delivery)
-*Interviewer:* "The App Bundle solved the language and screen density problem. But the app is still 70MB because of the massive Augmented Reality (AR) C++ library. The user hasn't even clicked the AR button yet. How do we defer this?"
+---
 
-**Staff Answer:**
-"We must refactor the app to use **Dynamic Feature Modules**.
-1. We extract the AR feature into a separate Gradle module (`:features:ar`).
-2. In the `AndroidManifest.xml` of that module, we declare `<dist:delivery><dist:on-demand/></dist:delivery>`.
-3. When we build the `.aab`, Google Play knows this module is optional. It is *not* included in the initial install. The initial install size drops to 20MB.
-4. When the user eventually taps 'Try AR Shoe Fitting', our code uses the `SplitInstallManager` SDK:
-   `splitInstallManager.startInstall(request)`
-5. The Play Store silently downloads the 50MB AR module in the background and injects it directly into the running app's ClassLoader. The user can then launch the AR screen."
+## 3. Splits Play Generates
 
-### Flow 3: Google Play App Signing Dependency
-*Interviewer:* "You try to build an App Bundle, but Google Play rejects it, saying you must enroll in Google Play App Signing first. Why are they linked?"
+Play's Dynamic Delivery slices the bundle along three axes:
 
-**Staff Answer:**
-"Because Google Play is generating the Split APKs dynamically on their servers.
-If we kept the App Signing Private Key on our local CI server, Google Play would have no way to cryptographically sign the dynamic `Language APK` or `ABI APK` it generates for the user.
-By giving Google the App Signing Key (Google Play App Signing), they can build, sign, and deliver the Split APKs seamlessly on our behalf. `.aab` requires Play App Signing; they are mathematically codependent."
+| Split type | Examples | What user gets |
+|---|---|---|
+| **Language** | `values-en`, `values-es`, `values-ar` | Resources matching device locale |
+| **Density** | `drawable-mdpi/hdpi/xhdpi/xxhdpi` | One density bucket |
+| **ABI** | `armeabi-v7a`, `arm64-v8a`, `x86_64` | One CPU architecture |
 
-## 4. Failure Modes & Bottlenecks
+A Pixel 7 (arm64, xxhdpi, en-US) downloads only `base + en + xxhdpi + arm64-v8a`. The bundle on Play has all variants; only the relevant slice ships.
 
-### Bottleneck: Sideloading & Enterprise Distribution
-*Interviewer:* "Your QA team in China cannot access the Google Play Store. You send them the `.aab` file via email. They cannot install it. The `adb install app.aab` command fails. How do you test it?"
+> **Verify with bundletool.** `bundletool build-apks --bundle=app.aab --output=app.apks` produces a `.apks` ZIP — extract it and inspect what device-class APKs were generated.
 
-**Staff Answer:**
-"An `.aab` cannot be installed on an Android device. The OS does not understand the format.
-To test an `.aab` locally or distribute it via an Enterprise MDM, we must use the **Bundletool** CLI.
-1. We run `bundletool build-apks --bundle=app.aab --output=app.apks --ks=keystore.jks`.
-2. This generates a `.apks` archive (a zip of all possible Split APKs).
-3. We connect the test device via USB and run `bundletool install-apks --apks=app.apks`.
-4. Bundletool interrogates the connected device, extracts the specific Split APKs it needs, and pushes them via ADB.
-If we must email an installable file to QA, we must build a `Universal APK` (a legacy Fat APK) using bundletool, explicitly abandoning the size savings for that specific QA cycle."
+---
 
-### Bottleneck: Dynamic Feature Reflection Crashes
-*Interviewer:* "You download the AR Dynamic Feature. You try to launch the `ArActivity`. The app crashes with `ClassNotFoundException`. Why?"
+## 4. Dynamic Feature Modules
 
-**Staff Answer:**
-"When the core app starts, the AR module does not exist on disk.
-If the core app tries to reference `ArActivity::class.java` statically, the Kotlin compiler will link it, and the app will crash instantly because the class isn't in the ClassLoader.
-**The Fix:** Dynamic Features must be completely decoupled using **Reflection** or a **Dependency Injection Map**.
-The core module defines an Interface `interface ArFeature`. The dynamic module implements it. When the dynamic module finishes downloading, we use reflection to instantiate the entry point: `Class.forName("com.app.ar.ArFeatureImpl").newInstance()`. We must never statically link the core module to the dynamic module."
+Ship features as separate downloadable modules — installed on demand or conditionally based on device class.
 
-## 5. Staff Engineer Thinking: The Asset Pack (Play Asset Delivery)
+```kotlin
+// settings.gradle.kts
+include(":app", ":feature:premium", ":feature:onboarding-rich")
+```
 
-A Staff Engineer distinguishes between Code and Assets.
-If the 50MB AR feature was mostly C++ code, Dynamic Feature Modules are correct.
-If the 50MB feature was actually high-resolution 3D `.obj` models and textures (Assets), we shouldn't put them in the code bundle at all.
-We use **Play Asset Delivery (PAD)**.
-PAD allows you to package Gigabytes of assets (used heavily in Games, but applicable to AR) into an `.aab`. These assets are delivered seamlessly via the Play Store CDN, bypassing the strict 150MB code limit of the Android ecosystem, and avoiding the complex ClassLoader reflection logic required for Dynamic Code Modules.
+```kotlin
+// feature/premium/build.gradle.kts
+plugins {
+    id("com.android.dynamic-feature")
+    id("org.jetbrains.kotlin.android")
+}
 
-## 6. Probing Questions (For Practice)
+android {
+    namespace = "com.example.feature.premium"
+    compileSdk = 35
+    defaultConfig { minSdk = 26 }
+}
 
-1.  Explain why an Android App Bundle (`.aab`) cannot be directly installed on an Android phone using standard `adb install`.
-2.  Describe the concept of "Split APKs". How does Google Play dissect an `.aab` to create an optimized install for a Spanish-speaking user on a Pixel 7?
-3.  Why does the adoption of the `.aab` format mandate that the developer also opts into Google Play App Signing?
-4.  Walk through the architecture of a Dynamic Feature Module. How does the app request the module, and how does the OS inject it into a running process?
-5.  Explain the `ClassNotFoundException` bottleneck when working with Dynamic Features. Why is Reflection or interface-based DI strictly required?
-6.  How does a developer use `bundletool` to test an `.aab` on a physical device connected via USB?
-7.  If a QA tester needs an installable file emailed to them (and they don't have bundletool), how do you generate a legacy "Universal APK" from the `.aab`?
-8.  Describe the difference between Play Feature Delivery (Code) and Play Asset Delivery (Assets). When would you use one over the other?
-9.  If a user has limited storage space, how can an app use the `SplitInstallManager` to explicitly uninstall a Dynamic Feature Module after the user is finished with it?
-10. Why did the legacy "Fat APK" architecture severely punish developers who included native C++ libraries (NDK) in their applications?
+dependencies {
+    implementation(project(":app"))            // dynamic feature depends on app, not vice versa
+    implementation(libs.androidx.core)
+}
+```
 
-## Further Reading
+```xml
+<!-- feature/premium/src/main/AndroidManifest.xml -->
+<manifest xmlns:dist="http://schemas.android.com/apk/distribution">
+    <dist:module
+        dist:instant="false"
+        dist:title="@string/premium_title">
+        <dist:delivery>
+            <dist:on-demand />
+        </dist:delivery>
+        <dist:fusing dist:include="true" />
+    </dist:module>
+</manifest>
+```
 
-- [`code-signing.md`](code-signing.md) — The required architecture of Google Play App Signing.
-- [`play-store-internals.md`](play-store-internals.md) — How the `.aab` interacts with the Play Store Tracks and Delta Patching.
-- [`app-size-and-r8.md`](../android/performance/app-size-and-r8.md) — How code shrinking complements the `.aab` size reductions.
+| Delivery mode | When installed |
+|---|---|
+| `on-demand` | App requests download at runtime |
+| `install-time` | At app install, included by default |
+| `conditional` | Install-time, but only on devices meeting criteria (min SDK, RAM, country) |
+| `instant` | Available for Instant Apps via Play Instant |
+
+```kotlin
+// Request on-demand install
+class PremiumModuleInstaller @Inject constructor(
+    @ApplicationContext private val context: Context,
+) {
+    private val manager = SplitInstallManagerFactory.create(context)
+
+    suspend fun installPremium(): Boolean = suspendCancellableCoroutine { cont ->
+        val request = SplitInstallRequest.newBuilder()
+            .addModule("premium")
+            .build()
+        manager.startInstall(request)
+            .addOnSuccessListener { cont.resume(true) {} }
+            .addOnFailureListener { cont.resume(false) {} }
+    }
+}
+```
+
+After installation, the new module's classes are available via `SplitCompat` integration in your `Application` and `Activity` base classes.
+
+---
+
+## 5. Asset Packs (Large Assets, Out of the Base APK)
+
+For games or apps shipping > 200 MB of assets, asset packs separate them from the binary:
+
+```kotlin
+// asset_pack/build.gradle.kts
+plugins { id("com.android.asset-pack") }
+
+assetPack {
+    packName.set("game_levels")
+    dynamicDelivery {
+        deliveryType.set("on-demand")    // or "install-time", "fast-follow"
+    }
+}
+```
+
+Limits:
+- Base APK: up to 200 MB.
+- Each install-time asset pack: up to 1 GB.
+- Total install-time assets: up to 2 GB.
+- On-demand asset packs: up to 1 GB each, total uncapped (within Play's overall limits).
+
+Without asset packs, the 200 MB base APK cap is a hard wall. With them, you can ship games up to several GB.
+
+---
+
+## 6. Conditional Delivery
+
+```xml
+<dist:module>
+    <dist:delivery>
+        <dist:install-time>
+            <dist:conditions>
+                <dist:device-feature dist:name="android.hardware.camera.ar" />
+                <dist:min-sdk dist:value="28" />
+                <dist:user-countries dist:exclude="false">
+                    <dist:country dist:code="US" />
+                    <dist:country dist:code="GB" />
+                </dist:user-countries>
+            </dist:conditions>
+        </dist:install-time>
+    </dist:delivery>
+</dist:module>
+```
+
+Useful for:
+- AR features only for AR-capable devices.
+- Country-specific compliance modules.
+- High-RAM-only features.
+
+---
+
+## 7. Testing AAB Builds Locally (bundletool)
+
+Side-loading an AAB on a device is a two-step process:
+
+```bash
+# Generate the device-specific APKs from the AAB
+bundletool build-apks \
+  --bundle=app/build/outputs/bundle/release/app-release.aab \
+  --output=local.apks \
+  --connected-device \
+  --ks=upload-key.jks \
+  --ks-pass=pass:$KS_PASS \
+  --ks-key-alias=upload \
+  --key-pass=pass:$KEY_PASS
+
+# Install on the connected device
+bundletool install-apks --apks=local.apks
+```
+
+`--connected-device` tells bundletool to pick splits matching the attached device. For testing a specific device class:
+
+```bash
+bundletool build-apks \
+  --bundle=app.aab \
+  --output=mid-tier-emerging-market.apks \
+  --device-spec=device-specs/mid-tier-emerging-market.json
+```
+
+```json
+{
+  "supportedAbis": ["armeabi-v7a"],
+  "supportedLocales": ["pt-BR"],
+  "screenDensity": 320,
+  "sdkVersion": 28
+}
+```
+
+This is the only sane way to debug "this works on flagship, breaks on emerging market" issues.
+
+---
+
+## 8. AAB Size Gates In CI
+
+```bash
+# Generates a report.json showing per-device APK sizes
+bundletool get-size total --apks=local.apks
+```
+
+```
++--------+--------+
+| MIN    | MAX    |
++--------+--------+
+| 25 MB  | 41 MB  |
++--------+--------+
+```
+
+By dimension:
+
+```bash
+bundletool get-size total --apks=local.apks --dimensions=SDK,ABI,LANGUAGE
+```
+
+CI gate: fail the build if any device class crosses a threshold:
+
+```yaml
+- name: AAB size gate
+  run: |
+    MAX_MB=$(bundletool get-size total --apks=local.apks | tail -1 \
+              | awk -F'|' '{print $3}' | tr -d ' MB')
+    if [ "$MAX_MB" -gt 50 ]; then
+      echo "ERROR: max-device APK size $MAX_MB MB exceeds 50 MB budget"
+      exit 1
+    fi
+```
+
+---
+
+## 9. ABI and Density — Sanity Checks
+
+```kotlin
+android {
+    bundle { abi { enableSplit = true } }
+    splits { abi { isEnable = false } }   // bundle handles this, not legacy splits
+}
+```
+
+`splits { abi { isEnable = true } }` is the OLD per-APK split mechanism. With AAB, leave it disabled.
+
+For native libraries (`.so` files), audit what ABIs you actually ship:
+
+```bash
+unzip -l app-release.aab | grep '\.so$' | awk -F/ '{print $3}' | sort -u
+# Expect: arm64-v8a, armeabi-v7a (drop x86 unless you support emulators in distribution)
+```
+
+---
+
+## 10. The Universal APK (Internal Distribution Only)
+
+For internal QA on heterogeneous devices, generate a universal APK:
+
+```bash
+bundletool build-apks --bundle=app-release.aab --output=universal.apks --mode=universal
+unzip -p universal.apks universal.apk > universal.apk
+```
+
+This APK works on any device matching min-SDK. Never ship to Play — defeats the point. Use only for:
+- QA on devices Play won't accept (special-purpose hardware).
+- Side-load to enterprise distribution outside Play.
+- Forensic reproducibility.
+
+---
+
+## 11. Common Pitfalls
+
+- **Treating dynamic features as optional after launch.** Once shipped, removing a dynamic feature requires version bump + manifest cleanup. Plan splits at design time.
+- **Not testing on low-tier device-spec.** Flagship devs see a tiny APK; mid-tier emerging market may see 45 MB and break update budgets.
+- **Forgetting `SplitCompat`.** Without `SplitCompatApplication` and `SplitCompat.install(Activity)`, freshly-installed dynamic modules don't work until process restart.
+- **Asset packs with on-demand delivery but no UX for download progress.** Users wonder why nothing happens.
+- **`splits` block and `bundle` block both enabled.** Conflicting — pick one.
+- **Disabling language splits to ship all locales.** Wastes per-device size unless you support runtime language switching.
+- **Universal APK leaking to Play.** Configure `play { artifactDir }` to point only to AAB, never universal APK.
+- **No size budget gate in CI.** Bundles grow silently. Set a per-device-class budget.
+- **`bundletool` version mismatch with build-tools.** Pin both.
+
+---
+
+## 12. Further Reading
+
+- [Android Developers — App Bundles overview](https://developer.android.com/guide/app-bundle) — official.
+- [bundletool](https://developer.android.com/tools/bundletool) — local AAB inspection.
+- [Dynamic delivery](https://developer.android.com/guide/playcore/feature-delivery) — Play Feature Delivery API.
+- [Asset delivery](https://developer.android.com/guide/playcore/asset-delivery) — large assets.
+- [SplitCompat](https://developer.android.com/reference/com/google/android/play/core/splitcompat/SplitCompat) — runtime support for dynamic features.
+
+---
+
+> **In short:** AAB is the only Play upload format that matters today. Enable `language`/`density`/`abi` splits. Dynamic features for on-demand. Asset packs for > 200 MB. Test with bundletool against a device-spec JSON. Gate size in CI.

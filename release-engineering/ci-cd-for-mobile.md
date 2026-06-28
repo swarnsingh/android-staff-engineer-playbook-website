@@ -1,129 +1,538 @@
 # Release Engineering: CI/CD for Mobile
 
-## The Prompt
+> A working CI/CD pipeline for a multi-module Android app: GitHub Actions YAML, Gradle config, Firebase Test Lab for UI tests, secret-scoped release path. Pin everything; cache aggressively; sign in CI, never on a laptop.
 
-*"Design the Continuous Integration and Continuous Deployment (CI/CD) pipeline for a 100-engineer Android team. Developers complain that their Pull Requests take 45 minutes to build. The Release Manager complains that generating the production APK requires running a script on their personal laptop. Automate the pipeline from PR creation to Play Store submission."*
+---
 
-## 1. Requirements & Clarification (RADIO Framework)
+## 1. The Pipeline Shape
 
-### Functional Requirements
-- Build, test, and verify every Pull Request (CI).
-- Build, sign, and upload Release candidates to QA (CD).
-- Deploy production App Bundles (.aab) to Google Play automatically (CD).
+```
+PR opened ───► PR Checks (< 15 min)
+                 ├─ Detekt + Android Lint
+                 ├─ Spotless / ktlint
+                 ├─ Unit tests (JVM)
+                 ├─ assembleDebug
+                 ├─ Instrumented tests on Firebase Test Lab (selected)
+                 └─ Secret scanning (gitleaks)
 
-### Non-Functional Requirements (NFRs)
-- **Speed (Priority 0):** PR builds must complete in < 15 minutes to prevent developer idle time.
-- **Reproducibility:** A build generated today must be mathematically identical if built from the same commit a year from now. "It works on my machine" is unacceptable.
-- **Security:** Code signing certificates (Keystore) must never be checked into git or reside on a developer's laptop.
+main merge ───► Nightly (full)
+                 ├─ assembleRelease (debug-signed)
+                 ├─ Full instrumented suite on FTL
+                 ├─ Macrobenchmark startup gate
+                 └─ Firebase App Distribution → internal QA
 
-## 2. High-Level Architecture (The Pipeline)
-
-A Junior engineer uses a single GitHub Actions YAML file that runs `./gradlew assembleDebug` on every commit.
-A Staff engineer designs a multi-tiered pipeline utilizing Remote Build Caching, physical device testing, and secure secret injection.
-
-```mermaid
-graph TD
-    Developer[Developer commits code] --> GitHub[GitHub PR]
-    
-    subgraph CI Pipeline (PR Checks)
-        GitHub --> BuildTrigger[Trigger CI]
-        BuildTrigger --> Cache[Fetch Gradle Remote Cache]
-        Cache --> Detekt[Lint / Static Analysis]
-        Detekt --> UnitTests[Run Unit Tests]
-        UnitTests --> BuildAPK[Build Debug APK]
-    end
-    
-    subgraph QA & Release (Main Branch)
-        Merge[Merge to Main] --> Nightly[Nightly Build]
-        Nightly --> Firebase[Firebase App Distribution to QA]
-        
-        Tag[Tag Release v2.0] --> Keystore[Inject Secure Keystore]
-        Keystore --> BuildAAB[Build Release AAB]
-        BuildAAB --> PlayStoreAPI[Upload via Google Play API]
-    end
+Tag pushed ───► Production release
+                 ├─ Pull signing secrets from Cloud KMS
+                 ├─ bundleRelease (signed AAB)
+                 ├─ Upload to Play Internal Track
+                 ├─ Upload mapping.txt to crash reporter
+                 └─ Auto-promote to Production after 24h soak (gated)
 ```
 
-## 3. The Core Flows (Deep Dive)
+---
 
-### Flow 1: The 45-Minute PR Build (Remote Build Caching)
-*Interviewer:* "Your project has 100 Gradle modules. A clean build takes 45 minutes. Developers are wasting hours every day waiting for CI to approve their PR. How do you get it under 10 minutes?"
+## 2. GitHub Actions Workflow — PR Checks
 
-**Staff Answer:**
-"We implement the **Gradle Remote Build Cache** and module modularization.
-1. When CI builds the `main` branch, it uploads the compiled output of every single module (the `.class` files and `.aar`s) to a remote Cache Server (e.g., an AWS S3 bucket or Gradle Enterprise).
-2. A developer creates a PR. They only modified 1 module (`:feature:checkout`).
-3. The CI server starts the PR build. It queries the Remote Cache.
-4. It downloads the pre-compiled binaries for the other 99 modules instantly. It *only* compiles `:feature:checkout`.
-5. The build drops from 45 minutes to 3 minutes.
-*(Note: To make this work, the project must be highly modularized. If everything is in the `:app` module, the cache is useless because any change invalidates the entire cache).*
+```yaml
+# .github/workflows/pr.yml
+name: PR Checks
 
-### Flow 2: UI Testing (The Emulators Flakiness)
-*Interviewer:* "You added UI tests (Espresso) to the CI pipeline. They run on an Android Emulator in the CI server. 30% of the time they fail because the emulator is slow, causing a timeout. Developers are ignoring the red 'X' and merging anyway."
+on:
+  pull_request:
+    branches: [main]
 
-**Staff Answer:**
-"Emulators running in headless CI environments (like GitHub Actions runners) are notoriously flaky and slow due to nested virtualization. We must move UI tests to physical hardware.
-1. We configure the CI pipeline to build the `androidTest.apk`.
-2. The pipeline uploads the APK to **Firebase Test Lab** (or AWS Device Farm).
-3. Firebase provisions real, physical Android devices (e.g., a Pixel 7 and a Samsung Galaxy) mounted in a server rack.
-4. It executes the Espresso tests on bare metal. It records a video of the screen and captures the Logcat.
-5. It returns the result to CI. Flakiness drops to near-zero, and developers regain trust in the testing gate."
+concurrency:
+  group: pr-${{ github.head_ref }}
+  cancel-in-progress: true
 
-### Flow 3: The Production Release (Google Play Publishing API)
-*Interviewer:* "The Release Manager currently builds the production APK on their laptop, signs it, logs into the Google Play website, and clicks 'Upload'. Fix this."
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # for ktlint diff mode
 
-**Staff Answer:**
-"Manual releases are a massive security and reliability risk. We automate it via the **Google Play Developer API**.
-1. We configure a Continuous Deployment (CD) trigger (e.g., creating a GitHub Release or pushing a Git Tag like `v2.0.0`).
-2. The CI runner pulls the code.
-3. The runner reaches out to a Secure Secret Vault (like HashiCorp Vault or GitHub Secrets) to temporarily download the `release.keystore` and password.
-4. It executes `./gradlew bundleRelease` to generate the `.aab` (Android App Bundle).
-5. The runner instantly deletes the keystore from memory.
-6. The runner uses the Google Play API (via a plugin like Triple-T Gradle Play Publisher) to upload the `.aab`, update the release notes, and assign it to the `Internal Test Track` or `Alpha Track`. No human ever touches the binary."
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
 
-## 4. Failure Modes & Bottlenecks
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+          gradle-home-cache-cleanup: true
 
-### Bottleneck: The OOM Crash on CI
-*Interviewer:* "The CI runner keeps failing with `java.lang.OutOfMemoryError: Java heap space` during the Gradle build. You increase the RAM of the CI runner to 32GB, but it still crashes."
+      - name: Secret scanning
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-**Staff Answer:**
-"Increasing the hardware RAM doesn't help if the JVM isn't allowed to use it.
-We must configure the **Gradle Daemon Memory Allocation**.
-In `gradle.properties`, we must explicitly set:
-`org.gradle.jvmargs=-Xmx8g -XX:+HeapDumpOnOutOfMemoryError`
-This allocates 8GB of RAM specifically to the JVM executing the build. Furthermore, if the CI runner spins up multiple parallel Gradle workers (`org.gradle.workers.max`), they might multiply the memory usage and crash the machine. Tuning these parameters specifically for the CI environment (which differs from a developer's laptop) is mandatory."
+      - name: Detekt
+        run: ./gradlew detekt --no-daemon --build-cache
 
-### Bottleneck: API Key Leakage
-*Interviewer:* "A developer hardcodes the Stripe API Production Secret Key into `MainActivity.kt` and opens a PR. How does the CI pipeline prevent this from reaching production?"
+      - name: Android Lint
+        run: ./gradlew lintDebug --no-daemon --build-cache
 
-**Staff Answer:**
-"The CI pipeline must include a **Secret Scanning / Static Analysis** step (e.g., using `trufflehog`, `gitleaks`, or GitHub Advanced Security).
-1. Before Gradle even attempts to compile the code, the pipeline scans the diff.
-2. If it detects a regex pattern matching a high-entropy string or a known API key prefix (e.g., `sk_live_`), the build immediately fails with a fatal error.
-3. The PR is blocked until the developer removes the key and revokes it."
+      - name: Spotless
+        run: ./gradlew spotlessCheck --no-daemon --build-cache
 
-## 5. Staff Engineer Thinking: Reproducible Builds
+  unit-tests:
+    runs-on: ubuntu-latest
+    needs: static
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
 
-A Junior engineer doesn't care if a build is reproducible. A Staff Engineer knows that 2 years from now, a massive bug might be discovered in an old version of the app, and you *must* be able to rebuild that exact historical version to debug it.
+      - name: Run JVM tests
+        run: ./gradlew testDebugUnitTest --no-daemon --build-cache
 
-If your `build.gradle` says `implementation 'com.squareup.retrofit2:retrofit:2.+'`, the CI pipeline will pull version 2.9 today, but version 2.10 next year. The build is no longer reproducible.
+      - name: Upload reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: '**/build/reports/tests/'
 
-**The Staff Rule:** Every single dependency, including the Gradle Wrapper version, the Kotlin Compiler version, and every third-party library, must be strictly pinned to an exact version number (or managed via a Version Catalog `libs.versions.toml`). Floating dependencies (`+`) are banned in a professional CI/CD pipeline.
+  assemble:
+    runs-on: ubuntu-latest
+    needs: static
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - uses: gradle/actions/setup-gradle@v3
 
-## 6. Probing Questions (For Practice)
+      - name: Assemble debug
+        run: ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon --build-cache
 
-1.  Explain the concept of the Gradle Remote Build Cache. How does it reduce a 45-minute PR build to 3 minutes for a 100-engineer team?
-2.  Why are Android UI tests (Espresso) notoriously flaky when executed directly on a CI runner, and how does Firebase Test Lab solve this?
-3.  Walk through the automated CD pipeline from pushing a Git Tag to uploading an App Bundle (.aab) to the Google Play Store.
-4.  How does a CI pipeline securely handle the `release.keystore` file without exposing it in the Git repository?
-5.  Explain why increasing the physical RAM of a CI server won't fix a Gradle OutOfMemoryError, and what specific `gradle.properties` configurations are required.
-6.  Describe the role of Secret Scanning (e.g., `gitleaks`) in the CI pipeline and why it must run before compilation.
-7.  What is a "Reproducible Build", and why do floating dependencies (e.g., `version 1.4.+`) completely destroy reproducibility?
-8.  Why should static analysis tools (like Detekt or Android Lint) be configured to 'Fail the Build' in CI rather than just emitting warnings?
-9.  If a PR fails a CI check, what GitHub branch protection rules must a Staff Engineer configure to prevent a developer from force-merging it?
-10. Describe the difference between deploying an APK to Firebase App Distribution (for internal QA) versus deploying to the Google Play Internal Test Track.
+      - name: Save APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apks
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/androidTest/debug/*.apk
+          retention-days: 7
 
-## Further Reading
+  instrumented:
+    runs-on: ubuntu-latest
+    needs: assemble
+    if: ${{ github.event.pull_request.draft == false }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: debug-apks, path: build/ }
 
-- [`gradle-and-build-systems.md`](../android/os-internals/gradle-and-build-systems.md) — The deep dive into Gradle Caching and Daemon mechanics.
-- [`code-signing.md`](code-signing.md) — The cryptographic details of the `release.keystore`.
-- [`app-bundles.md`](app-bundles.md) — Why the pipeline builds an `.aab` instead of an `.apk`.
+      - id: gcp
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_FTL_SA_JSON }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Run on Firebase Test Lab
+        run: |
+          gcloud firebase test android run \
+            --type instrumentation \
+            --app build/app-debug.apk \
+            --test build/app-debug-androidTest.apk \
+            --device model=oriole,version=33,locale=en,orientation=portrait \
+            --device model=Pixel2,version=28,locale=en,orientation=portrait \
+            --timeout 30m \
+            --results-bucket gs://${{ secrets.FTL_RESULTS_BUCKET }}
+```
+
+Key choices:
+- `concurrency` cancels in-progress runs when a new push lands on the same PR — kills wasted CPU.
+- `cache-read-only` on PRs prevents poisoning the cache from forked PRs.
+- `setup-gradle@v3` handles Gradle config-cache, build-cache reads/writes, and dependency caching in one action.
+- `assemble` and `unit-tests` parallel after `static`; the gate is fast feedback first.
+
+---
+
+## 3. Gradle Configuration For CI
+
+```properties
+# gradle.properties
+org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError -XX:+UseG1GC -Dfile.encoding=UTF-8
+org.gradle.parallel=true
+org.gradle.caching=true
+org.gradle.configuration-cache=true
+org.gradle.workers.max=4
+
+# Kotlin
+kotlin.daemon.jvmargs=-Xmx3g
+kotlin.incremental=true
+
+# AndroidX
+android.useAndroidX=true
+android.enableJetifier=false
+android.nonTransitiveRClass=true
+android.nonFinalResIds=true
+
+# Build features
+android.defaults.buildfeatures.buildconfig=false
+android.defaults.buildfeatures.aidl=false
+android.defaults.buildfeatures.renderscript=false
+android.defaults.buildfeatures.resvalues=false
+android.defaults.buildfeatures.shaders=false
+```
+
+`org.gradle.jvmargs=-Xmx6g`: explicit, because adding RAM to the runner does nothing if the JVM heap cap is the default 1 GB.
+
+`org.gradle.configuration-cache=true`: configuration is reused between builds. Saves 10-30 seconds per command on a moderately complex project.
+
+`android.useAndroidX=true` + `android.enableJetifier=false`: forbids legacy support libraries. Modernizes the project and shrinks the build graph.
+
+```kotlin
+// gradle/libs.versions.toml — Version Catalog
+[versions]
+kotlin = "2.1.20"
+agp = "8.9.1"
+compose-bom = "2025.04.00"
+hilt = "2.55"
+
+[libraries]
+androidx-core = { module = "androidx.core:core-ktx", version = "1.15.0" }
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+```
+
+Every module reads from the catalog:
+
+```kotlin
+// app/build.gradle.kts
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.hilt)
+}
+
+dependencies {
+    implementation(libs.androidx.core)
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.ui)
+    implementation(libs.hilt.android)
+}
+```
+
+No version literals in `build.gradle.kts`. One source of truth.
+
+---
+
+## 4. Remote Build Cache (Gradle Enterprise / Develocity)
+
+```kotlin
+// settings.gradle.kts
+plugins {
+    id("com.gradle.develocity") version "3.18.1"
+}
+
+develocity {
+    server.set("https://develocity.example.com")
+    buildScan {
+        publishing.onlyIf { System.getenv("CI") == "true" }
+        termsOfUseAgree.set("yes")
+        uploadInBackground.set(false)   // wait for upload in CI
+    }
+}
+
+buildCache {
+    local { isEnabled = true }
+    remote(develocity.buildCache) {
+        isEnabled = true
+        isPush = System.getenv("GITHUB_REF") == "refs/heads/main"   // only main writes
+    }
+}
+```
+
+The contract: `main` builds *write* cached task outputs; PR builds *read* them. A PR that modifies one of 100 modules only recompiles that one. 45-minute clean builds become 3 minutes when the cache is warm.
+
+Equivalent without Develocity: Gradle Build Cache Node or self-hosted backed by S3 (`gradle/build-cache-node` Docker image + your own bucket).
+
+---
+
+## 5. Release Workflow (Tag → Production)
+
+```yaml
+# .github/workflows/release.yml
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+  id-token: write   # for GCP workload identity federation
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://play.google.com/console
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - uses: gradle/actions/setup-gradle@v3
+
+      - id: gcp-auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_RELEASE_SA }}
+
+      - name: Download upload keystore from KMS
+        run: |
+          gcloud secrets versions access latest --secret=android-upload-keystore --format='get(payload.data)' \
+            | base64 --decode > keystore.jks
+
+      - name: Build signed AAB
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          ./gradlew :app:bundleRelease \
+            -Pandroid.injected.signing.store.file=$PWD/keystore.jks \
+            -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
+            -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
+            -Pandroid.injected.signing.key.password=$KEY_PASSWORD
+
+      - name: Shred keystore
+        if: always()
+        run: shred -u keystore.jks || rm -f keystore.jks
+
+      - name: Upload mapping to Crashlytics
+        run: ./gradlew :app:uploadCrashlyticsMappingFileRelease
+
+      - name: Publish to Play (Internal Track)
+        env:
+          PLAY_SERVICE_ACCOUNT: ${{ secrets.PLAY_PUBLISHER_SA_JSON }}
+        run: ./gradlew :app:publishReleaseBundle --track=internal
+```
+
+The keystore lives in Cloud KMS / Secret Manager, pulled at runtime, deleted with `shred` before the runner shuts down. The runner never has long-lived access — workload identity federation issues a short-lived token from a GitHub-issued OIDC token; nothing persists.
+
+---
+
+## 6. Triple-T Play Publisher Plugin
+
+```kotlin
+// app/build.gradle.kts
+plugins {
+    id("com.github.triplet.play") version "3.11.0"
+}
+
+play {
+    serviceAccountCredentials.set(file(System.getenv("PLAY_SERVICE_ACCOUNT") ?: "play-service-account.json"))
+    defaultToAppBundles.set(true)
+    track.set("internal")
+    releaseStatus.set(ReleaseStatus.COMPLETED)
+    updatePriority.set(2)
+    resolutionStrategy.set(ResolutionStrategy.AUTO)
+    artifactDir.set(file("build/outputs/bundle/release"))
+}
+```
+
+Tasks the plugin contributes:
+- `publishReleaseBundle` — upload the AAB and create a release.
+- `promoteArtifact --from-track internal --to-track production --user-fraction 0.1` — staged rollout (see `staged-rollouts.md`).
+- `publishListing` — push release notes and store listings.
+
+---
+
+## 7. UI Tests on Firebase Test Lab
+
+```kotlin
+// gradle/libs.versions.toml
+flank = "23.10.1"
+
+// app/build.gradle.kts (testing module)
+plugins {
+    id("flank") version libs.versions.flank.get()
+}
+
+fladle {
+    serviceAccountCredentials = file("ftl-service-account.json")
+    devices = listOf(
+        mapOf("model" to "oriole", "version" to "33"),       // Pixel 6 / Android 13
+        mapOf("model" to "redfin", "version" to "30"),       // Pixel 5 / Android 11
+        mapOf("model" to "Pixel2", "version" to "28"),       // Old API floor smoke
+    )
+    timeoutMin = 30
+    flakyTestAttempts = 1
+    smartFlankGcsPath = "gs://${BuildConfig.FTL_BUCKET}/flank/results.xml"
+    shardTime = 120   // 2-minute target shard
+}
+```
+
+Flank shards tests across N devices in parallel. A 25-minute serial run becomes 5 minutes across 5 shards. Smart sharding uses historic data to balance.
+
+Why FTL over CI-runner emulators:
+- Nested virtualization on cloud runners is slow and flaky.
+- FTL runs on real hardware — Pixel devices on a server rack.
+- Side-by-side reports of video, Logcat, performance metrics.
+- Stable rate of flake (< 1% with proper tests; emulator flake is 30%+).
+
+---
+
+## 8. Reproducible Builds
+
+```kotlin
+// settings.gradle.kts
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+```
+
+```properties
+# gradle/wrapper/gradle-wrapper.properties
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.13-bin.zip
+distributionSha256Sum=8d12...c8a1   # pin the wrapper itself
+```
+
+Rules:
+- **No `+` in versions.** Anywhere.
+- **`dependencyResolutionManagement` is FAIL_ON_PROJECT_REPOS** — modules can't add ad-hoc repositories.
+- **Pin Gradle wrapper SHA-256.**
+- **Pin Kotlin and AGP exact versions.**
+- **Lock dependency versions:** `./gradlew dependencies --write-locks` and commit `gradle/dependency-locks/`.
+
+A build from commit `abc123` today should produce a byte-identical APK as the same commit in 18 months.
+
+---
+
+## 9. CI-Specific Memory Tuning
+
+```yaml
+# In the workflow when needed
+env:
+  GRADLE_OPTS: -Xmx6g -Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx6g
+```
+
+`-Dorg.gradle.daemon=false` in CI: the daemon offers no benefit on a one-shot ephemeral runner and consumes memory at the end of the build with no chance to reuse.
+
+For Macrobenchmark and instrumented tests, runners need 6-8 GB Gradle heap. Standard GitHub `ubuntu-latest` is 7 GB total — explicitly cap to leave headroom for the daemon. If running out of memory in CI but not locally, you've hit this default JVM heap cap.
+
+---
+
+## 10. Macrobenchmark Gate
+
+```kotlin
+// app-benchmark/build.gradle.kts
+plugins {
+    id("com.android.test")
+    id("androidx.baselineprofile") version "1.3.0"
+}
+
+android {
+    defaultConfig {
+        minSdk = 28
+        targetSdk = 35
+    }
+    testOptions {
+        managedDevices {
+            devices {
+                create<ManagedVirtualDevice>("pixel6Api33") {
+                    device = "Pixel 6"
+                    apiLevel = 33
+                    systemImageSource = "aosp"
+                }
+            }
+        }
+    }
+}
+```
+
+```kotlin
+// app-benchmark/src/main/kotlin/StartupBenchmark.kt
+@RunWith(AndroidJUnit4::class)
+@LargeTest
+class StartupBenchmark {
+    @get:Rule val rule = MacrobenchmarkRule()
+
+    @Test
+    fun coldStart() = rule.measureRepeated(
+        packageName = "com.example.app",
+        metrics = listOf(StartupTimingMetric()),
+        iterations = 10,
+        startupMode = StartupMode.COLD,
+        compilationMode = CompilationMode.Partial(BaselineProfileMode.Require),
+    ) {
+        pressHome()
+        startActivityAndWait()
+    }
+}
+```
+
+```yaml
+# .github/workflows/nightly.yml
+- name: Run startup benchmark
+  run: ./gradlew :app-benchmark:pixel6Api33BenchmarkAndroidTest
+
+- name: Gate on regression
+  run: |
+    python3 scripts/check_perf.py \
+      app-benchmark/build/outputs/connected_android_test_additional_output/ \
+      --baseline scripts/baselines/startup.json \
+      --max-regression-percent 10
+```
+
+A nightly perf gate that diffs against a baseline. If cold-start regresses > 10%, the build fails and triggers an investigation.
+
+---
+
+## 11. Common Pitfalls
+
+- **Daemon enabled in CI.** Wastes memory on a single-shot runner. Disable with `-Dorg.gradle.daemon=false`.
+- **Cache poisoning from PRs.** Allowing untrusted PRs to write to remote cache lets a malicious actor replace cached artifacts. `cache-read-only: true` on PRs.
+- **Signing on developer laptops.** Once a key is on someone's laptop, it's effectively public. CI-only, KMS-backed.
+- **Logging the keystore password.** A `set -x` in the workflow leaks it. Use GitHub Actions secrets and avoid printing.
+- **`./gradlew :app:assembleRelease` without injected signing.** Defaults to debug-signed in CI; ships an APK no Play Store will accept.
+- **Floating dependency versions.** `1.2.+` resolves differently over time; reproducibility dies.
+- **Skipping the build cache for "consistency."** A correctly configured cache *is* consistent — same inputs, same outputs. Distrust = symptom of bad config, not reason to disable.
+- **Running UI tests on emulators in CI.** 30% flake rate; engineers learn to ignore red runs. FTL or AWS Device Farm; physical devices.
+- **No concurrency cancel.** Pushing twice to the same PR runs two full pipelines. `concurrency: cancel-in-progress: true`.
+- **Tag pushes without environment protection.** Anyone with write can publish to Play. `environment: production` with required reviewers blocks accidental releases.
+
+---
+
+## 12. Further Reading
+
+- [Gradle build cache](https://docs.gradle.org/current/userguide/build_cache.html) — official.
+- [Gradle configuration cache](https://docs.gradle.org/current/userguide/configuration_cache.html) — what it caches and pitfalls.
+- [Macrobenchmark](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview) — CI startup/jank gates.
+- [Firebase Test Lab](https://firebase.google.com/docs/test-lab) — physical-device test infra.
+- [Triple-T Gradle Play Publisher](https://github.com/Triple-T/gradle-play-publisher) — Play upload automation.
+- [Flank for FTL parallelism](https://github.com/Flank/flank) — sharding wrapper.
+
+---
+
+> **In short:** GitHub Actions for orchestration; Develocity (or self-hosted node) for remote build cache; Firebase Test Lab for UI tests; Triple-T for Play publishing; Cloud KMS for signing secrets; pin every version; cancel duplicate runs; gate perf in nightly. The release path is a YAML file, not a person.

@@ -1,125 +1,308 @@
 # Release Engineering: Kill Switches
 
-## The Prompt
+> A server-controlled flag that disables a specific feature within minutes of flipping it. Built on top of `feature-flags-and-remote-config.md`'s infrastructure but with operational discipline: who flips, how fast, what's audited.
 
-*"Your team just shipped a massive new Video Call feature to 100% of your Android users. Two hours later, you discover a critical bug in the Video Call SDK that causes the phone's microphone to overheat and crash the OS. You cannot un-publish the app. You cannot wait 2 days for a Hotfix review. How do you stop users from using the feature instantly?"*
+---
 
-## 1. Requirements & Clarification (RADIO Framework)
+## 1. When To Use A Kill Switch
 
-### Functional Requirements
-- Instantly disable a broken feature for 100% of active users.
-- Hide the entry points to the feature in the UI.
-- Fail gracefully if the user is already inside the feature.
+| Scenario | Kill Switch? |
+|---|---|
+| New feature has a critical bug on Samsung Galaxy A | Yes |
+| Server backend overloaded by new feature traffic | Yes |
+| Regulatory request to disable a feature in one country | Yes |
+| Security vulnerability in a specific code path | Yes |
+| New feature has lower engagement than expected | No — A/B test |
+| Need to change a UI string | No — server config |
+| Wallet UI is slow on low-end devices | Yes (gated kill switch) |
 
-### Non-Functional Requirements (NFRs)
-- **Latency (Priority 0):** The kill switch must propagate globally in seconds or minutes, not days.
-- **Resilience:** The Kill Switch infrastructure itself must never crash. It must be highly available and isolated from the core application backend.
+The rule: kill switches are emergency brakes. Use them sparingly so they retain operational authority.
 
-## 2. High-Level Architecture (The Remote Config Paradigm)
+---
 
-A Junior engineer says "We'll just turn off the Video Call backend server." This causes the Android app to make network requests, time out, show ugly error dialogs, and potentially crash if it doesn't handle HTTP 500s correctly.
-A Staff engineer uses a **Client-Side Kill Switch** driven by Remote Config.
+## 2. The Kill-Switch Flag Pattern
 
-```mermaid
-graph TD
-    subgraph Mobile App (Android)
-        Config[(Remote Config Cache)]
-        Engine[Kill Switch Engine]
-        UI[App UI]
-        Feature[Video Call Module]
-    end
-    
-    subgraph Incident Response
-        SRE[SRE / Release Manager] -->|Panic Button| Dashboard[Config Dashboard]
-        Dashboard --> CDN[(Global Edge CDN)]
-    end
-    
-    CDN -.->|Push / Short TTL Pull| Config
-    UI -->|1. Check `is_video_killed`| Engine
-    Engine -->|Returns True| UI
-    UI -->|2. Hide Button| Feature
-```
+```kotlin
+object Flags {
+    // Kill switches are boolean. Default is `true` (feature enabled).
+    // Server flipping to `false` disables.
+    val killVideoCalls = BooleanFlag(
+        key = "kill_video_calls",
+        default = true,                       // ← default-enabled; flip = disable
+        applyPolicy = ApplyPolicy.LIVE,        // ← live, not next-session
+        owners = listOf("video-calls@example.com"),
+    )
 
-## 3. The Core Flows (Deep Dive)
-
-### Flow 1: Granularity of the Kill Switch
-*Interviewer:* "Do you have one giant Kill Switch for the entire app?"
-
-**Staff Answer:**
-"No, a global kill switch is only for catastrophic API failures (Force Update/Maintenance Mode). For features, we use **Granular Kill Switches**.
-Every major feature (Video Calls, Payments, Chat, Search) has its own dedicated boolean in the Remote Config payload:
-```json
-{
-  "kill_video_calls": true,
-  "kill_payments": false,
-  "kill_chat": false
+    val killBackgroundSync = BooleanFlag(
+        key = "kill_background_sync",
+        default = true,
+        applyPolicy = ApplyPolicy.LIVE,
+        owners = listOf("sync@example.com"),
+    )
 }
 ```
-If the Video Call SDK is melting phones, we only flip `kill_video_calls` to `true`. The rest of the application functions perfectly, preserving 90% of the company's revenue."
 
-### Flow 2: UI Degradation (Hiding the Entry Points)
-*Interviewer:* "The Kill Switch is flipped to `true`. What exactly happens on the user's screen?"
+```kotlin
+@Composable
+fun VideoCallButton(...) {
+    val enabled by remember { derivedStateOf { Flags.killVideoCalls() } }
+    if (!enabled) return     // feature gone; no entry point
+    Button(onClick = startVideoCall) { Text("Video Call") }
+}
+```
 
-**Staff Answer:**
-"The UI must degrade gracefully. We do not show an error dialog. We remove the feature from existence.
-1. The 'Start Video Call' button (`FloatingActionButton`) is wrapped in a check:
-   `if (KillSwitch.isKilled("video_calls")) { fab.visibility = View.GONE }`
-2. If the user is *already* inside the Video Call screen when the payload arrives (via a silent push or background sync), the app immediately terminates the call, pops the fragment off the back-stack, and shows a non-intrusive Snackbar: 'Video Calls are temporarily disabled for maintenance.'
-This requires strictly wrapping every entry point to a major feature in the Kill Switch evaluation."
+The naming convention is `kill_<feature>`. Server flipping to `false` means "kill the feature." Default `true` because if the flag service is down, you ship the feature (otherwise you'd accidentally kill on flag-fetch failure).
 
-### Flow 3: Propagation Strategy (Pull vs Push)
-*Interviewer:* "How does the Android app actually receive the 'true' signal instantly? If your config cache is set to 12 hours, the phone won't check for updates until tomorrow."
+---
 
-**Staff Answer:**
-"We combine **Short TTL Polling** with **Silent Push Notifications**.
-1. **Pull (Standard):** We configure the Remote Config SDK with a relatively short TTL (Time-To-Live), such as 1 hour. This guarantees a baseline recovery.
-2. **Push (Instant):** When an SRE flips the panic button on the dashboard, the backend broadcasts a **Silent Push Notification** (FCM Data Payload) to all active devices.
-3. The Silent Push wakes up the `FirebaseMessagingService`.
-4. The service reads the payload: `{"action": "invalidate_config"}`.
-5. The service immediately invalidates the 1-hour cache and forces the Remote Config SDK to fetch the newest JSON from the CDN. The UI is updated instantly."
+## 3. Live Apply Policy
 
-## 4. Failure Modes & Bottlenecks
+Most flags use "next session" apply policy (see `mobile-system-design/feature-flags-and-remote-config.md`). Kill switches are the exception: they MUST take effect now, not at next launch.
 
-### Bottleneck: The Kill Switch Breaks the App
-*Interviewer:* "You flip the `kill_payments` switch. The entire app crashes on startup. Why?"
+```kotlin
+class FlagsRepository @Inject constructor(...) {
 
-**Staff Answer:**
-"The Kill Switch path was never tested.
-When a feature is built, engineers test the 'Happy Path' (Payments enabled). If they never test the 'Sad Path' (Payments disabled), they might leave a `null` reference or a broken dependency injection graph when the feature is forcibly removed from the UI.
-**The Fix:** Automated UI Tests (Espresso/UIAutomator) must run nightly on CI with **every single kill switch flipped to true**. The app must prove it can boot and navigate safely when degraded."
+    private val flagSet = MutableStateFlow(FlagSet.EMPTY)
 
-### Bottleneck: The Infinite Retry Storm
-*Interviewer:* "You kill the Video Call feature. But there's a background `WorkManager` job that is trying to upload a missed Video Call log. It keeps failing, retrying, and draining the battery."
+    suspend fun refresh() {
+        val response = api.fetchFlags(context.snapshot())
+        store.write(FlagsSnapshot(response.flags, response.evaluatedAt))
 
-**Staff Answer:**
-"The Kill Switch must penetrate to the Background Layer, not just the UI layer.
-1. When `kill_video_calls` is flipped, the `KillSwitchEngine` must broadcast an internal event (e.g., Kotlin `SharedFlow`).
-2. All background jobs related to Video Calls must subscribe to this event.
-3. If they detect the kill switch is active, they must instantly `cancelAllWork()` or return `Result.failure()` to clear themselves from the OS scheduling queue. They must not infinitely retry."
+        val newSet = evaluator.evaluate(FlagsSnapshot(response.flags, response.evaluatedAt))
 
-## 5. Staff Engineer Thinking: Technical Debt of Kill Switches
+        if (hasLiveFlagChange(flagSet.value, newSet)) {
+            flagSet.value = newSet       // immediate
+        } else {
+            pendingSnapshot.value = newSet  // wait for next session
+        }
+    }
 
-A Junior engineer leaves Kill Switches in the code forever. A Staff Engineer knows that Kill Switches, like Feature Flags, are Technical Debt.
+    private fun hasLiveFlagChange(old: FlagSet, new: FlagSet): Boolean {
+        return old.entries.any { (key, oldValue) ->
+            val newValue = new.entries[key]
+            val policy = flagDefinitions[key]?.applyPolicy
+            policy == ApplyPolicy.LIVE && oldValue != newValue
+        }
+    }
+}
+```
 
-However, unlike Feature Flags (which expire after 30 days when a rollout hits 100%), **Kill Switches are permanent infrastructure**.
+A kill switch flip triggers an immediate UI update via the StateFlow; any composable observing the flag re-runs.
 
-If you build a Payment Gateway, you keep the `kill_payments` switch in the code forever. A 3rd-party API like Stripe can go down at any time, 5 years from now. You must always have the ability to turn it off. The cost is that the UI must forever support the `View.GONE` state for that button.
+---
 
-## 6. Probing Questions (For Practice)
+## 4. Propagation Latency
 
-1.  Explain why turning off the backend server is a dangerous and poor alternative to using a Client-Side Kill Switch.
-2.  Describe the concept of "Granularity" in Kill Switches. Why should a major app have 10-20 kill switches instead of just one?
-3.  Walk through the "Graceful Degradation" of the UI. What happens to entry points, and what happens if the user is already inside the feature?
-4.  How does a Silent Push Notification (FCM) solve the latency problem of a Remote Config cache that is set to expire in 12 hours?
-5.  Why is it critical to run automated CI tests with all Kill Switches flipped to `true`? What type of bug does this prevent?
-6.  Explain how a Kill Switch must interact with Android's `WorkManager`. Why is hiding the UI button not enough?
-7.  Differentiate between the lifespan of a Feature Flag and a Kill Switch. Why are Kill Switches considered permanent infrastructure?
-8.  If the CDN hosting the Kill Switch JSON goes down completely, what should the Android app's default behavior be (Fail Open vs Fail Closed)?
-9.  Describe the architectural pattern required to ensure a developer remembers to wrap a new button in a Kill Switch check before merging their PR.
-10. How do you handle deep links or App Links that point directly to a feature that is currently disabled by a Kill Switch?
+How fast does a kill switch travel?
 
-## Further Reading
+| Step | Typical latency |
+|---|---|
+| Engineer flips flag in dashboard | 0s |
+| Flag service caches invalidated | 5-30s |
+| Next client polling fetch | 0-300s (poll interval) |
+| FCM "refresh flags" push (optional) | 2-10s |
+| Client refresh + UI update | < 1s |
+| **Total without FCM**: | up to 5 minutes |
+| **Total with FCM push**: | < 15 seconds |
 
-- [`feature-flags-and-remote-config.md`](../mobile-system-design/feature-flags-and-remote-config.md) — The underlying infrastructure that powers Kill Switches.
-- [`push-notifications.md`](../mobile-system-design/push-notifications.md) — How Silent Pushes wake the app to invalidate the config cache.
-- [`staged-rollouts.md`](staged-rollouts.md) — Why Kill Switches are necessary because Hotfixes take 2 days.
+For true incident response, ship the FCM push path. Server flips the flag, then fires a `data` push to all devices:
+
+```json
+{ "type": "flags.refresh", "reason": "kill_video_calls" }
+```
+
+```kotlin
+class FlagRefreshFcmService : FirebaseMessagingService() {
+    @Inject lateinit var flagsRepository: FlagsRepository
+
+    override fun onMessageReceived(message: RemoteMessage) {
+        if (message.data["type"] == "flags.refresh") {
+            CoroutineScope(Dispatchers.IO).launch {
+                flagsRepository.refresh()
+            }
+        }
+    }
+}
+```
+
+FCM data messages bypass the app's normal polling cadence. Even backgrounded devices wake to apply the flip (subject to OEM kill caveats; see `mobile-system-design/push-notifications.md`).
+
+---
+
+## 5. Who Can Flip (Authorization)
+
+The same dashboard that flips experiments shouldn't flip kill switches with the same authority. Distinct paths:
+
+```yaml
+# flags.config.yaml
+flags:
+  kill_video_calls:
+    default: true
+    apply_policy: LIVE
+    owners: ["video-calls@example.com"]
+    required_approvers: ["releng@example.com"]   # second sign-off
+    audit_required: true                          # log every flip
+    rollback_window: 24h                          # auto-revert if no human reapplies
+```
+
+A flag flip:
+1. Engineer submits a flip request in the dashboard.
+2. Dashboard requires a reason ("Sev-1 incident #4242").
+3. A second signer (releng on-call or feature owner) approves.
+4. Flag changes server-side, audit log records (who, when, why, approvers).
+5. Optional FCM push fires.
+6. Auto-revert if no one re-applies the flip within the rollback window.
+
+The auto-revert is the most important rule: a kill switch that nobody re-validates becomes a forgotten dead feature.
+
+---
+
+## 6. Granular Kill Switches
+
+Instead of one binary, use a gated kill switch for partial outages:
+
+```kotlin
+val killVideoCalls = VariantFlag(
+    key = "kill_video_calls",
+    default = "enabled",
+    variants = listOf("enabled", "disabled_for_samsung_a", "disabled_for_low_ram", "disabled_globally"),
+)
+
+@Composable
+fun VideoCallButton(...) {
+    val mode = Flags.killVideoCalls()
+    val show = when (mode) {
+        "disabled_globally" -> false
+        "disabled_for_samsung_a" -> !DeviceInfo.isSamsungA()
+        "disabled_for_low_ram" -> DeviceInfo.totalRamMb > 4000
+        else -> true
+    }
+    if (!show) return
+    Button(onClick = startVideoCall) { Text("Video Call") }
+}
+```
+
+The cohort-specific kill is far less disruptive than a global kill. Always reach for cohort-specific first.
+
+---
+
+## 7. Server-Side Kill For Backend Features
+
+Some features have a server-side counterpart you need to kill simultaneously (e.g., a new endpoint that's overloading a service):
+
+```kotlin
+// Server BFF
+fun handleVideoCallStart(...): Response {
+    if (configService.killVideoCallsActive()) {
+        return Response(status = 503, body = "Feature temporarily unavailable")
+    }
+    return startVideoCall(...)
+}
+```
+
+```kotlin
+// Client handles the 503 gracefully
+suspend fun startVideoCall(): Result<...> {
+    return runCatching { api.startVideoCall(...) }
+        .onFailure { e ->
+            if (e is HttpException && e.code() == 503) {
+                analytics.log("video_call_unavailable_server_side")
+                showSnack("Video calling is temporarily unavailable. Please try again later.")
+            }
+        }
+}
+```
+
+Server + client kill together. Client kill hides the entry point; server kill rejects any race-condition calls. Defense in depth.
+
+---
+
+## 8. Local Override For Engineering
+
+```kotlin
+class FlagsOverridesStore @Inject constructor(
+    @ApplicationContext private val context: Context,
+) {
+    private val prefs = context.getSharedPreferences("flag_overrides", Context.MODE_PRIVATE)
+
+    fun set(key: String, value: String) {
+        check(BuildConfig.DEBUG) { "overrides only allowed in debug builds" }
+        prefs.edit().putString(key, value).apply()
+    }
+
+    fun get(key: String): String? = if (BuildConfig.DEBUG) prefs.getString(key, null) else null
+}
+```
+
+`FlagSet.get()` checks the override store first; in release builds, the override returns `null` and is ignored. Engineers can simulate kill switches locally without server flips. Production users cannot.
+
+---
+
+## 9. Telemetry
+
+Every kill-switch evaluation logs:
+
+```kotlin
+analytics.log("flag_evaluated", mapOf(
+    "flag" to flagKey,
+    "value" to evaluatedValue,
+    "isLiveApply" to (policy == ApplyPolicy.LIVE),
+    "source" to source,  // "remote", "default", "override"
+))
+```
+
+Server-side telemetry monitors:
+- **Kill switch flip frequency.** A flag flipped > 5x in a month signals an unstable feature.
+- **Auto-revert events.** A flag that auto-reverted without resolution is an incident.
+- **Time from flag flip to deactivation rate plateau.** Did the kill actually take effect?
+
+---
+
+## 10. Common Pitfalls
+
+- **Kill switch default = `false`.** A flag-fetch failure now silently kills the feature for all users. Always default `true`.
+- **No FCM push for live flags.** A 5-minute propagation is too slow for incident response.
+- **Flipping experiments and kill switches through the same path.** Different stakes, different approvals.
+- **No auto-revert.** Kill switches become "abandoned switches" no one knows about.
+- **Forgetting client-side kill = no server protection.** A racing client still calls the endpoint. Server-side kill too.
+- **Kill switch around a feature that's deep in code.** If kill = compile-time `#if`, the user must update. If kill = runtime check, the user gets it instantly. Always runtime.
+- **No audit log.** "Who killed video calls last night?" answerable in 30 seconds, not 3 hours.
+- **Engineer-only kill authority.** Releng / on-call needs to be able to kill features they didn't write at 3 AM.
+- **Killing without a path to re-enable.** Once killed, the rollout to re-enable should be staged: 1% → 10% → 100% to confirm the fix.
+- **No documented kill-switch list.** "What kill switches do we have?" — a release runbook should answer this in seconds.
+
+---
+
+## 11. Testing
+
+```kotlin
+@Test
+fun killSwitch_disabled_hidesFeature() = runTest {
+    val flagsRepo = FakeFlagsRepository().apply { set("kill_video_calls", "false") }
+    composeRule.setContent { VideoCallButton(repo = flagsRepo) }
+    composeRule.onNodeWithText("Video Call").assertDoesNotExist()
+}
+
+@Test
+fun killSwitch_flagFetchFails_defaultsToEnabled() = runTest {
+    val flagsRepo = FailingFlagsRepository()
+    composeRule.setContent { VideoCallButton(repo = flagsRepo) }
+    composeRule.onNodeWithText("Video Call").assertExists()
+}
+```
+
+End-to-end: flip a kill switch in the staging flag service; assert the production-build staging APK hides the feature within the propagation window.
+
+---
+
+## 12. Further Reading
+
+- [Martin Fowler — Feature Toggles taxonomy](https://martinfowler.com/articles/feature-toggles.html) — categorization: release, ops, experiment, permission.
+- [GrowthBook](https://www.growthbook.io/) — open-source flag platform with kill-switch path.
+- [LaunchDarkly — Kill switches](https://launchdarkly.com/blog/) — vendor patterns.
+- [feature-flags-and-remote-config.md](../mobile-system-design/feature-flags-and-remote-config.md) — the underlying flag architecture.
+- [push-notifications.md](../mobile-system-design/push-notifications.md) — FCM-driven flag refresh.
+
+---
+
+> **In short:** kill switches default-enabled, live-apply policy, FCM-driven refresh for < 15s propagation, gated approval, audit + auto-revert, server + client kill in tandem, cohort-specific where possible. Build them before you need them.

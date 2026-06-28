@@ -1,119 +1,338 @@
-# Release Engineering: Crash Rate Gating (Automated Rollback)
+# Release Engineering: Crash-Rate Gating (Automated Rollback)
 
-## The Prompt
+> Automated checks that read crash + ANR metrics during a staged rollout and decide: promote, hold, or halt. The release manager isn't supposed to babysit Crashlytics at 3 AM.
 
-*"Your company releases a new version of the Android app every week. The Release Manager manually checks Firebase Crashlytics every 6 hours during a Staged Rollout to see if the app is crashing. Last week, the Release Manager was asleep, and a fatal crash reached 20% of users. Design an automated system to prevent this."*
+---
 
-## 1. Requirements & Clarification (RADIO Framework)
+## 1. The Metrics That Matter
 
-### Functional Requirements
-- Monitor crash rates in real-time during a Staged Rollout.
-- Automatically halt the rollout if the crash rate exceeds a defined threshold.
-- Alert the engineering team instantly.
+| Metric | Source | Target |
+|---|---|---|
+| **Crash-free users** | Firebase Crashlytics / Android Vitals | > 99.5% |
+| **Crash-free sessions** | Firebase Crashlytics | > 99.7% |
+| **ANR rate** | Android Vitals | < 0.47% (Play's threshold) |
+| **User-perceived ANR** | Android Vitals | < 0.20% |
+| **Slow cold start rate** | Android Vitals | < 5% |
+| **Slow rendering rate** | Android Vitals | < 5% |
 
-### Non-Functional Requirements (NFRs)
-- **Speed:** The system must detect a spike and halt the rollout in minutes, not hours.
-- **Accuracy (Priority 0):** The system must not trigger false positives (e.g., halting the rollout because 5 users out of 10 had a crash in the first 30 seconds of the release). It requires statistical significance.
+"Crash-free users" is the gold standard: of all users who interacted with this version today, what fraction did NOT experience a crash? Above 99.5% is healthy. Below 99% is "do not promote." Below 98% is "halt the rollout immediately."
 
-## 2. High-Level Architecture (The Feedback Loop)
+Always compare against a **baseline** (previous version) over the same time window. A 99.6% crash-free rate is great unless the previous version was 99.9%.
 
-A Junior engineer relies on human vigilance.
-A Staff engineer builds a **Closed-Loop Automation System**. The Telemetry pipeline feeds directly back into the CD (Continuous Deployment) pipeline.
+---
 
-```mermaid
-graph TD
-    App[Android App v2.0] -->|Crash Data| Telemetry[Firebase / New Relic]
-    
-    Telemetry -->|Webhook/PubSub| Monitoring[Crash Analysis Microservice]
-    
-    subgraph The Gatekeeper
-        Monitoring -->|Calculate %| Threshold{Crash-Free < 99.5%?}
-        Threshold -- Yes (Statistically Significant) --> Halt[Halt Action]
-    end
-    
-    Halt -->|Google Play Developer API| PlayStore[Google Play Console]
-    Halt -->|PagerDuty API| PagerDuty[SRE On-Call Alert]
-    Halt -->|Slack API| Slack[Team Channel Alert]
-    
-    PlayStore -.->|Stops serving v2.0| App
+## 2. Reading Android Vitals (Play Developer API)
+
+```python
+# scripts/vitals_crashrate.py
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+import argparse, sys, json
+from datetime import datetime, timedelta
+
+SCOPES = ['https://www.googleapis.com/auth/playdeveloperreporting']
+PACKAGE = 'com.example.app'
+
+def crash_free_users(version_code: int, hours: int) -> float:
+    creds = service_account.Credentials.from_service_account_file(
+        os.environ['PLAY_VITALS_SA'], scopes=SCOPES,
+    )
+    service = build('playdeveloperreporting', 'v1beta1', credentials=creds)
+
+    now = datetime.utcnow()
+    start = now - timedelta(hours=hours)
+
+    body = {
+        "timelineSpec": {
+            "aggregationPeriod": "HOURLY",
+            "startTime": {"year": start.year, "month": start.month, "day": start.day,
+                          "hours": start.hour, "minutes": 0},
+            "endTime":   {"year": now.year,   "month": now.month,   "day": now.day,
+                          "hours": now.hour,   "minutes": 0},
+        },
+        "metrics": ["distinctUsers", "crashRate"],
+        "filter": f'versionCode = {version_code}',
+        "dimensions": ["versionCode"],
+    }
+
+    resp = service.vitals().crashrate().query(
+        name=f"apps/{PACKAGE}/crashRateMetricSet",
+        body=body,
+    ).execute()
+
+    rows = resp.get('rows', [])
+    total_users = sum(int(r['metrics'][0]['decimalValue']['value']) for r in rows)
+    crashed = sum(int(r['metrics'][1]['decimalValue']['value']) for r in rows)
+    return 1.0 - (crashed / total_users) if total_users else 1.0
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--version-code', type=int, required=True)
+    parser.add_argument('--hours', type=int, default=24)
+    args = parser.parse_args()
+
+    rate = crash_free_users(args.version_code, args.hours)
+    print(json.dumps({"crashFreeUsers": rate, "versionCode": args.version_code, "hours": args.hours}))
 ```
 
-## 3. The Core Flows (Deep Dive)
+```bash
+python scripts/vitals_crashrate.py --version-code 12340 --hours 24
+# {"crashFreeUsers": 0.9962, "versionCode": 12340, "hours": 24}
+```
 
-### Flow 1: Calculating the Threshold (Statistical Volume)
-*Interviewer:* "You release v2.0. Within the first 2 minutes, 10 users download it. 1 user crashes. Your crash rate is 10%. Your system automatically halts the release. The engineering team is paged at 2 AM. But it was just 1 user with a rooted phone. How do you prevent this false alarm?"
+The Vitals API is the same Play Console reads; trust it.
 
-**Staff Answer:**
-"We must define a **Minimum Threshold of Significance**.
-The automated system must evaluate two variables simultaneously:
-1.  **The Rate:** Crash-Free Users drops below 99.5% (or whatever the SLA is).
-2.  **The Volume (N):** The system completely ignores the rate until at least 10,000 users (or a statistically significant sample size for the app's MAU) have opened v2.0.
-Until `N >= 10,000`, the system is in 'Observation Mode' and will not trigger an automated halt, preventing noisy false positives from small sample sizes."
+---
 
-### Flow 2: The Google Play Developer API (The Kill Command)
-*Interviewer:* "Your system detects a massive crash spike. 50,000 users are crashing. How does a backend microservice actually stop Google Play from distributing the app?"
+## 3. Reading Firebase Crashlytics
 
-**Staff Answer:**
-"The system uses the **Google Play Custom Publishing API**.
-1. The microservice securely authenticates with Google using a Service Account JSON key.
-2. It executes a `GET` request to retrieve the current Edit transaction.
-3. It executes an `UPDATE` request against the `tracks` endpoint. It finds the `production` track and changes the `userFraction` of the current release to `0.0`, or changes the status from `inProgress` to `halted`.
-4. It `COMMITS` the Edit transaction.
-Within seconds, Google Play's global servers stop offering the v2.0 APK/AAB to users. The blast radius is instantly contained without human intervention."
+Crashlytics doesn't expose a streaming API; you BigQuery-export and read from there:
 
-### Flow 3: The Fatal vs Non-Fatal Distinction
-*Interviewer:* "Your app has a known, minor bug where a non-fatal exception is logged in the background (e.g., `Failed to load avatar image`). This happens 100,000 times a day. Will your crash rate gate halt the release for this?"
+```sql
+-- BigQuery dataset: firebase_crashlytics.<package_name>_ANDROID
+WITH window_users AS (
+  SELECT
+    COUNT(DISTINCT installation_uuid) AS users,
+    COUNTIF(crashed) AS crashed_users,
+  FROM `proj.firebase_crashlytics.com_example_app_ANDROID`
+  WHERE event_timestamp BETWEEN
+        TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR) AND CURRENT_TIMESTAMP()
+    AND app_display_version = '2.0.0'
+)
+SELECT
+  1 - (SAFE_DIVIDE(crashed_users, users)) AS crash_free_rate,
+  users
+FROM window_users;
+```
 
-**Staff Answer:**
-"No. The Telemetry SDK and the Monitoring Microservice must strictly differentiate between **Fatal Crashes** (the app died and the OS closed it) and **Non-Fatal Exceptions** (handled errors logged manually via `Crashlytics.logException()`).
-The primary automated Halt threshold is strictly tied to *Fatal Crash-Free Users*.
-However, a sophisticated system will have a secondary alert (a Slack notification, not a hard Halt) if Non-Fatals spike by > 500%, as this might indicate a severe silent failure, like a broken API endpoint that is caught in a `try/catch` but preventing users from checking out."
+```python
+# scripts/crashlytics_bq.py
+from google.cloud import bigquery
+import sys, json
 
-## 4. Failure Modes & Bottlenecks
+def crash_free_rate(version_name: str, hours: int) -> dict:
+    client = bigquery.Client()
+    query = f"""
+        WITH window_users AS (
+          SELECT
+            COUNT(DISTINCT installation_uuid) AS users,
+            COUNTIF(crashed) AS crashed_users
+          FROM `proj.firebase_crashlytics.com_example_app_ANDROID`
+          WHERE event_timestamp BETWEEN
+                TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {hours} HOUR) AND CURRENT_TIMESTAMP()
+            AND app_display_version = '{version_name}'
+        )
+        SELECT 1 - SAFE_DIVIDE(crashed_users, users) AS rate, users
+        FROM window_users
+    """
+    row = list(client.query(query).result())[0]
+    return {"crashFreeRate": float(row.rate), "users": int(row.users)}
+```
 
-### Bottleneck: The Delayed Metric (Data Processing Latency)
-*Interviewer:* "Firebase Crashlytics can sometimes take 15 to 30 minutes to process and display crash data on their dashboard. If your app is pushing to 10% (1 Million users), 15 minutes is enough time to crash 50,000 devices. How do you speed this up?"
+Crashlytics gives richer per-issue breakdowns; Vitals is more authoritative for promote/halt decisions because it's the same source Play uses.
 
-**Staff Answer:**
-"We cannot rely on the Firebase Dashboard UI or its standard batched webhooks for real-time gating.
-**The Fix:** We export the raw crash events directly to **BigQuery** or a high-throughput streaming database. We write a custom cron job (or streaming pipeline) that queries the raw BigQuery table every 60 seconds. This bypasses the processing delays of the standard dashboard, allowing us to detect and halt a catastrophic failure in ~2 minutes."
+---
 
-### Bottleneck: ANRs vs Crashes
-*Interviewer:* "The rollout reaches 50%. The Crash-Free Users metric is a perfect 99.9%. But Twitter is blowing up. Users are furious, saying the app is completely frozen. Your system didn't halt the rollout. Why?"
+## 4. The Auto-Halt Workflow
 
-**Staff Answer:**
-"The system was blind to **ANRs (Application Not Responding)**.
-An ANR is not a crash. The JVM doesn't throw an Unhandled Exception. The Main Thread is just blocked for > 5 seconds, and the OS kills it. Standard crash reporting often misses this or categorizes it separately.
-**The Fix:** The Automated Gate must evaluate a composite metric: `(Fatal Crashes + ANRs) / Total Users`. If the ANR rate exceeds the threshold (e.g., > 0.4%), the system must trigger the exact same Halt procedure."
+```yaml
+# .github/workflows/crash-gate.yml
+on:
+  schedule:
+    - cron: '*/30 * * * *'   # every 30 min during a rollout
+  workflow_dispatch:
 
-## 5. Staff Engineer Thinking: The "Poison Pill" Metric
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install google-api-python-client google-auth google-cloud-bigquery
 
-A Staff Engineer thinks about edge cases that completely break the math.
+      - name: Get current release status
+        id: status
+        run: |
+          python scripts/play_status.py > status.json
+          echo "version_code=$(jq -r .versionCode status.json)" >> $GITHUB_OUTPUT
+          echo "fraction=$(jq -r .userFraction status.json)" >> $GITHUB_OUTPUT
+        env: { PLAY_SERVICE_ACCOUNT: ${{ secrets.PLAY_PUBLISHER_SA_JSON }} }
 
-*The Scenario:* You release an update that instantly crashes on launch (a `RuntimeException` in `Application.onCreate()`).
-*The Flaw:* If it crashes instantly, the Telemetry SDK (Firebase/New Relic) might not have enough time to initialize, connect to the network, and send the crash report before the OS kills the process. The server receives 0 crash reports.
-*The Result:* The dashboard says "0 Crashes." The automated gate assumes the release is perfect. It rolls out to 100%.
+      - name: Read crash-free rate (Vitals)
+        id: crash
+        run: |
+          python scripts/vitals_crashrate.py \
+            --version-code "${{ steps.status.outputs.version_code }}" \
+            --hours 6 > vitals.json
+          echo "rate=$(jq -r .crashFreeUsers vitals.json)" >> $GITHUB_OUTPUT
+        env: { PLAY_VITALS_SA: ${{ secrets.PLAY_VITALS_SA_JSON }} }
 
-**The Staff Solution (The 'Missing Sessions' Metric):**
-We cannot just measure crashes. We must measure **Session Volume**.
-If v1.0 usually generates 10,000 successful sessions per minute, and v2.0 is rolled out to 10%, we expect 1,000 successful sessions per minute from v2.0.
-If the monitoring system sees *zero* successful sessions coming from v2.0 users, it must instantly trigger a 'Missing Data / Poison Pill' Alert. A sudden, massive drop in total successful sessions is a stronger indicator of an instant-death crash than the crash logs themselves.
+      - name: Read baseline rate (previous version)
+        id: baseline
+        run: |
+          prev=$(python scripts/previous_version.py "${{ steps.status.outputs.version_code }}")
+          python scripts/vitals_crashrate.py --version-code "$prev" --hours 168 > baseline.json
+          echo "rate=$(jq -r .crashFreeUsers baseline.json)" >> $GITHUB_OUTPUT
+        env: { PLAY_VITALS_SA: ${{ secrets.PLAY_VITALS_SA_JSON }} }
 
-## 6. Probing Questions (For Practice)
+      - name: Decision
+        id: decide
+        env:
+          NOW: ${{ steps.crash.outputs.rate }}
+          BASE: ${{ steps.baseline.outputs.rate }}
+        run: |
+          delta=$(python -c "print($BASE - $NOW)")
+          echo "delta=$delta" >> $GITHUB_OUTPUT
+          if (( $(python -c "print(int($NOW < 0.98))") )); then
+            echo "action=halt-critical" >> $GITHUB_OUTPUT
+          elif (( $(python -c "print(int($delta > 0.005))") )); then
+            echo "action=halt-regression" >> $GITHUB_OUTPUT
+          elif (( $(python -c "print(int($delta > 0.001))") )); then
+            echo "action=hold" >> $GITHUB_OUTPUT
+          else
+            echo "action=promote-eligible" >> $GITHUB_OUTPUT
+          fi
 
-1.  Explain why human monitoring of a Staged Rollout is a critical point of failure and how a Closed-Loop Automation system solves it.
-2.  Describe the two variables required to define a Minimum Threshold of Significance. Why must you wait for a specific volume (N) of users before trusting a 10% crash rate?
-3.  Walk through the exact technical mechanism (Google Play Developer API) that allows a backend server to halt an Android app rollout.
-4.  Why is it crucial to distinguish between Fatal Crashes and Non-Fatal Exceptions in an automated rollout gate?
-5.  Explain the data processing latency issue with third-party dashboards (like Crashlytics) and how querying a raw database (like BigQuery) accelerates detection.
-6.  Describe the difference between a Crash and an ANR, and why an automated gate must monitor both metrics simultaneously.
-7.  What is the "Poison Pill" scenario (Crash on Launch)? Explain why standard crash reporting tools might fail to record this event.
-8.  How does monitoring "Session Volume" act as a failsafe against the Poison Pill scenario?
-9.  If an automated gate halts a rollout at 2 AM, what specific information should it include in the PagerDuty alert sent to the on-call engineer to minimize their time-to-resolution?
-10. Describe the architectural relationship between a Feature Flag Kill Switch and a Crash Rate Rollout Gate. If a crash is traced to a specific feature flag, should the system halt the Play Store rollout or just flip the kill switch?
+      - name: Apply
+        run: |
+          case "${{ steps.decide.outputs.action }}" in
+            halt-critical)
+              python scripts/halt.py production
+              python scripts/slack_alert.py "🚨 HALTED v${{ steps.status.outputs.version_code }} — crash-free $NOW below 98%"
+              ;;
+            halt-regression)
+              python scripts/halt.py production
+              python scripts/slack_alert.py "⚠️ HALTED v${{ steps.status.outputs.version_code }} — crash regression $(printf %.2f%% "$(echo "${{steps.decide.outputs.delta}} * 100" | bc)") vs baseline"
+              ;;
+            hold)
+              python scripts/slack_alert.py "⏸ HOLDING v${{ steps.status.outputs.version_code }} — minor regression; re-evaluating"
+              ;;
+            promote-eligible)
+              # Only auto-promote on weekdays during business hours.
+              dow=$(date -u +%u); hr=$(date -u +%H)
+              if [ "$dow" -lt 6 ] && [ "$hr" -ge 14 ] && [ "$hr" -lt 22 ]; then
+                next=$(python -c "print(min(1.0, ${{ steps.status.outputs.fraction }} * 2))")
+                python scripts/promote.py production "$next"
+                python scripts/slack_alert.py "✅ Promoted to $next"
+              fi
+              ;;
+          esac
+        env:
+          PLAY_SERVICE_ACCOUNT: ${{ secrets.PLAY_PUBLISHER_SA_JSON }}
+          SLACK_WEBHOOK: ${{ secrets.RELEASE_SLACK_WEBHOOK }}
+          NOW: ${{ steps.crash.outputs.rate }}
+```
 
-## Further Reading
+Decision rules tuned to the org's risk profile. The thresholds (0.001, 0.005, 0.98) are starting points; calibrate on historical data.
 
-- [`staged-rollouts.md`](staged-rollouts.md) — The fundamental phases of the Play Store release.
-- [`telemetry-sdk.md`](../mobile-system-design/telemetry-sdk.md) — How the Crash and ANR data is physically collected on the device.
-- [`anrs.md`](../android/performance/anrs.md) — Why ANRs happen and why they are harder to track than crashes.
+---
+
+## 5. Per-Cohort Crash Rates
+
+A single global rate hides cohort regressions:
+
+```python
+# scripts/cohort_breakdown.py
+COHORTS = [
+    ("emerging_market_lowend",  "country IN ('IN','BR','ID') AND ram_mb < 4000"),
+    ("flagship",                "country NOT IN ('IN','BR','ID') AND ram_mb >= 6000"),
+    ("samsung_a_series",        "device_model LIKE 'SM-A%'"),
+    ("oem_xiaomi",              "device_manufacturer = 'Xiaomi'"),
+]
+
+for name, filter_clause in COHORTS:
+    rate = crash_free_with_filter(version_name, filter_clause)
+    print(f"{name:30s}: {rate * 100:.2f}%")
+```
+
+If global is fine but `samsung_a_series` is at 96%, you've found a vendor-specific bug. Halt or kill-switch the offending feature on that cohort only.
+
+---
+
+## 6. Slack-Driven Manual Override
+
+Auto-halt errs on caution. Sometimes a regression is acceptable (e.g., new feature has slightly worse baseline because it does more). Manual override pattern:
+
+```python
+# scripts/slack_promote_handler.py (Slack slash command)
+# /release promote 0.10
+def handle(user, command):
+    if user not in RELENG_TEAM:
+        return "Sorry, only releng can run this."
+    if "promote" in command:
+        fraction = float(command.split()[1])
+        promote_production(fraction)
+        return f"Promoted to {fraction}. Watching crash-free rate."
+    if "halt" in command:
+        halt_production()
+        return "Halted. Run `/release resume` to undo."
+```
+
+Manual paths are audited (Slack channel + GitHub Actions log + Play Console history). No silent overrides.
+
+---
+
+## 7. Time Windows And Sample Size
+
+A 6-hour window at 1% rollout might only have 5K active users. Crash-free rate is noisy at that scale. Rules:
+
+| Rollout % | Min sample for decision | Window |
+|---|---|---|
+| 1% | 10K users | 12h |
+| 5% | 50K users | 6h |
+| 10% | 100K users | 4h |
+| 25%+ | 250K users | 2h |
+
+Don't promote prematurely just because the crash-free rate looks good with 200 users.
+
+```python
+def is_sample_sufficient(rollout_fraction: float, users_observed: int) -> bool:
+    required = max(10_000, 1_000_000 * rollout_fraction)
+    return users_observed >= required
+```
+
+---
+
+## 8. ANR-Specific Gates
+
+ANRs (Application Not Responding) have their own threshold:
+
+```python
+def anr_rate(version_code: int, hours: int) -> float:
+    # via Vitals anrRateMetricSet, same shape as crashRateMetricSet
+    ...
+```
+
+Play's "bad behavior threshold" is 0.47% ANR rate (1 in 200 sessions). Above that, Play deprioritizes the app in Search and may eventually remove it. Gate at 0.30% to give margin.
+
+User-perceived ANRs (those that happened while the user was actually interacting) are stricter — gate at 0.20%.
+
+---
+
+## 9. Common Pitfalls
+
+- **Comparing to no baseline.** "99.6% is fine" — if previous was 99.95%, you've regressed.
+- **Auto-promoting outside business hours.** If something breaks on auto-promote at 3 AM Sunday, no human is responding for hours.
+- **Tiny sample sizes.** 100 users isn't enough to estimate a 99.5% crash-free rate.
+- **Only looking at global rate.** Cohort regressions hide.
+- **Halting without alerting.** Silent halts confuse the next release manager.
+- **Decision rules in code, not in a docs runbook.** When CI halts at 3 AM, on-call needs to read why.
+- **Ignoring slow-rendering / slow-start rates.** They're soft failures that erode trust over time.
+- **Trusting Crashlytics for the gate.** Vitals is the source Play uses; align with it.
+- **No "cooldown" after a halt.** Halt + resume in 5 minutes hides whether the fix worked.
+- **Manual overrides without audit.** Someone presses resume and forgets to monitor.
+
+---
+
+## 10. Further Reading
+
+- [Play Developer Reporting API](https://developers.google.com/play/developer/reporting) — Vitals access.
+- [Android Vitals — Crash rate & ANR](https://developer.android.com/topic/performance/vitals) — what Play measures.
+- [Firebase Crashlytics BigQuery export](https://firebase.google.com/docs/crashlytics/bigquery-export) — historical cohort queries.
+- [Play "bad behavior threshold"](https://support.google.com/googleplay/android-developer/answer/9859174) — the 0.47% ANR cutoff.
+- [Site Reliability Engineering (SRE) ch. 33 — Lessons learned from other incidents](https://sre.google/sre-book/lessons-learned/) — incident discipline transferable to releases.
+
+---
+
+> **In short:** Vitals as the source of truth; compare against baseline; per-cohort breakdown; auto-halt with Slack alert; auto-promote only in business hours; sample-size minimums; ANR < 0.30% target. Don't make humans babysit dashboards.
