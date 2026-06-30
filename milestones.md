@@ -349,29 +349,29 @@ KMP is mentioned in 22 files in passing but has no dedicated coverage. User deci
 **Folder:** `android/kotlin-multiplatform/`
 
 **Phase 1 — Foundations:**
-- ⬜ `overview-and-k1-vs-k2.md` — Compiler-level (JVM, Native, Wasm), K2 speedups, `expect`/`actual`.
-- ⬜ `architecture-and-module-boundaries.md` — Shared Logic vs Shared UI, Domain/Data sharing patterns.
+- ✅ `foundations/overview-and-k1-vs-k2.md` — Compiler-level (JVM, Native, Wasm), K2 speedups, `expect`/`actual`.
+- ✅ `foundations/architecture-and-module-boundaries.md` — Shared Logic vs Shared UI, Domain/Data sharing patterns.
 
 **Phase 2 — Tooling:**
-- ⬜ `build-system-and-source-sets.md` — Gradle KMP plugin, source sets (`commonMain`, `iosMain`), Version Catalogs.
-- ⬜ `ios-distribution.md` — Frameworks, CocoaPods plugin, SwiftPM, XCFramework.
-- ⬜ `swift-interop.md` — Swift↔Kotlin via Obj-C bridge, SKIE, Direct Swift Export.
+- ✅ `tooling/build-system-and-source-sets.md` — Gradle KMP plugin, source sets (`commonMain`, `iosMain`), Version Catalogs.
+- ✅ `tooling/ios-distribution.md` — Frameworks, CocoaPods plugin, SwiftPM, XCFramework.
+- ✅ `tooling/swift-interop.md` — Swift↔Kotlin via Obj-C bridge, SKIE, Direct Swift Export.
 
 **Phase 3 — Ecosystem:**
-- ⬜ `libraries-ecosystem.md` — KMP-ready matrix vs non-KMP.
-- ⬜ `networking-with-ktor.md` — Ktor patterns across platforms, engine selection.
-- ⬜ `persistence.md` — SQLDelight, Multiplatform Settings, Realm.
-- ⬜ `dependency-injection.md` — Koin shared modules and iOS initialization.
+- ✅ `ecosystem/libraries-ecosystem.md` — KMP-ready matrix vs non-KMP.
+- ✅ `ecosystem/networking-with-ktor.md` — Ktor patterns across platforms, engine selection.
+- ✅ `ecosystem/persistence.md` — SQLDelight, Multiplatform Settings, Realm.
+- ✅ `ecosystem/dependency-injection.md` — Koin shared modules and iOS initialization.
 
 **Phase 4 — UI Sharing:**
-- ⬜ `compose-multiplatform.md` — CMP vs Jetpack Compose, iOS Canvas vs UIKit.
-- ⬜ `resource-sharing.md` — JetBrains Compose Resources (strings, fonts, vectors).
+- ✅ `ui-sharing/compose-multiplatform.md` — CMP vs Jetpack Compose, iOS Canvas vs UIKit.
+- ✅ `ui-sharing/resource-sharing.md` — JetBrains Compose Resources (strings, fonts, vectors).
 
 **Phase 5 — Production:**
-- ⬜ `concurrency-and-memory.md` — K/Native memory model, coroutines on iOS main thread.
-- ⬜ `testing-and-mocking.md` — `commonTest`, MocKMP, iOS simulator tests from Gradle.
-- ⬜ `ci-cd-for-kmp.md` — Automating builds, macOS runners, caching Native tasks.
-- ⬜ `adoption-and-migration.md` — Incremental migration, case studies.
+- ✅ `production/concurrency-and-memory.md` — K/Native memory model, coroutines on iOS main thread.
+- ✅ `production/testing-and-mocking.md` — `commonTest`, MocKMP, iOS simulator tests from Gradle.
+- ✅ `production/ci-cd-for-kmp.md` — Automating builds, macOS runners, caching Native tasks.
+- ✅ `production/adoption-and-migration.md` — Incremental migration, case studies.
 
 **Cross-linking required when KMP folder lands:** Update `ktor-vs-retrofit.md`, `hilt-vs-koin-vs-manual-di.md`, `modularization-strategies.md`, `library-versioning.md`, and others that currently mention KMP in passing.
 

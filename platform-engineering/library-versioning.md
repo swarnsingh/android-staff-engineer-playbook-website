@@ -4,6 +4,11 @@
 
 ---
 
+> [!NOTE]
+> **Kotlin Multiplatform Deep Dive:** For a comprehensive guide on managing dependencies across source sets (`commonMain`, `iosMain`) using Version Catalogs in a KMP environment, see [`../android/kotlin-multiplatform/tooling/build-system-and-source-sets.md`](../android/kotlin-multiplatform/tooling/build-system-and-source-sets.md).
+
+---
+
 ## The Three Problems Versioning Solves
 
 1. **Alignment** — every consumer of `Retrofit` in your build uses the same version.

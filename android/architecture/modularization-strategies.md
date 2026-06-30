@@ -4,6 +4,11 @@
 
 ---
 
+> [!NOTE]
+> **Kotlin Multiplatform Deep Dive:** For a comprehensive look at how module boundaries shift when sharing code across platforms (e.g., separating shared domain logic from platform-specific UI modules), see [`../kotlin-multiplatform/foundations/architecture-and-module-boundaries.md`](../kotlin-multiplatform/foundations/architecture-and-module-boundaries.md).
+
+---
+
 ## Why Modularize At All?
 
 Three forcing functions:

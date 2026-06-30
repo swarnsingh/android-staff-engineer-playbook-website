@@ -4,6 +4,11 @@
 
 ---
 
+> [!NOTE]
+> **Kotlin Multiplatform Deep Dive:** For a comprehensive guide on using Ktor across Android and iOS within a shared KMP module, including engine selection and cross-platform patterns, see [`../kotlin-multiplatform/ecosystem/networking-with-ktor.md`](../kotlin-multiplatform/ecosystem/networking-with-ktor.md).
+
+---
+
 ## TL;DR
 
 | Need | Pick |

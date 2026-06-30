@@ -4,6 +4,11 @@
 
 ---
 
+> [!NOTE]
+> **Kotlin Multiplatform Deep Dive:** For a comprehensive guide on sharing Koin graphs across Android and iOS within a KMP module, resolving cross-platform initializations, and dealing with platform-specific injections, see [`../kotlin-multiplatform/ecosystem/dependency-injection.md`](../kotlin-multiplatform/ecosystem/dependency-injection.md).
+
+---
+
 ## Why DI Matters (Briefly)
 
 Without DI, your `CheckoutViewModel` constructs its own `Repository`, which constructs its own `Retrofit`, which constructs its own `OkHttp`. Every test of the ViewModel runs a real network. Every change to `OkHttp`'s init touches `CheckoutViewModel`.
