@@ -99,3 +99,8 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full convention list.
 ## License
 
 This work is licensed under a [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
+> [!WARNING]
+> **© 2026 Swaran Singh Aulakh. All Rights Reserved.**
+> 
+> You are free to read, share, and adapt this material for personal or educational use, provided you give appropriate credit. **Commercial use, including reproducing this content for paid courses, books, or monetized platforms, is strictly prohibited without explicit written permission.**
