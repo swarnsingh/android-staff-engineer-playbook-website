@@ -145,6 +145,19 @@ When reviewing code for Jank, a Staff engineer uses metrics, not feelings.
 2.  **Systrace / Perfetto:** When Jank is reported in production, I do not guess. I use `Perfetto` to capture a trace. Perfetto provides a visual timeline of the 16.6ms window. I can see exactly which function (Measure, Layout, or a random GC event) breached the deadline.
 3.  **The "Release" Rule:** I frequently remind developers that R8 (ProGuard) strips dead code and inline functions. R8 optimization is required to hit 60fps in complex Compose apps.
 
+### Jank as an SLI
+
+Jank should be owned per critical screen, not averaged across the whole app.
+
+| Screen class | Suggested gate | Action |
+|---|---|---|
+| Checkout/payment | p95 frame duration and frozen frames cannot regress | Halt rollout or disable the new UI path |
+| Feed/search results | Scroll jank budget per device tier | Hold rollout; reduce composition/bind cost |
+| Media/camera/map | Surface-specific frame metrics | Feature-owner triage; use device allowlist if needed |
+| Settings/static screens | Very low tolerance | Fix in normal PR flow; should rarely need incident response |
+
+CI macrobenchmarks catch deterministic regressions. Production telemetry catches device/OEM-specific regressions. A Staff engineer needs both: CI protects the main path, and production protects the long tail.
+
 ## Common Misconceptions
 
 - **"My phone has a 120Hz screen, so Jank is less noticeable."** The opposite is true. On a 120Hz screen, the deadline is 8.3ms. If you miss it, the frame drops. Because the user is accustomed to extreme smoothness, a single stutter on a 120Hz display is jarringly obvious compared to a 60Hz display.

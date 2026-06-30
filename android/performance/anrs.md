@@ -133,6 +133,20 @@ When attacking an ANR spike in production, a Staff engineer does not guess.
 2.  **Thread State Analysis:** I read the trace. Is the Main Thread `Runnable` (doing a massive mathematical loop)? Is it `Sleeping` (`Thread.sleep()`)? Or is it `Blocked` (waiting on a lock)? The state dictates the fix.
 3.  **Strict Mode:** I enforce `StrictMode` during debug builds. `StrictMode` instantly crashes the app with a bright red error if *any* developer attempts to perform Network or Disk I/O on the Main Thread. This catches 90% of ANR causes before they ever merge into the `main` branch.
 
+### Release-gating ANRs
+
+ANRs deserve different handling from crashes because many ANR signals arrive late through Play Vitals. Use both fast in-house telemetry and slower Play data.
+
+| Signal | Decision |
+|---|---|
+| User-perceived ANR spike in current rollout | Halt rollout immediately |
+| Background ANR increase only | Hold rollout if trend persists; investigate receiver/service work |
+| ANRs isolated to low-RAM devices | Gate feature by device tier or reduce startup/background work |
+| Main thread blocked in third-party SDK init | Disable/defer SDK; escalate vendor removal if repeated |
+| Trace points to app lock contention | Treat as architectural bug; add regression test or StrictMode policy |
+
+Do not page every ANR threshold crossing. Page when the app is currently unusable for a meaningful cohort and the on-call engineer can mitigate by halting rollout, flipping a flag, or disabling a backend-driven entry point.
+
 ## Common Misconceptions
 
 - **"If my app is in the background, it can't ANR."** False. If your app is in the background, and a `BroadcastReceiver` fires, and you block the thread for 10 seconds, the OS will silently record a "Background ANR." While the user won't see the dialog, Google Play Console *will* penalize your app's vitals score just as heavily.

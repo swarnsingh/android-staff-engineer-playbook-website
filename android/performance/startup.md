@@ -376,6 +376,20 @@ Reproducible measurements in CI.
 
 Production data. P90 cold-start time across all users. Alerts on "% slow start" > 5%.
 
+### Release gates and alerting
+
+Startup regressions usually should not page the on-call engineer, but they should stop rollout progression.
+
+| Signal | Decision |
+|---|---|
+| Cold start p95 regresses > 10% versus previous version | Hold rollout; inspect startup trace and recent SDK/init changes |
+| Cold start p99 regresses > 20% on low-tier devices | Hold rollout; add device-tier mitigation |
+| Slow-start percentage crosses Play bad-behavior threshold | Halt rollout until root cause is understood |
+| First install / first launch regresses only | Check baseline profile packaging and install-time compilation |
+| Repeat launch regresses only | Check lazy init, cache warmup, and retained process assumptions |
+
+Always slice startup by app version, device tier, API level, and first-install vs repeat launch. Aggregated startup charts hide the exact cohort a Staff engineer needs to protect.
+
 ---
 
 ## Patterns That Help

@@ -170,6 +170,20 @@ Mobile-distinct:
 4. **Battery is an SLO too.** "< 5% battery / active hour" for a streaming feature. Measure via in-app telemetry; Play doesn't surface this.
 5. **OEM cohort SLOs.** Samsung A series sometimes hits ANRs that Pixel doesn't; track separately and degrade gracefully on outliers.
 
+### Alert routing policy
+
+An SLO breach is not automatically a page. Route by user impact and available mitigation.
+
+| Breach | Route | Why |
+|---|---|---|
+| New release crash-free users drop below floor | PagerDuty + release channel | Halt rollout or kill feature immediately |
+| Checkout/login critical-flow success drops sharply | PagerDuty | Revenue/access outage with clear mitigation path |
+| Cold start p95 regresses 20% in staged rollout | Release channel | Hold rollout; rarely worth waking someone at 3 AM |
+| Jank increases on one non-critical screen | Feature channel | Needs owner action, not incident response |
+| Background sync success dips but retries recover | Ticket/business hours | User impact is delayed and self-healing |
+
+This policy prevents alert fatigue. Paging is reserved for cases where a human can reduce user harm right now.
+
 ## Further Reading
 
 - [`slis.md`](slis.md) — The metrics that the SLO is measuring.

@@ -401,16 +401,16 @@ Goal: make offline-first content production-grade across long-offline clients, a
 
 Why it matters: real sync systems fail at version boundaries, not only under network loss.
 
-#### G9c — Mobile observability architecture ⬜
+#### G9c — Mobile observability architecture ✅
 
 Goal: teach how Staff engineers detect, explain, and prevent mobile regressions.
 
-- ⬜ `observability/slis.md`
-- ⬜ `observability/slos.md`
-- ⬜ `android/observability/crash-monitoring.md`
-- ⬜ `android/performance/anrs.md`
-- ⬜ `android/performance/startup.md`
-- ⬜ `android/performance/jank.md`
+- ✅ `observability/slis.md`
+- ✅ `observability/slos.md`
+- ✅ `android/observability/crash-monitoring.md`
+- ✅ `android/performance/anrs.md`
+- ✅ `android/performance/startup.md`
+- ✅ `android/performance/jank.md`
 
 Why it matters: Staff-level mobile engineering is measured through crash-free users, ANR rate, startup p95/p99, jank, trace propagation, sampling, release dashboards, and privacy-safe telemetry.
 
@@ -504,7 +504,7 @@ In order of impact-per-effort:
 
 ## Blocked — Decisions Needed ✅
 
-All decisions made. Current execution: G9c mobile observability architecture.
+All decisions made. Current execution: G9d release engineering decision trees.
 
 ---
 

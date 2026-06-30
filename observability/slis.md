@@ -167,6 +167,20 @@ Mobile-distinct rules:
 4. **Don't aggregate frame jank globally.** A heavy carousel might be janky by design (expected); a settings page should never be. Per-screen SLIs.
 5. **Cumulative ANRs vs user-perceived ANRs.** Play distinguishes; you should too. User-perceived (within an interactive session) is the stricter measure.
 
+### Ownership matrix
+
+Every SLI needs a named owner and a first mitigation. Otherwise it becomes a dashboard tile nobody trusts.
+
+| SLI | Primary owner | Required slices | First mitigation |
+|---|---|---|---|
+| Crash-free users | Release owner + feature owner | app version, OEM, API level, ABI | Halt rollout, disable feature, hotfix |
+| ANR-free users | Android platform/performance owner | app version, device tier, foreground/background | Halt rollout, revert SDK/init path, ship hotfix |
+| Cold start p95/p99 | App platform owner | app version, device tier, first install vs repeat launch | Hold rollout, defer startup work, update baseline profile |
+| Jank rate | Feature owner | screen, refresh rate, device tier | Disable animation/list feature, reduce composition cost |
+| Critical-flow success | Product feature owner | app version, backend region, network class | Kill switch or backend fallback |
+
+The owner is accountable for the runbook and for deleting or retuning the SLI if it stops driving decisions. "Everyone watches this" usually means no one watches it.
+
 ## Further Reading
 
 - [`slos.md`](slos.md) — How to set targets for your SLIs.

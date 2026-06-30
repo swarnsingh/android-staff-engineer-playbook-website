@@ -144,6 +144,20 @@ When reviewing Crash Monitoring strategy, a Staff engineer focuses on Workflow a
 2.  **Velocity Metrics:** A crash is an incident. I integrate Firebase Crashlytics directly into Jira and Slack via webhooks. If a new crash spikes above 1% of users, it automatically pages the on-call engineer and creates a Jira ticket.
 3.  **Velocity and Rollouts:** When we release v2.0 of the app to the Play Store, we do a Staged Rollout (10% of users). I sit and watch the Crashlytics "Velocity Alert" dashboard. If a new crash appears in the 10% cohort, we halt the rollout instantly, fix the bug, and release v2.0.1. We use 10% of our users as guinea pigs to protect the other 90%.
 
+### Triage policy
+
+Crash triage needs rules before the incident, not during it.
+
+| Signal | Route | First action |
+|---|---|---|
+| New fatal crash in current rollout, growing faster than baseline | Page release owner | Halt rollout and inspect affected feature flags |
+| Existing crash steady across many versions | Backlog with owner | Fix by priority; do not page |
+| Crash isolated to one OEM/API cohort | Release/performance channel | Gate rollout or disable cohort-specific feature |
+| Non-fatal volume spike from expected network/device failures | No page | Move to analytics or sampled telemetry |
+| Crash in checkout/login/onboarding | Page feature owner | Kill switch, server fallback, or hotfix |
+
+Every top crash cluster should have an owner, a first-seen version, a last-seen version, and a decision: fix, monitor, suppress, or accept. Suppression must be rare and documented; otherwise the dashboard becomes a landfill.
+
 ## Common Misconceptions
 
 - **"I caught the exception, so the app didn't crash."** Correct, but the user experience might still be destroyed (e.g., they tapped a button and nothing happened). This is why Non-Fatal logging is critical for tracking "silent" failures.
