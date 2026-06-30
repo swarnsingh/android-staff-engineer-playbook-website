@@ -60,7 +60,7 @@ The team has a budget of 10,000 crashes to "spend" over the next 30 days.
 
 ```mermaid
 graph TD
-    subgraph The Error Budget Loop
+    subgraph "The Error Budget Loop"
         A[New Feature Code] --> B{Check Budget}
         B -->|Budget > 0| C[Deploy to Production]
         B -->|Budget <= 0| D[Feature Freeze / Fix Debt]

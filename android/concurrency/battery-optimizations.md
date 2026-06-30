@@ -56,19 +56,19 @@ The OS uses Machine Learning to place your app into one of five buckets:
 
 ```mermaid
 graph TD
-    subgraph Device State
+    subgraph "Device State"
         Screen[Screen Off] --> Unplugged[Unplugged]
         Unplugged --> Stationary[Stationary]
         Stationary -->|Timer expires| Doze[Deep Doze Mode]
     end
     
-    subgraph Restrictions
+    subgraph "Restrictions"
         Doze -->|Network Drops| NoNet[0 bytes transferred]
         Doze -->|Alarms Deferred| NoWake[WakeLocks Ignored]
         Doze -->|WorkManager Paused| NoJob[Jobs Queued]
     end
     
-    subgraph Maintenance Window
+    subgraph "Maintenance Window"
         Doze -.->|Brief Wakeup| Maint[All Apps Execute Simultaneously]
         Maint -.->|Timer expires| Doze
     end

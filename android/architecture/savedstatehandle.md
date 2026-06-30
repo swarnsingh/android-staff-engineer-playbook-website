@@ -75,12 +75,12 @@ class UserDetailViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
 
 ```mermaid
 graph TD
-    subgraph App Process (Dies & Restarts)
+    subgraph "App Process (Dies & Restarts)"
         VM[ViewModel] -->|Reads/Writes| SSH[SavedStateHandle]
         UI[Activity/Fragment] -->|Observes| VM
     end
     
-    subgraph OS Core (ActivityManager)
+    subgraph "OS Core (ActivityManager)"
         OS_Bundle[System RAM: Bundle]
     end
     

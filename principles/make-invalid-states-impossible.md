@@ -93,13 +93,13 @@ fun processPayment(card: CreditCardNumber) { ... }
 
 ```mermaid
 graph TD
-    subgraph The Old Way (Validation)
+    subgraph "The Old Way (Validation)"
         A1[Raw Input] --> B1[Validation Logic]
         B1 -->|Pass| C1[Business Logic]
         B1 -->|Fail| D1[Throw Runtime Exception]
     end
     
-    subgraph The New Way (Structural Safety)
+    subgraph "The New Way (Structural Safety)"
         A2[Raw Input] --> B2[Constructor / Factory]
         B2 -->|Fail| E2[Return Null / Error Type]
         B2 -->|Pass| C2[Strongly Typed Object]

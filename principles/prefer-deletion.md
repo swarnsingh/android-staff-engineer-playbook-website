@@ -67,7 +67,7 @@ If the "new checkout" has been live for 100% of users for 6 months, the `launchL
 
 ```mermaid
 graph TD
-    subgraph The Bloated App
+    subgraph "The Bloated App"
         FeatureA[Feature A]
         FeatureB[Feature B: Unused but maintained]
         FeatureC[Feature C: 2% Usage]
@@ -78,7 +78,7 @@ graph TD
         FeatureC --- Lib
     end
     
-    subgraph The Lean App
+    subgraph "The Lean App"
         FeatureA2[Feature A]
         FeatureA2 --- SmallLib[Tiny, specific util function]
     end

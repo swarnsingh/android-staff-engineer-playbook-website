@@ -58,7 +58,7 @@ This is the most common SLI in mobile engineering.
 
 ```mermaid
 graph TD
-    subgraph Mobile Client
+    subgraph "Mobile Client"
         M1[Metric: App Start Time] --> Aggregator
         M2[Metric: Background Syncs] --> Aggregator
         M3[Metric: CPU Usage] --> Aggregator
@@ -67,7 +67,7 @@ graph TD
     
     Aggregator -->|Push| Backend[Observability Platform]
     
-    subgraph SRE Definition
+    subgraph "SRE Definition"
         Backend --> Filter[Filter to User-Facing Metrics]
         Filter --> SLI1["SLI: Startup Time < 1.5s"]
         Filter --> SLI2[SLI: Sync Success Rate]

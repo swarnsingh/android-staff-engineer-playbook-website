@@ -79,7 +79,7 @@ graph TD
         Proxy -->|Marshals Parcel| B_Client[Binder Client API]
     end
     
-    subgraph Linux Kernel
+    subgraph "Linux Kernel"
         B_Client --> Driver[(/dev/binder Kernel Driver)]
         Driver --> B_Server
     end

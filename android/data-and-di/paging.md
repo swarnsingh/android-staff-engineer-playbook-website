@@ -90,15 +90,15 @@ val usersFlow: Flow<PagingData<User>> = Pager(
 
 ```mermaid
 graph TD
-    subgraph UI Layer
+    subgraph "UI Layer"
         UI[LazyColumn]
     end
     
-    subgraph ViewModel
+    subgraph "ViewModel"
         Pager[Pager]
     end
     
-    subgraph Data Layer
+    subgraph "Data Layer"
         RM[RemoteMediator]
         Net[Network API]
         DB[(Room DB)]

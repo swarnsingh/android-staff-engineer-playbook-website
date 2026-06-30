@@ -47,7 +47,7 @@ Used for tracking the User's experience (APIs, UI rendering).
 
 ```mermaid
 graph TD
-    subgraph The Golden Dashboard (Top-Down)
+    subgraph "The Golden Dashboard (Top-Down)"
         Row1[Row 1: High Level SLIs] -->|R.E.D. Metrics| OverallHealth[App Crash Rate, API Success Rate]
         
         Row1 --> Row2

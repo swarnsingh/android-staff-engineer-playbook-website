@@ -82,7 +82,7 @@ class ProfileViewModel(
 
 ```mermaid
 graph TD
-    subgraph Inheritance Pattern
+    subgraph "Inheritance Pattern"
         Base[BaseActivity]
         Net[NetworkActivity]
         Auth[AuthActivity]
@@ -93,7 +93,7 @@ graph TD
         Net --> AuthNet
     end
     
-    subgraph Composition Pattern
+    subgraph "Composition Pattern"
         Act[Activity]
         AuthMod[Authenticator]
         NetMod[NetworkClient]

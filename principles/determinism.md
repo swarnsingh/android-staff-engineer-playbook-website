@@ -84,12 +84,12 @@ fun increment() {
 
 ```mermaid
 graph TD
-    subgraph Pure Function (Deterministic)
+    subgraph "Pure Function (Deterministic)"
         In1[Input Data] --> F1((Function))
         F1 --> Out1[Predictable Output]
     end
     
-    subgraph Impure Function (Non-Deterministic)
+    subgraph "Impure Function (Non-Deterministic)"
         In2[Input Data] --> F2((Function))
         Time[Hidden State: System.currentTime] -.-> F2
         F2 --> Out2[Random Output]

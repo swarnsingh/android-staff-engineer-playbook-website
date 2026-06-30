@@ -89,14 +89,14 @@ viewModelScope.launch(TraceContextElement(UUID.randomUUID().toString())) {
 
 ```mermaid
 graph TD
-    subgraph Trace: User Checkout (ID: 1234)
+    subgraph "Trace: User Checkout (ID: 1234)"
         A[Span: UI Click] --> B
         B[Span: Validate Cart] -->|Suspends| C[Span: DB Read]
         C -->|Resumes| D[Span: Payment API]
         D --> E[Span: Update UI]
     end
     
-    subgraph Observability Backend
+    subgraph "Observability Backend"
         TraceData[Trace 1234 Data] --> Visualizer[Gantt Chart UI]
     end
 ```

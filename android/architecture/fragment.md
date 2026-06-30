@@ -78,10 +78,10 @@ class MyFragment : Fragment() {
 
 ```mermaid
 graph TD
-    subgraph The Activity
+    subgraph "The Activity"
         AM[ActivityManager] -->|Creates| Act[MainActivity]
         
-        subgraph The FragmentManager
+        subgraph "The FragmentManager"
             Act --> FM[supportFragmentManager]
             FM -->|FragmentTransaction| F1[Fragment A: Feed]
             FM -->|FragmentTransaction| F2[Fragment B: Details]

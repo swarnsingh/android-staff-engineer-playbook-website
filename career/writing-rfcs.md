@@ -165,7 +165,7 @@ sequenceDiagram
     Payment-->>BFF: 200 OK
     BFF->>BFF: persist (abc, response)
     BFF-->>Client: 200 OK
-    Note over Client: network drops; client retries
+    Note over Client: network drops, client retries
     Client->>BFF: POST /v1/order (Idempotency-Key: abc)
     BFF->>BFF: dedupe check: abc already seen
     BFF-->>Client: 200 OK (cached response)

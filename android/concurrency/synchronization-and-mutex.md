@@ -74,7 +74,7 @@ Under the hood, `Mutex` maintains a Queue of `Continuations`.
 
 ```mermaid
 graph TD
-    subgraph Coroutine Mutex
+    subgraph "Coroutine Mutex"
         Lock[Mutex Lock]
         Q[Suspended Continuation Queue]
         
@@ -85,7 +85,7 @@ graph TD
         Lock -.->|Releases & Resumes| Q
     end
     
-    subgraph Thread Blocking (Legacy)
+    subgraph "Thread Blocking (Legacy)"
         Sync[Synchronized Block]
         T1[Thread 1] -->|Acquires| Sync
         T2[Thread 2] -->|HALTED BY OS| Sync

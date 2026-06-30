@@ -83,13 +83,13 @@ suspend fun fetchUser(id: String) {
 
 ```mermaid
 graph TD
-    subgraph Apollo Build Time
+    subgraph "Apollo Build Time"
         Schema[schema.graphqls] --> KSP[Apollo Gradle Plugin]
         Query[GetUserProfile.graphql] --> KSP
         KSP -->|Generates| KT[GetUserProfileQuery.kt]
     end
     
-    subgraph Apollo Runtime
+    subgraph "Apollo Runtime"
         Client[ApolloClient] -->|Executes Query| Server[(GraphQL Backend)]
         Server -.->|Exact JSON| Client
         Client -->|Parses via| KT

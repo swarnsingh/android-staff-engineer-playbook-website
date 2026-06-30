@@ -55,14 +55,14 @@ $10\% / 0.1\% = 100\text{x Burn Rate}$.
 
 ```mermaid
 graph TD
-    subgraph Mobile Client
+    subgraph "Mobile Client"
         Logs[Firebase Crashlytics] --> Aggregator
         Metrics[Datadog Metrics] --> Aggregator
     end
     
     Aggregator --> Engine[Alert Evaluation Engine]
     
-    subgraph Alert Routing
+    subgraph "Alert Routing"
         Engine -->|1x Burn Rate| Null[Do Nothing]
         Engine -->|10x Burn Rate| Slack[Slack: #eng-mobile-alerts]
         Engine -->|1000x Burn Rate| PD[PagerDuty: Call On-Call Engineer]

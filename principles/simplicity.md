@@ -77,14 +77,14 @@ As the saying goes: **"A little duplication is cheaper than the wrong abstractio
 
 ```mermaid
 graph TD
-    subgraph The Complex Way
+    subgraph "The Complex Way"
         A1[Screen] --> B1[Generic Base Interactor]
         B1 --> C1[Dynamic Proxy Mapper]
         C1 --> D1[Abstract Repository]
         D1 --> E1[Database]
     end
     
-    subgraph The Simple Way
+    subgraph "The Simple Way"
         A2[Screen] --> B2[Specific Use Case]
         B2 --> C2[Specific Repository]
         C2 --> D2[Database]

@@ -50,18 +50,18 @@ Think of Real-Time communication as **Getting news from a Friend**.
 
 ```mermaid
 graph TD
-    subgraph Client Initiated (Request/Response)
+    subgraph "Client Initiated (Request/Response)"
         Poll[Short Polling] -->|Ask... Wait... Ask| S1[Server]
         LongPoll[Long Polling] -->|Ask... Hold... Respond| S1
     end
     
-    subgraph Persistent Connections
-        SSE[Server-Sent Events] <--|Server Streams Data Down| S2[Server]
-        WS[WebSockets] <-->|Bidirectional Binary| S2
+    subgraph "Persistent Connections"
+        SSE[Server-Sent Events] -- "Server Streams Data Down" --> S2[Server]
+        WS[WebSockets] -- "Bidirectional Binary" --> S2
     end
     
-    subgraph OS Managed
-        App[Android App] <--|Wakes Up via Intent| FCM[Google Play Services]
+    subgraph "OS Managed"
+        App[Android App] -- "Wakes Up via Intent" --> FCM[Google Play Services]
         S3[Server] -->|HTTP POST| FCM
     end
 ```

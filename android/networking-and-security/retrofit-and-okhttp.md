@@ -71,18 +71,18 @@ There are two types of Interceptors:
 
 ```mermaid
 graph TD
-    subgraph Retrofit Layer
+    subgraph "Retrofit Layer"
         API[Kotlin @GET Interface] -->|Serialization| Moshi[Moshi Converter]
         Moshi -->|Generates| Req[OkHttp Request]
     end
     
-    subgraph OkHttp Interceptor Chain
+    subgraph "OkHttp Interceptor Chain"
         Req --> AppInt[Application Interceptor: Logging/Auth]
         AppInt --> Cache[Cache Interceptor: Checks local DB]
         Cache --> NetInt[Network Interceptor: GZIP/Stetho]
     end
     
-    subgraph The Internet
+    subgraph "The Internet"
         NetInt -->|TCP/TLS| Server[(Backend Server)]
     end
     

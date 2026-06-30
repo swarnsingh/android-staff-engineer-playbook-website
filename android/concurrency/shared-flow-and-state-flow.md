@@ -79,7 +79,7 @@ If the buffer is totally full and a new emission occurs, the `onBufferOverflow` 
 
 ```mermaid
 graph TD
-    subgraph ViewModel
+    subgraph "ViewModel"
         Cold[Cold Flow from Repo]
         
         Cold -->|stateIn| SF[StateFlow]
@@ -88,7 +88,7 @@ graph TD
         SF -->|Always holds 1 Value| Val[Current UI State]
     end
     
-    subgraph UI Layer
+    subgraph "UI Layer"
         SF -.->|collectAsState| Screen1[Compose Screen]
         ShF -.->|LaunchedEffect| Event[Navigation Event]
         

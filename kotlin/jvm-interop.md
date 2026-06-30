@@ -332,7 +332,7 @@ fun readConfig(): Config = File("config").readText().let { parse(it) }
 ```mermaid
 flowchart TB
     subgraph KT["Kotlin source"]
-        KFun["fun greet(n: String = \"world\")"]
+        KFun["fun greet(n: String = 'world')"]
         KObj["object Singleton"]
         KComp["companion object"]
         KProp["val name: String"]
@@ -347,7 +347,7 @@ flowchart TB
     end
 
     subgraph Java["Java caller experience"]
-        JStatic["UtilKt.greet(\"world\")"]
+        JStatic["UtilKt.greet('world')"]
         JInst["Singleton.INSTANCE.doThing()"]
         JComp["Foo.Companion.doThing()"]
         JGet["user.getName()"]

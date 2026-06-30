@@ -89,16 +89,16 @@ fun Counter() {
 
 ```mermaid
 graph TD
-    subgraph ViewModel
+    subgraph "ViewModel"
         State[StateFlow]
     end
     
-    subgraph UI Layer
+    subgraph "UI Layer"
         Screen[Screen Composable]
         Button[Button Composable]
     end
     
-    State -.->|collectAsState()| Screen
+    State -. "collectAsState()" .-> Screen
     Screen -->|Passes State| Button
     Button -->|User Clicks| Event[Intent]
     Event -->|Mutates| State

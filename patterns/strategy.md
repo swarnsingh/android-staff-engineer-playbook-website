@@ -135,9 +135,9 @@ This is the true power of the Strategy pattern: `AlgorithmicSorter` requires a `
 ```mermaid
 flowchart TD
     Context[Context] -->|Delegates algorithm to| StrategyInterface[Strategy Interface]
-    StrategyInterface <.. ConcreteA[Concrete Strategy A]
-    StrategyInterface <.. ConcreteB[Concrete Strategy B]
-    StrategyInterface <.. ConcreteC[Concrete Strategy C]
+    StrategyInterface -.-> ConcreteA[ConcreteStrategyA]
+    StrategyInterface -.-> ConcreteB[ConcreteStrategyB]
+    StrategyInterface -.-> ConcreteC[Concrete Strategy C]
     
     classDef core fill:#d4edda,stroke:#28a745,stroke-width:2px;
     classDef strat fill:#fff3cd,stroke:#ffc107,stroke-width:2px;

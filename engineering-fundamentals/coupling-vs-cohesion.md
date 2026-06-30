@@ -85,7 +85,7 @@ class UserProfileViewModel(
 
 ```mermaid
 graph TD
-    subgraph High Coupling / Low Cohesion
+    subgraph "High Coupling / Low Cohesion"
         A1[Module A] --- B1[Module B]
         A1 --- C1[Module C]
         B1 --- C1
@@ -93,7 +93,7 @@ graph TD
         C1 --- D1
     end
     
-    subgraph Low Coupling / High Cohesion
+    subgraph "Low Coupling / High Cohesion"
         A2[Cart Module]
         B2[Checkout Module]
         A2 -.->|Interface| B2

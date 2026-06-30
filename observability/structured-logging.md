@@ -70,13 +70,13 @@ StructuredLogger.logInfo(telemetry)
 
 ```mermaid
 graph TD
-    subgraph Mobile App
+    subgraph "Mobile App"
         A[Business Logic] -->|Map of Key/Values| B[Structured Facade]
         C[Context Injector] -->|App Version, OS, etc.| B
         B -->|JSON Object| D[Network Sender]
     end
     
-    subgraph Observability Backend
+    subgraph "Observability Backend"
         D --> E[JSON Indexer e.g., Elasticsearch]
         E -->|Instant Query| F[Datadog / Splunk Dashboard]
     end

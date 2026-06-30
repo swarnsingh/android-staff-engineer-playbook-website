@@ -88,13 +88,13 @@ When you try to use this key, the `Cipher` object will throw a `UserNotAuthentic
 
 ```mermaid
 graph TD
-    subgraph Your App (Compromised OS)
+    subgraph "Your App (Compromised OS)"
         App[Auth Repository]
         Prefs[EncryptedSharedPreferences]
         Disk[(XML File on Disk)]
     end
     
-    subgraph Secure Hardware (TEE / StrongBox)
+    subgraph "Secure Hardware (TEE / StrongBox)"
         Chip[Crypto Chip]
         Key[Master Key AES256]
     end

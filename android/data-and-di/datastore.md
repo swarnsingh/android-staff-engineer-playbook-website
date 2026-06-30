@@ -111,12 +111,12 @@ suspend fun setLoggedIn(loggedIn: Boolean) {
 
 ```mermaid
 graph TD
-    subgraph UI Layer
+    subgraph "UI Layer"
         UI[Compose UI]
         VM[ViewModel]
     end
     
-    subgraph Data Layer
+    subgraph "Data Layer"
         Repo[PreferencesRepository]
         DS[(DataStore file)]
     end
@@ -127,7 +127,7 @@ graph TD
     
     UI -->|Intent| VM
     VM -->|viewModelScope.launch| Repo
-    Repo -->|suspend edit()| DS
+    Repo -- "suspend edit()" --> DS
 ```
 
 ## Production Example

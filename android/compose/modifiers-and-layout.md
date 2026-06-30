@@ -75,7 +75,7 @@ During the **Measure/Layout Phase**, Compose traverses this linked list:
 
 ```mermaid
 graph TD
-    subgraph Modifier Chain
+    subgraph "Modifier Chain"
         Pad1[Padding 10dp]
         Bg[Background Red]
         Pad2[Padding 5dp]

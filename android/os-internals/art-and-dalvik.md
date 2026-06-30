@@ -59,23 +59,23 @@ When millions of users use your app, Google Play aggregates their profiles into 
 
 ```mermaid
 graph TD
-    subgraph Development
+    subgraph "Development"
         Kotlin[Kotlin Code] -->|R8 Compiler| DEX[.dex Bytecode]
     end
     
-    subgraph Android Device (Day 1)
+    subgraph "Android Device (Day 1)"
         DEX -->|User Opens App| JIT[JIT Compiler]
         JIT -->|Translates on the fly| CPU[ARM CPU]
         JIT -->|Records usage| Prof[Local Profile]
     end
     
-    subgraph Android Device (Night Time)
+    subgraph "Android Device (Night Time)"
         DEX -.->|dex2oat daemon| AOT[AOT Compiler]
         Prof -.-> AOT
         AOT -.->|Writes Machine Code| ODEX[.odex File]
     end
     
-    subgraph Android Device (Day 2)
+    subgraph "Android Device (Day 2)"
         ODEX -->|Bypasses JIT| CPU
     end
 ```

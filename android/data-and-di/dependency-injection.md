@@ -55,18 +55,18 @@ When you annotate a module with `@InstallIn(SingletonComponent::class)`, you are
 
 ```mermaid
 graph TD
-    subgraph SingletonComponent
+    subgraph "SingletonComponent"
         App[Application]
         DB[(Room Database)]
         Net[Retrofit Network]
     end
     
-    subgraph ViewModelComponent
+    subgraph "ViewModelComponent"
         VM[ViewModel]
         Repo[Repository]
     end
     
-    subgraph ActivityComponent
+    subgraph "ActivityComponent"
         Act[Activity]
     end
     

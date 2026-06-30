@@ -57,10 +57,10 @@ The beautiful part of Nested Graphs is that the *Graph itself* generates a `NavB
 
 ```mermaid
 graph TD
-    subgraph Single Activity
+    subgraph "Single Activity"
         NH[NavHost Container]
         
-        subgraph NavController
+        subgraph "NavController"
             Stack[Backstack]
             E1[Entry: Home] --> E2[Entry: List] --> E3[Entry: Detail]
             Stack -.-> E1
@@ -69,7 +69,7 @@ graph TD
         NH -.->|Displays Top Entry| E3
     end
     
-    subgraph Jetpack Navigation System
+    subgraph "Jetpack Navigation System"
         E3 -.->|Owns| VMO[ViewModelStore]
         VMO -.->|Instantiates| VM[DetailViewModel]
     end

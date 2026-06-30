@@ -87,19 +87,19 @@ When the user downloads your app from Google Play:
 
 ```mermaid
 graph TD
-    subgraph Developer Machine
+    subgraph "Developer Machine"
         Test[Macrobenchmark Test] -->|Automates UI| Device[Test Device]
         Device -->|Records Methods| Txt[baseline-prof.txt]
         Txt -->|Bundled into| APK[Release APK]
     end
     
-    subgraph User Device (Installation)
+    subgraph "User Device (Installation)"
         APK --> Play[Google Play Install]
         Play --> OS[Android OS 'dex2oat']
         OS -->|AOT Compiles| ODEX[Optimized Machine Code]
     end
     
-    subgraph User Device (App Launch)
+    subgraph "User Device (App Launch)"
         User[Taps App Icon] --> ODEX
         ODEX -->|Bypasses JIT| Fast[Instant Startup]
     end

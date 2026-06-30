@@ -89,21 +89,21 @@ override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
 ```mermaid
 graph TD
-    subgraph UI Process
+    subgraph "UI Process"
         Act[Activity]
     end
     
-    subgraph OS Kernel
+    subgraph "OS Kernel"
         Binder[Binder IPC]
     end
     
-    subgraph Service Process
+    subgraph "Service Process"
         Svc[Bound Service]
         Thread[Background Thread]
     end
     
-    Act -->|bindService()| Binder
-    Binder -->|onBind()| Svc
+    Act -- "bindService()" --> Binder
+    Binder -- "onBind()" --> Svc
     Svc -.->|Delegates work| Thread
 ```
 

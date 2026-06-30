@@ -190,7 +190,7 @@ sequenceDiagram
         WS->>Disp: location.ping
         Disp->>R: trip.driver_location_update (WS)
     else Offline
-        Note over Buf: accumulate; flush on reconnect
+        Note over Buf: accumulate, flush on reconnect
     end
 ```
 

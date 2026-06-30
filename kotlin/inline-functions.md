@@ -91,19 +91,19 @@ public final void calculate() {
 
 ```mermaid
 graph TD
-    subgraph Caller Function
+    subgraph "Caller Function"
         Call["val res = myInlineFunc { doWork() }"]
     end
     
-    subgraph Inline Function
+    subgraph "Inline Function"
         Func["inline fun myInlineFunc(block: () -> Unit)"]
-        FuncBody["println "Start" <br> block() <br> println "End""]
+        FuncBody["println 'Start' <br> block() <br> println 'End'"]
     end
     
     FuncBody -.->|Compile-Time Copy/Paste| Call
     
-    subgraph Resulting Bytecode at Caller
-        Byte["println "Start" <br> doWork() <br> println "End""]
+    subgraph "Resulting Bytecode at Caller"
+        Byte["println 'Start' <br> doWork() <br> println 'End'"]
     end
 ```
 

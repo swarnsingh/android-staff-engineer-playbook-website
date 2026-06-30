@@ -60,14 +60,14 @@ When `parentJob.cancel()` is called, it iterates through its internal list of ch
 
 ```mermaid
 graph TD
-    subgraph viewModelScope
+    subgraph "viewModelScope"
         ParentJob[ViewModel Job]
         
-        subgraph fetchDashboardData()
+        subgraph "fetchDashboardData()"
             Launch1[launch: Fetch User]
             Launch2[launch: Fetch Posts]
             
-            subgraph fetchPosts()
+            subgraph "fetchPosts()"
                 Async1[async: Network]
                 Async2[async: Database]
             end

@@ -74,17 +74,17 @@ If you are forced to use JSON, you must choose a parser.
 
 ```mermaid
 graph TD
-    subgraph JSON Payload (5MB Text)
-        J1[{"id": 1, "name": "A"}] -->|Network| J2[Parse JSON String]
+    subgraph "JSON Payload (5MB Text)"
+        J1["{#quot;id#quot;: 1, #quot;name#quot;: #quot;A#quot;}"] -->|Network| J2[Parse JSON String]
         J2 -->|Allocate Strings/Ints| J3[Kotlin Objects]
     end
     
-    subgraph Protobuf Payload (1MB Binary)
+    subgraph "Protobuf Payload (1MB Binary)"
         P1[01 01 02 41] -->|Network| P2[Parse Binary Tags]
         P2 -->|Allocate Strings/Ints| P3[Kotlin Objects]
     end
     
-    subgraph FlatBuffers Payload (1MB Binary)
+    subgraph "FlatBuffers Payload (1MB Binary)"
         F1[Memory Aligned Binary] -->|Network| F2[Memory Map ByteBuffer]
         F2 -.->|Zero Allocation| F3[Direct Pointer Reads]
     end

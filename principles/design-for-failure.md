@@ -75,12 +75,12 @@ val response = retryWithBackoff { api.fetchData() }
 
 ```mermaid
 graph TD
-    subgraph Happy Path Architecture
+    subgraph "Happy Path Architecture"
         UI1[UI] --> Net1[Network Call]
         Net1 -->|Timeout| Crash[App Crash]
     end
     
-    subgraph Designed for Failure
+    subgraph "Designed for Failure"
         UI2[UI] --> Repo[Repository]
         Repo --> Net2[Network Call]
         Net2 -->|Timeout| Catch[Catch Exception]

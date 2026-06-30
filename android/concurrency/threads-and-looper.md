@@ -100,12 +100,12 @@ Thread {
 
 ```mermaid
 graph TD
-    subgraph Background Thread
+    subgraph "Background Thread"
         Worker[Worker Logic]
         Worker -->|handler.post| MQ
     end
     
-    subgraph Main Thread
+    subgraph "Main Thread"
         Looper[Looper Loop] -->|Pulls Task| MQ[(Message Queue)]
         MQ -->|Executes| UI[Update UI]
         UI -->|Loop Repeats| Looper

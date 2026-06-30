@@ -66,19 +66,19 @@ Because `emit` and `collect` are both `suspend` functions, they seamlessly hand 
 
 ```mermaid
 graph LR
-    subgraph Data Layer
+    subgraph "Data Layer"
         DB[(Room DB)] -->|Cold Flow| Flow1["Flow<List<User>>"]
     end
     
-    subgraph Domain Layer
+    subgraph "Domain Layer"
         Flow1 -->|map: filter active| Flow2["Flow<List<ActiveUser>>"]
     end
     
-    subgraph UI Layer (ViewModel)
+    subgraph "UI Layer (ViewModel)"
         Flow2 -->|stateIn: converts to Hot| State["StateFlow<UiState>"]
     end
     
-    subgraph UI Layer (Activity/Compose)
+    subgraph "UI Layer (Activity/Compose)"
         State -.->|collectAsStateWithLifecycle| UI((Screen))
     end
 ```

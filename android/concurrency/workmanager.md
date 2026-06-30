@@ -56,12 +56,12 @@ How does `WorkManager` guarantee execution across reboots? It uses an internal S
 
 ```mermaid
 graph TD
-    subgraph Your App
+    subgraph "Your App"
         UI[ViewModel/UI] -->|enqueue| WM[WorkManager API]
         Worker[CoroutineWorker]
     end
     
-    subgraph WorkManager Internals
+    subgraph "WorkManager Internals"
         WM -->|1. Save State| DB[(Internal Room DB)]
         WM -->|2. Delegate| OS[OS JobScheduler]
     end

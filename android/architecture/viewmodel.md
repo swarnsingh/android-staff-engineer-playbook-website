@@ -64,17 +64,17 @@ The store iterates through all its ViewModels and calls their `onCleared()` meth
 
 ```mermaid
 graph TD
-    subgraph View Layer (Survives Milliseconds)
+    subgraph "View Layer (Survives Milliseconds)"
         Act[Activity / Fragment / Compose UI]
     end
     
-    subgraph State Layer (Survives Rotation)
+    subgraph "State Layer (Survives Rotation)"
         VM[ViewModel]
         State["StateFlow<UiState>"]
         VM --> State
     end
     
-    subgraph Domain/Data Layer (Survives App Lifecycle)
+    subgraph "Domain/Data Layer (Survives App Lifecycle)"
         Repo[Repository]
     end
     

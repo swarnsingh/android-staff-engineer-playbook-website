@@ -85,13 +85,13 @@ println(reference.employees) // Prints [Alice, Bob, Charlie]
 
 ```mermaid
 graph TD
-    subgraph Shared Mutable State
+    subgraph "Shared Mutable State"
         T1[Thread 1] -->|Writes| MS[Mutable Object]
         T2[Thread 2] -->|Reads| MS
         MS -.->|RACE CONDITION| Crash[Data Corruption]
     end
     
-    subgraph Immutable State
+    subgraph "Immutable State"
         T3[Thread 3] -->|Reads| IS[Immutable Object]
         T4[Thread 4] -->|Reads| IS
         T3 -->|Wants to change| IS2[New Immutable Object Copy]

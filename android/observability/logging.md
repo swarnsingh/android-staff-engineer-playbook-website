@@ -94,16 +94,16 @@ If R8 deletes the method call, the Kotlin compiler also deletes the `StringBuild
 
 ```mermaid
 graph TD
-    subgraph Your Code
+    subgraph "Your Code"
         App[Kotlin Code] -->|Timber.d| Timber[Timber Core]
     end
     
-    subgraph Timber Trees
+    subgraph "Timber Trees"
         Timber -->|In Debug Build| DTree[DebugTree]
         Timber -->|In Release Build| RTree[CrashlyticsTree]
     end
     
-    subgraph OS Boundaries
+    subgraph "OS Boundaries"
         DTree -->|Log.d| Logd[(logd daemon ring buffer)]
         RTree -->|Firebase.log| Firebase[(Crashlytics Breadcrumbs)]
     end

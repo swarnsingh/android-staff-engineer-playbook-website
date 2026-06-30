@@ -67,19 +67,19 @@ When the user taps your app icon on the Launcher screen:
 
 ```mermaid
 graph TD
-    subgraph Device Boot
+    subgraph "Device Boot"
         Kernel[Linux Kernel] --> Init[Init Process]
         Init -->|Reads init.rc| Zygote[The Zygote]
         Zygote -->|Preloads| RAM[Shared RAM: ART + Core Classes]
     end
     
-    subgraph App Launches
-        Zygote -.->|fork() 1| SysServer[System Server]
-        Zygote -.->|fork() 2| AppA[WhatsApp]
-        Zygote -.->|fork() 3| AppB[Spotify]
+    subgraph "App Launches"
+        Zygote -. "fork() 1" .-> SysServer[System Server]
+        Zygote -. "fork() 2" .-> AppA[WhatsApp]
+        Zygote -. "fork() 3" .-> AppB[Spotify]
     end
     
-    subgraph Copy-On-Write Memory
+    subgraph "Copy-On-Write Memory"
         SysServer -->|Reads| RAM
         AppA -->|Reads| RAM
         AppB -->|Reads| RAM

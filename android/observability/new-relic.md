@@ -71,7 +71,7 @@ Because of this automated weaving, you get 100% visibility into every network ca
 
 ```mermaid
 graph TD
-    subgraph Android Application
+    subgraph "Android Application"
         UI[UI Thread]
         Net[OkHttp / Network]
         Mem[Memory Allocator]
@@ -83,8 +83,8 @@ graph TD
         Mem -.->|OOM Warnings| NR_SDK
     end
     
-    subgraph New Relic Cloud
-        NR_SDK -->|Batch Upload (HTTPS)| Ingest[Ingestion Engine]
+    subgraph "New Relic Cloud"
+        NR_SDK -- "Batch Upload (HTTPS)" --> Ingest[Ingestion Engine]
         Ingest --> DB[(NRDB Time-Series Database)]
         DB --> Dash[Web Dashboard / Alerts]
     end

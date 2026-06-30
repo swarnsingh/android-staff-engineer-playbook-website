@@ -70,13 +70,13 @@ The compiler generates Kotlin/Java classes from this file. The resulting payload
 
 ```mermaid
 graph LR
-    subgraph Backend Server (Go/Java)
+    subgraph "Backend Server (Go/Java)"
         Mem1[In-Memory Object] -->|Serialize| Flat[JSON String / Byte Array]
     end
     
     Flat -->|Network Transmission| Mobile
     
-    subgraph Mobile Client (Kotlin)
+    subgraph "Mobile Client (Kotlin)"
         Mobile[Flat Byte Stream] -->|Deserialize| Mem2[In-Memory Object]
     end
     

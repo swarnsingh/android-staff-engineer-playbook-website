@@ -94,12 +94,12 @@ If Developer Bob pulls Alice's branch and hits "Build", Bob's Gradle calculates 
 
 ```mermaid
 graph TD
-    subgraph Configuration Phase
+    subgraph "Configuration Phase"
         B1[app/build.gradle] -->|Evaluated| DAG[Task Graph]
         B2[library/build.gradle] -->|Evaluated| DAG
     end
     
-    subgraph Execution Phase
+    subgraph "Execution Phase"
         DAG --> T1[Task: compileKotlin]
         DAG --> T2[Task: mergeResources]
         

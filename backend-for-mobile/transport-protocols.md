@@ -70,14 +70,14 @@ gRPC is a framework built on top of HTTP/2 that transmits Protobufs. It is heavi
 
 ```mermaid
 graph TD
-    subgraph TCP / HTTP/2
+    subgraph "TCP / HTTP/2"
         TCP_C[Client] -->|Handshake 1| TCP_S[Server]
         TCP_C -->|TLS Handshake 2| TCP_S
         TCP_C -.->|Packet Loss| TCP_S
         TCP_C -.->|Entire Connection Frozen| TCP_S
     end
     
-    subgraph UDP / HTTP/3 QUIC
+    subgraph "UDP / HTTP/3 QUIC"
         UDP_C[Client] -->|Single Handshake| UDP_S[Server]
         UDP_C -.->|Packet Loss| UDP_S
         UDP_C -->|Other Streams Unaffected| UDP_S

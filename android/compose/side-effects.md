@@ -84,13 +84,13 @@ If the user hits the Back Button and leaves the screen, Compose cancels the Coro
 
 ```mermaid
 graph TD
-    subgraph Compose UI
+    subgraph "Compose UI"
         Screen[Screen Composable]
         Button[Button]
         LE[LaunchedEffect]
     end
     
-    subgraph Coroutine Scope
+    subgraph "Coroutine Scope"
         Job1[Suspend Function Job]
     end
     

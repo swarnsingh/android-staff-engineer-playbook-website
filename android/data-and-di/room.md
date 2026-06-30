@@ -58,12 +58,12 @@ Under the hood, Room wraps this query in an `InvalidationTracker`. Whenever an `
 
 ```mermaid
 graph TD
-    subgraph UI Layer
+    subgraph "UI Layer"
         UI[Jetpack Compose]
         VM[ViewModel]
     end
     
-    subgraph Data Layer
+    subgraph "Data Layer"
         Repo[Repository]
         Room[(Room Database)]
         Net[Retrofit Network]

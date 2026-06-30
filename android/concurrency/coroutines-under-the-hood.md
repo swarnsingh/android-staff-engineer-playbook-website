@@ -101,12 +101,12 @@ Calling `.resume()` literally just calls `fetchAndShowUser(sm)` *again*. But bec
 
 ```mermaid
 graph TD
-    subgraph Thread Pool (Dispatchers.IO)
+    subgraph "Thread Pool (Dispatchers.IO)"
         T1[Thread 1]
         T2[Thread 2]
     end
     
-    subgraph The State Machine (Continuation)
+    subgraph "The State Machine (Continuation)"
         State0[Label 0: Start] --> Suspend1[Return COROUTINE_SUSPENDED]
         Resume1[Resume with User] --> State1[Label 1: Print User]
         State1 --> Suspend2[Return COROUTINE_SUSPENDED]
@@ -116,7 +116,7 @@ graph TD
     T1 -->|Executes| State0
     Suspend1 -.->|Thread 1 is freed!| T1
     
-    T2 -->|Network Callback calls resume()| Resume1
+    T2 -- "Network Callback calls resume()" --> Resume1
     Suspend2 -.->|Thread 2 is freed!| T2
 ```
 

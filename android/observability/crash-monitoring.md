@@ -76,7 +76,7 @@ Crashlytics handles this by using low-level Linux signal handlers (`sigaction`).
 
 ```mermaid
 graph TD
-    subgraph Android Device
+    subgraph "Android Device"
         App[Your App Code] -->|Throws Exception| Handler[Thread.UncaughtExceptionHandler]
         Handler -->|Writes to| Disk[(Local Disk)]
         
@@ -84,7 +84,7 @@ graph TD
         Restart -->|Uploads Payload| Firebase[Firebase Servers]
     end
     
-    subgraph Firebase Cloud
+    subgraph "Firebase Cloud"
         Firebase --> Deobfuscate[De-obfuscation Engine]
         Map[mapping.txt from CI/CD] --> Deobfuscate
         Deobfuscate --> Dash[Crashlytics Dashboard]

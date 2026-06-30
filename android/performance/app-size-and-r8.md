@@ -66,7 +66,7 @@ Code is only half the battle. Images and XML layouts are huge. If you enable `sh
 
 ```mermaid
 graph TD
-    subgraph Gradle Build
+    subgraph "Gradle Build"
         Code[Kotlin/Java Code] --> Javac[KotlinC / Javac]
         Javac --> Classes[.class files]
         Libs[3rd Party AARs] --> Classes
@@ -75,7 +75,7 @@ graph TD
         Rules[proguard-rules.pro] --> R8
     end
     
-    subgraph R8 Output
+    subgraph "R8 Output"
         R8 -->|Shrinks/Obfuscates/Optimizes| DEX[.dex files]
         R8 -->|Generates mapping| Map[mapping.txt]
     end

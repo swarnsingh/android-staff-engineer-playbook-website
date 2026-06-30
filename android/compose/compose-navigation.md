@@ -128,17 +128,17 @@ Five screens that belong together → nested graph. Lets you scope shared ViewMo
 
 ```mermaid
 graph TD
-    subgraph Routes
+    subgraph "Routes"
         R1[object Home]
         R2[data class Profile]
     end
 
-    subgraph Navigation Layer
+    subgraph "Navigation Layer"
         NC[NavController]
         NH[NavHost]
     end
 
-    subgraph UI Layer
+    subgraph "UI Layer"
         HomeScrn[Home Composable]
         ProfScrn[Profile Composable]
     end
