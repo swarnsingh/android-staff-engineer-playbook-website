@@ -464,6 +464,6 @@ On JVM, test methods can run in any order (unless you use `@TestMethodOrder`). O
 ## Further Reading
 
 - [`ci-cd-for-kmp.md`](ci-cd-for-kmp.md) — How to configure macOS GitHub Action runners to execute `iosSimulatorArm64Test`.
-- [`../../android/testing/unit-testing.md`](../../android/testing/unit-testing.md) — The JVM testing strategies (JUnit, MockK, Turbine) for Android-only code.
-- [`networking-with-ktor.md`](networking-with-ktor.md) — The `MockEngine` for testing Ktor HTTP calls.
-- [`dependency-injection.md`](dependency-injection.md) — How DI enables Fake injection in tests.
+- [`../../android/testing/unit-testing.md`](../../testing/unit-testing.md) — The JVM testing strategies (JUnit, MockK, Turbine) for Android-only code.
+- [`networking-with-ktor.md`](../ecosystem/networking-with-ktor.md) — The `MockEngine` for testing Ktor HTTP calls.
+- [`dependency-injection.md`](../ecosystem/dependency-injection.md) — How DI enables Fake injection in tests.

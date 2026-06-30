@@ -348,8 +348,8 @@ struct CheckoutScreen: View {
 
 ## Further Reading
 
-- [`architecture-and-module-boundaries.md`](architecture-and-module-boundaries.md) — The architectural end-state you are migrating towards.
-- [`ios-distribution.md`](ios-distribution.md) — How to hide the build system from the iOS team via SPM.
-- [`swift-interop.md`](swift-interop.md) — How SKIE makes the shared API pleasant for iOS engineers.
-- [`libraries-ecosystem.md`](libraries-ecosystem.md) — The exact library swaps required during Phase 2 and Phase 3.
+- [`architecture-and-module-boundaries.md`](../foundations/architecture-and-module-boundaries.md) — The architectural end-state you are migrating towards.
+- [`ios-distribution.md`](../tooling/ios-distribution.md) — How to hide the build system from the iOS team via SPM.
+- [`swift-interop.md`](../tooling/swift-interop.md) — How SKIE makes the shared API pleasant for iOS engineers.
+- [`libraries-ecosystem.md`](../ecosystem/libraries-ecosystem.md) — The exact library swaps required during Phase 2 and Phase 3.
 - [`ci-cd-for-kmp.md`](ci-cd-for-kmp.md) — Setting up the macOS CI infrastructure (Phase 0).

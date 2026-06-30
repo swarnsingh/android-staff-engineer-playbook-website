@@ -423,6 +423,6 @@ Without `@Throws`, Swift's `try` won't catch the exception — it will crash the
 ## Further Reading
 
 - [`ios-distribution.md`](ios-distribution.md) — How the SKIE-enhanced framework is packaged into an `.xcframework`.
-- [`concurrency-and-memory.md`](concurrency-and-memory.md) — The K/Native memory model and how it interacts with Swift ARC during StateFlow collection.
-- [`overview-and-k1-vs-k2.md`](overview-and-k1-vs-k2.md) — How K2's architecture enables Direct Swift Export.
-- [`architecture-and-module-boundaries.md`](architecture-and-module-boundaries.md) — Designing the KMP API surface to be "Swift-friendly" from the start.
+- [`concurrency-and-memory.md`](../production/concurrency-and-memory.md) — The K/Native memory model and how it interacts with Swift ARC during StateFlow collection.
+- [`overview-and-k1-vs-k2.md`](../foundations/overview-and-k1-vs-k2.md) — How K2's architecture enables Direct Swift Export.
+- [`architecture-and-module-boundaries.md`](../foundations/architecture-and-module-boundaries.md) — Designing the KMP API surface to be "Swift-friendly" from the start.

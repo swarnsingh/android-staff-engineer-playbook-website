@@ -249,4 +249,4 @@ Your `commonMain` business logic calls `crashReporter.recordException(e)` withou
 - [`networking-with-ktor.md`](networking-with-ktor.md) — Deep dive into the Ktor Client (the Retrofit replacement).
 - [`persistence.md`](persistence.md) — Deep dive into SQLDelight (the Room replacement) and Multiplatform Settings.
 - [`dependency-injection.md`](dependency-injection.md) — Koin as the Hilt/Dagger replacement, with the "androidMain Escape Hatch" pattern.
-- [`build-system-and-source-sets.md`](build-system-and-source-sets.md) — How Gradle resolves KMP library artifacts via `.module` metadata.
+- [`build-system-and-source-sets.md`](../tooling/build-system-and-source-sets.md) — How Gradle resolves KMP library artifacts via `.module` metadata.

@@ -478,6 +478,6 @@ The `Darwin` engine doesn't just wrap `NSURLSession` — it inherits all of Appl
 ## Further Reading
 
 - [`libraries-ecosystem.md`](libraries-ecosystem.md) — Why Retrofit can't be used in `commonMain` (the JVM dependency trap).
-- [`../../android/networking-and-security/ktor-vs-retrofit.md`](../../android/networking-and-security/ktor-vs-retrofit.md) — The detailed Android-focused decision file comparing Retrofit and Ktor.
+- [`../../android/networking-and-security/ktor-vs-retrofit.md`](../../networking-and-security/ktor-vs-retrofit.md) — The detailed Android-focused decision file comparing Retrofit and Ktor.
 - [`dependency-injection.md`](dependency-injection.md) — How to inject the platform-specific `HttpClientEngine` via Koin.
-- [`build-system-and-source-sets.md`](build-system-and-source-sets.md) — Where to put `ktor-client-okhttp` (androidMain) vs `ktor-client-darwin` (iosMain) dependencies.
+- [`build-system-and-source-sets.md`](../tooling/build-system-and-source-sets.md) — Where to put `ktor-client-okhttp` (androidMain) vs `ktor-client-darwin` (iosMain) dependencies.

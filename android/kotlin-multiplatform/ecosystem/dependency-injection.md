@@ -408,8 +408,8 @@ java.lang.StackOverflowError: Circular dependency detected for type 'RepositoryA
 
 ## Further Reading
 
-- [`../../android/data-and-di/hilt-vs-koin-vs-manual-di.md`](../../android/data-and-di/hilt-vs-koin-vs-manual-di.md) — The comprehensive Android DI comparison (Hilt vs Koin vs Manual).
-- [`architecture-and-module-boundaries.md`](architecture-and-module-boundaries.md) — The Inversion of Control pattern that DI implements.
+- [`../../android/data-and-di/hilt-vs-koin-vs-manual-di.md`](../../data-and-di/hilt-vs-koin-vs-manual-di.md) — The comprehensive Android DI comparison (Hilt vs Koin vs Manual).
+- [`architecture-and-module-boundaries.md`](../foundations/architecture-and-module-boundaries.md) — The Inversion of Control pattern that DI implements.
 - [`persistence.md`](persistence.md) — Why `SqlDriver` requires DI to inject the Android `Context`.
 - [`networking-with-ktor.md`](networking-with-ktor.md) — Why `HttpClientEngine` requires DI to inject platform-specific engines.
-- [`swift-interop.md`](swift-interop.md) — Why `reified` generics don't bridge to Swift.
+- [`swift-interop.md`](../tooling/swift-interop.md) — Why `reified` generics don't bridge to Swift.

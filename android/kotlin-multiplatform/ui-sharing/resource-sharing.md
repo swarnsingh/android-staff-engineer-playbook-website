@@ -405,6 +405,6 @@ The Compose Resources Gradle plugin processes all files in `composeResources/` o
 ## Further Reading
 
 - [`compose-multiplatform.md`](compose-multiplatform.md) — How the UI layer consumes these resources via Skia.
-- [`ios-distribution.md`](ios-distribution.md) — How resource bytes are packaged into the `.xcframework`.
-- [`build-system-and-source-sets.md`](build-system-and-source-sets.md) — Configuring the Compose Resources Gradle plugin.
-- [`../../mobile-system-design/localization-and-internationalization.md`](../../mobile-system-design/localization-and-internationalization.md) — Large-scale localization strategy beyond string files.
+- [`ios-distribution.md`](../tooling/ios-distribution.md) — How resource bytes are packaged into the `.xcframework`.
+- [`build-system-and-source-sets.md`](../tooling/build-system-and-source-sets.md) — Configuring the Compose Resources Gradle plugin.
+- [`../../mobile-system-design/localization-and-internationalization.md`](../../../mobile-system-design/localization-and-internationalization.md) — Large-scale localization strategy beyond string files.

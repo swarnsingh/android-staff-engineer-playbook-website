@@ -411,7 +411,7 @@ If `androidMain` uses OkHttp 4.12.0 and `commonMain` pulls in a transitive Ktor 
 
 ## Further Reading
 
-- [`overview-and-k1-vs-k2.md`](overview-and-k1-vs-k2.md) — The K2 compiler that processes this Gradle configuration.
+- [`overview-and-k1-vs-k2.md`](../foundations/overview-and-k1-vs-k2.md) — The K2 compiler that processes this Gradle configuration.
 - [`ios-distribution.md`](ios-distribution.md) — How the `framework {}` block output is consumed by Xcode via SPM or CocoaPods.
-- [`../../android/os-internals/convention-plugins.md`](../../android/os-internals/convention-plugins.md) — The Android convention plugin patterns that extend to KMP.
-- [`../../android/os-internals/gradle-and-build-systems.md`](../../android/os-internals/gradle-and-build-systems.md) — Deep dive into Gradle's task graph and configuration avoidance.
+- [`../../android/os-internals/convention-plugins.md`](../../os-internals/convention-plugins.md) — The Android convention plugin patterns that extend to KMP.
+- [`../../android/os-internals/gradle-and-build-systems.md`](../../os-internals/gradle-and-build-systems.md) — Deep dive into Gradle's task graph and configuration avoidance.

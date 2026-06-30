@@ -378,7 +378,7 @@ Without this, you'll see `OutOfMemoryError: Java heap space` during framework li
 
 ## Further Reading
 
-- [`ios-distribution.md`](ios-distribution.md) — The three distribution methods (CocoaPods, SPM, Direct Xcode) that CI must support.
+- [`ios-distribution.md`](../tooling/ios-distribution.md) — The three distribution methods (CocoaPods, SPM, Direct Xcode) that CI must support.
 - [`testing-and-mocking.md`](testing-and-mocking.md) — The `iosSimulatorArm64Test` task that runs in Pipeline A.
-- [`build-system-and-source-sets.md`](build-system-and-source-sets.md) — The `framework {}` block configuration that produces the XCFramework.
-- [`../../release-engineering/ci-cd-for-mobile.md`](../../release-engineering/ci-cd-for-mobile.md) — General mobile CI/CD practices (Fastlane, code signing).
+- [`build-system-and-source-sets.md`](../tooling/build-system-and-source-sets.md) — The `framework {}` block configuration that produces the XCFramework.
+- [`../../release-engineering/ci-cd-for-mobile.md`](../../../release-engineering/ci-cd-for-mobile.md) — General mobile CI/CD practices (Fastlane, code signing).

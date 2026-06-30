@@ -331,8 +331,8 @@ On Android, you control the status bar color via `WindowCompat`. On iOS via CMP,
 
 ## Further Reading
 
-- [`../../android/compose/compose-runtime.md`](../../android/compose/compose-runtime.md) — How the Compose compiler transforms `@Composable` functions (identical on iOS).
-- [`../../android/compose/recomposition-and-state.md`](../../android/compose/recomposition-and-state.md) — Recomposition mechanics (identical on iOS).
-- [`../../android/performance/rendering.md`](../../android/performance/rendering.md) — Android RenderThread vs CMP's Skia pipeline.
+- [`../../android/compose/compose-runtime.md`](../../compose/compose-runtime.md) — How the Compose compiler transforms `@Composable` functions (identical on iOS).
+- [`../../android/compose/recomposition-and-state.md`](../../compose/recomposition-and-state.md) — Recomposition mechanics (identical on iOS).
+- [`../../android/performance/rendering.md`](../../performance/rendering.md) — Android RenderThread vs CMP's Skia pipeline.
 - [`resource-sharing.md`](resource-sharing.md) — How shared strings, fonts, and images are loaded in CMP.
-- [`swift-interop.md`](swift-interop.md) — How the CMP `UIViewController` is created and embedded in SwiftUI.
+- [`swift-interop.md`](../tooling/swift-interop.md) — How the CMP `UIViewController` is created and embedded in SwiftUI.

@@ -399,5 +399,5 @@ suspend fun setDarkMode(enabled: Boolean) {
 
 - [`libraries-ecosystem.md`](libraries-ecosystem.md) — Why Room and SharedPreferences cannot be used in `commonMain`.
 - [`dependency-injection.md`](dependency-injection.md) — How to inject the platform-specific `SqlDriver` via Koin.
-- [`build-system-and-source-sets.md`](build-system-and-source-sets.md) — Configuring the SQLDelight Gradle plugin in the KMP module.
-- [`adoption-and-migration.md`](adoption-and-migration.md) — The Room → SQLDelight migration guide (Phase 3).
+- [`build-system-and-source-sets.md`](../tooling/build-system-and-source-sets.md) — Configuring the SQLDelight Gradle plugin in the KMP module.
+- [`adoption-and-migration.md`](../production/adoption-and-migration.md) — The Room → SQLDelight migration guide (Phase 3).

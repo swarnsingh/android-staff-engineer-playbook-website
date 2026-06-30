@@ -289,5 +289,5 @@ Now Swift sees `User` directly, not `SharedCodeUser`.
 
 - [`swift-interop.md`](swift-interop.md) — Deep dive into the Objective-C bridge limitations shown in the header mapping table above.
 - [`build-system-and-source-sets.md`](build-system-and-source-sets.md) — The `framework {}` block configuration that drives framework generation.
-- [`ci-cd-for-kmp.md`](ci-cd-for-kmp.md) — Automating the SPM pipeline (XCFramework → zip → upload → Package.swift update).
-- [`overview-and-k1-vs-k2.md`](overview-and-k1-vs-k2.md) — How K2's Direct Swift Export will eventually replace the Objective-C header entirely.
+- [`ci-cd-for-kmp.md`](../production/ci-cd-for-kmp.md) — Automating the SPM pipeline (XCFramework → zip → upload → Package.swift update).
+- [`overview-and-k1-vs-k2.md`](../foundations/overview-and-k1-vs-k2.md) — How K2's Direct Swift Export will eventually replace the Objective-C header entirely.

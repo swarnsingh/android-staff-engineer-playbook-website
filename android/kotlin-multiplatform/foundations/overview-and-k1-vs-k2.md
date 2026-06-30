@@ -343,7 +343,7 @@ Kotlin/Native handles `lateinit` differently than the JVM. On the JVM, accessing
 ## Further Reading
 
 - [`architecture-and-module-boundaries.md`](architecture-and-module-boundaries.md) — How to decide what goes in `commonMain` vs the native apps.
-- [`build-system-and-source-sets.md`](build-system-and-source-sets.md) — The Gradle configuration that defines the source set hierarchy.
-- [`ios-distribution.md`](ios-distribution.md) — How the Kotlin/Native output (the `.xcframework`) is consumed by Xcode.
-- [`concurrency-and-memory.md`](concurrency-and-memory.md) — How the JVM GC and the Kotlin/Native GC differ fundamentally.
-- [`swift-interop.md`](swift-interop.md) — The Objective-C bridge limitations that K2's Direct Swift Export aims to eliminate.
+- [`build-system-and-source-sets.md`](../tooling/build-system-and-source-sets.md) — The Gradle configuration that defines the source set hierarchy.
+- [`ios-distribution.md`](../tooling/ios-distribution.md) — How the Kotlin/Native output (the `.xcframework`) is consumed by Xcode.
+- [`concurrency-and-memory.md`](../production/concurrency-and-memory.md) — How the JVM GC and the Kotlin/Native GC differ fundamentally.
+- [`swift-interop.md`](../tooling/swift-interop.md) — The Objective-C bridge limitations that K2's Direct Swift Export aims to eliminate.

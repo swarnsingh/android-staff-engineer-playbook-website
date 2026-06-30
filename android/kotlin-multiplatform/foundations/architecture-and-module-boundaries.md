@@ -208,7 +208,7 @@ class CheckoutViewModelObserver: ObservableObject {
 
 ## Paradigm B: Shared UI (Compose Multiplatform)
 
-In this model, you share the entire UI using Compose Multiplatform (CMP). See [`compose-multiplatform.md`](compose-multiplatform.md) for the deep dive on how CMP renders via Skia on iOS.
+In this model, you share the entire UI using Compose Multiplatform (CMP). See [`compose-multiplatform.md`](../ui-sharing/compose-multiplatform.md) for the deep dive on how CMP renders via Skia on iOS.
 
 ### When to Use Paradigm B
 
@@ -481,7 +481,7 @@ If you force iOS engineers to write their UI in Kotlin (Paradigm B) without thei
 ## Further Reading
 
 - [`overview-and-k1-vs-k2.md`](overview-and-k1-vs-k2.md) — The compiler targets that make this architecture possible.
-- [`swift-interop.md`](swift-interop.md) — How the iOS SwiftUI consumer actually observes `StateFlow` from the shared ViewModel.
-- [`dependency-injection.md`](dependency-injection.md) — How Koin wires the `LocationService` implementations across the boundary.
-- [`compose-multiplatform.md`](compose-multiplatform.md) — Deep dive into Paradigm B (Shared UI via CMP).
-- [`../architecture/modularization-strategies.md`](../architecture/modularization-strategies.md) — The Android modularization principles that directly apply to KMP modules.
+- [`swift-interop.md`](../tooling/swift-interop.md) — How the iOS SwiftUI consumer actually observes `StateFlow` from the shared ViewModel.
+- [`dependency-injection.md`](../ecosystem/dependency-injection.md) — How Koin wires the `LocationService` implementations across the boundary.
+- [`compose-multiplatform.md`](../ui-sharing/compose-multiplatform.md) — Deep dive into Paradigm B (Shared UI via CMP).
+- [`../architecture/modularization-strategies.md`](../../architecture/modularization-strategies.md) — The Android modularization principles that directly apply to KMP modules.
