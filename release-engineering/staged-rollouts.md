@@ -149,6 +149,19 @@ When you halt:
 
 For users already on the bad release, kill switches (see `kill-switches.md`) disable the offending feature. Halting is the supply-side fix; kill switches are the demand-side fix.
 
+### Halt runbook
+
+Halting a rollout is a mitigation, not an incident close.
+
+1. Halt the Play production release.
+2. Freeze further promotions in CI.
+3. Flip any relevant kill switch or backend fallback for already-updated users.
+4. Pin the release dashboard to the affected `versionCode`.
+5. Write the incident note: impact, affected cohorts, lever used, next checkpoint.
+6. Decide whether the recovery path is resume, hotfix, backend rollback, or force update.
+
+Do not resume because the graph "looks better" after the halt. Resume only after the affected cohort is stable for the agreed window and the root cause is understood.
+
 ---
 
 ## 5. Automated Stage Promotion With Crash-Rate Gates

@@ -328,6 +328,36 @@ jobs:
 
 The keystore lives in Cloud KMS / Secret Manager, pulled at runtime, deleted with `shred` before the runner shuts down. The runner never has long-lived access — workload identity federation issues a short-lived token from a GitHub-issued OIDC token; nothing persists.
 
+### Release evidence artifact
+
+Every production candidate should publish one machine-readable evidence file before promotion:
+
+```json
+{
+  "versionName": "4.12.1",
+  "versionCode": 412010,
+  "gitSha": "abc1234",
+  "branch": "release/v4.12",
+  "signedAabSha256": "f3...",
+  "mappingUploaded": true,
+  "baselineProfileIncluded": true,
+  "unitTests": "passed",
+  "instrumentedTests": "passed",
+  "macrobenchmark": {
+    "coldStartP95Ms": 1320,
+    "scrollFrameP95Ms": 14
+  },
+  "releaseDecision": {
+    "track": "internal",
+    "nextTrack": "production",
+    "allowed": true,
+    "reason": "all gates passed"
+  }
+}
+```
+
+This artifact becomes the release manager's source of truth. It proves what was built, which commit produced it, whether mapping files were uploaded, whether startup/profile protections were present, and why CI allowed the next promotion.
+
 ---
 
 ## 6. Triple-T Play Publisher Plugin

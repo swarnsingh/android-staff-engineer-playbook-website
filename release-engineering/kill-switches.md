@@ -230,7 +230,23 @@ Default-enabled flags are right for most client UI kill switches, because a flag
 
 ---
 
-## 8. Local Override For Engineering
+## 8. Kill Switches During A Bad Release
+
+In a mobile incident, a kill switch is often faster than a hotfix and more useful than a Play halt. Use it to protect users who already updated.
+
+| Release failure | Kill-switch response |
+|---|---|
+| New checkout UI crashes | Hide new checkout entry point and route to legacy checkout |
+| Feed response shape breaks old parser | Server downgrades response by capability |
+| Heavy animation causes jank on low-end devices | Disable animation for device-tier cohort |
+| Backend dependency overloads | Return cached/stale state or disable the expensive feature |
+| Security-sensitive path is unsafe | Block the action and force update if needed |
+
+Every kill switch used during release response needs an expiry owner. If the switch remains off after the incident, it becomes a silent fork of the product.
+
+---
+
+## 9. Local Override For Engineering
 
 ```kotlin
 class FlagsOverridesStore @Inject constructor(
@@ -251,7 +267,7 @@ class FlagsOverridesStore @Inject constructor(
 
 ---
 
-## 9. Telemetry
+## 10. Telemetry
 
 Every kill-switch evaluation logs:
 
@@ -271,7 +287,7 @@ Server-side telemetry monitors:
 
 ---
 
-## 10. Common Pitfalls
+## 11. Common Pitfalls
 
 - **Kill switch default = `false`.** A flag-fetch failure now silently kills the feature for all users. Always default `true`.
 - **No FCM push for live flags.** A 5-minute propagation is too slow for incident response.
@@ -282,11 +298,12 @@ Server-side telemetry monitors:
 - **No audit log.** "Who killed video calls last night?" answerable in 30 seconds, not 3 hours.
 - **Engineer-only kill authority.** Releng / on-call needs to be able to kill features they didn't write at 3 AM.
 - **Killing without a path to re-enable.** Once killed, the rollout to re-enable should be staged: 1% → 10% → 100% to confirm the fix.
+- **No expiry owner after an incident.** A disabled feature can become permanent by accident unless someone owns the re-enable plan.
 - **No documented kill-switch list.** "What kill switches do we have?" — a release runbook should answer this in seconds.
 
 ---
 
-## 11. Testing
+## 12. Testing
 
 ```kotlin
 @Test
@@ -308,7 +325,7 @@ End-to-end: flip a kill switch in the staging flag service; assert the productio
 
 ---
 
-## 12. Further Reading
+## 13. Further Reading
 
 - [Martin Fowler — Feature Toggles taxonomy](https://martinfowler.com/articles/feature-toggles.html) — categorization: release, ops, experiment, permission.
 - [GrowthBook](https://www.growthbook.io/) — open-source flag platform with kill-switch path.

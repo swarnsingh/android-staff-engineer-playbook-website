@@ -416,15 +416,15 @@ Why it matters: Staff-level mobile engineering is measured through crash-free us
 
 Depth add: alert thresholds and fatigue. Dashboards are not enough; alerts need clear ownership, burn-rate logic, release awareness, and thresholds that page only for user-impacting regressions.
 
-#### G9d — Release engineering decision trees ⬜
+#### G9d — Release engineering decision trees ✅
 
 Goal: turn rollout content into operational playbooks.
 
-- ⬜ `release-engineering/release-strategy.md`
-- ⬜ `release-engineering/staged-rollouts.md`
-- ⬜ `release-engineering/crash-rate-gating.md`
-- ⬜ `release-engineering/kill-switches.md`
-- ⬜ `release-engineering/ci-cd-for-mobile.md`
+- ✅ `release-engineering/release-strategy.md`
+- ✅ `release-engineering/staged-rollouts.md`
+- ✅ `release-engineering/crash-rate-gating.md`
+- ✅ `release-engineering/kill-switches.md`
+- ✅ `release-engineering/ci-cd-for-mobile.md`
 
 Why it matters: Principal-level judgment appears during bad releases: halt rollout, rollback, hotfix, remote-disable, device/OEM gating, and risk communication.
 
@@ -504,7 +504,7 @@ In order of impact-per-effort:
 
 ## Blocked — Decisions Needed ✅
 
-All decisions made. Current execution: G9d release engineering decision trees.
+All decisions made. Current execution: G9e testing strategy at scale.
 
 ---
 

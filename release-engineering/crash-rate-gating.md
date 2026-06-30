@@ -228,7 +228,38 @@ Decision rules tuned to the org's risk profile. The thresholds (0.001, 0.005, 0.
 
 ---
 
-## 5. Per-Cohort Crash Rates
+## 5. Multi-Signal Release Gate
+
+A Staff-level gate never promotes on one metric alone. It asks: is the new version healthy, are the samples large enough, and is any important cohort burning?
+
+| Signal | Promote | Hold | Halt |
+|---|---|---|---|
+| Crash-free users | Within 0.1 pp of baseline | 0.1-0.5 pp worse | > 0.5 pp worse or < 98% |
+| User-perceived ANR | Within target | Trending upward, sample small | Crosses release floor |
+| Cold start p95 | Within 10% of baseline | 10-20% regression | > 20% plus user complaints/vitals warning |
+| Critical-flow success | Within target | Minor drop with fallback | Checkout/login/onboarding blocked |
+| Top cohort health | No cohort worse than floor | One cohort noisy | Major OEM/API/country cohort below floor |
+| Sample size | Meets minimum | Below minimum | N/A unless catastrophic failures are obvious |
+
+The gate output is a decision object, not a boolean:
+
+```json
+{
+  "versionCode": 412010,
+  "fraction": 0.10,
+  "decision": "hold",
+  "primaryReason": "cold_start_p95_regression",
+  "affectedCohorts": ["low_ram", "android_10"],
+  "nextAction": "hold rollout; inspect startup trace; re-evaluate in 6h",
+  "expiresAt": "2026-07-01T18:00:00Z"
+}
+```
+
+Persist this as a CI artifact and post it to the release channel. Humans should be able to reconstruct why the system promoted, held, or halted without reading workflow logs.
+
+---
+
+## 6. Per-Cohort Crash Rates
 
 A single global rate hides cohort regressions:
 
@@ -250,7 +281,7 @@ If global is fine but `samsung_a_series` is at 96%, you've found a vendor-specif
 
 ---
 
-## 6. Slack-Driven Manual Override
+## 7. Slack-Driven Manual Override
 
 Auto-halt errs on caution. Sometimes a regression is acceptable (e.g., new feature has slightly worse baseline because it does more). Manual override pattern:
 
@@ -273,7 +304,7 @@ Manual paths are audited (Slack channel + GitHub Actions log + Play Console hist
 
 ---
 
-## 7. Time Windows And Sample Size
+## 8. Time Windows And Sample Size
 
 A 6-hour window at 1% rollout might only have 5K active users. Crash-free rate is noisy at that scale. Rules:
 
@@ -294,7 +325,7 @@ def is_sample_sufficient(rollout_fraction: float, users_observed: int) -> bool:
 
 ---
 
-## 8. ANR-Specific Gates
+## 9. ANR-Specific Gates
 
 ANRs (Application Not Responding) have their own threshold:
 
@@ -310,12 +341,13 @@ User-perceived ANRs (those that happened while the user was actually interacting
 
 ---
 
-## 9. Common Pitfalls
+## 10. Common Pitfalls
 
 - **Comparing to no baseline.** "99.6% is fine" — if previous was 99.95%, you've regressed.
 - **Auto-promoting outside business hours.** If something breaks on auto-promote at 3 AM Sunday, no human is responding for hours.
 - **Tiny sample sizes.** 100 users isn't enough to estimate a 99.5% crash-free rate.
 - **Only looking at global rate.** Cohort regressions hide.
+- **Promoting on green crashes while startup or checkout is red.** Release gates need multiple user-impact signals.
 - **Halting without alerting.** Silent halts confuse the next release manager.
 - **Decision rules in code, not in a docs runbook.** When CI halts at 3 AM, on-call needs to read why.
 - **Ignoring slow-rendering / slow-start rates.** They're soft failures that erode trust over time.
@@ -325,7 +357,7 @@ User-perceived ANRs (those that happened while the user was actually interacting
 
 ---
 
-## 10. Further Reading
+## 11. Further Reading
 
 - [Play Developer Reporting API](https://developers.google.com/play/developer/reporting) — Vitals access.
 - [Android Vitals — Crash rate & ANR](https://developer.android.com/topic/performance/vitals) — what Play measures.

@@ -264,7 +264,70 @@ Each one is wired into the auto-promote workflow as a gate (see `crash-rate-gati
 
 ---
 
-## 9. Release Freeze Windows
+## 9. Production Release Decision Tree
+
+During a bad rollout, the Staff engineer's job is not to "fix the bug" first. It is to reduce user harm with the fastest reversible lever, then drive the root-cause fix.
+
+```mermaid
+flowchart TD
+    Signal["New release signal"] --> Impact{"Is user impact severe?"}
+    Impact -- "No, soft regression" --> Hold["Hold rollout at current fraction"]
+    Impact -- "Yes" --> Scope{"Is impact tied to current app version?"}
+    Scope -- "Yes" --> Halt["Halt Play rollout"]
+    Scope -- "No / mixed versions" --> Backend{"Backend/config related?"}
+    Backend -- "Yes" --> ServerMitigate["Rollback backend, disable flag, or serve fallback"]
+    Backend -- "No" --> Cohort{"Specific device, OS, country, or feature cohort?"}
+    Cohort -- "Yes" --> Gate["Cohort gate via flag, device catalog, or remote config"]
+    Cohort -- "No" --> Hotfix["Cut minimal hotfix"]
+    Halt --> Existing{"Are already-updated users still broken?"}
+    Existing -- "Yes" --> KillSwitch["Flip kill switch or server-side compatibility fallback"]
+    Existing -- "No" --> Observe["Observe until metrics stabilize"]
+    KillSwitch --> Hotfix
+    ServerMitigate --> Observe
+    Gate --> Observe
+    Hotfix --> Rollout["Ship hotfix staged rollout"]
+```
+
+### Lever selection
+
+| Lever | Time to effect | Use when | Cost / limitation |
+|---|---|---|---|
+| Hold rollout | Minutes | Signal is concerning but not user-breaking | Does not help users already updated |
+| Halt rollout | Minutes | Current version is clearly worse than baseline | Existing updated users stay affected |
+| Kill switch | Seconds to minutes | Bad code path is remotely gateable | Requires prebuilt fallback path |
+| Backend rollback | Minutes | Server deploy broke old/current clients | May affect web/iOS/backend consumers |
+| Compatibility fallback | Minutes | New client response shape is broken | Requires old response shape still supported |
+| Device/country gate | Hours | Regression is cohort-specific | Play/device targeting may lag |
+| Hotfix | Hours to days | Bug is client code and cannot be remotely disabled | Adoption is slow; still needs staged rollout |
+| Force update | Days and user-hostile | Security/legal or retired contract | Last resort; locks out users who cannot update |
+
+### Severity guide
+
+| Signal | First decision | Notes |
+|---|---|---|
+| Crash-free users below floor in new version | Halt + kill switch if possible | Page release owner |
+| Checkout/login/onboarding broken | Halt + feature/backend mitigation | Treat as revenue/access outage |
+| ANR spike on current rollout | Halt if user-perceived; hold if background-only | Slice by device tier and SDK/init path |
+| Startup p95 regression | Hold rollout | Page only if app becomes unusable |
+| Jank on critical purchase/feed flow | Hold or cohort-gate | Disable animation/experiment if available |
+| Backend 5xx only for new app version | Halt rollout + backend fallback | Check handshake/capability gates |
+| Privacy/security exposure | Disable path immediately | Coordinate legal/security comms |
+
+### Communication contract
+
+Every stop-the-line decision needs one incident note:
+
+- **What changed:** app version, backend deploy, flag, dependency, or store rollout fraction.
+- **Who is affected:** version, OS, OEM/device, country, account type, feature cohort.
+- **Current lever:** hold, halt, kill switch, backend rollback, cohort gate, hotfix, or force update.
+- **User impact:** crash, blocked flow, data loss risk, performance degradation, or compliance risk.
+- **Next checkpoint:** exact time and metric that decides resume/hotfix/persist.
+
+This turns release judgment into an auditable operating system, not a Slack argument.
+
+---
+
+## 10. Release Freeze Windows
 
 ```yaml
 # .github/workflows/freeze-check.yml
@@ -304,7 +367,7 @@ Freeze windows protect high-stakes periods. PRs can be opened but not merged wit
 
 ---
 
-## 10. Release-Notes Generation
+## 11. Release-Notes Generation
 
 ```yaml
 # .github/workflows/release.yml
@@ -323,7 +386,7 @@ Conventional commit messages (`feat:`, `fix:`, `chore:`) let you generate cleane
 
 ---
 
-## 11. Common Pitfalls
+## 12. Common Pitfalls
 
 - **Hold-the-release-for-my-PR culture.** Train doesn't wait. Push back firmly; next train is a week away.
 - **Cherry-picking new features into release branches.** Defeats the train model. New features wait.
@@ -333,12 +396,14 @@ Conventional commit messages (`feat:`, `fix:`, `chore:`) let you generate cleane
 - **Tag the release before CI passes.** Tag triggers release workflow; failed CI mid-release is recoverable but messy.
 - **Missing CODEOWNERS on release config.** Anyone can change the rollout fraction.
 - **Backend incompatible with the new client.** Coordinate breaking server changes; staged rollout means N versions live.
+- **Confusing halt with rollback.** Play halt stops future installs; it does not remove the bad version from devices that already updated.
+- **Cutting a hotfix before mitigation.** If a kill switch or backend fallback can reduce harm now, do that before waiting for store adoption.
 - **Release notes auto-generated from commit messages without curation.** Users see "fix: null check in FooBar" — unhelpful, possibly leaks internals.
 - **No post-release review.** Each release should produce a 5-minute retrospective.
 
 ---
 
-## 12. Further Reading
+## 13. Further Reading
 
 - [Google — Site Reliability Engineering, ch.27 (Release engineering)](https://sre.google/sre-book/release-engineering/) — principles.
 - [Triple-T Gradle Play Publisher](https://github.com/Triple-T/gradle-play-publisher) — Play release automation.
