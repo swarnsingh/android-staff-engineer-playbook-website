@@ -36,7 +36,6 @@ Canonical owner:
 Referenced from:
   mobile-system-design/offline-sync.md
   mobile-system-design/file-downloader.md
-  mobile-system-design/offline-sync.md
 ```
 
 When writing an application file, if you find yourself explaining what a concept *is*, stop and link to the canonical owner instead.
