@@ -23,6 +23,36 @@ This file is the **practical guide**. Companion file: [`unit-testing.md`](unit-t
 
 ---
 
+## UI Test Governance At Scale
+
+UI tests fail in two ways: they catch real regressions, or they teach engineers to ignore CI. Staff engineers protect the first outcome by aggressively managing the second.
+
+### Flake policy
+
+| Signal | Action |
+|---|---|
+| Test fails once, passes on retry | Track as flake; do not hide it |
+| Same test flakes twice in 7 days | Quarantine from merge gate and create owner ticket |
+| Quarantined test not fixed in 14 days | Delete or rewrite it |
+| Critical journey flakes | Treat as release risk; fix before next train |
+| Whole device pool flakes | Platform owner investigates infrastructure |
+
+Quarantine is not forgiveness. It is a time-boxed safety valve so one bad test does not block the org while the owning team fixes it.
+
+### Stable UI test design
+
+Rules for long-lived UI tests:
+- Prefer semantics and stable test tags over text that changes with copy.
+- Disable or control animations in test builds.
+- Inject fake clocks, fake repositories, and fake network states.
+- Avoid sleeps; wait on UI state or idling resources.
+- Keep one assertion theme per test: navigation, validation, rendering, or accessibility.
+- Run broad visual coverage on JVM screenshots; reserve devices for flows that need the OS.
+
+The test should fail because the product behavior changed, not because a spinner took 400 ms longer on one emulator.
+
+---
+
 ## Compose UI Testing Setup
 
 ```kotlin

@@ -105,6 +105,34 @@ The reusable `standard-pr.yml` workflow:
 
 When the Platform team upgrades the workflow from `@v3` to `@v4` (e.g., adding a new lint rule), all consumers get it on the next merge automatically.
 
+### Quality gates as platform product
+
+At scale, "please add tests" does not work. The platform must provide the rails:
+
+| Gate | Platform responsibility | Feature-team responsibility |
+|---|---|---|
+| Affected-module unit tests | Fast selection, caching, clear reports | Own failures in touched modules |
+| Screenshot tests | Golden storage, review UX, re-record tooling | Approve intentional visual diffs |
+| Contract tests | Fixture format, schema diff tooling, backend CI hook | Keep feature fixtures current |
+| Macrobenchmarks | Device pool, baseline tracking, regression thresholds | Own regressions in feature surfaces |
+| Instrumented smoke tests | Firebase Test Lab matrix, sharding, retries | Keep flows deterministic |
+| Flake dashboard | Detection, quarantine workflow, SLA reminders | Fix or delete flaky tests |
+
+The goal is not maximum coverage. The goal is fast, trusted signal. A slow gate that nobody trusts is worse than no gate because it trains engineers to look for bypasses.
+
+### Flake budget
+
+Publish flake metrics next to build time:
+
+| Metric | Target |
+|---|---|
+| PR false-failure rate | < 2% |
+| Quarantined tests older than 14 days | 0 |
+| Release-blocking smoke flake rate | < 1% |
+| Median time to identify owning team | < 10 min |
+
+If flakes exceed budget, feature work slows down until the signal is trustworthy again. This is the testing version of an error budget.
+
 ### 4. Observability
 
 Every app built on the platform ships with:

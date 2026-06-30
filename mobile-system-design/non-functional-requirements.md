@@ -71,6 +71,12 @@ This file is the menu. Pick what's relevant per problem; don't recite the whole 
 - Backwards-compatible wire format with the server.
 - Configurable kill switches; feature flags for risky launches.
 
+### 13. **Testability & Operability**
+- Fakeable dependencies for unit and integration tests.
+- Contract fixtures for API compatibility.
+- Synthetic production checks for critical journeys.
+- Clear ownership for flaky tests and release gates.
+
 ---
 
 ## 3. NFR Cheatsheet (per problem)
@@ -91,6 +97,7 @@ Use this 90-second checklist after stating functional requirements:
 | Observability | What to measure for this feature? |
 | Resilience | Process death? OEM kill? |
 | Compatibility | Schema evolution? API floor? |
+| Testability | Can we prove this works before and after release? |
 
 If 6+ dimensions matter, the interviewer is testing you on tradeoffs, not features.
 
@@ -122,6 +129,10 @@ If 6+ dimensions matter, the interviewer is testing you on tradeoffs, not featur
 - **Security, Privacy, Resilience, Observability** dominate.
 - Token vault; verified deep links; OEM-resilient.
 
+### Critical production journeys (login, checkout, payment, sync)
+- **Testability, Observability, Resilience, Security** dominate.
+- Synthetic production tests with test accounts; contract tests; kill switches.
+
 ---
 
 ## 5. Common NFR Misses (and how to spot them)
@@ -138,10 +149,34 @@ If 6+ dimensions matter, the interviewer is testing you on tradeoffs, not featur
 | "Token in SharedPrefs" — no encryption | Ask: "What if the device is rooted?" |
 | "Worker fires on launch" — no `WorkManager` constraints | Ask: "What about Doze?" |
 | "All strings in code" — no localization | Ask: "Does this app ship to RTL languages?" |
+| "We'll manually verify prod" — no synthetic monitor | Ask: "How do we know checkout is broken before users do?" |
 
 ---
 
-## 6. How to Pace NFRs in an Interview
+## 6. Synthetic Testing in Production
+
+Synthetic tests are automated smoke journeys that run against production using controlled test accounts. They do not replace unit, UI, or contract tests; they prove the deployed system still works end to end.
+
+Good synthetic tests:
+- use clearly marked test users, products, payment methods, and backend fixtures;
+- avoid polluting real analytics, recommendations, fraud models, and financial ledgers;
+- assert user-visible outcomes, not internal implementation details;
+- run from multiple regions or network profiles when geography matters;
+- page only for critical journeys with an immediate mitigation path.
+
+| Journey | Synthetic assertion | Guardrail |
+|---|---|---|
+| Login | test account reaches home screen | Exclude from growth analytics |
+| Checkout | test order reaches success with fake payment | Auto-cancel or sandbox settlement |
+| Offline sync | seeded edit syncs across two devices/accounts | Dedicated synthetic workspace |
+| Push | notification arrives and opens correct destination | Mark as synthetic campaign |
+| Deep link | production link opens intended screen | No real user state mutation |
+
+Synthetic tests are Staff-level because they cross team boundaries. Mobile, backend, payments, analytics, fraud, and support must agree on the test data and cleanup rules.
+
+---
+
+## 7. How to Pace NFRs in an Interview
 
 | Time spent | What you've shown |
 |---|---|
@@ -154,7 +189,7 @@ Right balance: **2 minutes**, picking 4-6 most relevant dimensions, stating budg
 
 ---
 
-## 7. NFR Trade-off Table
+## 8. NFR Trade-off Table
 
 Many NFRs trade off against each other. Recognise and call out:
 
@@ -167,12 +202,13 @@ Many NFRs trade off against each other. Recognise and call out:
 | Privacy ↔ Observability | More telemetry = better debug + privacy risk | Aggregate; redact |
 | Reliability ↔ Speed | More retries = robust + slower | Backoff + idempotency |
 | Offline ↔ Storage | Cache more = offline-friendly + bigger app | Tier by importance |
+| Test realism ↔ CI speed | Real devices catch more but slow feedback | Split PR, nightly, and release gates |
 
 Naming the trade-off out loud is half the signal.
 
 ---
 
-## 8. Mobile-Specific NFRs Worth Calling Out
+## 9. Mobile-Specific NFRs Worth Calling Out
 
 The OS imposes constraints that don't exist on backend:
 
@@ -187,7 +223,7 @@ The OS imposes constraints that don't exist on backend:
 
 ---
 
-## 9. Sample NFR Section Wording (Use in interview)
+## 10. Sample NFR Section Wording (Use in interview)
 
 > "Before diving into the architecture, let me name the non-functional concerns I'll keep in mind:
 > 1. **Battery** — this is a streaming feature, so the foreground/background socket policy matters; we'll close the socket after 30s of background and rely on FCM.
@@ -201,7 +237,7 @@ This signals: you have a mental checklist, you've prioritised for *this* problem
 
 ---
 
-## 10. Where to Read More
+## 11. Where to Read More
 
 - [Android Developers — App quality guidelines](https://developer.android.com/quality) — official baseline.
 - [Material Design — Accessibility](https://m3.material.io/foundations/accessible-design) — pattern library.

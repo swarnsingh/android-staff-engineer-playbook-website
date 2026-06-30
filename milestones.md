@@ -428,14 +428,14 @@ Goal: turn rollout content into operational playbooks.
 
 Why it matters: Principal-level judgment appears during bad releases: halt rollout, rollback, hotfix, remote-disable, device/OEM gating, and risk communication.
 
-#### G9e — Testing strategy at scale ⬜
+#### G9e — Testing strategy at scale ✅
 
 Goal: teach test portfolio design for large Android codebases.
 
-- ⬜ `android/testing/unit-testing.md`
-- ⬜ `android/testing/ui-testing.md`
-- ⬜ `mobile-system-design/non-functional-requirements.md`
-- ⬜ `platform-engineering/internal-developer-platforms.md`
+- ✅ `android/testing/unit-testing.md`
+- ✅ `android/testing/ui-testing.md`
+- ✅ `mobile-system-design/non-functional-requirements.md`
+- ✅ `platform-engineering/internal-developer-platforms.md`
 
 Why it matters: the Staff lens is not "write tests"; it is fake servers, contract tests, screenshot tests, macrobenchmarks, flake management, CI sharding, and ownership.
 
@@ -504,7 +504,7 @@ In order of impact-per-effort:
 
 ## Blocked — Decisions Needed ✅
 
-All decisions made. Current execution: G9e testing strategy at scale.
+All decisions made. Current execution: G9f platform engineering for mobile organizations.
 
 ---
 

@@ -33,6 +33,35 @@ A 30-second flake on a journey test is acceptable for catching real bugs. A 30-s
 
 This file covers **unit testing**. Companion file: [`ui-testing.md`](ui-testing.md).
 
+### Staff-level test portfolio
+
+A large Android org needs a portfolio, not a pile of tests. Each layer should have an owner, a budget, and a reason to exist.
+
+| Layer | Primary purpose | Owner | Merge gate |
+|---|---|---|---|
+| Pure unit tests | Business rules, reducers, mappers, validation | Feature team | Every PR |
+| Contract tests | Client/server schema and error-shape compatibility | Mobile + backend owners | Every API change |
+| Integration tests | Repository, Room, fake network, sync engine | Feature/platform team | Every PR for touched module |
+| Screenshot tests | Component visual states, themes, localization | Design system + feature team | Every PR touching UI |
+| Macrobenchmarks | Startup, scroll, critical performance paths | Platform/performance owner | Nightly + release gate |
+| Journey tests | Login, checkout, sync, payment, onboarding | Release owner + feature team | Release candidate |
+
+The Staff review question is: "Which production failure does this test prevent, and is this the cheapest layer that can catch it?" If a journey test can be replaced by five deterministic unit and contract tests, replace it. If only a real device can expose the risk, keep the journey test and invest in flake control.
+
+### Contract tests beat mocked optimism
+
+Mocks prove your assumptions. Contract tests prove your assumptions still match the backend.
+
+For mobile APIs, contract fixtures should include:
+- current response shape;
+- N-2 or N-3 old-client response shape;
+- unknown enum values;
+- missing optional fields;
+- typed business errors;
+- malformed but historically observed payloads.
+
+Run these fixtures against generated clients and parsers in CI. A backend PR that removes a field still used by an old Android app should fail before it reaches production.
+
 ---
 
 ## What "Unit" Means
