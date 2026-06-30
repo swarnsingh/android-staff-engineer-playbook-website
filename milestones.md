@@ -375,6 +375,114 @@ KMP is mentioned in 22 files in passing but has no dedicated coverage. User deci
 
 **Cross-linking required when KMP folder lands:** Update `ktor-vs-retrofit.md`, `hilt-vs-koin-vs-manual-di.md`, `modularization-strategies.md`, `library-versioning.md`, and others that currently mention KMP in passing.
 
+### G9 — Staff/Principal depth expansion 🟡
+
+Post-correction roadmap. The repo is already Staff-shaped; this gap exists to push it from deep encyclopedia to production ownership manual. Each item should upgrade existing files first. Add new files only if the concept cannot fit an existing owner without violating the single-canonical-owner rule.
+
+#### G9a — Mobile API evolution ✅
+
+Goal: teach how Android clients survive backend change while old app versions remain in the wild for months or years.
+
+- ✅ `backend-for-mobile/api-design-for-mobile.md` — old-client safety, compatibility contracts, handshake design, negative capability testing.
+- ✅ `backend-for-mobile/bff-pattern.md` — BFF as a mobile compatibility boundary, not only a payload aggregator.
+- ✅ `backend-for-mobile/graphql-vs-rest.md` — GraphQL vs REST vs BFF decision criteria for old-client support, caching, and schema governance.
+- ✅ `mobile-system-design/versioning-and-backward-compatibility.md` — compatibility matrix, sunset runbook, forced-upgrade failure modes.
+- ✅ `release-engineering/kill-switches.md` — API/server kill switches, capability-gated fallback behavior.
+
+Why it matters: backend deploys continuously; mobile deploys through stores, user choice, OEMs, and long-tail app versions. Staff engineers need to design the contract so backend velocity does not become mobile fragility.
+
+#### G9b — Schema and sync protocol evolution ⬜
+
+Goal: make offline-first content production-grade across long-offline clients, app upgrades, and server protocol changes.
+
+- ⬜ `mobile-system-design/offline-sync.md` — outbox payload versions, op compaction, delta-token invalidation, tombstone retention.
+- ⬜ `android/data-and-di/room.md` — multi-hop migration discipline, destructive fallback policy, exported schema review.
+- ⬜ `android/data-and-di/datastore.md` — preference/proto migrations, corruption handlers.
+
+Why it matters: real sync systems fail at version boundaries, not only under network loss.
+
+#### G9c — Mobile observability architecture ⬜
+
+Goal: teach how Staff engineers detect, explain, and prevent mobile regressions.
+
+- ⬜ `observability/slis.md`
+- ⬜ `observability/slos.md`
+- ⬜ `android/observability/crash-monitoring.md`
+- ⬜ `android/performance/anrs.md`
+- ⬜ `android/performance/startup.md`
+- ⬜ `android/performance/jank.md`
+
+Why it matters: Staff-level mobile engineering is measured through crash-free users, ANR rate, startup p95/p99, jank, trace propagation, sampling, release dashboards, and privacy-safe telemetry.
+
+Depth add: alert thresholds and fatigue. Dashboards are not enough; alerts need clear ownership, burn-rate logic, release awareness, and thresholds that page only for user-impacting regressions.
+
+#### G9d — Release engineering decision trees ⬜
+
+Goal: turn rollout content into operational playbooks.
+
+- ⬜ `release-engineering/release-strategy.md`
+- ⬜ `release-engineering/staged-rollouts.md`
+- ⬜ `release-engineering/crash-rate-gating.md`
+- ⬜ `release-engineering/kill-switches.md`
+- ⬜ `release-engineering/ci-cd-for-mobile.md`
+
+Why it matters: Principal-level judgment appears during bad releases: halt rollout, rollback, hotfix, remote-disable, device/OEM gating, and risk communication.
+
+#### G9e — Testing strategy at scale ⬜
+
+Goal: teach test portfolio design for large Android codebases.
+
+- ⬜ `android/testing/unit-testing.md`
+- ⬜ `android/testing/ui-testing.md`
+- ⬜ `mobile-system-design/non-functional-requirements.md`
+- ⬜ `platform-engineering/internal-developer-platforms.md`
+
+Why it matters: the Staff lens is not "write tests"; it is fake servers, contract tests, screenshot tests, macrobenchmarks, flake management, CI sharding, and ownership.
+
+Depth add: synthetic testing in production. Use controlled test accounts and canary workflows to validate login, checkout, sync, push, and payments against real production dependencies without polluting user data.
+
+#### G9f — Platform engineering for mobile organizations ⬜
+
+Goal: cover leverage across many teams.
+
+- ⬜ `platform-engineering/build-graph-scaling.md`
+- ⬜ `platform-engineering/internal-developer-platforms.md`
+- ⬜ `platform-engineering/design-systems-architecture.md`
+- ⬜ `platform-engineering/library-versioning.md`
+- ⬜ `android/os-internals/convention-plugins.md`
+- ⬜ `android/os-internals/multi-module.md`
+- ⬜ `android/performance/app-size-and-r8.md` — app size budgets, CI gates, owner attribution, R8/resource shrinking, and dynamic feature governance.
+- ⬜ `release-engineering/app-bundles.md` — AAB delivery strategy, split APK behavior, and size risk during rollout.
+
+Why it matters: Staff engineers often own build speed, dependency governance, shared architecture, design systems, and paved roads.
+
+#### G9g — Security and privacy threat modeling ⬜
+
+Goal: move security from checklist to threat-model thinking.
+
+- ⬜ `security/auth-on-mobile.md`
+- ⬜ `security/key-management.md`
+- ⬜ `security/secure-storage-on-android.md`
+- ⬜ `security/attestation.md`
+- ⬜ `security/privacy-gdpr-data-residency.md`
+- ⬜ `android/networking-and-security/security-and-keystore.md`
+
+Why it matters: Staff engineers must reason about rooted devices, token theft, cert pinning tradeoffs, Play Integrity limits, local storage limits, location privacy, and data minimization.
+
+#### G9h — Principal architecture governance ⬜
+
+Goal: teach how architectural decisions scale across teams.
+
+- ⬜ `career/writing-rfcs.md`
+- ⬜ `leadership/running-a-design-review.md`
+- ⬜ `leadership/escalation-and-decision-making.md`
+- ⬜ `platform-engineering/internal-developer-platforms.md`
+- ⬜ `templates/decision.md`
+
+Why it matters: Principal work is decision quality at org scale: RFCs, ADRs, tech radar, review rituals, ownership boundaries, migration plans, and deprecation discipline.
+
+Recommended execution order: G9a → G9b → G9c → G9d → G9e → G9f → G9g → G9h.
+
 ---
 
 ## Execution Order (Gap Closure Plan) — Updated 2026-06
@@ -390,12 +498,13 @@ In order of impact-per-effort:
 7. ✅ **G7a** (Ktor) — DONE
 8. ✅ **G7b** (Nav 3) — DONE
 9. ✅ **G8** (KMP subfolder, 15 files) — DONE
+10. 🟡 **G9** (Staff/Principal depth expansion) — IN PROGRESS
 
 ---
 
 ## Blocked — Decisions Needed ✅
 
-All decisions made. Current execution: G6 high-priority → G6 medium → G8 (KMP).
+All decisions made. Current execution: G9b schema and sync protocol evolution.
 
 ---
 

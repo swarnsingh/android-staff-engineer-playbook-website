@@ -215,6 +215,19 @@ suspend fun startVideoCall(): Result<...> {
 
 Server + client kill together. Client kill hides the entry point; server kill rejects any race-condition calls. Defense in depth.
 
+### API compatibility behavior
+
+An API kill switch must return a response shape every supported client can parse. Do not invent a new error payload during an incident.
+
+| Situation | Server behavior | Client expectation |
+|---|---|---|
+| Optional feature disabled | Return a typed business error such as `FEATURE_TEMPORARILY_UNAVAILABLE` | Hide entry point or show retryable unavailable state |
+| Expensive endpoint overload | Return cached/stale response, smaller page size, or `Retry-After` | Back off; do not spin retries |
+| New response shape is broken | Downgrade by capability to the previous shape | Old and current clients parse successfully |
+| Security issue | Fail closed with force-update or blocked action | User cannot continue the risky flow |
+
+Default-enabled flags are right for most client UI kill switches, because a flag-fetch outage should not remove features accidentally. Server/API kill switches need a per-risk default. For overload protection, fail open can take the backend down; for non-critical UI, fail closed can create a user outage. Document the default in the flag definition, not in tribal memory.
+
 ---
 
 ## 8. Local Override For Engineering

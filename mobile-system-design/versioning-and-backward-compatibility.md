@@ -116,6 +116,35 @@ Link: </v2/feed>; rel="successor-version"
 
 Client logs these headers as analytics events. Eng team monitors the dashboard.
 
+### Compatibility matrix
+
+For every mobile-facing API family, maintain a compatibility matrix. This belongs next to the API spec, not in a forgotten spreadsheet.
+
+| Client cohort | Endpoint | Wire contract | Server behavior | Test fixture |
+|---|---|---|---|---|
+| Current | `/v2/feed` | `FeedV2` with badges and reactions | Full feature set | `feed_v2_current.json` |
+| N-1 | `/v2/feed` | `FeedV2` without experimental fields | Gate by capability | `feed_v2_n_minus_1.json` |
+| N-2 | `/v1/feed` or `/v2/feed` fallback | `FeedV1Compatible` | Omit unknown enum values and new required fields | `feed_v1_legacy.json` |
+| Deprecated | `/v1/feed` | Frozen legacy contract | Return deprecation headers and soft banner policy | `feed_v1_deprecated.json` |
+| Unsupported | Any retired contract | No business traffic | Force-update policy only | `force_update.json` |
+
+The matrix is the bridge between engineering and operations. It tells backend engineers what they can remove, mobile engineers what they must parse, QA what to test, and release managers when a forced upgrade is safe.
+
+### Sunset runbook
+
+Do not retire a mobile contract because a new app version shipped. Retire it when the old contract is no longer materially used.
+
+1. Add the replacement endpoint/field and ship a client that reads it.
+2. Mark the old contract deprecated in the schema or response headers.
+3. Add dashboards for active installs, request volume, crashes, and business events by app version and endpoint.
+4. Run old-client contract tests in CI against today's backend payloads.
+5. Wait until the old cohort is below the agreed threshold, for example `< 1%` monthly active users and `< 0.1%` revenue-impacting sessions.
+6. Soft-deprecate with banners, support messaging, and release notes.
+7. Force-update only if the remaining risk is security, legal, or a server contract that cannot be kept alive.
+8. Remove the old contract after a rollback window, and keep synthetic monitors for the retirement path.
+
+The hardest part is step 5. Calendar time is a weak signal; active install distribution is the real gate.
+
 ---
 
 ## 5. Room Schema Migrations

@@ -18,6 +18,8 @@ This is the **Orchestration Problem**. Doing this on a mobile device over a 3G c
 
 The **BFF Pattern** solves this by placing a dedicated server (the Android BFF) between the mobile app and the microservices. The Android app makes *one* call to the BFF. The BFF makes the 4 internal calls over high-speed data center fiber, aggregates the result into a single, perfectly shaped JSON object, and sends it back to the phone.
 
+At Staff level, a BFF is also a **compatibility boundary**. Backend microservices can rename fields, split services, or change internal error models without forcing the Android app to change immediately. The BFF owns the mobile contract: old app versions, fallback payloads, feature capability checks, semantic error envelopes, and partial-success behavior.
+
 ---
 
 ## 1. The Mobile Orchestration Problem
@@ -62,6 +64,20 @@ suspend fun fetchHomeScreenData(): HomeState {
 ## 2. The BFF Implementation
 
 With a BFF, the backend team (or often, the mobile team themselves using Kotlin/Ktor or Node.js) builds an endpoint specifically for the Android Home Screen.
+
+### Contract ownership
+
+The BFF must be versioned and operated like a product API, not like throwaway glue code.
+
+| Responsibility | Staff-level expectation |
+|---|---|
+| Old app support | Keep N-2/N-3 response shapes working, or document the explicit sunset policy |
+| Capabilities | Gate new fields, component types, and actions behind client capabilities |
+| Partial failures | Convert microservice failures into stable mobile UI states |
+| Observability | Tag logs, traces, and SLIs by app version, endpoint, capability, and upstream dependency |
+| Rollback | A backend rollback must not require an app rollback, because app rollback is usually impossible |
+
+This is why ownership matters. If the mobile organization owns the BFF, Android engineers can evolve the screen contract with the same care they apply to client code. If a central backend team owns it, the team needs an explicit API review path, service-level objectives, and a deprecation policy for mobile contracts.
 
 ### The BFF Server Logic (e.g., Ktor)
 ```kotlin

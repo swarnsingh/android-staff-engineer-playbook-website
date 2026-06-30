@@ -348,6 +348,20 @@ type User {
 
 Clients on old query strings keep working as long as the deprecated fields exist. Reduces release coordination but increases schema-sprawl over time.
 
+For mobile, "no version" does not mean "no lifecycle." A released Android app may contain persisted query hashes for months or years. If the server removes a deprecated field while an old app still sends a safelisted query that selects it, that old app now has a production outage.
+
+Treat GraphQL schema evolution like mobile API evolution:
+
+| Practice | Why it matters on Android |
+|---|---|
+| Persisted query inventory by app version | Shows which old clients still depend on each field |
+| Deprecation window tied to active installs | Removal waits for real adoption, not release-date optimism |
+| CI schema diff against shipped queries | Prevents server merges that break old Android builds |
+| Generic UI fallback for GraphQL errors | GraphQL can return HTTP 200 with partial `data` and `errors` |
+| Complexity and depth limits | Protects the backend from expensive queries, even from buggy clients |
+
+GraphQL helps mobile move faster only when the schema is governed as a contract. Without query safelisting, schema diffs, and app-version telemetry, it simply moves breakage from URL versions to field selection.
+
 ---
 
 ## Real-World Apollo + Compose + Flow Pattern
