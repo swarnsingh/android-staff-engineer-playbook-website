@@ -123,6 +123,22 @@ When reviewing App Size, a Staff engineer looks holistically at the App Bundle:
 2.  **Vector Drawables:** I actively reject PRs that contain large `.png` or `.jpg` illustrations if they can be recreated as `.xml` VectorDrawables. Vectors scale infinitely with zero pixelation and take kilobytes instead of megabytes.
 3.  **ProGuard Rule Scoping:** I ensure that library modules (like a custom UI library built by another team) ship their own `-consumer-proguard-rules.pro` files inside their `.aar`. The main app module should not be responsible for writing keep rules for a library's internal reflection needs.
 
+### App size governance
+
+App size is a platform budget, not a cleanup chore after marketing complains. Give each major owner a budget and make CI report attribution.
+
+| Budget | Owner | Gate |
+|---|---|---|
+| Base install size | App platform | Fail release candidate if any target device exceeds budget |
+| DEX growth | Feature/module owner | Warn on > 100 KB, require approval on > 500 KB |
+| Native library growth | SDK/platform owner | Require ABI justification and per-ABI size report |
+| Resources/assets | Design system or feature owner | Require optimized format and density review |
+| Dynamic feature size | Feature owner | Require install-time/on-demand decision record |
+
+The useful report is not "the app grew by 2 MB." It is "checkout added 1.2 MB DEX through payment-sdk, design-system added 600 KB drawables, maps added 4 MB arm64 native code." Staff engineers need owner attribution so size work does not become a vague platform tax.
+
+Run size checks on release-like, minified AABs. Debug APK size is noise.
+
 ## Common Misconceptions
 
 - **"R8 prevents reverse engineering."** False. R8 obfuscation renames variables, making it *annoying* to read decompiled code. It does not encrypt the code. A determined attacker can easily follow the flow of `a.b.c()`. True security requires the [Android Keystore](../networking-and-security/security-and-keystore.md).

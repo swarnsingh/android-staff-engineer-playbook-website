@@ -269,6 +269,26 @@ CI gate: fail the build if any device class crosses a threshold:
     fi
 ```
 
+### Size budget matrix
+
+Use multiple device specs, not one global max. A flagship `arm64` English install and a low-end `armeabi-v7a` install can have different risk profiles.
+
+| Device class | Example budget | Why |
+|---|---|---|
+| Low-end emerging market | 35 MB max download | Install conversion and storage pressure |
+| Mid-tier global | 50 MB max download | Default product budget |
+| High-end flagship | 65 MB max download | More native/high-density assets acceptable |
+| Internal universal APK | No product budget | QA artifact only; never compare to user download |
+
+For every regression, store:
+- AAB size.
+- Generated APK size by device spec.
+- Top growing files/modules.
+- Owning team.
+- Whether the feature is base, install-time, conditional, or on-demand.
+
+This is how app size becomes governable instead of emotional.
+
 ---
 
 ## 9. ABI and Density — Sanity Checks

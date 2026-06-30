@@ -372,6 +372,21 @@ Without governance, every team adds tokens for their use case and the system bec
 
 Run a weekly "Design Systems Sync" with 1 designer + 2 engineers. PRs queued through it. The bottleneck is intentional — design-system changes ripple too far to ship without review.
 
+### Adoption metrics
+
+The design system is only leverage if feature teams use it.
+
+| Metric | Target | Enforcement |
+|---|---|---|
+| Feature modules depending on `:core:design-system` | 100% for UI modules | Build graph audit |
+| Raw Material component imports | 0 in feature modules | Lint error |
+| Hardcoded colors/spacing | 0 outside DS module | Lint + review |
+| Component snapshot coverage | 100% for public components | CI |
+| Accessibility preview coverage | 100% for public components | Paparazzi/Compose preview tests |
+| Deprecated component usage | 0 after migration window | Lint warning -> error |
+
+Publish adoption like any platform metric. If only half the org uses the design system, the problem is either missing components, weak enforcement, or a paved road that is harder than the dirt road.
+
 ---
 
 ## Failure Modes

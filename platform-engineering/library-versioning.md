@@ -265,6 +265,22 @@ Gate dangerous bumps:
 
 Save dozens of engineer-hours per week.
 
+### Dependency governance board
+
+New top-level dependencies are platform surface area. They need a lightweight review before they become everyone else's transitive problem.
+
+| Question | Why it matters |
+|---|---|
+| Who owns upgrades and security advisories? | Unowned libraries rot |
+| Is it on the paved road or team-owned dirt road? | Determines support expectations |
+| What is the method count, DEX, native, and resource impact? | Size and startup budgets are real |
+| Does it bring annotation processors? | Build graph and KAPT/KSP impact |
+| Does it require keep rules or reflection? | R8 and crash risk |
+| Does it duplicate an existing capability? | Fragmentation tax |
+| What is the exit plan? | Prevents permanent vendor lock-in |
+
+Review does not mean "platform says no." It means the maintenance cost is visible before the dependency lands. Approved dependencies go into the version catalog with an owner comment; rejected dependencies can still be used as dirt-road choices if the feature team accepts the support burden.
+
 ---
 
 ## Internal SDK Repos: Private Maven

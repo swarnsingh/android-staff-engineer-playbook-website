@@ -346,6 +346,20 @@ Rules of thumb:
 
 Track these as SLOs in a dashboard. Regress any of them and the whole org feels it.
 
+### Critical-path ownership
+
+Every slow build has a longest path. Assign owners to that path the same way you assign owners to production services.
+
+| Signal | Owner | Action |
+|---|---|---|
+| A module appears in the top 5 critical-path tasks for 2 weeks | Module owner + build platform | Split implementation, reduce generated code, or prebuild artifact |
+| `:core` change rebuilds most of the app | Architecture/platform owner | Move business logic out; enforce `api` surface review |
+| KAPT remains in a module | Module owner | Migrate to KSP or document blocking processor |
+| Cache hit rate drops below 80% | Build platform | Bisect plugin/task inputs and block rollout of offending change |
+| Configuration phase regresses by > 10% | Build platform | Profile plugins and remove configuration-time I/O |
+
+The rule is simple: if a module taxes every engineer's build, the module owner owes the org a remediation plan. Build performance is shared infrastructure, not a local implementation detail.
+
 ---
 
 ## Common Pitfalls

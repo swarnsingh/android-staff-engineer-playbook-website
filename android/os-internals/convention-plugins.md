@@ -236,6 +236,31 @@ Two lines and a namespace. Done.
 
 ---
 
+## Governance Rules
+
+Convention plugins are platform APIs. Treat them with the same care as a shared SDK.
+
+| Rule | Why |
+|---|---|
+| One plugin per module type | Prevents feature teams from composing ad-hoc Gradle behavior |
+| Plugin changes require build-platform review | A bad convention breaks the whole repo |
+| Every convention plugin has functional tests | Gradle behavior changes across versions |
+| Breaking behavior gets a migration window | Hundreds of modules may consume the plugin |
+| Defaults are strict; escape hatches are explicit | Paved road stays safe without blocking rare needs |
+
+Good escape hatches are named and searchable:
+
+```kotlin
+androidPlatform {
+    enableBuildConfig = true       // explicit exception
+    allowRawMaterialImports = false
+}
+```
+
+Avoid "just override it in your module" culture. If many modules need the escape hatch, the convention is wrong and should be redesigned.
+
+---
+
 ## Composing Plugins — The Feature Plugin
 
 `AndroidFeatureConventionPlugin.kt` builds on the library plugin:

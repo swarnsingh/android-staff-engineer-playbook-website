@@ -441,18 +441,18 @@ Why it matters: the Staff lens is not "write tests"; it is fake servers, contrac
 
 Depth add: synthetic testing in production. Use controlled test accounts and canary workflows to validate login, checkout, sync, push, and payments against real production dependencies without polluting user data.
 
-#### G9f — Platform engineering for mobile organizations ⬜
+#### G9f — Platform engineering for mobile organizations ✅
 
 Goal: cover leverage across many teams.
 
-- ⬜ `platform-engineering/build-graph-scaling.md`
-- ⬜ `platform-engineering/internal-developer-platforms.md`
-- ⬜ `platform-engineering/design-systems-architecture.md`
-- ⬜ `platform-engineering/library-versioning.md`
-- ⬜ `android/os-internals/convention-plugins.md`
-- ⬜ `android/os-internals/multi-module.md`
-- ⬜ `android/performance/app-size-and-r8.md` — app size budgets, CI gates, owner attribution, R8/resource shrinking, and dynamic feature governance.
-- ⬜ `release-engineering/app-bundles.md` — AAB delivery strategy, split APK behavior, and size risk during rollout.
+- ✅ `platform-engineering/build-graph-scaling.md`
+- ✅ `platform-engineering/internal-developer-platforms.md`
+- ✅ `platform-engineering/design-systems-architecture.md`
+- ✅ `platform-engineering/library-versioning.md`
+- ✅ `android/os-internals/convention-plugins.md`
+- ✅ `android/os-internals/multi-module.md`
+- ✅ `android/performance/app-size-and-r8.md` — app size budgets, CI gates, owner attribution, R8/resource shrinking, and dynamic feature governance.
+- ✅ `release-engineering/app-bundles.md` — AAB delivery strategy, split APK behavior, and size risk during rollout.
 
 Why it matters: Staff engineers often own build speed, dependency governance, shared architecture, design systems, and paved roads.
 
@@ -504,7 +504,7 @@ In order of impact-per-effort:
 
 ## Blocked — Decisions Needed ✅
 
-All decisions made. Current execution: G9f platform engineering for mobile organizations.
+All decisions made. Current execution: G9g security and privacy threat modeling.
 
 ---
 

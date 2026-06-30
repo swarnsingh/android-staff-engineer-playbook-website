@@ -267,6 +267,24 @@ The platform lead decides explicitly. Most extensions are rejected; that's the p
 
 ---
 
+## Platform Service Catalog
+
+Treat each paved-road capability as a supported internal product with owners and SLOs.
+
+| Service | Owner | SLO / expectation |
+|---|---|---|
+| Build logic and convention plugins | Build platform | Breaking build issue response < 2 hours |
+| CI reusable workflows | Build/release platform | PR feedback P90 < 12 minutes |
+| Design system | UI platform + design lead | Migration guidance for every breaking change |
+| Dependency catalog | Platform | Patch upgrades automated; major upgrades RFC'd |
+| Observability wrapper | Platform + SRE | Crash/perf metadata present in every feature |
+| Release tooling | Releng | Promotion/halt actions audited and reversible |
+| Scaffolder/doctor CLI | DevEx platform | New module builds and tests after generation |
+
+A platform capability without an owner is a liability. A feature team will depend on it, it will break, and nobody will know who can safely change it.
+
+---
+
 ## Failure Modes
 
 | Symptom | Cause | Fix |

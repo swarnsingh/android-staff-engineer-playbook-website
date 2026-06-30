@@ -95,6 +95,21 @@ Ten lines instead of fifty. Convention plugin does the heavy lifting.
 
 The rule when adding a new module: **what row are you?** If none fits, push back. The taxonomy should be exhaustive.
 
+### Module creation review
+
+New modules are cheap to create and expensive to own forever. Require a short review before adding one.
+
+| Question | Expected answer |
+|---|---|
+| What boundary does this module enforce? | Feature API, feature impl, data, core, test, benchmark, or dynamic delivery |
+| Who owns it? | A team, not "platform" by default |
+| What can depend on it? | Explicit allowed consumers |
+| Does it expose `api` dependencies? | Only if its public ABI needs them |
+| What is the build impact? | Expected affected-module count for common edits |
+| Is it regular library or dynamic feature? | Dynamic only for install-time/on-demand/conditional delivery reasons |
+
+If the answer is "we want cleaner folders," use packages. If the answer is "we need a compile-time ownership boundary," use a module.
+
 ---
 
 ## Variant-Aware Dependencies
