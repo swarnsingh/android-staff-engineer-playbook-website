@@ -120,7 +120,7 @@ If the Javascript exploit breaks out, it only compromises the sandboxed renderer
 
 When thinking about the Zygote, a Staff engineer focuses on the architectural implications of Application Initialization.
 
-1.  **`Application.onCreate()`:** Because the Zygote handles the heavy lifting of JVM boot and framework loading, the absolute biggest bottleneck in app startup is the code *you* write in `Application.onCreate()`. The Zygote forks in milliseconds. If your app takes 3 seconds to launch, it is entirely your fault.
+1.  **`Application.onCreate()`:** Because the Zygote handles the heavy lifting of JVM boot and framework loading, the absolute biggest bottleneck in app startup is typically the code *you* write in `Application.onCreate()`. The Zygote forks in milliseconds. If your app takes 3 seconds to launch, it is almost certainly due to application-level initialization rather than OS overhead.
 2.  **Multidex Overhead:** On legacy Android versions (Dalvik), if your app exceeded 65,536 methods, you had to enable Multidex. The Dalvik Zygote was not designed for this. Loading secondary DEX files required extracting massive ZIP files on the Main Thread during the fork process, causing multi-second black screens. While ART natively supports Multidex, I still ensure our build pipelines optimize DEX layout for the Zygote.
 3.  **Process Restarts:** I design apps with the assumption that the OS will ruthlessly kill my app's process when in the background. Because the Zygote makes forking a new process so cheap, the OS uses Process Death as its primary memory management tool. We must rely on `SavedStateHandle` to restore state, because the Zygote will happily fork us a brand new, empty process when the user returns.
 

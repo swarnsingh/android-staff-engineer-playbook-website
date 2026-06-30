@@ -236,6 +236,8 @@ suspend fun update(id: String, title: String, body: String) = db.withTransaction
     workManager.enqueueUniqueWork("push", REPLACE, pushWorkRequest())
 }
 ```
+> [!WARNING]
+> **The Outbox Flaw:** It is extremely tempting to replace `workManager.enqueue...` with a simple `CoroutineScope.launch { upload() }` for lower latency. Do not do this. If the network call succeeds but the OS kills your app *before* you can delete the Outbox row, the record remains in the database. Without WorkManager, that row is permanently stuck. With WorkManager, it will be retried on the next launch. Furthermore, because it will be retried, the `clientId` acts as an **idempotency key** so the server safely drops the duplicate upload.
 
 ### Push path (`PushWorker`, `@HiltWorker`)
 

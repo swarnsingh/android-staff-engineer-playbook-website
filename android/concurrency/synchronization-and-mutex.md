@@ -108,19 +108,28 @@ class AnalyticsTracker {
     private val isUploading = AtomicBoolean(false)
 
     suspend fun trackEvent(event: Event) {
-        // We MUST use withLock. It automatically unlocks even if an exception is thrown.
-        mutex.withLock {
-            batch.add(event) // This is now safe from race conditions
-            
-            if (batch.size >= 50 && !isUploading.get()) {
-                uploadBatch() // Suspending function
+        val snapshotToUpload = mutex.withLock {
+            batch.add(event)
+            // Snapshot the batch inside the lock, but DO NOT upload here!
+            // Suspending inside a Mutex is a massive anti-pattern that blocks all other callers.
+            if (batch.size >= 50 && isUploading.compareAndSet(false, true)) {
+                val copy = batch.toList()
+                batch.clear()
+                copy
+            } else {
+                null
             }
+        }
+
+        // Upload OUTSIDE the lock
+        snapshotToUpload?.let { 
+            uploadBatch(it) 
+            isUploading.set(false)
         }
     }
 
-    private suspend fun uploadBatch() {
+    private suspend fun uploadBatch(events: List<Event>) {
         // ... network call ...
-        batch.clear()
     }
 }
 ```

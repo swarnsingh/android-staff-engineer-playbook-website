@@ -29,12 +29,12 @@ Android sits in the middle. Your Kotlin code is compiled into `.dex` (Dalvik Exe
 1.  **DEX (Dalvik Executable):** The highly optimized bytecode format specific to Android. The `d8` / `R8` compiler turns your Kotlin into DEX.
 2.  **JIT (Just-In-Time):** Translating bytecode into Machine Code *while the app is running*. Slows down the app in real-time, but requires zero installation time.
 3.  **AOT (Ahead-Of-Time):** Translating bytecode into Machine Code *before the app runs*. Makes the app run blazingly fast, but requires time and CPU power upfront (during installation or while charging).
-4.  **Profile (`.prof`):** A text file the OS maintains that tracks exactly which methods you use most frequently.
+4.  **Profile (`.prof`):** A binary file the OS maintains that tracks exactly which methods you use most frequently. (Note: Baseline Profile source files you write are text, but the compiled runtime profile is binary).
 
 ## Mental Model
 
 Think of your app's DEX code as a **French Novel**. The CPU only speaks **English**.
-- **Dalvik (Pure JIT):** Every time the user opens the book, a translator stands next to them, translating each French sentence into English out loud. Reading is slow and exhausting for the translator (Battery).
+- **Dalvik (Interpreter-first):** Every time the user opens the book, a translator stands next to them, translating each French sentence into English out loud (Interpreter). Later versions added a notepad to remember frequent translations (JIT). Reading is slow and exhausting for the translator (Battery).
 - **ART v1 (Pure AOT):** When you buy the book, you must wait in the bookstore for 2 hours while the translator writes a complete English copy. Once done, you can read the English book instantly forever.
 - **Modern ART (PGO):** When you buy the book, you take the French version home. You start reading (JIT translation). The translator notices you really like reading Chapter 3. When you go to sleep (plug the phone in), the translator stays up and writes an English copy of *only* Chapter 3 (AOT based on Profile). The next day, Chapter 3 is instant.
 
@@ -113,7 +113,7 @@ Why did Android use a Register-based VM (Dalvik/ART) instead of a Stack-based VM
 - **AOT Thrashing (Pre-Android 7):**
   On Android 5 and 6, the OS AOT compiled *everything*. If you had a 150MB APK, `dex2oat` would lock up the phone for 10 minutes during installation, causing the device to overheat. This is the exact failure mode that forced Google to invent Profile-Guided Optimization.
 - **De-optimization:**
-  If the OS detects that your app is throwing an excessive amount of Exceptions, ART might actually *de-optimize* your `.odex` machine code and fall back to the JIT interpreter to safely capture the stack traces, severely degrading performance. Exceptions should only be used for truly exceptional states, not for standard control flow.
+  Exceptions are computationally expensive. Generating stack traces requires walking the call stack and resolving symbol information, severely degrading performance when used for standard control flow. Exceptions should only be used for truly exceptional states.
 
 ## Staff Engineer Thinking
 

@@ -48,9 +48,10 @@ flowchart TB
     DLoc --> DSocket
     DSocket --> Dispatcher[Dispatcher BFF]
     RSocket --> Dispatcher
-    Dispatcher --> LocationIdx["Location Index<br/>H3 / S2 black box"]
-    Dispatcher --> Matcher["Matching Engine<br/>black box"]
-    Dispatcher --> TripSvc["Trip Service<br/>state authority"]
+    Dispatcher --> LocationIdx[(Redis Geospatial<br/>ephemeral location index)]
+    Dispatcher --> Matcher[Matching Engine]
+    Dispatcher --> TripSvc[Trip Service]
+    TripSvc --> TripDB[(Postgres/CockroachDB<br/>durable trip state)]
     DTrip --> Room[(Room: trip state cache)]
     RTrip --> Room
 ```
@@ -185,16 +186,18 @@ sequenceDiagram
 
     FLP->>LS: location update
     LS->>Buf: enqueue
-    alt Online
+    alt Online (WebSocket active)
         Buf->>WS: flush batch
         WS->>Disp: location.ping
         Disp->>R: trip.driver_location_update (WS)
+    else Online (WebSocket dropped)
+        Buf->>Disp: POST /v1/location/batch (REST Fallback)
     else Offline
         Note over Buf: accumulate, flush on reconnect
     end
 ```
 
-`LocationBuffer` is the resilience against brief network drops (tunnels, dead zones). It survives the gap; on reconnect, batched ping flushes catch the server up.
+`LocationBuffer` is the resilience against brief network drops (tunnels, dead zones). It survives the gap; on reconnect, batched ping flushes catch the server up. **Crucially**, it must have a `maxAge` limit (e.g., 5 minutes). If a driver loses connection for 2 hours, we drop the stale location history rather than flooding the backend with irrelevant historical coordinates.
 
 ### Trip State Transition (Driver Marks Arrived)
 
@@ -205,7 +208,7 @@ sequenceDiagram
     participant Disp as Dispatcher BFF
     participant Trip as Trip Service
 
-    D->>D: cashier swipes "Arrived"
+    D->>D: driver swipes "Arrived"
     D->>Disp: POST /v1/trips/{id}/transition?to=ARRIVED (Idempotency-Key)
     Disp->>Trip: validate transition (DRIVER_EN_ROUTE → ARRIVED ok?)
     Trip-->>Disp: 200 OK { state: ARRIVED, ... }
@@ -216,6 +219,8 @@ sequenceDiagram
 ```
 
 Both apps see the same `trip.update` event; both transition in sync. Local optimistic update on the driver side; rider sees the server's authoritative state.
+
+**Idempotency-Key Nuance:** State transitions (like swiping "Arrived") are high-stakes. The client generates a UUID v4 `Idempotency-Key` at the exact moment of the swipe and includes it in the header. If the network drops *during* the transition and the client retries the POST, the server sees the same key and returns the cached 200 OK without re-triggering business logic. The server typically caches these keys in Redis for 24 hours.
 
 ---
 

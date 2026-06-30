@@ -36,7 +36,7 @@ Every file is exactly one of four kinds. Each kind has its own template in [`tem
 | **Canonical** | The single source of truth for a concept | `distributed-systems/idempotency.md` | [`templates/canonical.md`](templates/canonical.md) |
 | **Application** | Applies a canonical concept to a concrete system | `mobile-system-design/offline-sync.md` | [`templates/application.md`](templates/application.md) |
 | **Decision** | A recorded tradeoff and choice (ADR) | `backend-for-mobile/sse-vs-websockets.md` | [`templates/decision.md`](templates/decision.md) |
-| **Blueprint** | A complete end-to-end system reference | `reference-architectures/ecommerce-app.md` | [`templates/blueprint.md`](templates/blueprint.md) |
+| **Blueprint** | A complete end-to-end system reference | `reference-architectures/e-commerce-app.md` | [`templates/blueprint.md`](templates/blueprint.md) |
 
 Two rules govern the whole repo. Both live in [`CONTRIBUTING.md`](CONTRIBUTING.md):
 

@@ -144,7 +144,7 @@ Now no caller anywhere thinks about threading. The repository owns its own main-
 |---|---|---|
 | Returns | `Job` | `Deferred<T>` (a `Job` that produces a result) |
 | Result | None (fire-and-forget) | `.await()` to get the value |
-| Exception behavior | Propagates immediately to parent | **Held inside `Deferred`** until `await()` is called |
+| Exception behavior | Propagates immediately to parent | **Propagates immediately to parent** (if child of standard Job) AND holds in `Deferred` for `await()` |
 | Use case | "Do something" (start a save, update UI) | "Compute something I need a value from" |
 
 ```kotlin
@@ -161,12 +161,12 @@ This is **parallel decomposition** — run two independent things concurrently, 
 
 ```kotlin
 viewModelScope.launch {
-    async { throw IOException("boom") }   // ← exception held in Deferred
-    // never call .await() → silently lost
+    async { throw IOException("boom") }   // ← exception propagates IMMEDIATELY to parent
+    // The parent 'launch' crashes, and the app crashes.
 }
 ```
 
-Without `.await()`, the exception sits inside the Deferred forever. No crash, no log. Use `launch` if you don't need a value — exceptions propagate immediately.
+A common misconception is that `async` swallows exceptions until you call `.await()`. This is **only true** if the `async` is a top-level coroutine or a direct child of a `SupervisorJob` (like `supervisorScope`). In standard structured concurrency (like the `launch` above), the child `async` fails, immediately notifies its parent, the parent cancels, and the exception is thrown, crashing your app—even if you never called `.await()`.
 
 ---
 

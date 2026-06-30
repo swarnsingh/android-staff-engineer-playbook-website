@@ -107,7 +107,7 @@ EventSources.createFactory(client).newEventSource(
 
 ### Built-in resume semantics: `Last-Event-ID`
 
-If the server gives each event an `id:`, on reconnect the client automatically sends `Last-Event-ID: <last>`. The server resumes from there. **No custom code needed** — this is the SSE protocol's killer feature.
+If the server gives each event an `id:`, the SSE specification dictates that on reconnect the client automatically sends `Last-Event-ID: <last>`. The server resumes from there. **Android Note:** While this is a killer feature of the web specification, OkHttp's SSE implementation *does not* automatically track or append this header for you. You must manually cache the last seen ID and append `Last-Event-ID` to your reconnection request headers.
 
 ### Pros / Cons
 

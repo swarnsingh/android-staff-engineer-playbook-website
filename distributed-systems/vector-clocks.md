@@ -2,7 +2,7 @@
 
 ## Overview
 
-A **vector clock** is a data structure that tracks causality across nodes in a distributed system. Where a Lamport timestamp can tell you "A happened before B," a vector clock can tell you something more powerful: "A and B are *concurrent* — neither caused the other." This ability to detect concurrency is what makes conflict detection possible in multi-master replication, CRDTs, and eventually consistent databases. A vector clock is an array of counters, one per node, that collectively encode the causal history of an event.
+A **vector clock** is a data structure that tracks causality across nodes in a distributed system. Where a Lamport timestamp only provides a total order (if A causally precedes B, then `lamport(A) < lamport(B)`, but NOT the other way around), a vector clock captures true causality. It can tell you something more powerful: "A and B are *concurrent* — neither caused the other." This ability to detect concurrency is what makes conflict detection possible in multi-master replication, CRDTs, and eventually consistent databases. A vector clock is an array of counters, one per node, that collectively encode the causal history of an event.
 
 ---
 

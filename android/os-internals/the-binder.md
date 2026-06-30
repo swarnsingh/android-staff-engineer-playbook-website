@@ -53,7 +53,7 @@ data class User(val id: Int, val name: String) : Parcelable
 
 ### 2. The Transaction Limits
 
-The Binder kernel driver allocates a fixed, shared memory buffer for *all* IPC transactions happening across the entire OS at any given moment. This buffer is exactly **1 Megabyte**.
+The Binder kernel driver allocates a fixed, shared memory buffer for IPC transactions. Crucially, this buffer is limited to **1 Megabyte per process**. This single 1MB pool is shared by *all* in-flight transactions happening simultaneously for that specific app process.
 
 ```kotlin
 val intent = Intent(this, TargetActivity::class.java)
@@ -139,7 +139,7 @@ The Android build system generates a `Stub` and a `Proxy`.
 When reviewing code that crosses process boundaries, a Staff engineer focuses on the physical transport cost.
 
 1.  **Intent Size Auditing:** I actively search the codebase for `intent.putExtra(KEY, object)`. If `object` is anything more complex than a basic String or Int, I flag it. Developers frequently attach massive `ArrayList<Data>` to intents for convenience, completely unaware they are attacking the Linux kernel.
-2.  **`oneway` AIDL Calls:** If we are forced to build an AIDL interface, and the Client does not need a return value (e.g., `fun reportAnalyticsEvent()`), I mandate the use of the `oneway` keyword in the AIDL file. This tells the Binder driver to fire the Parcel into the kernel and return instantly, without waiting for the Server to process it. This completely eliminates the risk of the Client ANRing.
+2.  **`oneway` AIDL Calls:** If we are forced to build an AIDL interface, and the Client does not need a return value (e.g., `fun reportAnalyticsEvent()`), I mandate the use of the `oneway` keyword in the AIDL file. This tells the Binder driver to fire the Parcel into the kernel and return instantly. While this prevents the caller thread from blocking, it does *not* completely eliminate ANR risk—async Binder queues can still back up, and server-side Binder thread pools can be exhausted if flooded.
 3.  **Process Death Resiliency:** Because the Binder manages the connections between processes, if the System Server crashes (a "soft reboot" of the phone), all `Proxy` objects in your app become dead ("Binder Died"). I ensure our critical services implement `IBinder.DeathRecipient` to gracefully reconnect when the OS recovers.
 
 ## Common Misconceptions

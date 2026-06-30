@@ -140,8 +140,14 @@ flowchart LR
     Client["Client<br/>(generates key)"] -->|Op + Idempotency-Key| API
     API --> Dedup{Key seen?}
     Dedup -->|No| Lock[Lock key]
-    Lock --> Effect[Execute operation]
-    Effect --> Store[Store key + response]
+    
+    subgraph DBTx["Database Transaction (Atomic)"]
+        Effect[Execute business operation]
+        Store[Store key + response]
+    end
+    
+    Lock --> Effect
+    Effect --> Store
     Store --> Return[Return response]
     Dedup -->|Yes, completed| Replay[Return stored response]
     Dedup -->|Yes, in flight| Wait[Wait or 409]

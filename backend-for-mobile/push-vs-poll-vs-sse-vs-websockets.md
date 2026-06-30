@@ -89,9 +89,9 @@ This Ping forces the cellular radio to stay in the "Active" state permanently. A
 ### 3. FCM "Data" vs "Notification" Messages
 Firebase Cloud Messaging (FCM) allows two payload types:
 - **Notification Payload:** The Android OS intercepts the message and automatically draws a system notification in the tray. Your app code *never runs* unless the user taps the notification.
-- **Data Payload:** The Android OS wakes up your app's `FirebaseMessagingService`. You get up to 10 seconds of CPU time to process the JSON, sync your local Room database, and optionally draw your own notification. 
+- **Data Payload (FCM) / Background Push (APNs):** The OS wakes up your app in the background. On Android (FCM High Priority), you get up to 10 seconds of CPU time to process the JSON, sync your local Room database, and optionally draw your own notification. **However, on iOS**, APNs background pushes (even high priority) are strictly governed by the OS's battery and usage heuristics. If the user rarely opens your app, or the battery is low, iOS will silently throttle or drop your background pushes. You cannot guarantee waking the app on iOS.
 
-*Staff Rule:* For chat apps, always use **Data Payloads**. When the message arrives, write it to the local SQLite database. Then, emit a Kotlin `Flow`. If the UI is open, the chat screen updates instantly. If the UI is closed, draw a notification.
+*Staff Rule:* For chat apps, always use **Data Payloads** (with the understanding that iOS delivery is best-effort). When the message arrives, write it to the local SQLite database. Then, emit a Kotlin `Flow`. If the UI is open, the chat screen updates instantly. If the UI is closed, draw a notification.
 
 ## Failure Modes
 

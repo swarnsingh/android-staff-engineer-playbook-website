@@ -48,8 +48,8 @@ fun computeArea() {
 }
 ```
 
-- **Primitives in non-nullable positions** stay on the stack.
-- **All object references** live on the stack; the objects themselves live on the heap.
+- **Local primitives** (like variables in a function) may live on the stack or in registers. Non-null primitives *inside objects* live on the heap as part of their parent object.
+- **All object references** live on the stack or in registers; the actual objects they point to live on the heap.
 - **Closures** that capture a `var` cause that variable to live on the heap (so it can outlive the call).
 
 ### Boxing — the silent perf killer
@@ -151,8 +151,8 @@ Mostly seen in framework code (Coil, Glide, FFmpeg bindings) that needs to know 
 
 | Dalvik (pre-Android 5) | ART (Android 5+) |
 |---|---|
-| Just-in-time only | Ahead-of-time + JIT |
-| Mark-and-sweep GC | Concurrent generational GC |
+| Just-in-time only | AOT (5/6) -> AOT + JIT PGO (7+) |
+| Mark-and-sweep GC | Concurrent generational GC (Android 8+) |
 | Long stop-the-world pauses (~50ms+) | Sub-5ms pauses typically |
 | ~1ms allocation cost | ~100ns allocation cost (TLAB) |
 | No Large Object Space | Separate LOS for Bitmaps |

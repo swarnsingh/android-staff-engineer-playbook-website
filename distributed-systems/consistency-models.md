@@ -242,7 +242,7 @@ Different consistency models require different architectural choices. Linearizab
 
 - **Google Spanner.** Linearizable. TrueTime enables globally-consistent reads. Every read sees the latest committed write. The most expensive option; justified by the need for globally-consistent financial transactions.
 - **Amazon DynamoDB.** Tunable per read. `ConsistentRead=true` gives linearizable reads from the leader; `ConsistentRead=false` gives eventual consistency from any replica. The default is eventual.
-- **Cassandra.** Tunable per query. `QUORUM` reads and writes give linearizability if `W + R > N`; `ONE` gives eventual consistency.
+- **Cassandra.** Tunable per query. `QUORUM` reads and writes give strong consistency if `W + R > N` (and linearizability if combined with read-repair); `ONE` gives eventual consistency.
 - **MongoDB.** Causal consistency since 3.6. Reads within a causally-consistent session see all prior writes from that session. Independent sessions may see different orderings.
 - **Redis.** Single-leader eventual consistency. Reads from the leader are consistent; reads from replicas may be stale.
 - **Facebook/Meta TAO.** Read-your-writes consistency for social data. Users always see their own posts immediately; other users see them after replication lag (typically sub-second).
@@ -412,7 +412,7 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 3. Explain causal consistency using a concrete example (e.g., a social media post and its comments).
 4. Why is "read-your-writes" a particularly important guarantee for user-facing applications?
 5. DynamoDB offers both eventually consistent and strongly consistent reads. When would you use each?
-6. A system uses quorum reads (R=2) and quorum writes (W=2) with N=3 replicas. Is this linearizable? Why?
+6. A system uses quorum reads (R=2) and quorum writes (W=2) with N=3 replicas. Is this strictly linearizable? Why or why not?
 7. Two clients write different values to the same key concurrently in an eventually consistent system. What happens? Who "wins"?
 8. What is bounded staleness, and why is it a useful middle ground?
 9. How does replication lag become a user-visible bug? Give a mobile-app example.

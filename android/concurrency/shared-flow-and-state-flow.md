@@ -160,21 +160,23 @@ data class UiState(
     val errorMessages: List<String> = emptyList() // Events are state!
 )
 
-// UI Layer:
-if (state.errorMessages.isNotEmpty()) {
-    val error = state.errorMessages.first()
-    Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
-    // Explicitly tell the ViewModel the event was consumed!
-    viewModel.onErrorConsumed(error) 
+// UI Layer (Compose):
+val error = state.errorMessages.firstOrNull()
+if (error != null) {
+    LaunchedEffect(error) {
+        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+        // Explicitly tell the ViewModel the event was consumed!
+        viewModel.onErrorConsumed(error)
+    }
 }
 ```
 
 ## Failure Modes
 
-- **Infinite Suspension on `SharedFlow`:**
+- **Suspension on `SharedFlow` with slow collectors:**
   By default, `MutableSharedFlow` has a buffer of 0 and `onBufferOverflow = SUSPEND`.
-  If you call `_sharedFlow.emit(data)` from a coroutine, and *no one is collecting it*, or the collector is slow, the `emit()` function will suspend forever. The coroutine freezes, causing a massive logic bug.
-  *(Fix: If you expect to emit when no one is listening, use `tryEmit()`, or configure the `SharedFlow` with `extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST`).*
+  If you call `_sharedFlow.emit(data)` from a coroutine, and *there are zero subscribers*, the emission is dropped immediately. However, if there is an *active subscriber but it is slow* to process the data, the `emit()` function will suspend. The emitting coroutine freezes until the subscriber catches up, causing a massive logic bug.
+  *(Fix: If you cannot tolerate blocking the emitter, use `tryEmit()`, or configure the `SharedFlow` with `extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST`).*
 - **Accidental Conflation with Data Classes:**
   ```kotlin
   data class ScreenState(val list: List<Item>)

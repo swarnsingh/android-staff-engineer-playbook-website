@@ -341,7 +341,7 @@ Reuses the `file-downloader.md` library.
 | Tunnel / no GPS | Last known location dimmed; "GPS lost" badge; nav pauses until signal back |
 | Off route | Reroute triggers; "Recalculating" announcement |
 | TTS engine unavailable | Visual cues only; haptic at turns |
-| Foreground service killed by OEM | Persistent notification + STIRR; user warned in onboarding |
+| Foreground service killed by OEM | Persistent notification + STIR; user warned in onboarding |
 | Offline region expired (TTL) | Show "update available"; downgrade quality if missing tiles |
 | Routing API down | Use cached recent route to destination if available; otherwise error |
 | Battery critical | Reduce location frequency; warn user |

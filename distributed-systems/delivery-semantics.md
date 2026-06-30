@@ -18,7 +18,7 @@ Delivery semantics, as a formal vocabulary, let engineers name their system's be
 
 ## Historical Context
 
-1. **UDP vs TCP (1970s-80s).** UDP provides at-most-once delivery — the datagram is sent once and may be lost. TCP provides at-least-once delivery of byte streams — lost segments are retransmitted. Neither provides exactly-once at the transport layer.
+1. **UDP vs TCP (1970s-80s).** UDP provides at-most-once delivery — the datagram is sent once and may be lost. TCP guarantees in-order retransmission and deduplication *within a single active connection*, but if the connection drops, application-level retries dictate the true delivery semantics. Neither provides end-to-end exactly-once at the application layer.
 2. **Message queues (1990s-2000s).** JMS, AMQP, and early message brokers distinguished between "persistent" and "non-persistent" messages. Persistent messages were at-least-once; non-persistent were at-most-once. "Exactly-once" was a frequent marketing claim that rarely held up under scrutiny.
 3. **Kafka (2011 onward).** Kafka initially provided at-least-once delivery. In version 0.11 (2017), Kafka introduced "exactly-once semantics" (EOS) through idempotent producers and transactional writes — actually implementing at-least-once delivery with server-side deduplication.
 4. **Stream processing (2010s).** Frameworks like Flink, Spark Streaming, and Kafka Streams made delivery semantics a first-class configuration. Each framework had to specify what "exactly-once" meant in its context.

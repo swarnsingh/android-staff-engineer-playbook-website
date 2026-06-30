@@ -140,6 +140,8 @@ val readHeavy        = QuorumConfig(n = 3, w = 3, r = 1)  // W+R=4 > 3
 val eventual         = QuorumConfig(n = 3, w = 1, r = 1)  // W+R=2 <= 3
 ```
 
+*(Note: `W + R > N` guarantees strong consistency. To achieve strict *linearizability*, the database must also perform read-repair during the read phase before returning the value).*
+
 This is not a binary CP/AP choice — it's a dial that trades consistency for availability per operation.
 
 ---
@@ -355,7 +357,7 @@ Canonical: [`../observability/slis.md`](../observability/slis.md), [`../observab
 2. Why are network partitions considered inevitable in distributed systems?
 3. Cassandra uses last-writer-wins for conflict resolution during partition healing. What can go wrong? (Link to [`../engineering-fundamentals/time-and-clocks.md`](../engineering-fundamentals/time-and-clocks.md).)
 4. An e-commerce app stores product inventory counts. Should this be CP or AP? Justify your answer, including the failure mode you're accepting.
-5. Explain quorum reads and writes (W + R > N). Why does this guarantee strong consistency?
+5. Explain quorum reads and writes (W + R > N). Why does this guarantee strong consistency? What extra step is required for true linearizability?
 6. Why is the "pick two" framing of CAP misleading?
 7. A mobile app stores user preferences locally and syncs to a server. Where does this sit in the CAP model?
 8. Google Spanner claims to be "effectively CA." How does it achieve this, and what assumption makes it possible?
