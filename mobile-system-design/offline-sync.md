@@ -126,6 +126,37 @@ GET /v1/sync/pull?since=ct_8f3a&limit=100
 
 > **Wire-level rule:** the client never sends "full state" — only ops since the last successful push. Pulls are always deltas after the first sync.
 
+### Versioned operation envelope
+
+The outbox stores operations for days or weeks. That means the app may enqueue an op on version 4.12, upgrade to 4.15, and only then get network back. The worker must still understand the old row.
+
+Wrap every operation in an envelope:
+
+```json
+{
+  "opId": "8f7...uuid",
+  "opType": "note.upsert",
+  "opVersion": 2,
+  "entityType": "note",
+  "entityId": "n_42",
+  "baseVersion": 7,
+  "createdAt": 1750000000,
+  "payload": {
+    "title": "Groceries",
+    "body": "milk\neggs"
+  }
+}
+```
+
+Rules:
+- **Add new optional payload fields** freely.
+- **Never change the meaning** of an existing `opType` + `opVersion`.
+- **Introduce a new op version** when server semantics change.
+- **Keep an upgrader** from old local op versions to the latest supported wire shape.
+- **Preserve the original `opId`** during upgrade so idempotency survives process death and app upgrades.
+
+If an outbox row is too old to upgrade safely, do not drop it silently. Mark it `NEEDS_USER_REVIEW` or `FAILED_PERMANENT` and surface a repair path.
+
 ---
 
 ## 5. Mobile App Architecture (~10 min)
@@ -316,6 +347,24 @@ class ConflictResolver {
 ### Tombstones + delete propagation
 
 Deletes are **soft** server-side: the record gets `deleted=true` and stays around for ~30 days so other devices can pull the tombstone. Client mirrors: setting `deleted=true` instead of removing the row, then purging after the next successful pull confirms the tombstone.
+
+### Protocol evolution: tokens, compaction, tombstones
+
+Offline sync has three version boundaries: the app binary, the local database schema, and the server sync protocol. Treat them as one migration plan.
+
+| Boundary | Failure mode | Production discipline |
+|---|---|---|
+| Outbox op version | New app cannot upload an old queued op | Store `opVersion`; ship local upgraders; keep idempotency key stable |
+| Delta token | Server changes token format or invalidates history | Return typed `TOKEN_EXPIRED`; client performs paginated full resync |
+| Tombstone retention | Device offline longer than tombstone window | Server forces full resync or account repair flow |
+| Op compaction | Offline user edits same note 200 times | Compact adjacent local upserts only when order and conflict semantics are preserved |
+| Conflict semantics | Server changes merge rules | Version conflict response shape and keep old resolver tests |
+
+**Delta-token invalidation:** `nextToken` is opaque. The client must never parse it, cache assumptions about its timestamp, or synthesize one. If the server returns `TOKEN_EXPIRED`, wipe only the token, not the local database, then run a paginated full pull that reconciles by record ID/version.
+
+**Tombstone retention:** pick a retention window based on real offline behavior. Thirty days is reasonable for consumer notes; field-service or enterprise apps may need 90-180 days. If the user can be offline longer than tombstones live, the protocol must include a repair path, usually a full resync with delete reconciliation.
+
+**Op compaction:** coalesce only operations that are safe to reorder into the same final intent. Multiple local title/body upserts to the same note can usually collapse to the latest payload. A delete followed by an edit, payment retry, inventory reservation, or message send must not be compacted casually because each op may have business meaning.
 
 ### Sync triggers
 

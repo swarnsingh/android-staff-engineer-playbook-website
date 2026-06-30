@@ -391,13 +391,13 @@ Goal: teach how Android clients survive backend change while old app versions re
 
 Why it matters: backend deploys continuously; mobile deploys through stores, user choice, OEMs, and long-tail app versions. Staff engineers need to design the contract so backend velocity does not become mobile fragility.
 
-#### G9b — Schema and sync protocol evolution ⬜
+#### G9b — Schema and sync protocol evolution ✅
 
 Goal: make offline-first content production-grade across long-offline clients, app upgrades, and server protocol changes.
 
-- ⬜ `mobile-system-design/offline-sync.md` — outbox payload versions, op compaction, delta-token invalidation, tombstone retention.
-- ⬜ `android/data-and-di/room.md` — multi-hop migration discipline, destructive fallback policy, exported schema review.
-- ⬜ `android/data-and-di/datastore.md` — preference/proto migrations, corruption handlers.
+- ✅ `mobile-system-design/offline-sync.md` — outbox payload versions, op compaction, delta-token invalidation, tombstone retention.
+- ✅ `android/data-and-di/room.md` — multi-hop migration discipline, destructive fallback policy, exported schema review.
+- ✅ `android/data-and-di/datastore.md` — preference/proto migrations, corruption handlers.
 
 Why it matters: real sync systems fail at version boundaries, not only under network loss.
 
@@ -504,7 +504,7 @@ In order of impact-per-effort:
 
 ## Blocked — Decisions Needed ✅
 
-All decisions made. Current execution: G9b schema and sync protocol evolution.
+All decisions made. Current execution: G9c mobile observability architecture.
 
 ---
 

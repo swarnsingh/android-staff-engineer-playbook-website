@@ -190,6 +190,72 @@ class SettingsRepository @Inject constructor(
   If you attempt to store a 5MB JSON string or a list of 10,000 cached network objects in DataStore, the app will stutter massively. DataStore reads the *entire file* into memory on initialization.
   *(Fix: DataStore is strictly for small primitives. Use Room for relational or large datasets).*
 
+## Schema Evolution and Corruption Handling
+
+DataStore looks simple, but it still needs migration discipline. A bad settings migration can disable notifications, skip onboarding, break auth bootstrap, or permanently hide a feature.
+
+### Preferences DataStore migrations
+
+When moving from `SharedPreferences`, treat the migration as production code:
+
+```kotlin
+val Context.userPrefsDataStore by preferencesDataStore(
+    name = "user_prefs",
+    produceMigrations = { context ->
+        listOf(
+            SharedPreferencesMigration(
+                context = context,
+                sharedPreferencesName = "legacy_user_prefs",
+                keysToMigrate = setOf("dark_mode", "notification_level")
+            )
+        )
+    }
+)
+```
+
+Review questions:
+- Are legacy keys mapped to new keys with explicit defaults?
+- Is the migration idempotent if the app process dies during startup?
+- Do analytics prove the migration ran before deleting legacy reads?
+- Is there a rollback plan if a release writes bad values?
+
+### Proto DataStore evolution
+
+Proto schemas evolve by field number. Field names can change; field numbers are the wire contract.
+
+```protobuf
+message UserPreferences {
+  bool dark_mode = 1;
+  string notification_level = 2;
+
+  reserved 3;
+  reserved "old_experiment_bucket";
+}
+```
+
+Rules:
+- Never reuse a removed field number.
+- Reserve removed field numbers and names.
+- Add fields with safe defaults.
+- Prefer additive enum values with an `UNKNOWN` fallback.
+- Do not change a field's type in place; add a new field and migrate in code.
+
+### Corruption handler
+
+Use a corruption handler when a safe default is better than crashing at startup:
+
+```kotlin
+DataStoreFactory.create(
+    serializer = UserPreferencesSerializer,
+    corruptionHandler = ReplaceFileCorruptionHandler {
+        UserPreferences.getDefaultInstance()
+    },
+    produceFile = { context.dataStoreFile("user_prefs.pb") }
+)
+```
+
+This is appropriate for non-critical preferences. It is not appropriate for data that represents unsynced user work, payment state, or security-sensitive recovery material. For those, record telemetry, preserve the corrupted bytes if policy allows, and route the user through a repair path.
+
 ## Staff Engineer Thinking
 
 When reviewing data persistence, a Staff engineer focuses on access patterns:

@@ -143,6 +143,69 @@ interface MusicDao {
   If you attempt to call `dao.insert(user)` on the Main Thread, Room throws an exception and crashes the app.
   *(Fix: Always mark DAO methods as `suspend` (e.g., `suspend fun insert(user: User)`). Room will automatically route the database I/O to a custom background dispatcher, ensuring the Main thread is never blocked).*
 
+## Schema Evolution Discipline
+
+Room migrations are not one-step patches. Real users skip releases, so version 3 may upgrade directly to version 12. Room will run each registered migration in sequence; if any hop is missing, the app fails at startup.
+
+### Multi-hop migration rule
+
+For every schema bump:
+
+1. Add the new `Migration(X, X + 1)`.
+2. Keep every older migration in the builder.
+3. Export the schema JSON and commit it.
+4. Add a test for the new hop.
+5. Add at least one long-hop test from an old supported schema to latest.
+
+```kotlin
+@Test
+fun migration3To12_preservesPendingOutboxRows() {
+    helper.createDatabase(TEST_DB, 3).use { db ->
+        db.execSQL("INSERT INTO outbox (clientId, noteId, opType, payloadJson) VALUES ('op1', 'n1', 'UPSERT', '{}')")
+    }
+
+    helper.runMigrationsAndValidate(
+        TEST_DB,
+        12,
+        true,
+        MIGRATION_3_4,
+        MIGRATION_4_5,
+        // ...
+        MIGRATION_11_12,
+    ).use { db ->
+        val cursor = db.query("SELECT clientId FROM outbox WHERE clientId = 'op1'")
+        assertTrue(cursor.moveToFirst())
+    }
+}
+```
+
+The long-hop test should cover the tables that carry user value: offline outbox, drafts, authentication-adjacent session metadata, cached entities, and conflict records.
+
+### Destructive fallback policy
+
+`fallbackToDestructiveMigration()` is a product decision, not an engineering convenience.
+
+| Data type | Destructive fallback? | Reason |
+|---|---|---|
+| Offline outbox / drafts | Never | Contains unsynced user work |
+| Auth/session state | Almost never | Can log users out or break recovery flows |
+| Server-cache tables | Sometimes | Safe only if the app can refetch and UX accepts the cost |
+| Debug/sample data | Yes | No user value |
+
+If destructive migration is allowed for a cache-only database, scope it narrowly with `fallbackToDestructiveMigrationFrom(...)` and document the affected versions. Never enable global destructive fallback on the primary app database.
+
+### Exported schema review
+
+Exported Room schemas are review artifacts. In PR review, inspect:
+
+- Column additions: default value, nullability, and backfill.
+- Column removals: whether old code still reads the column during staged rollout.
+- Index changes: read/write performance and migration cost on large tables.
+- Foreign keys: cascade behavior, orphan handling, and delete semantics.
+- FTS tables and triggers: whether generated SQL changed unexpectedly.
+
+If the schema diff is too large to review manually, the migration is too risky to ship without a staged rollout and crash-rate gate.
+
 ## Staff Engineer Thinking
 
 When reviewing Room architecture, a Staff engineer focuses heavily on Migrations and Query Efficiency:
