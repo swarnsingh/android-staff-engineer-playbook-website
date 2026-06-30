@@ -1,175 +1,168 @@
 # Retry Pattern
 
+> The Retry pattern enables an application to handle transient failures by transparently retrying a failed operation. On mobile networks, transient failures (packet loss, cell tower handoffs) are guaranteed. A Staff engineer implements retries in two distinct layers: **Fast Retries** (via OkHttp interceptors for split-second blips) and **Durable Retries** (via WorkManager for prolonged offline periods). Crucially, you must understand Exponential Backoff, Jitter, and Idempotency to prevent your retries from destroying the backend infrastructure.
+
+---
+
 ## Overview
 
-The Retry pattern enables an application to handle transient failures by transparently retrying a failed operation. In mobile development, where network connections drop in elevators and APIs sporadically timeout, it is the most fundamental mechanism for providing a seamless user experience.
+Mobile devices are inherently disconnected. When an API call fails, it might be because the server is down (fatal), or it might be because the user drove under a bridge for 2 seconds (transient).
 
-## Why It Exists
+If you fail immediately on a transient error, the user experiences a frustrating, flaky app. If you retry aggressively, you drain the battery and DDOS your own backend. 
 
-Mobile networks are inherently hostile. A 503 Service Unavailable, an `UnknownHostException` during a tunnel handover, or a simple timeout are expected daily occurrences. If you surface an error to the user the *first* time a request fails, your app will feel broken. Retrying hides the volatility of the network from the user.
+---
 
-## Historical Context
+## 1. Fast Retries: The HTTP Layer (OkHttp)
 
-A core resilience engineering pattern. In the era of Java `Thread.sleep()`, implementing asynchronous retry logic with backoff was a complex web of callbacks and timers. Today, Kotlin Coroutines have reduced advanced retry logic (with exponential backoff and jitter) to a few lines of highly readable, non-blocking code.
+Fast retries are designed to catch momentary network blips. They execute immediately in memory while the user is actively staring at a loading spinner.
 
-## First Principles
+### Built-in OkHttp Retries
+By default, OkHttp silently recovers from certain connection failures (e.g., unreachable IP addresses, stale connection pools).
+```kotlin
+val client = OkHttpClient.Builder()
+    .retryOnConnectionFailure(true) // Enabled by default, but good to know
+    .build()
+```
 
-1.  **Idempotency:** You can only safely retry an operation if executing it multiple times has the same effect as executing it once. (You don't want to charge a credit card three times).
-2.  **Backoff:** Immediate retries usually fail for the same reason the first attempt failed. You must wait.
-3.  **Jitter:** If 10,000 devices lose connection and regain it simultaneously, you must randomize their retry delays to avoid a thundering herd.
-
-## Mental Model
-
-Think of trying to unlock a sticky door. 
-- You turn the key, it doesn't work (Attempt 1). 
-- You don't instantly violently shake the handle. You jiggle it slightly, pause, and try again (Attempt 2 - linear backoff). 
-- If it still doesn't work, you step back, look at the lock, apply some WD-40, and try again (Attempt 3 - exponential backoff). 
-- If the door is bricked up (a 404 Not Found), you stop trying entirely.
-
-## Internal Mechanics
-
-A robust Retry implementation requires three components: the loop, the delay (backoff), and the condition (should we retry?).
-
-### The Kotlin Coroutine Implementation
+### Custom Exponential Backoff Interceptor
+OkHttp's built-in retry does not handle HTTP 503 (Service Unavailable) or 504 (Gateway Timeout) errors. We implement a custom interceptor with **Exponential Backoff** (waiting longer between each attempt) and **Jitter** (adding randomness to prevent thundering herds).
 
 ```kotlin
-/**
- * Retries the given [block] up to [times] times.
- * Applies exponential backoff with jitter.
- */
-suspend fun <T> retryWithBackoff(
-    times: Int = 3,
-    initialDelayMs: Long = 1000,
-    maxDelayMs: Long = 10_000,
-    factor: Double = 2.0,
-    block: suspend () -> T
-): T {
-    var currentDelay = initialDelayMs
-    repeat(times - 1) { attempt ->
-        try {
-            return block() // If successful, exit the function immediately
-        } catch (e: Exception) {
-            // Check if the error is transient. Don't retry 404s or 401s.
-            if (!e.isTransient()) {
-                throw e
+class RetryInterceptor(private val maxRetries: Int = 3) : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        var response: Response? = null
+        var tryCount = 0
+        
+        while (tryCount < maxRetries) {
+            try {
+                response = chain.proceed(request)
+                
+                // If success or a client error (4xx), return immediately. No need to retry.
+                if (response.isSuccessful || response.code in 400..499) {
+                    return response
+                }
+                
+                // If 5xx (Server Error), close the response body to prevent leaks before retrying
+                response.close()
+                
+            } catch (e: IOException) {
+                // SocketTimeout or Connection drop. We will retry.
             }
             
-            // Log the retry
-            println("Attempt ${attempt + 1} failed. Retrying in ${currentDelay}ms")
+            tryCount++
+            if (tryCount < maxRetries) {
+                // Exponential Backoff with Jitter: 1s, 2s, 4s + random ms
+                val backoff = 1000L * (2.0.pow(tryCount - 1)).toLong()
+                val jitter = (Math.random() * 500).toLong()
+                Thread.sleep(backoff + jitter)
+            }
         }
         
-        // Wait before the next attempt
-        delay(currentDelay)
-        
-        // Calculate the next delay: Exponential + Jitter
-        // Jitter is a random +/- 20% variance
-        val nextDelay = (currentDelay * factor).toLong()
-        val jitter = (nextDelay * 0.2 * Math.random()).toLong() - (nextDelay * 0.1).toLong()
-        currentDelay = (nextDelay + jitter).coerceAtMost(maxDelayMs)
+        // If we exhausted retries and still have a response, return the last failure
+        // Otherwise, throw an IOException indicating ultimate network failure
+        return response ?: throw IOException("Failed after $maxRetries retries")
     }
-    
-    // Final attempt outside the loop so the exception bubbles up naturally
-    return block() 
-}
-
-// Extension to determine retryability
-fun Exception.isTransient(): Boolean {
-    return this is IOException || 
-           (this is HttpException && this.code() in 500..599)
 }
 ```
 
-## Architecture
+---
 
-```mermaid
-flowchart TD
-    Start[Start Operation] --> Attempt{Attempt < Max?}
-    Attempt -->|Yes| Execute[Execute Block]
-    Attempt -->|No| Fail[Throw Exception]
-    
-    Execute --> Success{Success?}
-    Success -->|Yes| Return[Return Result]
-    Success -->|No| CheckError{Is Error\nTransient?}
-    
-    CheckError -->|No| Fail
-    CheckError -->|Yes| Backoff[Calculate Delay\n(Backoff + Jitter)]
-    Backoff --> Sleep[Wait (delay)]
-    Sleep --> Attempt
-```
+## 2. Durable Retries: The Command Layer (WorkManager)
 
-## Production Example
+Fast retries fail if the user enters airplane mode for 2 hours. If the user tried to upload a photo, an in-memory OkHttp retry loop will crash when the Android OS kills the app in the background.
 
-In OkHttp, the `RetryAndFollowUpInterceptor` is built-in, but it mostly handles connection failures and redirects, not application-level 5xx retries with backoff. You usually write a custom Interceptor or wrap your Repository calls.
+For these operations, we use **Durable Retries** via WorkManager. WorkManager persists the retry state to an SQLite database.
 
 ```kotlin
-class ResilientUserRepository(private val api: UserApi) {
+class UploadWorker(appContext: Context, params: WorkerParameters) :
+    CoroutineWorker(appContext, params) {
 
-    suspend fun fetchUserProfile(userId: String): UserProfile {
-        // Wrap the raw API call in the retry logic
-        return retryWithBackoff(times = 3, initialDelayMs = 500) {
-            api.getUser(userId)
+    override suspend fun doWork(): Result {
+        return try {
+            api.uploadPhoto(inputData.getString("URI")!!)
+            Result.success()
+        } catch (e: IOException) {
+            // Tells WorkManager to use its built-in Backoff Policy
+            Result.retry()
+        } catch (e: HttpException) {
+            if (e.code() >= 500) Result.retry() else Result.failure() // Don't retry 400 Bad Request
         }
     }
 }
 ```
 
-For background tasks, `WorkManager` handles retry natively. You just return `Result.retry()` and configure the WorkRequest:
-
+You configure the backoff policy when enqueuing the work:
 ```kotlin
-val workRequest = OneTimeWorkRequestBuilder<SyncWorker>()
+val uploadWorkRequest = OneTimeWorkRequestBuilder<UploadWorker>()
     .setBackoffCriteria(
-        BackoffPolicy.EXPONENTIAL, 
-        WorkRequest.MIN_BACKOFF_MILLIS, // 10 seconds
+        BackoffPolicy.EXPONENTIAL, // 10s, 20s, 40s, 80s...
+        WorkRequest.MIN_BACKOFF_MILLIS, // Starts at 10 seconds
         TimeUnit.MILLISECONDS
     )
     .build()
 ```
 
-## Tradeoffs
+---
 
-**Advantages**
-- **User Experience:** Dramatically reduces the number of error screens shown to users.
-- **Resilience:** Gracefully handles the chaos of mobile networks.
+## 3. The Danger of Retries: Idempotency
 
-**Disadvantages**
-- **Latency Masking:** If an API is consistently failing and succeeding on the 3rd attempt, the user waits 5 seconds for data. The Retry pattern hides this server degradation from your crash reporting (unless you explicitly log retries).
-- **Resource Amplification:** If your app makes 5 requests on startup, and they all fail and retry 3 times, your app just made 15 requests, potentially exacerbating the server issue.
+**Retrying a non-idempotent operation is a catastrophic bug.**
 
-## Failure Modes
+Imagine a `POST /api/v1/checkout` endpoint.
+1. The Android app sends the POST request.
+2. The server charges the user's credit card successfully.
+3. The server sends the `200 OK` response back to the phone.
+4. *The user's cellular connection drops before the phone receives the response.*
+5. The Android app hits an `IOException` (timeout).
+6. The OkHttp Retry Interceptor blindly resends the `POST /checkout` request.
+7. The user is charged a second time.
 
-- **Retrying Non-Idempotent Operations:** Wrapping `POST /checkout` in a generic retry block. If the first request succeeds on the server but the response drops on the way back, the retry will charge the user a second time. (Fix: Implement Idempotency Keys).
-- **The Missing Jitter:** Implementing exponential backoff (`delay = 2^attempt`) without randomness. If a popular backend service goes down, 100,000 devices fail at `T=0`. They all retry exactly at `T=2`, bringing the recovering server down again. They all retry exactly at `T=4`, etc. Jitter smears the load.
-- **Infinite Loops:** Using a `while(true)` loop for retries without a maximum attempt cap or a maximum duration cap.
-- **Retrying Fatal Errors:** Retrying a 401 Unauthorized or a 400 Bad Request. The server told you exactly why it failed; trying the exact same request again is a waste of resources.
+**The Fix:**
+Any API that creates or mutates data (`POST`, `PATCH`, `PUT`) must be designed idempotently if it is going to be retried. The Android client must generate a unique `Idempotency-Key` (a UUID) and send it as an HTTP header.
 
-## Staff Engineer Thinking
+```kotlin
+val request = originalRequest.newBuilder()
+    .header("Idempotency-Key", UUID.randomUUID().toString())
+    .build()
+```
+When the server receives the retry, it sees the same UUID, realizes it already charged the card, and simply returns the cached `200 OK` response without double-charging.
 
-When reviewing resilience code, a Staff engineer focuses on the systemic impact:
+---
 
-1.  **Is it combined with a Circuit Breaker?** Retry without a Circuit Breaker is dangerous. If the server is definitively dead, Retrying 3 times with exponential backoff just wastes battery and blocks the UI thread/coroutine for 10 seconds before finally surfacing the error. The Circuit Breaker should wrap the Retry.
-2.  **Are we logging retries?** A successful operation on the 3rd retry is a success to the user, but a failure to the platform. If we don't log `retry_count` in our telemetry, we are blind to degrading backend performance.
-3.  **Is the backoff configured correctly?** A 10-second initial backoff on a UI-blocking fetch is terrible UX. A 100ms backoff on a background sync is too aggressive. Backoff policies must be context-aware.
+## 4. Failure Modes & Tradeoffs
 
-## Common Misconceptions
+| Failure Mode | Cause | Prevention / Solution |
+|---|---|---|
+| **The Thundering Herd** | The backend goes down for 5 minutes. 100,000 apps all hit an exponential backoff timer that resolves at the exact same second, DDOSing the server when it reboots. | Always add **Jitter** (a random offset like +/- 10%) to your backoff calculations so retries spread out over time. |
+| **Battery Drain** | Configuring WorkManager with a `LINEAR` backoff of 10 seconds for an endpoint that is permanently dead. | Always use `EXPONENTIAL` backoff, and set a hard maximum on `maxRetries`. |
+| **Silent Failures in UI** | The OkHttp interceptor blocks the thread for 8 seconds retrying in the background. The UI shows a frozen loading spinner, and the user force-kills the app. | Set strict read/write timeouts in OkHttp. A network call (including all retries) should either succeed or fail within a UX-acceptable timeframe (e.g., 10 seconds total). |
 
-- **"RxJava `retryWhen` is better than Coroutines."** They solve the same problem. Coroutines are generally preferred now because a simple `try/catch` inside a `repeat` loop is significantly easier to read and debug than a complex reactive chain of `Observable.timer` and `flatMap`.
-- **"I don't need retry if I have offline caching."** False. Offline caching serves stale data. You still need to retry the network request to get fresh data to update the cache.
+---
+
+## 5. Common Pitfalls
+
+### Pitfall 1: Retrying HTTP 4xx Errors
+If an API returns `400 Bad Request` or `401 Unauthorized`, retrying it will change nothing. The payload is malformed or the token is dead. It will just fail again instantly.
+*Fix:* Only retry on `IOException` (network drop) or HTTP `5xx` (server-side struggle).
+
+### Pitfall 2: Confusing Retry with Circuit Breaker
+A Retry pattern *adds* load to a struggling server. A Circuit Breaker *removes* load from a struggling server.
+*Fix:* They must be used together. The Circuit Breaker interceptor must sit *below* the Retry interceptor. If the breaker trips, it throws an immediate exception, short-circuiting the Retry loop and failing fast.
+
+---
 
 ## Probing Questions
 
-1.  Explain why "Jitter" is just as important as "Exponential Backoff".
-2.  What is Idempotency, and why is it a strict prerequisite for applying the Retry pattern to a POST/PUT request?
-3.  Write the pseudo-code for a Coroutine retry function that gives up early if it receives an `IllegalArgumentException`.
-4.  If you are using both a Circuit Breaker and a Retry pattern, which one should wrap the other? Why?
-5.  How does Android's `WorkManager` handle retries internally? What happens if the device is rebooted during a backoff period?
-6.  Why is it an anti-pattern to retry a 404 (Not Found) HTTP response?
-7.  What is the "Thundering Herd" problem, and how does the Retry pattern (if implemented poorly) cause it?
-8.  How do you ensure that a long-running retry loop doesn't leak memory if the user navigates away from the screen? (Hint: Coroutine cancellation).
-9.  Should you surface "Retrying..." to the UI, or keep it completely transparent to the user? Defend your UX choice.
-10. How do you distinguish between a network failure (where retry makes sense) and a server-side crash (where retry might not make sense) in OkHttp?
+1.  **WorkManager Constraints:** If a WorkManager task returns `Result.retry()`, but you also specified `Constraints.setRequiredNetworkType(NetworkType.CONNECTED)`, what happens if the device is offline when the exponential backoff timer hits?
+2.  **OkHttp Internals:** OkHttp's `Interceptor.Chain.proceed()` is called multiple times in a retry loop. What happens if the `RequestBody` is a one-shot stream (like streaming a large file from disk)? How does OkHttp know if the body can be consumed twice?
+3.  **GraphQL Retries:** GraphQL typically returns HTTP 200 OK even if the query failed, embedding the errors in the JSON payload. How do you implement a generic Retry Interceptor for a GraphQL client?
+4.  **Jitter Algorithms:** Describe the difference between "Full Jitter" and "Equal Jitter". Which one provides a better distribution of load for a recovering backend system?
+5.  **Coroutines:** Instead of OkHttp interceptors, you can implement retries at the Kotlin Flow layer using the `retryWhen { cause, attempt -> }` operator. What are the architectural tradeoffs of retrying in the Domain layer (Flow) versus the Data layer (OkHttp)?
 
 ## Further Reading
 
-- [`circuit-breaker.md`](circuit-breaker.md) — The complementary pattern. Retry protects the user; Circuit Breaker protects the system.
-- [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md) — Mandatory reading before applying retries to mutating requests.
-- AWS Architecture Blog: [Exponential Backoff And Jitter](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/)
+- [`circuit-breaker.md`](circuit-breaker.md) — The protective layer that must accompany any aggressive retry strategy.
+- [`command.md`](command.md) — How WorkManager encapsulates the retry payload safely.
+- [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md) — Deep dive into the backend mechanics of `Idempotency-Key`.
+- [`../android/networking-and-security/retrofit-and-okhttp.md`](../android/networking-and-security/retrofit-and-okhttp.md) — Where to place the retry interceptor in the OkHttp chain.

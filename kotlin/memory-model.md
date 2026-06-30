@@ -1,182 +1,492 @@
-# The Memory Model (Stack vs. Heap)
+# The Memory Model (JVM, ART, and Android Leaks)
+
+> Memory is the most expensive resource in Android. The Garbage Collector is *not* magic — every wasted allocation buys you back jank and OOM crashes. Staff-level mastery means you can reason about the Stack vs the Heap, predict when boxing happens, know the four reference strengths (strong/weak/soft/phantom), recognize the six classic Android leak patterns by sight, and use LeakCanary + the Memory Profiler to find leaks that don't reproduce locally.
+
+---
 
 ## Overview
 
-Understanding the Kotlin memory model requires understanding the underlying Java Virtual Machine (JVM). The JVM divides memory into two primary areas: the **Stack** and the **Heap**. 
+The JVM (and Android's ART runtime) split memory into:
 
-A Staff engineer must know exactly where their Kotlin code is allocating memory, because allocating memory in the wrong place (the Heap) causes the Garbage Collector (GC) to run, which drops UI frames and causes the app to stutter (Jank).
+- **Stack** — per-thread, fast, automatic cleanup. Holds primitives and references.
+- **Heap** — shared, slower, garbage-collected. Holds all objects.
+- **Native heap** — outside the JVM, used by C/C++ code (Bitmaps, OpenGL surfaces, FFmpeg, etc.).
 
-## Why It Matters
+Where your code allocates determines whether the user sees a smooth UI or a stutter. Where references *outlive* their intended owner determines whether the app leaks until OOM.
 
-Every object you create requires memory. 
-- Memory allocated on the **Stack** is "free." It takes nanoseconds, requires zero cleanup, and is completely invisible to the Garbage Collector.
-- Memory allocated on the **Heap** is expensive. It takes longer to find space, and eventually, the JVM must stop the entire app (Stop-The-World) to clean it up.
+---
 
-If you write a `for` loop that iterates 10,000 times to draw pixels on a screen, and you accidentally allocate an object on the Heap inside that loop, you will trigger a GC pause. The screen will freeze. Understanding how Kotlin compiles to JVM bytecode is the only way to avoid this.
+## Why It Matters (Android Context)
 
-## Historical Context
+- A 16ms frame budget (60Hz) — any GC pause longer than ~10ms drops a frame.
+- An Activity reference held past `onDestroy` keeps the whole view hierarchy alive — easily 5–50 MB per leak.
+- Android limits app heap (e.g., 256 MB on many devices). OOM crashes are a real production failure mode.
+- The single biggest Crashlytics bucket for many apps after NPE is `OutOfMemoryError`.
 
-In C and C++, developers had to manually allocate memory to the heap using `malloc()` and manually clean it up using `free()`. Forgetting to call `free()` caused memory leaks. The JVM was invented to solve this by managing the Heap automatically via Garbage Collection. However, automatic GC is not magic; it requires massive CPU resources to track "dead" objects. Modern Android development (like Jetpack Compose) emphasizes minimizing Heap allocations to keep the GC completely silent.
+Memory bugs ship invisible. The user sees a "weird app that gets slow over time." You see it in the crash dashboard a quarter later.
+
+---
 
 ## First Principles
 
-1.  **The Stack (Fast & Temporary):** Used for function execution. It holds primitive values (`Int`, `Double`, `Boolean`) and *references* (memory addresses) to objects. When a function finishes, its Stack is instantly destroyed.
-2.  **The Heap (Slow & Permanent):** Used for storing actual Objects (`User`, `String`, `List`). It persists across function calls until the Garbage Collector decides no Stack references point to it anymore.
-3.  **Kotlin's Illusion:** Kotlin hides the difference between Primitives and Objects in syntax. Everything *looks* like an Object (`Int`, `Double`), but the compiler secretly optimizes them to JVM primitives on the Stack whenever mathematically possible.
+1. **Stack memory is free** — allocated on function entry, gone on function return.
+2. **Heap memory costs** — allocation + bookkeeping + eventual GC.
+3. **Generic types are erased** → `List<Int>` boxes every `Int` to `java.lang.Integer` on the heap.
+4. **Reachable from a GC root = alive.** No matter how indirectly.
+5. **Lifecycle longer than yours = leak source.** A static field outlives any Activity that touches it.
 
-## Mental Model
+---
 
-Think of a bustling Restaurant.
-- **The Stack (A Waiter's Notepad):** The waiter writes down an order quickly. It's cheap, fast, and completely temporary. As soon as the order is given to the kitchen (the function returns), the waiter throws the paper away. Zero cleanup required.
-- **The Heap (The Kitchen Pantry):** The kitchen stores massive amounts of ingredients. When an order comes in, they have to search the pantry (allocation) and take ingredients out. Every hour, the kitchen has to stop cooking entirely to sweep the floors and throw away rotten food (Garbage Collection). 
-- **The Reference:** The waiter's notepad doesn't contain a physical steak. It contains a *reference* (a word) pointing to the steak in the pantry.
-
-## Internal Mechanics
-
-How does Kotlin map its elegant syntax to the ruthless reality of the JVM Stack and Heap?
-
-### 1. Primitives vs Wrappers
+## Stack vs Heap
 
 ```kotlin
-fun calculate() {
-    // Looks like an object. The compiler optimizes it to a JVM primitive 'int'.
-    // Stored entirely on the STACK. Zero GC cost.
-    val age: Int = 30 
-    
-    // Looks almost identical. But it's Nullable.
-    // The JVM cannot store 'null' in a primitive 'int'. 
-    // The compiler is forced to "Box" it into a java.lang.Integer OBJECT.
-    // Stored on the HEAP. Causes GC pressure.
-    val nullAge: Int? = 30 
+fun computeArea() {
+    val width: Int = 10        // STACK (JVM primitive `int`)
+    val height: Int = 20       // STACK
+    val name: String = "Box"   // STACK holds the *reference*; HEAP holds the String
+    val area = width * height  // STACK (primitive arithmetic)
 }
 ```
 
-This is why `List<Int>` is dangerous in performance-critical code. A `List` can only hold Objects (Generics undergo Type Erasure). Every single `Int` in that list is Boxed into an object on the Heap. *(Use `IntArray` instead, which holds raw primitives contiguous in memory).*
+- **Primitives in non-nullable positions** stay on the stack.
+- **All object references** live on the stack; the objects themselves live on the heap.
+- **Closures** that capture a `var` cause that variable to live on the heap (so it can outlive the call).
 
-### 2. Escape Analysis
+### Boxing — the silent perf killer
 
-The JVM has an incredibly advanced Just-In-Time (JIT) compiler. It performs "Escape Analysis."
+The JVM has eight primitive types (`int`, `long`, etc.). Anything else — including any nullable primitive (`Int?`) and any generic (`List<Int>`) — must be a heap object:
 
 ```kotlin
-fun processUser() {
-    // We create a User object. Normally, Objects go on the Heap.
-    val user = User("Alice") 
-    
-    // We only use it inside this function. We don't return it. 
-    // It does not "Escape" the function.
-    println(user.name)
+val a: Int = 30        // primitive `int` — stack
+val b: Int? = 30       // boxed `java.lang.Integer` — heap
+val c: List<Int> = listOf(1, 2, 3)   // each Int boxed into Integer — heap × 3
+val d: IntArray = intArrayOf(1, 2, 3)   // raw int[] — single heap allocation
+```
+
+For perf-critical code, prefer `IntArray` / `LongArray` / `FloatArray` over `List<Int>` / `List<Long>` / `List<Float>`. The difference is huge: a `List<Int>` of 100k items is **100k+1** heap objects; an `IntArray` of 100k items is **1** heap object holding contiguous ints.
+
+### Escape analysis
+
+The JIT compiler can sometimes "scalar replace" an object — if it can prove the object never escapes the function, it splits the fields onto the stack:
+
+```kotlin
+fun area(): Int {
+    val box = Rect(0, 0, 10, 20)   // looks like heap allocation
+    return box.width * box.height   // ...but JIT may inline + stack-allocate
 }
 ```
-If the JIT compiler can mathematically prove that the `User` object never leaves the function (it doesn't escape), it will magically "Scalar Replace" the object. It will break the `User` object apart and store its inner fields directly on the **Stack**, completely bypassing the Heap and the Garbage Collector.
 
-### 3. Lambdas and the Heap
+You can't rely on escape analysis — write code that doesn't allocate in hot paths, and don't expect the JIT to bail you out.
 
-As discussed in [Inline Functions](inline-functions.md), Lambdas are anonymous objects.
+---
+
+## Reference Strengths (the Four Kinds)
+
+The Garbage Collector reclaims any object **not reachable from a GC root**. A "GC root" is something whose lifetime exceeds any normal object — static fields, thread stacks, JNI references, the application class.
+
+How an object becomes reachable matters. There are four reference strengths:
+
+| Reference | Prevents GC? | Use case |
+|---|---|---|
+| **Strong** (default `val x = Foo()`) | Yes | Normal references |
+| **Soft** (`SoftReference<T>`) | Until memory pressure | In-memory caches that can be regenerated |
+| **Weak** (`WeakReference<T>`) | No (cleared on next GC) | Listener back-references, observers, caches keyed by lifecycle |
+| **Phantom** (`PhantomReference<T>`) | No (cleared even before finalize) | Native-resource cleanup hooks |
+
+### Strong references — the default trap
 
 ```kotlin
-fun doMath(action: () -> Unit) { ... }
+class Singleton private constructor() {
+    var currentActivity: Activity? = null    // ← strong reference
 
-fun test() {
-    var counter = 0
-    // We pass a Lambda. This allocates a Function0 Object on the HEAP.
-    // AND it captures the 'counter' variable, forcing 'counter' onto the Heap too!
-    doMath { counter++ } 
+    companion object {
+        val instance = Singleton()
+    }
 }
 ```
-If `doMath` is marked `inline`, the Lambda is never allocated, and `counter` remains safely on the Stack.
 
-## Architecture
+If you ever do `Singleton.instance.currentActivity = this` inside `Activity.onCreate`, the singleton (alive for the app's lifetime) holds the activity forever. The activity can't be GC'd. The activity holds its entire view tree. The view tree holds Bitmaps. You leak megabytes per screen.
 
-```mermaid
-graph TD
-    subgraph The JVM Memory Space
-        subgraph Thread 1 Stack
-            F1[Function execution]
-            P1[Primitive: int = 5]
-            Ref1[Reference: mem_addr_0x1]
-            Ref2[Reference: mem_addr_0x2]
-        end
-        
-        subgraph The Heap (Garbage Collected)
-            Obj1[0x1: String 'Alice']
-            Obj2[0x2: User Object]
-            Obj3[0x3: Dead Object] -.->|Swept by GC| Trash
-        end
-    end
-    
-    Ref1 --> Obj1
-    Ref2 --> Obj2
-```
-
-## Production Example
-
-**Jetpack Compose & Value Classes**
-
-In Jetpack Compose, the color of a pixel is represented by a `Color` class. The screen draws at 60 Frames Per Second. If `Color` was a normal class, changing the color of the screen would allocate 60 Objects per second on the Heap. The UI would stutter immediately.
-
-Kotlin solved this with `value class`.
+### Weak references — break the chain
 
 ```kotlin
-// A Value Class tells the compiler to erase the object wrapper at runtime!
-@JvmInline
-value class Color(val value: ULong)
+class AnalyticsBus {
+    private val listeners = mutableListOf<WeakReference<Listener>>()
 
-fun draw(color: Color) { ... }
+    fun register(listener: Listener) {
+        listeners.add(WeakReference(listener))
+    }
+
+    fun fire(event: Event) {
+        listeners.forEach { it.get()?.onEvent(event) }
+        listeners.removeAll { it.get() == null }   // drop dead entries
+    }
+}
 ```
-At compile time, `Color` is a strongly-typed class. At runtime, the JVM literally strips the class away and passes the raw `ULong` primitive on the Stack. Zero Heap allocations. 60 FPS achieved.
 
-## Tradeoffs
+The bus doesn't keep listeners alive. When the activity dies, the GC reclaims it; the bus's WeakReference becomes `null`. No leak.
 
-**Advantages of Stack Allocation**
-- Blistering fast access (L1 CPU Cache).
-- Zero Garbage Collection overhead.
+### Soft references — caching with backpressure
 
-**Disadvantages of Stack Allocation**
-- Tiny capacity (usually 1MB per thread). If you try to put too much on the Stack (e.g., Infinite Recursion), you get a `StackOverflowError`.
-- No sharing. The Stack is private to the Thread. You cannot share Stack memory between two threads.
+```kotlin
+class BitmapCache {
+    private val cache = mutableMapOf<String, SoftReference<Bitmap>>()
+
+    fun get(key: String): Bitmap? = cache[key]?.get()
+    fun put(key: String, bmp: Bitmap) { cache[key] = SoftReference(bmp) }
+}
+```
+
+The bitmap stays cached until memory pressure forces the GC to reclaim soft-reachable objects. Better than holding strong references and risking OOM; worse than a proper LRU cache with explicit eviction policies.
+
+In modern Android, **`LruCache`** (with hard size limits in bytes) is generally preferred over soft-reference caching — it's more predictable.
+
+### Phantom references — finalize replacement
+
+Mostly seen in framework code (Coil, Glide, FFmpeg bindings) that needs to know when a Java object is collected so it can release a native resource. Rarely written by app developers.
+
+---
+
+## Android's GC: ART vs Dalvik
+
+| Dalvik (pre-Android 5) | ART (Android 5+) |
+|---|---|
+| Just-in-time only | Ahead-of-time + JIT |
+| Mark-and-sweep GC | Concurrent generational GC |
+| Long stop-the-world pauses (~50ms+) | Sub-5ms pauses typically |
+| ~1ms allocation cost | ~100ns allocation cost (TLAB) |
+| No Large Object Space | Separate LOS for Bitmaps |
+
+ART introduced **generational GC** — most objects die young (short-lived locals), so the GC sweeps a small "young generation" frequently and the long-lived "old generation" rarely. Bitmaps go to a separate Large Object Space.
+
+What this means for your code:
+
+- **Allocations are cheap in modern ART.** Don't micro-optimize away every `String` concatenation.
+- **GC pauses are short** but still measurable. A burst of allocations during a list scroll can stack pauses and drop frames.
+- **Bitmaps still hurt.** They're large, often go to LOS, and frequently allocated to native heap (`Bitmap.Config.HARDWARE`) where the GC can't see them at all.
+
+---
+
+## The Six Classic Android Leak Patterns
+
+### 1. Static field holding an Activity / Context
+
+```kotlin
+object Logger {
+    var context: Context? = null   // ← if assigned an Activity, leak forever
+}
+
+class MainActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        Logger.context = this   // LEAK
+    }
+}
+```
+
+**Fix:** use `applicationContext` for app-lifetime storage, or hold a `WeakReference`.
+
+### 2. Non-static inner class / lambda capturing the outer
+
+```kotlin
+class MainActivity : AppCompatActivity() {
+    private val handler = Handler(Looper.getMainLooper())
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        handler.postDelayed({
+            updateUi()   // ← lambda captures `this` (the Activity)
+        }, 60_000)
+    }
+}
+```
+
+If the user leaves the screen before 60 seconds, the runnable still holds the activity until the message fires.
+
+**Fix:**
+```kotlin
+override fun onDestroy() {
+    handler.removeCallbacksAndMessages(null)
+    super.onDestroy()
+}
+```
+
+Or better: use `viewModelScope.launch` with `delay(60_000)`, which auto-cancels.
+
+### 3. Listener registered, never unregistered
+
+```kotlin
+override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    locationManager.requestLocationUpdates(provider, 1000L, 1f, this)
+}
+// ← if no onPause/onDestroy unregister, the manager holds the Activity
+```
+
+**Fix:** pair every `register` with `unregister` in the matching lifecycle callback. Better: use a `DefaultLifecycleObserver` and register/unregister automatically.
+
+### 4. Coroutine escaping the lifecycle
+
+```kotlin
+class MainActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        GlobalScope.launch {       // ← lives as long as the app process
+            delay(10_000)
+            updateUi()              // captures `this`
+        }
+    }
+}
+```
+
+**Fix:** always use `lifecycleScope` / `viewModelScope` / `repeatOnLifecycle`. See [`coroutines.md`](coroutines.md).
+
+### 5. Holding a View past `onDestroyView`
+
+```kotlin
+class CartFragment : Fragment() {
+    private lateinit var binding: FragmentCartBinding
+
+    override fun onCreateView(/*...*/): View {
+        binding = FragmentCartBinding.inflate(/*...*/)
+        return binding.root
+    }
+    // ← onDestroyView fires; `binding` still holds every view
+}
+```
+
+**Fix:** the `_binding` lifecycle pattern from [`null-safety.md`](null-safety.md):
+```kotlin
+private var _binding: FragmentCartBinding? = null
+private val binding get() = _binding!!
+
+override fun onDestroyView() {
+    _binding = null
+    super.onDestroyView()
+}
+```
+
+### 6. Singleton DI / Service holding a screen-scoped object
+
+```kotlin
+@Singleton
+class Analytics @Inject constructor() {
+    var currentScreen: Screen? = null   // injected from Activity each time
+}
+```
+
+A `@Singleton` Hilt component lives as long as the process. Storing screen-scoped state inside is a leak by definition. Use a scoped component (`@ActivityScoped`, `@ViewModelScoped`) or `WeakReference`.
+
+---
+
+## Bitmap Memory — The Special Case
+
+A 4K image (3840 × 2160) at `ARGB_8888` is **33.2 MB** in memory regardless of file size. Six full-screen photos = your heap is gone.
+
+```kotlin
+val opts = BitmapFactory.Options().apply { inSampleSize = 4 }   // downsample 4×
+val bmp = BitmapFactory.decodeResource(resources, R.drawable.huge, opts)
+```
+
+In modern Android:
+
+- Use **Coil 3** / **Glide 4+** — they handle downsampling, off-heap, LRU, and lifecycle integration.
+- Pass `Bitmap.Config.HARDWARE` where possible — stored in graphics memory, not Java heap. Caveat: can't be read back to a `Pixel[]`.
+- `BitmapDrawable` caching — only if you know the bitmap size and have a memory budget.
+
+For large image lists (RecyclerView, LazyColumn): never load full-size bitmaps; always use a sampling decoder.
+
+---
+
+## Detecting Leaks: LeakCanary + Memory Profiler
+
+### LeakCanary
+
+```kotlin
+// app/build.gradle.kts
+debugImplementation("com.squareup.leakcanary:leakcanary-android:2.13")
+```
+
+That's it. LeakCanary installs as a `ContentProvider`, watches every `Activity` and `Fragment` for `onDestroy`, waits a few seconds, forces a GC, then checks if the destroyed object is still reachable. If yes, it dumps the heap, walks the reference chain to the GC root, and shows you exactly which field points where.
+
+A typical LeakCanary report:
+
+```
+┬───
+│ GC Root: System class
+│
+├─ android.app.ActivityThread instance
+│    Leaking: NO (a singleton)
+│    ↓ ActivityThread.mActivities
+├─ android.util.ArrayMap instance
+│    ↓ ArrayMap[1]
+├─ android.app.LocalActivityManager$LocalActivityRecord instance
+│    ↓ LocalActivityRecord.activity
+├─ com.yourapp.MainActivity instance
+│      Leaking: YES (Activity#mDestroyed is true and ObjectWatcher was watching this)
+```
+
+Read the chain bottom-up: "MainActivity is held by LocalActivityRecord, which is in an ArrayMap, which is in ActivityThread, which is a GC root." Trace each hop to find which of *your* references caused it.
+
+### Android Studio Memory Profiler
+
+For leaks LeakCanary misses (non-Activity/Fragment leaks), or for OOM debugging:
+
+1. Run the app, open Profiler, attach the Memory tab.
+2. Reproduce the scenario several times (open screen → close → repeat 5x).
+3. Click "Force GC" → "Capture heap dump."
+4. Filter by your app's package.
+5. Sort by "Allocations" — anything with 5+ instances after a Force GC of a screen-scoped class is a leak.
+6. Click the instance → Reference tab → walk up to a GC root.
+
+---
+
+## Java Memory Model — Multithreading Semantics
+
+The JMM defines what one thread sees of another thread's writes. Critical primitives:
+
+| Primitive | Effect |
+|---|---|
+| `@Volatile` | Reads/writes have happens-before semantics across threads; no caching in CPU registers |
+| `synchronized` / `Mutex.withLock` | Mutual exclusion + memory barrier |
+| `AtomicReference` / `AtomicInteger` | Lock-free atomic ops + memory barrier |
+| `final` fields | Safely published after constructor completes |
+
+### Double-checked locking (the canonical idiom)
+
+```kotlin
+class Manager private constructor() {
+    companion object {
+        @Volatile private var INSTANCE: Manager? = null
+
+        fun get(): Manager = INSTANCE ?: synchronized(this) {
+            INSTANCE ?: Manager().also { INSTANCE = it }
+        }
+    }
+}
+```
+
+`@Volatile` is non-negotiable. Without it, one thread can see `INSTANCE != null` but the object's fields not yet initialized (instruction reordering). Welcome to two days of "impossible" bugs.
+
+In Kotlin, prefer `lazy(LazyThreadSafetyMode.SYNCHRONIZED)` over hand-rolled double-checked locking — same semantics, less ceremony.
+
+### `volatile` on Android in 2025
+
+Most application code should not need `@Volatile` directly. Coroutines + StateFlow give you correctness without writing your own threading. Reach for `@Volatile` only when working at framework / SDK level (custom thread pools, low-level event buses, native callbacks).
+
+---
+
+## OOM and the Heap Limit
+
+Android limits app heap per device (typically 192–512 MB). Hitting it = `OutOfMemoryError` = app crash.
+
+Common OOM patterns:
+
+| Pattern | Why | Fix |
+|---|---|---|
+| Loading large bitmap full-size | 1 image = 30 MB+ | Downsample, use image loader |
+| Infinite list in memory | Holds every item ever scrolled | Paging 3 + Room |
+| String concatenation in tight loop | Every `+` allocates a new String | `StringBuilder` |
+| Boxing in numeric loops | Every iteration boxes | Primitive arrays |
+| Unbounded cache | No size limit | `LruCache(maxSizeBytes)` |
+| Singletons retaining Bitmaps | Process-lifetime hold | Pass Application context only; clear on `onTrimMemory` |
+| Static field accumulating per-call | List grows unboundedly | Use `WeakHashMap` or explicit clear |
+| Leaked Activity × N | Each leak holds 5–50 MB | LeakCanary; fix root cause |
+
+`Runtime.getRuntime().maxMemory()` reports the limit. `Debug.MemoryInfo` reports current usage. Production apps should listen to `onTrimMemory()` and shed caches.
+
+---
+
+## Native Memory and JNI
+
+Some objects live outside the JVM heap:
+
+- **Bitmaps with `Config.HARDWARE`** — in GPU memory.
+- **`ByteBuffer.allocateDirect(N)`** — native heap.
+- **NDK code** allocations.
+- **Cursor and SQLite handles** — kernel resources.
+
+The GC can't see these. Leaking them shows up as "the app uses 800 MB according to RSS but only 80 MB heap." Profile with the **Native Memory Profiler** (Android Studio) or `dumpsys meminfo <pkg>`.
+
+---
 
 ## Failure Modes
 
-- **The Boxing Loop:**
-  ```kotlin
-  var sum: Long? = 0L // BAD: Nullable Long forces Boxing.
-  for (i in 1..10_000) {
-      // Every iteration creates a brand new java.lang.Long OBJECT on the Heap!
-      // This allocates 10,000 Objects and triggers a massive GC pause.
-      sum = sum?.plus(i) 
-  }
-  ```
-  *(Fix: Use non-nullable primitives `var sum: Long = 0L` in loops).*
-- **Leaking the Context (Android):**
-  If a long-running background thread holds a reference to an `Activity`, the `Activity` object is on the Heap. Even if the user destroys the screen, the GC cannot clean up the `Activity` because the thread's Stack still holds a valid reference to it. This is a Memory Leak. The app will eventually run out of Heap space and throw an `OutOfMemoryError` (OOM).
+| Symptom | Cause | Fix |
+|---|---|---|
+| Frame drop during list scroll | Allocation in `onBindViewHolder` | Pre-allocate; reuse Paint/Path |
+| Slow over time, eventually OOM | Activity leak | LeakCanary → fix reference chain |
+| Crash: `java.lang.OutOfMemoryError` on photo screen | Loading full-size bitmap | Downsample + Coil/Glide |
+| App uses 300 MB but heap shows 50 MB | Native memory leak | Native profiler; check Bitmap.Config, JNI |
+| Singleton retains Activity | Static field assignment | Application context or WeakReference |
+| Coroutine leak | GlobalScope used | Always lifecycle scopes |
+| Inner class lambda holds outer | Non-static or capturing reference | Lifecycle observer / `removeCallbacks` in onDestroy |
+| ViewBinding NPE in Fragment | View destroyed but binding retained | `_binding = null` in onDestroyView |
+| Two `Toast` displays leak Activity | Pre-API 30 Toast view holds Context | `Toast.makeText(applicationContext, …)` |
+| LeakCanary points at framework class | False positive (or framework leak) | Sometimes it's a known platform issue; check leakcanary-known-leaks |
+| Mystery slowness only on user devices | Production GC patterns differ | Add memory profiler in QA builds; ship Crashlytics OOM tracking |
+| Bitmap cache evicts too aggressively | Soft references too loose | Switch to `LruCache` with explicit byte budget |
 
-## Staff Engineer Thinking
+---
 
-When reviewing performance-critical code (Custom Views, Compose Modifiers, Physics Engines), a Staff engineer becomes a Memory Auditor:
+## Staff Engineer Lens
 
-1.  **Hunt for allocations in `onDraw`.** I will reject any PR that uses the `new` keyword (or Kotlin constructor calls) inside an `onDraw` loop. All `Paint`, `Path`, and `Rect` objects must be pre-allocated on the Heap during initialization and simply reused/mutated during the loop.
-2.  **Primitive Arrays vs Collections.** If we are processing 100,000 audio samples, I forbid the use of `List<Float>`. It must be a `FloatArray`. The overhead of 100,000 Object Headers on the Heap will destroy the cache locality and choke the CPU.
-3.  **Value Classes for Domain Types.** I push teams to use `value class UserId(val id: String)` instead of passing raw Strings everywhere. It provides massive compile-time safety (preventing you from accidentally passing a `Password` string to a `UserId` function) with literally zero memory overhead at runtime.
+When reviewing for memory:
+
+1. **Hunt static state.** Any `companion object var` holding a `Context`, `Activity`, `View`, `Fragment`, `Callback`, or `Listener` is a leak unless wrapped in WeakReference.
+2. **`onDestroy` pairing.** Every `register*` / `addCallback` / `subscribe` needs a matching unregister. Lifecycle observers automate this; favor them.
+3. **`GlobalScope.launch` and `Thread { }`** — never approved without justification.
+4. **List-of-primitives in hot paths.** `List<Int>` for an audio buffer is a junior mistake. `IntArray`.
+5. **`onDraw` allocations.** Any `new` / constructor call inside a draw or layout pass is a hard reject. Pre-allocate, reuse.
+6. **Singletons holding scoped state.** `@Singleton Analytics.currentScreen` is a leak by construction. Use `@ActivityScoped` or `WeakReference`.
+7. **Bitmap handling.** Direct `BitmapFactory.decodeResource` in app code is a smell — always go through Coil/Glide.
+8. **No `onTrimMemory` handler.** A serious app should release caches on system memory pressure.
+9. **No LeakCanary in debug.** Add it. Free leak detection.
+10. **OOM Crashlytics signal ignored.** Set up a Crashlytics OOM panel; track week-over-week.
+
+---
 
 ## Common Misconceptions
 
-- **"Kotlin `Int` is an Object because I can call `.toString()` on it."** False. It is an illusion provided by the compiler. If it can be a JVM primitive on the Stack, the compiler makes it one. The compiler only boxes it into an Object on the Heap if you make it nullable (`Int?`) or put it in a Generic (`List<Int>`).
-- **"The Garbage Collector is fast, I don't need to worry about the Heap."** The modern ART GC is incredibly fast, but it is not magic. "Stop-The-World" pauses still exist. If you allocate garbage faster than the GC can clean it up, the GC is forced into a desperate, blocking sweep, skipping frames and causing Jank.
+- **"GC is fast, allocations don't matter."** Modern ART is fast but not free. Burst allocations stack pauses; jank is the result.
+- **"Kotlin `Int` is always a primitive."** False. `Int?`, `List<Int>`, `Int` returned from a generic function — all box.
+- **"WeakReference solves all leaks."** No. Leaks live deeper — a strong reference somewhere holds the chain.
+- **"`System.gc()` will fix my leak."** No. Force-GC reproduces the bug; it doesn't fix the reference chain. Real leak = something points where it shouldn't.
+- **"OOM means out of memory."** Not exactly — Android limits app heap; you can OOM with the device having 4GB free.
+- **"Bitmaps are in the Java heap."** Pre-Oreo: yes. Post-Oreo: native heap by default (Glide/Coil exploit this).
+- **"The Memory Profiler shows everything."** It shows the Java/Kotlin heap. Native memory needs the Native Memory Profiler. NDK code needs different tooling entirely.
+
+---
 
 ## Probing Questions
 
-1.  What is the fundamental difference in lifecycle and cleanup between the JVM Stack and the JVM Heap?
-2.  Why does adding a `?` to a primitive type (e.g., `Int?`) force the JVM to allocate memory on the Heap instead of the Stack?
-3.  Explain why `IntArray` is vastly more memory-efficient than `List<Int>` when dealing with thousands of numbers.
-4.  What is "Escape Analysis," and how does the JIT compiler use it to optimize object allocation?
-5.  Why is allocating a new object inside a drawing loop (like `onDraw` or a Compose layout phase) considered a catastrophic performance anti-pattern in Android?
-6.  How does a `value class` provide the compile-time safety of a strong type without the runtime memory overhead of a Heap object?
-7.  Explain the relationship between the `inline` keyword and reducing Garbage Collection pressure caused by Lambdas.
-8.  What is a `StackOverflowError`, and what specific programming mistake typically causes it?
-9.  Describe how a Memory Leak occurs when the Stack interacts with the Heap (e.g., an Android `Activity` leak).
-10. If the JVM Stack is so much faster than the Heap, why don't we just allocate all objects on the Stack?
+1. Walk through what happens at the JVM level when you write `val x: Int? = 5`. Where does `5` live?
+2. `List<Int>` of 100,000 items vs `IntArray` of 100,000 items — concretely, what's the memory footprint difference?
+3. Explain the four reference strengths. Give one real Android use case for each (except phantom).
+4. A user reports the app "slowly gets sluggish over the day, then crashes." Walk through your first 30 minutes of investigation.
+5. LeakCanary points to MainActivity held by `ActivityThread.mActivities → ArrayMap → LocalActivityRecord`. How do you decide whether to fix it or mark as platform bug?
+6. Why is `BitmapFactory.decodeResource(huge_image)` dangerous? What's the safer pattern?
+7. Walk through a textbook double-checked locking singleton. Why does `@Volatile` matter?
+8. Singleton DI vs activity-scoped DI — why does scope matter for memory?
+9. `GlobalScope.launch` vs `viewModelScope.launch` — what's the memory difference?
+10. A Fragment's `View` is destroyed in `onDestroyView` but the Fragment isn't. Why is `_binding = null` necessary?
+11. ART generational GC: explain "young generation" vs "old generation" and what it means for your code.
+12. Bitmap with `Config.HARDWARE` — what changes in memory tracking, and what's the trade-off?
+13. You see the app use 600 MB RSS but only 80 MB Java heap. Where's the missing memory and how do you find it?
+
+---
 
 ## Further Reading
 
-- [`inline-functions.md`](inline-functions.md) — The tool used to prevent Lambdas from hitting the Heap.
-- [Android Developers: Manage your app's memory](https://developer.android.com/topic/performance/memory)
+- [`coroutines.md`](coroutines.md) — structured concurrency as leak prevention.
+- [`null-safety.md`](null-safety.md) — `_binding = null` lifecycle pattern.
+- [`delegation.md`](delegation.md) — `by lazy` semantics + thread-safe modes.
+- [`inline-functions.md`](inline-functions.md) — preventing Lambda heap allocations.
+- [`../android/performance/memory-management-and-leaks.md`](../android/performance/memory-management-and-leaks.md) — Android-specific leak catalog.
+- [`../android/concurrency/synchronization-and-mutex.md`](../android/concurrency/synchronization-and-mutex.md) — JMM concurrency primitives.
+- [`../android/os-internals/art-and-dalvik.md`](../android/os-internals/art-and-dalvik.md) — ART runtime internals.
+- [Android Developers — Manage your app's memory](https://developer.android.com/topic/performance/memory) — official guide.
+- [LeakCanary docs](https://square.github.io/leakcanary/) — the tool every Android app should ship.
+- [Pierre-Yves Ricau — "A small leak will sink a great ship"](https://medium.com/square-corner-blog/) — LeakCanary author's deep-dive.
+- [JEP 197 — Segmented Code Cache](https://openjdk.org/jeps/197) — JIT / generational GC background.
+- [Romain Guy — "Memory and tracing"](https://www.curious-creature.com/) — long-time Android graphics engineer's profiling notes.

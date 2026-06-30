@@ -1,7 +1,7 @@
 # Glossary
 
 ## Purpose
-A centralized dictionary for terms used across the `android-staff-engineer-bible`. When an acronym or specialized term is used in a canonical file, it should ideally be defined here so readers have a quick reference without losing context.
+A centralized dictionary for terms used across the `android-staff-engineer-playbook`. When an acronym or specialized term is used in a canonical file, it should ideally be defined here so readers have a quick reference without losing context.
 
 ## Terms
 

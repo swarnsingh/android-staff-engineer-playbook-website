@@ -20,6 +20,7 @@ CAP and consistency models first (the framing), then idempotency and delivery se
 - [Delivery Semantics (at-least-once vs exactly-once)](distributed-systems/delivery-semantics.md)
 - [Vector Clocks](distributed-systems/vector-clocks.md)
 - [CRDTs](distributed-systems/crdts.md)
+- [LWW vs CRDT](distributed-systems/lww-vs-crdt.md)
 - [Consensus Basics](distributed-systems/consensus-basics.md)
 - [Distributed Tracing](distributed-systems/distributed-tracing.md) — short stub; canonical is [`observability/distributed-tracing.md`](observability/distributed-tracing.md)
 

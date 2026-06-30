@@ -28,7 +28,7 @@ Include code only if it sharpens the explanation; otherwise, prose and diagrams.
 
 ## Decisions Made Here
 
-The specific choices made for this application (knob settings, thresholds, library picks). For larger decisions, link to an ADR in `adr/` rather than re-deriving them inline.
+The specific choices made for this application (knob settings, thresholds, library picks). For larger decisions, link to a Decision file co-located with the relevant topic (e.g., `android/data-and-di/room-vs-datastore.md` for a storage choice) rather than re-deriving them inline. See [`decision.md`](decision.md) for the Decision-file template.
 
 ---
 

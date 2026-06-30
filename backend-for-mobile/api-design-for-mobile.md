@@ -1,155 +1,179 @@
 # API Design for Mobile
 
+> A mobile phone is not a server in a data center. It operates on battery power, communicates over unreliable cellular networks with high latency, and runs app versions that may be three years old. A Staff engineer knows that an API designed for a web browser will destroy a mobile app's performance. Designing APIs for mobile requires minimizing request counts (radio wakeups), aggressively compressing payloads, and building defensive parsing strategies to handle unexpected schema changes from the backend.
+
+---
+
 ## Overview
 
-A Junior Engineer consumes whatever REST API the backend team provides, ignoring the fact that it requires 14 round-trips to render a single screen, and assumes "the network is reliable."
+When backend engineers design APIs, they typically optimize for RESTful purity, microservice boundaries, and database normalization. When mobile engineers consume APIs, they optimize for **user experience**. 
 
-A Staff Engineer understands that standard REST API design principles (Hypermedia, HATEOAS, strict Resource orientation) were built for Desktop Web Browsers on wired fiber-optic connections. Mobile networks are high-latency, packet-loss-prone environments. Designing an API for mobile requires violating pure REST principles in favor of pragmatism, payload reduction, and state synchronization.
+If a screen requires data from the `Users` microservice, the `Inventory` microservice, and the `Pricing` microservice, a web browser can make three parallel requests quickly over a fast Wi-Fi connection. A mobile app doing this on a 3G cell tower will experience compounding latency, battery drain, and UI stutter.
 
-## Why It Matters
+---
 
-Consider a classic REST API for a social media app:
-1. `GET /users/123` (Get user profile)
-2. `GET /users/123/posts` (Get IDs of user's posts)
-3. `GET /posts/991` (Get Post 991)
-4. `GET /posts/992` (Get Post 992)
+## 1. The Physical Constraints of Mobile
 
-If a user is on a train switching cellular towers, their phone takes 500ms just to establish a TLS connection. The N+1 query problem shown above will take 4-5 seconds to execute on mobile, compared to 50ms on a desktop. The user will see a loading spinner for 5 seconds, assume the app is broken, and uninstall it. 
+### The Cellular Radio State Machine
+Mobile devices use Radio Resource Control (RRC) to manage the cellular modem. To save battery, the modem sleeps. 
+When an app makes an HTTP request:
+1. The modem wakes up (takes ~1-2 seconds, consuming high power).
+2. The request is sent and received (high power).
+3. The modem stays in a "tail state" for 5-15 seconds expecting more data (medium power).
+4. The modem goes back to sleep (low power).
 
-Mobile APIs must be designed to minimize TCP round-trips above all else.
+**The Anti-Pattern:** Polling an API every 10 seconds. The modem never leaves the high/medium power state. The battery will drain in hours.
+**The Solution:** Batch requests, use Push Notifications (FCM) to wake the app, or use Server-Sent Events (SSE) / WebSockets for continuous streams.
 
-## Historical Context
+### Bandwidth and Latency
+- **Latency is compounding.** If you make sequential requests (Auth -> Get User -> Get Permissions), a 200ms ping means the user waits 600ms just for network transit.
+- **Payload size matters.** A 5MB JSON payload (over-fetching) on a slow connection will cause OkHttp `SocketTimeoutException`s.
 
-- **SOAP / XML (Pre-2010):** Massive, strict, heavily typed XML contracts. Required massive parsing overhead on early CPUs.
-- **Pure REST (2010-2015):** The era of strict Resource-based routing (`GET /authors/1/books/2`). It forced mobile apps to make chaining network calls, leading to the N+1 problem.
-- **Pragmatic Mobile REST (2015-Present):** Backend teams realized mobile needed specialized endpoints. Introduction of `?include=` query parameters to fetch relations in a single call, and [Backend-For-Frontend (BFF)](bff-pattern.md) patterns.
-- **GraphQL (Present):** The ultimate solution to REST limitations, allowing the client to specify exactly the shape of the graph it wants in one trip. (See [GraphQL](../android/networking-and-security/graphql.md)).
+---
 
-## First Principles
+## 2. Core Android Example: Retrofit and the Over/Under-Fetching Problem
 
-1.  **Latency vs Bandwidth:** Bandwidth is how much data fits in the pipe (e.g., 4G is wide). Latency is how long it takes for a drop of water to travel through the pipe. Mobile networks have terrible latency. *Minimizing round-trips is vastly more important than minimizing JSON size.*
-2.  **Idempotency:** A network call is idempotent if making the exact same call 5 times has the exact same result on the server as making it once. (Crucial for Mobile Retries).
-3.  **Partial Responses:** Allowing the client to ask the server to strip out useless JSON fields to save parsing time and battery.
-4.  **Versioning:** Mobile apps cannot be force-updated easily. An API must support multiple versions simultaneously for years.
+### Under-Fetching (The N+1 Problem)
+The backend provides pure REST resources.
+```kotlin
+// Android Retrofit Definition
+interface SocialApi {
+    @GET("api/v1/posts")
+    suspend fun getFeed(): List<Post> // Returns just post IDs and Text
 
-## Mental Model
-
-Think of designing a Mobile API like **Ordering at a Drive-Thru**.
-- **Pure REST:** You pull up to the window. You ask for a Burger. The cashier hands you a burger. You pull around the building, wait in line again, and ask for Fries. You pull around again, wait in line, and ask for a Coke. (Too many round trips).
-- **Mobile API:** You pull up to the window and say "I want Meal #4". The cashier hands you a box containing a Burger, Fries, and a Coke all at once. (One round trip, aggregated data).
-
-## Internal Mechanics
-
-### 1. Eliminating the N+1 Problem (Compound Documents)
-
-If the UI requires a User and their recent Posts, the API must return it in a single HTTP request.
-
-```http
-// Pragmatic REST using query expansion
-GET /api/v1/users/123?include=posts,followers
-
-// Response
-{
-  "id": "123",
-  "name": "Jane",
-  "posts": [
-    { "id": "991", "text": "Hello" }
-  ],
-  "followers": 50
+    @GET("api/v1/users/{id}")
+    suspend fun getUserProfile(@Path("id") userId: String): User
 }
 ```
+To render a feed of 20 posts with author avatars, the Android app must make **21 HTTP requests** (1 for the feed, 20 for the users). This will destroy the user experience on cellular networks.
 
-This violates strict REST (which dictates that `/users/` should only return User primitives), but it saves 500ms of latency and completely eliminates the risk of the first network call succeeding but the second call failing due to a tunnel dropout.
+### Over-Fetching
+The backend tries to solve the above by sending everything.
+```kotlin
+interface SocialApi {
+    @GET("api/v1/posts?include=author,comments,likes,history")
+    suspend fun getFeed(): List<PostWithEverything>
+}
+```
+Now the Android app downloads 3MB of JSON for a screen that only displays 140 characters of text and a tiny avatar. The JSON parsing alone (using Moshi or Gson) will block the background thread and trigger a GC pause, causing UI jank.
 
-### 2. Idempotency Keys (Handling the Tunnel Dropout)
+### The Mobile Solution: Payload Shaping
+Mobile APIs should return exactly what the screen needs, nothing more. This is achieved via:
+1. **GraphQL:** The Android app defines the exact schema it wants via Apollo Kotlin.
+2. **Backend-For-Mobile (BFF):** A middleware server aggregates the microservices and returns a custom JSON object tailored for the specific Android screen. (See `bff-pattern.md`).
 
-A user taps "Submit Order". The Android app sends a `POST /checkout`. The server receives it, charges the credit card, and sends the `HTTP 200 OK` response.
-*But the user drove into a tunnel right as the server replied.*
-The Android app throws a `SocketTimeoutException`. The app thinks the order failed. The user taps "Submit Order" again. They are charged twice.
+---
 
-A Staff Engineer mandates **Idempotency Keys** for all state-mutating APIs.
+## 3. Core Android Example: Defensive Parsing and Result Envelopes
+
+Backend teams deploy continuously. Mobile apps are shipped as static binaries (APKs/AABs) that users may never update. **Forward compatibility is mandatory.**
+
+### 1. Ignore Unknown Keys
+If the backend adds a new `"badge_tier"` field to the JSON, older versions of the app must not crash.
+- **Retrofit/Moshi:** Fails by default on unknown keys if using certain adapters. Must be explicitly configured to ignore them.
+- **Kotlinx Serialization:** Fails by default! You must set `ignoreUnknownKeys = true`.
 
 ```kotlin
-// Android App generates a unique UUID for this specific button press
-val idempotencyKey = UUID.randomUUID().toString()
-
-val request = Request.Builder()
-    .url("https://api.com/checkout")
-    .addHeader("Idempotency-Key", idempotencyKey)
-    .post(body)
-    .build()
+val json = Json { ignoreUnknownKeys = true }
 ```
 
-When the user taps "Submit" the second time (due to the timeout), the app sends the *exact same UUID*. The backend database sees the UUID, realizes it already charged the card, skips the billing phase, and just returns the previous `HTTP 200 OK`. 
-
-### 3. Sparse Fieldsets (Partial Responses)
-
-If a `Product` object contains 100 fields, but the search list UI only needs `id`, `name`, and `price`, the mobile app should not pay the battery/CPU cost of parsing 97 unused fields.
-
-```http
-// The Client dictates the payload shape
-GET /api/v1/products?fields=id,name,price
-
-// Response
-{
-  "data": [
-    { "id": "1", "name": "Laptop", "price": 999.00 }
-  ]
+### 2. Enum Fallbacks
+If the backend adds a new enum value (e.g., `Status.ARCHIVED`), older apps that only know `ACTIVE` and `INACTIVE` will crash during deserialization.
+```kotlin
+// Defensive Kotlin definition
+enum class Status {
+    ACTIVE,
+    INACTIVE,
+    UNKNOWN; // Always include a fallback!
 }
 ```
 
-*(Staff Note: This is exactly what GraphQL does natively, but if your company is stuck on REST, Sparse Fieldsets are mandatory for mobile performance).*
+### 3. The Sealed Result Envelope
+Standard HTTP status codes (404, 500) are not enough for mobile. Mobile needs business-logic error handling. Wrap API responses in a typed `Result` envelope.
 
-## Tradeoffs
+```kotlin
+sealed interface NetworkResult<out T> {
+    data class Success<T>(val data: T) : NetworkResult<T>
+    
+    data class BusinessError(
+        val code: String, // e.g., "INSUFFICIENT_FUNDS"
+        val userMessage: String // e.g., "Your balance is too low."
+    ) : NetworkResult<Nothing>
+    
+    data class HttpError(val code: Int) : NetworkResult<Nothing>
+    
+    data class IOError(val exception: IOException) : NetworkResult<Nothing> // No network
+}
+```
 
-**Strict Versioning vs API Evolution**
+In your Repository:
+```kotlin
+suspend fun fetchProfile(): NetworkResult<Profile> {
+    return try {
+        val response = api.getProfile()
+        if (response.isSuccessful) {
+            NetworkResult.Success(response.body()!!)
+        } else {
+            // Parse custom error JSON from the backend
+            val errorBody = parseErrorJson(response.errorBody())
+            NetworkResult.BusinessError(errorBody.code, errorBody.message)
+        }
+    } catch (e: IOException) {
+        NetworkResult.IOError(e) // Airplane mode
+    }
+}
+```
 
-- **URL Versioning (`/v1/users`, `/v2/users`):**
-    - *Pros:* Extremely explicit. The Android client knows exactly what JSON shape it will receive.
-    - *Cons:* The backend team hates maintaining `v1`, `v2`, and `v3` codebases simultaneously. They will eventually deprecate `v1`. When they do, users on 3-year-old Android devices whose phones cannot update to the new APK will experience a fatal app crash.
-- **API Evolution (GraphQL / Add-Only REST):**
-    - *Pros:* You never version the URL. You only ever *add* new fields. You never delete or rename old fields. Old apps continue to work forever.
-    - *Cons:* The backend database models become littered with legacy fields (`firstName`, `new_first_name`, `firstNameV3`). 
+---
 
-*Staff Decision:* For mobile, API Evolution is vastly superior to URL Versioning. Because you cannot force a user to update an Android app, URL Versioning is a ticking time bomb.
+## 4. Versioning Strategy for Mobile
 
-## Failure Modes
+When a web app updates its API, the frontend is deployed simultaneously. When a mobile app updates its API, it creates a new version, but v1.0, v1.1, and v1.2 are all still running in the wild.
 
-- **The Massive Payload Freeze:**
-  The backend team returns a 2MB JSON array of 10,000 items in a single API call. When Android's `Gson` or `Moshi` attempts to parse a 2MB string into 10,000 Kotlin objects on a mid-range phone, the CPU locks up for 3 seconds, causing severe [Jank](../android/performance/jank.md), and often triggering an `OutOfMemoryError`.
-  *(Fix: The API MUST implement [Pagination](../mobile-system-design/pagination.md). The backend should never return more than 20-50 items per request).*
-- **Assuming Sequential Execution:**
-  A developer fires `POST /uploadImage` and `POST /updateProfile` simultaneously, assuming the server will process the image first. The network routes the packets differently, the profile updates first, fails because the image doesn't exist, and crashes.
-  *(Fix: APIs should support batching, or the client must strictly chain dependent calls, absorbing the latency hit).*
+### Strategies
+1. **URI Versioning:** `api.example.com/v1/users` -> `api.example.com/v2/users`. Safest for major breaking changes.
+2. **Header Versioning:** `Accept: application/vnd.example.v2+json`. Cleaner URLs, but harder to cache via CDNs.
+3. **GraphQL:** No versions. Add new fields, never delete old fields. Deprecate fields in the schema so new client builds get warnings.
 
-## Staff Engineer Thinking
+**The Force Upgrade Check:**
+Every mobile app MUST hit a `/config` or `/handshake` endpoint on startup. If the backend determines the client version is too old to safely function, it returns a `FORCE_UPGRADE` flag, and the app locks the user out until they visit the Play Store.
 
-When reviewing an API Contract (Swagger/OpenAPI spec) proposed by the backend team, a Staff engineer fights for the mobile client.
+---
 
-1.  **Enforce UI-Driven Payloads:** If I see an API contract that looks exactly like the backend SQL database schema, I reject it. The API should look like the Android UI. If the UI needs a pre-calculated "Time since posted" (e.g., "5 mins ago"), the backend should calculate it and send it. Do not send `2024-10-01T12:00:00Z` and force 10 million Android phones to run DateTime math 60 times a second.
-2.  **Status Codes vs Business Errors:** Standard REST uses HTTP 404 for "Not Found". But what if the HTTP call hit a proxy that returned 404? Did the Proxy fail, or did the API fail? I ensure that HTTP 200 is used for successful *network* transit, and the JSON payload contains a strict `business_error_code` (e.g., `USER_NOT_FOUND_104`) so the Android app can differentiate between a network failure and a logic failure.
-3.  **Deprecation Horizons:** I monitor the analytics of our oldest app versions. If the backend team wants to drop an old API field, I query the APM to prove that 4% of our revenue still comes from users on Android 8 running a 4-year-old APK. The field stays.
+## 5. Failure Modes & Tradeoffs
 
-## Common Misconceptions
+| Failure Mode | Cause | Prevention / Solution |
+|---|---|---|
+| **JSON Parse Crash** | Backend added a new field, or changed an `Int` to a `String`, or sent a new Enum value. | Strict defensive parsing (ignore unknown keys, fallback enums). Write integration tests using real backend payload samples. |
+| **Silent Token Expiration** | API returns 401, but the app doesn't handle it globally, resulting in empty screens. | Use an OkHttp `Authenticator` or `Interceptor` to automatically refresh tokens or trigger a logout event globally. |
+| **Cellular Timeout** | Retrofit's default timeout (10s) is too short for large payloads on 3G, or too long for interactive searches. | Configure custom timeouts per endpoint (using OkHttp interceptors with custom headers) or tune the global OkHttp timeouts. |
+| **Battery Drain** | Frequent polling of an endpoint for status updates. | Replace with Server-Sent Events (SSE), WebSockets, or FCM push notifications that wake the app only when state changes. |
 
-- **"REST means one resource per endpoint."** In an academic computer science paper, yes. In a production mobile environment, adhering to this rule will destroy your app's performance. Pragmatic mobile APIs group resources to save TCP handshakes.
-- **"GZIP solves payload size problems."** GZIP compresses the JSON over the network, saving bandwidth. However, the Android phone still has to decompress it back into a massive String in RAM, and then parse that massive String into Kotlin objects. GZIP does not save CPU or Memory. Only sending less data saves CPU.
+---
+
+## 6. Common Pitfalls
+
+### Pitfall 1: Trusting the Backend's Nullability
+Backend sends: `{"name": null}`. Your Kotlin data class says: `val name: String`. Retrofit uses Gson, which uses reflection to bypass Kotlin's null safety, injecting a Java `null` into your non-null Kotlin `String`. Your app crashes later with a `NullPointerException`.
+*Fix:* Use `Moshi` or `Kotlinx Serialization`. They enforce Kotlin's null safety at the boundary and will fail the parsing immediately, allowing you to catch the exception and show an error state, rather than crashing the app randomly later.
+
+### Pitfall 2: Treating HTTP 200 as "Success"
+Many enterprise backends (especially legacy ones) return `HTTP 200 OK` for everything, with the error embedded in the JSON: `{"status": "error", "code": 500}`.
+*Fix:* If you can't fix the backend, write a custom OkHttp `Interceptor` that intercepts the response, parses the status field, and rewrites the HTTP code to 500 before Retrofit sees it. This keeps your Repository layer clean.
+
+---
 
 ## Probing Questions
 
-1.  Explain why minimizing network latency (round-trips) is significantly more critical for a mobile application than minimizing total bandwidth payload size.
-2.  What is the "N+1 Query Problem" in REST API design, and how does the concept of "Compound Documents" (`?include=`) solve it for mobile clients?
-3.  Describe the specific edge-case scenario where an Android device loses cellular connection *after* an API processes a payment, and how an Idempotency Key prevents double-billing.
-4.  Why is URL versioning (`/v1/api`) inherently dangerous for mobile applications compared to web applications?
-5.  What are "Sparse Fieldsets", and how do they protect a mobile device's CPU and battery?
-6.  Explain the architectural anti-pattern of forcing a mobile client to perform heavy mathematical calculations (e.g., aggregating 50 prices into a Total) instead of doing it on the backend.
-7.  If a backend API returns a 5MB JSON payload, why does GZIP compression fail to protect the Android device from `OutOfMemoryError`s during parsing?
-8.  Describe why a Staff Engineer might advocate for HTTP 200 OK responses that contain explicit "Business Error Codes" in the JSON body, rather than relying solely on HTTP 4xx/5xx status codes.
-9.  How does the Backend-For-Frontend (BFF) pattern act as a physical manifestation of Mobile API Design principles?
-10. What is the fundamental difference in API contract design between an endpoint that returns a literal Database Row versus an endpoint that returns a UI State Object?
+1.  **Radio Wakeup:** Explain the specific mechanism by which FCM (Firebase Cloud Messaging) "wakes up" an Android device. Why is it vastly more battery-efficient than the app running an AlarmManager to ping the server every 15 minutes?
+2.  **OkHttp Interceptors:** You want to implement an automatic retry mechanism for 503 Server Unavailable errors with exponential backoff. Do you put this logic in the Retrofit interface, the Repository, or an OkHttp Interceptor? Why?
+3.  **Null Safety Boundary:** Explain exactly how `Moshi` differs from `Gson` when encountering a null JSON value mapped to a non-null Kotlin property. How does Kotlinx Serialization handle this same scenario?
+4.  **GraphQL vs REST:** If a screen needs User Profile, Latest Order, and Cart Count, how many HTTP requests does REST typically require vs GraphQL? What are the caching disadvantages of GraphQL on the mobile client side?
+5.  **Force Upgrade:** Walk through the architecture of a Force Upgrade system. How do you ensure the `/config` endpoint itself doesn't become a single point of failure that prevents the app from opening when the server is down?
 
 ## Further Reading
 
-- [`bff-pattern.md`](bff-pattern.md) — The cloud architecture used to implement these mobile-specific API designs.
-- [`graphql.md`](../android/networking-and-security/graphql.md) — A query language that natively solves Over-fetching and N+1 routing.
-- [`idempotency.md`](../distributed-systems/idempotency.md) — Deep dive into the distributed systems math behind Idempotency Keys.
+- [`bff-pattern.md`](bff-pattern.md) — How to fix over-fetching by building a middleware API tailored for the Android app.
+- [`data-formats.md`](data-formats.md) — The performance differences between JSON, Protocol Buffers, and FlatBuffers on mobile.
+- [`../android/networking-and-security/retrofit-and-okhttp.md`](../android/networking-and-security/retrofit-and-okhttp.md) — Deep dive into configuring OkHttp for mobile constraints.
+- [`../android/networking-and-security/ktor-vs-retrofit.md`](../android/networking-and-security/ktor-vs-retrofit.md) — Modern networking alternatives for Kotlin Multiplatform.

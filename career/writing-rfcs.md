@@ -28,9 +28,9 @@ The history book, written **after** a decision. Short (1-3 pages).
 
 - **Audience:** The engineer who joins in 18 months and asks "why did we build it this way?"
 - **Goal:** Capture decision context so it can't be relitigated without new information.
-- **Lives in:** `/adr/` in the repo. Numbered chronologically. Never deleted; only superseded.
+- **Lives in:** Co-located with the topic it decides — e.g., a decision about the data layer lives in `android/data-and-di/`, a decision about transport in `backend-for-mobile/`. Filename pattern is `<choice-a>-vs-<choice-b>.md`. Never deleted; only superseded by a newer file that links back to it.
 
-See `adr/` folder for examples.
+See [`../android/architecture/mvvm-vs-mvi.md`](../android/architecture/mvvm-vs-mvi.md), [`../backend-for-mobile/sse-vs-websockets.md`](../backend-for-mobile/sse-vs-websockets.md), and [`../android/data-and-di/hilt-vs-koin-vs-manual-di.md`](../android/data-and-di/hilt-vs-koin-vs-manual-di.md) for examples. Template: [`../templates/decision.md`](../templates/decision.md).
 
 ### 1-Pager / Tech Spec
 
@@ -259,11 +259,11 @@ If the live meeting becomes a place to re-raise resolved comments, the meeting i
 
 ---
 
-## Real Examples From The Bible
+## Real Examples From The Playbook
 
 This repo follows the patterns above. See:
 
-- `adr/003-sse-vs-websockets.md` and `adr/008-lww-vs-crdt.md` — full-depth ADRs.
+- `backend-for-mobile/sse-vs-websockets.md` and `distributed-systems/lww-vs-crdt.md` — full-depth ADRs.
 - `mobile-system-design/feature-flags-and-remote-config.md` — RFC-shaped design discussion.
 - `release-engineering/release-strategy.md` — rollout plans (the kind a real RFC includes).
 
@@ -287,5 +287,5 @@ This repo follows the patterns above. See:
 - [Michael Nygard — Documenting Architecture Decisions](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions) — the canonical ADR template.
 - [Industrial Logic — How to write a Design Doc](https://www.industriallogic.com/blog/) — practical RFC guidance.
 - [Google's eng-practices](https://google.github.io/eng-practices/) — review discipline.
-- [`adr/008-lww-vs-crdt.md`](../adr/008-lww-vs-crdt.md) — full-depth ADR in this repo.
+- [`distributed-systems/lww-vs-crdt.md`](../distributed-systems/lww-vs-crdt.md) — full-depth ADR in this repo.
 - [`scope-and-ambiguity.md`](scope-and-ambiguity.md) — when RFCs are how you take scope.

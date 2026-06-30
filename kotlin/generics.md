@@ -1,181 +1,526 @@
 # Generics
 
+> Generics are how Android avoids 17 copies of `ArrayList`. `Result<T>`, `ViewModelFactory<T>`, `RecyclerView.Adapter<T : ViewHolder>`, `LazyColumn { items<T>(...) }` — every Android architectural primitive is generic. Staff-level mastery is knowing the JVM's type-erasure rules, when `reified` is the workaround, and how variance (`in`/`out`) interacts with generic hierarchies — because the moment you write `Result<Success>` and try to assign it to `Result<Outcome>`, you're in deep water.
+
+---
+
 ## Overview
 
-Generics allow you to write code that operates on *types as parameters*. Just as a function can take a `String` or an `Int` as an argument, a Generic class or function can take the *concept* of a `String` or `Int` as an argument. 
+A generic type parameter is a placeholder for a type. The compiler enforces consistency at compile time:
 
-Generics are the foundation of reusable architectures. Without them, you would have to write a separate `StringList` class, an `IntList` class, and a `UserList` class. With generics, you write a single `List<T>` class, and the compiler enforces the type safety for you.
+```kotlin
+class Box<T>(val item: T)
 
-## Why It Matters
+val intBox: Box<Int> = Box(42)
+val strBox: Box<String> = Box("hi")
 
-Before Generics existed (Java 1.4 and earlier), collections held raw `Object` references. You could put a `String` and a `Dog` into the exact same `ArrayList`. When you pulled an item out, you had to cast it: `(Dog) list.get(0)`. If you accidentally cast the `String` to a `Dog`, the app crashed at runtime with a `ClassCastException`.
+intBox.item.length    // ❌ compile error — Int has no .length
+strBox.item.length    // ✅ smart-typed as String
+```
 
-Generics shifted this risk from Run Time to Compile Time. If you declare a `List<Dog>`, the compiler physically prevents you from putting a `String` into it. This mathematical guarantee is required to build safe, scalable SDKs.
+The mental model: `<T>` is "for any T, here is the contract."
 
-## Historical Context
+---
 
-When Java 5 introduced Generics in 2004, they had a massive problem: Backward Compatibility. They could not break the millions of existing Java 1.4 programs that used raw `ArrayList`s. 
+## Why It Matters (Android Context)
 
-To solve this, Java introduced **Type Erasure**. The compiler enforces the generic types while compiling, but then it *erases* the types before generating the bytecode. At runtime in the JVM, a `List<String>` and a `List<Dog>` are the exact same thing: a raw `List` holding `Object`s. Kotlin runs on the JVM, so it inherited this exact same limitation. Understanding Type Erasure is the key to understanding all advanced Kotlin generics.
+Pre-generics Java collections held raw `Object`:
+
+```java
+ArrayList list = new ArrayList();
+list.add("hello");
+list.add(42);
+String s = (String) list.get(1);   // ClassCastException at runtime
+```
+
+Generics shifted this risk from runtime to compile time. Modern Android relies on this everywhere:
+
+- `RecyclerView.Adapter<VH : ViewHolder>` — your VH type flows through every call.
+- `StateFlow<T>` — emissions and collectors agree on type.
+- `Repository<User>` — pluggable data sources.
+- `Result<T>` / `ApiResponse<T>` — typed success/error envelopes.
+- `Comparator<T>` — sortable collections.
+- `Class<T>` / `KClass<T>` — type tokens for serialization.
+
+A weak grasp of generics turns into runtime crashes that look like "this can't happen."
+
+---
 
 ## First Principles
 
-1.  **The Type Parameter (`<T>`):** The placeholder. It says "I don't know what type this is yet, but whatever it is, I will enforce it consistently across this class."
-2.  **Type Erasure:** Generics do not exist at runtime on the JVM. They are a compile-time hallucination.
-3.  **Upper Bounds:** You can restrict a generic. `<T : Animal>` means "T can be anything, as long as it is an Animal or a subclass of Animal."
+1. **Type parameters are compile-time only.** The JVM doesn't see them at runtime — that's type erasure.
+2. **Bounded generics restrict.** `<T : Comparable<T>>` says "T must be comparable to itself."
+3. **`where` clauses combine bounds.** `<T> where T : A, T : B`.
+4. **Variance** (`in`/`out`) controls how generic parameters interact with inheritance — covered in [`variance.md`](variance.md).
+5. **`reified`** + `inline` is Kotlin's escape from JVM erasure.
 
-## Mental Model
+---
 
-Think of a generic class like a Tupperware container factory.
-- **The Blueprint (The Class):** The factory makes containers of a specific size, but it doesn't care what you put in them. `class Container<T>(val item: T)`
-- **The Label (The Compiler):** When you buy the container, you stick a label on it: "Flour Only" (`Container<Flour>`). The Kitchen Manager (the Compiler) reads the label. If you try to put Sugar in the Flour container, the Manager stops you.
-- **Type Erasure (At Runtime):** Once the containers are in the pantry with the lights off, the labels disappear. A container holding Flour looks identical to a container holding Sugar.
-
-## Internal Mechanics
-
-### 1. Type Erasure in Action
+## Generic Functions
 
 ```kotlin
-val stringList = listOf("A", "B")
+fun <T> singletonList(item: T): List<T> = listOf(item)
+
+fun <T : Comparable<T>> max(a: T, b: T): T = if (a > b) a else b
+
+fun <T> List<T>.swapInPlace(i: Int, j: Int): MutableList<T> {
+    val mutable = this.toMutableList()
+    val tmp = mutable[i]; mutable[i] = mutable[j]; mutable[j] = tmp
+    return mutable
+}
+```
+
+Type parameters declared before the function name. Used in parameter types, return type, and (in extension functions) the receiver.
+
+### Multiple parameters
+
+```kotlin
+fun <K, V> mapOf(vararg pairs: Pair<K, V>): Map<K, V> = ...
+fun <K, V, R> Map<K, V>.mapValues(transform: (V) -> R): Map<K, R> = ...
+```
+
+By convention: `T`, `R` for return, `E` for element, `K`/`V` for key/value.
+
+---
+
+## Bounded Generics
+
+### Upper bound
+
+```kotlin
+class JsonParser<T : Any>             // T cannot be nullable
+class Repo<T : Entity>                // T must extend Entity
+fun <T : Number> sum(list: List<T>)   // T must extend Number
+```
+
+Without the bound, the compiler defaults to `T : Any?` — including nullable.
+
+### `where` clause for multiple bounds
+
+```kotlin
+fun <T> validate(value: T): Boolean
+    where T : Comparable<T>,
+          T : CharSequence
+{
+    return value.length > 0 && value > "minimum"
+}
+```
+
+Multiple constraints, all must hold.
+
+### Common Android upper bounds
+
+| Bound | Use case |
+|---|---|
+| `T : Any` | Exclude null; required for type-token reflection |
+| `T : Comparable<T>` | Sortable items |
+| `T : Number` | Numeric collections |
+| `T : Parcelable` | Items that survive process death |
+| `VH : RecyclerView.ViewHolder` | RecyclerView adapters |
+| `T : ViewModel` | Generic ViewModel factories |
+| `T : Activity` | Type-safe `Intent` builders |
+
+---
+
+## Type Erasure — The Core Constraint
+
+Kotlin runs on the JVM. The JVM erases generic types in bytecode. **At runtime, `List<String>` and `List<Int>` are the same class.**
+
+```kotlin
+val strList = listOf("a", "b")
 val intList = listOf(1, 2)
 
-// At compile time, the compiler knows stringList is List<String>.
-// But look at what happens at runtime if we check the class:
-
-println(stringList::class.java) // Prints: class java.util.Arrays$ArrayList
-println(intList::class.java)    // Prints: class java.util.Arrays$ArrayList
-
-// They are identical. The <String> and <Int> have been erased.
+println(strList::class.java)    // class kotlin.collections.EmptyList
+println(intList::class.java)    // class kotlin.collections.EmptyList (same!)
+strList::class.java == intList::class.java   // true
 ```
 
-Because of Type Erasure, you **cannot** perform `is` checks on generic types at runtime:
+### What you CAN'T do because of erasure
 
 ```kotlin
-fun checkType(list: Any) {
-    // COMPILER ERROR: Cannot check for instance of erased type: List<String>
-    if (list is List<String>) { ... } 
+fun checkType(x: Any) {
+    if (x is List<String>) { ... }   // ❌ compile error: erased
+}
+
+inline fun <T> create(): T {
+    return T()                       // ❌ compile error: erased
+}
+
+fun <T> classOf(): Class<T> {
+    return T::class.java             // ❌ compile error: erased
 }
 ```
-*Why?* Because at runtime, the JVM has no idea if the list holds Strings or Ints. It only knows it's a `List`.
 
-### 2. The Star Projection (`*`)
-
-If you want to check if something is a List, but you acknowledge that you cannot know what is *inside* the List due to Type Erasure, you use the Star Projection.
+### What you CAN do
 
 ```kotlin
-fun checkTypeSafely(list: Any) {
-    // Valid! Checks if it is a List of literally anything.
-    if (list is List<*>) {
-        println("It's a list with ${list.size} items!")
-        
-        // But because of the *, you cannot safely read elements as specific types:
-        val item = list[0] // Type is 'Any?', not 'String'.
+if (x is List<*>) { ... }                       // ✅ star projection
+val s = x as? String ?: return                  // ✅ casting concrete types
+inline fun <reified T> classOf(): Class<T> =    // ✅ reified
+    T::class.java
+```
+
+### Star projection (`*`)
+
+When you don't know or don't care what `T` is at runtime:
+
+```kotlin
+fun describe(list: List<*>) {
+    println("size=${list.size}")
+    val first = list.firstOrNull()    // type is Any?
+    // can read as Any?, cannot safely write
+}
+```
+
+`List<*>` is like `List<out Any?>` for reads, `List<in Nothing>` for writes — i.e., read-as-`Any?`, can't write at all.
+
+---
+
+## `reified` — Escaping Erasure with `inline`
+
+`inline` functions are copy-pasted at every call site. The compiler can preserve the type parameter because there are no longer "uses" of `T` — only specific specialized calls.
+
+```kotlin
+inline fun <reified T> Gson.fromJson(json: String): T =
+    fromJson(json, T::class.java)
+
+val user: User = gson.fromJson("""{"id": 1}""")    // T is known concretely
+```
+
+Without `reified`, you'd write:
+
+```kotlin
+fun <T> Gson.fromJson(json: String, clazz: Class<T>): T = ...
+val user: User = gson.fromJson(json, User::class.java)    // verbose
+```
+
+### When `reified` works
+
+- The function **must be `inline`** — the compiler needs to copy the body into the call site.
+- You can use `T::class`, `T::class.java`, `is T`, `as T` inside the body.
+
+### When `reified` doesn't work
+
+- Lambda parameters can't easily be reified.
+- You can't store a reified `T` as a field — only use it locally.
+- Recursion across reified functions has limits.
+
+### Why this matters in Android
+
+```kotlin
+// Generic Intent builder
+inline fun <reified A : Activity> Context.start(
+    builder: Intent.() -> Unit = {}
+) {
+    val intent = Intent(this, A::class.java).apply(builder)
+    startActivity(intent)
+}
+
+// Call site
+context.start<DetailActivity> {
+    putExtra("id", productId)
+}
+
+// Generic ViewModel factory
+inline fun <reified VM : ViewModel> Fragment.viewModelFactory(
+    noinline create: () -> VM
+): Lazy<VM> = viewModels {
+    object : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            @Suppress("UNCHECKED_CAST")
+            return create() as T
+        }
     }
 }
 ```
 
-## Architecture
+`reified` makes the call sites elegant. Without it, every caller would pass `VM::class.java` manually.
 
-```mermaid
-graph TD
-    subgraph Compile Time
-        Code[val list = List<String>] --> Compiler[Kotlinc Compiler]
-        Compiler -->|Enforces Types| Check[Refuses list.add(1)]
-    end
-    
-    subgraph Run Time (JVM)
-        Compiler -->|Generates Bytecode| Bytecode
-        Bytecode --> JVM[JVM Execution]
-        JVM -->|Types Erased| Raw[Raw List holds Objects]
-        Raw -->|Auto-Casts| Get[String s = (String) list.get(0)]
-    end
-```
+---
 
-## Production Example
+## Type Tokens — The Reflection Workaround
 
-**Generic Network Responses**
-
-Generics are heavily used to create uniform wrappers around API responses.
+If you need *generic-of-generic* type info at runtime (`List<User>` not just `List`), even `reified` isn't enough. You need a type token.
 
 ```kotlin
-// The Generic Wrapper
-// T can be anything (User, Product, Order)
-sealed class ApiResponse<T> {
-    data class Success<T>(val data: T) : ApiResponse<T>()
-    data class Error<T>(val exception: Exception) : ApiResponse<T>()
+// Moshi
+val type = Types.newParameterizedType(List::class.java, User::class.java)
+val adapter = moshi.adapter<List<User>>(type)
+
+// Gson (less safe)
+val type = object : TypeToken<List<User>>() {}.type
+val users: List<User> = gson.fromJson(json, type)
+```
+
+`object : TypeToken<List<User>>() {}` is the anonymous-subclass trick: by extending `TypeToken<T>`, the generic parameter is captured in the class file's `Signature` attribute, which reflection can read at runtime.
+
+---
+
+## Variance — `in`, `out`, and Why `List<Dog>` Isn't `List<Animal>`
+
+Without explicit variance, generic types are **invariant**. `Producer<Dog>` and `Producer<Animal>` are unrelated, even if `Dog : Animal`.
+
+```kotlin
+open class Animal
+class Dog : Animal()
+
+val dogs: MutableList<Dog> = mutableListOf()
+val animals: MutableList<Animal> = dogs    // ❌ compile error
+```
+
+Why? Because if it compiled, you could do `animals.add(Cat())` — corrupting `dogs`.
+
+### `out T` (covariance) — for producers
+
+```kotlin
+interface Source<out T> {
+    fun next(): T
 }
 
-// Usage in Repository
-suspend fun fetchUser(): ApiResponse<User> {
-    return try {
-        val user = api.getUser()
-        ApiResponse.Success(user)
-    } catch (e: Exception) {
-        ApiResponse.Error(e)
+val dogSource: Source<Dog> = ...
+val animalSource: Source<Animal> = dogSource    // ✅ OK with `out`
+```
+
+`out T` means "T only appears in *output* (return) positions." Safe to read; can't write.
+
+### `in T` (contravariance) — for consumers
+
+```kotlin
+interface Sink<in T> {
+    fun accept(item: T)
+}
+
+val animalSink: Sink<Animal> = ...
+val dogSink: Sink<Dog> = animalSink    // ✅ OK with `in`
+```
+
+`in T` means "T only appears in *input* (parameter) positions." Safe to write; can't read.
+
+### Real-world examples
+
+- `List<out T>` — read-only, covariant.
+- `MutableList<T>` — read and write, invariant.
+- `Comparator<in T>` — `Comparator<Animal>` works as `Comparator<Dog>`.
+- `Flow<out T>` — covariant; collector receives `T`.
+- `Function1<in P, out R>` — `(Animal) -> Number` works as `(Dog) -> Int`.
+
+Full deep dive in [`variance.md`](variance.md).
+
+---
+
+## Generic Constraints — Use-Site Projections
+
+If the *declaration* doesn't specify variance, you can apply it at the use site:
+
+```kotlin
+// MutableList is invariant by declaration.
+// At use site, we read out without writing in:
+fun copy(from: MutableList<out Number>, to: MutableList<Number>) {
+    for (item in from) to.add(item)
+    // from.add(...)    ← compile error: 'out' position
+}
+```
+
+This is Java's `? extends T` / `? super T` syntax in disguise.
+
+---
+
+## Common Android Patterns
+
+### Generic ApiResponse / Resource
+
+```kotlin
+sealed interface Resource<out T> {
+    data object Loading : Resource<Nothing>
+    data class Success<T>(val data: T) : Resource<T>
+    data class Failure(val error: Throwable) : Resource<Nothing>
+}
+
+suspend fun <T> safeApi(call: suspend () -> T): Resource<T> = try {
+    Resource.Success(call())
+} catch (e: Exception) {
+    if (e is CancellationException) throw e
+    Resource.Failure(e)
+}
+
+// Usage
+val userR: Resource<User> = safeApi { api.getUser() }
+```
+
+### RecyclerView adapters
+
+```kotlin
+abstract class BaseAdapter<T, VH : RecyclerView.ViewHolder>(
+    diffCallback: DiffUtil.ItemCallback<T>,
+) : ListAdapter<T, VH>(diffCallback)
+
+class CartAdapter : BaseAdapter<CartItem, CartViewHolder>(CartDiff) {
+    override fun onBindViewHolder(holder: CartViewHolder, position: Int) {
+        holder.bind(getItem(position))
     }
 }
 ```
 
-## Tradeoffs
+`<T, VH : ViewHolder>` enforces matched item + holder types.
 
-**Advantages**
-- **Type Safety:** Eliminates `ClassCastException`.
-- **DRY (Don't Repeat Yourself):** A single `Result<T>` class can handle every single network request in the entire application.
+### Compose generic Composables
 
-**Disadvantages**
-- **Complexity:** Generics get incredibly confusing when combined with Inheritance (this leads to [Variance](variance.md), which is notoriously difficult).
-- **Runtime Blindness:** Type Erasure makes reflection and dynamic type checking very painful. (Though Kotlin solves some of this with [Reified Types](reified-types.md)).
+```kotlin
+@Composable
+fun <T> LazyList(
+    items: List<T>,
+    key: (T) -> Any,
+    content: @Composable (T) -> Unit
+) {
+    LazyColumn {
+        items(items, key = key) { content(it) }
+    }
+}
+
+LazyList(products, key = { it.id }) { ProductRow(it) }
+```
+
+The `key = (T) -> Any` callback is generic — caller decides what stable identity looks like.
+
+### Hilt assisted-inject with generics
+
+```kotlin
+@HiltViewModel(assistedFactory = DetailViewModel.Factory::class)
+class DetailViewModel @AssistedInject constructor(
+    @Assisted val productId: String,
+    private val repo: ProductRepo,
+) : ViewModel() {
+    @AssistedFactory
+    interface Factory {
+        fun create(productId: String): DetailViewModel
+    }
+}
+
+// Composable
+val factory = EntryPointAccessors.fromActivity<DetailEntryPoint>(activity)
+val vm: DetailViewModel = viewModel(factory = ...) { factory.create(id) }
+```
+
+### Service locators / DI containers
+
+```kotlin
+inline fun <reified T : Any> ServiceLocator.get(): T {
+    return registry[T::class.java] as T
+        ?: error("Service ${T::class.java.simpleName} not registered")
+}
+
+val analytics: Analytics = locator.get()
+```
+
+---
+
+## Java Interop — `@JvmSuppressWildcards` and Friends
+
+Kotlin's variance generates Java wildcards when crossing the interop boundary. Sometimes you need to suppress them:
+
+```kotlin
+// Kotlin signature: List<out T>
+// Java sees: List<? extends T>  ← wildcard from `out`
+
+@JvmSuppressWildcards
+fun process(list: List<Animal>) { ... }
+// Java now sees: List<Animal>  (no wildcard)
+
+fun produce(): List<@JvmWildcard Animal> = ...
+// Forces a wildcard even when Kotlin wouldn't
+```
+
+Mostly relevant when shipping a Kotlin SDK that needs clean Java consumption. See `library-versioning.md` for SDK API concerns.
+
+---
+
+## `@UnsafeVariance` — The Escape Hatch
+
+```kotlin
+interface Producer<out T> {
+    fun produce(): T
+    fun consume(@UnsafeVariance item: T): Unit   // ← T in 'in' position
+}
+```
+
+Tells the compiler "trust me, I know this looks variance-unsafe, but it's OK in my implementation." Use sparingly. The standard library uses this for `List.contains(element: @UnsafeVariance E): Boolean`.
+
+---
 
 ## Failure Modes
 
-- **The Generic Shadowing Trap:**
-  ```kotlin
-  class Processor<T> {
-      // BAD: The <T> in the function signature SHADOWS the <T> of the class.
-      // This function's T is completely unrelated to the class's T!
-      fun <T> process(item: T) { }
-  }
-  ```
-  *(Fix: Remove the `<T>` from the function signature if you want to use the class's type parameter).*
-- **The Unchecked Cast Warning:**
-  ```kotlin
-  val genericList: List<*> = listOf(1, 2, 3)
-  // The compiler warns you: "Unchecked cast: List<*> to List<String>"
-  val stringList = genericList as List<String> 
-  
-  // It compiles, but it will crash at runtime when you try to read it!
-  val s: String = stringList[0] // ClassCastException: Integer cannot be cast to String
-  ```
-  *(Fix: Never ignore unchecked cast warnings. The compiler is telling you it cannot guarantee safety because of Type Erasure).*
+| Symptom | Cause | Fix |
+|---|---|---|
+| `ClassCastException` from unchecked cast | `as` cast of erased generic | Use `reified` or pass a `Class<T>` explicitly |
+| `is List<String>` fails to compile | Erasure | `is List<*>` then check element types manually |
+| Cannot instantiate `T()` inside generic class | Erasure — `T::class.java` unavailable | Pass a `Class<T>` constructor arg or use `reified` (which needs `inline`) |
+| Shadowed type parameter | `fun <T> bar(item: T)` inside `class Foo<T>` | Remove the inner `<T>` or rename |
+| `MutableList<Dog>` not assignable to `MutableList<Animal>` | Invariance is correct | Use `MutableList<out Animal>` (read-only) or copy |
+| Gson silently returns `List<LinkedTreeMap>` instead of `List<User>` | Type token lost | Use Moshi (compile-time codegen) or `TypeToken` |
+| Java consumer gets verbose wildcard signatures | Default `out` becomes `? extends T` in bytecode | `@JvmSuppressWildcards` on the API |
+| `inline fun` becomes huge | Body copied at every call site | Smaller body; or extract non-inline helpers |
+| Hilt fails to inject generic type | Erasure — Dagger sees raw `Repo`, not `Repo<User>` | Use `@Qualifier` or non-generic wrapper |
+| `reified` doesn't work | Forgot `inline` | Add `inline` and re-`reified` |
+| Compose recomposes more than expected with generic stable type | Inferred unstable | Annotate the generic class `@Immutable` |
+| `Bundle` extras with generics | Erasure | Use Parcelize + sealed wrappers, or kotlinx serialization |
 
-## Staff Engineer Thinking
+---
 
-When reviewing generic architecture, a Staff engineer focuses on boundaries and constraints:
+## Staff Engineer Lens
 
-1.  **Do we need Upper Bounds?** If I see `class JsonParser<T>`, I immediately ask if `T` can be literally anything, including `null`. If `T` shouldn't be nullable, it must be `class JsonParser<T : Any>`. If `T` must implement an interface, it must be `class JsonParser<T : Serializable>`. Unbounded generics are often too permissive.
-2.  **Is this overly generic?** Junior developers often suffer from "Genericitis"—trying to make every single class generic "just in case." Generics reduce readability. If a class is only ever going to process `String`s, hardcode it to `String`. I enforce the Rule of Three: don't make it generic until you have three distinct use cases.
-3.  **Are we relying on Runtime Type Information (RTTI)?** If a generic class tries to do `T::class.java` to instantiate an object using reflection, I know the developer doesn't understand Type Erasure. The bytecode won't compile. I will direct them to use `inline` functions with `reified` types.
+When reviewing generics, I look for:
+
+1. **Unbounded `<T>` where `<T : Any>` is correct.** A nullable type parameter is rarely intended; the bound forces nullability into a separate `T?` decision.
+2. **Generic class with `T::class.java` inside non-`reified` non-`inline` context.** Won't compile — but I've seen PRs that tried. Push to `reified` + `inline`.
+3. **`@Suppress("UNCHECKED_CAST")` without justification.** Each one is a runtime crash possibility. Either fix or document why it's safe.
+4. **Five-parameter generic functions.** `<A, B, C, D, E>` is a code smell. Usually means too many concerns crammed into one function.
+5. **"Generics everywhere" syndrome.** A class only used with `String` doesn't need to be `class X<T>`. Rule of Three: stay concrete until three real generic uses appear.
+6. **`Class<*>` API.** Use `KClass<*>` or `KClass<out Foo>` to be Kotlin-idiomatic and let the compiler help.
+7. **Star projection where covariance would work.** `List<*>` is read-as-`Any?`. If you can refactor to `List<out T>` and read as `T`, do so.
+8. **Java interop wildcards leaking through SDK boundary.** `@JvmSuppressWildcards` on the public API surface.
+
+---
 
 ## Common Misconceptions
 
-- **"Generics make the app larger or slower."** False. Because of Type Erasure, there is no runtime overhead. A `List<String>` and a `List<Int>` share the exact same bytecode implementation in memory. (Note: C++ Templates work differently and *do* bloat the binary; JVM Generics do not).
-- **"If `Dog` is a subclass of `Animal`, then `List<Dog>` is a subclass of `List<Animal>`."** This is the most dangerous misconception in Kotlin. It is completely FALSE. This concept is called Invariance, and it requires a dedicated file to explain: [Variance](variance.md).
+- **"Generics make the app larger or slower."** False on JVM. Type erasure means zero runtime cost. (C++ templates do bloat; the JVM does not.)
+- **"`List<Dog>` is a `List<Animal>` because Dog is an Animal."** **False — that's invariance.** Variance (`in`/`out`) is opt-in.
+- **"`reified` works on any generic function."** Only on `inline` functions.
+- **"`<T : Any?>` is the same as `<T>`."** True for bounds, false in practice — `<T : Any>` (no `?`) excludes null.
+- **"I can use `T::class.java` in a non-inline generic class."** No. Erasure prevents it. Pass `Class<T>` as a constructor arg.
+- **"`List<*>` and `List<Any?>` are the same."** `List<*>` is read-only at the element type; `List<Any?>` accepts any input. Subtle but important.
+- **"All generic functions should be `reified`."** No. Reified forces inline; inline bloats bytecode if the body is large.
+
+---
 
 ## Probing Questions
 
-1.  What is "Type Erasure," and why was it introduced into the JVM?
-2.  Why does `if (myList is List<String>)` fail to compile in Kotlin?
-3.  What is the purpose of the Star Projection (`*`) in Kotlin generics?
-4.  Explain the difference between `<T>` (unbounded) and `<T : Any>` (bounded) in a generic class definition.
-5.  If Generics are erased at runtime, how does the JVM know to throw a `ClassCastException` if you put the wrong object into a raw list? (Hint: The compiler inserts automatic casts).
-6.  Describe a scenario where a developer might accidentally "Shadow" a generic type parameter.
-7.  Why are generic wrapper classes (like `Result<T>` or `Resource<T>`) so ubiquitous in Android repository layers?
-8.  If you need to know the actual `Class` of `T` at runtime (e.g., to pass it to a JSON deserializer), why do standard generics fail, and what Kotlin feature must you use instead?
-9.  Why is ignoring an "Unchecked Cast" compiler warning considered a severe architectural risk?
-10. If `List<String>` and `List<Int>` compile to the exact same bytecode, how does the IDE provide auto-complete for `.length` on the String list, but not the Int list?
+1. Walk through what bytecode the JVM sees for `List<String>` vs `List<Int>`. Why are they identical, and what does the IDE actually check?
+2. Why does `if (x is List<String>)` fail to compile? How do you check at runtime if `x` is a list of strings?
+3. Write a `reified` extension that deserializes JSON to `T`. Why does it have to be `inline`?
+4. Explain the `<T : Any>` constraint. When is `<T>` (no bound) wrong?
+5. You need `Class<T>` inside a non-inline generic class. What's the workaround?
+6. Why is `MutableList<Dog>` not assignable to `MutableList<Animal>` even though `Dog : Animal`? How does `out` fix it for read-only cases?
+7. The `@Suppress("UNCHECKED_CAST")` warning — when is it dangerous and when is it acceptable?
+8. Explain `<T> where T : Comparable<T>, T : Iterable<T>`. What does each bound contribute?
+9. Walk through how `object : TypeToken<List<User>>() {}` captures the generic at runtime when normal erasure would lose it.
+10. `inline fun <reified T> Context.start(...)` for starting an Activity — what does this gain over passing `T::class.java`?
+11. Hilt fails to inject `Repo<User>` because Dagger sees the raw type. How do you work around it?
+12. Compose generic `LazyList<T>` — what makes the inferred stability *correct* vs *wrong* for the parameter `T`?
+
+---
 
 ## Further Reading
 
-- [`variance.md`](variance.md) — Why `List<Dog>` is not a `List<Animal>`, and how to fix it with `in` and `out`.
-- [`reified-types.md`](reified-types.md) — How to magically bypass Type Erasure at runtime.
-- [Oracle Java Docs: Type Erasure](https://docs.oracle.com/javase/tutorial/java/generics/erasure.html)
+- [`variance.md`](variance.md) — `in`/`out` deep dive.
+- [`reified-types.md`](reified-types.md) — `reified` mechanics in depth.
+- [`inline-functions.md`](inline-functions.md) — `inline` rules that enable `reified`.
+- [`sealed-classes.md`](sealed-classes.md) — generic sealed hierarchies (`Resource<out T>`).
+- [`data-classes.md`](data-classes.md) — generic data classes (`Pair<A, B>`).
+- [`null-safety.md`](null-safety.md) — `<T : Any>` for non-null type params.
+- [`../android/architecture/viewmodel.md`](../android/architecture/viewmodel.md) — generic ViewModel factories.
+- [`../platform-engineering/library-versioning.md`](../platform-engineering/library-versioning.md) — `@JvmSuppressWildcards` and Java consumer concerns.
+- [Kotlin Docs — Generics](https://kotlinlang.org/docs/generics.html) — official reference.
+- [Roman Elizarov — "Generic variance"](https://elizarov.medium.com/) — Kotlin language team's design notes.
+- [Java Generics FAQ — Angelika Langer](https://www.angelikalanger.com/GenericsFAQ/JavaGenericsFAQ.html) — encyclopedic JVM-side reference.
+- [Effective Java Items 26–32](https://www.amazon.com/Effective-Java-Joshua-Bloch/dp/0134685997) — Bloch's chapter on generics.

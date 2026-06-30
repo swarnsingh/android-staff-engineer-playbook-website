@@ -87,6 +87,49 @@ val vipDiscount: (Order) -> Double = { order -> if (order.total > 100) 25.0 else
 val processor = OrderProcessor(calculateDiscount = vipDiscount)
 ```
 
+### 3. The DI-Injected Strategy (The Staff Approach)
+
+In modern Android architecture, Strategies are almost always injected via Dagger/Hilt. This is incredibly powerful for things like Sorters, Filters, or Authenticators.
+
+```kotlin
+// 1. The Strategy Interface
+interface FeedSorter {
+    fun sort(items: List<FeedItem>): List<FeedItem>
+}
+
+// 2. Concrete Strategies (Injected with their own dependencies!)
+class ChronologicalSorter @Inject constructor() : FeedSorter {
+    override fun sort(items: List<FeedItem>) = items.sortedByDescending { it.timestamp }
+}
+
+class AlgorithmicSorter @Inject constructor(
+    private val userPreferences: UserPreferences // Strategy declares its own dependencies!
+) : FeedSorter {
+    override fun sort(items: List<FeedItem>): List<FeedItem> {
+        val favoriteTopics = userPreferences.getTopics()
+        return items.sortedByDescending { favoriteTopics.contains(it.topic) }
+    }
+}
+
+// 3. The Context (ViewModel)
+@HiltViewModel
+class FeedViewModel @Inject constructor(
+    private val repository: FeedRepository,
+    // Inject a Map of Strategies using Hilt Multibinding
+    private val sorters: Map<String, @JvmSuppressWildcards FeedSorter>
+) : ViewModel() {
+    
+    private val _uiState = MutableStateFlow<List<FeedItem>>(emptyList())
+    
+    fun changeSortMethod(method: String) {
+        val items = repository.getCurrentFeed()
+        val strategy = sorters[method] ?: sorters["chronological"]!!
+        _uiState.value = strategy.sort(items)
+    }
+}
+```
+This is the true power of the Strategy pattern: `AlgorithmicSorter` requires a `UserPreferences` database, while `ChronologicalSorter` does not. Because they are injected via DI, the `FeedViewModel` never has to know about `UserPreferences`.
+
 ## Architecture
 
 ```mermaid

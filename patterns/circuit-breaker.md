@@ -1,179 +1,216 @@
 # Circuit Breaker Pattern
 
+> The Circuit Breaker pattern prevents an application from repeatedly trying to execute an operation that is likely to fail. While traditionally thought of as a backend microservice pattern, a Staff engineer knows that mobile clients *must* implement client-side circuit breakers. If a backend service goes down, millions of Android apps aggressively retrying the API will cause a "thundering herd" that acts as a self-inflicted DDoS attack, keeping the servers down. A client-side circuit breaker fails fast, saves device battery, and protects the backend infrastructure.
+
+---
+
 ## Overview
 
-The Circuit Breaker pattern is a resilience engineering pattern that prevents an application from repeatedly trying to execute an operation that is likely to fail. By failing fast, it prevents cascading system failures, conserves client battery/radio, and gives struggling backend services time to recover.
+A Circuit Breaker acts as a state machine that sits between your app (the client) and a remote resource (the API). It monitors the success/failure rate of the calls.
 
-## Why It Exists
+### The Three States
+1. **Closed (Normal):** The circuit is closed, allowing requests to flow freely to the API. If a request fails, a failure counter increments.
+2. **Open (Failing):** If the failure threshold is reached (e.g., 5 consecutive 503 errors), the circuit "trips" open. **All subsequent requests fail immediately with an exception, without ever hitting the network.** A timeout timer starts.
+3. **Half-Open (Testing):** After the timeout expires, the circuit allows a limited number of test requests through. If they succeed, the circuit resets to **Closed**. If they fail, it trips back to **Open** and the timer restarts.
 
-If a backend service goes down, mobile clients will naturally experience failures. If 10 million mobile clients instantly implement an aggressive [Retry](retry.md) strategy, they will unintentionally execute a massive Distributed Denial of Service (DDoS) attack against their own backend, ensuring the service stays dead. 
+---
 
-Furthermore, making a network request that will certainly fail wastes the user's battery, wakes up the cellular radio unnecessarily, and delays UI error rendering. The Circuit Breaker stops the bleeding on both ends.
+## 1. Why Android Needs Circuit Breakers
 
-## Historical Context
+Backend teams use tools like Envoy or Istio to manage circuit breaking between microservices. However, if the API Gateway itself goes down, the mobile clients are the only line of defense.
 
-Popularized by Michael Nygard in his seminal book *Release It!* (2007). While originally focused on server-to-server communication, it has become essential in mobile engineering as fleets of mobile devices represent the largest potential load generators for any API.
+If your app has a naive retry policy (e.g., retry 3 times on failure) and the server is down, millions of active apps will multiply the load on the backend by 3x. When the server tries to recover, it is immediately crushed by the backlog of retries.
 
-## First Principles
+**Benefits of a Client-Side Circuit Breaker:**
+1. **Protects the Backend:** Prevents the Thundering Herd problem.
+2. **Saves Battery:** Failing immediately is extremely cheap. Waking up the cellular radio to wait 10 seconds for a timeout drains the battery.
+3. **Improves UX:** Instead of making the user stare at a spinning loader for 15 seconds before showing an error, the app shows the error (or cached offline data) instantly.
 
-1.  **Fail Fast:** If you know an operation will fail, failing immediately is better than failing after a 30-second network timeout.
-2.  **Protect the Downstream:** Do not kick a server while it is down.
-3.  **Self-Healing:** The system should automatically detect when the downstream service recovers and resume traffic.
+---
 
-## Mental Model
+## 2. Core Android Example: OkHttp Interceptor
 
-Think of the electrical circuit breaker in your house. 
-- Normally, the circuit is **Closed** (electricity flows).
-- If you plug in too many appliances, a fault occurs. To prevent a fire, the breaker trips and becomes **Open** (electricity stops). You cannot turn on the TV; the power is cut immediately at the box.
-- After removing the appliances, you flip the switch to test it. If it stays flipped (**Half-Open**), electricity resumes. If it trips again, it stays **Open**.
-
-## Internal Mechanics
-
-The Circuit Breaker is a State Machine with three distinct states:
-
-1.  **Closed:** The normal state. Requests flow through. The breaker counts recent failures. If the failure rate exceeds a threshold (e.g., 50% over the last 10 requests), the breaker trips to **Open**.
-2.  **Open:** The fault state. All requests fail instantly with a `CircuitBreakerOpenException`. No network calls are made. A timer starts (e.g., 30 seconds).
-3.  **Half-Open:** The test state. After the timer expires, the breaker allows *a single* (or a small number of) probe request(s) through. 
-    *   If the probe succeeds, the backend has recovered. The breaker transitions to **Closed** and resets its counters.
-    *   If the probe fails, the backend is still sick. The breaker transitions back to **Open** and restarts the timer.
-
-## Architecture
-
-```mermaid
-stateDiagram-v2
-    [*] --> Closed
-    
-    Closed --> Open: Failure threshold exceeded\n(e.g., 5 failures in 10s)
-    
-    Open --> HalfOpen: Timeout expires\n(e.g., wait 30s)
-    
-    HalfOpen --> Closed: Probe succeeds
-    HalfOpen --> Open: Probe fails
-```
-
-## Production Example
-
-In Android, Circuit Breakers are typically implemented as OkHttp Interceptors or Wrappers around Repository calls.
+The most effective place to implement a circuit breaker in Android is at the HTTP layer, using an OkHttp `Interceptor`. This ensures all API calls respect the breaker.
 
 ```kotlin
+// A thread-safe state machine for the Circuit Breaker
 class CircuitBreaker(
-    private val failureThreshold: Int = 5,
-    private val resetTimeoutMillis: Long = 30_000
+    private val failureThreshold: Int = 3,
+    private val resetTimeoutMillis: Long = 30_000 // 30 seconds
 ) {
-    private var state = State.CLOSED
-    private var failureCount = 0
-    private var lastFailureTime = 0L
+    private val failureCount = AtomicInteger(0)
+    private var lastFailureTime = AtomicLong(0)
+    
+    // States: 0 = CLOSED, 1 = OPEN, 2 = HALF_OPEN
+    private val state = AtomicInteger(0)
 
-    enum class State { CLOSED, OPEN, HALF_OPEN }
+    fun allowRequest(): Boolean {
+        if (state.get() == 0) return true // CLOSED - let it through
 
-    suspend fun <T> execute(block: suspend () -> T): T {
-        evaluateState()
+        val now = System.currentTimeMillis()
+        if (state.get() == 1) { // OPEN
+            if (now - lastFailureTime.get() > resetTimeoutMillis) {
+                // Timeout passed. Transition to HALF_OPEN to test the waters
+                if (state.compareAndSet(1, 2)) {
+                    return true // Allow one test request through
+                }
+            }
+            return false // Still OPEN, block the request
+        }
+        
+        // If HALF_OPEN, another thread is already testing. Block this one.
+        return false 
+    }
 
-        if (state == State.OPEN) {
-            // Fail fast without hitting the network
-            throw CircuitBreakerOpenException("Circuit is open")
+    fun recordSuccess() {
+        failureCount.set(0)
+        state.set(0) // Reset to CLOSED
+    }
+
+    fun recordFailure() {
+        lastFailureTime.set(System.currentTimeMillis())
+        val currentFailures = failureCount.incrementAndGet()
+        
+        if (currentFailures >= failureThreshold || state.get() == 2) {
+            // Trip the breaker to OPEN
+            state.set(1)
+        }
+    }
+}
+```
+
+Now, inject this into an OkHttp Interceptor:
+
+```kotlin
+class CircuitBreakerInterceptor(
+    private val circuitBreaker: CircuitBreaker
+) : Interceptor {
+
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+
+        // 1. Check if we should even attempt the network call
+        if (!circuitBreaker.allowRequest()) {
+            throw CircuitBreakerOpenException("Circuit is open. Failing fast.")
         }
 
-        return try {
-            val result = block()
-            onSuccess()
-            result
+        try {
+            // 2. Attempt the network call
+            val response = chain.proceed(request)
+
+            if (response.isSuccessful || response.code in 400..499) {
+                // 4xx errors are client bugs, not server downtime. Don't trip the breaker.
+                circuitBreaker.recordSuccess()
+            } else if (response.code >= 500) {
+                // 5xx errors indicate server struggle.
+                circuitBreaker.recordFailure()
+            }
+
+            return response
+            
         } catch (e: IOException) {
-            onFailure()
+            // Network timeouts or connection drops
+            circuitBreaker.recordFailure()
             throw e
         }
     }
-
-    private fun evaluateState() {
-        if (state == State.OPEN) {
-            if (System.currentTimeMillis() - lastFailureTime > resetTimeoutMillis) {
-                state = State.HALF_OPEN
-            }
-        }
-    }
-
-    private fun onSuccess() {
-        failureCount = 0
-        state = State.CLOSED
-    }
-
-    private fun onFailure() {
-        failureCount++
-        lastFailureTime = System.currentTimeMillis()
-        if (failureCount >= failureThreshold) {
-            state = State.OPEN
-        }
-    }
 }
+
+class CircuitBreakerOpenException(message: String) : IOException(message)
 ```
 
-## Android Integration (OkHttp)
+---
 
-Implementing this as an OkHttp interceptor ensures all traffic routed through that client is protected.
+## 3. Handling the Exception in the UI (Fallback State)
+
+When the OkHttp interceptor throws `CircuitBreakerOpenException`, Retrofit propagates it to your Repository/ViewModel. 
+
+A Staff engineer uses this specific exception to trigger a "Degraded Mode" in the UI.
 
 ```kotlin
-class CircuitBreakerInterceptor(private val breaker: CircuitBreaker) : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        // We use runBlocking here because Interceptors are synchronous, 
-        // but in reality you'd adapt the CircuitBreaker to be synchronous for this use case.
-        return breaker.executeSync {
-            val response = chain.proceed(chain.request())
-            // 5xx errors are server crashes; we should trip the breaker for these.
-            if (response.code in 500..599) {
-                throw ServerFaultException()
+class HomeViewModel(private val repository: Repository) : ViewModel() {
+    private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
+    val uiState = _uiState.asStateFlow()
+
+    fun loadHomeFeed() {
+        viewModelScope.launch {
+            try {
+                val data = repository.fetchFeed()
+                _uiState.value = UiState.Success(data)
+            } catch (e: CircuitBreakerOpenException) {
+                // The server is down. Show cached data with an offline banner immediately.
+                val cachedData = repository.getCachedFeed()
+                _uiState.value = UiState.Degraded(cachedData, message = "Server unavailable")
+            } catch (e: Exception) {
+                _uiState.value = UiState.Error("An error occurred")
             }
-            response
         }
     }
 }
 ```
 
-## Tradeoffs
+---
 
-**Advantages**
-- **Saves Battery & Bandwidth:** Prevents the device's radio from staying active during known outages.
-- **Improved UX:** Instead of the UI showing a spinner for 30 seconds before failing, the Circuit Breaker causes an instant failure, allowing the UI to immediately show an "Offline / Service Unavailable" banner.
-- **Backend Mercy:** Prevents the "Thundering Herd" problem where mobile clients repeatedly hammer a recovering server.
+## 4. Resilience4j (The Library Alternative)
 
-**Disadvantages**
-- **State Complexity:** The Circuit Breaker is stateful. If it's a Singleton, it affects the whole app. If it's scoped incorrectly, it doesn't protect the server effectively.
-- **Tuning Difficulty:** Setting the correct failure threshold and timeout is hard. If the threshold is too low, the breaker trips on normal network blips (flaky cell connection). If too high, it doesn't protect the server.
+If you don't want to build a custom thread-safe state machine, you can use **Resilience4j**, a lightweight, modular fault tolerance library designed for Java 8+ (a modern replacement for Netflix Hystrix).
 
-## Failure Modes
+While heavily used on backends, it can be used on Android via Kotlin Coroutines.
 
-- **Tripping on Client Errors (4xx):** A 400 Bad Request or 401 Unauthorized means the *client* sent bad data. Retrying won't help, but the server isn't sick. Tripping the breaker here will lock the app. Breakers should only trip on 5xx errors or network timeouts (IOExceptions).
-- **The Global Breaker:** Having one single Circuit Breaker for the entire `Retrofit` instance. If the `ImageService` goes down, the breaker trips, and now the `AuthService` (which is healthy) is completely blocked because they share the same breaker. Breakers should be scoped per-service or per-host.
-- **Persistent State:** Circuit breaker state should generally be held in memory. Persisting the `OPEN` state to disk means if the user forces-closes the app and restarts, the app might still refuse to connect even if the server came back online while the app was closed.
+```kotlin
+// Setup the registry
+val circuitBreakerConfig = CircuitBreakerConfig.custom()
+    .failureRateThreshold(50.0f) // Trip if 50% of calls fail
+    .waitDurationInOpenState(Duration.ofSeconds(30))
+    .slidingWindowSize(10) // Evaluate over the last 10 calls
+    .build()
 
-## Staff Engineer Thinking
+val circuitBreaker = CircuitBreakerRegistry.of(circuitBreakerConfig)
+    .circuitBreaker("backendAPI")
 
-When reviewing resilience patterns, a Staff engineer asks:
+// In your Repository, wrap the suspend function
+suspend fun fetchUsers(): List<User> {
+    return circuitBreaker.executeSuspendFunction {
+        api.getUsers()
+    }
+}
+```
 
-1.  **How does this interact with Retry?** If you have a Retry mechanism and a Circuit Breaker, the order matters. The Retry must be *inside* the Circuit Breaker. If the Circuit Breaker is inside the Retry, the Retry loop will just hammer the `CircuitBreakerOpenException` locally.
-2.  **What is the fallback?** When the breaker throws `CircuitBreakerOpenException`, what does the Repository do? Does it return a cached value? Does it bubble up to the UI? The pattern is useless if the fallback behavior isn't defined.
-3.  **Is the threshold dynamic?** A static "5 errors" threshold is naive. On a stable Wi-Fi connection, 5 errors means the server is dead. On a moving train, 5 errors is normal background noise. Advanced implementations adjust thresholds based on the active `NetworkCapabilities`.
+---
 
-## Common Misconceptions
+## 5. Failure Modes & Tradeoffs
 
-- **"Circuit Breaker and Retry are the same thing."** No. They are opposites that work together. Retry says "The network is flaky; try again." Circuit Breaker says "The network is dead; STOP trying."
-- **"It's only for microservices."** While born in the backend, mobile clients are the edge of the distributed system. An un-broken mobile client is a weapon pointed at the backend.
+| Failure Mode | Cause | Prevention / Solution |
+|---|---|---|
+| **Tripping on Bad Internet** | The user goes into a tunnel (IOException). The circuit breaker trips. The user exits the tunnel 5 seconds later, but the app blocks requests for 30 seconds because the circuit is OPEN. | Separate "Server Errors" (HTTP 503) from "Network Connectivity Errors" (SocketTimeout). Only trip the breaker on 503/504 errors, not pure network drops. |
+| **Global Breaker Lockout** | Using a single global CircuitBreaker for all endpoints. If the `ImageServer` goes down, the breaker trips, and the app blocks calls to the perfectly healthy `AuthServer`. | Instantiate multiple CircuitBreakers keyed by base URL or domain (e.g., one for `api.company.com`, one for `cdn.company.com`). |
+| **Silent Failures** | The UI doesn't explicitly handle the `CircuitBreakerOpenException` and treats it like a generic error, showing a generic "Something went wrong" message. | Catch the specific exception and show a Degraded state, utilizing local SQLite/Room caches to keep the app functional. |
+
+---
+
+## 6. Common Pitfalls
+
+### Pitfall 1: Confusing Retry with Circuit Breaker
+Many engineers use a Retry Interceptor with exponential backoff (1s, 2s, 4s) to handle failures. **Retry is not a Circuit Breaker.** Retry *adds* load to the server in hopes it recovers. A Circuit Breaker *removes* load to allow it to recover. 
+*Fix:* You must use both together. Wrap your Retrofit call in a Retry block (to handle blips), but put the Circuit Breaker interceptor underneath it. If the breaker trips, the Retry block will instantly fail 3 times in 3 milliseconds (because the breaker throws immediately), aborting the operation.
+
+### Pitfall 2: Memory Leaks in Half-Open State
+In the Half-Open state, if you allow exactly 1 request through to test the server, and that request hangs forever (no timeout configured on OkHttp), the circuit remains permanently Half-Open, blocking all other requests infinitely.
+*Fix:* Always configure strict OkHttp `readTimeout` and `connectTimeout`. The test request must fail fast if the server is still struggling.
+
+---
 
 ## Probing Questions
 
-1.  Explain the transition from `Half-Open` to `Closed` vs `Half-Open` to `Open`.
-2.  Why is it critical to differentiate between a 404 (Not Found) and a 503 (Service Unavailable) when implementing a Circuit Breaker?
-3.  If an app uses multiple backend services (e.g., a Payment API and an Analytics API), how should the Circuit Breakers be scoped?
-4.  How does a Circuit Breaker improve the user experience (UX) during an outage compared to standard network timeouts?
-5.  What is the "Thundering Herd" problem, and how does the Circuit Breaker prevent mobile apps from causing it?
-6.  Where is the best place to implement a Circuit Breaker in modern Android architecture? (e.g., ViewModel, Repository, OkHttp Interceptor). Defend your choice.
-7.  How should a `CircuitBreakerOpenException` be translated into UI state?
-8.  If the app is backgrounded and the OS kills the process while the breaker is `OPEN`, what state should it be in when the app restarts?
-9.  How do you test a Circuit Breaker implementation using unit tests without dealing with real timing and `Thread.sleep()`?
-10. Describe how a Circuit Breaker might integrate with an offline-first architecture.
+1.  **Concurrency:** In the custom OkHttp Interceptor implementation above, `AtomicInteger` and `AtomicLong` are used. If 10 coroutines make a network request simultaneously and the server returns a 503 for all of them at the exact same millisecond, how does `compareAndSet` prevent the state machine from corruption?
+2.  **Jitter:** When a Circuit Breaker transitions from OPEN to HALF_OPEN, and a test request succeeds, the state transitions to CLOSED. If millions of apps transition to CLOSED at the same time, what happens to the backend? How would you add "Jitter" to the `resetTimeoutMillis` to mitigate this?
+3.  **HTTP Status Codes:** Why is it an anti-pattern to record a failure and trip the circuit breaker when the server returns an HTTP 400 (Bad Request) or 401 (Unauthorized)?
+4.  **Backend vs Frontend Breakers:** Your API Gateway has an Envoy circuit breaker configured to reject requests if the internal database is down. Why do you still need an OkHttp circuit breaker on the Android client?
+5.  **Offline First:** How does the Circuit Breaker pattern synergize with the Repository Pattern and a local Room database to create an "Offline-First" application architecture?
 
 ## Further Reading
 
-- [`retry.md`](retry.md) — The complementary pattern. Retry handles transient errors; Circuit Breaker handles systemic errors.
-- [`engineering-fundamentals/state-machines.md`](../engineering-fundamentals/state-machines.md) — The mathematical foundation of the Circuit Breaker.
-- [`principles/design-for-failure.md`](../principles/design-for-failure.md) — The overarching philosophy.
-- Martin Fowler: [CircuitBreaker](https://martinfowler.com/bliki/CircuitBreaker.html)
+- [`retry.md`](retry.md) — How to combine Circuit Breakers with Exponential Backoff Retry policies.
+- [`../backend-for-mobile/api-design-for-mobile.md`](../backend-for-mobile/api-design-for-mobile.md) — The physical costs of cellular radio wakeups that Circuit Breakers prevent.
+- [`../android/networking-and-security/retrofit-and-okhttp.md`](../android/networking-and-security/retrofit-and-okhttp.md) — OkHttp interceptor chain ordering (where the breaker should sit relative to logging and auth).
+- [`../reference-architectures/offline-first-app.md`](../reference-architectures/offline-first-app.md) — Architecting the UI to gracefully fallback to local caches when the breaker trips.

@@ -163,7 +163,7 @@ Three viable strategies, depending on conflict tolerance and engineering investm
 2. **Operational Transforms (OT).** Mutations are transformed against intervening remote mutations before applying. Complex to implement correctly; used by Google Docs.
 3. **CRDTs.** Conflict-free Replicated Data Types. Operations are designed to commute mathematically, so any order of application produces the same result. See [`../distributed-systems/crdts.md`](../distributed-systems/crdts.md). Best fit for true offline-first systems.
 
-The choice is recorded in an ADR (e.g., [`../adr/008-lww-vs-crdt.md`](../adr/008-lww-vs-crdt.md)). For most notes-style apps, LWW is sufficient; for collaboratively-edited documents, CRDTs.
+The choice is recorded in an ADR (e.g., [`../distributed-systems/lww-vs-crdt.md`](../distributed-systems/lww-vs-crdt.md)). For most notes-style apps, LWW is sufficient; for collaboratively-edited documents, CRDTs.
 
 ---
 
@@ -247,4 +247,4 @@ The choice is recorded in an ADR (e.g., [`../adr/008-lww-vs-crdt.md`](../adr/008
 - [`offline-sync` in worked design problems](../mobile-system-design/offline-sync.md) — the design-reasoning exercise that this blueprint is the settled answer to.
 - [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md), [`../distributed-systems/crdts.md`](../distributed-systems/crdts.md) — the theory underneath.
 - [`../engineering-fundamentals/state-machines.md`](../engineering-fundamentals/state-machines.md) — the sync engine is a state machine.
-- [`../adr/008-lww-vs-crdt.md`](../adr/008-lww-vs-crdt.md) — the conflict-resolution decision.
+- [`../distributed-systems/lww-vs-crdt.md`](../distributed-systems/lww-vs-crdt.md) — the conflict-resolution decision.

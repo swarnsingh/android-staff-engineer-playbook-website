@@ -1,98 +1,95 @@
-# Rate Limiting (HTTP 429)
+# Rate Limiting
+
+> Rate Limiting restricts the number of operations that can be performed in a given timeframe. While backends enforce rate limits to protect databases from DDoS attacks, a Staff engineer builds **Client-Side Rate Limiting** to protect the user's battery, data plan, and UI experience. Whether it's debouncing a fast-typing user in a search bar, or gracefully handling an `HTTP 429 Too Many Requests` response from a struggling backend, client-side rate limiting is a mandatory defensive mechanism on mobile.
+
+---
 
 ## Overview
 
-A Junior Engineer writes a `while(true)` loop to retry a failed network request, assuming the network just had a temporary hiccup.
+There are two sides to Rate Limiting in a mobile architecture:
+1. **Server-Side Enforcement:** The backend returns an `HTTP 429` error, often with a `Retry-After` header. The Android client must parse this and halt requests.
+2. **Client-Side Throttling (Debounce/Throttle):** The Android app intentionally delays or drops user input to prevent generating excessive network requests in the first place.
 
-A Staff Engineer understands that if 1 million app instances all run a `while(true)` retry loop simultaneously, they will launch a Distributed Denial of Service (DDoS) attack against their own company's servers, bringing down the entire backend infrastructure and costing the company millions of dollars.
+---
 
-**Rate Limiting** is the defensive mechanism backend servers use to protect themselves from malicious actors and poorly written mobile apps. A mobile application must be meticulously designed to respect Rate Limits (`HTTP 429 Too Many Requests`), implement Exponential Backoff, and utilize Jitter to prevent accidental self-DDoS.
+## 1. Client-Side Throttling (Coroutines & Flow)
 
-## Why It Matters
+The most common rate-limiting scenario on mobile is a "Search-as-you-type" feature. If the user types "S - T - A - F - F" in 500 milliseconds, you do not want to fire 5 separate API calls. 
 
-Imagine a highly anticipated product drop (e.g., concert tickets). 500,000 users open the Android app at exactly 12:00 PM. 
-They all hit `GET /tickets`.
-The backend database cannot handle 500,000 queries a second. The API Gateway detects the surge and instantly Rate Limits 490,000 of the users, returning `HTTP 429`.
+We use Kotlin `Flow` operators to rate-limit the input.
 
-- **Bad App Design:** The 490,000 apps see a failure, immediately retry at 12:00:01 PM. The server returns 429 again. The apps retry at 12:00:02 PM. The Load Balancer melts.
-- **Staff App Design:** The 490,000 apps read the `Retry-After: 30` header in the HTTP 429 response. They wait exactly 30 seconds. Furthermore, they add "Jitter", so 10,000 apps retry at 30s, 10,000 at 31s, 10,000 at 32s, smoothing out the massive spike into a manageable wave.
+### Debounce
+`debounce` waits for a period of *silence* before emitting the latest value. If the user keeps typing, the timer resets.
 
-## Historical Context
+```kotlin
+// In the ViewModel
+private val _searchQuery = MutableStateFlow("")
+val searchQuery = _searchQuery.asStateFlow()
 
-- **The Slashdot Effect / Reddit Hug of Death:** In the early 2000s, if a popular website linked to a small website, the sudden influx of traffic would crash the small server.
-- **Throttling vs Rate Limiting:** Throttling slows down the speed of the response (giving you bytes slower). Rate Limiting outright rejects the request (giving you an error).
-- **HTTP 429 (2012):** RFC 6585 officially introduced the `429 Too Many Requests` status code. Before this, servers incorrectly used `503 Service Unavailable` or `400 Bad Request`.
+val searchResults = _searchQuery
+    .debounce(300L) // Wait for 300ms of silence
+    .filter { it.length >= 3 } // Don't search for 1 or 2 characters
+    .distinctUntilChanged() // Don't search if the query hasn't actually changed
+    .flatMapLatest { query ->
+        // Cancels the previous API call if a new one starts
+        api.search(query) 
+    }
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+```
+**Staff Insight:** `flatMapLatest` is a form of concurrency rate-limiting. It ensures that only one network request is being processed at a time for this specific flow, instantly cancelling any inflight request if the user types again.
 
-## First Principles
+### Throttle (Sample)
+If you are tracking a user's location via GPS, you might receive updates every 10 milliseconds. You only want to send an update to the server once every 5 seconds. `sample` (throttling) emits the latest value at fixed intervals, regardless of silence.
 
-1.  **Rate Limit (HTTP 429):** The server explicitly rejecting a request because the client has sent too many in a given timeframe (e.g., Max 100 requests per minute).
-2.  **`Retry-After` Header:** An HTTP header sent alongside the 429 response, telling the client exactly how many seconds to wait before trying again.
-3.  **Exponential Backoff:** If the server doesn't provide a `Retry-After` header, the client must guess. It waits 1s, then 2s, then 4s, then 8s, up to a maximum limit.
-4.  **Jitter:** Adding a random mathematical variance to the backoff time (e.g., waiting 4.2 seconds instead of exactly 4.0 seconds) to prevent thousands of clients from retrying at the exact same millisecond.
-
-## Mental Model
-
-Think of Rate Limiting as a **Bouncer at an Exclusive Club**.
-- **The Limit:** The club can only hold 100 people.
-- **Rate Limiting (HTTP 429):** You walk up to the door. The Bouncer puts his hand up and says, "We are full."
-- **Retry-After:** The Bouncer adds, "Wait in line for 10 minutes, then ask me again."
-- **Exponential Backoff:** If the Bouncer doesn't give you a time, you ask. He says no. You wait 1 minute. Ask again. He says no. You wait 2 minutes. Ask again. You wait 4 minutes.
-- **Jitter:** Instead of the entire line of 50 people asking the bouncer at the exact same second (overwhelming him), everyone agrees to wait a random amount of seconds between asks.
-
-## Internal Mechanics
-
-### 1. The HTTP 429 Response
-
-When an API Gateway (like AWS API Gateway, Cloudflare, or NGINX) rate-limits a client, it usually includes headers indicating the current status of the client's "Token Bucket."
-
-```http
-HTTP/1.1 429 Too Many Requests
-Content-Type: application/json
-X-RateLimit-Limit: 60
-X-RateLimit-Remaining: 0
-X-RateLimit-Reset: 1672531200
-Retry-After: 45
-
-{
-  "error": "Rate limit exceeded. Try again in 45 seconds."
-}
+```kotlin
+val locationUpdates = gpsTracker.locationFlow
+    .sample(5000L) // Take the latest location every 5 seconds
+    .onEach { location ->
+        api.sendLocation(location)
+    }
 ```
 
-The Mobile App's network interceptor must catch this specific status code globally.
+---
 
-### 2. Global OkHttp Interceptor for 429
+## 2. Handling Server-Side Rate Limits (HTTP 429)
 
-A Staff Engineer does not write retry logic in every single `ViewModel`. They write it once, at the absolute lowest network layer: the `OkHttp Interceptor`.
+If the Android app spams the server (or if the server lowers its global rate limits during a traffic spike), the server will return an `HTTP 429 Too Many Requests`.
+
+Well-designed APIs include a `Retry-After` header indicating how many seconds the client must wait before trying again.
+
+### The OkHttp Interceptor Solution
+
+You must build a global OkHttp Interceptor to handle this gracefully, rather than relying on every ViewModel to parse 429 errors manually.
 
 ```kotlin
 class RateLimitInterceptor : Interceptor {
+    
+    // Thread-safe flag to block all outgoing requests globally
+    private val isRateLimited = AtomicBoolean(false)
+    private var limitEndTime = AtomicLong(0)
+
     override fun intercept(chain: Interceptor.Chain): Response {
-        var request = chain.request()
-        var response = chain.proceed(request)
-        var tryCount = 0
-        val maxRetries = 3
+        // 1. Pre-check: Are we currently locked out?
+        if (isRateLimited.get() && System.currentTimeMillis() < limitEndTime.get()) {
+            throw IOException("Client-side rate limit enforced. Try again later.")
+        } else {
+            isRateLimited.set(false) // Lockout expired
+        }
 
-        while (response.code == 429 && tryCount < maxRetries) {
-            tryCount++
-            
-            // 1. Check if server told us exactly how long to wait
-            val retryAfterSeconds = response.header("Retry-After")?.toLongOrNull()
-            
-            // 2. Calculate sleep time: Use Retry-After, OR Exponential Backoff with Jitter
-            val sleepMs = if (retryAfterSeconds != null) {
-                retryAfterSeconds * 1000L
-            } else {
-                val exponentialMs = (2.0.pow(tryCount) * 1000).toLong() // 2s, 4s, 8s
-                val jitter = Random.nextLong(-500, 500) // +/- 500ms
-                exponentialMs + jitter
-            }
+        val request = chain.request()
+        val response = chain.proceed(request)
 
-            // 3. Pause the thread (OkHttp background thread, NOT the UI thread)
-            Thread.sleep(sleepMs)
+        // 2. Post-check: Did the server tell us to back off?
+        if (response.code == 429) {
+            val retryAfterSeconds = response.header("Retry-After")?.toLongOrNull() ?: 60L // Default 1 min
             
-            // 4. Close the failed response and try again
-            response.close() 
-            response = chain.proceed(request)
+            // Lock the client
+            limitEndTime.set(System.currentTimeMillis() + (retryAfterSeconds * 1000))
+            isRateLimited.set(true)
+            
+            // Close the response body to prevent leaks before throwing
+            response.close()
+            throw RateLimitException("Server returned 429. Locked for $retryAfterSeconds seconds.")
         }
 
         return response
@@ -100,57 +97,73 @@ class RateLimitInterceptor : Interceptor {
 }
 ```
 
-## Tradeoffs
+### UX Fallback
+When this interceptor throws a `RateLimitException`, the Retrofit call in your Repository fails. Your ViewModel must catch this specific exception and display a clear UI message: *"Our servers are currently overwhelmed. Please wait 1 minute."* (And optionally disable the submit button until the timer expires).
 
-**Silent Retry vs UI Feedback**
+---
 
-- **Silent Retry (The Interceptor):**
-    - *Pros:* The UI code (ViewModel) is completely unaware the network is failing. It just thinks the request is taking a long time (e.g., 5 seconds instead of 1 second). Clean architecture.
-    - *Cons:* If the `Retry-After` header dictates a 60-second wait, the user will stare at a spinning loading circle for 60 seconds. They will assume the app is frozen and force-close it.
-- **UI Feedback (Failing Fast):**
-    - *Pros:* The Interceptor immediately returns the 429 to the UI. The UI displays a Snackbar: *"Server busy. Try again in 60 seconds."* The user understands what is happening.
-    - *Cons:* You have to write HTTP 429 handling logic in every single ViewModel.
+## 3. UI Rate Limiting (Disabling Interactions)
 
-*Staff Decision:* Hybrid approach. The `OkHttp` interceptor silently handles small retries (e.g., `< 3 seconds`). If the calculated backoff exceeds 3 seconds, or the max retry count is hit, the Interceptor throws a custom `RateLimitException`. The global UI error handler catches this exception and displays the Snackbar to the user.
+Beyond network flows, rate limiting must be applied to UI interactions. A frustrated user might tap the "Submit Payment" button 15 times in 2 seconds.
 
-## Failure Modes
+While `debounce` works on streams, UI components should be explicitly disabled during critical operations.
 
-- **The Accidental DDoS (Thundering Herd):**
-  If 100,000 users are rate-limited simultaneously, and your exponential backoff algorithm does *not* include Jitter, all 100,000 apps will sleep for exactly 2.0 seconds, and then all 100,000 apps will hit the server at the exact same millisecond.
-  *(Fix: The `jitter` calculation `Random.nextLong(-500, 500)` ensures the 100,000 requests are smeared smoothly across a 1-second window, protecting the server).*
-- **Retry Amplification:**
-  Microservice A calls Microservice B. Microservice B is overloaded and returns 429. Microservice A retries 3 times. Meanwhile, the Android App called Microservice A, saw a timeout, and retried 3 times. 
-  3 Android retries * 3 Microservice A retries = 9 requests hitting Microservice B. If the user taps the button 3 times, that's 27 requests. 
-  *(Fix: Mobile apps must limit global retries to 1 or 2 maximum. Do not rely heavily on client-side retries; fix the scaling issue on the backend).*
+```kotlin
+@Composable
+fun CheckoutButton(
+    uiState: CheckoutUiState,
+    onSubmit: () -> Unit
+) {
+    // 1. Visual indication of loading
+    // 2. Physical disablement of the button
+    Button(
+        onClick = onSubmit,
+        enabled = uiState !is CheckoutUiState.Loading 
+    ) {
+        if (uiState is CheckoutUiState.Loading) {
+            CircularProgressIndicator()
+        } else {
+            Text("Submit Payment")
+        }
+    }
+}
+```
 
-## Staff Engineer Thinking
+---
 
-When reviewing network resilience, a Staff engineer focuses on protecting the backend infrastructure.
+## 4. Failure Modes & Tradeoffs
 
-1.  **Idempotency is Mandatory for Retries:** If an interceptor automatically retries a `POST /checkout` request, it is mathematically possible that the first request *succeeded* on the server, but the 429 was generated by a reverse proxy *returning* the response. If the client retries, the user is charged twice. I mandate [Idempotency Keys](api-design-for-mobile.md) for all mutating endpoints before allowing an automated retry interceptor to be merged.
-2.  **Differentiating 429 vs 500:** A 429 means "The server is healthy, but you are too loud." A 500/502/503 means "The server is on fire." Exponential backoff with Jitter works for both, but the `Retry-After` header is usually only present on a 429. I ensure our networking layer treats 503s with extreme caution (larger backoffs) to avoid kicking a server while it is down.
-3.  **Circuit Breaker Pattern:** If the server is returning 429s or 500s continuously, the app should stop trying entirely. I implement a Client-Side [Circuit Breaker](../patterns/circuit-breaker.md). If 5 requests fail in a row, the circuit "opens." For the next 60 seconds, any network request made by the UI instantly fails locally without ever hitting the radio antenna, saving battery and server load.
+| Failure Mode | Cause | Prevention / Solution |
+|---|---|---|
+| **Global 429 Lockout** | Using a single global interceptor to block *all* network traffic when an image CDN returns a 429, preventing the user from using the core API. | Implement domain-specific rate limits. Keep a map of `[Domain -> LockoutTime]` in the interceptor, so hitting a limit on `images.example.com` doesn't block `api.example.com`. |
+| **Missing `Retry-After`** | The backend returns a 429 but doesn't include the header. The app assumes it can retry immediately, creating an infinite loop of 429s. | The client must enforce a default, aggressive exponential backoff (e.g., 60 seconds) if the server omits the header. |
+| **Double Clicks bypassing UI** | A button is disabled during `Loading`, but the ViewModel takes 50ms to transition from `Idle` to `Loading`. The user clicks twice in 20ms. | Use a fast-path local boolean flag or a click-debouncer at the View layer (e.g., a custom `Modifier.debouncedClick` in Compose) to ignore clicks within 300ms of each other. |
 
-## Common Misconceptions
+---
 
-- **"If the server returns an error, try again immediately."** This is the single most destructive misconception in mobile development. Immediate retries cause cascading infrastructure failures.
-- **"Rate limiting is only for malicious bots."** False. A poorly written Android app that accidentally gets stuck in an infinite loop while syncing a database will generate bot-level traffic. Rate limiting protects the API from your own bugs.
+## 5. Common Pitfalls
+
+### Pitfall 1: Retrying a 429 Automatically
+If you combine an OkHttp Retry Interceptor with a Rate Limit interceptor, the Retry Interceptor might see the 429 and immediately retry the request 3 times. This will instantly get your app permanently banned by the backend's WAF (Web Application Firewall) or Cloudflare layer.
+*Fix:* **Never automatically retry a 429.** A 429 means "stop talking to me." The request should fail, propagate to the UI, and the user must manually initiate the action later.
+
+### Pitfall 2: Silent Dropping via `sample`
+If you use `sample(5000L)` on a flow of critical analytics events (like "Purchase Completed"), and three events fire in 5 seconds, `sample` will drop the first two completely. They are lost forever.
+*Fix:* Do not rate-limit critical data via dropping. Use a `buffer` or `batch` operator to collect all events over 5 seconds, and send them in a single array payload to the server.
+
+---
 
 ## Probing Questions
 
-1.  Explain the fundamental difference between Throttling (slowing down a response) and Rate Limiting (HTTP 429).
-2.  Why is an HTTP 429 response accompanied by a `Retry-After` header considered a "polite" rejection by an API Gateway?
-3.  Describe the "Thundering Herd" problem, and exactly how adding a random "Jitter" variable to an Exponential Backoff algorithm prevents it.
-4.  Why is it dangerous to implement an automated retry loop for a `POST /transfer_funds` API call without implementing an Idempotency Key?
-5.  Explain the architectural tradeoff between handling a 429 silently inside an `OkHttp Interceptor` versus bubbling the 429 up to the UI/ViewModel.
-6.  How does a "Retry Amplification" cascade occur when a mobile app, an API Gateway, and a backend microservice all implement their own retry logic simultaneously?
-7.  If an API Gateway returns an HTTP 503 (Service Unavailable) instead of a 429, how should a mobile client adjust its retry behavior?
-8.  Describe how a Client-Side "Circuit Breaker" pattern protects both the Android device's battery and the backend server during a prolonged outage.
-9.  Why might a Staff Engineer mandate a maximum limit (e.g., 3) on the number of automated retries an application is allowed to perform for a single user action?
-10. If 500,000 users open an application at the exact same second to buy concert tickets, why is the backend architecture solely reliant on the mobile app's correct implementation of backoff/jitter to survive?
+1.  **Token Bucket Algorithm:** A common backend rate-limiting algorithm is the "Token Bucket". If the backend uses this, how does it differ from a fixed-window rate limit (e.g., 100 requests per minute), and how might the Android client experience bursts of traffic differently?
+2.  **Concurrency:** In the OkHttp Interceptor example above, `AtomicBoolean` and `AtomicLong` are used. If 5 coroutines make a request simultaneously and all 5 receive a 429 response at the exact same millisecond, what race conditions exist when setting the `limitEndTime`, and how does `AtomicLong` solve it?
+3.  **Flow Operators:** What is the mechanical difference between `debounce`, `sample`, and `throttleFirst` (often found in RxJava)? Which one is best for preventing double-clicks on a "Buy" button?
+4.  **Batching:** You need to track user scroll positions in a massive list for analytics. Firing an API call per pixel is impossible. Using Kotlin Flows, write pseudo-code to batch these scroll events into arrays of 50 events, and emit the batch to the network layer.
+5.  **Offline Queues:** If the app receives a 429 with a Retry-After of 1 hour, what should the app do with critical background data (like WorkManager sync operations) during that hour? How do you instruct WorkManager to respect a dynamic 1-hour delay?
 
 ## Further Reading
 
-- [`circuit-breaker.md`](../patterns/circuit-breaker.md) — The pattern used to halt all network traffic when a server is completely unresponsive.
-- [`api-design-for-mobile.md`](api-design-for-mobile.md) — How Idempotency Keys ensure that automated retries don't duplicate transactions.
-- [`retrofit-and-okhttp.md`](../android/networking-and-security/retrofit-and-okhttp.md) — The layer where the `Interceptor` handles the Exponential Backoff loop.
+- [`../patterns/circuit-breaker.md`](../patterns/circuit-breaker.md) — How rate limiting relates to full circuit tripping.
+- [`../patterns/retry.md`](../patterns/retry.md) — Why 429 errors must be explicitly excluded from retry logic.
+- [`../android/architecture/flow.md`](../android/architecture/flow.md) — Deep dive into the Coroutine Flow operators (`debounce`, `sample`, `flatMapLatest`).
+- [`api-design-for-mobile.md`](api-design-for-mobile.md) — Designing APIs to accept batched payloads to avoid rate limits entirely.

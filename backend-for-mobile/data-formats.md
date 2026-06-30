@@ -62,6 +62,12 @@ To parse `{"name": "John"}`, `Gson` would use Java Reflection to inspect the Kot
 Modern libraries (like `Moshi` with KSP, or `kotlinx.serialization`) use **Code Generation**.
 During the Gradle build, they generate hardcoded Kotlin classes that act like massive `switch` statements. When the parser reads the string `"name"`, it jumps straight to `user.name = value`. This is 10x faster than Reflection.
 
+### The JSON Parser Decision: Moshi vs `kotlinx.serialization`
+If you are forced to use JSON, you must choose a parser.
+- **Gson:** Deprecated by the community. Relies entirely on slow, unsafe Java Reflection. Do not use for new projects.
+- **Moshi (Codegen):** Developed by Square. Highly reliable, fast, and generates Kotlin parsers via KSP at compile time. Excellent if you are using Retrofit in a pure Android (non-KMP) app.
+- **kotlinx.serialization:** Developed by JetBrains. The modern standard. It is the only option that works perfectly across Kotlin Multiplatform (Android, iOS, Wasm). It is incredibly strict (will crash if backend sends `null` for a non-nullable field).
+
 *Staff Rule:* If you use JSON, you MUST use a code-generating parser (`kotlinx.serialization` or Moshi Codegen). If you use `Gson` in a modern app, you are committing architectural malpractice.
 
 ## Architecture

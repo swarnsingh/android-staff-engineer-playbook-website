@@ -99,7 +99,7 @@ Same concept, multiple angles — link between them, never duplicate.
 
 - All filenames are **kebab-case**: `state-machines.md`, `app-startup.md`, `deterministic-resume.md`
 - No spaces, no underscores, no PascalCase
-- ADRs: zero-padded three-digit prefix → `adr/003-sse-vs-websockets.md`
+- ADRs: zero-padded three-digit prefix → `backend-for-mobile/sse-vs-websockets.md`
 
 ### Cross-references
 

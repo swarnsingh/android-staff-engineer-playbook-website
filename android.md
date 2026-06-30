@@ -20,13 +20,19 @@ Architecture and lifecycle first (you cannot reason about anything else without 
 - [Fragment](android/architecture/fragment.md)
 - [ViewModel](android/architecture/viewmodel.md)
 - [Navigation](android/architecture/navigation.md)
+- [MVVM vs MVI](android/architecture/mvvm-vs-mvi.md)
+- [Modularization Strategies](android/architecture/modularization-strategies.md)
 - [SavedStateHandle](android/architecture/savedstatehandle.md)
 - [Process Death & State Restoration](android/architecture/process-death-and-state-restoration.md)
 - [Structured Concurrency](android/architecture/structured-concurrency.md)
 - [Flow](android/architecture/flow.md)
+- [State Management (patterns)](android/architecture/state-management.md)
 
 ### Compose
 
+- [Compose Runtime](android/compose/compose-runtime.md)
+- [Stability (`@Stable` / `@Immutable`)](android/compose/stability.md)
+- [Snapshot System (MVCC for UI state)](android/compose/snapshot-system.md)
 - [Compose Navigation](android/compose/compose-navigation.md)
 - [Modifiers & Layout](android/compose/modifiers-and-layout.md)
 - [Recomposition & State](android/compose/recomposition-and-state.md)
@@ -46,6 +52,8 @@ Architecture and lifecycle first (you cannot reason about anything else without 
 ### Performance
 
 - [Jank](android/performance/jank.md)
+- [Rendering (RenderThread, Skia)](android/performance/rendering.md)
+- [Startup (Cold/Warm/Hot)](android/performance/startup.md)
 - [ANRs](android/performance/anrs.md)
 - [Baseline Profiles](android/performance/baseline-profiles.md)
 - [Memory Management & Leaks](android/performance/memory-management-and-leaks.md)
@@ -56,11 +64,16 @@ Architecture and lifecycle first (you cannot reason about anything else without 
 - [Room](android/data-and-di/room.md)
 - [Paging](android/data-and-di/paging.md)
 - [DataStore](android/data-and-di/datastore.md)
+- [Room vs DataStore](android/data-and-di/room-vs-datastore.md)
+- [Hilt vs Koin vs Manual DI](android/data-and-di/hilt-vs-koin-vs-manual-di.md)
+- [Hilt Components](android/data-and-di/components.md)
+- [Scopes (Hilt vs coroutine)](android/data-and-di/scopes.md)
 - [Dependency Injection (Hilt)](android/data-and-di/dependency-injection.md)
 
 ### Networking & Security
 
 - [Retrofit & OkHttp](android/networking-and-security/retrofit-and-okhttp.md)
+- [Ktor vs Retrofit (decision)](android/networking-and-security/ktor-vs-retrofit.md)
 - [GraphQL](android/networking-and-security/graphql.md)
 - [Security & Keystore](android/networking-and-security/security-and-keystore.md)
 
@@ -70,6 +83,32 @@ Architecture and lifecycle first (you cannot reason about anything else without 
 - [Zygote](android/os-internals/the-zygote.md)
 - [ART & Dalvik](android/os-internals/art-and-dalvik.md)
 - [Gradle & Build Systems](android/os-internals/gradle-and-build-systems.md)
+- [KSP (Kotlin Symbol Processing)](android/os-internals/ksp.md)
+- [Convention Plugins](android/os-internals/convention-plugins.md)
+- [Multi-Module Project Structure](android/os-internals/multi-module.md)
+
+### Testing
+
+- [Unit Testing (JUnit, MockK, Turbine)](android/testing/unit-testing.md)
+- [UI Testing (Compose, Robolectric, Paparazzi)](android/testing/ui-testing.md)
+
+### Kotlin Multiplatform (KMP)
+
+- [Overview & K1 vs K2](android/kotlin-multiplatform/overview-and-k1-vs-k2.md)
+- [Architecture & Module Boundaries](android/kotlin-multiplatform/architecture-and-module-boundaries.md)
+- [Build System & Source Sets](android/kotlin-multiplatform/build-system-and-source-sets.md)
+- [iOS Distribution (XCFramework/SPM)](android/kotlin-multiplatform/ios-distribution.md)
+- [Swift Interop & SKIE](android/kotlin-multiplatform/swift-interop.md)
+- [Libraries Ecosystem](android/kotlin-multiplatform/libraries-ecosystem.md)
+- [Networking with Ktor](android/kotlin-multiplatform/networking-with-ktor.md)
+- [Persistence (SQLDelight/Realm)](android/kotlin-multiplatform/persistence.md)
+- [Dependency Injection (Koin)](android/kotlin-multiplatform/dependency-injection.md)
+- [Compose Multiplatform](android/kotlin-multiplatform/compose-multiplatform.md)
+- [Resource Sharing](android/kotlin-multiplatform/resource-sharing.md)
+- [Concurrency & Memory Model](android/kotlin-multiplatform/concurrency-and-memory.md)
+- [Testing & Mocking](android/kotlin-multiplatform/testing-and-mocking.md)
+- [CI/CD for KMP](android/kotlin-multiplatform/ci-cd-for-kmp.md)
+- [Adoption & Migration](android/kotlin-multiplatform/adoption-and-migration.md)
 
 ### Observability (Application Files)
 

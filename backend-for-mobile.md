@@ -17,6 +17,8 @@ BFF pattern and API design first (the shape), then transport protocols (the wire
 - [BFF Pattern](backend-for-mobile/bff-pattern.md)
 - [API Design for Mobile](backend-for-mobile/api-design-for-mobile.md)
 - [Transport Protocols (REST / gRPC / GraphQL)](backend-for-mobile/transport-protocols.md)
+- [GraphQL vs REST](backend-for-mobile/graphql-vs-rest.md)
 - [Push vs Poll vs SSE vs WebSockets](backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md)
+- [SSE vs WebSockets](backend-for-mobile/sse-vs-websockets.md)
 - [Rate Limiting](backend-for-mobile/rate-limiting.md)
 - [Data Formats (JSON / Protobuf)](backend-for-mobile/data-formats.md)

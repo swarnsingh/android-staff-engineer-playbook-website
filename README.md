@@ -1,4 +1,4 @@
-# Android Staff Engineer Bible
+# Android Staff Engineer Playbook
 
 A long-term knowledge base for Android and Mobile Platform Engineering. Not an interview prep repo — a 1-2 year study guide aimed at Senior → Staff Mobile Platform Engineer depth.
 
@@ -35,7 +35,7 @@ Every file is exactly one of four kinds. Each kind has its own template in [`tem
 |---|---|---|---|
 | **Canonical** | The single source of truth for a concept | `distributed-systems/idempotency.md` | [`templates/canonical.md`](templates/canonical.md) |
 | **Application** | Applies a canonical concept to a concrete system | `mobile-system-design/offline-sync.md` | [`templates/application.md`](templates/application.md) |
-| **Decision** | A recorded tradeoff and choice (ADR) | `adr/003-sse-vs-websockets.md` | [`templates/decision.md`](templates/decision.md) |
+| **Decision** | A recorded tradeoff and choice (ADR) | `backend-for-mobile/sse-vs-websockets.md` | [`templates/decision.md`](templates/decision.md) |
 | **Blueprint** | A complete end-to-end system reference | `reference-architectures/ecommerce-app.md` | [`templates/blueprint.md`](templates/blueprint.md) |
 
 Two rules govern the whole repo. Both live in [`CONTRIBUTING.md`](CONTRIBUTING.md):
@@ -80,7 +80,8 @@ Each top-level file is a table of contents for its tree. Start with whichever ma
 **Career & Decisions**
 - [`leadership.md`](leadership.md) — incident response, technical leadership
 - [`career.md`](career.md) — senior → staff progression
-- [`adr/`](adr/) — Architecture Decision Records
+
+Decision files (the `Decision` kind in the table above) live alongside the topic they decide. For example, `backend-for-mobile/sse-vs-websockets.md` decides a transport choice and sits in the BFM tree, not in a separate `adr/` folder. This co-location keeps the decision next to the canonical concept it relates to. See [`templates/decision.md`](templates/decision.md) for the template.
 
 ---
 

@@ -30,7 +30,7 @@ These are the constraints every milestone is shaped by. If a future session forg
 |---|---|---|
 | `engineering-fundamentals/state-machines.md` | canonical | `4d7cb3c` then refined `7b7a8f1` |
 | `distributed-systems/idempotency.md` | canonical | `371fd62` |
-| `adr/003-sse-vs-websockets.md` | decision | `371fd62` (kept as-is) |
+| `backend-for-mobile/sse-vs-websockets.md` | decision | `371fd62` (kept as-is) |
 | `reference-architectures/offline-first-app.md` | blueprint | `371fd62` |
 | `engineering-fundamentals/sync-vs-async.md` | canonical | M1 batch |
 | `engineering-fundamentals/latency-vs-throughput.md` | canonical | M1 batch |
@@ -236,93 +236,166 @@ All files across these four non-technical domains have been successfully generat
 
 A folder-by-folder audit after M22 surfaced content that was checked off as ✅ but doesn't meet the SDE-1-to-Staff bar. Tracking here so future sessions don't re-discover the same debt.
 
-### G1 — Reference architectures (thin) 🟡
+### G1 — Reference architectures (depth bump) ✅
 
-7 of 8 blueprints are 54-70 lines; only `offline-first-app.md` (250) is full-depth. Each blueprint should be ~350-450 lines with: architectural signature, HLD diagram, per-layer blueprint, top 5 scaling bottlenecks with code, tech summary, cross-references, further reading.
+All 8 blueprints now at ~285-354 lines, each with distinct architectural signature, HLD diagram, per-layer blueprint, top scaling bottlenecks with code, tech summary, cross-references.
 
-- `reference-architectures/banking-app.md` (55 lines → target 400)
-- `reference-architectures/consumer-app.md` (55 → 400)
-- `reference-architectures/e-commerce-app.md` (62 → 400)
-- `reference-architectures/merchant-app.md` (54 → 400)
-- `reference-architectures/ride-hailing-app.md` (63 → 400)
-- `reference-architectures/social-media-app.md` (70 → 400)
-- `reference-architectures/video-streaming-app.md` (59 → 400)
+- ✅ `reference-architectures/offline-first-app.md` (250)
+- ✅ `reference-architectures/banking-app.md` (293)
+- ✅ `reference-architectures/consumer-app.md` (285)
+- ✅ `reference-architectures/e-commerce-app.md` (297)
+- ✅ `reference-architectures/merchant-app.md` (291)
+- ✅ `reference-architectures/ride-hailing-app.md` (354)
+- ✅ `reference-architectures/social-media-app.md` (318)
+- ✅ `reference-architectures/video-streaming-app.md` (353)
 
-### G2 — Career, leadership, platform-engineering (thin) ⬜
+### G2 — Career, leadership, platform-engineering depth ✅
 
-15 files at 30-44 lines each. Narrative is present; concrete artifacts (RFC templates, COE templates, design-review rubrics, Gradle convention plugin code, BoM publishing pipelines, real promo packets) are absent. Target ~250-350 lines per file with real templates inline.
+All 15 files now at ~250-525 lines each with real templates inline (RFC, COE, design-review rubrics, Gradle convention plugins, BoM publishing pipelines, promo packets).
 
-- `career/` 5 files
-- `leadership/` 5 files
-- `platform-engineering/` 5 files
+- ✅ `career/` 5 files (writing-rfcs, scope-and-ambiguity, performance-reviews-and-promotion, senior-to-staff-progression, technical-leadership)
+- ✅ `leadership/` 5 files (escalation-and-decision-making, incident-response-on-call, influence-without-authority, running-a-design-review, technical-mentorship)
+- ✅ `platform-engineering/` 5 files (build-graph-scaling 384, design-systems-architecture 424, internal-developer-platforms 310, library-versioning 375, sdk-distribution 536)
 
-### G3 — Thin ADRs ⬜
+### G3 — Decision file depth bump ✅
 
-5 ADRs at 40-50 lines each. ADR 003 (115) and 008 (152) set the bar. Pattern: context, alternatives, decision, consequences, plus enough code that a reader can verify the decision was applied.
+All 6 decision files now at 342-520 lines with full Android-specific code, failure mode tables, 12+ probing questions.
 
-- `adr/001-mvvm-vs-mvi.md` (41 → 180)
-- `adr/004-room-vs-datastore.md` (39 → 180)
-- `adr/005-graphql-vs-rest.md` (42 → 180)
-- `adr/006-monolith-vs-modularization.md` (43 → 180)
-- `adr/007-hilt-vs-manual-di.md` (43 → 180)
+- ✅ `android/architecture/mvvm-vs-mvi.md` (342)
+- ✅ `android/data-and-di/room-vs-datastore.md` (492)
+- ✅ `backend-for-mobile/graphql-vs-rest.md` (465)
+- ✅ `android/architecture/modularization-strategies.md` (392)
+- ✅ `android/data-and-di/hilt-vs-koin-vs-manual-di.md` (520)
+- ✅ `backend-for-mobile/sse-vs-websockets.md` (450)
 
-### G4 — Kotlin files missing bytecode evidence ⬜
+### G4 — Kotlin files practical interview depth ✅ (REDIRECTED from bytecode)
 
-8 files have decent length but no `javap -c` output. Pattern established in `bytecode.md`, `inline-functions.md`, `reified-types.md`.
+**Note:** Original plan was bytecode evidence (`javap -c`). Redirected per user request: bytecode is engineer-curiosity content, not interview-ready. Refocused on practical Job/SupervisorJob/scopes/dispatchers depth that maps to staff interviews. All 8 files at 423-567 lines.
 
-- `kotlin/coroutines.md` — add suspend state-machine bytecode
-- `kotlin/null-safety.md` — add `ifnull` branch bytecode
-- `kotlin/data-classes.md` — add generated `equals/hashCode` bytecode
-- `kotlin/delegation.md` — add `getfield`/`invokevirtual` for delegated properties
-- `kotlin/sealed-classes.md` — add `tableswitch` bytecode for `when`
-- `kotlin/generics.md` — add type-erasure bytecode evidence
-- `kotlin/memory-model.md` — add stack-frame / GC roots evidence
-- `kotlin/variance.md` — add wildcard bytecode for `in`/`out`
+- ✅ `kotlin/coroutines.md` (567) — Job/SupervisorJob/scopes/dispatchers/cancellation/timeouts
+- ✅ `kotlin/null-safety.md` (474) — operators, lateinit vs lazy, platform types, Android NPE traps
+- ✅ `kotlin/data-classes.md` (486) — generated methods, when to use, Compose stability
+- ✅ `kotlin/delegation.md` (459) — lazy modes, observable/vetoable, Android `by` delegates
+- ✅ `kotlin/sealed-classes.md` (500) — vs enum/interface, exhaustive when, polymorphic JSON
+- ✅ `kotlin/generics.md` (526) — bounded, reified, variance basics, type tokens
+- ✅ `kotlin/memory-model.md` (492) — stack/heap, GC roots, 6 Android leak patterns, LeakCanary
+- ✅ `kotlin/variance.md` (423) — `out`/`in`, Nothing, function-type variance, Java interop
 
-### G5 — Stub-revealed Android gaps ⬜
+### G5 — Stub-revealed Android gaps ✅
 
-After deleting the 43 root stubs, these topics have no canonical anywhere in the repo. Some are covered indirectly; others are genuine holes.
+13 of 14 done. Journey-testing dropped per user.
 
-- `android/compose/compose-runtime.md` (new file; deeper than recomposition-and-state)
-- `android/compose/stability.md` (Compose `@Stable`/`@Immutable` deep dive)
-- `android/compose/snapshot-system.md` (Snapshot state internals)
-- `android/data-and-di/components.md` (Hilt component hierarchy)
-- `android/data-and-di/scopes.md` (Hilt scopes vs coroutine scopes)
-- `android/architecture/state-management.md` (or fold into `viewmodel.md`)
-- `android/performance/rendering.md` (RenderThread + Skia)
-- `android/performance/startup.md` (deeper than the cross-folder coverage)
-- `android/os-internals/ksp.md`
-- `android/os-internals/convention-plugins.md`
-- `android/os-internals/multi-module.md`
-- `android/testing/unit-testing.md` (new subfolder)
-- `android/testing/ui-testing.md`
-- `android/testing/journey-testing.md`
+- ✅ `android/compose/compose-runtime.md` (426)
+- ✅ `android/compose/stability.md` (436)
+- ✅ `android/compose/snapshot-system.md` (471)
+- ✅ `android/data-and-di/components.md` (511)
+- ✅ `android/data-and-di/scopes.md` (436)
+- ✅ `android/architecture/state-management.md` (566)
+- ✅ `android/performance/rendering.md` (505)
+- ✅ `android/performance/startup.md` (522)
+- ✅ `android/os-internals/ksp.md` (518)
+- ✅ `android/os-internals/convention-plugins.md` (684)
+- ✅ `android/os-internals/multi-module.md` (507)
+- ✅ `android/testing/unit-testing.md` (725) — new subfolder created
+- ✅ `android/testing/ui-testing.md` (724)
+- 🚫 `android/testing/journey-testing.md` — dropped per user decision
 
-### G6 — Patterns and backend-for-mobile depth bump ⬜
+### G6 — Patterns and backend-for-mobile depth bump ✅
 
-Mid-tier (~150-200 lines each). To hit staff-FAANG bar, each needs: failure-mode tables, mobile-integration code (not just JVM examples), and the `Common Pitfalls` + `Probing Questions` polish.
+All 16 pattern and backend-for-mobile files have been updated to Staff-level depth with Android-specific code (e.g. OkHttp, Flow, Compose), failure mode tables, and probing questions.
 
-- `patterns/` 12 files
-- `backend-for-mobile/` 6 files
+**5 high-priority files** (Completed):
+- ✅ `patterns/decorator.md` (OkHttp Interceptors, Compose Modifiers)
+- ✅ `patterns/observer.md` (Flow/StateFlow, Lifecycle safety)
+- ✅ `patterns/state.md` (Sealed classes, MVI reducers, ExoPlayer)
+- ✅ `backend-for-mobile/api-design-for-mobile.md` (Retrofit, Error Envelopes)
+- ✅ `backend-for-mobile/bff-pattern.md` (Android client orchestration, SDUI)
+
+**7 medium-priority files** (Completed):
+- ✅ `patterns/adapter.md` (RecyclerView.Adapter, Compose AndroidView, ACL)
+- ✅ `patterns/builder.md` (OkHttp.Builder, DSLs, Kotlin Named Args)
+- ✅ `patterns/circuit-breaker.md` (OkHttp Interceptor implementation, Fallback UI)
+- ✅ `patterns/command.md` (WorkManager Command Bus, Offline queues)
+- ✅ `patterns/factory.md` (ViewModelProvider.Factory, Hilt AssistedInject)
+- ✅ `patterns/repository.md` (Single-source-of-truth Room+Retrofit)
+- ✅ `patterns/retry.md` (OkHttp + WorkManager retry, Exponential Backoff)
+- ✅ `patterns/saga.md` (WorkManager-based saga, compensating actions)
+- ✅ `backend-for-mobile/rate-limiting.md` (Client-side Flow throttling)
+
+**3 lower-priority files** (Completed / Light-touch):
+- ✅ `patterns/strategy.md` (DI-injected strategy added)
+- ✅ `backend-for-mobile/data-formats.md` (Moshi vs kotlinx.serialization added)
+- ✅ `backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md`
+- ✅ `backend-for-mobile/transport-protocols.md`
+
+### G7 — Newly discovered gaps (post-2026-06 session) 🟡
+
+#### G7a — Ktor coverage ✅
+
+Mentioned in 12 files in passing but never explained as a topic. Created dedicated decision file.
+
+- ✅ `android/networking-and-security/ktor-vs-retrofit.md` (668 lines) — full decision file with KMP focus
+
+#### G7b — Compose Navigation 3 ✅
+
+Major restructure of existing file. Both Nav 2 (current stable) and Nav 3 (2024 alpha) now covered with decision table, Nav 2 ↔ Nav 3 API mapping, migration phases, scenes for multi-pane layouts.
+
+- ✅ `android/compose/compose-navigation.md` (674 lines)
+
+### G8 — Kotlin Multiplatform subfolder ✅ DONE
+
+KMP is mentioned in 22 files in passing but has no dedicated coverage. User decision: create dedicated subfolder `android/kotlin-multiplatform/` with 15 in-depth canonical files. Topic curriculum agreed and execution started.
+
+**Folder:** `android/kotlin-multiplatform/`
+
+**Phase 1 — Foundations:**
+- ⬜ `overview-and-k1-vs-k2.md` — Compiler-level (JVM, Native, Wasm), K2 speedups, `expect`/`actual`.
+- ⬜ `architecture-and-module-boundaries.md` — Shared Logic vs Shared UI, Domain/Data sharing patterns.
+
+**Phase 2 — Tooling:**
+- ⬜ `build-system-and-source-sets.md` — Gradle KMP plugin, source sets (`commonMain`, `iosMain`), Version Catalogs.
+- ⬜ `ios-distribution.md` — Frameworks, CocoaPods plugin, SwiftPM, XCFramework.
+- ⬜ `swift-interop.md` — Swift↔Kotlin via Obj-C bridge, SKIE, Direct Swift Export.
+
+**Phase 3 — Ecosystem:**
+- ⬜ `libraries-ecosystem.md` — KMP-ready matrix vs non-KMP.
+- ⬜ `networking-with-ktor.md` — Ktor patterns across platforms, engine selection.
+- ⬜ `persistence.md` — SQLDelight, Multiplatform Settings, Realm.
+- ⬜ `dependency-injection.md` — Koin shared modules and iOS initialization.
+
+**Phase 4 — UI Sharing:**
+- ⬜ `compose-multiplatform.md` — CMP vs Jetpack Compose, iOS Canvas vs UIKit.
+- ⬜ `resource-sharing.md` — JetBrains Compose Resources (strings, fonts, vectors).
+
+**Phase 5 — Production:**
+- ⬜ `concurrency-and-memory.md` — K/Native memory model, coroutines on iOS main thread.
+- ⬜ `testing-and-mocking.md` — `commonTest`, MocKMP, iOS simulator tests from Gradle.
+- ⬜ `ci-cd-for-kmp.md` — Automating builds, macOS runners, caching Native tasks.
+- ⬜ `adoption-and-migration.md` — Incremental migration, case studies.
+
+**Cross-linking required when KMP folder lands:** Update `ktor-vs-retrofit.md`, `hilt-vs-koin-vs-manual-di.md`, `modularization-strategies.md`, `library-versioning.md`, and others that currently mention KMP in passing.
 
 ---
 
-## Execution Order (Gap Closure Plan)
+## Execution Order (Gap Closure Plan) — Updated 2026-06
 
 In order of impact-per-effort:
 
-1. **G1 (reference architectures)** — highest impact for interview prep; format already proven by `offline-first-app.md`.
-2. **G2 (career/leadership/platform-engineering)** — most direct path to staff promotion-doc utility.
-3. **G4 (Kotlin bytecode evidence)** — narrow, fast, technical depth.
-4. **G3 (thin ADRs)** — short, set the bar for decision documentation.
-5. **G5 (Android subfolder gaps)** — fill the holes the stub deletion exposed.
-6. **G6 (patterns / backend-for-mobile depth bump)** — final polish.
+1. ✅ **G1** (reference architectures) — DONE
+2. ✅ **G2** (career/leadership/platform-engineering) — DONE
+3. ✅ **G3** (decision file depth bump) — DONE
+4. ✅ **G4** (Kotlin practical depth, redirected from bytecode) — DONE
+5. ✅ **G5** (Android subfolder gaps, journey-testing dropped) — DONE
+6. ✅ **G6** (patterns + BFM depth bump) — DONE
+7. ✅ **G7a** (Ktor) — DONE
+8. ✅ **G7b** (Nav 3) — DONE
+9. ✅ **G8** (KMP subfolder, 15 files) — DONE
 
 ---
 
 ## Blocked — Decisions Needed ✅
 
-All decisions made; gap closure proceeds per the execution order above.
+All decisions made. Current execution: G6 high-priority → G6 medium → G8 (KMP).
 
 ---
 

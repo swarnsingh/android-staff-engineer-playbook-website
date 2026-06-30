@@ -76,7 +76,7 @@ This is the most common debate. If you are building a Stock Trading app (where p
 - SSE natively supports automatic reconnection (`EventSource`). If a WebSocket drops, you must write complex Exponential Backoff logic in Kotlin to reconnect it.
 - SSE supports HTTP multiplexing (HTTP/2). WebSockets do not (they consume a dedicated physical TCP port).
 
-*(See [ADR-003 SSE vs WebSockets](../adr/003-sse-vs-websockets.md) for a deeper architectural analysis).*
+*(See [ADR-003 SSE vs WebSockets](../backend-for-mobile/sse-vs-websockets.md) for a deeper architectural analysis).*
 
 ### 2. The Battery Cost of WebSockets
 On Android, the cellular radio has power states (Active, Idle, Sleep). Waking the radio from Sleep to Active consumes massive battery power.
@@ -139,4 +139,4 @@ When designing a real-time feature, a Staff engineer focuses on the State Machin
 
 - [`transport-protocols.md`](transport-protocols.md) — How HTTP/2 multiplexing impacts SSE and Polling.
 - [`process-death-and-state-restoration.md`](../android/architecture/viewmodel.md) — How the Android OS aggressively kills background apps, destroying WebSockets.
-- [`003-sse-vs-websockets.md`](../adr/003-sse-vs-websockets.md) — The specific Architecture Decision Record detailing why SSE was chosen over WebSockets for one-way streams.
+- [`003-sse-vs-websockets.md`](../backend-for-mobile/sse-vs-websockets.md) — The specific Architecture Decision Record detailing why SSE was chosen over WebSockets for one-way streams.

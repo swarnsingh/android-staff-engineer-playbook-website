@@ -1,197 +1,240 @@
 # Command Pattern
 
+> The Command pattern encapsulates a request as an object, thereby letting you parameterize clients with different requests, queue or log requests, and support undoable operations. In modern Android, the Command pattern is the architectural bedrock of offline-first applications and background processing. A Staff engineer recognizes that **WorkManager** is simply a durable, SQLite-backed Command Bus. By encapsulating network calls or database writes as Commands, you can ensure execution across process death, poor network conditions, and complex state changes.
+
+---
+
 ## Overview
 
-The Command pattern turns a request into a stand-alone object that contains all information about the request. This transformation lets you pass requests as method arguments, delay or queue a request's execution, and support undoable operations. In modern Android, it is the foundational pattern for implementing offline queues, undo stacks, and reliable background processing.
+In traditional object-oriented programming, if the UI wants to save a user's profile, it calls `repository.saveProfile(user)`. This executes immediately. 
 
-## Why It Exists
+If you use the Command pattern, the UI creates a `SaveProfileCommand(user)` object and hands it to an Invoker (a queue or bus). The Invoker decides *when* and *how* to execute it.
 
-Normally, if the UI wants to save a document, it calls `document.save()`. The request is executed immediately. But what if the user is offline? What if you want to support "Undo"? What if you want to schedule the save for 3:00 AM? 
+This separation of "what to do" from "when to do it" is critical on mobile devices where network connectivity is intermittent and the OS aggressively kills background processes.
 
-You cannot queue or delay a raw method invocation. By turning the invocation into a data object (`SaveDocumentCommand`), you separate the *intent* to do work from the *execution* of the work.
+---
 
-## Historical Context
+## 1. The Classic Implementation: Undo/Redo in Android
 
-One of the original GoF behavioral patterns. Historically implemented using strict class hierarchies (e.g., `Command` interface, `ConcreteCommand` classes, an `Invoker`, and a `Receiver`). In modern Kotlin, functional programming features (like higher-order functions and lambdas) can replace simple commands, but robust, serializable commands for offline architectures still heavily rely on data classes and the classic pattern structure.
-
-## First Principles
-
-1.  **Reification of Intent:** Make a verb (an action) into a noun (an object).
-2.  **Decoupling Invoker and Receiver:** The UI (Invoker) creates the command. It does not know how the Receiver (e.g., the Database) will execute it.
-3.  **Serializability:** If a command is an object, it can be serialized to disk. This is the cornerstone of offline-first design.
-
-## Mental Model
-
-Think of ordering food at a restaurant. You don't walk into the kitchen and cook the steak yourself (direct execution). You don't even talk to the chef. You tell the waiter what you want. The waiter writes your order on a piece of paper (The Command Object). This piece of paper is placed on a spindle (The Queue). The chef (The Receiver) takes the paper when they are ready and cooks the meal. The paper decouples you from the kitchen, allows orders to be queued, and provides a record of what was requested.
-
-## Internal Mechanics
-
-### 1. The Classic Offline-Queue Command
-
-This is how modern offline-first apps operate. The Command is a data structure.
+The most traditional use case for the Command pattern is an Undo/Redo stack, commonly used in photo editors or note-taking apps.
 
 ```kotlin
-// 1. The Command (Reified Intent)
-// Must be serializable so it can survive process death
-@Serializable
-sealed class SyncCommand {
-    data class LikePost(val postId: String, val timestamp: Long) : SyncCommand()
-    data class UpdateProfile(val newName: String) : SyncCommand()
-}
-
-// 2. The Invoker (UI / Repository)
-class PostRepository(private val db: Database) {
-    fun likePost(postId: String) {
-        val command = SyncCommand.LikePost(postId, System.currentTimeMillis())
-        // We don't execute it. We queue it.
-        db.commandQueueDao().insert(command)
-        
-        // Optimistically update UI
-        db.postDao().incrementLikes(postId) 
-    }
-}
-
-// 3. The Receiver / Executor (Background Sync Engine)
-class SyncEngine(
-    private val api: RemoteApi,
-    private val queueDao: CommandQueueDao
-) {
-    suspend fun executePendingCommands() {
-        val commands = queueDao.getPending()
-        commands.forEach { command ->
-            when (command) {
-                is SyncCommand.LikePost -> api.sendLike(command.postId)
-                is SyncCommand.UpdateProfile -> api.updateName(command.newName)
-            }
-            queueDao.markComplete(command)
-        }
-    }
-}
-```
-
-### 2. The Undoable Command (Editor pattern)
-
-If a command knows how to execute itself, it can also know how to *un-execute* itself.
-
-```kotlin
+// 1. The Command Interface
 interface Command {
     fun execute()
     fun undo()
 }
 
-class ChangeTextCommand(
-    private val editor: TextEditor,
-    private val newText: String
+// 2. A Concrete Command
+class DrawStrokeCommand(
+    private val canvasView: CanvasView,
+    private val stroke: Stroke
 ) : Command {
-    private var previousText: String = ""
-
+    
     override fun execute() {
-        previousText = editor.getText() // Save state before changing
-        editor.setText(newText)
+        canvasView.addStroke(stroke)
     }
 
     override fun undo() {
-        editor.setText(previousText) // Restore state
+        canvasView.removeStroke(stroke)
     }
 }
 
+// 3. The Invoker (The Command Manager)
 class CommandManager {
     private val history = Stack<Command>()
+    private val redoStack = Stack<Command>()
 
-    fun execute(command: Command) {
+    fun executeCommand(command: Command) {
         command.execute()
         history.push(command)
+        redoStack.clear() // New actions invalidate the redo history
     }
 
     fun undo() {
         if (history.isNotEmpty()) {
-            history.pop().undo()
+            val command = history.pop()
+            command.undo()
+            redoStack.push(command)
+        }
+    }
+
+    fun redo() {
+        if (redoStack.isNotEmpty()) {
+            val command = redoStack.pop()
+            command.execute()
+            history.push(command)
+        }
+    }
+}
+```
+**Staff Insight:** If this state needs to survive process death (e.g., the user leaves the photo editor and returns), the `Command` objects must be serializable (e.g., to JSON) and saved in `SavedStateHandle` or Room.
+
+---
+
+## 2. Core Android Example: WorkManager as a Command Bus
+
+Android's **WorkManager** is the ultimate, OS-integrated Command pattern. 
+- The `Worker` is the Command implementation.
+- The `Data` input is the Command payload.
+- The `WorkManager` enqueue system is the Invoker.
+- Room (inside WorkManager) is the durable Command Queue.
+
+### Encapsulating a Request
+Instead of making an API call directly, we encapsulate the intent to upload an image into a `Worker`.
+
+```kotlin
+// The Command Implementation
+class UploadImageWorker(
+    appContext: Context,
+    workerParams: WorkerParameters
+) : CoroutineWorker(appContext, workerParams) {
+
+    override suspend fun doWork(): Result {
+        // The Payload
+        val imageUri = inputData.getString("IMAGE_URI") ?: return Result.failure()
+        
+        return try {
+            val response = api.uploadImage(imageUri)
+            Result.success(workDataOf("SERVER_URL" to response.url))
+        } catch (e: IOException) {
+            // Network failure? WorkManager will automatically retry this Command later!
+            Result.retry()
+        } catch (e: Exception) {
+            Result.failure()
         }
     }
 }
 ```
 
-## Architecture
+### Issuing the Command
+The UI layer simply creates the Command (the `WorkRequest`) and hands it to the Invoker (`WorkManager`).
 
-```mermaid
-flowchart LR
-    Client[Client / UI] -->|creates| Command[Command Object]
-    Client -->|passes to| Invoker[Invoker / Queue]
-    Invoker -->|calls execute() on| Command
-    Command -->|modifies state of| Receiver[Receiver / Database]
+```kotlin
+class ProfileViewModel(private val workManager: WorkManager) : ViewModel() {
     
-    classDef core fill:#d4edda,stroke:#28a745,stroke-width:2px;
-    classDef cmd fill:#fff3cd,stroke:#ffc107,stroke-width:2px;
-    
-    class Client,Receiver core;
-    class Command,Invoker cmd;
+    fun onProfilePictureSelected(uri: Uri) {
+        // 1. Parameterize the request
+        val inputData = workDataOf("IMAGE_URI" to uri.toString())
+        
+        // 2. Create the Command object
+        val uploadCommand = OneTimeWorkRequestBuilder<UploadImageWorker>()
+            .setInputData(inputData)
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .build()
+            
+        // 3. Queue the request
+        workManager.enqueue(uploadCommand)
+    }
+}
 ```
+Because this Command is written to SQLite by WorkManager, even if the user immediately swipes the app away and kills the process, the image will upload the next time the OS detects network connectivity.
 
-## Production Example
+---
 
-**WorkManager** is Android's ultimate implementation of the Command pattern.
+## 3. The Offline-First Action Queue
 
-When you create a `OneTimeWorkRequest`, you are creating a Command object. You don't execute the work. You hand the request to `WorkManager.enqueue()`. WorkManager writes the command to a local SQLite database (so it survives device reboots). Later, when battery and network conditions are met, WorkManager (the Invoker) instantiates your `Worker` class (the Receiver) and tells it to `doWork()`.
+For highly interactive apps (like Twitter or Slack), you cannot use WorkManager for every single "Like" or "Upvote" button press—it is too heavy and has a minimum latency overhead.
+
+Instead, Staff engineers build an in-memory or Room-backed **Action Queue** using Coroutines and Channels. This is a custom Command Invoker.
 
 ```kotlin
 // The Command Definition
-val uploadWorkRequest = OneTimeWorkRequestBuilder<UploadWorker>()
-    // Constraints are meta-data attached to the Command
-    .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-    // Input data is the payload of the Command
-    .setInputData(workDataOf("IMAGE_URI" to "file://image.jpg"))
-    .build()
+sealed interface OfflineAction {
+    data class LikePost(val postId: String) : OfflineAction
+    data class SubmitComment(val postId: String, val text: String) : OfflineAction
+}
 
-// The Invoker queuing the command
-WorkManager.getInstance(context).enqueue(uploadWorkRequest)
+// The Invoker (Application Scoped)
+@Singleton
+class ActionQueue @Inject constructor(
+    private val api: SocialApi,
+    private val database: ActionDatabase,
+    @ApplicationScope private val scope: CoroutineScope
+) {
+    // A channel to buffer commands
+    private val commandChannel = Channel<OfflineAction>(Channel.UNLIMITED)
+
+    init {
+        // The worker loop
+        scope.launch {
+            for (action in commandChannel) {
+                processAction(action)
+            }
+        }
+    }
+
+    // UI calls this. It returns instantly.
+    fun enqueue(action: OfflineAction) {
+        scope.launch {
+            database.saveAction(action) // Persist to disk for crash resilience
+            commandChannel.send(action) // Push to in-memory queue
+        }
+    }
+
+    private suspend fun processAction(action: OfflineAction) {
+        try {
+            when (action) {
+                is OfflineAction.LikePost -> api.likePost(action.postId)
+                is OfflineAction.SubmitComment -> api.submitComment(action.postId, action.text)
+            }
+            database.deleteAction(action) // Remove from disk on success
+        } catch (e: IOException) {
+            // Network is down. Push it back to the channel after a delay
+            delay(5000)
+            commandChannel.send(action)
+        }
+    }
+}
 ```
+This pattern allows the UI to update optimistically ("Like" turns red immediately) while the background Command Queue ensures eventual consistency with the server.
 
-## Tradeoffs
+---
 
-**Advantages**
-- **Offline Reliability:** By queuing serializable commands, apps work seamlessly offline and sync when reconnected.
-- **Undo/Redo:** Trivial to implement if commands track their previous state.
-- **Decoupling:** The UI doesn't need to know the heavy dependencies required to actually execute the network request.
+## 4. Failure Modes & Tradeoffs
 
-**Disadvantages**
-- **Over-engineering:** Using the Command pattern for simple, synchronous UI actions (like navigating to a new screen) adds massive, useless boilerplate.
-- **State Stale-ness:** If a command sits in an offline queue for 3 days, executing it later might overwrite newer data on the server. (Requires Idempotency and Conflict Resolution strategies).
-- **Asynchronous Complexity:** Because execution is deferred, the UI cannot simply `catch` an exception if the command fails. Error handling becomes an asynchronous architectural problem.
+| Failure Mode | Cause | Prevention / Solution |
+|---|---|---|
+| **Command Bloat** | Storing massive payloads (e.g., entire Bitmaps or 10MB JSON strings) directly inside the Command object (or WorkManager `Data`). | Commands should only store **references** (URIs, Database IDs). The Command executor fetches the heavy data when it runs. |
+| **Out of Order Execution** | The user goes offline, renames a folder to "A", then renames it to "B". The Commands execute out of order when connectivity returns, resulting in "A". | Use sequential queues (Channels) or WorkManager Chaining (`beginWith().then()`) to enforce strict FIFO execution of related commands. |
+| **Process Death Memory Loss** | Implementing an Undo/Redo stack purely in memory. If the app is backgrounded and killed by the OS, the user loses their work. | Serialize the Command stack to `SavedStateHandle` or disk. Ensure Commands don't hold references to non-serializable objects (like `View` or `Activity`). |
+| **Zombie Commands** | A Command to delete a post is queued offline. Before it executes, the user deletes their account. The Command executes later, crashing on the backend. | Commands must validate system state *at execution time*, not at creation time. |
 
-## Failure Modes
+---
 
-- **Un-serializable Commands:** If a Command holds a reference to a `Context`, a `View`, or a large Bitmap, it cannot be safely serialized to disk or passed across process boundaries. Commands should hold primitive IDs (like `userId` or `filePath`), not the objects themselves.
-- **The Fat Command:** A command that contains 500 lines of complex business logic. The Command should just be a data transport layer or a thin orchestrator. The actual business logic belongs in the Receiver (the Domain or Data layer).
-- **Ignoring Idempotency:** If the network drops while the app is executing a command, the app won't know if the server received it. The Invoker will retry the command. If the server isn't idempotent, you'll end up with duplicate purchases or likes. See [`distributed-systems/idempotency.md`](../distributed-systems/idempotency.md).
+## 5. Common Pitfalls
 
-## Staff Engineer Thinking
+### Pitfall 1: Leaking UI References in Commands
+```kotlin
+// BAD
+class ShowSnackbarCommand(private val view: View, private val message: String) : Command {
+    override fun execute() { Snackbar.make(view, message, Snackbar.LENGTH_SHORT).show() }
+}
+```
+If this Command is put in a delayed queue, it holds a strong reference to `View`. If the Activity rotates, the `View` leaks.
+*Fix:* Commands should manipulate data or emit state. The UI observes the state. Commands should never hold Android UI toolkit references.
 
-When reviewing architectures relying on queues and commands, a Staff engineer asks:
+### Pitfall 2: Bypassing the Single Source of Truth
+If a `SubmitCommentCommand` updates the network, and then the Command itself updates the UI via a callback, you fracture your state.
+*Fix:* The Command should only update the remote server and the local database (Room). The UI should observe the Room database (via `Flow`). The Command has no UI callbacks.
 
-1.  **What happens when the queue gets stuck?** If a `SyncProfileCommand` consistently crashes the background worker due to a bad payload, does it block the entire queue? There must be a mechanism to quarantine "poison pill" commands.
-2.  **Is the order guaranteed?** If I queue `UpdateName("John")` then `UpdateName("Johnny")`, does the executor guarantee they hit the server in that exact order?
-3.  **How is the user notified of failure?** If I "like" a post offline, the UI shows a red heart. Three hours later, the command fails permanently because the post was deleted. How does the UI reconcile this?
-
-## Common Misconceptions
-
-- **"Lambdas replaced the Command pattern."** Partially. For simple UI callbacks (`button.onClick = { doSomething() }`), lambdas are perfect. However, you cannot easily serialize a lambda to a SQLite database, nor can you easily inspect a lambda's internal properties. For offline queues, the explicit Command Object pattern is still mandatory.
-- **"Commands are just Events."** The difference is intent. An **Event** says "Something happened" (`UserLoggedInEvent`). A **Command** says "Do this thing" (`SyncUserDataCommand`).
+---
 
 ## Probing Questions
 
-1.  How does the Command pattern enable offline-first application architectures?
-2.  What is the "Poison Pill" problem in command queues, and how do you handle it?
-3.  Why is it critical that offline commands use primitive data types (like String IDs) rather than object references?
-4.  Explain how Android's `WorkManager` implements the Command pattern.
-5.  How would you design a text editor with infinite Undo/Redo capabilities using the Command pattern?
-6.  If a user queues an `UpdateEmailCommand`, and immediately queues a `DeleteAccountCommand`, how should the executor handle this?
-7.  What is the relationship between the Command pattern and Idempotency?
-8.  How does the Command pattern relate to the concept of Unidirectional Data Flow (MVI/Redux)? (Hint: Actions/Intents are often Commands).
-9.  If execution is deferred, how do you handle validation? Should the command be validated when it's created, or when it's executed?
-10. Describe a scenario where using the Command pattern would be considered an anti-pattern.
+1.  **WorkManager Internals:** WorkManager serializes your `Data` object into a SQLite database. What is the maximum size (in bytes) of a `Data` payload in WorkManager, and what exception is thrown if you exceed it? 
+2.  **Idempotency:** If the network drops *after* the server processes a `LikePostCommand` but *before* the Android device receives the HTTP 200 OK, WorkManager will retry the Command. How must the backend API be designed to handle this duplicate command safely?
+3.  **Command Chaining:** In WorkManager, you can chain commands: `A -> B -> C`. If Worker A fails and returns `Result.failure()`, what is the state of Worker B and Worker C? Do they run?
+4.  **Undo/Redo State:** In a complex app like a photo editor, storing a new `Command` object for every single pixel change will exhaust device memory. How do you combine the Command pattern with the Memento pattern to manage memory in a deep undo stack?
+5.  **Optimistic UI:** When you use an Offline Action Queue, you update the UI immediately (Optimistic Update). If the `Command` permanently fails (e.g., HTTP 403 Forbidden), how does the Command notify the UI to roll back the optimistic state?
 
 ## Further Reading
 
-- [`../reference-architectures/offline-first-app.md`](../reference-architectures/offline-first-app.md) — The ultimate application of the Command pattern (the Outbox queue).
-- [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md) — Mandatory reading if you are sending commands across a network boundary.
-- Refactoring Guru: [Command Pattern](https://refactoring.guru/design-patterns/command)
+- [`../android/concurrency/workmanager.md`](../android/concurrency/workmanager.md) — Deep dive into Android's persistent Command Bus.
+- [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md) — Why Commands must be idempotent when retried over mobile networks.
+- [`../reference-architectures/offline-first-app.md`](../reference-architectures/offline-first-app.md) — Architecting the full data layer around offline command queues.
+- [`saga.md`](saga.md) — Chaining multiple commands together across microservices.
