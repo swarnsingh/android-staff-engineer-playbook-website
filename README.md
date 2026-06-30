@@ -93,3 +93,9 @@ Decision files (the `Decision` kind in the table above) live alongside the topic
 - Cross-references: relative GitHub-rendered links.
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full convention list.
+
+---
+
+## License
+
+This work is licensed under a [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-nc-sa/4.0/).
