@@ -196,7 +196,7 @@ A typical fault-tolerant service architecture:
 
 ```mermaid
 flowchart TB
-    Client --> LB[Load Balancer<br/>health checks + failover]
+    Client --> LB["Load Balancer<br/>health checks + failover"]
     LB --> A1[App 1]
     LB --> A2[App 2]
     LB --> A3[App 3]

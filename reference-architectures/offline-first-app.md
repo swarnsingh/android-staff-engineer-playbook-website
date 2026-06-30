@@ -29,7 +29,7 @@ This blueprint describes the architectural shape of an app designed to function 
 
 ```mermaid
 flowchart TB
-    UI[UI Layer<br/>Compose] --> Repo[Repository]
+    UI["UI Layer<br/>Compose"] --> Repo[Repository]
     Repo -->|Reads| LocalDB[(Local DB<br/>Room / SQLite)]
     Repo -->|Writes| LocalDB
     Repo -->|Enqueue| OutboxQueue[(Outbox<br/>pending mutations)]

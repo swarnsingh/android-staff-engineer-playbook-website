@@ -242,7 +242,7 @@ flowchart TB
     Peer --> Compare{Compare VCs}
     Compare -->|"local < remote"| Accept[Accept remote]
     Compare -->|"remote < local"| Ignore[Keep local]
-    Compare -->|"concurrent"| Conflict[Conflict!<br/>Resolve or store siblings]
+    Compare -->|"concurrent"| Conflict["Conflict!<br/>Resolve or store siblings"]
 ```
 
 ---

@@ -36,7 +36,7 @@
 
 ```mermaid
 flowchart TB
-    UI[Compose UI<br/>catalog + player] --> VM[ViewModels]
+    UI["Compose UI<br/>catalog + player"] --> VM[ViewModels]
     VM --> CatalogRepo[CatalogRepository]
     VM --> PlayerRepo[PlayerRepository]
     VM --> DownloadRepo[DownloadRepository]
@@ -44,14 +44,14 @@ flowchart TB
     CatalogRepo --> Pager[Paging 3]
     Pager --> CatalogApi[Catalog BFF]
     PlayerRepo --> ExoPlayer[Media3 ExoPlayer]
-    ExoPlayer --> Drm[DRM Session Manager<br/>Widevine]
-    ExoPlayer --> Abr[ABR Selector<br/>DefaultTrackSelector]
-    ExoPlayer --> CDN[CDN<br/>HLS / DASH segments]
-    PlayerRepo --> ResumeApi[Resume Point API<br/>cross-device sync]
+    ExoPlayer --> Drm["DRM Session Manager<br/>Widevine"]
+    ExoPlayer --> Abr["ABR Selector<br/>DefaultTrackSelector"]
+    ExoPlayer --> CDN["CDN<br/>HLS / DASH segments"]
+    PlayerRepo --> ResumeApi["Resume Point API<br/>cross-device sync"]
     DownloadRepo --> DownloadMgr[Media3 DownloadManager]
     DownloadMgr --> DiskCache[(Encrypted disk cache<br/>local segments)]
     DownloadMgr --> OfflineLicense[Offline License Helper]
-    UI --> CastSession[Cast Session<br/>Chromecast]
+    UI --> CastSession["Cast Session<br/>Chromecast"]
 ```
 
 The defining property: **the player module is a first-class citizen on par with the entire rest of the app**. ExoPlayer is not a UI widget; it's a service-layer concern with its own threading, DRM session lifecycle, ABR state, and surface lifecycle.

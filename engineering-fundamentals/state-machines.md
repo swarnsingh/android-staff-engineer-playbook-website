@@ -131,7 +131,7 @@ flowchart LR
     Queue --> Transition["transition(state, event)"]
     Transition --> NewState[New state]
     NewState --> Store[(State store<br/>in-memory + persisted)]
-    Store --> Observers[Observers<br/>UI, side-effect runner]
+    Store --> Observers["Observers<br/>UI, side-effect runner"]
     Observers --> Sources
 ```
 

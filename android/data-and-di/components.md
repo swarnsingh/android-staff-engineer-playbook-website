@@ -46,13 +46,13 @@ There's also `ViewWithFragmentComponent` (rarely needed) — for views created i
 
 ```mermaid
 graph TD
-  Singleton[SingletonComponent<br/>app lifetime] --> ActRet[ActivityRetainedComponent<br/>survives rotation]
-  ActRet --> Activity[ActivityComponent<br/>activity instance]
-  ActRet --> VM[ViewModelComponent<br/>per-ViewModel]
-  Activity --> Fragment[FragmentComponent<br/>fragment instance]
-  Fragment --> View[ViewComponent<br/>view instance]
+  Singleton["SingletonComponent<br/>app lifetime"] --> ActRet["ActivityRetainedComponent<br/>survives rotation"]
+  ActRet --> Activity["ActivityComponent<br/>activity instance"]
+  ActRet --> VM["ViewModelComponent<br/>per-ViewModel"]
+  Activity --> Fragment["FragmentComponent<br/>fragment instance"]
+  Fragment --> View["ViewComponent<br/>view instance"]
 
-  Singleton --> Service[ServiceComponent<br/>service instance]
+  Singleton --> Service["ServiceComponent<br/>service instance"]
 ```
 
 Children inherit bindings from their parents. A `@Singleton`-scoped `Analytics` is accessible from `@ActivityScoped`, `@FragmentScoped`, and `@ViewScoped` consumers. Reverse is impossible — an `@ActivityScoped` `ToolbarController` cannot be injected into a `@Singleton`-scoped service.

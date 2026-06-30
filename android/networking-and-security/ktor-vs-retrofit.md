@@ -27,9 +27,9 @@ Most Android teams in 2025 still pick Retrofit + OkHttp; KMP-shared business log
 
 ```mermaid
 graph LR
-  Your[Your code] --> Iface[Retrofit interface<br/>@GET / @POST]
-  Iface --> Conv[Converter<br/>Moshi / kotlinx.serialization]
-  Conv --> OkHttp[OkHttpClient<br/>connection pool + interceptors]
+  Your[Your code] --> Iface["Retrofit interface<br/>@GET / @POST"]
+  Iface --> Conv["Converter<br/>Moshi / kotlinx.serialization"]
+  Conv --> OkHttp["OkHttpClient<br/>connection pool + interceptors"]
   OkHttp --> Socket[TLS socket]
 ```
 
@@ -44,8 +44,8 @@ You can use OkHttp alone (for raw HTTP), but rarely Retrofit alone. They're sold
 ```mermaid
 graph LR
   Your[Your code] --> Client[HttpClient]
-  Client --> Plugins[Plugins<br/>Auth, Logging, Retry, etc.]
-  Plugins --> Engine[Engine<br/>OkHttp / CIO / Darwin / JS]
+  Client --> Plugins["Plugins<br/>Auth, Logging, Retry, etc."]
+  Plugins --> Engine["Engine<br/>OkHttp / CIO / Darwin / JS"]
   Engine --> Socket[TLS socket]
 ```
 

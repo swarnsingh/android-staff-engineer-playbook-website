@@ -35,7 +35,7 @@
 
 ```mermaid
 flowchart TB
-    UI[Compose UI<br/>LazyColumn + ExoPlayer pool] --> VM[ViewModels]
+    UI["Compose UI<br/>LazyColumn + ExoPlayer pool"] --> VM[ViewModels]
     VM --> FeedRepo[FeedRepository]
     VM --> ProfileRepo[ProfileRepository]
     VM --> EngagementRepo[EngagementRepository]
@@ -46,9 +46,9 @@ flowchart TB
     EngagementRepo --> Outbox[(Outbox)]
     Outbox --> EngagementApi[Engagement API]
     DmRepo --> ChatSocket[ChatSocket]
-    FeedApi --> Ranker[Ranking + Fan-out<br/>black box]
-    FeedApi --> CDN[CDN<br/>images + HLS short video]
-    FeedRepo --> Coil[Coil 3<br/>image loader]
+    FeedApi --> Ranker["Ranking + Fan-out<br/>black box"]
+    FeedApi --> CDN["CDN<br/>images + HLS short video"]
+    FeedRepo --> Coil["Coil 3<br/>image loader"]
     FeedRepo --> Media3[Media3 player pool]
     UI --> PushChannel[FCM data messages]
 ```

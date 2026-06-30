@@ -52,9 +52,9 @@ Formulating an SLO requires taking an SLI and attaching a target and a time wind
 ```mermaid
 graph LR
     subgraph The Mathematical Promise
-        SLI[SLI: Startup Time < 1.5s] --> Target[Target: 95%]
+        SLI["SLI: Startup Time < 1.5s"] --> Target[Target: 95%]
         Target --> Window[Window: 30 Days]
-        Window --> SLO[SLO: 95% of Startups < 1.5s over 30 Days]
+        Window --> SLO["SLO: 95% of Startups < 1.5s over 30 Days"]
     end
     
     subgraph The Outcomes

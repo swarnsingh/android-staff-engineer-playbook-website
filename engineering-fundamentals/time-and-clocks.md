@@ -236,9 +236,9 @@ flowchart TB
     end
 
     subgraph Node["Each Node"]
-        Wall[Wall clock<br/>System.currentTimeMillis]
-        Mono[Monotonic clock<br/>System.nanoTime]
-        Logical[Logical clock<br/>Lamport / Vector / HLC]
+        Wall["Wall clock<br/>System.currentTimeMillis"]
+        Mono["Monotonic clock<br/>System.nanoTime"]
+        Logical["Logical clock<br/>Lamport / Vector / HLC"]
     end
 
     GPS --> NTP

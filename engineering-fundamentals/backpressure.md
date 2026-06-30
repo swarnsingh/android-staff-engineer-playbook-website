@@ -169,7 +169,7 @@ A typical async pipeline with explicit backpressure at each stage:
 
 ```mermaid
 flowchart LR
-    Src[Source<br/>e.g. SSE stream] -->|"buffer(64, DROP_OLDEST)"| Stage1[Parse]
+    Src["Source<br/>e.g. SSE stream"] -->|"buffer(64, DROP_OLDEST)"| Stage1[Parse]
     Stage1 -->|"buffer(32)"| Stage2[Enrich]
     Stage2 -->|"conflate"| Stage3[Render]
     Stage3 --> UI[UI]

@@ -157,8 +157,8 @@ Across the whole screen:
 
 ```mermaid
 graph TD
-  Repository[Repository<br/>data source] -->|Flow.collectAsState| VM[ViewModel<br/>screen state holder]
-  VM -->|StateFlow| UI[Composable<br/>renders state]
+  Repository["Repository<br/>data source"] -->|Flow.collectAsState| VM["ViewModel<br/>screen state holder"]
+  VM -->|StateFlow| UI["Composable<br/>renders state"]
   UI -->|events / intents| VM
   VM -->|suspend calls| Repository
 ```

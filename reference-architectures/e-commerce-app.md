@@ -34,7 +34,7 @@
 
 ```mermaid
 flowchart TB
-    UI[Compose UI<br/>catalog + cart + checkout] --> VM[ViewModels]
+    UI["Compose UI<br/>catalog + cart + checkout"] --> VM[ViewModels]
     VM --> CatalogRepo[CatalogRepository]
     VM --> CartRepo[CartRepository]
     VM --> CheckoutRepo[CheckoutRepository]
@@ -42,11 +42,11 @@ flowchart TB
     CatalogRepo --> Pager[Paging 3]
     Pager --> CatalogApi[Catalog BFF]
     CartRepo --> CartRoom[(Room cart cache)]
-    CartRepo --> CartApi[Cart BFF<br/>server-backed]
+    CartRepo --> CartApi["Cart BFF<br/>server-backed"]
     CheckoutRepo --> PaymentApi[Payments BFF]
-    PaymentApi --> PSP[PSP SDK<br/>Stripe/Adyen/Razorpay]
+    PaymentApi --> PSP["PSP SDK<br/>Stripe/Adyen/Razorpay"]
     SearchRepo --> SearchApi[Search BFF]
-    CatalogApi --> Recommend[Recommendations<br/>ML, black box]
+    CatalogApi --> Recommend["Recommendations<br/>ML, black box"]
 ```
 
 The defining property: **the cart is server-side state with a local cache, not local state with server sync**. Cart durability across devices is a feature, not an offline trade-off. The local Room cache is a performance optimization; the source of truth is the cart service.

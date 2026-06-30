@@ -8,14 +8,14 @@
 
 ```mermaid
 graph LR
-  Vsync[Vsync<br/>display tick] --> Input[Input<br/>handle touch]
-  Input --> Animate[Animations<br/>tick choreographer]
-  Animate --> Measure[Measure / Layout<br/>UI thread]
-  Measure --> Draw[Record draw commands<br/>UI thread]
-  Draw --> Sync[Sync display list<br/>to RenderThread]
-  Sync --> RT[RenderThread<br/>translate to GPU]
-  RT --> GPU[GPU executes<br/>OpenGL / Vulkan]
-  GPU --> SF[SurfaceFlinger<br/>composites layers]
+  Vsync["Vsync<br/>display tick"] --> Input["Input<br/>handle touch"]
+  Input --> Animate["Animations<br/>tick choreographer"]
+  Animate --> Measure["Measure / Layout<br/>UI thread"]
+  Measure --> Draw["Record draw commands<br/>UI thread"]
+  Draw --> Sync["Sync display list<br/>to RenderThread"]
+  Sync --> RT["RenderThread<br/>translate to GPU"]
+  RT --> GPU["GPU executes<br/>OpenGL / Vulkan"]
+  GPU --> SF["SurfaceFlinger<br/>composites layers"]
   SF --> Display[Display]
 ```
 

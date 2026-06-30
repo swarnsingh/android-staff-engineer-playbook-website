@@ -132,9 +132,9 @@ Throughput rises with concurrency *up to saturation*. Beyond saturation, through
 
 ```mermaid
 flowchart LR
-    Low[Low concurrency<br/>low throughput<br/>low latency] --> Mid[Optimal concurrency<br/>high throughput<br/>low latency]
-    Mid --> Sat[Saturated<br/>flat throughput<br/>climbing latency]
-    Sat --> Over[Overload<br/>falling throughput<br/>high latency]
+    Low["Low concurrency<br/>low throughput<br/>low latency"] --> Mid["Optimal concurrency<br/>high throughput<br/>low latency"]
+    Mid --> Sat["Saturated<br/>flat throughput<br/>climbing latency"]
+    Sat --> Over["Overload<br/>falling throughput<br/>high latency"]
 ```
 
 The goal of capacity planning is to keep the system in the *Mid* zone — high throughput, predictable latency — and to set load-shedding thresholds before *Sat* tips into *Over*.

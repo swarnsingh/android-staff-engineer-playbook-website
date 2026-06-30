@@ -79,7 +79,7 @@ graph TD
     Launch2 -->|Parent of| Async1
     Launch2 -->|Parent of| Async2
     
-    Note1[If ViewModel dies, ParentJob cancels. <br> The cancellation cascades down instantly.] -.-> ParentJob
+    Note1["If ViewModel dies, ParentJob cancels. <br> The cancellation cascades down instantly."] -.-> ParentJob
 ```
 
 ## Production Example

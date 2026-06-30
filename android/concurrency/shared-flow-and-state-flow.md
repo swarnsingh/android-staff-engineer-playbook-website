@@ -92,7 +92,7 @@ graph TD
         SF -.->|collectAsState| Screen1[Compose Screen]
         ShF -.->|LaunchedEffect| Event[Navigation Event]
         
-        Note1[If Screen rotates, it instantly gets the StateFlow value. <br> It does NOT get the SharedFlow event unless replay > 0] -.-> Screen1
+        Note1["If Screen rotates, it instantly gets the StateFlow value. <br> It does NOT get the SharedFlow event unless replay > 0"] -.-> Screen1
     end
 ```
 

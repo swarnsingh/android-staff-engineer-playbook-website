@@ -80,15 +80,15 @@ metricsClient.histogram(
 graph TD
     subgraph Mobile Client
         C1[Counter++] --> InMem[(In-Memory Aggregator)]
-        G1[Gauge(42)] --> InMem
-        H1[Histogram(120ms)] --> InMem
+        G1["Gauge(42)"] --> InMem
+        H1["Histogram(120ms)"] --> InMem
         InMem -->|Push every 60s| Net[Network]
     end
     
     subgraph Observability Backend
         Net --> TSDB[(Time-Series Database)]
         TSDB --> Dashboard[Grafana / Datadog]
-        TSDB --> Alert[PagerDuty Alert: P99 > 2s]
+        TSDB --> Alert["PagerDuty Alert: P99 > 2s"]
     end
 ```
 

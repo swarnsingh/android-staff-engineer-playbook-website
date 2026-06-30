@@ -33,18 +33,18 @@
 
 ```mermaid
 flowchart TB
-    UI[Compose UI<br/>kitchen view + cashier flow] --> VM[ViewModels]
+    UI["Compose UI<br/>kitchen view + cashier flow"] --> VM[ViewModels]
     VM --> OrdersRepo[OrdersRepository]
     VM --> PaymentRepo[PaymentRepository]
     VM --> InventoryRepo[InventoryRepository]
     VM --> PeripheralMgr[PeripheralManager]
     OrdersRepo --> Room[(Room: orders, items, audit_log)]
-    OrdersRepo --> WS[OrdersSocket<br/>WebSocket persistent]
+    OrdersRepo --> WS["OrdersSocket<br/>WebSocket persistent"]
     OrdersRepo --> RestApi[REST fallback]
-    PaymentRepo --> PinPad[PIN-Pad SDK<br/>EMV/contactless]
+    PaymentRepo --> PinPad["PIN-Pad SDK<br/>EMV/contactless"]
     PaymentRepo --> PaymentApi[Payment BFF]
     InventoryRepo --> Room
-    InventoryRepo --> SyncEngine[SyncEngine<br/>delta + outbox]
+    InventoryRepo --> SyncEngine["SyncEngine<br/>delta + outbox"]
     PeripheralMgr --> Printer[Bluetooth Printer]
     PeripheralMgr --> Scanner[Barcode Scanner]
     PeripheralMgr --> CashDrawer[Cash Drawer]

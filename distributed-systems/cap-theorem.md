@@ -150,20 +150,20 @@ This is not a binary CP/AP choice — it's a dial that trades consistency for av
 flowchart TB
     subgraph CP["CP Systems"]
         direction TB
-        ZK[ZooKeeper] --> Q1[Quorum write<br/>majority must ack]
-        Q1 --> Reject[Reject minority<br/>during partition]
+        ZK[ZooKeeper] --> Q1["Quorum write<br/>majority must ack"]
+        Q1 --> Reject["Reject minority<br/>during partition"]
     end
 
     subgraph AP["AP Systems"]
         direction TB
-        Cass[Cassandra] --> All[Accept writes<br/>on any node]
-        All --> Resolve[Resolve conflicts<br/>after partition heals]
+        Cass[Cassandra] --> All["Accept writes<br/>on any node"]
+        All --> Resolve["Resolve conflicts<br/>after partition heals"]
     end
 
     subgraph Tunable["Tunable Systems"]
         direction TB
-        Dynamo[DynamoDB] --> Per[Per-operation<br/>consistency level]
-        Per --> Strong[Strong: W+R>N]
+        Dynamo[DynamoDB] --> Per["Per-operation<br/>consistency level"]
+        Per --> Strong["Strong: W+R>N"]
         Per --> Event[Eventual: W+R≤N]
     end
 ```

@@ -224,12 +224,12 @@ flowchart LR
     S2 -->|"merge"| S3
     S3 -->|"merge"| S1
 
-    Note1[Each node updates locally<br/>Merge on sync<br/>All converge to same state]
+    Note1["Each node updates locally<br/>Merge on sync<br/>All converge to same state"]
 ```
 
 ```mermaid
 flowchart TB
-    Op[Local Operation<br/>increment / add / remove] --> Local[Update Local State]
+    Op["Local Operation<br/>increment / add / remove"] --> Local[Update Local State]
     Local --> Broadcast[Broadcast State or Op]
     Broadcast --> Peer1[Peer merges]
     Broadcast --> Peer2[Peer merges]

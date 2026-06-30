@@ -33,14 +33,14 @@
 ```mermaid
 flowchart TB
     subgraph DriverApp[Driver App]
-        DUI[Compose UI<br/>map + trip flow]
+        DUI["Compose UI<br/>map + trip flow"]
         DVM[ViewModels]
-        DLoc[LocationStreamer<br/>FusedLocation + foreground service]
+        DLoc["LocationStreamer<br/>FusedLocation + foreground service"]
         DTrip[TripStateMachine]
         DSocket[WebSocket]
     end
     subgraph RiderApp[Rider App]
-        RUI[Compose UI<br/>map + request flow]
+        RUI["Compose UI<br/>map + request flow"]
         RVM[ViewModels]
         RTrip[TripStateMachine]
         RSocket[WebSocket]
@@ -48,9 +48,9 @@ flowchart TB
     DLoc --> DSocket
     DSocket --> Dispatcher[Dispatcher BFF]
     RSocket --> Dispatcher
-    Dispatcher --> LocationIdx[Location Index<br/>H3 / S2 black box]
-    Dispatcher --> Matcher[Matching Engine<br/>black box]
-    Dispatcher --> TripSvc[Trip Service<br/>state authority]
+    Dispatcher --> LocationIdx["Location Index<br/>H3 / S2 black box"]
+    Dispatcher --> Matcher["Matching Engine<br/>black box"]
+    Dispatcher --> TripSvc["Trip Service<br/>state authority"]
     DTrip --> Room[(Room: trip state cache)]
     RTrip --> Room
 ```

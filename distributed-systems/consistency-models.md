@@ -218,18 +218,18 @@ The client tracks its own write version and refuses to read from replicas that h
 ```mermaid
 flowchart TB
     subgraph Strong["Strong Consistency (CP)"]
-        Leader[Single Leader] --> Sync[Synchronous<br/>Replication]
+        Leader[Single Leader] --> Sync["Synchronous<br/>Replication"]
         Sync --> Follower1[Follower 1]
         Sync --> Follower2[Follower 2]
     end
 
     subgraph Causal["Causal Consistency"]
-        Multi[Multi-Leader] --> Track[Version Vectors<br/>per key]
-        Track --> Dep[Dependency<br/>Tracking]
+        Multi[Multi-Leader] --> Track["Version Vectors<br/>per key"]
+        Track --> Dep["Dependency<br/>Tracking"]
     end
 
     subgraph Eventual["Eventual Consistency (AP)"]
-        Any[Any Node<br/>Accepts Writes] --> Async[Async<br/>Replication]
+        Any["Any Node<br/>Accepts Writes"] --> Async["Async<br/>Replication"]
         Async --> Gossip[Gossip / Anti-entropy]
     end
 ```

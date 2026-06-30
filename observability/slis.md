@@ -69,7 +69,7 @@ graph TD
     
     subgraph SRE Definition
         Backend --> Filter[Filter to User-Facing Metrics]
-        Filter --> SLI1[SLI: Startup Time < 1.5s]
+        Filter --> SLI1["SLI: Startup Time < 1.5s"]
         Filter --> SLI2[SLI: Sync Success Rate]
         
         M3 -.->|Ignored for SLI| Trash[Internal Use Only]

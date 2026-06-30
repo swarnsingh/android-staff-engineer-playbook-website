@@ -143,16 +143,16 @@ Three concurrency architectures, with the same I/O workload:
 ```mermaid
 flowchart LR
     subgraph TPR[Thread-per-request]
-        T1[Thread 1<br/>handles req 1] -.blocks on I/O.-> R1[Result 1]
-        T2[Thread 2<br/>handles req 2] -.blocks on I/O.-> R2[Result 2]
-        T3[Thread 3<br/>handles req 3] -.blocks on I/O.-> R3[Result 3]
+        T1["Thread 1<br/>handles req 1"] -.blocks on I/O.-> R1[Result 1]
+        T2["Thread 2<br/>handles req 2"] -.blocks on I/O.-> R2[Result 2]
+        T3["Thread 3<br/>handles req 3"] -.blocks on I/O.-> R3[Result 3]
     end
 ```
 
 ```mermaid
 flowchart LR
     subgraph EL[Event loop]
-        Loop[Single thread<br/>event loop] --> Q[Pending I/Os]
+        Loop["Single thread<br/>event loop"] --> Q[Pending I/Os]
         Q --> Loop
         Loop --> CB1[Callback 1]
         Loop --> CB2[Callback 2]
@@ -162,7 +162,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     subgraph MN[M:N coroutines]
-        Pool[Thread pool<br/>N OS threads] --> Many[Many coroutines<br/>M total]
+        Pool["Thread pool<br/>N OS threads"] --> Many["Many coroutines<br/>M total"]
         Many -.suspend.-> Many
     end
 ```

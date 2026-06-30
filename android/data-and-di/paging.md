@@ -112,7 +112,7 @@ graph TD
     Net -->|Returns JSON| RM
     RM -->|Inserts into| DB
     
-    Note1[The UI never talks to the Network. <br> It only observes the DB via PagingSource.] -.-> DB
+    Note1["The UI never talks to the Network. <br> It only observes the DB via PagingSource."] -.-> DB
 ```
 
 ## Production Example

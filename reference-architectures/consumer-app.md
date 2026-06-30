@@ -32,17 +32,17 @@
 
 ```mermaid
 flowchart TB
-    UI[Compose UI<br/>Lazy lists + Coil 3] --> VM[ViewModels]
+    UI["Compose UI<br/>Lazy lists + Coil 3"] --> VM[ViewModels]
     VM --> Repo[Feature Repositories]
     Repo --> Pager[Pager + RemoteMediator]
     Pager --> RoomCache[(Room<br/>page cache + likes)]
     Pager --> FeedApi[Feed BFF]
-    Repo --> Flags[FlagsRepository<br/>kill switches + experiments]
-    Repo --> Analytics[Analytics SDK<br/>durable queue]
-    Repo --> Telemetry[Telemetry SDK<br/>crashes + perf]
+    Repo --> Flags["FlagsRepository<br/>kill switches + experiments"]
+    Repo --> Analytics["Analytics SDK<br/>durable queue"]
+    Repo --> Telemetry["Telemetry SDK<br/>crashes + perf"]
     Repo --> Push[FCM data messages]
-    FeedApi --> Ranker[Ranking Service<br/>black box]
-    FeedApi --> CDN[CDN<br/>images + video segments]
+    FeedApi --> Ranker["Ranking Service<br/>black box"]
+    FeedApi --> CDN["CDN<br/>images + video segments"]
 ```
 
 The defining property: **the home feed is the product**. Cold start to first useful frame is the metric every other architectural decision serves. Server-side ranker is opaque; the client's job is to display whatever the BFF hands back, fast, and tag every interaction for the next training cycle.

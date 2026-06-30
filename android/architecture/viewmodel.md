@@ -70,7 +70,7 @@ graph TD
     
     subgraph State Layer (Survives Rotation)
         VM[ViewModel]
-        State[StateFlow<UiState>]
+        State["StateFlow<UiState>"]
         VM --> State
     end
     

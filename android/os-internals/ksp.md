@@ -19,7 +19,7 @@ This is how Hilt, Room, Moshi, Dagger, and dozens of other libraries generate th
 ```mermaid
 graph LR
   Source[Your .kt sources] --> Parse[Kotlin compiler]
-  Parse --> Resolver[KSP Resolver<br/>symbol graph]
+  Parse --> Resolver["KSP Resolver<br/>symbol graph"]
   Resolver --> Processor[Your KSP processor]
   Processor --> Generated[Generated .kt files]
   Generated --> Compile[Final compilation]

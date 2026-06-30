@@ -31,17 +31,17 @@
 
 ```mermaid
 flowchart TB
-    UI[Compose UI<br/>FLAG_SECURE screens] --> VM[ViewModels]
+    UI["Compose UI<br/>FLAG_SECURE screens"] --> VM[ViewModels]
     VM --> Repo[Repositories]
-    Repo --> SessionMgr[SessionManager<br/>JWT + rotating refresh]
-    Repo --> BiometricGate[StepUpGate<br/>BiometricPrompt + Keystore]
-    Repo --> CertPinner[CertificatePinner<br/>OkHttp]
+    Repo --> SessionMgr["SessionManager<br/>JWT + rotating refresh"]
+    Repo --> BiometricGate["StepUpGate<br/>BiometricPrompt + Keystore"]
+    Repo --> CertPinner["CertificatePinner<br/>OkHttp"]
     Repo --> Api[Retrofit/OkHttp]
     Api --> BFF[BFF / Gateway]
-    BFF --> Core[Core Banking<br/>ledger, fraud, SCA]
-    BiometricGate --> Keystore[Android Keystore<br/>StrongBox where avail]
+    BFF --> Core["Core Banking<br/>ledger, fraud, SCA"]
+    BiometricGate --> Keystore["Android Keystore<br/>StrongBox where avail"]
     SessionMgr --> EncStore[(EncryptedSharedPreferences<br/>Keystore-wrapped)]
-    Repo --> Attest[Play Integrity<br/>Key Attestation]
+    Repo --> Attest["Play Integrity<br/>Key Attestation"]
     Repo --> Telemetry[Audit Telemetry]
 ```
 

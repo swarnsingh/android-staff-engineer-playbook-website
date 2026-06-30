@@ -27,13 +27,13 @@ Google Play Console reports cold-start time at the 90th percentile. Anything abo
 
 ```mermaid
 graph LR
-  Tap[User taps icon] --> Zygote[Zygote fork<br/>kernel]
-  Zygote --> ClassLoad[Load app classes<br/>DEX]
-  ClassLoad --> App[Application.onCreate<br/>UI thread]
-  App --> ActStart[Activity.onCreate<br/>UI thread]
+  Tap[User taps icon] --> Zygote["Zygote fork<br/>kernel"]
+  Zygote --> ClassLoad["Load app classes<br/>DEX"]
+  ClassLoad --> App["Application.onCreate<br/>UI thread"]
+  App --> ActStart["Activity.onCreate<br/>UI thread"]
   ActStart --> Inflate[Layout inflate / Compose setup]
   Inflate --> Measure[Measure / Layout / Draw]
-  Measure --> FirstFrame[First frame<br/>visible to user]
+  Measure --> FirstFrame["First frame<br/>visible to user"]
   FirstFrame --> NetworkFetch[First network calls / DB queries]
 ```
 
