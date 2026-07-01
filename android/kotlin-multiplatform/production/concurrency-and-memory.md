@@ -284,7 +284,7 @@ class ProfileViewModelObserver: ObservableObject {
 2. If you forget `DispatchQueue.main.async`, SwiftUI crashes because you're updating `@Published` from a background thread.
 3. The `[weak self]` is mandatory. Without it, the closure captures `self` strongly → cross-boundary reference cycle → neither the Swift object nor the Kotlin Job is ever freed.
 
-### With SKIE (Automatic Collection)
+### With SKIE or Kotlin 2.4 Swift Export
 
 ```swift
 struct ProfileScreen: View {
@@ -300,11 +300,18 @@ struct ProfileScreen: View {
             }
         }
         .task {
-            // SKIE converts StateFlow to AsyncSequence
-            // .task automatically cancels when the View disappears
-            // Which cancels the Kotlin Job through SKIE's bridge
-            for await newState in viewModel.state {
-                self.state = newState
+            do {
+                // Kotlin 2.4 Swift Export exposes StateFlow/Flow
+                // as Swift AsyncSequence via asAsyncSequence().
+                // .task automatically cancels when the View disappears,
+                // which cancels the Kotlin collection job through the bridge.
+                for try await newState in viewModel.state.asAsyncSequence() {
+                    self.state = newState
+                }
+            } catch is CancellationError {
+                // Normal SwiftUI view-disappearance cancellation.
+            } catch {
+                // Surface as state or telemetry in production code.
             }
         }
         .onAppear {
@@ -314,11 +321,20 @@ struct ProfileScreen: View {
 }
 ```
 
-**What SKIE does internally:**
-1. Generates a Swift `AsyncSequence` wrapper around the Kotlin `StateFlow`.
-2. The `AsyncSequence` internally launches a Kotlin `coroutine` that calls `StateFlow.collect`.
-3. When Swift's `Task` is cancelled (e.g., View disappears), SKIE calls `Job.cancel()` on the Kotlin side.
-4. The Kotlin coroutine throws `CancellationException`, which unwinds the coroutine stack and releases all references.
+**What the AsyncSequence bridge does internally:**
+1. Exposes the Kotlin `Flow`/`StateFlow` as a Swift `AsyncSequence`.
+2. Starts a Kotlin coroutine that calls `Flow.collect`.
+3. When Swift's `Task` is cancelled (e.g., View disappears), the bridge cancels the Kotlin collection job.
+4. The Kotlin coroutine throws `CancellationException`, which unwinds the coroutine stack and releases references.
+
+Kotlin 2.4 Swift export enables Flow-to-`AsyncSequence` export by default and preserves public Flow element types. It is still Alpha, so production teams may keep SKIE or explicit wrappers when they need a mature generated Swift API. One important dispatcher detail remains: exported suspend functions and `asAsyncSequence()` use a Kotlin coroutine context backed by `Dispatchers.Default` unless the Kotlin implementation switches context explicitly.
+
+```kotlin
+suspend fun loadProfileOnMain(): Profile =
+    withContext(Dispatchers.Main) {
+        repository.loadProfile()
+    }
+```
 
 ---
 

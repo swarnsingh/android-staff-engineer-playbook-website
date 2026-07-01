@@ -23,7 +23,7 @@ However, `LiveData` had massive flaws:
 2. It operates exclusively on the Main Thread.
 3. It has extremely limited transformation operators compared to RxJava.
 
-In 2019, Kotlin introduced `Flow`. It was pure Kotlin (platform-agnostic), thread-safe, and had operators matching RxJava. Google officially deprecated `LiveData` for modern architectures in favor of `StateFlow` and `SharedFlow`.
+In 2019, Kotlin introduced `Flow`. It was pure Kotlin (platform-agnostic), thread-safe, and had operators matching RxJava. Google has not needed to remove `LiveData`, but modern Android architecture guidance strongly favors `Flow`, `StateFlow`, and lifecycle-aware collection for new Kotlin-first codebases.
 
 ## First Principles
 
@@ -127,8 +127,8 @@ class UserViewModel @Inject constructor(
     - *Pros:* Always has a value. Conflates identical values (if you emit "A" then "A", the UI only updates once). Perfect for UI State.
     - *Cons:* Requires `collectAsStateWithLifecycle` in Compose to avoid memory leaks.
 - **`SharedFlow`:** 
-    - *Pros:* Can emit the exact same value twice in a row. Can have zero initial value. Perfect for "One-off Events" (like showing a Toast or triggering Navigation).
-    - *Cons:* Highly complex configuration (replay caches, buffer overflow strategies). If no one is listening when an event fires, the event is permanently lost.
+    - *Pros:* Can emit the exact same value twice in a row. Can have zero initial value. Useful for broadcast streams where replay, buffering, and loss behavior are explicit.
+    - *Cons:* Highly complex configuration (replay caches, buffer overflow strategies). A default `MutableSharedFlow` drops values emitted with no subscribers, which makes it risky for critical one-off UI effects like navigation.
 
 ## Failure Modes
 
@@ -155,9 +155,9 @@ class UserViewModel @Inject constructor(
 
 When reviewing reactive architectures, a Staff engineer focuses on the "Cold to Hot" pivot point:
 
-1.  **Where does the flow get hot?** Data sources (Room, Retrofit, DataStore) should always return Cold flows. The UI should always consume Hot flows (`StateFlow`). The exact boundary where Cold turns to Hot must be the `ViewModel` via `.stateIn()`. If a Repository returns a `StateFlow`, it is caching data globally and creating a memory leak.
-2.  **Are we using `WhileSubscribed(5000)`?** When converting to `StateFlow`, we must use `SharingStarted.WhileSubscribed(5000)`. If the user rotates their phone, the UI disappears for a few milliseconds. If we used `Eagerly` or `Lazily`, the flow would instantly tear down and restart the upstream database query. The 5000ms delay acts as a debouncer, keeping the flow alive during the brief rotation.
-3.  **One-off Events vs State:** I will aggressively challenge developers using `SharedFlow` to send "Show Error Toast" events. Single events are notoriously flaky in reactive streams. If the app is in the background when the error fires, the `SharedFlow` drops it, and the user never sees the Toast. I advocate for modeling errors as persistent State (e.g., `errorMessages: List<String>`) that the UI displays and then explicitly dismisses.
+1.  **Where does the flow get hot?** Data sources (Room, Retrofit, DataStore) should usually return Cold flows. The UI should usually consume Hot `StateFlow`. The default boundary where Cold turns to Hot is the ViewModel via `.stateIn()`. A repository can return hot state only when it is intentionally acting as a scoped cache or app-wide state holder.
+2.  **Are we using the right `SharingStarted` strategy?** `SharingStarted.WhileSubscribed(5000)` is a strong Android default because it keeps upstream work alive across quick rotations and navigation transitions. `Eagerly`, `Lazily`, and custom `WhileSubscribed` parameters are valid when the resource and replay contract justify them.
+3.  **One-off Events vs State:** I challenge `SharedFlow` for "Show Error Toast" and navigation unless loss/replay semantics are explicit. If the app is in the background when a default `SharedFlow` emits, the event is dropped. Important user-visible effects should usually be modeled as pending state that the UI displays and then explicitly dismisses.
 
 ## Common Misconceptions
 
@@ -168,7 +168,7 @@ When reviewing reactive architectures, a Staff engineer focuses on the "Cold to 
 
 1.  Explain the fundamental difference between a Cold Flow and a Hot Flow (StateFlow/SharedFlow).
 2.  What happens to a standard `flow { }` block if no one ever calls `.collect()` on it?
-3.  Why did Google officially recommend migrating away from `LiveData` to `StateFlow`? Give at least two architectural reasons.
+3.  Why does modern Android guidance favor `Flow`/`StateFlow` over `LiveData` for new Kotlin-first architectures? Give at least two reasons.
 4.  Explain how Backpressure is handled naturally in Kotlin Flow compared to RxJava. (Hint: Look at the `suspend` keyword).
 5.  What is the `StateFlow` conflation property, and why does it make `StateFlow` inappropriate for emitting "One-off Events" like Navigation triggers?
 6.  Describe the memory leak that occurs when collecting a Flow in a Fragment using `lifecycleScope.launch` instead of `viewLifecycleOwner.repeatOnLifecycle`.

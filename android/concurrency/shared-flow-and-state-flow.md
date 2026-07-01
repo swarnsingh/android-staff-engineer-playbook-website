@@ -2,219 +2,581 @@
 
 ## Overview
 
-In the [Flow architecture](../architecture/flow.md), we established the difference between Cold streams (which only run when collected) and Hot streams (which run constantly). 
+`StateFlow` and `SharedFlow` are Kotlin's main hot-flow primitives. They are both always-live stream objects, but they solve different problems:
 
-`SharedFlow` and `StateFlow` are the two concrete implementations of Hot streams in Kotlin. They are the absolute standard for managing UI State and Unidirectional Data Flow (UDF) in modern Android. 
+- `StateFlow` models current state.
+- `SharedFlow` broadcasts values to active subscribers with configurable replay and buffering.
 
-A Staff Engineer must deeply understand the nuanced differences between the two, particularly around *Conflation*, *Replay Caches*, and why using `SharedFlow` for one-off events (like Toasts or Navigation) is an architectural minefield.
+The practical Android question is not "which one is newer?" It is: what delivery contract does this feature need under rotation, backgrounding, slow collectors, process death, and multiple subscribers?
 
-## Why It Matters
+## Decision Matrix
 
-If you use a standard Cold `Flow` in your UI, every single screen rotation will re-trigger the underlying database query or network request, destroying battery life and API quotas.
-
-To solve this, we must pivot from Cold to Hot in the `ViewModel`. But which Hot flow do we choose? 
-- Choose `StateFlow` incorrectly, and your "Show Error Toast" event might trigger 5 times.
-- Choose `SharedFlow` incorrectly, and your UI might never render because the event fired while the screen was in the background and was permanently lost.
-
-## Historical Context
-
-Before Kotlin Flow, the standard for Android UI state was `LiveData`. `LiveData` is inherently a state holder: it always holds the "latest" value, and new observers instantly receive that latest value upon subscription. 
-
-When Google pushed the community to migrate from `LiveData` to `Flow`, they needed a direct replacement. `StateFlow` was created explicitly to replace `LiveData`. 
-
-However, `LiveData` had a famous flaw: the "Single Live Event" problem. Developers hacked `LiveData` to send one-off events (like "Navigate to Checkout"), but because `LiveData` holds state, rotating the screen caused the "Navigate" event to fire *again*. `SharedFlow` was introduced as a highly configurable broadcast channel that could solve these event-routing problems without holding permanent state.
-
-## First Principles
-
-1.  **`StateFlow` (The Current Truth):** 
-    - It ALWAYS has a value (requires an initial value).
-    - It conflates identical emissions (if you emit `Loading` and then emit `Loading` again, the observers are only notified *once*).
-    - It acts exactly like a variable that you can observe.
-2.  **`SharedFlow` (The Broadcast Tower):** 
-    - It does NOT require an initial value.
-    - It does NOT conflate (if you emit `"Error"` twice, observers receive `"Error"` twice).
-    - Highly configurable: you can set the `replay` cache size (how many past events a new subscriber receives) and `extraBufferCapacity` (how many events to queue if the subscribers are slow).
+| Need | Use | Why | Avoid |
+|---|---|---|---|
+| Current screen state | `StateFlow<UiState>` | Always has a value and replays latest to new collectors | `SharedFlow` with replay as fake state |
+| Derived UI state from repository Flow | `stateIn(viewModelScope, ...)` | Converts cold stream to hot state at ViewModel boundary | Hot repository state unless it is an intentional cache |
+| Broadcast app updates to many active collectors | `SharedFlow<T>` | One emission can reach many subscribers | `Channel`, because normal channels are point-to-point |
+| One worker should receive each item | `Channel<T>` | Queue/point-to-point semantics | `SharedFlow`, because every subscriber may see the value |
+| Latest-only high-frequency values | `StateFlow` or conflated stream | Old values are stale | Lossless queues that grow under pressure |
+| Critical business progress | Durable state/outbox | Survives process death and backgrounding | In-memory flow events |
+| Ephemeral UI effect where loss is acceptable | `Channel` or carefully configured `SharedFlow` | Contract is explicit and scoped | Treating it as reliable delivery |
+| Callback/listener API | `callbackFlow` | Registration tied to collection and cancellation | Manually managed global listeners |
 
 ## Mental Model
 
-**`StateFlow` is a Thermostat on a wall.**
-- It always displays a temperature (initial value).
-- If you walk into the room (subscribe), you instantly see the current temperature.
-- If the temperature changes from 70° to 71°, it updates.
-- If the heater tries to change it from 70° to 70° (conflation), the display doesn't change.
+`StateFlow` is an observable variable.
 
-**`SharedFlow` is a Radio Station.**
-- It broadcasts songs. If no one is tuned in, the song is played to an empty room and is lost forever.
-- If you tune in halfway through a song, you only hear the rest of the song; you don't hear the start (unless the station has a `replay` cache).
-- If the station plays "Stairway to Heaven" twice in a row (no conflation), you hear it twice in a row.
+- It always has a current value.
+- A new collector immediately receives the current value.
+- Setting an equal value does not emit a new value.
+- Slow collectors skip intermediate updates and receive the latest.
 
-## Internal Mechanics
+`SharedFlow` is a broadcast hub.
 
-### StateFlow
+- It may have no initial value.
+- It can replay zero or more past values to new collectors.
+- It does not conflate equal values.
+- Its buffering and suspension behavior depend on configuration and subscriber speed.
 
-Under the hood, `StateFlow` is actually just a highly specific configuration of a `SharedFlow`. 
+`Channel` is a queue.
 
-```kotlin
-// The literal source code of MutableStateFlow inside the Kotlin Coroutines library
-public fun <T> MutableStateFlow(value: T): MutableStateFlow<T> = 
-    StateFlowImpl(value ?: NULL)
-```
-A `StateFlow` is functionally equivalent to a `SharedFlow` created with:
-- `replay = 1` (Always remembers the last emitted value)
-- `onBufferOverflow = BufferOverflow.DROP_OLDEST` (If a new value comes in, drop the old one instantly)
-- An internal check that ignores `emit(x)` if `x == currentValue`.
+- A normal channel value is consumed by one receiver.
+- It is useful for work distribution and point-to-point handoff.
+- It is not a broadcast primitive.
 
-### SharedFlow
+## StateFlow Deep Dive
 
-A `SharedFlow` maintains an internal `Array` buffer. 
-- The **Replay Cache** determines how many items are kept in memory for *new* subscribers.
-- The **Extra Buffer Capacity** determines how many items are kept in memory for *slow* active subscribers.
+### Current value and initial value
 
-If the buffer is totally full and a new emission occurs, the `onBufferOverflow` strategy dictates what happens:
-- `SUSPEND`: (Default) The producer (the `emit()` call) suspends and waits for the subscribers to catch up.
-- `DROP_OLDEST`: The oldest event is deleted to make room. (The producer never suspends).
-- `DROP_LATEST`: The new event is ignored. (The producer never suspends).
-
-## Architecture
-
-```mermaid
-graph TD
-    subgraph "ViewModel"
-        Cold[Cold Flow from Repo]
-        
-        Cold -->|stateIn| SF[StateFlow]
-        Cold -->|shareIn| ShF[SharedFlow]
-        
-        SF -->|Always holds 1 Value| Val[Current UI State]
-    end
-    
-    subgraph "UI Layer"
-        SF -.->|collectAsState| Screen1[Compose Screen]
-        ShF -.->|LaunchedEffect| Event[Navigation Event]
-        
-        Note1["If Screen rotates, it instantly gets the StateFlow value. <br> It does NOT get the SharedFlow event unless replay > 0"] -.-> Screen1
-    end
-```
-
-## Production Example
-
-**The Pivot in the ViewModel**
-
-We almost never instantiate `MutableSharedFlow` directly if we are reading from a database. We use the `.stateIn()` and `.shareIn()` operators to pivot Cold streams to Hot streams.
+`MutableStateFlow` requires an initial value.
 
 ```kotlin
-class ProfileViewModel(private val repository: UserRepository) : ViewModel() {
+private val _state = MutableStateFlow(ProfileUiState.Loading)
+val state: StateFlow<ProfileUiState> = _state.asStateFlow()
+```
 
-    // 1. STATEFLOW: For the UI State (Thermometer)
-    // We use WhileSubscribed(5000) so that if the user rotates the screen,
-    // the Flow stays alive for 5 seconds, preventing the upstream DB from restarting.
-    val uiState: StateFlow<ProfileState> = repository.getUserProfile()
-        .map { ProfileState.Success(it) }
+That requirement is a feature, not ceremony. A UI can always render something.
+
+```kotlin
+@Composable
+fun ProfileRoute(viewModel: ProfileViewModel) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    ProfileScreen(state)
+}
+```
+
+### Atomic updates
+
+Prefer `update { }` for state transitions based on the previous value.
+
+```kotlin
+_state.update { current ->
+    current.copy(
+        isLoading = false,
+        profile = profile
+    )
+}
+```
+
+This is atomic and safe when multiple coroutines update the same `MutableStateFlow`. Avoid read-modify-write patterns for concurrent updates:
+
+```kotlin
+// Risky under concurrency
+_state.value = _state.value.copy(count = _state.value.count + 1)
+
+// Better
+_state.update { it.copy(count = it.count + 1) }
+```
+
+### Equality conflation
+
+`StateFlow` uses equality to suppress duplicate emissions. If `newValue == oldValue`, collectors are not notified.
+
+This is ideal for UI state. Re-rendering the same state is wasted work.
+
+It becomes a bug when state contains mutable objects.
+
+```kotlin
+data class CartState(val items: List<Item>)
+
+val mutableItems = _state.value.items as MutableList<Item>
+mutableItems.add(newItem)
+_state.value = _state.value.copy(items = mutableItems)
+```
+
+If the old and new state compare equal because the same list instance was mutated, the UI may not update. Use immutable data and create new collections.
+
+```kotlin
+_state.update { current ->
+    current.copy(items = current.items + newItem)
+}
+```
+
+### StateFlow as a special SharedFlow
+
+Conceptually, `StateFlow` behaves like a `SharedFlow` configured with:
+
+- `replay = 1`
+- latest-value replacement
+- equality-based `distinctUntilChanged`
+- a synchronous `.value` property
+
+But do not treat it as just "SharedFlow with replay 1." `StateFlow` has a stronger state contract:
+
+- It always has an initial value.
+- It exposes `.value`.
+- It conflates equal values.
+- It does not support `resetReplayCache`.
+
+### Combining StateFlows
+
+Use `combine` for derived state.
+
+```kotlin
+val uiState: StateFlow<HomeUiState> =
+    combine(user, notifications, connectivity) { user, notifications, connectivity ->
+        HomeUiState(
+            user = user,
+            unreadCount = notifications.count { !it.read },
+            offline = !connectivity.isOnline
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = HomeUiState.Loading
+    )
+```
+
+`combine` emits after each upstream has emitted at least once, then emits whenever any upstream changes.
+
+## SharedFlow Deep Dive
+
+### Replay cache
+
+`replay` controls how many past values a new subscriber receives.
+
+```kotlin
+private val _prices = MutableSharedFlow<Price>(replay = 5)
+val prices: SharedFlow<Price> = _prices.asSharedFlow()
+```
+
+A new collector immediately receives up to five cached prices, then live prices.
+
+Inspecting replay:
+
+```kotlin
+val cached: List<Price> = _prices.replayCache
+```
+
+Resetting replay:
+
+```kotlin
+_prices.resetReplayCache()
+```
+
+Use `resetReplayCache` carefully. It only exists on `MutableSharedFlow`, and it changes what future subscribers see. Active subscribers are not "un-emitted."
+
+### Extra buffer capacity
+
+`extraBufferCapacity` lets slow active subscribers lag behind without suspending emitters immediately.
+
+```kotlin
+private val _gps = MutableSharedFlow<Location>(
+    replay = 1,
+    extraBufferCapacity = 16,
+    onBufferOverflow = BufferOverflow.DROP_OLDEST
+)
+```
+
+The contract here is explicit: keep the latest location for new subscribers, tolerate short bursts, and drop old values when the consumer cannot keep up.
+
+### No-subscriber behavior
+
+This is the detail that breaks many Android event implementations.
+
+For `MutableSharedFlow`:
+
+- If there are no subscribers, only `replay` values are stored.
+- `extraBufferCapacity` does not store values for future subscribers by itself.
+- Buffer overflow strategy is not triggered without at least one slow subscriber.
+- A default `MutableSharedFlow()` has `replay = 0` and no buffer, so values emitted with no subscribers are lost immediately.
+
+```kotlin
+val events = MutableSharedFlow<String>()
+
+events.emit("Navigate") // returns immediately if there are no subscribers
+// No replay, no subscriber, value is gone.
+```
+
+### `emit` vs `tryEmit`
+
+| API | Suspends? | Success meaning | Dangerous misconception |
+|---|---:|---|---|
+| `emit(value)` | Yes | Value accepted according to flow config | "It always waits for a future subscriber" |
+| `tryEmit(value)` | No | Value accepted immediately | "true means a subscriber received it" |
+
+For a default unbuffered `MutableSharedFlow()`:
+
+- `emit` suspends until all active subscribers receive the value.
+- If there are no subscribers, `emit` returns immediately and the value is lost.
+- `tryEmit` succeeds only when there are no subscribers, and in that case the value is immediately lost.
+
+That last bullet surprises people. `tryEmit(true)` does not mean "delivered." It means "accepted by the configured SharedFlow without suspension."
+
+### `subscriptionCount`
+
+`MutableSharedFlow.subscriptionCount` is a `StateFlow<Int>` with the number of active collectors.
+
+```kotlin
+locationUpdates.subscriptionCount
+    .map { count -> count > 0 }
+    .distinctUntilChanged()
+    .onEach { active ->
+        if (active) gps.start() else gps.stop()
+    }
+    .launchIn(appScope)
+```
+
+Use it for resource management, metrics, or debugging. Do not use it as a correctness gate for critical event delivery because subscribers can appear or disappear immediately after the check.
+
+### SharedFlow never completes
+
+`SharedFlow.collect` never completes normally. It also cannot be closed like a channel. If a shared stream needs to represent completion or failure, materialize that as data:
+
+```kotlin
+sealed interface SyncSignal {
+    data object Started : SyncSignal
+    data class Progress(val percent: Int) : SyncSignal
+    data class Failed(val cause: SyncFailure) : SyncSignal
+    data object Complete : SyncSignal
+}
+```
+
+## `stateIn` and `shareIn`
+
+Cold flows become hot with `stateIn` or `shareIn`.
+
+```kotlin
+val uiState: StateFlow<ProfileUiState> =
+    repository.observeProfile()
+        .map(ProfileUiState::Content)
+        .catch { emit(ProfileUiState.Error) }
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = ProfileState.Loading
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = ProfileUiState.Loading
         )
+```
 
-    // 2. SHAREDFLOW: For a continuous stream of background updates (Radio Station)
-    // Example: A WebSocket ticker of live prices. We don't need an initial value,
-    // but we want the last 5 prices to be replayed if the user rotates the phone.
-    val priceTicker: SharedFlow<Price> = repository.getLivePrices()
+```kotlin
+val livePrices: SharedFlow<Price> =
+    repository.observePrices()
         .shareIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            replay = 5 // Keep the last 5 prices for new subscribers
+            started = SharingStarted.WhileSubscribed(5_000),
+            replay = 1
         )
+```
+
+### SharingStarted strategies
+
+| Strategy | Behavior | Use when | Risk |
+|---|---|---|---|
+| `Eagerly` | Starts upstream immediately | App-wide singleton cache, metrics stream | Wastes work if nobody needs it |
+| `Lazily` | Starts when first subscriber appears, then keeps running | Warm cache after first use | Can keep work alive longer than expected |
+| `WhileSubscribed()` | Starts with subscribers, stops without subscribers | UI-bound streams | May restart frequently |
+| `WhileSubscribed(5_000)` | Delays stop after last subscriber | Android rotation/navigation gaps | Timeout must match expected lifecycle gaps |
+| `WhileSubscribed(stopTimeoutMillis, replayExpirationMillis)` | Separately controls upstream stop and replay reset | Sensitive/stale replay data | Incorrect replay expiration causes stale or missing UI |
+
+For Android ViewModels, `SharingStarted.WhileSubscribed(5_000)` is a strong default for UI state derived from cold streams. It avoids restarting upstream work during quick configuration changes.
+
+Use `replayExpirationMillis = 0` when replayed data must be reset as soon as the stream stops:
+
+```kotlin
+SharingStarted.WhileSubscribed(
+    stopTimeoutMillis = 5_000,
+    replayExpirationMillis = 0
+)
+```
+
+For `stateIn`, replay reset returns to the original `initialValue`. For `shareIn`, replay reset clears the replay cache.
+
+## Lifecycle-Safe Collection
+
+In Compose:
+
+```kotlin
+val state by viewModel.uiState.collectAsStateWithLifecycle()
+```
+
+For one-off collection in Compose, use `LaunchedEffect` and lifecycle-aware flow collection when needed.
+
+```kotlin
+LaunchedEffect(viewModel) {
+    viewModel.effects.collect { effect ->
+        when (effect) {
+            is UiEffect.ShowToast -> snackbarHostState.showSnackbar(effect.message)
+        }
+    }
 }
 ```
 
-## Tradeoffs
-
-**The Single-Event Dilemma (The Anti-Pattern)**
-
-A very common pattern is using `SharedFlow` for one-off events (Toasts, Navigation):
+In Views/Fragments:
 
 ```kotlin
-// THE DANGEROUS APPROACH
-private val _events = MutableSharedFlow<String>()
+viewLifecycleOwner.lifecycleScope.launch {
+    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+        viewModel.uiState.collect { state ->
+            render(state)
+        }
+    }
+}
+```
+
+Do not collect a UI flow with plain `lifecycleScope.launch { collect { } }` from a Fragment view. The collector can outlive the view and keep doing work while stopped.
+
+## The Single-Event Problem
+
+The common anti-pattern:
+
+```kotlin
+private val _events = MutableSharedFlow<UiEvent>()
 val events = _events.asSharedFlow()
 
-fun login() {
+fun onLoginSuccess() {
     viewModelScope.launch {
-        _events.emit("NavigateToHome")
+        _events.emit(UiEvent.NavigateHome)
     }
 }
 ```
 
-**Why this is dangerous:**
-If the user clicks "Login", and immediately backgrounds the app, the UI is `onStop()`. The UI is no longer collecting the `SharedFlow` (because we use `repeatOnLifecycle`).
-The ViewModel calls `_events.emit("NavigateToHome")`. Because `SharedFlow` has no replay cache (by default), it broadcasts the event to an empty room. The event is **permanently lost**. When the user re-opens the app, they are stuck on the Login screen forever.
+If the UI is stopped when the event is emitted, the default `SharedFlow` has no subscriber and no replay. The navigation event is lost.
 
-**The Staff Engineer Fix:**
-Never model one-off events as streams. Model them as State.
+Adding `replay = 1` creates a different bug: a new collector may receive old navigation after rotation or after returning to the screen unless the replay cache is reset carefully.
+
+## Event-as-State Pattern
+
+For effects the user must see, model pending work as state with stable IDs.
 
 ```kotlin
-// THE SAFE APPROACH (State)
-data class UiState(
-    val isLoading: Boolean = false,
-    val errorMessages: List<String> = emptyList() // Events are state!
+data class UiMessage(
+    val id: String,
+    val text: String
 )
 
-// UI Layer (Compose):
-val error = state.errorMessages.firstOrNull()
-if (error != null) {
-    LaunchedEffect(error) {
-        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
-        // Explicitly tell the ViewModel the event was consumed!
-        viewModel.onErrorConsumed(error)
+data class LoginUiState(
+    val isLoading: Boolean = false,
+    val pendingMessages: List<UiMessage> = emptyList(),
+    val destination: Destination? = null
+)
+```
+
+ViewModel:
+
+```kotlin
+fun onLoginFailed(error: LoginError) {
+    _state.update { current ->
+        current.copy(
+            isLoading = false,
+            pendingMessages = current.pendingMessages + UiMessage(
+                id = newMessageId(),
+                text = error.userMessage
+            )
+        )
+    }
+}
+
+fun onMessageShown(id: String) {
+    _state.update { current ->
+        current.copy(
+            pendingMessages = current.pendingMessages.filterNot { it.id == id }
+        )
     }
 }
 ```
 
-## Failure Modes
+`newMessageId()` can be backed by any app-approved unique ID strategy. The important part is that each pending message has a stable identity for Compose effects and explicit consumption.
 
-- **Suspension on `SharedFlow` with slow collectors:**
-  By default, `MutableSharedFlow` has a buffer of 0 and `onBufferOverflow = SUSPEND`.
-  If you call `_sharedFlow.emit(data)` from a coroutine, and *there are zero subscribers*, the emission is dropped immediately. However, if there is an *active subscriber but it is slow* to process the data, the `emit()` function will suspend. The emitting coroutine freezes until the subscriber catches up, causing a massive logic bug.
-  *(Fix: If you cannot tolerate blocking the emitter, use `tryEmit()`, or configure the `SharedFlow` with `extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST`).*
-- **Accidental Conflation with Data Classes:**
-  ```kotlin
-  data class ScreenState(val list: List<Item>)
-  
-  // If you mutate the list in-place and re-emit the EXACT SAME ScreenState object instance...
-  val mutableList = state.value.list as MutableList
-  mutableList.add(newItem)
-  _state.value = ScreenState(mutableList) 
-  ```
-  `StateFlow` checks `oldValue == newValue`. Because it is the exact same object instance in memory, `equals()` returns true. The `StateFlow` conflates the emission. The UI never updates.
-  *(Fix: Never mutate data classes. Always use `.copy()` with immutable lists (`toList()`)).*
+Compose:
 
-## Staff Engineer Thinking
+```kotlin
+val message = state.pendingMessages.firstOrNull()
 
-1.  **State vs Events:** I actively reject PRs that use `SharedFlow` to trigger Navigation or Toasts unless the engineer can prove they have perfectly handled the background-drop scenario (which is nearly impossible). Events should be modeled as consumable state inside the `StateFlow`.
-2.  **The Pivot Boundary:** I verify that `stateIn` or `shareIn` is only used at the exact boundary between the Domain/Data layer and the UI layer (inside the ViewModel). If a `Repository` uses `stateIn`, it is caching data globally in an Application Scope, creating an immortal memory leak unless explicitly designed as a global cache.
-3.  **Buffer Overflow Strategies:** If I see a custom `MutableSharedFlow`, I interrogate the `onBufferOverflow` strategy. Does the developer actually want the producer to suspend if the consumer is slow? Usually, they want `DROP_OLDEST` (e.g., dropping old GPS coordinates in favor of new ones).
+LaunchedEffect(message?.id) {
+    if (message != null) {
+        snackbarHostState.showSnackbar(message.text)
+        viewModel.onMessageShown(message.id)
+    }
+}
+```
+
+This survives rotation because the pending message is part of state. It avoids replay cache hacks because consumption is explicit.
+
+For navigation, prefer durable screen state:
+
+```kotlin
+if (state.destination == Destination.Home) {
+    LaunchedEffect(Unit) {
+        navController.navigate("home") {
+            popUpTo("login") { inclusive = true }
+        }
+        viewModel.onNavigationHandled()
+    }
+}
+```
+
+If navigation represents critical business progress, persist the underlying progress, not just an in-memory event.
+
+## When SharedFlow Effects Are Acceptable
+
+`SharedFlow` can still be fine for ephemeral effects when loss is acceptable and documented.
+
+Examples:
+
+- Debug toasts.
+- Haptic pulse while a visible control is pressed.
+- Analytics/debug stream for currently visible developer tooling.
+- Non-critical UI animation cues.
+
+Make the contract explicit:
+
+```kotlin
+private val _effects = MutableSharedFlow<UiEffect>(
+    replay = 0,
+    extraBufferCapacity = 1,
+    onBufferOverflow = BufferOverflow.DROP_OLDEST
+)
+val effects = _effects.asSharedFlow()
+
+fun pulse() {
+    _effects.tryEmit(UiEffect.HapticPulse)
+}
+```
+
+This says: keep at most one pending effect for slow active collectors; drop old effects; do not replay to future collectors.
+
+## Testing
+
+### StateFlow value assertions
+
+```kotlin
+@Test
+fun incrementsAtomically() = runTest {
+    val viewModel = CounterViewModel()
+
+    coroutineScope {
+        repeat(100) {
+            launch { viewModel.increment() }
+        }
+    }
+
+    assertEquals(100, viewModel.state.value.count)
+}
+```
+
+The implementation should use `_state.update { }`, not read-modify-write.
+
+### Testing StateFlow emissions with Turbine
+
+```kotlin
+@Test
+fun emitsLoadingThenContent() = runTest {
+    viewModel.uiState.test {
+        assertEquals(ProfileUiState.Loading, awaitItem())
+
+        repository.emit(Profile("Asha"))
+
+        assertEquals(ProfileUiState.Content("Asha"), awaitItem())
+        cancelAndIgnoreRemainingEvents()
+    }
+}
+```
+
+### Testing SharedFlow no-subscriber behavior
+
+```kotlin
+@Test
+fun defaultSharedFlowDropsWithoutSubscribers() = runTest {
+    val events = MutableSharedFlow<String>()
+
+    events.emit("lost")
+
+    events.test {
+        expectNoEvents()
+        cancelAndIgnoreRemainingEvents()
+    }
+}
+```
+
+### Testing lifecycle-sensitive event-as-state
+
+```kotlin
+@Test
+fun messageStaysPendingUntilConsumed() = runTest {
+    viewModel.onLoginFailed(LoginError.Network)
+
+    val message = viewModel.state.value.pendingMessages.single()
+    assertEquals("Network unavailable", message.text)
+
+    viewModel.onMessageShown(message.id)
+
+    assertTrue(viewModel.state.value.pendingMessages.isEmpty())
+}
+```
+
+## KMP and Kotlin 2.4 Note
+
+Kotlin 2.4 Swift export can export `kotlinx.coroutines` Flow APIs to Swift as `AsyncSequence` with type information preserved. That improves the KMP story for `StateFlow` and `SharedFlow`, but it does not change the semantics described above:
+
+- `StateFlow` is still current state.
+- `SharedFlow` is still broadcast with replay/buffer rules.
+- The Swift collector must still be cancelled with Swift task lifecycle.
+- Exported Flow collection uses Kotlin coroutine dispatching under the hood; switch dispatchers in Kotlin when Main confinement is required.
+
+Treat Swift export as an interop surface, not as a semantic adapter that makes event delivery reliable.
+
+## Staff Engineer Review Checklist
+
+- Is the primitive chosen from a delivery contract, not taste?
+- Does UI state use `StateFlow` and immutable state objects?
+- Are state transitions based on previous state using `update { }`?
+- Are one-off critical effects modeled as state or durable progress?
+- If `SharedFlow` is used, are `replay`, `extraBufferCapacity`, and `onBufferOverflow` justified?
+- Does the team understand no-subscriber behavior?
+- Are `tryEmit` results handled when drops matter?
+- Is `subscriptionCount` used only for resource management, not correctness?
+- Is `stateIn`/`shareIn` scoped to the right owner?
+- Does `SharingStarted` match lifecycle and resource cost?
+- Are hot-flow tests finite through Turbine, `first`, `take`, or explicit cancellation?
 
 ## Common Misconceptions
 
-- **"I should use `SharedFlow` because I have multiple UI subscribers."** False. You can have 10 different Compose screens collect the exact same `StateFlow`. "Shared" just means the upstream flow is shared, not that it is specifically designed for multiple distinct UI elements.
-- **"I can check the current value of a `SharedFlow`."** False. Unlike `StateFlow`, `SharedFlow` has no `.value` property. It does not hold state. If you need to check the current value synchronously without suspending, you must use `StateFlow`.
+- "`SharedFlow` is for one-off events." Incomplete. It is a configurable broadcast flow. Whether it is safe for an event depends on loss, replay, lifecycle, and consumption semantics.
+- "`tryEmit` true means delivered." False. It means accepted without suspension by the configured flow.
+- "`replay = 1` makes SharedFlow a StateFlow." False. It lacks `.value`, initial value, and equality conflation.
+- "`StateFlow` cannot represent errors." False. State can include error fields, pending messages, and retry affordances.
+- "A repository must never return `StateFlow`." Too absolute. It should not accidentally create immortal caches, but app-wide state holders may intentionally expose hot state if lifecycle and memory are designed.
 
 ## Probing Questions
 
-1.  What is the fundamental difference between `StateFlow` and `SharedFlow` regarding how they handle new subscribers?
-2.  Explain what "Conflation" means in the context of `StateFlow`. Why is this behavior desirable for UI State?
-3.  Why is it dangerous to emit a "Navigate" event into a standard `MutableSharedFlow` if the Android application is currently in the background?
-4.  If you configure a `SharedFlow` with `replay = 1` and `onBufferOverflow = BufferOverflow.DROP_OLDEST`, how does its behavior differ from a `StateFlow`?
-5.  What happens if you call `emit()` on a default `MutableSharedFlow` and the single UI collector is currently blocked doing heavy computation?
-6.  Explain why mutating an underlying list and re-emitting the same `data class` instance into a `StateFlow` will fail to trigger a UI recomposition in Jetpack Compose.
-7.  What is the purpose of the `SharingStarted.WhileSubscribed(5000)` parameter when converting a Cold flow to a Hot flow in an Android ViewModel?
-8.  Why did Google deprecate the use of `LiveData` in modern Android architectures in favor of `StateFlow`?
-9.  Describe the architectural pattern of "Consumable State" and how it solves the Single-Event Dilemma without relying on `SharedFlow`.
-10. If a repository needs to expose a continuous stream of GPS coordinates to the entire app, but you want to drop older coordinates if the UI is slow to process them, how would you configure the flow?
+1. What happens when `emit` is called on a default `MutableSharedFlow` with zero subscribers?
+2. Why can `tryEmit` return true while no active collector receives the value?
+3. Why is `MutableStateFlow.update { }` safer than assigning `_state.value = _state.value.copy(...)` under concurrency?
+4. How does equality conflation interact with mutable lists inside data classes?
+5. What is the difference between replay cache and extra buffer capacity?
+6. When would `resetReplayCache` be appropriate?
+7. How does `WhileSubscribed(5_000)` change behavior during rotation?
+8. Why is `replay = 1` dangerous for navigation events?
+9. When is a `Channel` more correct than a `SharedFlow`?
+10. What changes when a Flow is exported to Swift `AsyncSequence` in Kotlin 2.4, and what does not change?
 
 ## Further Reading
 
-- [`flow.md`](../architecture/flow.md) — The Cold flow foundation.
-- [`viewmodel.md`](../architecture/viewmodel.md) — The owner of the `stateIn` transformation.
+- [`../architecture/flow.md`](../architecture/flow.md) - Cold vs hot Flow foundations.
+- [`../../kotlin/flow-operators-and-backpressure.md`](../../kotlin/flow-operators-and-backpressure.md) - Flow operator semantics.
+- [`../../kotlin/channels-and-select.md`](../../kotlin/channels-and-select.md) - Channels and point-to-point delivery.
+- [`../../kotlin/test-dispatchers-virtual-time.md`](../../kotlin/test-dispatchers-virtual-time.md) - Testing hot flows.
 - [Android Developers: StateFlow and SharedFlow](https://developer.android.com/kotlin/flow/stateflow-and-sharedflow)
+- [Kotlin API: StateFlow](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/)
+- [Kotlin API: SharedFlow](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/)
+- [Kotlin API: SharingStarted](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-sharing-started/)

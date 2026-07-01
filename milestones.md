@@ -355,7 +355,7 @@ KMP is mentioned in 22 files in passing but has no dedicated coverage. User deci
 **Phase 2 — Tooling:**
 - ✅ `tooling/build-system-and-source-sets.md` — Gradle KMP plugin, source sets (`commonMain`, `iosMain`), Version Catalogs.
 - ✅ `tooling/ios-distribution.md` — Frameworks, CocoaPods plugin, SwiftPM, XCFramework.
-- ✅ `tooling/swift-interop.md` — Swift↔Kotlin via Obj-C bridge, SKIE, Direct Swift Export.
+- ✅ `tooling/swift-interop.md` — Swift↔Kotlin via Obj-C bridge, SKIE, and Swift export.
 
 **Phase 3 — Ecosystem:**
 - ✅ `ecosystem/libraries-ecosystem.md` — KMP-ready matrix vs non-KMP.
@@ -526,17 +526,18 @@ Add or deepen:
 
 Why it matters: Activity, Fragment, Binder, Zygote, and ART are present, but classic Android primitives are scattered. Staff engineers need one canonical path for manifest resolution, exported components, package visibility, permissions, process states, and IPC boundaries.
 
-#### G10d — Coroutines, Flow, and concurrency mastery ⬜
+#### G10d — Coroutines, Flow, and concurrency mastery ✅
 
 Add or deepen:
 
-- `android/concurrency/shared-flow-and-state-flow.md` — make this a one-stop guide: StateFlow vs SharedFlow vs Channel vs cold Flow decision matrix; `MutableStateFlow.update {}` and atomic updates; equality conflation edge cases; `MutableSharedFlow` no-subscriber behavior; `emit` vs `tryEmit`; `replayCache`, `resetReplayCache`, `subscriptionCount`; `SharingStarted.Eagerly`, `Lazily`, and `WhileSubscribed(stopTimeout, replayExpiration)`; lifecycle collection; Turbine/runTest examples; event-as-state patterns.
-- `kotlin/channels-and-select.md`
-- `kotlin/flow-operators-and-backpressure.md`
-- `kotlin/callbackflow-and-bridging-callbacks.md`
-- `kotlin/coroutines-debugging-and-profiling.md`
-- `kotlin/test-dispatchers-virtual-time.md`
-- Kotlin 2.4 update pass — document language/tooling changes relevant to Android/KMP, especially official Flow export to Swift `AsyncSequence`, and update KMP `StateFlow`/Swift interop guidance where it currently assumes third-party adapters are the only option.
+- ✅ `android/concurrency/shared-flow-and-state-flow.md` — one-stop guide: StateFlow vs SharedFlow vs Channel vs cold Flow decision matrix; `MutableStateFlow.update {}` and atomic updates; equality conflation edge cases; `MutableSharedFlow` no-subscriber behavior; `emit` vs `tryEmit`; `replayCache`, `resetReplayCache`, `subscriptionCount`; `SharingStarted.Eagerly`, `Lazily`, and `WhileSubscribed(stopTimeout, replayExpiration)`; lifecycle collection; Turbine/runTest examples; event-as-state patterns.
+- ✅ `kotlin/channels-and-select.md`
+- ✅ `kotlin/flow-operators-and-backpressure.md`
+- ✅ `kotlin/callbackflow-and-bridging-callbacks.md`
+- ✅ `kotlin/coroutines-debugging-and-profiling.md`
+- ✅ `kotlin/test-dispatchers-virtual-time.md`
+- ✅ `kotlin/kotlin-2-4-update.md`
+- ✅ Kotlin 2.4 update pass — documented language/tooling changes relevant to Android/KMP, especially official Flow export to Swift `AsyncSequence`, and updated KMP `StateFlow`/Swift interop guidance where it previously assumed third-party adapters were the only option.
 
 Why it matters: `kotlin/coroutines.md` and `android/concurrency/shared-flow-and-state-flow.md` are strong, but advanced learners still need one-stop coverage of hot-flow selection, lifecycle-safe collection, event delivery, channels, callback bridging, operator semantics, cancellation/debugging, deterministic tests, and Kotlin 2.4 KMP Flow interop.
 

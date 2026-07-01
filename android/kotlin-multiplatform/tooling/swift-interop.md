@@ -1,4 +1,4 @@
-# Swift Interop, SKIE & Direct Swift Export
+# Swift Interop, SKIE, and Swift Export
 
 > The #1 reason iOS teams reject KMP is not the shared logic — it's the *API surface*. When a Kotlin `sealed class` becomes an un-exhaustive Objective-C class hierarchy, when a `StateFlow` becomes an opaque generic that SwiftUI can't observe, when default arguments vanish — the iOS engineer rightfully declares the API unusable. A Staff engineer must understand every translation failure in the Objective-C bridge and know how to fix each one, either with SKIE or architectural wrappers.
 
@@ -338,44 +338,80 @@ For CI pipelines, this is negligible. For local development with Direct Xcode In
 
 ---
 
-## Direct Swift Export (The Future)
+## Swift Export in Kotlin 2.4
 
-Kotlin 2.1 introduced experimental **Direct Swift Export**. Instead of generating Objective-C headers, the compiler natively produces Swift module interfaces.
+Kotlin 2.4 promotes Swift export to **Alpha**. Instead of exposing Kotlin only through Objective-C headers, the compiler can generate Swift-facing modules so Swift code can call Kotlin APIs more idiomatically.
+
+This changes the recommendation. Swift export is no longer just future theory, and Flow interop is no longer only available through third-party adapters. However, Alpha still means incomplete behavior and possible breaking changes, so production teams need a deliberate migration plan.
 
 ### Architecture Comparison
 
 ```text
-Current (Objective-C Bridge):
+Objective-C bridge:
   Kotlin → Obj-C Header → Swift Bridge → Swift Code
 
-Future (Direct Swift Export):
+Swift export:
   Kotlin → Swift Module (.swiftmodule) → Swift Code
 
 What's eliminated:
   - Obj-C header generation
   - Swift-to-Obj-C bridge overhead
-  - All Obj-C limitations (sealed classes, defaults, generics)
+  - Many Objective-C bridge limitations around naming, nullability, async APIs, and Flow interop
 ```
 
-### What Direct Swift Export Enables
+### What Swift Export Enables
 
-| Feature | Current (Obj-C Bridge) | Direct Swift Export |
+| Feature | Objective-C bridge | Kotlin 2.4 Swift export |
 |---|---|---|
-| Sealed classes | Opaque class hierarchy | Native Swift `enum` |
-| Default arguments | Lost | Preserved |
-| Generics | Type-erased to `Any` | Full generic types |
-| `suspend fun` | Completion handler → async | Native `async` with cancellation |
-| Swift value types | Not possible | Kotlin `value class` → Swift `struct` |
-| Kotlin extensions | Static methods on companion | Native Swift extensions |
-| Framework size | Larger (Obj-C metadata) | Smaller (~15-20% reduction) |
+| Module shape | One framework with Objective-C naming artifacts | Swift modules with module naming and package preservation options |
+| Nullability | Boxed primitives for nullable values | Better Swift nullability for primitives |
+| Overloads | Often awkward or renamed | Supported more directly |
+| `suspend fun` | Completion-handler style bridge | Swift `async` counterpart |
+| `Flow<T>` | Opaque without wrappers/adapters | Exported as Swift `AsyncSequence` via `asAsyncSequence()` |
+| Type aliases | Usually erased through bridge | Preserved in Swift |
+| Generic types | Often erased or awkward | Still limited; generic type parameters are generally type-erased to upper bounds |
+| Swift inheritance | Not a natural fit | Cross-language inheritance is still unsupported |
 
-### Current Status (2024-2025)
+### Flow Export to `AsyncSequence`
 
-- **Kotlin 2.1:** Experimental opt-in. Only basic types, classes, and functions.
-- **Kotlin 2.2:** Expected to support sealed classes and coroutines.
-- **Production-ready:** Expected in Kotlin 2.3+ (estimated late 2025 / early 2026).
+Kotlin 2.4 can export public APIs that use `kotlinx.coroutines.flow.Flow` while preserving the element type.
 
-**Staff Recommendation:** Use SKIE today. Architect your code knowing that Direct Swift Export will eventually make SKIE unnecessary — but don't wait for it.
+```kotlin
+// Kotlin
+fun observeMessages(): Flow<Message> = repository.observeMessages()
+```
+
+```swift
+// Swift
+Task {
+    do {
+        for try await message in shared.observeMessages().asAsyncSequence() {
+            self.messages.append(message)
+        }
+    } catch is CancellationError {
+        // Normal task cancellation.
+    } catch {
+        // Surface as state or telemetry.
+    }
+}
+```
+
+Important operational details:
+
+- Flow export is enabled by default for Swift export.
+- Swift sees the stream as `AsyncSequence`, which fits Swift structured concurrency.
+- By default, exported suspend functions and `asAsyncSequence()` run Kotlin code on `Dispatchers.Default`.
+- If Main confinement is required, switch dispatcher in Kotlin with `withContext(Dispatchers.Main)`.
+- Swift task cancellation must still cancel the collection; the interop layer does not make event delivery durable.
+
+### Staff Recommendation
+
+Use a two-track strategy:
+
+1. Keep SKIE or explicit wrappers for production modules where you already depend on stable generated Swift APIs.
+2. Evaluate Kotlin 2.4 Swift export in a sample or non-critical module, especially for shared Flow APIs and suspend functions.
+3. Design public KMP APIs as if Swift engineers are first-class consumers: stable names, simple DTOs, explicit errors, no leaked internal coroutine types.
+4. Do not expose important one-off UI events as `SharedFlow` just because Swift can now collect Flow. The StateFlow/SharedFlow delivery semantics are unchanged across the bridge.
 
 ---
 
@@ -416,13 +452,13 @@ Without `@Throws`, Swift's `try` won't catch the exception — it will crash the
 
 1.  **Cancellation Mechanics:** Trace the exact execution path when a Swift `Task` is cancelled while a Kotlin `suspend fun` is in progress. Without SKIE, what happens to the Kotlin `Job`? With SKIE, what C-interop mechanism does SKIE use to bridge the two cancellation systems?
 2.  **Sealed Class Safety:** Your Kotlin `sealed class PaymentResult` has 3 subclasses. Without SKIE, the iOS team uses a `switch` with a `default:` case. A Kotlin engineer adds a 4th subclass. What happens on the iOS side? With SKIE, what happens?
-3.  **StateFlow Collection Lifecycle:** Using SKIE's `AsyncSequence` adapter, explain exactly what happens to the Kotlin `StateFlow` collector when a SwiftUI `View` disappears. Who cancels the collector? What mechanism prevents a memory leak of the ViewModel?
+3.  **StateFlow Collection Lifecycle:** Using SKIE or Kotlin 2.4 Swift export's `AsyncSequence` bridge, explain exactly what happens to the Kotlin `StateFlow` collector when a SwiftUI `View` disappears. Who cancels the collector? What mechanism prevents a memory leak of the ViewModel?
 4.  **Type Mapping:** A Kotlin function returns `Map<String, List<Pair<Int, Boolean>>>`. What does the Objective-C header look like? What does Swift see? Why is this a sign of poor API design for the KMP boundary?
-5.  **Direct Swift Export vs SKIE:** When Direct Swift Export becomes stable, what problems does it solve that SKIE cannot? (Hint: think about value types and generic type preservation.) What new problems might it introduce?
+5.  **Swift Export vs SKIE:** In Kotlin 2.4, which problems does Swift export solve directly, which limitations still remain, and where would you keep SKIE or explicit wrappers for production stability?
 
 ## Further Reading
 
 - [`ios-distribution.md`](ios-distribution.md) — How the SKIE-enhanced framework is packaged into an `.xcframework`.
 - [`concurrency-and-memory.md`](../production/concurrency-and-memory.md) — The K/Native memory model and how it interacts with Swift ARC during StateFlow collection.
-- [`overview-and-k1-vs-k2.md`](../foundations/overview-and-k1-vs-k2.md) — How K2's architecture enables Direct Swift Export.
+- [`overview-and-k1-vs-k2.md`](../foundations/overview-and-k1-vs-k2.md) — How K2's architecture enables Swift export.
 - [`architecture-and-module-boundaries.md`](../foundations/architecture-and-module-boundaries.md) — Designing the KMP API surface to be "Swift-friendly" from the start.
