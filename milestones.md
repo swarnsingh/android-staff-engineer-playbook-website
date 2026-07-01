@@ -513,16 +513,16 @@ Add or deepen:
 
 Why it matters: the current CS folder is Staff-relevant but too lean for a complete Android interview/study path. DSA fundamentals should connect directly to Kotlin collections, mobile memory pressure, SQLite indexes, DiffUtil, tries for typeahead, and graph/module dependencies.
 
-#### G10c — Android OS fundamentals and app components ⬜
+#### G10c — Android OS fundamentals and app components ✅
 
 Add or deepen:
 
-- `android/os-internals/intent-resolution-and-manifest.md`
-- `android/os-internals/broadcast-receivers.md`
-- `android/os-internals/content-providers-and-contentresolver.md`
-- `android/os-internals/permissions-and-app-ops.md`
-- `android/os-internals/activitymanager-process-lifecycle.md`
-- `android/os-internals/package-manager-installation-classloading.md`
+- ✅ `android/os-internals/intent-resolution-and-manifest.md`
+- ✅ `android/os-internals/broadcast-receivers.md`
+- ✅ `android/os-internals/content-providers-and-contentresolver.md`
+- ✅ `android/os-internals/permissions-and-app-ops.md`
+- ✅ `android/os-internals/activitymanager-process-lifecycle.md`
+- ✅ `android/os-internals/package-manager-installation-classloading.md`
 
 Why it matters: Activity, Fragment, Binder, Zygote, and ART are present, but classic Android primitives are scattered. Staff engineers need one canonical path for manifest resolution, exported components, package visibility, permissions, process states, and IPC boundaries.
 
@@ -530,13 +530,15 @@ Why it matters: Activity, Fragment, Binder, Zygote, and ART are present, but cla
 
 Add or deepen:
 
+- `android/concurrency/shared-flow-and-state-flow.md` — make this a one-stop guide: StateFlow vs SharedFlow vs Channel vs cold Flow decision matrix; `MutableStateFlow.update {}` and atomic updates; equality conflation edge cases; `MutableSharedFlow` no-subscriber behavior; `emit` vs `tryEmit`; `replayCache`, `resetReplayCache`, `subscriptionCount`; `SharingStarted.Eagerly`, `Lazily`, and `WhileSubscribed(stopTimeout, replayExpiration)`; lifecycle collection; Turbine/runTest examples; event-as-state patterns.
 - `kotlin/channels-and-select.md`
 - `kotlin/flow-operators-and-backpressure.md`
 - `kotlin/callbackflow-and-bridging-callbacks.md`
 - `kotlin/coroutines-debugging-and-profiling.md`
 - `kotlin/test-dispatchers-virtual-time.md`
+- Kotlin 2.4 update pass — document language/tooling changes relevant to Android/KMP, especially official Flow export to Swift `AsyncSequence`, and update KMP `StateFlow`/Swift interop guidance where it currently assumes third-party adapters are the only option.
 
-Why it matters: `kotlin/coroutines.md` is strong, but advanced learners still need one-stop coverage of channels, callback bridging, operator semantics, cancellation/debugging, and deterministic tests.
+Why it matters: `kotlin/coroutines.md` and `android/concurrency/shared-flow-and-state-flow.md` are strong, but advanced learners still need one-stop coverage of hot-flow selection, lifecycle-safe collection, event delivery, channels, callback bridging, operator semantics, cancellation/debugging, deterministic tests, and Kotlin 2.4 KMP Flow interop.
 
 #### G10e — Compose, performance, and adaptive UI depth ⬜
 

@@ -79,6 +79,12 @@ Architecture and lifecycle first (you cannot reason about anything else without 
 
 ### System Internals
 
+- [Intent Resolution & Manifest](android/os-internals/intent-resolution-and-manifest.md)
+- [Broadcast Receivers](android/os-internals/broadcast-receivers.md)
+- [Content Providers & ContentResolver](android/os-internals/content-providers-and-contentresolver.md)
+- [Permissions & AppOps](android/os-internals/permissions-and-app-ops.md)
+- [ActivityManager & Process Lifecycle](android/os-internals/activitymanager-process-lifecycle.md)
+- [Package Manager, Installation & Class Loading](android/os-internals/package-manager-installation-classloading.md)
 - [Binder](android/os-internals/the-binder.md)
 - [Zygote](android/os-internals/the-zygote.md)
 - [ART & Dalvik](android/os-internals/art-and-dalvik.md)
