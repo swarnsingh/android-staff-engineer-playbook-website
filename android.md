@@ -37,6 +37,10 @@ Architecture and lifecycle first (you cannot reason about anything else without 
 - [Modifiers & Layout](android/compose/modifiers-and-layout.md)
 - [Recomposition & State](android/compose/recomposition-and-state.md)
 - [Side Effects](android/compose/side-effects.md)
+- [Adaptive Compose & Large Screens](android/compose/adaptive-compose-large-screens.md)
+- [Compose Performance Tooling](android/compose/compose-performance-tooling.md)
+- [Custom Layout & Measurement](android/compose/custom-layout-measurement.md)
+- [Compose Accessibility](android/compose/compose-accessibility.md)
 
 ### Concurrency
 
@@ -58,6 +62,11 @@ Architecture and lifecycle first (you cannot reason about anything else without 
 - [Baseline Profiles](android/performance/baseline-profiles.md)
 - [Memory Management & Leaks](android/performance/memory-management-and-leaks.md)
 - [App Size & R8](android/performance/app-size-and-r8.md)
+- [Macrobenchmark & Perfetto](android/performance/macrobenchmark-and-perfetto.md)
+- [Battery & Power Profiling](android/performance/battery-power-profiling.md)
+- [Network Radio Wakeups](android/performance/network-radio-wakeups.md)
+- [Native Memory & Bitmaps](android/performance/native-memory-bitmaps.md)
+- [Thermal & Low-End Device Strategy](android/performance/thermal-low-end-device-strategy.md)
 
 ### Data & DI
 

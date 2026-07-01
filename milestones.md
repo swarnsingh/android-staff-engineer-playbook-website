@@ -541,19 +541,19 @@ Add or deepen:
 
 Why it matters: `kotlin/coroutines.md` and `android/concurrency/shared-flow-and-state-flow.md` are strong, but advanced learners still need one-stop coverage of hot-flow selection, lifecycle-safe collection, event delivery, channels, callback bridging, operator semantics, cancellation/debugging, deterministic tests, and Kotlin 2.4 KMP Flow interop.
 
-#### G10e — Compose, performance, and adaptive UI depth ⬜
+#### G10e — Compose, performance, and adaptive UI depth ✅
 
 Add or deepen:
 
-- `android/compose/adaptive-compose-large-screens.md`
-- `android/compose/compose-performance-tooling.md`
-- `android/compose/custom-layout-measurement.md`
-- `android/compose/compose-accessibility.md`
-- `android/performance/macrobenchmark-and-perfetto.md`
-- `android/performance/battery-power-profiling.md`
-- `android/performance/network-radio-wakeups.md`
-- `android/performance/native-memory-bitmaps.md`
-- `android/performance/thermal-low-end-device-strategy.md`
+- ✅ `android/compose/adaptive-compose-large-screens.md`
+- ✅ `android/compose/compose-performance-tooling.md`
+- ✅ `android/compose/custom-layout-measurement.md`
+- ✅ `android/compose/compose-accessibility.md`
+- ✅ `android/performance/macrobenchmark-and-perfetto.md`
+- ✅ `android/performance/battery-power-profiling.md`
+- ✅ `android/performance/network-radio-wakeups.md`
+- ✅ `android/performance/native-memory-bitmaps.md`
+- ✅ `android/performance/thermal-low-end-device-strategy.md`
 
 Why it matters: Compose internals are strong, but production Staff work also requires measurement, adaptive layouts, accessibility, thermal constraints, radio costs, and low-end-device strategy.
 
