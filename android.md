@@ -74,6 +74,7 @@ Architecture and lifecycle first (you cannot reason about anything else without 
 - [Paging](android/data-and-di/paging.md)
 - [DataStore](android/data-and-di/datastore.md)
 - [Room vs DataStore](android/data-and-di/room-vs-datastore.md)
+- [Repository Source of Truth](android/data-and-di/repository-source-of-truth.md)
 - [Hilt vs Koin vs Manual DI](android/data-and-di/hilt-vs-koin-vs-manual-di.md)
 - [Hilt Components](android/data-and-di/components.md)
 - [Scopes (Hilt vs coroutine)](android/data-and-di/scopes.md)
@@ -84,6 +85,7 @@ Architecture and lifecycle first (you cannot reason about anything else without 
 - [Retrofit & OkHttp](android/networking-and-security/retrofit-and-okhttp.md)
 - [Ktor vs Retrofit (decision)](android/networking-and-security/ktor-vs-retrofit.md)
 - [GraphQL](android/networking-and-security/graphql.md)
+- [NetworkCallback, Metered Networks, VPNs & Captive Portals](android/networking-and-security/networkcallback-metered-vpn-captive-portal.md)
 - [Security & Keystore](android/networking-and-security/security-and-keystore.md)
 
 ### System Internals
@@ -109,6 +111,10 @@ Architecture and lifecycle first (you cannot reason about anything else without 
 
 ### Kotlin Multiplatform (KMP)
 
+- [KMP Decision Matrix](android/kotlin-multiplatform/kmp-decision-matrix.md)
+- [Shared Domain Boundaries](android/kotlin-multiplatform/shared-domain-boundaries.md)
+- [KMP Observability & Crash Symbolication](android/kotlin-multiplatform/kmp-observability-crash-symbolication.md)
+- [Binary Compatibility & API Evolution](android/kotlin-multiplatform/binary-compatibility-api-evolution.md)
 - [Overview & K1 vs K2](android/kotlin-multiplatform/foundations/overview-and-k1-vs-k2.md)
 - [Architecture & Module Boundaries](android/kotlin-multiplatform/foundations/architecture-and-module-boundaries.md)
 - [Build System & Source Sets](android/kotlin-multiplatform/tooling/build-system-and-source-sets.md)

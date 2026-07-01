@@ -557,16 +557,16 @@ Add or deepen:
 
 Why it matters: Compose internals are strong, but production Staff work also requires measurement, adaptive layouts, accessibility, thermal constraints, radio costs, and low-end-device strategy.
 
-#### G10f — Data, networking, security, and KMP production depth ⬜
+#### G10f — Data, networking, security, and KMP production depth ✅
 
 Add or deepen:
 
-- `android/data-and-di/repository-source-of-truth.md`
-- `android/networking-and-security/networkcallback-metered-vpn-captive-portal.md`
-- `android/kotlin-multiplatform/kmp-decision-matrix.md`
-- `android/kotlin-multiplatform/shared-domain-boundaries.md`
-- `android/kotlin-multiplatform/kmp-observability-crash-symbolication.md`
-- `android/kotlin-multiplatform/binary-compatibility-api-evolution.md`
+- ✅ `android/data-and-di/repository-source-of-truth.md`
+- ✅ `android/networking-and-security/networkcallback-metered-vpn-captive-portal.md`
+- ✅ `android/kotlin-multiplatform/kmp-decision-matrix.md`
+- ✅ `android/kotlin-multiplatform/shared-domain-boundaries.md`
+- ✅ `android/kotlin-multiplatform/kmp-observability-crash-symbolication.md`
+- ✅ `android/kotlin-multiplatform/binary-compatibility-api-evolution.md`
 
 Why it matters: these are the production boundaries where Staff engineers make expensive decisions: source-of-truth ownership, network reality, shared code scope, platform-specific escape hatches, and compatibility promises.
 
