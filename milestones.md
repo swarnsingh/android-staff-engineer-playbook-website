@@ -456,16 +456,16 @@ Goal: cover leverage across many teams.
 
 Why it matters: Staff engineers often own build speed, dependency governance, shared architecture, design systems, and paved roads.
 
-#### G9g — Security and privacy threat modeling ⬜
+#### G9g — Security and privacy threat modeling ✅
 
 Goal: move security from checklist to threat-model thinking.
 
-- ⬜ `security/auth-on-mobile.md`
-- ⬜ `security/key-management.md`
-- ⬜ `security/secure-storage-on-android.md`
-- ⬜ `security/attestation.md`
-- ⬜ `security/privacy-gdpr-data-residency.md`
-- ⬜ `android/networking-and-security/security-and-keystore.md`
+- ✅ `security/auth-on-mobile.md`
+- ✅ `security/key-management.md`
+- ✅ `security/secure-storage-on-android.md`
+- ✅ `security/attestation.md`
+- ✅ `security/privacy-gdpr-data-residency.md`
+- ✅ `android/networking-and-security/security-and-keystore.md`
 
 Why it matters: Staff engineers must reason about rooted devices, token theft, cert pinning tradeoffs, Play Integrity limits, local storage limits, location privacy, and data minimization.
 
@@ -504,7 +504,7 @@ In order of impact-per-effort:
 
 ## Blocked — Decisions Needed ✅
 
-All decisions made. Current execution: G9g security and privacy threat modeling.
+All decisions made. Current execution: G9h principal architecture governance.
 
 ---
 

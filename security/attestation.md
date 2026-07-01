@@ -15,6 +15,20 @@ A backend receives a request claiming "send $500 to alice." Auth alone proves a 
 
 Attestation answers some of these — but only when the server holds the verdict, not the client.
 
+### What attestation is not
+
+Attestation is a risk signal, not a magic "safe device" stamp.
+
+| Misuse | Problem |
+|---|---|
+| Client checks its own verdict | A modified client can skip the check |
+| Attesting every request | Quota, latency, battery, and poor UX |
+| Blocking all non-strong devices | Excludes legitimate users on older/low-end devices |
+| Treating attestation as fraud detection | It says something about app/device integrity, not user intent |
+| Ignoring nonce binding | Captured verdicts become replayable |
+
+Use attestation to raise or lower risk: allow, step-up, limit, delay, or reject. For many consumer apps, `DEVICE` integrity plus behavioral/risk signals is better than requiring `STRONG` everywhere.
+
 ---
 
 ## 2. The Two Attestation Surfaces

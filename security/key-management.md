@@ -18,6 +18,21 @@ The client runs on hardware the attacker owns. Any constant in your `.dex`, `.so
 
 > **Mantra:** the only secret safe on a phone is a secret derived from the user (PIN, biometric-bound key, or session token tied to their account).
 
+### Secret classification policy
+
+Before adding any key or token to Android, classify it:
+
+| Class | Example | Allowed on device? | Required control |
+|---|---|---|---|
+| Public identifier | Firebase app id, Maps key with package restriction | Yes | Vendor-side package/SHA restrictions |
+| User session secret | Access/refresh token | Yes, after login | Keystore-wrapped storage, TTL, rotation |
+| Device private key | Request-signing key | Yes, generated on device | Keystore/StrongBox, attestation if high risk |
+| Vendor billing secret | Paid API server key | No | Backend proxy and per-user rate limits |
+| Signing private key | App signing/upload key | No on dev machines | Play App Signing, HSM/KMS, audited CI |
+| Regulatory/payment secret | PCI key, bank credential | No unless hardware-bound and approved | Security review, server-side custody preferred |
+
+If the answer is "we need this secret before the user authenticates," assume it will be extracted and abused. Move the trust boundary to the backend.
+
 ---
 
 ## 2. Build-Time Constants vs Runtime Secrets

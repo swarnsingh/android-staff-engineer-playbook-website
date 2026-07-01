@@ -13,6 +13,21 @@ Three building blocks:
 2. **Two-token model** (short-lived access, longer-lived rotating refresh) for ongoing API calls.
 3. **Biometric-bound Keystore key** for step-up when amount/risk demands it.
 
+### Staff threat model
+
+Mobile auth assumes the attacker can own the client. Design policy around server-side risk, not client-side trust.
+
+| Threat | Mitigation | Limit |
+|---|---|---|
+| Stolen access token | Short TTL, audience/scope binding, revoke on anomaly | Token works until expiry |
+| Stolen refresh token | Rotation with reuse detection | Requires backend token family tracking |
+| Deep-link interception | Claimed HTTPS app links, PKCE, state validation | Custom schemes are weaker |
+| Rooted/tampered device | Step-up, attestation, risk scoring | Cannot make a compromised client trustworthy |
+| Replay of sensitive action | Server nonce, idempotency, device signing key | Needs server-side enforcement |
+| Socially engineered session | Biometric step-up for high-risk actions | Biometrics prove local user presence, not intent |
+
+The Staff-level rule: authentication proves account access; it does not prove device integrity, app integrity, or user intent. High-risk actions need additional signals.
+
 ---
 
 ## 2. OAuth 2.0 Authorization Code + PKCE (the Login)

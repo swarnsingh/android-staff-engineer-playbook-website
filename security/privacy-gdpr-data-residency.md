@@ -83,6 +83,32 @@ Before any string is sent to the Crashlytics SDK, it must pass through a Regex S
 
 A Staff Engineer recognizes that privacy cannot be enforced by hoping 100 developers read a Confluence document. Privacy must be enforced by the compiler, the CI pipeline, and the API gateway. If a developer *can* easily violate GDPR, the architecture is flawed. By wrapping third-party SDKs, utilizing Anycast routing, and automating data sanitization, the organization achieves compliance by default.
 
+### Data minimization register
+
+Before collecting a new field, require an owner and retention policy.
+
+| Field class | Example | Default policy |
+|---|---|---|
+| Direct identifier | email, phone, government id | Avoid in telemetry; encrypt if product-critical |
+| Indirect identifier | device id, advertising id, IP, precise location | Collect only with purpose and consent |
+| Sensitive behavioral data | search, health, finance, contacts | Explicit product/legal review |
+| Operational metadata | app version, API level, crash stack | Allowed if redacted and sampled |
+| Aggregated metric | crash-free users, startup p95 | Preferred form where debugging still works |
+
+The review question is not "can we collect it?" It is "what decision becomes impossible without it, how long do we need it, and who owns deletion?"
+
+### Privacy enforcement points
+
+| Layer | Enforcement |
+|---|---|
+| Code | Lint/Detekt bans direct SDK imports and raw PII logging |
+| Telemetry SDK | Consent gate, redaction, sampling, event schema validation |
+| Build | Dependency review for SDKs with data collection behavior |
+| Backend edge | Region routing, residency policy, data processor allowlist |
+| Support tooling | Role-based access, audit logs, retention windows |
+
+Privacy fails when it is only a runtime `if` statement. Staff engineers move privacy into schemas, wrappers, CI, and data retention jobs.
+
 ## Further Reading
 - [`telemetry-sdk.md`](../mobile-system-design/telemetry-sdk.md) (How the Facade pattern hides Firebase).
 - [`authentication.md`](../mobile-system-design/authentication.md) (How session revokes trigger local wipes).

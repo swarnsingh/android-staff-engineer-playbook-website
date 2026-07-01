@@ -31,6 +31,21 @@ The goal of secure storage: even if the file on disk is stolen, the secret insid
 
 > **Rule of thumb:** don't roll your own Keystore + Cipher code. The Jetpack Security and Tink libraries get IV management, padding, and authentication-tag handling correct. Direct Keystore API is for cases where the higher-level libraries don't fit.
 
+### Storage decision matrix
+
+Pick storage by consequence of compromise, not by convenience.
+
+| Data | Storage | Additional control |
+|---|---|---|
+| Theme, locale, onboarding flags | Plain DataStore | None |
+| Access token | Encrypted DataStore or EncryptedSharedPreferences | Short TTL |
+| Refresh token | Encrypted storage + rotation | Reuse detection server-side |
+| Drafts / offline user content | Room, optionally SQLCipher | Backup/delete policy |
+| Payment or wallet material | Biometric-bound Keystore key or server custody | Step-up and attestation |
+| Analytics/user identifiers | Minimized plain or encrypted store | Consent and reset path |
+
+No storage tier protects against a malicious app process that already has the token in memory. Do not log decrypted values, expose them through crash breadcrumbs, or keep them in singleton fields longer than needed.
+
 ---
 
 ## 3. EncryptedSharedPreferences (the default for tokens)

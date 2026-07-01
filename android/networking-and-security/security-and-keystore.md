@@ -158,6 +158,21 @@ When reviewing security PRs, a Staff engineer focuses on attack vectors and blas
 2.  **Root Detection:** While we can use tools like Google Play Integrity API (formerly SafetyNet) to check if a device is rooted, I remind the team that root detection is a cat-and-mouse game. We must assume the device is rooted and ensure our Keystore implementation relies on Hardware-Backed security, which protects keys even from the root user.
 3.  **ProGuard / R8 Obfuscation:** I ensure R8 is enabled in release builds. While it is not true security (it's obscurity), obfuscating class names from `AuthManager` to `a.b.c` slows down script-kiddie attackers significantly.
 
+### Security decision matrix
+
+Use the strongest control where it changes the outcome. Avoid controls that only add outage risk.
+
+| Risk | Primary control | Staff caveat |
+|---|---|---|
+| Token theft from disk | Keystore-wrapped encrypted storage | Plaintext still exists in memory while used |
+| Token replay from another machine | Short TTL, refresh rotation, device-bound signing | Requires backend enforcement |
+| MITM on public network | TLS + certificate validation | Standard HTTPS handles most cases |
+| User-installed rogue CA | Certificate pinning for high-risk APIs | Needs backup pins and rotation runbook |
+| Rooted/tampered device | Play Integrity + risk scoring | Signal can be unavailable or bypassed |
+| Sensitive local action | Biometric-bound key | Key invalidation must trigger recovery flow |
+
+Certificate pinning is appropriate for banking, wallets, auth, and high-value APIs. It is usually overkill for low-risk content APIs unless the team has rotation discipline. A pinning mistake can create a total outage that only an app update fixes.
+
 ## Common Misconceptions
 
 - **"HTTPS keeps my API traffic completely safe."** It keeps it safe from hackers on public Wi-Fi. It does *not* keep it safe from the owner of the device if they install a custom Root CA (like Charles Proxy). To protect against the user intercepting their own traffic, you must use Certificate Pinning.
