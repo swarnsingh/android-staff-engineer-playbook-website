@@ -499,17 +499,17 @@ Execution priority:
 
 Why it matters: foundational errors in OS internals, background execution, or algorithm analysis reduce trust in the entire playbook.
 
-#### G10b — Computer science interview foundations ⬜
+#### G10b — Computer science interview foundations ✅
 
 Add or deepen:
 
-- `computer-science/arrays-and-strings.md`
-- `computer-science/linked-lists-stacks-queues.md`
-- `computer-science/heaps-and-priority-queues.md`
-- `computer-science/sorting-and-searching.md`
-- `computer-science/recursion-backtracking.md`
-- `computer-science/dynamic-programming.md`
-- `computer-science/greedy-and-intervals.md`
+- ✅ `computer-science/arrays-and-strings.md`
+- ✅ `computer-science/linked-lists-stacks-queues.md`
+- ✅ `computer-science/heaps-and-priority-queues.md`
+- ✅ `computer-science/sorting-and-searching.md`
+- ✅ `computer-science/recursion-backtracking.md`
+- ✅ `computer-science/dynamic-programming.md`
+- ✅ `computer-science/greedy-and-intervals.md`
 
 Why it matters: the current CS folder is Staff-relevant but too lean for a complete Android interview/study path. DSA fundamentals should connect directly to Kotlin collections, mobile memory pressure, SQLite indexes, DiffUtil, tries for typeahead, and graph/module dependencies.
 
