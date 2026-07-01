@@ -22,5 +22,7 @@ CAP and consistency models first (the framing), then idempotency and delivery se
 - [CRDTs](distributed-systems/crdts.md)
 - [LWW vs CRDT](distributed-systems/lww-vs-crdt.md)
 - [Consensus Basics](distributed-systems/consensus-basics.md)
+- [Replication & Leader Election](distributed-systems/replication-and-leader-election.md)
+- [Streaming Logs & Partitioning](distributed-systems/streaming-logs-partitioning.md)
+- [Mobile Client Consistency Contracts](distributed-systems/mobile-client-consistency-contracts.md)
 - [Distributed Tracing](distributed-systems/distributed-tracing.md) — short stub; canonical is [`observability/distributed-tracing.md`](observability/distributed-tracing.md)
-

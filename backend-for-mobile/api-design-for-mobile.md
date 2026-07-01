@@ -263,6 +263,64 @@ Run these in CI against captured fixtures for N-3 or N-5 app versions. Mobile co
 
 ---
 
+## API Governance for Mobile
+
+Mobile API governance is the system that prevents backend velocity from breaking old app binaries.
+
+Minimum governance:
+
+- Endpoint owner.
+- Supported app version window.
+- Capability gates.
+- Request/response schema tests.
+- Deprecation dates.
+- Rollback plan.
+- Dashboard for old-client traffic.
+- Contract test fixtures for old apps.
+
+### Schema change rules
+
+| Change | Safe? | Rule |
+|---|---|---|
+| Add optional response field | Usually | Old clients must ignore unknown keys |
+| Add required response field | Breaking | Use new endpoint or capability gate |
+| Rename field | Breaking | Add new field, deprecate old field later |
+| Change field meaning | Breaking | Add new semantic field |
+| Add enum value | Risky | Clients need `UNKNOWN` fallback |
+| Remove enum value | Risky | Old stored values and analytics may still reference it |
+| Change pagination cursor shape | Safe only if opaque | Clients must never parse cursors |
+| Add business error code | Safe only with generic fallback | Old clients need unknown-error UI |
+
+### Persisted GraphQL queries
+
+For mobile GraphQL, use persisted or safelisted queries.
+
+Why:
+
+- Prevents arbitrary expensive client queries.
+- Lets backend know which app versions use which fields.
+- Enables schema checks against real mobile operations.
+- Improves CDN/cache behavior for query hashes.
+- Makes deprecation measurable.
+
+Governance rule: a GraphQL field is not removable until persisted-query traffic from supported app versions no longer references it.
+
+### Negative capability matrix
+
+Every backend feature rollout should test:
+
+| Client capability | Backend feature | Expected behavior |
+|---|---|---|
+| absent | new field | ignored or omitted |
+| absent | new enum | parsed as `UNKNOWN` |
+| absent | new endpoint shape | old endpoint still works |
+| old outbox protocol | new mutation protocol | server returns compatible response |
+| old pagination | new ranking backend | cursor remains opaque and valid |
+
+Negative capability tests are the antidote to "it works on the latest app."
+
+---
+
 ## 5. Failure Modes & Tradeoffs
 
 | Failure Mode | Cause | Prevention / Solution |

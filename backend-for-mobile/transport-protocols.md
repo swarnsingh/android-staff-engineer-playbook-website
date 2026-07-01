@@ -113,6 +113,83 @@ The payload size drops by 90% (no JSON strings). Parsing time drops to zero (it'
 
 *Staff Decision:* For 90% of standard CRUD apps, REST/JSON over HTTP/2 is perfectly fine. For highly interactive apps (Maps, Ride-Hailing real-time tracking, Financial Trading), the migration to gRPC or WebSockets is mandatory.
 
+## gRPC and Protobuf for Mobile
+
+gRPC is attractive on mobile because Protobuf payloads are small, typed, and cheap to parse compared with large JSON. But the operational contract is heavier than REST.
+
+| Concern | REST/JSON | gRPC/Protobuf |
+|---|---|---|
+| Debugging | Human-readable with proxy tools | Needs protobuf descriptors/decoders |
+| Schema evolution | Loose but easy to break accidentally | Strong field-number rules |
+| Streaming | SSE/WebSocket or polling | First-class unary, server, client, bidi streams |
+| Browser/CDN compatibility | Excellent | More limited |
+| Mobile generated code | Retrofit/Ktor simple | gRPC/Wire/protobuf toolchain |
+| Partial rollout | Endpoint/version based | Proto compatibility and method rollout |
+
+### Protobuf evolution rules
+
+- Never reuse field numbers.
+- Reserve removed field numbers and names.
+- Add fields as optional/nullable-compatible.
+- Do not change field type for an existing number.
+- Keep enum unknown handling.
+- Treat default values carefully; absence and default can be hard to distinguish.
+- Version behavior, not only schema.
+
+```proto
+message CheckoutRequest {
+  string idempotency_key = 1;
+  string cart_id = 2;
+  reserved 3;
+  reserved "legacy_coupon_code";
+}
+```
+
+### Streaming reconnect semantics
+
+Any mobile stream must define:
+
+- Resume token or last-seen sequence.
+- Heartbeat interval.
+- Backoff with jitter.
+- Maximum background lifetime.
+- Authentication refresh behavior.
+- Duplicate event handling.
+- Out-of-order event handling.
+- Full resync trigger.
+
+```json
+{
+  "lastSequence": 8812,
+  "resumeToken": "thread-123:8812"
+}
+```
+
+Without resume semantics, a stream is only a live socket, not a reliable mobile sync protocol.
+
+### Mobile streaming defaults
+
+| Stream type | Foreground | Background |
+|---|---|---|
+| Chat active thread | WebSocket/gRPC stream acceptable | Push + delta sync |
+| Ride tracking | WebSocket/gRPC while trip visible/active | Foreground service only if user-visible |
+| Market ticks | Stream while screen visible | Push/alerts/watchlist sync |
+| Presence | Best-effort stream | Usually off |
+| Analytics | Batch upload | WorkManager constraints |
+
+## Transport Decision Checklist
+
+- Does the feature need request/response, server streaming, client streaming, or bidirectional streaming?
+- Is payload size or parse CPU a real measured problem?
+- Do old app versions need to understand new schema?
+- Can the team debug binary payloads in production?
+- Does the stream have resume tokens and dedup IDs?
+- What happens on Wi-Fi to cellular migration?
+- Is there a fallback when HTTP/3/UDP is blocked?
+- Are connections closed when the product session ends?
+- Are retries idempotent?
+- Are transport metrics segmented by network type and app state?
+
 ## Failure Modes
 
 - **The `OkHttpClient` Instance Leak:**

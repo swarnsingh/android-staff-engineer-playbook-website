@@ -570,15 +570,15 @@ Add or deepen:
 
 Why it matters: these are the production boundaries where Staff engineers make expensive decisions: source-of-truth ownership, network reality, shared code scope, platform-specific escape hatches, and compatibility promises.
 
-#### G10g — Distributed systems and BFM depth ⬜
+#### G10g — Distributed systems and BFM depth ✅
 
 Add or deepen:
 
-- `distributed-systems/replication-and-leader-election.md`
-- `distributed-systems/streaming-logs-partitioning.md`
-- `distributed-systems/mobile-client-consistency-contracts.md`
-- `backend-for-mobile/api-design-for-mobile.md` — API evolution, negative capability testing, persisted queries, schema governance.
-- `backend-for-mobile/transport-protocols.md` — gRPC/protobuf tradeoffs, streaming constraints, mobile reconnect semantics.
+- ✅ `distributed-systems/replication-and-leader-election.md`
+- ✅ `distributed-systems/streaming-logs-partitioning.md`
+- ✅ `distributed-systems/mobile-client-consistency-contracts.md`
+- ✅ `backend-for-mobile/api-design-for-mobile.md` — API evolution, negative capability testing, persisted queries, schema governance.
+- ✅ `backend-for-mobile/transport-protocols.md` — gRPC/protobuf tradeoffs, streaming constraints, mobile reconnect semantics.
 
 Why it matters: mobile Staff engineers increasingly own the client contract with distributed backends, not just the UI code consuming it.
 
