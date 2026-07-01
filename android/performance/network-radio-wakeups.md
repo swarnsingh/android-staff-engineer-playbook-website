@@ -196,4 +196,4 @@ Segment by:
 - [Android Developers: Optimize network access](https://developer.android.com/develop/connectivity/network-ops/network-access-optimization)
 - [Android Developers: Analyze power use with Battery Historian](https://developer.android.com/topic/performance/power/battery-historian)
 - [`battery-power-profiling.md`](battery-power-profiling.md) - power measurement workflow.
-- [`../../mobile-system-design/push-vs-poll-vs-sse-vs-websockets.md`](../../mobile-system-design/push-vs-poll-vs-sse-vs-websockets.md) - transport tradeoffs.
+- [`../../backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md`](../../backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md) - transport tradeoffs.

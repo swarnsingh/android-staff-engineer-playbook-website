@@ -224,15 +224,22 @@ fun handle(result: NetworkResult) {
 
 K1 would fail because it couldn't prove exhaustiveness of a `when` block over an `expect sealed class` — it didn't know if the `actual` implementations on each platform might add extra subclasses. K2's unified FIR resolves this correctly.
 
-### K2 and Direct Swift Export (Experimental)
+### K2 and Swift Export
 
 The K1 compiler could only generate Objective-C headers (`.h` files) for iOS consumption. Swift had to go through the Objective-C bridge, losing `sealed class` exhaustiveness, default arguments, coroutine cancellation, and more.
 
-K2's architecture enables a new experimental feature: **Direct Swift Export**. Instead of generating an Objective-C header, the compiler generates:
-- A C-level API using `@_cdecl` Swift attributes.
-- A native `.swiftmodule` that Xcode understands directly.
+K2's architecture enables Kotlin's newer **Swift export** pipeline. In Kotlin 2.4, Swift export is Alpha. Instead of exposing Kotlin only through Objective-C headers, the compiler can generate Swift-facing modules with cleaner package/module structure and better Swift concurrency interop.
 
-This means Swift can see Kotlin `sealed class` as a Swift `enum`, `suspend fun` as a proper `async` function, and default arguments are preserved. This is still experimental (Kotlin 2.1+), but it is the endgame architecture.
+What it improves today:
+
+- Kotlin packages and modules can map more cleanly to Swift modules.
+- Kotlin type aliases can be preserved.
+- Nullable primitive types map more naturally.
+- Overloads are easier to call from Swift.
+- `suspend fun` exports as Swift `async`.
+- `kotlinx.coroutines` Flow exports as Swift `AsyncSequence`.
+
+It is still Alpha and incomplete. Generic type parameters are still erased to upper bounds, cross-language inheritance is unsupported, and teams must review the generated Swift API before treating it as a production contract.
 
 ---
 
@@ -346,4 +353,4 @@ Kotlin/Native handles `lateinit` differently than the JVM. On the JVM, accessing
 - [`build-system-and-source-sets.md`](../tooling/build-system-and-source-sets.md) — The Gradle configuration that defines the source set hierarchy.
 - [`ios-distribution.md`](../tooling/ios-distribution.md) — How the Kotlin/Native output (the `.xcframework`) is consumed by Xcode.
 - [`concurrency-and-memory.md`](../production/concurrency-and-memory.md) — How the JVM GC and the Kotlin/Native GC differ fundamentally.
-- [`swift-interop.md`](../tooling/swift-interop.md) — The Objective-C bridge limitations that K2's Direct Swift Export aims to eliminate.
+- [`swift-interop.md`](../tooling/swift-interop.md) — Objective-C bridge limitations and the Kotlin 2.4 Swift export path.
