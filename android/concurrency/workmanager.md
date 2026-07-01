@@ -4,7 +4,7 @@
 
 `WorkManager` is the Google-recommended architectural component for persistent, deferrable background work. 
 
-If your application needs to ensure a task completes—even if the user force-quits the app or the device reboots—you must use `WorkManager`. It abstracts away the massive fragmentation of Android background execution (JobScheduler, AlarmManager, BroadcastReceivers) into a single, clean API that strictly respects device battery constraints.
+If your application needs to ensure a task completes even after the app process exits, the app leaves the visible state, or the device reboots, you should use `WorkManager`. It abstracts away the massive fragmentation of Android background execution (JobScheduler, AlarmManager, BroadcastReceivers) into a single, clean API that strictly respects device battery constraints.
 
 A Staff Engineer must understand that `WorkManager` is not just a thread pool; it is a persistent database-backed execution engine.
 
@@ -149,6 +149,9 @@ fun scheduleSync(context: Context) {
 - **The 10-Minute Timeout:**
   A `Worker` has a strict maximum execution time limit imposed by the OS (historically 10 minutes). If your `doWork()` method takes 11 minutes (e.g., downloading a massive 4K movie on 3G), the OS will abruptly kill the worker. 
   *(Fix: Break massive tasks into smaller chunks, or use a Foreground Service for unbounded execution times).*
+- **The Force-Stop Misconception:**
+  WorkManager is persistent, but it is not a way to override explicit user intent. If the user force-stops the app from system settings, Android places the package into a stopped state and background work will not continue running as if nothing happened.
+  *(Fix: Design WorkManager for app exits, process death, constraints, retries, and reboot persistence. Do not promise execution after a user force-stop; reconcile pending server/client state the next time the app is opened).*
 - **Testing Nightmare:**
   Testing asynchronous, persistent OS jobs is notoriously difficult. Developers often resort to `Thread.sleep` in tests to wait for WorkManager.
   *(Fix: Use `TestListenableWorkerBuilder` to instantiate the Worker directly in unit tests and call `doWork()` synchronously).*

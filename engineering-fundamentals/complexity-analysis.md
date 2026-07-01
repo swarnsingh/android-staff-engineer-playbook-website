@@ -35,6 +35,8 @@ The standard complexity classes encountered in mobile engineering:
 | **$O(N)$** | Linear | Time increases directly with input size. | Iterating over a `RecyclerView.Adapter` list, parsing a JSON array. |
 | **$O(N \log N)$**| Linearithmic | slightly worse than linear. | Sorting a list (`Collections.sort()`). |
 | **$O(N^2)$** | Quadratic | Time explodes as input grows. Double loops. | Comparing every item in a list against every other item. |
+| **$O(2^N)$** | Exponential | Work doubles for every extra input item. | Exhaustive subset search, naive recursive combinatorics. |
+| **$O(N!)$** | Factorial | Every ordering/permutation is explored. | Brute-force traveling salesperson, naive permutation generation. |
 
 ### The "Hidden" Complexities in Kotlin
 
@@ -66,7 +68,8 @@ graph TD
     
     Time --> O1[O 1: Flat]
     Time --> ON[O N: Linear]
-    Time --> ON2[O N^2: Exponential curve]
+    Time --> ON2[O N^2: Quadratic curve]
+    Time --> OEXP[O 2^N: Exponential curve]
 ```
 
 ## Production Example

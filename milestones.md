@@ -485,6 +485,104 @@ Recommended execution order: G9a → G9b → G9c → G9d → G9e → G9f → G9g
 
 ---
 
+### G10 — One-place depth expansion 🟡
+
+Goal: make each major folder strong enough that a learner can study the topic from basics to Staff-level practice without immediately leaving the repo for missing fundamentals.
+
+Execution priority:
+
+#### G10a — Correctness fixes ✅
+
+- ✅ `android/os-internals/art-and-dalvik.md` — correct early Dalvik history to interpreter-first, with trace JIT added later.
+- ✅ `android/concurrency/workmanager.md` — remove unconditional force-stop guarantee and document the force-stop boundary.
+- ✅ `engineering-fundamentals/complexity-analysis.md` — fix `O(N^2)` labeling from exponential to quadratic and add true exponential/factorial classes.
+
+Why it matters: foundational errors in OS internals, background execution, or algorithm analysis reduce trust in the entire playbook.
+
+#### G10b — Computer science interview foundations ⬜
+
+Add or deepen:
+
+- `computer-science/arrays-and-strings.md`
+- `computer-science/linked-lists-stacks-queues.md`
+- `computer-science/heaps-and-priority-queues.md`
+- `computer-science/sorting-and-searching.md`
+- `computer-science/recursion-backtracking.md`
+- `computer-science/dynamic-programming.md`
+- `computer-science/greedy-and-intervals.md`
+
+Why it matters: the current CS folder is Staff-relevant but too lean for a complete Android interview/study path. DSA fundamentals should connect directly to Kotlin collections, mobile memory pressure, SQLite indexes, DiffUtil, tries for typeahead, and graph/module dependencies.
+
+#### G10c — Android OS fundamentals and app components ⬜
+
+Add or deepen:
+
+- `android/os-internals/intent-resolution-and-manifest.md`
+- `android/os-internals/broadcast-receivers.md`
+- `android/os-internals/content-providers-and-contentresolver.md`
+- `android/os-internals/permissions-and-app-ops.md`
+- `android/os-internals/activitymanager-process-lifecycle.md`
+- `android/os-internals/package-manager-installation-classloading.md`
+
+Why it matters: Activity, Fragment, Binder, Zygote, and ART are present, but classic Android primitives are scattered. Staff engineers need one canonical path for manifest resolution, exported components, package visibility, permissions, process states, and IPC boundaries.
+
+#### G10d — Coroutines, Flow, and concurrency mastery ⬜
+
+Add or deepen:
+
+- `kotlin/channels-and-select.md`
+- `kotlin/flow-operators-and-backpressure.md`
+- `kotlin/callbackflow-and-bridging-callbacks.md`
+- `kotlin/coroutines-debugging-and-profiling.md`
+- `kotlin/test-dispatchers-virtual-time.md`
+
+Why it matters: `kotlin/coroutines.md` is strong, but advanced learners still need one-stop coverage of channels, callback bridging, operator semantics, cancellation/debugging, and deterministic tests.
+
+#### G10e — Compose, performance, and adaptive UI depth ⬜
+
+Add or deepen:
+
+- `android/compose/adaptive-compose-large-screens.md`
+- `android/compose/compose-performance-tooling.md`
+- `android/compose/custom-layout-measurement.md`
+- `android/compose/compose-accessibility.md`
+- `android/performance/macrobenchmark-and-perfetto.md`
+- `android/performance/battery-power-profiling.md`
+- `android/performance/network-radio-wakeups.md`
+- `android/performance/native-memory-bitmaps.md`
+- `android/performance/thermal-low-end-device-strategy.md`
+
+Why it matters: Compose internals are strong, but production Staff work also requires measurement, adaptive layouts, accessibility, thermal constraints, radio costs, and low-end-device strategy.
+
+#### G10f — Data, networking, security, and KMP production depth ⬜
+
+Add or deepen:
+
+- `android/data-and-di/repository-source-of-truth.md`
+- `android/networking-and-security/networkcallback-metered-vpn-captive-portal.md`
+- `android/kotlin-multiplatform/kmp-decision-matrix.md`
+- `android/kotlin-multiplatform/shared-domain-boundaries.md`
+- `android/kotlin-multiplatform/kmp-observability-crash-symbolication.md`
+- `android/kotlin-multiplatform/binary-compatibility-api-evolution.md`
+
+Why it matters: these are the production boundaries where Staff engineers make expensive decisions: source-of-truth ownership, network reality, shared code scope, platform-specific escape hatches, and compatibility promises.
+
+#### G10g — Distributed systems and BFM depth ⬜
+
+Add or deepen:
+
+- `distributed-systems/replication-and-leader-election.md`
+- `distributed-systems/streaming-logs-partitioning.md`
+- `distributed-systems/mobile-client-consistency-contracts.md`
+- `backend-for-mobile/api-design-for-mobile.md` — API evolution, negative capability testing, persisted queries, schema governance.
+- `backend-for-mobile/transport-protocols.md` — gRPC/protobuf tradeoffs, streaming constraints, mobile reconnect semantics.
+
+Why it matters: mobile Staff engineers increasingly own the client contract with distributed backends, not just the UI code consuming it.
+
+Recommended execution order: G10a → G10b → G10c → G10d → G10e → G10f → G10g.
+
+---
+
 ## Execution Order (Gap Closure Plan) — Updated 2026-06
 
 In order of impact-per-effort:
@@ -499,12 +597,13 @@ In order of impact-per-effort:
 8. ✅ **G7b** (Nav 3) — DONE
 9. ✅ **G8** (KMP subfolder, 15 files) — DONE
 10. ✅ **G9** (Staff/Principal depth expansion) — DONE
+11. 🟡 **G10** (one-place depth expansion) — IN PROGRESS
 
 ---
 
 ## Blocked — Decisions Needed ✅
 
-All decisions made. Current execution: G9 Staff/Principal depth expansion complete.
+All decisions made. Current execution: G10 one-place depth expansion, priority order above.
 
 ---
 
