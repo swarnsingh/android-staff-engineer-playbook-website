@@ -285,6 +285,27 @@ A platform capability without an owner is a liability. A feature team will depen
 
 ---
 
+## Architecture Governance Loop
+
+Principal-level platform work is a loop, not a one-time standard.
+
+| Cadence | Ritual | Output |
+|---|---|---|
+| Weekly | Design/RFC review | Approved decisions, parked questions |
+| Monthly | Tech radar review | Adopt / trial / hold / retire list |
+| Quarterly | Paved-road health review | Build, CI, test, release, size, and adoption metrics |
+| Per major release | Deprecation review | APIs/modules to remove, owners, migration windows |
+
+The tech radar should be small and enforceable:
+- **Adopt:** supported paved road.
+- **Trial:** allowed in limited scope with owner.
+- **Hold:** do not add new usage.
+- **Retire:** migrate away by a named date.
+
+This avoids architecture by folklore. Teams know what is blessed, what is experimental, and what is being removed.
+
+---
+
 ## Failure Modes
 
 | Symptom | Cause | Fix |

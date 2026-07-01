@@ -146,6 +146,22 @@ Most teams over-rigor Type 2 decisions and under-rigor Type 1 decisions.
 - Match the process to the type. Type 1 gets RFC + ADR + sign-off. Type 2 gets a Slack message + try it.
 - Decline to over-process Type 2 decisions, even when others want to. The team's velocity depends on it.
 
+### Architecture governance triggers
+
+Some decisions should automatically enter the RFC/design-review path.
+
+| Trigger | Required process |
+|---|---|
+| New top-level dependency or vendor | 1-pager or RFC + platform/security review |
+| New cross-team API contract | RFC + contract-test plan |
+| New persistence/sync protocol | RFC + migration/rollback plan |
+| Security/privacy boundary change | RFC + InfoSec/legal review |
+| Build/release pipeline change | RFC or ADR + releng approval |
+| Deprecating a shared module/API | ADR + migration/deprecation plan |
+| Decision consumes more than one team for a quarter | Director-visible 1-pager + RFC |
+
+This is governance without a committee for every choice. The trigger list lets teams move fast locally while routing high-blast-radius decisions deliberately.
+
 ---
 
 ## Disagreeing With Your Manager

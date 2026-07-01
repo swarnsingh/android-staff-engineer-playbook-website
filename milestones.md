@@ -469,15 +469,15 @@ Goal: move security from checklist to threat-model thinking.
 
 Why it matters: Staff engineers must reason about rooted devices, token theft, cert pinning tradeoffs, Play Integrity limits, local storage limits, location privacy, and data minimization.
 
-#### G9h — Principal architecture governance ⬜
+#### G9h — Principal architecture governance ✅
 
 Goal: teach how architectural decisions scale across teams.
 
-- ⬜ `career/writing-rfcs.md`
-- ⬜ `leadership/running-a-design-review.md`
-- ⬜ `leadership/escalation-and-decision-making.md`
-- ⬜ `platform-engineering/internal-developer-platforms.md`
-- ⬜ `templates/decision.md`
+- ✅ `career/writing-rfcs.md`
+- ✅ `leadership/running-a-design-review.md`
+- ✅ `leadership/escalation-and-decision-making.md`
+- ✅ `platform-engineering/internal-developer-platforms.md`
+- ✅ `templates/decision.md`
 
 Why it matters: Principal work is decision quality at org scale: RFCs, ADRs, tech radar, review rituals, ownership boundaries, migration plans, and deprecation discipline.
 
@@ -498,13 +498,13 @@ In order of impact-per-effort:
 7. ✅ **G7a** (Ktor) — DONE
 8. ✅ **G7b** (Nav 3) — DONE
 9. ✅ **G8** (KMP subfolder, 15 files) — DONE
-10. 🟡 **G9** (Staff/Principal depth expansion) — IN PROGRESS
+10. ✅ **G9** (Staff/Principal depth expansion) — DONE
 
 ---
 
 ## Blocked — Decisions Needed ✅
 
-All decisions made. Current execution: G9h principal architecture governance.
+All decisions made. Current execution: G9 Staff/Principal depth expansion complete.
 
 ---
 

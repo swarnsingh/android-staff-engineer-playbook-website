@@ -10,6 +10,20 @@ Code is read sequentially by compilers. Prose is read asynchronously by humans w
 
 The RFC also forces *you* to think. The act of writing "why" forces you to confront edge cases your code-thinking glossed over. A Staff engineer who writes RFCs catches their own bad ideas before the team does. The reviewer who comments "what about retry semantics?" saves you a week of debugging in three months.
 
+## Principal-Level Governance
+
+At Principal scope, RFCs are not just documents. They are the operating system for architectural change.
+
+| Artifact | Purpose | Required when |
+|---|---|---|
+| 1-pager | Decide whether to explore | Work may consume multiple weeks or teams |
+| RFC | Align before build | Cross-team architecture, platform direction, migration |
+| ADR | Preserve why | Decision is Type 1 or likely to be re-litigated |
+| Migration plan | Make change survivable | Existing users/systems must move gradually |
+| Deprecation plan | Remove old paths cleanly | APIs, modules, SDKs, or patterns are being retired |
+
+The Principal question is: "Will a new team in 18 months understand why this happened, how to extend it, and when to revisit it?" If not, the decision is not governed yet.
+
 ---
 
 ## The Three Document Types

@@ -95,6 +95,21 @@ Every review should end in one of three states:
 
 If you end without one of these, you have a fourth (bad) state: **AMBIGUOUS**. Author doesn't know what to do; another meeting is needed; the proposal stalls. Avoid this at all costs.
 
+### Decision record
+
+For cross-team or platform reviews, capture a short decision record before people leave the room:
+
+| Field | Example |
+|---|---|
+| Decision | Adopt BFF-owned compatibility layer for checkout APIs |
+| Approver | Mobile platform lead |
+| Dissent | Backend lead preferred direct service integration |
+| Conditions | Must support N-3 Android clients and publish contract tests |
+| Revisit trigger | Revisit if BFF p95 latency exceeds 300 ms for 2 releases |
+| Owner | Checkout platform team |
+
+This does not replace the RFC or ADR. It prevents the meeting from ending with five different memories of what was decided.
+
 ---
 
 ## After The Meeting: The Wrap-Up
