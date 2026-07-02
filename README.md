@@ -1,6 +1,6 @@
 # Android Staff Engineer Playbook
 
-A long-term knowledge base for Android and Mobile Platform Engineering. Not an interview prep repo — a 1-2 year study guide aimed at Senior → Staff Mobile Platform Engineer depth.
+A long-term knowledge base for Android and Mobile Platform Engineering. Not an interview-cramming repo — a 1-2 year study guide aimed at Senior → Staff Mobile Platform Engineer depth.
 
 > If a Senior Android engineer studies this repository end-to-end and understands every topic deeply, they should be able to operate at Staff Mobile Platform Engineer level.
 
@@ -57,7 +57,7 @@ Each top-level file is a table of contents for its tree. Start with whichever ma
 
 **Foundations**
 - [`engineering-fundamentals.md`](engineering-fundamentals.md) — timeless concepts (state machines, backpressure, fault tolerance)
-- [`computer-science.md`](computer-science.md) — deliberately lean (Big-O, hashing, trees, graphs)
+- [`computer-science.md`](computer-science.md) — complexity, data structures, algorithms, and their Android/Kotlin implications
 - [`principles.md`](principles.md) — decision heuristics
 - [`patterns.md`](patterns.md) — design and resilience patterns
 
@@ -71,7 +71,7 @@ Each top-level file is a table of contents for its tree. Start with whichever ma
 
 **Infrastructure & Operations**
 - [`distributed-systems.md`](distributed-systems.md) — consistency, idempotency, consensus
-- [`backend-for-mobile.md`](backend-for-mobile.md) — BFF, transport protocols, push vs poll
+- [`backend-for-mobile.md`](backend-for-mobile.md) — BFFs, API evolution, transport protocols, push vs poll
 - [`release-engineering.md`](release-engineering.md) — rollouts, kill switches, CI/CD
 - [`observability.md`](observability.md) — logging, metrics, tracing, SLOs
 - [`platform-engineering.md`](platform-engineering.md) — internal platforms, developer experience

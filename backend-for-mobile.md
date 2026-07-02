@@ -1,4 +1,4 @@
-# Backend For Mobile
+# Backend for Mobile
 
 ## Purpose
 
@@ -6,7 +6,7 @@ The contract between mobile clients and the services they call — BFFs, transpo
 
 ## Why It Matters
 
-Mobile clients have different needs than web (battery, intermittent connectivity, payload size). The BFF pattern and mobile-specific API design exist because generic backend interfaces don't serve mobile well.
+Mobile clients have different needs than web clients: battery, intermittent connectivity, payload size, old app versions, and store-mediated rollouts. The BFF pattern and mobile-specific API design exist because generic backend interfaces do not serve mobile well.
 
 ## Learning Order
 

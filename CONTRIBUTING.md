@@ -40,7 +40,7 @@ Referenced from:
 
 When writing an application file, if you find yourself explaining what a concept *is*, stop and link to the canonical owner instead.
 
-This rule is non-negotiable. It is what makes 400 files maintainable.
+This rule is non-negotiable. It is what makes hundreds of files maintainable.
 
 ---
 
@@ -66,7 +66,7 @@ When the same word could plausibly live in multiple trees, this table pins the s
 
 | Concept | Canonical owner | Cross-references from |
 |---|---|---|
-| Complexity analysis / Big-O | `engineering-fundamentals/complexity-analysis.md` | `computer-science/big-o.md` (short stub linking back) |
+| Complexity analysis / Big-O | `engineering-fundamentals/complexity-analysis.md` | `computer-science/big-o.md` (bridge file linking back) |
 | Coroutines — language mechanics | `kotlin/coroutines.md` | `android/concurrency/coroutines-under-the-hood.md` (platform application) |
 | App Bundles & Dynamic Delivery | `release-engineering/app-bundles.md` | (cross-referenced from `android.md` index) |
 | Release strategy | `release-engineering/release-strategy.md` | `mobile-system-design.md` cross-links |
@@ -74,7 +74,7 @@ When the same word could plausibly live in multiple trees, this table pins the s
 | State machines — mechanics | `engineering-fundamentals/state-machines.md` | All application FSMs link here |
 | State machines — pattern | `patterns/state.md` | Cross-link both ways |
 | Observability concepts | `observability/` tree | `android/observability/` is application-only |
-| Distributed tracing | `observability/distributed-tracing.md` | `distributed-systems/distributed-tracing.md` (stub) |
+| Distributed tracing | `observability/distributed-tracing.md` | `distributed-systems/distributed-tracing.md` (bridge file) |
 | Idempotency | `distributed-systems/idempotency.md` | `mobile-system-design/` |
 | Determinism — heuristic | `principles/determinism.md` | Cross-link to mechanics |
 | Determinism — mechanics | `engineering-fundamentals/` | Cross-link to principle |

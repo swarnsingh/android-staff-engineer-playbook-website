@@ -25,4 +25,4 @@ CAP and consistency models first (the framing), then idempotency and delivery se
 - [Replication & Leader Election](distributed-systems/replication-and-leader-election.md)
 - [Streaming Logs & Partitioning](distributed-systems/streaming-logs-partitioning.md)
 - [Mobile Client Consistency Contracts](distributed-systems/mobile-client-consistency-contracts.md)
-- [Distributed Tracing](distributed-systems/distributed-tracing.md) — short stub; canonical is [`observability/distributed-tracing.md`](observability/distributed-tracing.md)
+- [Distributed Tracing](distributed-systems/distributed-tracing.md) — bridge file; canonical is [`observability/distributed-tracing.md`](observability/distributed-tracing.md)

@@ -36,9 +36,10 @@ All tracked roadmap milestones are complete.
 | G9 Staff/Principal expansion | ✅ | API evolution, sync protocol evolution, observability, release decision trees, testing strategy, platform engineering, security/privacy, architecture governance |
 | G10 one-place depth expansion | ✅ | Correctness fixes, CS foundations, Android OS primitives, coroutine/Flow mastery, Compose/performance, data/networking/KMP production, distributed backend contracts |
 
-Latest cleanup/audit commit:
+Latest cleanup/audit commits:
 
 - `26d8a97` — fixed one broken internal docs link and updated outdated Swift export wording.
+- `fd420ce` — cleaned up this milestone tracker.
 
 ---
 
@@ -81,7 +82,7 @@ Completed major areas:
 - Release engineering
 - Reference architecture blueprints
 - ADRs and decision files
-- Computer science lean foundations
+- Computer science foundations and interview-oriented algorithms
 - Security, leadership, platform, and career tracks
 - Polish pass for remaining Kotlin, principles, glossary, learning paths, and cross-links
 
@@ -151,7 +152,7 @@ Recent G10 commits:
 
 These are not active milestone blockers, but they are worth handling in a future polish pass:
 
-- `reference-architectures/offline-first-app.md` still contains old placeholder TODOs for product-specific thresholds and convergence windows.
+- `reference-architectures/offline-first-app.md` still has product-specific threshold and convergence-window choices to resolve in a future polish pass.
 - External web links have not been fully crawled. Internal Markdown links were checked after G10 and reported `0` broken links across `1,569` local links.
 - A full human grammar/technical review across all 285 Markdown files is still stronger than automated grep checks.
 

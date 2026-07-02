@@ -10,7 +10,7 @@ Most engineers don't get to Staff by being better at coding. They get there by c
 
 ## Learning Order
 
-> *Topics to be added as the tree is built out.*
+Start with the Senior to Staff progression to understand the level change. Then study scope and ambiguity, technical leadership, RFC writing, and promotion packets. The path is intentionally ordered from self-calibration to visible organizational impact.
 
 ## Topics
 

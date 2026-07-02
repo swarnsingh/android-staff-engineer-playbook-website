@@ -10,7 +10,7 @@ Staff is partly a leadership role. How you behave during incidents, how you run 
 
 ## Learning Order
 
-> *Begin with incident response and on-call as the operational baseline.*
+Begin with incident response and on-call as the operational baseline. Then study design reviews and influence without authority, followed by mentorship and escalation. That order mirrors how Staff engineers first stabilize systems, then scale judgment across teams.
 
 ## Topics
 

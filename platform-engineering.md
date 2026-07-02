@@ -10,7 +10,7 @@ Staff Mobile Platform Engineers spend most of their time building leverage — n
 
 ## Learning Order
 
-> *Topics to be added as the tree is built out. Begin with multi-tenancy and design-system architecture.*
+Start with internal developer platforms, because paved roads define how other teams experience architecture. Then study design systems, library versioning, and SDK distribution. Finish with build graph scaling, where platform choices become daily developer productivity.
 
 ## Topics
 

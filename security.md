@@ -10,7 +10,7 @@ Mobile is the attack surface for financial, identity, and personal-data systems.
 
 ## Learning Order
 
-> *Most topics here apply across other trees. Start with privacy and data residency as the cross-cutting concern, then dive into trees (Android security, transport security, etc.) as you encounter them.*
+Start with privacy and data residency because they shape what data should exist at all. Then move through authentication, secure storage, and key management. Finish with certificate pinning and attestation, where threat models meet mobile device reality.
 
 ## Topics
 

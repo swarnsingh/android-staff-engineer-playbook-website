@@ -1,69 +1,51 @@
 # Learning Paths
 
-This repository is massive. Reading it linearly from `android.md` to `security.md` is a recipe for burnout.
-Instead, use these curated learning paths based on your immediate goals.
+This repository is large enough that reading it linearly from `android.md` to `security.md` is a recipe for burnout. Use these paths based on the question you are trying to answer.
 
 ---
 
-## Path 1: The "I have a System Design Interview next week" Sprint
-If you need to quickly ramp up on how to design mobile systems at scale, focus entirely on the application of architecture and distributed systems.
+## Path 1: Mobile System Design Sprint
 
-1.  **Start with the Framework:** [Mobile System Design Framework](mobile-system-design.md)
-2.  **Understand the Backend Constraints:**
-    *   [API Design for Mobile](backend-for-mobile/api-design-for-mobile.md)
-    *   [Transport Protocols](backend-for-mobile/transport-protocols.md)
-3.  **Master the Hard Constraints (The "Gotchas"):**
-    *   [Offline Sync](mobile-system-design/offline-sync.md) (The hardest problem in mobile)
-    *   [Pagination](mobile-system-design/pagination.md)
-    *   [Image Loading](mobile-system-design/image-loading.md)
-4.  **Review the Blueprints:** Read the [Reference Architectures](reference-architectures.md) to see how the pieces fit together into a cohesive app.
+Use this when you need to design mobile systems under interview or architecture-review pressure.
+
+1. **Start with the framework:** [Mobile System Design Framework](mobile-system-design/design-framework.md)
+2. **Learn the mobile/backend contract:** [API Design for Mobile](backend-for-mobile/api-design-for-mobile.md), [Transport Protocols](backend-for-mobile/transport-protocols.md), and [Versioning & Backward Compatibility](mobile-system-design/versioning-and-backward-compatibility.md)
+3. **Study the hard mobile constraints:** [Offline Sync](mobile-system-design/offline-sync.md), [Pagination](mobile-system-design/pagination.md), [Image Loading](mobile-system-design/image-loading.md), and [Push Notifications](mobile-system-design/push-notifications.md)
+4. **Practice full designs:** [Ride-Hailing](mobile-system-design/ride-hailing.md), [Chat / Messaging](mobile-system-design/chat-messaging.md), [News Feed](mobile-system-design/news-feed.md), and [Payment Flow](mobile-system-design/payment-flow.md)
+5. **Read the blueprints:** [Reference Architectures](reference-architectures.md) shows how the same tradeoffs become buildable systems.
 
 ---
 
-## Path 2: The "Senior to Staff" Promotion Track
-If you are already a strong technical Senior engineer and want to understand the *scope* and *impact* required for Staff.
+## Path 2: Senior to Staff Track
 
-1.  **The Mindset Shift:**
-    *   [Senior to Staff Progression](career/senior-to-staff-progression.md)
-    *   [Scope and Ambiguity](career/scope-and-ambiguity.md)
-2.  **Building Leverage (Platform Engineering):**
-    *   [Internal Developer Platforms](platform-engineering/internal-developer-platforms.md)
-    *   [Build Graph Scaling](platform-engineering/build-graph-scaling.md)
-3.  **Communication & Leadership:**
-    *   [Writing Technical Documents (RFCs)](career/writing-rfcs.md)
-    *   [Incident Response & On-Call](leadership/incident-response-on-call.md)
-    *   [Influence Without Authority](leadership/influence-without-authority.md)
+Use this when you are already a strong Senior engineer and want to understand Staff-level scope, leverage, and decision quality.
+
+1. **Calibrate the level change:** [Senior to Staff Progression](career/senior-to-staff-progression.md) and [Scope and Ambiguity](career/scope-and-ambiguity.md)
+2. **Build leverage:** [Internal Developer Platforms](platform-engineering/internal-developer-platforms.md), [Build Graph Scaling](platform-engineering/build-graph-scaling.md), and [Design Systems Architecture](platform-engineering/design-systems-architecture.md)
+3. **Lead through documents and reviews:** [Writing Technical Documents (RFCs)](career/writing-rfcs.md), [Running a Design Review](leadership/running-a-design-review.md), and [Escalation & Decision Making](leadership/escalation-and-decision-making.md)
+4. **Operate production systems:** [Incident Response & On-Call](leadership/incident-response-on-call.md), [SLOs](observability/slos.md), [Alerting](observability/alerting.md), and [Release Strategy](release-engineering/release-strategy.md)
+5. **Make risk visible:** [Security & Privacy](mobile-system-design/security-and-privacy.md), [Privacy, GDPR & Data Residency](security/privacy-gdpr-data-residency.md), and [Kill Switches](release-engineering/kill-switches.md)
 
 ---
 
-## Path 3: The Android Performance & Internals Deep Dive
-If you want to become the resident expert on why the app is crashing, freezing, or draining the battery.
+## Path 3: Android Performance and Internals Deep Dive
 
-1.  **The Engine (Kotlin & OS):**
-    *   [Kotlin Bytecode](kotlin/bytecode.md)
-    *   [ART & Dalvik](android/os-internals/art-and-dalvik.md)
-    *   [The Binder](android/os-internals/the-binder.md)
-2.  **Concurrency:**
-    *   [Coroutines Under the Hood](android/concurrency/coroutines-under-the-hood.md)
-    *   [Threads and Looper](android/concurrency/threads-and-looper.md)
-3.  **Performance Bottlenecks:**
-    *   [Jank & Rendering](android/performance/jank.md)
-    *   [ANRs](android/performance/anrs.md)
-    *   [Memory Management & Leaks](android/performance/memory-management-and-leaks.md)
-4.  **Measurement (Observability):**
-    *   [SLIs, SLOs, and SLAs](observability/slis.md)
-    *   [Crash Monitoring](android/observability/crash-monitoring.md)
+Use this when you want to become the person who can explain crashes, freezes, memory pressure, startup regressions, and battery drain.
+
+1. **Understand the runtime:** [ART & Dalvik](android/os-internals/art-and-dalvik.md), [Zygote](android/os-internals/the-zygote.md), [Binder](android/os-internals/the-binder.md), and [ActivityManager & Process Lifecycle](android/os-internals/activitymanager-process-lifecycle.md)
+2. **Master concurrency:** [Coroutines](kotlin/coroutines.md), [Coroutines Under the Hood](android/concurrency/coroutines-under-the-hood.md), [SharedFlow & StateFlow](android/concurrency/shared-flow-and-state-flow.md), and [Threads & Looper](android/concurrency/threads-and-looper.md)
+3. **Measure UI performance:** [Jank](android/performance/jank.md), [Rendering](android/performance/rendering.md), [Compose Performance Tooling](android/compose/compose-performance-tooling.md), and [Macrobenchmark & Perfetto](android/performance/macrobenchmark-and-perfetto.md)
+4. **Control resource pressure:** [Memory Management & Leaks](android/performance/memory-management-and-leaks.md), [Native Memory & Bitmaps](android/performance/native-memory-bitmaps.md), [Battery & Power Profiling](android/performance/battery-power-profiling.md), and [Network Radio Wakeups](android/performance/network-radio-wakeups.md)
+5. **Close the loop with observability:** [Crash Monitoring](android/observability/crash-monitoring.md), [SLIs](observability/slis.md), [SLOs](observability/slos.md), and [Dashboards](observability/dashboards.md)
 
 ---
 
-## Path 4: The "Foundations First" Academic Track
-If you have time and want to build a bulletproof mental model of software engineering from the ground up, independent of the Android framework.
+## Path 4: Foundations First
 
-1.  **Computer Science & Complexity:**
-    *   [System Complexity](computer-science/system-complexity.md)
-    *   [Big-O](engineering-fundamentals/complexity-analysis.md)
-2.  **Engineering Fundamentals:**
-    *   [State Machines](engineering-fundamentals/state-machines.md)
-    *   [Idempotency](distributed-systems/idempotency.md)
-    *   [Time & Clocks](engineering-fundamentals/time-and-clocks.md)
-3.  **Principles:** Read the entire [Principles](principles.md) tree, starting with *Single Responsibility* and ending with *Optimize for Change*.
+Use this when you want the mental model underneath Android, Kotlin, distributed systems, and Staff-level architecture.
+
+1. **Learn complexity and data structures:** [Complexity Analysis](engineering-fundamentals/complexity-analysis.md), [Arrays and Strings](computer-science/arrays-and-strings.md), [Hashing](computer-science/hashing.md), [Trees](computer-science/trees.md), and [Graphs](computer-science/graphs.md)
+2. **Practice algorithmic patterns:** [Sorting and Searching](computer-science/sorting-and-searching.md), [Recursion and Backtracking](computer-science/recursion-backtracking.md), [Dynamic Programming](computer-science/dynamic-programming.md), and [Greedy Algorithms and Intervals](computer-science/greedy-and-intervals.md)
+3. **Build system intuition:** [State Machines](engineering-fundamentals/state-machines.md), [Queues](engineering-fundamentals/queues.md), [Backpressure](engineering-fundamentals/backpressure.md), [Fault Tolerance](engineering-fundamentals/fault-tolerance.md), and [Time & Clocks](engineering-fundamentals/time-and-clocks.md)
+4. **Connect to distributed reality:** [Idempotency](distributed-systems/idempotency.md), [Delivery Semantics](distributed-systems/delivery-semantics.md), [Consistency Models](distributed-systems/consistency-models.md), and [Mobile Client Consistency Contracts](distributed-systems/mobile-client-consistency-contracts.md)
+5. **Finish with principles:** [Principles](principles.md) turns the mechanics into judgment.

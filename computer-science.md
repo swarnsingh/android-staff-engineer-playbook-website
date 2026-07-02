@@ -14,7 +14,7 @@ Big-O first (it's the language everything else uses), then arrays/strings and se
 
 ## Topics
 
-- [Big-O](computer-science/big-o.md) — short stub; canonical is [`engineering-fundamentals/complexity-analysis.md`](engineering-fundamentals/complexity-analysis.md)
+- [Big-O](computer-science/big-o.md) — bridge file; canonical is [`engineering-fundamentals/complexity-analysis.md`](engineering-fundamentals/complexity-analysis.md)
 - [Arrays and Strings](computer-science/arrays-and-strings.md)
 - [Linked Lists, Stacks, and Queues](computer-science/linked-lists-stacks-queues.md)
 - [Hashing](computer-science/hashing.md)
