@@ -12,6 +12,13 @@ Decision heuristics. Distinct from patterns — patterns are *implementations*; 
 
 You can't memorize the right answer to every design question. You can internalize the heuristics that make the right answer reachable.
 
+## What This Folder Helps You Do
+
+- Build judgment that transfers across technologies instead of memorizing framework-specific rules.
+- Explain why a design is simple, cohesive, failure-aware, evolvable, deterministic, or deletion-friendly.
+- Use principles as review tools: identify when a module has too many reasons to change, when knowledge leaks across boundaries, and when an abstraction hides more than it helps.
+- Balance principles against each other, because Staff-level decisions often involve choosing which good rule matters most in a specific context.
+
 ## Learning Order
 
 The simplest first — Simplicity, Single Responsibility, Composition over Inheritance — then the operational ones — Design for Failure, Prefer Deletion — then the more abstract ones — Determinism, Optimize for Change.

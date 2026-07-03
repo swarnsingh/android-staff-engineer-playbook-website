@@ -8,6 +8,13 @@ The Senior → Staff → Principal progression as a real, navigable path. What c
 
 Most engineers don't get to Staff by being better at coding. They get there by changing what work they choose, what they optimize for, and what they make visible.
 
+## What This Folder Helps You Do
+
+- Understand the difference between Senior, Staff, and Principal scope without reducing growth to title-chasing.
+- Pick work that creates leverage across teams instead of only completing locally important tickets.
+- Write promotion and performance-review evidence that connects technical decisions to business, reliability, platform, and organizational outcomes.
+- Navigate ambiguity, influence, and long-running technical bets without waiting for perfect authority or perfect requirements.
+
 ## Learning Order
 
 Start with the Senior to Staff progression to understand the level change. Then study scope and ambiguity, technical leadership, RFC writing, and promotion packets. The path is intentionally ordered from self-calibration to visible organizational impact.

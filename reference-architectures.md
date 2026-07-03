@@ -12,6 +12,13 @@ A design problem in [`mobile-system-design/`](mobile-system-design.md) is the *r
 
 Every architecture has solved problems baked in. Reading a clean blueprint compresses years of mistakes other people made.
 
+## What This Folder Helps You Do
+
+- See what a complete mobile architecture looks like after the design interview is over and real implementation constraints arrive.
+- Compare product archetypes: consumer, merchant, banking, e-commerce, ride-hailing, social, video streaming, and offline-first apps.
+- Study how priorities change by domain: conversion, compliance, offline durability, real-time location, feed scale, playback quality, operational continuity, and reliability.
+- Reuse proven blueprints as starting points while still adapting them to your own product constraints, org structure, and backend maturity.
+
 ## Topics
 
 Each file follows the [blueprint template](templates/blueprint.md).

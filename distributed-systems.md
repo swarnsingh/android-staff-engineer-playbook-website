@@ -8,6 +8,13 @@ The theory underneath every multi-device, multi-server system the mobile client 
 
 A mobile engineer who treats the backend as a black box will eventually ship a bug that only manifests under partition or partial failure. Knowing CAP, consistency models, and idempotency at the theory level is what makes you able to reason about those bugs before they ship.
 
+## What This Folder Helps You Do
+
+- Reason about the backend guarantees your mobile app depends on: consistency, ordering, retries, deduplication, replication, and conflict resolution.
+- Design mobile flows that behave correctly under partitions, reconnects, duplicate submissions, stale reads, long-offline clients, and multi-device edits.
+- Translate distributed-systems theory into client contracts: idempotency keys, monotonic reads, sync tokens, vector clocks, CRDTs, and server-owned convergence.
+- Push backend/API discussions beyond "call this endpoint" toward explicit correctness, availability, and recovery guarantees.
+
 ## Learning Order
 
 CAP and consistency models first (the framing), then idempotency and delivery semantics (the most-applied concepts), then advanced topics (vector clocks, CRDTs, consensus).

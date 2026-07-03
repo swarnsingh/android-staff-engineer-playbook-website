@@ -8,6 +8,13 @@ A focused computer-science tree for Android engineers. This repo does not optimi
 
 You will rarely write a custom hash table, but you will frequently decide between a hash-based and tree-based structure for an LRU cache. Big-O appears in capacity-planning conversations. Graph reasoning appears in dependency-resolution and routing. Arrays, queues, heaps, sorting, recursion, dynamic programming, and intervals explain the performance shape of real product features.
 
+## What This Folder Helps You Do
+
+- Build the algorithmic vocabulary needed for senior Android interviews without turning the repo into a puzzle catalog.
+- Connect data structures to real mobile systems: DiffUtil, RecyclerView/Compose lists, caches, dependency graphs, routing, search, typeahead, sync queues, and local indexes.
+- Estimate CPU, memory, and latency costs before choosing a collection, algorithm, database query, or module graph shape.
+- Recognize when an algorithmic pattern is the right tool and when product constraints, persistence, or network behavior dominate the problem.
+
 ## Learning Order
 
 Big-O first (it's the language everything else uses), then arrays/strings and sequence structures, then hashing/trees/graphs/heaps, then algorithmic patterns, then `system-complexity` which ties data-structure choice to real-system performance.

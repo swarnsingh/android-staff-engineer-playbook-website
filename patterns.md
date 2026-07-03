@@ -10,6 +10,13 @@ Patterns are *implementations* — reusable shapes that solve a class of problem
 
 State machines have a canonical owner in [`engineering-fundamentals/state-machines.md`](engineering-fundamentals/state-machines.md) (mechanics); [`patterns/state.md`](patterns/state.md) is the pattern-shaped implementation. Cross-link both ways.
 
+## What This Folder Helps You Do
+
+- Recognize recurring solution shapes in Android, Kotlin, backend-for-mobile, and platform code without cargo-culting them.
+- Choose implementation patterns intentionally: Repository for source-of-truth boundaries, Adapter for anti-corruption layers, Strategy for runtime behavior, Command for queued work, and Saga for multi-step recovery.
+- Apply resilience patterns such as Retry and Circuit Breaker with mobile constraints like battery, offline mode, idempotency, and user-visible fallback.
+- Review whether a pattern reduces complexity or merely adds vocabulary around code that should stay simple.
+
 ## Learning Order
 
 Design patterns first (the classics), then resilience patterns (the production-engineering set).
@@ -33,4 +40,3 @@ Design patterns first (the classics), then resilience patterns (the production-e
 - [Circuit Breaker](patterns/circuit-breaker.md)
 - [Retry](patterns/retry.md)
 - [Saga](patterns/saga.md)
-

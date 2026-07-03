@@ -8,6 +8,14 @@ The Android platform, top to bottom — from app architecture down to Binder IPC
 
 Operating at Staff Mobile Platform Engineer level means understanding Android not as a collection of APIs but as a system with constraints (process death, doze, battery, ANRs) that shape every design decision above it.
 
+## What This Folder Helps You Do
+
+- Build Android features that survive lifecycle churn, configuration changes, process death, flaky networks, and OS background limits.
+- Choose the right platform primitive: Activity, Fragment, ViewModel, WorkManager, Service, Room, DataStore, Flow, StateFlow, Binder, or foreground service.
+- Understand how app code interacts with the OS: Zygote, ART, Binder, PackageManager, permissions, AppOps, and process lifecycle.
+- Diagnose production failures using Android-specific signals: ANRs, jank, cold start, memory leaks, app size, battery drain, radio wakeups, and crash telemetry.
+- Review Android architecture proposals at Staff level by asking whether they respect platform constraints, release constraints, and long-tail device behavior.
+
 ## Learning Order
 
 Architecture and lifecycle first (you cannot reason about anything else without these), then Compose (the modern UI system), then concurrency, then performance and operations. Build systems and internals come last — they sharpen everything that came before.

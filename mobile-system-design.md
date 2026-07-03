@@ -8,6 +8,13 @@ Three clusters: the design framework and non-functional requirements (the meta-s
 
 Design is the highest-leverage skill at Staff level. The framework and NFRs are lenses applied to every problem; the worked problems train pattern recognition; the platform/SDK topics are the components real systems are assembled from.
 
+## What This Folder Helps You Do
+
+- Walk into a mobile system-design interview or architecture review with a repeatable structure instead of improvising from memory.
+- Turn vague prompts into requirements, constraints, APIs, data models, high-level architecture, failure modes, rollout strategy, and observability.
+- Practice mobile-specific hard problems: offline sync, pagination, push delivery, location, video, payments, search, chat, feeds, and collaborative editing.
+- Design reusable mobile platforms and SDKs such as analytics, telemetry, feature flags, authentication, deep links, experimentation, and startup orchestration.
+
 ## Learning Order
 
 Framework + NFRs first — they apply to everything below. Then alternate between worked problems and the platform/SDK topics they exercise.

@@ -8,6 +8,13 @@ The canonical home for timeless concepts that span Android, backend, and distrib
 
 A Staff Mobile Platform Engineer is differentiated less by knowing a specific framework and more by understanding the substrate everything sits on: concurrency, state, caching, time. These are the concepts you reach for when designing under pressure.
 
+## What This Folder Helps You Do
+
+- Learn the timeless mechanics that reappear in Android, backend systems, distributed systems, SDKs, and platform engineering.
+- Explain tradeoffs using first principles instead of framework names: latency vs throughput, sync vs async, coupling, cohesion, queues, state machines, caching, and backpressure.
+- Spot design failure modes early: unbounded queues, hidden shared mutable state, cache incoherence, retry storms, clock assumptions, and serialization brittleness.
+- Use one shared vocabulary across the repo so application files can stay focused on concrete systems instead of redefining fundamentals.
+
 ## Learning Order
 
 Start with the building blocks (complexity, sync vs async, latency vs throughput), then move to state and coordination (state machines, queues, time & clocks), then to operational concerns (caching, backpressure, fault tolerance).

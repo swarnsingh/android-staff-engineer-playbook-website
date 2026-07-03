@@ -8,6 +8,13 @@ The canonical home for observability. Previously this was smuggled into the Andr
 
 You cannot operate a system you cannot see. SLOs and error budgets are how Staff engineers make reliability tradeoffs explicit instead of implicit.
 
+## What This Folder Helps You Do
+
+- Design telemetry that explains user impact instead of only collecting raw logs, metrics, traces, and dashboards.
+- Define SLIs, SLOs, error budgets, alerts, and release dashboards that help teams make better rollout and reliability decisions.
+- Connect mobile symptoms to backend causes through trace propagation, sampling, correlation IDs, crash signals, and performance cohorts.
+- Avoid observability traps: noisy alerts, PII leakage, unbounded logging cost, vanity dashboards, and metrics that cannot drive action.
+
 ## Learning Order
 
 Logging and structured logging first (the lowest layer), then metrics and tracing (the middle), then SLIs/SLOs/error budgets (the framing), then alerting and dashboards (how it reaches humans).
