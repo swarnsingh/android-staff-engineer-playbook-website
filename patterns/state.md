@@ -210,4 +210,4 @@ Creating states for every single UI widget (`ButtonEnabledState`, `TextColorStat
 
 - [`../android/architecture/state-management.md`](../android/architecture/state-management.md) — Deep dive into Compose state, `remember`, and ViewModel state hoisting.
 - [`../android/architecture/mvvm-vs-mvi.md`](../android/architecture/mvvm-vs-mvi.md) — Detailed comparison of separated streams (MVVM) vs. single state reducers (MVI).
-- [`../kotlin/sealed-classes.md`](../kotlin/sealed-classes.md) — The language mechanics of exhaustive checking and memory layout.
+- [`../kotlin/language-core/sealed-classes.md`](../kotlin/language-core/sealed-classes.md) — The language mechanics of exhaustive checking and memory layout.

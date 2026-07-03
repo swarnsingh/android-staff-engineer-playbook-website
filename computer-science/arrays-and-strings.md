@@ -282,5 +282,5 @@ Use `Locale.ROOT` for protocol identifiers, cache keys, and case-insensitive int
 
 - [`../engineering-fundamentals/complexity-analysis.md`](../engineering-fundamentals/complexity-analysis.md)
 - [`hashing.md`](hashing.md)
-- [`../kotlin/memory-model.md`](../kotlin/memory-model.md)
+- [`../kotlin/runtime-and-jvm/memory-model.md`](../kotlin/runtime-and-jvm/memory-model.md)
 - [`../mobile-system-design/typeahead-autocomplete-search.md`](../mobile-system-design/typeahead-autocomplete-search.md)

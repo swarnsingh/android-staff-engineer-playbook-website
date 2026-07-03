@@ -54,7 +54,7 @@ Matching components:
 
 ## Coroutine Scopes Recap
 
-(Detailed coverage in [`../../kotlin/coroutines.md`](../../kotlin/coroutines.md); summarized here for context.)
+(Detailed coverage in [`../../kotlin/coroutines-and-flow/coroutines.md`](../../kotlin/coroutines-and-flow/coroutines.md); summarized here for context.)
 
 A coroutine scope holds a `CoroutineContext` (mostly `Job` + `CoroutineDispatcher`). Every `launch { ... }` or `async { ... }` becomes a child of the scope's `Job`. Cancelling the scope cancels every child.
 
@@ -426,7 +426,7 @@ Both scopes start and end at the same time (login/logout). This is the right sha
 - [`components.md`](components.md) — Hilt component hierarchy in detail.
 - [`hilt-vs-koin-vs-manual-di.md`](hilt-vs-koin-vs-manual-di.md) — DI framework choice.
 - [`dependency-injection.md`](dependency-injection.md) — DI patterns canonical.
-- [`../../kotlin/coroutines.md`](../../kotlin/coroutines.md) — coroutine scope mechanics (Job, SupervisorJob, structured concurrency).
+- [`../../kotlin/coroutines-and-flow/coroutines.md`](../../kotlin/coroutines-and-flow/coroutines.md) — coroutine scope mechanics (Job, SupervisorJob, structured concurrency).
 - [`../architecture/viewmodel.md`](../architecture/viewmodel.md) — `viewModelScope` lifetime.
 - [`../concurrency/coroutines-under-the-hood.md`](../concurrency/coroutines-under-the-hood.md) — bytecode-level continuation mechanics.
 - [`../concurrency/workmanager.md`](../concurrency/workmanager.md) — for work that must outlive the process.

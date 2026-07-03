@@ -497,11 +497,11 @@ Extensions appear in stack traces by their JVM-mangled names: `StringExtKt.title
 In this repository:
 
 - [`functions.md`](functions.md) — function types, lambdas, higher-order functions; extensions build on top.
-- [`inline-functions.md`](inline-functions.md) — how `inline` interacts with extensions to give zero call overhead.
-- [`reified-types.md`](reified-types.md) — reified generics, only available on inline functions, used heavily in inline extensions.
+- [`inline-functions.md`](../compiler-features/inline-functions.md) — how `inline` interacts with extensions to give zero call overhead.
+- [`reified-types.md`](../compiler-features/reified-types.md) — reified generics, only available on inline functions, used heavily in inline extensions.
 - [`delegation.md`](delegation.md) — class delegation `by` complements extensions as an "add behavior without inheritance" tool.
 - [`null-safety.md`](null-safety.md) — nullable receivers depend on platform null safety.
-- [`jvm-interop.md`](jvm-interop.md) — how extensions are exposed to Java callers, name mangling rules.
+- [`jvm-interop.md`](../runtime-and-jvm/jvm-interop.md) — how extensions are exposed to Java callers, name mangling rules.
 
 External:
 

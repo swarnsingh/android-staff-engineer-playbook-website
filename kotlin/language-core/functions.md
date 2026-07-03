@@ -305,7 +305,7 @@ Compiles to:
 public static Object fetchUser(long id, Continuation<? super User> $cont)
 ```
 
-A `suspend` function is a normal function whose last parameter is a `Continuation` — Kotlin's mechanism for storing where the function should resume after suspension. Function types for suspending lambdas are `suspend (T) -> R`, which compile to `Function2<T, Continuation<R>, Object>` (arity bumped by 1 for the continuation). See [`coroutines.md`](coroutines.md) for the full state machine model.
+A `suspend` function is a normal function whose last parameter is a `Continuation` — Kotlin's mechanism for storing where the function should resume after suspension. Function types for suspending lambdas are `suspend (T) -> R`, which compile to `Function2<T, Continuation<R>, Object>` (arity bumped by 1 for the continuation). See [`coroutines.md`](../coroutines-and-flow/coroutines.md) for the full state machine model.
 
 ---
 
@@ -375,7 +375,7 @@ PrimaryButton(
 )
 ```
 
-The lambda is captured into the Composer's slot table and re-invoked on subsequent compositions. Compose recomposition relies on lambda *identity* — when `onClick` is structurally the same closure (capturing the same values), Compose can skip recomposing the child. See [`recomposition-and-state.md`](../android/compose/recomposition-and-state.md) for the lambda-stability story.
+The lambda is captured into the Composer's slot table and re-invoked on subsequent compositions. Compose recomposition relies on lambda *identity* — when `onClick` is structurally the same closure (capturing the same values), Compose can skip recomposing the child. See [`recomposition-and-state.md`](../../android/compose/recomposition-and-state.md) for the lambda-stability story.
 
 ### Strategy pattern as a function
 
@@ -399,7 +399,7 @@ fun checkout(price: BigDecimal, strategy: DiscountStrategy) =
     strategy(price)
 ```
 
-No interface, no implementation classes, no factories. Just functions. See [`../patterns/strategy.md`](../patterns/strategy.md) for when to prefer functions vs interfaces.
+No interface, no implementation classes, no factories. Just functions. See [`../patterns/strategy.md`](../../patterns/strategy.md) for when to prefer functions vs interfaces.
 
 ---
 
@@ -623,7 +623,7 @@ User-supplied function values (e.g., a script engine that takes user input as co
 
 Lambdas appear in stack traces as `EnclosingClass$enclosingFun$1.invoke()`. The `$1` is the order of declaration in the file. If you need readable traces, prefer named functions and pass them as references rather than inline lambdas.
 
-For Compose, lambda identity affects recomposition skipping. Tools like the Compose Compiler Reports flag unstable lambda captures that defeat skipping. See [`recomposition-and-state.md`](../android/compose/recomposition-and-state.md) for details.
+For Compose, lambda identity affects recomposition skipping. Tools like the Compose Compiler Reports flag unstable lambda captures that defeat skipping. See [`recomposition-and-state.md`](../../android/compose/recomposition-and-state.md) for details.
 
 ---
 
@@ -681,11 +681,11 @@ For Compose, lambda identity affects recomposition skipping. Tools like the Comp
 In this repository:
 
 - [`extensions.md`](extensions.md) — extension functions, including extension lambdas with receivers.
-- [`inline-functions.md`](inline-functions.md) — `inline`, `crossinline`, `noinline`, reified generics, performance tradeoffs.
-- [`coroutines.md`](coroutines.md) — suspend functions are functions with a Continuation parameter.
+- [`inline-functions.md`](../compiler-features/inline-functions.md) — `inline`, `crossinline`, `noinline`, reified generics, performance tradeoffs.
+- [`coroutines.md`](../coroutines-and-flow/coroutines.md) — suspend functions are functions with a Continuation parameter.
 - [`null-safety.md`](null-safety.md) — function types can be nullable: `((Int) -> String)?`.
-- [`bytecode.md`](bytecode.md) — how Kotlin functions and lambdas appear in compiled JVM bytecode.
-- [`../patterns/strategy.md`](../patterns/strategy.md) — when a function value replaces an interface-based Strategy.
+- [`bytecode.md`](../runtime-and-jvm/bytecode.md) — how Kotlin functions and lambdas appear in compiled JVM bytecode.
+- [`../patterns/strategy.md`](../../patterns/strategy.md) — when a function value replaces an interface-based Strategy.
 
 External:
 

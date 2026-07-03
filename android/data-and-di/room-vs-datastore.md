@@ -485,7 +485,7 @@ For Room: there's no automatic migrator from SharedPreferences. Read the prefs o
 - [`../networking-and-security/security-and-keystore.md`](../networking-and-security/security-and-keystore.md) — encrypted storage primitives.
 - [`../../patterns/repository.md`](../../patterns/repository.md) — single source of truth pattern.
 - [`../../backend-for-mobile/graphql-vs-rest.md`](../../backend-for-mobile/graphql-vs-rest.md) — syncing local Room with server.
-- [`../../kotlin/coroutines.md`](../../kotlin/coroutines.md) — suspend Flow integration.
+- [`../../kotlin/coroutines-and-flow/coroutines.md`](../../kotlin/coroutines-and-flow/coroutines.md) — suspend Flow integration.
 - [Android Developers — Save data with DataStore](https://developer.android.com/topic/libraries/architecture/datastore) — official guide.
 - [Android Developers — Room overview](https://developer.android.com/training/data-storage/room) — official guide.
 - [SQLCipher for Android](https://www.zetetic.net/sqlcipher/sqlcipher-for-android/) — encryption deep dive.

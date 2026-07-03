@@ -249,6 +249,6 @@ viewModel.locationUpdates.collect { location ->
 ## Further Reading
 
 - [`../android/architecture/state-management.md`](../android/architecture/state-management.md) — Deep dive into modeling UI state with Sealed Classes and StateFlow.
-- [`../kotlin/coroutines.md`](../kotlin/coroutines.md) — Understanding the underlying Coroutine scopes that power Flows.
+- [`../kotlin/coroutines-and-flow/coroutines.md`](../kotlin/coroutines-and-flow/coroutines.md) — Understanding the underlying Coroutine scopes that power Flows.
 - [`../android/compose/recomposition-and-state.md`](../android/compose/recomposition-and-state.md) — How Compose observes State changes to trigger UI updates.
 - [`../backend-for-mobile/api-design-for-mobile.md`](../backend-for-mobile/api-design-for-mobile.md) — Emitting network responses into observable streams.

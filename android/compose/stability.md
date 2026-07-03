@@ -426,8 +426,8 @@ Crude but effective. Or use the stability config file.
 - [`recomposition-and-state.md`](recomposition-and-state.md) — the state side of the system.
 - [`side-effects.md`](side-effects.md) — interactions between effects and stability.
 - [`modifiers-and-layout.md`](modifiers-and-layout.md) — `Modifier` stability.
-- [`../../kotlin/data-classes.md`](../../kotlin/data-classes.md) — stable `data class` requirements.
-- [`../../kotlin/null-safety.md`](../../kotlin/null-safety.md) — `var` traps that ruin stability.
+- [`../../kotlin/language-core/data-classes.md`](../../kotlin/language-core/data-classes.md) — stable `data class` requirements.
+- [`../../kotlin/language-core/null-safety.md`](../../kotlin/language-core/null-safety.md) — `var` traps that ruin stability.
 - [`../architecture/mvvm-vs-mvi.md`](../architecture/mvvm-vs-mvi.md) — UI state design with stability in mind.
 - [Compose Compiler — Stability documentation](https://developer.android.com/jetpack/compose/performance/stability) — official.
 - [Strong Skipping Mode — Compose 1.7+](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping) — official.

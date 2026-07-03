@@ -520,7 +520,7 @@ fun setup() {
 - [`../architecture/modularization-strategies.md`](../architecture/modularization-strategies.md) — DI across `:api` / `:impl` modules.
 - [`../architecture/viewmodel.md`](../architecture/viewmodel.md) — `@HiltViewModel` and factories.
 - [`../../platform-engineering/build-graph-scaling.md`](../../platform-engineering/build-graph-scaling.md) — KAPT → KSP migration impact.
-- [`../../kotlin/delegation.md`](../../kotlin/delegation.md) — `by viewModels()` / `by hiltViewModel()` mechanics.
+- [`../../kotlin/language-core/delegation.md`](../../kotlin/language-core/delegation.md) — `by viewModels()` / `by hiltViewModel()` mechanics.
 - [Hilt documentation](https://developer.android.com/training/dependency-injection/hilt-android) — official.
 - [Koin documentation](https://insert-koin.io/) — official.
 - [Koin Annotations](https://insert-koin.io/docs/reference/koin-annotations/start) — compiler plugin reference.

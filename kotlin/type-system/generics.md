@@ -513,13 +513,13 @@ When reviewing generics, I look for:
 ## Further Reading
 
 - [`variance.md`](variance.md) — `in`/`out` deep dive.
-- [`reified-types.md`](reified-types.md) — `reified` mechanics in depth.
-- [`inline-functions.md`](inline-functions.md) — `inline` rules that enable `reified`.
-- [`sealed-classes.md`](sealed-classes.md) — generic sealed hierarchies (`Resource<out T>`).
-- [`data-classes.md`](data-classes.md) — generic data classes (`Pair<A, B>`).
-- [`null-safety.md`](null-safety.md) — `<T : Any>` for non-null type params.
-- [`../android/architecture/viewmodel.md`](../android/architecture/viewmodel.md) — generic ViewModel factories.
-- [`../platform-engineering/library-versioning.md`](../platform-engineering/library-versioning.md) — `@JvmSuppressWildcards` and Java consumer concerns.
+- [`reified-types.md`](../compiler-features/reified-types.md) — `reified` mechanics in depth.
+- [`inline-functions.md`](../compiler-features/inline-functions.md) — `inline` rules that enable `reified`.
+- [`sealed-classes.md`](../language-core/sealed-classes.md) — generic sealed hierarchies (`Resource<out T>`).
+- [`data-classes.md`](../language-core/data-classes.md) — generic data classes (`Pair<A, B>`).
+- [`null-safety.md`](../language-core/null-safety.md) — `<T : Any>` for non-null type params.
+- [`../android/architecture/viewmodel.md`](../../android/architecture/viewmodel.md) — generic ViewModel factories.
+- [`../platform-engineering/library-versioning.md`](../../platform-engineering/library-versioning.md) — `@JvmSuppressWildcards` and Java consumer concerns.
 - [Kotlin Docs — Generics](https://kotlinlang.org/docs/generics.html) — official reference.
 - [Roman Elizarov — "Generic variance"](https://elizarov.medium.com/) — Kotlin language team's design notes.
 - [Java Generics FAQ — Angelika Langer](https://www.angelikalanger.com/GenericsFAQ/JavaGenericsFAQ.html) — encyclopedic JVM-side reference.

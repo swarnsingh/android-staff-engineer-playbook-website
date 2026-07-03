@@ -397,6 +397,6 @@ In production tests, prefer Turbine for Flow assertions and `runTest` for determ
 
 - [`coroutines.md`](coroutines.md) - structured concurrency and cancellation.
 - [`test-dispatchers-virtual-time.md`](test-dispatchers-virtual-time.md) - deterministic coroutine tests.
-- [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md) - hot-flow selection.
+- [`../android/concurrency/shared-flow-and-state-flow.md`](../../android/concurrency/shared-flow-and-state-flow.md) - hot-flow selection.
 - [Kotlin Flow guide](https://kotlinlang.org/docs/flow.html)
 - [Kotlin API: Flow](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow/)

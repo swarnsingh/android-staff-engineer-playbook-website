@@ -230,4 +230,4 @@ When reviewing code containing `inline`, a Staff engineer enforces strict bounda
 ## Further Reading
 
 - [`reified-types.md`](reified-types.md) — The other major feature unlocked by `inline`.
-- [`memory-model.md`](memory-model.md) — Understanding the Heap vs Stack implications of allocating hidden Lambda objects.
+- [`memory-model.md`](../runtime-and-jvm/memory-model.md) — Understanding the Heap vs Stack implications of allocating hidden Lambda objects.

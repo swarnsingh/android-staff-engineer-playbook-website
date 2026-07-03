@@ -558,8 +558,8 @@ State persists across the three wizard pages and survives process death.
 - [`../compose/compose-runtime.md`](../compose/compose-runtime.md) — CompositionLocal deep dive.
 - [`../compose/snapshot-system.md`](../compose/snapshot-system.md) — snapshot-based observability of state.
 - [`../data-and-di/scopes.md`](../data-and-di/scopes.md) — coroutine vs Hilt scopes for state holders.
-- [`../../kotlin/sealed-classes.md`](../../kotlin/sealed-classes.md) — modeling UI state.
-- [`../../kotlin/data-classes.md`](../../kotlin/data-classes.md) — immutable state classes.
+- [`../../kotlin/language-core/sealed-classes.md`](../../kotlin/language-core/sealed-classes.md) — modeling UI state.
+- [`../../kotlin/language-core/data-classes.md`](../../kotlin/language-core/data-classes.md) — immutable state classes.
 - [Android Developers — State and Jetpack Compose](https://developer.android.com/develop/ui/compose/state) — official.
 - [Android Developers — UI Layer guidance](https://developer.android.com/topic/architecture/ui-layer) — official.
 - [Android Developers — State holders](https://developer.android.com/topic/architecture/ui-layer/stateholders) — official.

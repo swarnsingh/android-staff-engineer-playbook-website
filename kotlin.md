@@ -21,45 +21,45 @@ Language basics -> type system depth -> API design and metaprogramming -> corout
 
 ## Organization Note
 
-The `kotlin/` folder is physically flat to preserve existing links, but this index groups the files by learning domain. If the repo later chooses a filesystem restructure, these sections are the intended subfolder boundaries.
+The `kotlin/` folder is organized by learning domain. Each subfolder keeps a focused slice of the language: core syntax, type-system design, compiler features, coroutine/Flow mechanics, runtime/JVM behavior, and version-specific updates.
 
 ## Topics
 
 ### Language Core
 
-- [Variables](kotlin/variables.md)
-- [Null Safety](kotlin/null-safety.md)
-- [Functions](kotlin/functions.md)
-- [Extensions](kotlin/extensions.md)
-- [Data Classes](kotlin/data-classes.md)
-- [Sealed Classes](kotlin/sealed-classes.md)
-- [Delegation](kotlin/delegation.md)
+- [Variables](kotlin/language-core/variables.md)
+- [Null Safety](kotlin/language-core/null-safety.md)
+- [Functions](kotlin/language-core/functions.md)
+- [Extensions](kotlin/language-core/extensions.md)
+- [Data Classes](kotlin/language-core/data-classes.md)
+- [Sealed Classes](kotlin/language-core/sealed-classes.md)
+- [Delegation](kotlin/language-core/delegation.md)
 
 ### Type System and API Design
 
-- [Generics](kotlin/generics.md)
-- [Variance](kotlin/variance.md)
+- [Generics](kotlin/type-system/generics.md)
+- [Variance](kotlin/type-system/variance.md)
 
 ### Compiler Features and Metaprogramming
 
-- [Inline Functions](kotlin/inline-functions.md)
-- [Reified Types](kotlin/reified-types.md)
+- [Inline Functions](kotlin/compiler-features/inline-functions.md)
+- [Reified Types](kotlin/compiler-features/reified-types.md)
 
 ### Coroutines and Flow
 
-- [Coroutines](kotlin/coroutines.md) — canonical owner; platform application lives in [`android/concurrency/coroutines-under-the-hood.md`](android/concurrency/coroutines-under-the-hood.md)
-- [Channels and Select](kotlin/channels-and-select.md)
-- [Flow Operators and Backpressure](kotlin/flow-operators-and-backpressure.md)
-- [callbackFlow and Bridging Callbacks](kotlin/callbackflow-and-bridging-callbacks.md)
-- [Coroutines Debugging and Profiling](kotlin/coroutines-debugging-and-profiling.md)
-- [Test Dispatchers and Virtual Time](kotlin/test-dispatchers-virtual-time.md)
+- [Coroutines](kotlin/coroutines-and-flow/coroutines.md) — canonical owner; platform application lives in [`android/concurrency/coroutines-under-the-hood.md`](android/concurrency/coroutines-under-the-hood.md)
+- [Channels and Select](kotlin/coroutines-and-flow/channels-and-select.md)
+- [Flow Operators and Backpressure](kotlin/coroutines-and-flow/flow-operators-and-backpressure.md)
+- [callbackFlow and Bridging Callbacks](kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks.md)
+- [Coroutines Debugging and Profiling](kotlin/coroutines-and-flow/coroutines-debugging-and-profiling.md)
+- [Test Dispatchers and Virtual Time](kotlin/coroutines-and-flow/test-dispatchers-virtual-time.md)
 
 ### Runtime and JVM Interop
 
-- [Memory Model](kotlin/memory-model.md)
-- [JVM Interop](kotlin/jvm-interop.md)
-- [Bytecode](kotlin/bytecode.md)
+- [Memory Model](kotlin/runtime-and-jvm/memory-model.md)
+- [JVM Interop](kotlin/runtime-and-jvm/jvm-interop.md)
+- [Bytecode](kotlin/runtime-and-jvm/bytecode.md)
 
 ### Version Updates
 
-- [Kotlin 2.4 Update for Android and KMP](kotlin/kotlin-2-4-update.md)
+- [Kotlin 2.4 Update for Android and KMP](kotlin/version-updates/kotlin-2-4-update.md)

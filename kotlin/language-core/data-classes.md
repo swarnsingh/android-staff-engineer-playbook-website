@@ -323,7 +323,7 @@ Two fixes for the second case:
    import kotlinx.collections.immutable.ImmutableList
    data class User(val id: String, val tags: ImmutableList<String>)
    ```
-   See [`../android/compose/stability.md`](../android/compose/stability.md) for the `@Stable` / `@Immutable` deep dive.
+   See [`../android/compose/stability.md`](../../android/compose/stability.md) for the `@Stable` / `@Immutable` deep dive.
 
 ### Why this matters in production
 
@@ -477,11 +477,11 @@ When reviewing a data class PR, I check for:
 - [`null-safety.md`](null-safety.md) — nullable properties inside data classes.
 - [`sealed-classes.md`](sealed-classes.md) — sealed parents + data class children pattern.
 - [`delegation.md`](delegation.md) — `by lazy` for expensive derived properties on a data class.
-- [`variance.md`](variance.md) — generic data classes (`Result<out T>`, `Either<L, R>`).
-- [`../android/compose/stability.md`](../android/compose/stability.md) — `@Stable` / `@Immutable` deep dive.
-- [`../android/compose/recomposition-and-state.md`](../android/compose/recomposition-and-state.md) — how Compose uses `equals` to skip work.
-- [`../android/data-and-di/room.md`](../android/data-and-di/room.md) — data class as `@Entity`.
-- [`../principles/make-invalid-states-impossible.md`](../principles/make-invalid-states-impossible.md) — immutable value types as the foundation.
+- [`variance.md`](../type-system/variance.md) — generic data classes (`Result<out T>`, `Either<L, R>`).
+- [`../android/compose/stability.md`](../../android/compose/stability.md) — `@Stable` / `@Immutable` deep dive.
+- [`../android/compose/recomposition-and-state.md`](../../android/compose/recomposition-and-state.md) — how Compose uses `equals` to skip work.
+- [`../android/data-and-di/room.md`](../../android/data-and-di/room.md) — data class as `@Entity`.
+- [`../principles/make-invalid-states-impossible.md`](../../principles/make-invalid-states-impossible.md) — immutable value types as the foundation.
 - [Kotlin Docs — Data classes](https://kotlinlang.org/docs/data-classes.html) — official reference.
 - [JEP 395: Records](https://openjdk.org/jeps/395) — Java's equivalent feature; useful for comparison.
 - [Jake Wharton — "Public API challenges in Kotlin"](https://jakewharton.com/public-api-challenges-in-kotlin/) — binary compatibility of data classes.

@@ -461,8 +461,8 @@ Almost no app developer needs this. Useful only if you're building a Compose-awa
 - [`recomposition-and-state.md`](recomposition-and-state.md) — state management at the API level.
 - [`stability.md`](stability.md) — `@Stable`/`@Immutable` for snapshot-state-holding wrappers.
 - [`side-effects.md`](side-effects.md) — `LaunchedEffect` + `snapshotFlow` patterns.
-- [`../../kotlin/coroutines.md`](../../kotlin/coroutines.md) — bridging snapshot world to Flow.
-- [`../../kotlin/memory-model.md`](../../kotlin/memory-model.md) — JMM concurrency that snapshots build on.
+- [`../../kotlin/coroutines-and-flow/coroutines.md`](../../kotlin/coroutines-and-flow/coroutines.md) — bridging snapshot world to Flow.
+- [`../../kotlin/runtime-and-jvm/memory-model.md`](../../kotlin/runtime-and-jvm/memory-model.md) — JMM concurrency that snapshots build on.
 - [`../architecture/viewmodel.md`](../architecture/viewmodel.md) — snapshot-state ViewModels.
 - [Compose Snapshot System (Android Developers)](https://developer.android.com/develop/ui/compose/state) — overview.
 - [Snapshot APIs in Compose Runtime](https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/package-summary) — reference.

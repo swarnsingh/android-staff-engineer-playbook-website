@@ -8,7 +8,7 @@ You can only use the `reified` keyword on generic parameters of an `inline` func
 
 ## Why It Matters
 
-As covered in [Generics](generics.md), the JVM erases generic types at compile time. At runtime, a `List<String>` is just a `List`. Because of this, you cannot perform reflection or type-checking on `T`.
+As covered in [Generics](../type-system/generics.md), the JVM erases generic types at compile time. At runtime, a `List<String>` is just a `List`. Because of this, you cannot perform reflection or type-checking on `T`.
 
 ```kotlin
 // BAD: This will not compile.
@@ -191,5 +191,5 @@ When reviewing code, a Staff engineer looks for API ergonomics:
 
 ## Further Reading
 
-- [`generics.md`](generics.md) — The fundamental rules of Type Erasure.
+- [`generics.md`](../type-system/generics.md) — The fundamental rules of Type Erasure.
 - [`inline-functions.md`](inline-functions.md) — The copy/paste mechanism that makes reified types possible.

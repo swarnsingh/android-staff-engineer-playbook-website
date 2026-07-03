@@ -379,6 +379,6 @@ On Android, `Dispatchers.Main.immediate` skips dispatch if you're already on the
 ## Further Reading
 
 - [`swift-interop.md`](../tooling/swift-interop.md) — How SKIE bridges Kotlin `Job` cancellation to Swift `Task` cancellation.
-- [`../../kotlin/coroutines.md`](../../../kotlin/coroutines.md) — Deep dive into Job hierarchies, SupervisorJob, and cancellation propagation.
-- [`../../kotlin/memory-model.md`](../../../kotlin/memory-model.md) — The JVM memory model (compare with the K/Native GC described here).
+- [`../../kotlin/coroutines-and-flow/coroutines.md`](../../../kotlin/coroutines-and-flow/coroutines.md) — Deep dive into Job hierarchies, SupervisorJob, and cancellation propagation.
+- [`../../kotlin/runtime-and-jvm/memory-model.md`](../../../kotlin/runtime-and-jvm/memory-model.md) — The JVM memory model (compare with the K/Native GC described here).
 - [`testing-and-mocking.md`](testing-and-mocking.md) — How to test concurrent code in `commonTest` across both runtimes.

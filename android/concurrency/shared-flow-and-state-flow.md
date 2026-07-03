@@ -573,9 +573,9 @@ Treat Swift export as an interop surface, not as a semantic adapter that makes e
 ## Further Reading
 
 - [`../architecture/flow.md`](../architecture/flow.md) - Cold vs hot Flow foundations.
-- [`../../kotlin/flow-operators-and-backpressure.md`](../../kotlin/flow-operators-and-backpressure.md) - Flow operator semantics.
-- [`../../kotlin/channels-and-select.md`](../../kotlin/channels-and-select.md) - Channels and point-to-point delivery.
-- [`../../kotlin/test-dispatchers-virtual-time.md`](../../kotlin/test-dispatchers-virtual-time.md) - Testing hot flows.
+- [`../../kotlin/coroutines-and-flow/flow-operators-and-backpressure.md`](../../kotlin/coroutines-and-flow/flow-operators-and-backpressure.md) - Flow operator semantics.
+- [`../../kotlin/coroutines-and-flow/channels-and-select.md`](../../kotlin/coroutines-and-flow/channels-and-select.md) - Channels and point-to-point delivery.
+- [`../../kotlin/coroutines-and-flow/test-dispatchers-virtual-time.md`](../../kotlin/coroutines-and-flow/test-dispatchers-virtual-time.md) - Testing hot flows.
 - [Android Developers: StateFlow and SharedFlow](https://developer.android.com/kotlin/flow/stateflow-and-sharedflow)
 - [Kotlin API: StateFlow](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/)
 - [Kotlin API: SharedFlow](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/)

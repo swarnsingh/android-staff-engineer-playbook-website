@@ -345,7 +345,7 @@ In this repository:
 - [`state-machines.md`](state-machines.md) — async systems are state machines; the suspend mechanism is a compiler-generated FSM.
 - [`backpressure.md`](backpressure.md) — what async systems do when producers outrun consumers.
 - [`../patterns/retry.md`](../patterns/retry.md), [`../patterns/circuit-breaker.md`](../patterns/circuit-breaker.md) — resilience patterns native to async.
-- [`../kotlin/coroutines.md`](../kotlin/coroutines.md) — Kotlin-specific mechanics.
+- [`../kotlin/coroutines-and-flow/coroutines.md`](../kotlin/coroutines-and-flow/coroutines.md) — Kotlin-specific mechanics.
 - [`../android/architecture/structured-concurrency.md`](../android/architecture/structured-concurrency.md) — tying coroutine lifetimes to Android lifecycles.
 - [`../android/performance/anrs.md`](../android/performance/anrs.md) — what happens when async goes wrong on Android.
 

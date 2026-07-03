@@ -528,7 +528,7 @@ override fun onCreate(savedInstanceState: Bundle?) {
 - [`../data-and-di/room-vs-datastore.md`](../data-and-di/room-vs-datastore.md) — lazy data layer init.
 - [`../compose/compose-runtime.md`](../compose/compose-runtime.md) — first composition.
 - [`../compose/stability.md`](../compose/stability.md) — initial recomposition cost.
-- [`../../kotlin/coroutines.md`](../../kotlin/coroutines.md) — deferring work.
+- [`../../kotlin/coroutines-and-flow/coroutines.md`](../../kotlin/coroutines-and-flow/coroutines.md) — deferring work.
 - [Android Developers — App startup time](https://developer.android.com/topic/performance/vitals/launch-time) — official.
 - [Android Developers — Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/overview) — official.
 - [Android Developers — App Startup library](https://developer.android.com/topic/libraries/app-startup) — official.

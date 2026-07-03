@@ -496,7 +496,7 @@ fun Underline(color: Color, modifier: Modifier = Modifier) {
 - [`../compose/compose-runtime.md`](../compose/compose-runtime.md) — Compose pipeline internals.
 - [`../compose/stability.md`](../compose/stability.md) — recomposition skipping.
 - [`../compose/modifiers-and-layout.md`](../compose/modifiers-and-layout.md) — modifier layout phase.
-- [`../../kotlin/memory-model.md`](../../kotlin/memory-model.md) — heap allocations in hot paths.
+- [`../../kotlin/runtime-and-jvm/memory-model.md`](../../kotlin/runtime-and-jvm/memory-model.md) — heap allocations in hot paths.
 - [Android Developers — Slow rendering](https://developer.android.com/topic/performance/vitals/render) — official.
 - [Android Developers — Better performance through threading](https://developer.android.com/topic/performance/threads) — official.
 - [Romain Guy — Android graphics & UI](https://www.curious-creature.com/) — engineer's blog.

@@ -635,10 +635,10 @@ In this repository:
 
 - [`delegation.md`](delegation.md) — `by lazy`, `Delegates.observable`, `Delegates.notNull`, and custom property delegates.
 - [`null-safety.md`](null-safety.md) — `lateinit` as alternative to nullable types.
-- [`memory-model.md`](memory-model.md) — how field reads, writes, and captures interact with the JVM memory model.
-- [`bytecode.md`](bytecode.md) — how `val`/`var`/`const val`/`lateinit` compile to JVM fields and getters.
-- [`jvm-interop.md`](jvm-interop.md) — how Kotlin properties appear to Java callers; `@JvmField`.
-- [`../engineering-fundamentals/immutability.md`](../engineering-fundamentals/immutability.md) — the principle behind preferring `val`.
+- [`memory-model.md`](../runtime-and-jvm/memory-model.md) — how field reads, writes, and captures interact with the JVM memory model.
+- [`bytecode.md`](../runtime-and-jvm/bytecode.md) — how `val`/`var`/`const val`/`lateinit` compile to JVM fields and getters.
+- [`jvm-interop.md`](../runtime-and-jvm/jvm-interop.md) — how Kotlin properties appear to Java callers; `@JvmField`.
+- [`../engineering-fundamentals/immutability.md`](../../engineering-fundamentals/immutability.md) — the principle behind preferring `val`.
 
 External:
 

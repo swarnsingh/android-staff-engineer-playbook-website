@@ -465,9 +465,9 @@ When reviewing nullability, I look at:
 - [`sealed-classes.md`](sealed-classes.md) — modeling explicit error states instead of `T?`.
 - [`data-classes.md`](data-classes.md) — immutability supports smart casts.
 - [`delegation.md`](delegation.md) — `by lazy`, `Delegates.notNull`, `Delegates.observable`.
-- [`coroutines.md`](coroutines.md) — `Result<T>` in suspend functions.
-- [`../principles/make-invalid-states-impossible.md`](../principles/make-invalid-states-impossible.md) — null-safety as one example of this principle.
-- [`../android/architecture/viewmodel.md`](../android/architecture/viewmodel.md) — state holders and nullability of UI state.
+- [`coroutines.md`](../coroutines-and-flow/coroutines.md) — `Result<T>` in suspend functions.
+- [`../principles/make-invalid-states-impossible.md`](../../principles/make-invalid-states-impossible.md) — null-safety as one example of this principle.
+- [`../android/architecture/viewmodel.md`](../../android/architecture/viewmodel.md) — state holders and nullability of UI state.
 - [Kotlin Docs — Null safety](https://kotlinlang.org/docs/null-safety.html) — official reference.
 - [Tony Hoare — "Null References: The Billion Dollar Mistake"](https://www.infoq.com/presentations/Null-References-The-Billion-Dollar-Mistake-Tony-Hoare/) — the apology that started it all.
 - [Roman Elizarov — "Dealing with absence of value"](https://elizarov.medium.com/dealing-with-absence-of-value-307b80534903) — Kotlin lead engineer's take.

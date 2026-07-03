@@ -363,6 +363,6 @@ fun emitsCallbacks() = runTest {
 
 - [`channels-and-select.md`](channels-and-select.md) - channel capacity and ownership.
 - [`flow-operators-and-backpressure.md`](flow-operators-and-backpressure.md) - buffering and cancellation operators.
-- [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md) - hot-flow selection.
+- [`../android/concurrency/shared-flow-and-state-flow.md`](../../android/concurrency/shared-flow-and-state-flow.md) - hot-flow selection.
 - [Kotlin API: callbackFlow](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html)
 - [Android Developers: Kotlin flows on Android](https://developer.android.com/kotlin/flow)

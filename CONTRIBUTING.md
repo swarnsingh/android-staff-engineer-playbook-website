@@ -67,7 +67,7 @@ When the same word could plausibly live in multiple trees, this table pins the s
 | Concept | Canonical owner | Cross-references from |
 |---|---|---|
 | Complexity analysis / Big-O | `engineering-fundamentals/complexity-analysis.md` | `computer-science/big-o.md` (bridge file linking back) |
-| Coroutines — language mechanics | `kotlin/coroutines.md` | `android/concurrency/coroutines-under-the-hood.md` (platform application) |
+| Coroutines — language mechanics | `kotlin/coroutines-and-flow/coroutines.md` | `android/concurrency/coroutines-under-the-hood.md` (platform application) |
 | App Bundles & Dynamic Delivery | `release-engineering/app-bundles.md` | (cross-referenced from `android.md` index) |
 | Release strategy | `release-engineering/release-strategy.md` | `mobile-system-design.md` cross-links |
 | Image loading | `mobile-system-design/image-loading.md` (single entry) | — |

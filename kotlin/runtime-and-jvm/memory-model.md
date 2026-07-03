@@ -239,7 +239,7 @@ class MainActivity : AppCompatActivity() {
 }
 ```
 
-**Fix:** always use `lifecycleScope` / `viewModelScope` / `repeatOnLifecycle`. See [`coroutines.md`](coroutines.md).
+**Fix:** always use `lifecycleScope` / `viewModelScope` / `repeatOnLifecycle`. See [`coroutines.md`](../coroutines-and-flow/coroutines.md).
 
 ### 5. Holding a View past `onDestroyView`
 
@@ -255,7 +255,7 @@ class CartFragment : Fragment() {
 }
 ```
 
-**Fix:** the `_binding` lifecycle pattern from [`null-safety.md`](null-safety.md):
+**Fix:** the `_binding` lifecycle pattern from [`null-safety.md`](../language-core/null-safety.md):
 ```kotlin
 private var _binding: FragmentCartBinding? = null
 private val binding get() = _binding!!
@@ -478,13 +478,13 @@ When reviewing for memory:
 
 ## Further Reading
 
-- [`coroutines.md`](coroutines.md) — structured concurrency as leak prevention.
-- [`null-safety.md`](null-safety.md) — `_binding = null` lifecycle pattern.
-- [`delegation.md`](delegation.md) — `by lazy` semantics + thread-safe modes.
-- [`inline-functions.md`](inline-functions.md) — preventing Lambda heap allocations.
-- [`../android/performance/memory-management-and-leaks.md`](../android/performance/memory-management-and-leaks.md) — Android-specific leak catalog.
-- [`../android/concurrency/synchronization-and-mutex.md`](../android/concurrency/synchronization-and-mutex.md) — JMM concurrency primitives.
-- [`../android/os-internals/art-and-dalvik.md`](../android/os-internals/art-and-dalvik.md) — ART runtime internals.
+- [`coroutines.md`](../coroutines-and-flow/coroutines.md) — structured concurrency as leak prevention.
+- [`null-safety.md`](../language-core/null-safety.md) — `_binding = null` lifecycle pattern.
+- [`delegation.md`](../language-core/delegation.md) — `by lazy` semantics + thread-safe modes.
+- [`inline-functions.md`](../compiler-features/inline-functions.md) — preventing Lambda heap allocations.
+- [`../android/performance/memory-management-and-leaks.md`](../../android/performance/memory-management-and-leaks.md) — Android-specific leak catalog.
+- [`../android/concurrency/synchronization-and-mutex.md`](../../android/concurrency/synchronization-and-mutex.md) — JMM concurrency primitives.
+- [`../android/os-internals/art-and-dalvik.md`](../../android/os-internals/art-and-dalvik.md) — ART runtime internals.
 - [Android Developers — Manage your app's memory](https://developer.android.com/topic/performance/memory) — official guide.
 - [LeakCanary docs](https://square.github.io/leakcanary/) — the tool every Android app should ship.
 - [Pierre-Yves Ricau — "A small leak will sink a great ship"](https://medium.com/square-corner-blog/) — LeakCanary author's deep-dive.

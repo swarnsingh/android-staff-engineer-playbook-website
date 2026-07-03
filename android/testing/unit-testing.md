@@ -744,8 +744,8 @@ Split into multiple tests, each verifying one thing.
 - [`../architecture/mvvm-vs-mvi.md`](../architecture/mvvm-vs-mvi.md) — testable UI state.
 - [`../data-and-di/hilt-vs-koin-vs-manual-di.md`](../data-and-di/hilt-vs-koin-vs-manual-di.md) — `@TestInstallIn` for module-level test fakes.
 - [`../os-internals/multi-module.md`](../os-internals/multi-module.md) — `:test:fixtures` shared fakes.
-- [`../../kotlin/coroutines.md`](../../kotlin/coroutines.md) — `runTest`, virtual time.
-- [`../../kotlin/sealed-classes.md`](../../kotlin/sealed-classes.md) — sealed types make testing simpler.
+- [`../../kotlin/coroutines-and-flow/coroutines.md`](../../kotlin/coroutines-and-flow/coroutines.md) — `runTest`, virtual time.
+- [`../../kotlin/language-core/sealed-classes.md`](../../kotlin/language-core/sealed-classes.md) — sealed types make testing simpler.
 - [JUnit 5 User Guide](https://junit.org/junit5/docs/current/user-guide/) — official.
 - [MockK](https://mockk.io/) — Kotlin mocking library.
 - [Turbine](https://github.com/cashapp/turbine) — Flow testing.

@@ -617,12 +617,12 @@ Lambda parameter (`((Result<Bitmap>) -> Unit)?`) compiles to a `Function1<Result
 
 In this repository:
 
-- [`null-safety.md`](null-safety.md) — platform types, intrinsics, `lateinit`, `!!` operator.
+- [`null-safety.md`](../language-core/null-safety.md) — platform types, intrinsics, `lateinit`, `!!` operator.
 - [`bytecode.md`](bytecode.md) — how Kotlin features compile to JVM constructs; decompiled examples.
-- [`extensions.md`](extensions.md) — extensions as static methods callable from Java via the file-class.
-- [`data-classes.md`](data-classes.md) — how data classes interop with Java (and records).
-- [`sealed-classes.md`](sealed-classes.md) — sealed-class interop nuances.
-- [`functions.md`](functions.md) — function types, `fun interface` for cross-language callbacks.
+- [`extensions.md`](../language-core/extensions.md) — extensions as static methods callable from Java via the file-class.
+- [`data-classes.md`](../language-core/data-classes.md) — how data classes interop with Java (and records).
+- [`sealed-classes.md`](../language-core/sealed-classes.md) — sealed-class interop nuances.
+- [`functions.md`](../language-core/functions.md) — function types, `fun interface` for cross-language callbacks.
 
 External:
 

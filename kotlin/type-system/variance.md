@@ -340,7 +340,7 @@ fun produce(): List<@JvmWildcard Animal> = ...
 // Java sees: List<? extends Animal>
 ```
 
-This is the kind of detail you discover when your Java consumers complain about cluttered signatures. See [`../platform-engineering/library-versioning.md`](../platform-engineering/library-versioning.md) and `generics.md` for SDK API discipline.
+This is the kind of detail you discover when your Java consumers complain about cluttered signatures. See [`../platform-engineering/library-versioning.md`](../../platform-engineering/library-versioning.md) and `generics.md` for SDK API discipline.
 
 ---
 
@@ -411,12 +411,12 @@ When reviewing variance choices, I look for:
 ## Further Reading
 
 - [`generics.md`](generics.md) — type erasure, bounded generics, foundation for variance.
-- [`sealed-classes.md`](sealed-classes.md) — `out T` + `Nothing` idiom in sealed hierarchies.
-- [`reified-types.md`](reified-types.md) — type info at runtime for generic / variant operations.
-- [`inline-functions.md`](inline-functions.md) — why `reified` requires inline.
-- [`coroutines.md`](coroutines.md) — `Flow<out T>` covariance in practice.
-- [`null-safety.md`](null-safety.md) — `Result<T>` and bounded null safety.
-- [`../platform-engineering/library-versioning.md`](../platform-engineering/library-versioning.md) — `@JvmSuppressWildcards` for clean Java consumer APIs.
+- [`sealed-classes.md`](../language-core/sealed-classes.md) — `out T` + `Nothing` idiom in sealed hierarchies.
+- [`reified-types.md`](../compiler-features/reified-types.md) — type info at runtime for generic / variant operations.
+- [`inline-functions.md`](../compiler-features/inline-functions.md) — why `reified` requires inline.
+- [`coroutines.md`](../coroutines-and-flow/coroutines.md) — `Flow<out T>` covariance in practice.
+- [`null-safety.md`](../language-core/null-safety.md) — `Result<T>` and bounded null safety.
+- [`../platform-engineering/library-versioning.md`](../../platform-engineering/library-versioning.md) — `@JvmSuppressWildcards` for clean Java consumer APIs.
 - [Kotlin Docs — Generics: variance](https://kotlinlang.org/docs/generics.html#variance) — official reference.
 - [Roman Elizarov — "Generic variance"](https://elizarov.medium.com/) — design notes from Kotlin's language lead.
 - [Java Generics FAQ — Wildcards](https://www.angelikalanger.com/GenericsFAQ/JavaGenericsFAQ.html) — the deep JVM-side reference.

@@ -338,6 +338,6 @@ assertEquals(expected, result.getOrThrow())
 
 - [`flow-operators-and-backpressure.md`](flow-operators-and-backpressure.md) - Flow operator and buffering semantics.
 - [`callbackflow-and-bridging-callbacks.md`](callbackflow-and-bridging-callbacks.md) - Callback-safe channel creation.
-- [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md) - Hot-flow decision guide.
+- [`../android/concurrency/shared-flow-and-state-flow.md`](../../android/concurrency/shared-flow-and-state-flow.md) - Hot-flow decision guide.
 - [Kotlin API: Channel](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/)
 - [Kotlin API: select](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.selects/select.html)

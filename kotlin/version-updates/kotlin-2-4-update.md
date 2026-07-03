@@ -184,5 +184,5 @@ Do not upgrade only because the language feature list is exciting. Upgrade when:
 
 - [Kotlin 2.4 release notes](https://kotlinlang.org/docs/whatsnew24.html)
 - [Kotlin Swift export documentation](https://kotlinlang.org/docs/native-swift-export.html)
-- [`../android/kotlin-multiplatform/tooling/swift-interop.md`](../android/kotlin-multiplatform/tooling/swift-interop.md) - KMP Swift API design.
-- [`../android/kotlin-multiplatform/production/concurrency-and-memory.md`](../android/kotlin-multiplatform/production/concurrency-and-memory.md) - StateFlow across the Swift bridge.
+- [`../android/kotlin-multiplatform/tooling/swift-interop.md`](../../android/kotlin-multiplatform/tooling/swift-interop.md) - KMP Swift API design.
+- [`../android/kotlin-multiplatform/production/concurrency-and-memory.md`](../../android/kotlin-multiplatform/production/concurrency-and-memory.md) - StateFlow across the Swift bridge.

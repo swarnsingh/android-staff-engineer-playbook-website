@@ -555,11 +555,11 @@ When reviewing a PR with coroutines, I scan for these signatures:
 
 ## Further Reading
 
-- [`../android/concurrency/coroutines-under-the-hood.md`](../android/concurrency/coroutines-under-the-hood.md) — bytecode-level continuation mechanics.
-- [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md) — coroutines + reactive streams.
-- [`../android/concurrency/structured-concurrency.md`](../android/architecture/structured-concurrency.md) — the contract from an Android architecture lens.
-- [`null-safety.md`](null-safety.md) — `Result<T>` and idiomatic error returns.
-- [`sealed-classes.md`](sealed-classes.md) — modeling UI state for coroutine-driven screens.
+- [`../android/concurrency/coroutines-under-the-hood.md`](../../android/concurrency/coroutines-under-the-hood.md) — bytecode-level continuation mechanics.
+- [`../android/concurrency/shared-flow-and-state-flow.md`](../../android/concurrency/shared-flow-and-state-flow.md) — coroutines + reactive streams.
+- [`../android/concurrency/structured-concurrency.md`](../../android/architecture/structured-concurrency.md) — the contract from an Android architecture lens.
+- [`null-safety.md`](../language-core/null-safety.md) — `Result<T>` and idiomatic error returns.
+- [`sealed-classes.md`](../language-core/sealed-classes.md) — modeling UI state for coroutine-driven screens.
 - [Kotlin Docs — Coroutines guide](https://kotlinlang.org/docs/coroutines-guide.html) — canonical.
 - [Roman Elizarov — "Structured concurrency"](https://elizarov.medium.com/structured-concurrency-722d765aa952) — the original framing.
 - [Roman Elizarov — "Coroutines design proposal"](https://github.com/Kotlin/KEEP/blob/master/proposals/coroutines.md) — the why.

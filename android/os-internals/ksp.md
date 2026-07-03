@@ -510,8 +510,8 @@ Expected savings: 20–40% on cold builds in a large project. Sometimes more if 
 - [`../data-and-di/hilt-vs-koin-vs-manual-di.md`](../data-and-di/hilt-vs-koin-vs-manual-di.md) — Hilt's KSP migration path.
 - [`../data-and-di/room-vs-datastore.md`](../data-and-di/room-vs-datastore.md) — Room's KSP usage.
 - [`../../platform-engineering/build-graph-scaling.md`](../../platform-engineering/build-graph-scaling.md) — KAPT → KSP build time savings.
-- [`../../kotlin/inline-functions.md`](../../kotlin/inline-functions.md) — `reified` types KSP processors can preserve.
-- [`../../kotlin/generics.md`](../../kotlin/generics.md) — generic type representation.
+- [`../../kotlin/compiler-features/inline-functions.md`](../../kotlin/compiler-features/inline-functions.md) — `reified` types KSP processors can preserve.
+- [`../../kotlin/type-system/generics.md`](../../kotlin/type-system/generics.md) — generic type representation.
 - [KSP — Google official docs](https://kotlinlang.org/docs/ksp-overview.html) — overview.
 - [KSP GitHub releases](https://github.com/google/ksp/releases) — version matrix.
 - [KotlinPoet](https://square.github.io/kotlinpoet/) — code generation library.

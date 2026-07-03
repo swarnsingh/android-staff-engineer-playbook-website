@@ -448,11 +448,11 @@ When reviewing delegation usage, I look for:
 
 - [`null-safety.md`](null-safety.md) — `lateinit` vs `by lazy` vs nullable choice.
 - [`data-classes.md`](data-classes.md) — when you want value semantics, not delegation.
-- [`coroutines.md`](coroutines.md) — async patterns instead of hiding I/O behind property delegates.
-- [`../android/architecture/viewmodel.md`](../android/architecture/viewmodel.md) — `by viewModels()` mechanics.
-- [`../android/compose/recomposition-and-state.md`](../android/compose/recomposition-and-state.md) — `by remember { mutableStateOf(...) }` deep dive.
-- [`../android/data-and-di/dependency-injection.md`](../android/data-and-di/dependency-injection.md) — Hilt-injected `lateinit var` vs delegated properties.
-- [`../principles/composition-over-inheritance.md`](../principles/composition-over-inheritance.md) — the design philosophy delegation serves.
+- [`coroutines.md`](../coroutines-and-flow/coroutines.md) — async patterns instead of hiding I/O behind property delegates.
+- [`../android/architecture/viewmodel.md`](../../android/architecture/viewmodel.md) — `by viewModels()` mechanics.
+- [`../android/compose/recomposition-and-state.md`](../../android/compose/recomposition-and-state.md) — `by remember { mutableStateOf(...) }` deep dive.
+- [`../android/data-and-di/dependency-injection.md`](../../android/data-and-di/dependency-injection.md) — Hilt-injected `lateinit var` vs delegated properties.
+- [`../principles/composition-over-inheritance.md`](../../principles/composition-over-inheritance.md) — the design philosophy delegation serves.
 - [Kotlin Docs — Delegation](https://kotlinlang.org/docs/delegation.html) — class delegation reference.
 - [Kotlin Docs — Delegated properties](https://kotlinlang.org/docs/delegated-properties.html) — property delegation reference.
 - [Effective Java Item 18](https://www.amazon.com/Effective-Java-Joshua-Bloch/dp/0134685997) — "Favor composition over inheritance" — the canonical argument.

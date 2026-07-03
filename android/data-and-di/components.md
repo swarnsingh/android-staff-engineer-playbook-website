@@ -504,7 +504,7 @@ Workers run in a hidden internal component but pull `@Singleton` deps from the m
 - [`room-vs-datastore.md`](room-vs-datastore.md) — typical `@Singleton`-scoped data deps.
 - [`../architecture/viewmodel.md`](../architecture/viewmodel.md) — `@HiltViewModel` mechanics.
 - [`../architecture/modularization-strategies.md`](../architecture/modularization-strategies.md) — module-level Hilt setup.
-- [`../../kotlin/delegation.md`](../../kotlin/delegation.md) — `by viewModels()` + Hilt.
+- [`../../kotlin/language-core/delegation.md`](../../kotlin/language-core/delegation.md) — `by viewModels()` + Hilt.
 - [Hilt — Component hierarchy (official)](https://developer.android.com/training/dependency-injection/hilt-android#component-hierarchy) — official.
 - [Hilt — Component lifetimes (official)](https://developer.android.com/training/dependency-injection/hilt-android#component-lifetimes) — official.
 - [Manuel Vivo — Migrating to Hilt](https://medium.com/androiddevelopers/) — Google DevRel migration playbook.

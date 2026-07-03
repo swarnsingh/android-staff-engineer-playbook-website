@@ -335,8 +335,8 @@ For most Android teams: **roll your own.** MVI is small enough that a library mo
 - [`state-management.md`](state-management.md) — state holder patterns deeper.
 - [`../compose/recomposition-and-state.md`](../compose/recomposition-and-state.md) — Compose recomposition rules MVI rides on.
 - [`../data-and-di/room-vs-datastore.md`](../data-and-di/room-vs-datastore.md) — persisting MVI state across process death.
-- [`../../kotlin/sealed-classes.md`](../../kotlin/sealed-classes.md) — modeling Intent / Effect / UiState.
-- [`../../kotlin/data-classes.md`](../../kotlin/data-classes.md) — immutable state with `copy()`.
+- [`../../kotlin/language-core/sealed-classes.md`](../../kotlin/language-core/sealed-classes.md) — modeling Intent / Effect / UiState.
+- [`../../kotlin/language-core/data-classes.md`](../../kotlin/language-core/data-classes.md) — immutable state with `copy()`.
 - [Hannes Dorfmann — "Reactive Apps with Model-View-Intent"](http://hannesdorfmann.com/android/mosby3-mvi-1/) — the seminal series.
 - [Manuel Vivo (Android) — UI layer guidance](https://developer.android.com/topic/architecture/ui-layer) — official Google take.
 - [Orbit MVI documentation](https://orbit-mvi.org/) — battle-tested library reference.

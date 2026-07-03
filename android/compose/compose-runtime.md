@@ -415,9 +415,9 @@ Your `@Composable` is platform-agnostic. The runtime engine is platform-agnostic
 - [`modifiers-and-layout.md`](modifiers-and-layout.md) — `Modifier.Node` and the layout phase.
 - [`compose-navigation.md`](compose-navigation.md) — `NavHost` builds on the same runtime.
 - [`../architecture/viewmodel.md`](../architecture/viewmodel.md) — state lifting from Composables to ViewModel.
-- [`../../kotlin/data-classes.md`](../../kotlin/data-classes.md) — `@Stable` / `@Immutable` for skippability.
-- [`../../kotlin/sealed-classes.md`](../../kotlin/sealed-classes.md) — UI state modeling.
-- [`../../kotlin/delegation.md`](../../kotlin/delegation.md) — `by remember { mutableStateOf(...) }` mechanics.
+- [`../../kotlin/language-core/data-classes.md`](../../kotlin/language-core/data-classes.md) — `@Stable` / `@Immutable` for skippability.
+- [`../../kotlin/language-core/sealed-classes.md`](../../kotlin/language-core/sealed-classes.md) — UI state modeling.
+- [`../../kotlin/language-core/delegation.md`](../../kotlin/language-core/delegation.md) — `by remember { mutableStateOf(...) }` mechanics.
 - [Jetpack Compose internals — Jorge Castillo](https://jorgecastillo.dev/book-jetpack-compose-internals) — the canonical deep dive.
 - [Leland Richardson — Under the hood of Jetpack Compose (KotlinConf 2019)](https://www.youtube.com/watch?v=Q9MtlmmN4Q0) — Compose architect's talk.
 - [Android Developers — Compose architecture](https://developer.android.com/jetpack/compose/architecture) — official.

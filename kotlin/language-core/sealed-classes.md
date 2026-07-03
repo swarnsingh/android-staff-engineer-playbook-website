@@ -197,7 +197,7 @@ val cartResource: Resource<List<CartItem>> = repo.getCart()
 ```
 
 Two important details:
-- `out T` makes the type **covariant** — a `Resource<Admin>` can be used where `Resource<User>` is expected (see [`variance.md`](variance.md)).
+- `out T` makes the type **covariant** — a `Resource<Admin>` can be used where `Resource<User>` is expected (see [`variance.md`](../type-system/variance.md)).
 - `Loading` and `Failure` parametrize on `Nothing` — `Resource<Nothing>` is assignable to `Resource<T>` for any `T`. This is the standard ADT idiom.
 
 ### `Result<T>` — Kotlin's built-in
@@ -488,12 +488,12 @@ When reviewing sealed-type usage, I look for:
 
 - [`data-classes.md`](data-classes.md) — the structures that fill sealed branches.
 - [`null-safety.md`](null-safety.md) — `Result`/sealed as alternatives to nullable returns.
-- [`generics.md`](generics.md) — generic sealed hierarchies (`Resource<out T>`).
-- [`variance.md`](variance.md) — `out T` covariance for `Resource<Nothing>` assignability.
-- [`coroutines.md`](coroutines.md) — modeling success/failure of suspend operations.
-- [`../patterns/state.md`](../patterns/state.md) — the state-pattern that sealed types enable.
-- [`../principles/make-invalid-states-impossible.md`](../principles/make-invalid-states-impossible.md) — design principle sealed types deliver.
-- [`../android/architecture/viewmodel.md`](../android/architecture/viewmodel.md) — sealed `UiState` flowing from ViewModel.
+- [`generics.md`](../type-system/generics.md) — generic sealed hierarchies (`Resource<out T>`).
+- [`variance.md`](../type-system/variance.md) — `out T` covariance for `Resource<Nothing>` assignability.
+- [`coroutines.md`](../coroutines-and-flow/coroutines.md) — modeling success/failure of suspend operations.
+- [`../patterns/state.md`](../../patterns/state.md) — the state-pattern that sealed types enable.
+- [`../principles/make-invalid-states-impossible.md`](../../principles/make-invalid-states-impossible.md) — design principle sealed types deliver.
+- [`../android/architecture/viewmodel.md`](../../android/architecture/viewmodel.md) — sealed `UiState` flowing from ViewModel.
 - [Kotlin Docs — Sealed classes](https://kotlinlang.org/docs/sealed-classes.html) — official reference.
 - [Roman Elizarov — "Sealed classes"](https://elizarov.medium.com/) — design notes from the language team.
 - [Jake Wharton — "Modeling Retrofit responses with sealed classes and coroutines"](https://github.com/JakeWharton) — practical patterns.

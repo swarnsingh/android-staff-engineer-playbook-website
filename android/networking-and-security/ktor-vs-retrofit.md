@@ -665,7 +665,7 @@ Same `UserRepository` runs on iOS, Android, JVM, and JS. Retrofit can't do this.
 - [`../../backend-for-mobile/transport-protocols.md`](../../backend-for-mobile/transport-protocols.md) — HTTP/2 / HTTP/3 / gRPC at the transport layer.
 - [`../../backend-for-mobile/sse-vs-websockets.md`](../../backend-for-mobile/sse-vs-websockets.md) — real-time protocols.
 - [`../../platform-engineering/library-versioning.md`](../../platform-engineering/library-versioning.md) — versioning shared HTTP clients.
-- [`../../kotlin/coroutines.md`](../../kotlin/coroutines.md) — coroutine cancellation semantics.
+- [`../../kotlin/coroutines-and-flow/coroutines.md`](../../kotlin/coroutines-and-flow/coroutines.md) — coroutine cancellation semantics.
 - [Ktor client documentation](https://ktor.io/docs/getting-started-ktor-client.html) — official.
 - [Retrofit documentation](https://square.github.io/retrofit/) — official.
 - [OkHttp documentation](https://square.github.io/okhttp/) — official.

@@ -667,7 +667,7 @@ When reviewing Compose Navigation code:
 - [`../architecture/state-management.md`](../architecture/state-management.md) — state hoisting + navigation events.
 - [`../data-and-di/components.md`](../data-and-di/components.md) — Hilt component lifecycle interacts with navigation.
 - [`../data-and-di/scopes.md`](../data-and-di/scopes.md) — coroutine scopes per `NavBackStackEntry`.
-- [`../../kotlin/sealed-classes.md`](../../kotlin/sealed-classes.md) — `sealed interface AppKey : NavKey`.
+- [`../../kotlin/language-core/sealed-classes.md`](../../kotlin/language-core/sealed-classes.md) — `sealed interface AppKey : NavKey`.
 - [Navigation Compose 2.8+ (Type Safety)](https://developer.android.com/guide/navigation/design/type-safety) — official Nav 2 docs.
 - [Navigation 3 announcement](https://android-developers.googleblog.com/) — Google blog (search "Navigation 3").
 - [Navigation 3 docs](https://developer.android.com/guide/navigation/navigation-3) — official Nav 3 docs (alpha).

@@ -2,7 +2,7 @@
 
 Working tracker for the canonical-content fill-in plan. This file is for maintainers, not readers of the playbook.
 
-Current state: the original canonical buildout, post-audit gap closure, Staff/Principal expansion, and one-place depth expansion are complete through G10. G11 is the next planned structural cleanup.
+Current state: the original canonical buildout, post-audit gap closure, Staff/Principal expansion, one-place depth expansion, and Kotlin folder structure cleanup are complete through G11.
 
 ---
 
@@ -27,7 +27,7 @@ Current state: the original canonical buildout, post-audit gap closure, Staff/Pr
 
 ## Current Status
 
-All content-depth roadmap milestones are complete. One structural cleanup milestone is now planned.
+All tracked roadmap and structural cleanup milestones are complete.
 
 | Track | Status | Notes |
 |---|---:|---|
@@ -35,7 +35,7 @@ All content-depth roadmap milestones are complete. One structural cleanup milest
 | G1-G8 post-audit gap closure | ✅ | Reference architecture depth, leadership/platform depth, decision files, Kotlin practical depth, Android gaps, patterns/BFM, Ktor, Compose Navigation 3, KMP |
 | G9 Staff/Principal expansion | ✅ | API evolution, sync protocol evolution, observability, release decision trees, testing strategy, platform engineering, security/privacy, architecture governance |
 | G10 one-place depth expansion | ✅ | Correctness fixes, CS foundations, Android OS primitives, coroutine/Flow mastery, Compose/performance, data/networking/KMP production, distributed backend contracts |
-| G11 Kotlin folder structure | ⬜ | Move flat Kotlin files into learning-domain subfolders, update every link, and preserve canonical ownership |
+| G11 Kotlin folder structure | ✅ | Flat Kotlin files moved into learning-domain subfolders; links updated; canonical ownership preserved |
 
 Latest cleanup/audit commits:
 
@@ -149,9 +149,9 @@ Recent G10 commits:
 
 ---
 
-## Planned Structural Cleanup
+## Completed Structural Cleanup
 
-### G11 — Kotlin Subfolder Structure ⬜
+### G11 — Kotlin Subfolder Structure ✅
 
 Goal: make the `kotlin/` tree match the learning domains already shown in `kotlin.md`, so learners can navigate Kotlin from basics to Staff-level runtime/concurrency depth without scanning one flat list of files.
 
@@ -189,13 +189,13 @@ Proposed target structure:
 
 Execution checklist:
 
-1. Move files with `git mv` so history is preserved.
-2. Update `kotlin.md` links to the new subfolder paths.
-3. Update all cross-folder links from Android, KMP, learning paths, README, and related files.
-4. Update `CONTRIBUTING.md` canonical ownership map where it references `kotlin/coroutines.md`.
-5. Run a full local Markdown link check across the repo.
-6. Run `git diff --check`.
-7. Commit as a dedicated structural cleanup commit.
+1. ✅ Move files with `git mv` so history is preserved.
+2. ✅ Update `kotlin.md` links to the new subfolder paths.
+3. ✅ Update all cross-folder links from Android, KMP, learning paths, README, and related files.
+4. ✅ Update `CONTRIBUTING.md` canonical ownership map where it references `kotlin/coroutines-and-flow/coroutines.md`.
+5. ✅ Run a full local Markdown link check across the repo.
+6. ✅ Run `git diff --check`.
+7. ✅ Commit as a dedicated structural cleanup commit.
 
 Non-goals:
 
@@ -203,9 +203,9 @@ Non-goals:
 - Do not create new Kotlin topics in this milestone.
 - Do not change Kotlin canonical ownership; this is navigation cleanup, not content redefinition.
 
-Recommended commit message:
+Validation result:
 
-- `Organize Kotlin topics into subfolders`
+- Full local Markdown link check: `0` broken links across `1,606` local links.
 
 ---
 

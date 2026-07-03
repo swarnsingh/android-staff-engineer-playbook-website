@@ -52,7 +52,7 @@ Architecture and lifecycle first (you cannot reason about anything else without 
 
 ### Concurrency
 
-- Coroutines language mechanics: [`kotlin/coroutines.md`](kotlin/coroutines.md)
+- Coroutines language mechanics: [`kotlin/coroutines-and-flow/coroutines.md`](kotlin/coroutines-and-flow/coroutines.md)
 - [Coroutines Under the Hood](android/concurrency/coroutines-under-the-hood.md)
 - [Threads & Looper](android/concurrency/threads-and-looper.md)
 - [SharedFlow & StateFlow](android/concurrency/shared-flow-and-state-flow.md)
