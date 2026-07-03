@@ -2,7 +2,7 @@
 
 Working tracker for the canonical-content fill-in plan. This file is for maintainers, not readers of the playbook.
 
-Current state: the original canonical buildout, post-audit gap closure, Staff/Principal expansion, and one-place depth expansion are complete through G10.
+Current state: the original canonical buildout, post-audit gap closure, Staff/Principal expansion, and one-place depth expansion are complete through G10. G11 is the next planned structural cleanup.
 
 ---
 
@@ -27,7 +27,7 @@ Current state: the original canonical buildout, post-audit gap closure, Staff/Pr
 
 ## Current Status
 
-All tracked roadmap milestones are complete.
+All content-depth roadmap milestones are complete. One structural cleanup milestone is now planned.
 
 | Track | Status | Notes |
 |---|---:|---|
@@ -35,6 +35,7 @@ All tracked roadmap milestones are complete.
 | G1-G8 post-audit gap closure | ✅ | Reference architecture depth, leadership/platform depth, decision files, Kotlin practical depth, Android gaps, patterns/BFM, Ktor, Compose Navigation 3, KMP |
 | G9 Staff/Principal expansion | ✅ | API evolution, sync protocol evolution, observability, release decision trees, testing strategy, platform engineering, security/privacy, architecture governance |
 | G10 one-place depth expansion | ✅ | Correctness fixes, CS foundations, Android OS primitives, coroutine/Flow mastery, Compose/performance, data/networking/KMP production, distributed backend contracts |
+| G11 Kotlin folder structure | ⬜ | Move flat Kotlin files into learning-domain subfolders, update every link, and preserve canonical ownership |
 
 Latest cleanup/audit commits:
 
@@ -145,6 +146,66 @@ Recent G10 commits:
 - `98ebad2` — data, networking, and KMP production boundaries
 - `1e19317` — distributed backend mobile contracts
 - `26d8a97` — docs link and Swift export wording audit
+
+---
+
+## Planned Structural Cleanup
+
+### G11 — Kotlin Subfolder Structure ⬜
+
+Goal: make the `kotlin/` tree match the learning domains already shown in `kotlin.md`, so learners can navigate Kotlin from basics to Staff-level runtime/concurrency depth without scanning one flat list of files.
+
+Why it matters: Kotlin is one of the densest folders in the repo. The index now groups it conceptually, but the filesystem is still flat. That mismatch creates friction for readers and makes future Kotlin additions harder to place consistently.
+
+Proposed target structure:
+
+- `kotlin/language-core/`
+  - `variables.md`
+  - `functions.md`
+  - `extensions.md`
+  - `null-safety.md`
+  - `data-classes.md`
+  - `sealed-classes.md`
+  - `delegation.md`
+- `kotlin/type-system/`
+  - `generics.md`
+  - `variance.md`
+- `kotlin/compiler-features/`
+  - `inline-functions.md`
+  - `reified-types.md`
+- `kotlin/coroutines-and-flow/`
+  - `coroutines.md`
+  - `channels-and-select.md`
+  - `flow-operators-and-backpressure.md`
+  - `callbackflow-and-bridging-callbacks.md`
+  - `coroutines-debugging-and-profiling.md`
+  - `test-dispatchers-virtual-time.md`
+- `kotlin/runtime-and-jvm/`
+  - `memory-model.md`
+  - `jvm-interop.md`
+  - `bytecode.md`
+- `kotlin/version-updates/`
+  - `kotlin-2-4-update.md`
+
+Execution checklist:
+
+1. Move files with `git mv` so history is preserved.
+2. Update `kotlin.md` links to the new subfolder paths.
+3. Update all cross-folder links from Android, KMP, learning paths, README, and related files.
+4. Update `CONTRIBUTING.md` canonical ownership map where it references `kotlin/coroutines.md`.
+5. Run a full local Markdown link check across the repo.
+6. Run `git diff --check`.
+7. Commit as a dedicated structural cleanup commit.
+
+Non-goals:
+
+- Do not rewrite Kotlin topic content during the move unless a link or ownership note must change.
+- Do not create new Kotlin topics in this milestone.
+- Do not change Kotlin canonical ownership; this is navigation cleanup, not content redefinition.
+
+Recommended commit message:
+
+- `Organize Kotlin topics into subfolders`
 
 ---
 
