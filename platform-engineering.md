@@ -26,3 +26,4 @@ Start with internal developer platforms, because paved roads define how other te
 - [Library Versioning](platform-engineering/library-versioning.md)
 - [SDK Distribution](platform-engineering/sdk-distribution.md)
 - [Build Graph Scaling](platform-engineering/build-graph-scaling.md)
+- [Custom Lint Rules & Static Analysis](platform-engineering/custom-lint-and-static-analysis.md)

@@ -113,6 +113,10 @@ Architecture and lifecycle first (you cannot reason about anything else without 
 - [Convention Plugins](android/os-internals/convention-plugins.md)
 - [Multi-Module Project Structure](android/os-internals/multi-module.md)
 
+### Media
+
+- [Media3 & ExoPlayer Player Architecture](android/media/media3-player-architecture.md)
+
 ### Testing
 
 - [Testing Strategy at Scale](android/testing/testing-strategy.md)

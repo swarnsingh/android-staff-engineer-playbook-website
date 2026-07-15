@@ -32,6 +32,7 @@ The `kotlin/` folder is organized by learning domain. Each subfolder keeps a foc
 - [Functions](kotlin/language-core/functions.md)
 - [Extensions](kotlin/language-core/extensions.md)
 - [Data Classes](kotlin/language-core/data-classes.md)
+- [Value Classes](kotlin/language-core/value-classes.md)
 - [Sealed Classes](kotlin/language-core/sealed-classes.md)
 - [Delegation](kotlin/language-core/delegation.md)
 
