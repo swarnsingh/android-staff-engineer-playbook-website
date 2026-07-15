@@ -53,6 +53,7 @@ Each is a full topic file. Image Loading appears once here, not also in Platform
 - [Collaborative Editing (CRDT / OT)](mobile-system-design/collaborative-editing.md)
 - [Notification System](mobile-system-design/notification-system.md)
 - [Payment Flow](mobile-system-design/payment-flow.md)
+- [Play Billing: IAP & Subscriptions](mobile-system-design/play-billing-and-subscriptions.md)
 - [Pagination](mobile-system-design/pagination.md)
 - [Search](mobile-system-design/search.md)
 

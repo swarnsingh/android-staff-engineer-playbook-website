@@ -404,7 +404,7 @@ Triggered only when amount > threshold OR risk score from PSP is elevated.
 
 - **Refunds and chargebacks** — separate flow, different threat model.
 - **Card management CRUD** — list/delete/set-default screens.
-- **Subscriptions / recurring billing** — different lifecycle entirely.
+- **Subscriptions / recurring billing** — different lifecycle entirely; for digital goods on Android that's Play Billing, covered in [Play Billing: IAP & Subscriptions](play-billing-and-subscriptions.md).
 - **Apple Pay / Google Pay** — one slot-in component; not the architectural core.
 - **Anti-fraud rules** — server-side risk engine; client just shows challenges.
 - **PSP onboarding** — that's the merchant team's problem.
