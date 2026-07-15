@@ -27,7 +27,7 @@ Current state: the original canonical buildout, post-audit gap closure, Staff/Pr
 
 ## Current Status
 
-The G12–G17 quality roadmap (from the 2026-07 principal-level audit) is in progress: G12–G15 are merged; G16–G17 are pending. Full scope of the pending milestones is in the **Active Roadmap** section below — pending work is tracked here *before* it lands, not only recorded after.
+The G12–G17 quality roadmap (from the 2026-07 principal-level audit) is in progress: G12–G16 are merged; G17 (final audit & close-out) is pending. Full scope of the pending milestones is in the **Active Roadmap** section below — pending work is tracked here *before* it lands, not only recorded after.
 
 | Track | Status | Notes |
 |---|---:|---|
@@ -40,7 +40,7 @@ The G12–G17 quality roadmap (from the 2026-07 principal-level audit) is in pro
 | G13 quality infrastructure | ✅ | CI quality gates on every PR (`scripts/check_docs.py` via GitHub Actions): broken links, stale text/target redirects, TODO/TBD markers, thin-file floor. PR template with kind/canonical-owner/fact-verification checklist. CONTRIBUTING: documented the gates, fixed the self-contradicting ADR naming rule, classified release digests (`kotlin/version-updates/`) as Application files under the Staleness Strategy |
 | G14 consistency & editorial | ✅ | Expanded the five thin files to canonical depth (replication & leader election, streaming logs & partitioning, mobile client consistency contracts, KMP shared domain boundaries, SRP) — each gained Why It Matters, Mental Model, production example, tradeoffs, and probing questions. Renamed `new-relic.md` → `mobile-apm-and-rum.md` and reworked it vendor-neutrally (W3C Trace Context, Android vitals baseline, corrected memory-allocator overstatement). Tone pass: normalized the repeated "Junior Engineer" opener trope and hyperbole across 6 files |
 | G15 Tier 1 content | ✅ | All four sub-PRs done: 1 (SDUI + WebView/hybrid, PR #4), 2 (testing strategy, PR #5), 3 (2026 currency: on-device AI, Privacy Sandbox phaseout, 16 KB pages, PR #6), 4 (Play Billing & subscriptions, PR #7) — see Active Roadmap below |
-| G16 Tier 2 differentiators | 🟡 | Sub-PR 1 (Media3, custom lint rules, value classes, PR #8) done; View interop + form factors pending — see Active Roadmap below |
+| G16 Tier 2 differentiators | ✅ | Both sub-PRs done: 1 (Media3, custom lint rules, value classes, PR #8), 2 (View interop & migration + form-factors matrix, PR #9) — see Active Roadmap below |
 | G17 final audit & close-out | ⬜ | Re-run full audit, adversarial read of new files, refresh README/learning paths |
 
 Latest cleanup/audit commits:
@@ -88,12 +88,12 @@ Staff-level topics with no dedicated treatment anywhere in the repo, ordered by 
 3. ✅ **2026 currency** (PR #6): `mobile-system-design/on-device-ai.md` (Gemini Nano/AICore/ML Kit GenAI layering, LiteRT + CompiledModel API, on-device vs cloud routing, fleet-coverage fallback) + `security/privacy-sandbox.md` — rewritten from the original plan after online verification: Privacy Sandbox on Android was deprecated 2025-10-17, so the file covers the phaseout, what replaces it, and the platform-bet lessons + `release-engineering/16kb-page-sizes.md` (Play requirement since 2025-11-01 for API 35+ targets; ELF + zip alignment, AGP 8.5.1/NDK r28 floors, CI gate, 16 KB emulator testing).
 4. ✅ **Commerce** (PR #7): `mobile-system-design/play-billing-and-subscriptions.md` — sibling of `payment-flow.md` (card checkout ≠ Play Billing): product/base-plan/offer model, server-as-source-of-truth entitlement service (RTDN as trigger + `subscriptionsv2.get`, verify→grant→acknowledge ordering, 3-day ack window), involuntary-churn lifecycle (grace/hold/canceled-vs-expired, restore vs resubscribe, `linkedPurchaseToken` dedup), replacement modes incl. PBL 8.1+ `SubscriptionProductReplacementParams`, PBL 8+ publishing gate (2026-08-31), license-tester time compression. Cross-linked from `payment-flow.md`.
 
-### G16 — Tier 2 Differentiators 🟡
+### G16 — Tier 2 Differentiators ✅
 
 Two sub-PRs:
 
 1. ✅ **Media, tooling, language** (PR #8): `android/media/media3-player-architecture.md` (new Media section — component model, buffering economics, session ownership, cache vs downloads, Widevine L1/L3 fallback, player pooling, Media3 1.10 Compose UI) + `platform-engineering/custom-lint-and-static-analysis.md` (detector anatomy, `lintChecks` vs `lintPublish`, TestLintTask, baseline-and-ratchet rollout, analysis-tool portfolio) + `kotlin/language-core/value-classes.md` (boxing rules, mangling/`@JvmName` as permanent API decisions, vs typealias/data class, Compose stability).
-2. ⬜ **Hybrid UI & form factors:** `android/compose/view-interop-and-migration.md` (ComposeView/ViewCompositionStrategy, AndroidView/AndroidViewBinding, migration strategy for hybrid codebases) + form-factors decision matrix (Wear/Auto/TV/Glance widgets).
+2. ✅ **Hybrid UI & form factors** (PR #9): `android/compose/view-interop-and-migration.md` (ComposeView/ViewCompositionStrategy pitfalls, AndroidView factory/update/onReset contract, AndroidViewBinding/AndroidFragment as transitional tools, seam costs, phased migration strategy with navigation-last sequencing) + `android/compose/form-factors-matrix.md` (Wear Compose Material 3 stable with parallel artifact set, Compose for TV stable with Leanback formally deprecated, Car App Library template/category gating, Glance-as-RemoteViews constraints, decision framework and leverage sequencing). Media3 cross-link restored.
 
 ### G17 — Final Audit & Close-out ⬜
 

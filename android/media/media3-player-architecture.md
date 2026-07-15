@@ -62,7 +62,7 @@ Instrument the player, not just the app: startup time (prepare→first frame), r
 
 ## 8. Compose Integration
 
-Media3 1.10 added a Compose UI layer split across two artifacts: **`media3-ui-compose-material3`** provides the out-of-the-box widgets — the `Player` composable with controls, `ProgressSlider`, `PlayPauseButton`, and the other Material 3-styled components — while the core **`media3-ui-compose`** holds the unstyled surface layer (`PlayerSurface`, `ContentFrame`) and state holders. Depend on the Material 3 artifact for ready-made player UI; drop to the core module when you're theming from scratch. Either way it beats hand-wrapping `PlayerView` in `AndroidView` for new surfaces. Older codebases embedding `PlayerView` via `AndroidView` interop should migrate surface-by-surface as the Compose components stabilize.
+Media3 1.10 added a Compose UI layer split across two artifacts: **`media3-ui-compose-material3`** provides the out-of-the-box widgets — the `Player` composable with controls, `ProgressSlider`, `PlayPauseButton`, and the other Material 3-styled components — while the core **`media3-ui-compose`** holds the unstyled surface layer (`PlayerSurface`, `ContentFrame`) and state holders. Depend on the Material 3 artifact for ready-made player UI; drop to the core module when you're theming from scratch. Either way it beats hand-wrapping `PlayerView` in `AndroidView` for new surfaces. Older codebases embedding `PlayerView` via `AndroidView` interop should migrate surface-by-surface following [View Interop & Compose Migration](../compose/view-interop-and-migration.md).
 
 ## Further Reading
 

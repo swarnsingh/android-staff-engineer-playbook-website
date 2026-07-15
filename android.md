@@ -46,6 +46,8 @@ Architecture and lifecycle first (you cannot reason about anything else without 
 - [Recomposition & State](android/compose/recomposition-and-state.md)
 - [Side Effects](android/compose/side-effects.md)
 - [Adaptive Compose & Large Screens](android/compose/adaptive-compose-large-screens.md)
+- [Form Factors Decision Matrix (Wear, TV, Auto, Widgets)](android/compose/form-factors-matrix.md)
+- [View Interop & Compose Migration](android/compose/view-interop-and-migration.md)
 - [Compose Performance Tooling](android/compose/compose-performance-tooling.md)
 - [Custom Layout & Measurement](android/compose/custom-layout-measurement.md)
 - [Compose Accessibility](android/compose/compose-accessibility.md)
