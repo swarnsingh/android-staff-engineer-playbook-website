@@ -39,7 +39,7 @@ The G12–G17 quality roadmap (from the 2026-07 principal-level audit) is in pro
 | G12 correctness pass | ✅ | Fixed Strong Skipping semantics (`===` for unstable params), lambda/method-reference memoization guidance, R8/`@Stable` failure mode, AIDL append-only evolution rules, ART escape-analysis nuance, Binder buffer/thread-pool precision; repaired 16 stale link redirects; filled 3 TODO placeholders in offline-first blueprint; refreshed stale versions/DSLs. All factual changes verified against current official docs/AOSP source |
 | G13 quality infrastructure | ✅ | CI quality gates on every PR (`scripts/check_docs.py` via GitHub Actions): broken links, stale text/target redirects, TODO/TBD markers, thin-file floor. PR template with kind/canonical-owner/fact-verification checklist. CONTRIBUTING: documented the gates, fixed the self-contradicting ADR naming rule, classified release digests (`kotlin/version-updates/`) as Application files under the Staleness Strategy |
 | G14 consistency & editorial | ✅ | Expanded the five thin files to canonical depth (replication & leader election, streaming logs & partitioning, mobile client consistency contracts, KMP shared domain boundaries, SRP) — each gained Why It Matters, Mental Model, production example, tradeoffs, and probing questions. Renamed `new-relic.md` → `mobile-apm-and-rum.md` and reworked it vendor-neutrally (W3C Trace Context, Android vitals baseline, corrected memory-allocator overstatement). Tone pass: normalized the repeated "Junior Engineer" opener trope and hyperbole across 6 files |
-| G15 Tier 1 content | ⬜ | Seven missing staff-level topics — see Active Roadmap below |
+| G15 Tier 1 content | 🟡 | Sub-PR 1 (SDUI + WebView/hybrid) done; testing strategy, 2026 currency, and commerce pending — see Active Roadmap below |
 | G16 Tier 2 differentiators | ⬜ | Media3, custom lint rules, View interop, value classes, form factors — see Active Roadmap below |
 | G17 final audit & close-out | ⬜ | Re-run full audit, adversarial read of new files, refresh README/learning paths |
 
@@ -52,13 +52,38 @@ Latest cleanup/audit commits:
 
 ## Active Roadmap — G12–G17 Quality Program
 
-Origin: 2026-07 principal-level audit of the full repo (technical accuracy, structural integrity, coverage vs. staff-level expectations). Each milestone lands as one reviewed PR (Codex review + merge gate) before the next begins. One PR per milestone; every factual claim verified against current official docs/source at writing time.
+**Origin.** A 2026-07 principal-level audit of the full repo (285 files, ~531k words) assessed technical accuracy, structural integrity, and coverage against staff-level expectations. It found three classes of issues, which map directly to the milestones below:
 
-### G15 — Tier 1 Content: The Seven Missing Topics ⬜
+1. **Correctness defects** — confirmed technical errors in flagship files (Compose Strong Skipping semantics, AIDL evolution rules, ART escape analysis, Binder precision), 16 stale link redirects, 3 shipped TODO placeholders → **G12**.
+2. **Missing enforcement** — nothing prevented those defect classes from landing again (no CI, no PR gates, taxonomy ambiguities in CONTRIBUTING) → **G13**.
+3. **Consistency and coverage gaps** — five files at a fraction of sibling depth, a vendor-named file in the observability TOC, a repeated tone trope → **G14**; seven staff-level topics with no dedicated treatment → **G15**; differentiator topics → **G16**; and a final re-audit → **G17**.
 
-Staff-level topics with no dedicated treatment anywhere in the repo, ordered by interview/production impact. Planned as four sub-PRs:
+**Operating rules for this program.** One milestone per PR (sub-PRs where scoped below); every PR is Codex-reviewed and merged before the next begins; every factual claim is verified against current official docs/source at writing time; commits carry no LLM attribution; CI quality gates must be green.
 
-1. ⬜ **Platform architecture:** `mobile-system-design/server-driven-ui.md` (schema versioning, component registry, forward compatibility, release-cycle bypass — the #1 gap) + `android/networking-and-security/webview-and-hybrid.md` (JS bridge security, process model, 3-DS/payment webviews).
+### G12 — Correctness Pass ✅ (PR #1)
+
+- ✅ `android/compose/stability.md`: Strong Skipping compares unstable params with `===` not `equals()`; lambda vs method-reference memoization guidance corrected (function references un-memoized until Compose compiler 1.5.1/1.5.5); bogus R8-strips-`@Stable` failure mode replaced; modern `composeCompiler {}` metrics DSL; `kotlinx-collections-immutable` bumped to 0.5.1.
+- ✅ `android/os-internals/the-binder.md`: AIDL append-only evolution (transaction codes from declaration order); corrected AOSP link; `BINDER_VM_SIZE`/thread-pool precision from `ProcessState.cpp`; (post-review) structured-AIDL qualification on field additions.
+- ✅ `kotlin/runtime-and-jvm/memory-model.md`: HotSpot scalar replacement vs ART's more conservative `escape.cc` + LSE distinction.
+- ✅ 16 stale link redirects repaired; 3 TODO placeholders in `reference-architectures/offline-first-app.md` filled ((post-review) convergence SLO scoped to foreground sync).
+
+### G13 — Quality Infrastructure ✅ (PR #2)
+
+- ✅ `scripts/check_docs.py` + GitHub Actions workflow: broken links, stale text/target redirects, TODO/TBD markers, thin-file floor — fails every PR that regresses.
+- ✅ PR template: file kind, canonical owner, fact-verification, TOC updates, local gate run.
+- ✅ CONTRIBUTING: gates documented; ADR naming contradiction fixed; release digests classified as Application files.
+
+### G14 — Consistency & Editorial ✅ (PR #3)
+
+- ✅ Five thin files expanded to canonical depth: `distributed-systems/replication-and-leader-election.md`, `distributed-systems/streaming-logs-partitioning.md`, `distributed-systems/mobile-client-consistency-contracts.md`, `android/kotlin-multiplatform/shared-domain-boundaries.md`, `principles/single-responsibility.md` ((post-review) Swift-bridge caveats on sealed exhaustiveness and coroutine cancellation, verified via KT-47610).
+- ✅ `new-relic.md` → `mobile-apm-and-rum.md`: vendor-neutral APM/RUM treatment (W3C Trace Context, Android vitals baseline, memory-allocator overstatement fixed).
+- ✅ Tone normalization across 6 files; this Active Roadmap section added to the tracker.
+
+### G15 — Tier 1 Content: The Seven Missing Topics 🟡
+
+Staff-level topics with no dedicated treatment anywhere in the repo, ordered by interview/production impact. Four sub-PRs:
+
+1. ✅ **Platform architecture** (PR #4): `mobile-system-design/server-driven-ui.md` (capability negotiation, tolerant reader, fallback chains, action-as-enum vs interpreter — the #1 gap) + `android/networking-and-security/webview-and-hybrid.md` (origin-scoped bridges, WebViewAssetLoader, `isForMainFrame` navigation gating, 3-DS example).
 2. ⬜ **Testing at scale:** `android/testing/testing-strategy.md` — test pyramid economics, flakiness management (quarantine/retry/blame), CI device labs vs emulators, sharding, contract tests against BFFs.
 3. ⬜ **2026 currency:** `mobile-system-design/on-device-ai.md` (Gemini Nano/AICore, LiteRT, on-device vs cloud inference trade-offs) + `security/privacy-sandbox.md` (attribution, SDK runtime) + 16 KB page-size compatibility (in `release-engineering/`, Play requirement for Android 15+ targets).
 4. ⬜ **Commerce:** Play Billing / IAP / subscriptions (extend `mobile-system-design/payment-flow.md` or sibling file — RTDN, server-side verification, grace periods, proration).

@@ -60,6 +60,7 @@ Each is a full topic file. Image Loading appears once here, not also in Platform
 
 ## Platform & SDK Design
 
+- [Server-Driven UI](mobile-system-design/server-driven-ui.md)
 - [Feature Flags & Remote Config](mobile-system-design/feature-flags-and-remote-config.md)
 - [Telemetry SDK](mobile-system-design/telemetry-sdk.md)
 - [Analytics SDK](mobile-system-design/analytics-sdk.md)

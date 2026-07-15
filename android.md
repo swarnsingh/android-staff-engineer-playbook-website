@@ -95,6 +95,7 @@ Architecture and lifecycle first (you cannot reason about anything else without 
 - [GraphQL](android/networking-and-security/graphql.md)
 - [NetworkCallback, Metered Networks, VPNs & Captive Portals](android/networking-and-security/networkcallback-metered-vpn-captive-portal.md)
 - [Security & Keystore](android/networking-and-security/security-and-keystore.md)
+- [WebView & Hybrid Architecture](android/networking-and-security/webview-and-hybrid.md)
 
 ### System Internals
 

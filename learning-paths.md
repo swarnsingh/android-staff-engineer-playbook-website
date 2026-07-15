@@ -21,7 +21,7 @@ Use this when you need to design mobile systems under interview or architecture-
 Use this when you are already a strong Senior engineer and want to understand Staff-level scope, leverage, and decision quality.
 
 1. **Calibrate the level change:** [Senior to Staff Progression](career/senior-to-staff-progression.md) and [Scope and Ambiguity](career/scope-and-ambiguity.md)
-2. **Build leverage:** [Internal Developer Platforms](platform-engineering/internal-developer-platforms.md), [Build Graph Scaling](platform-engineering/build-graph-scaling.md), and [Design Systems Architecture](platform-engineering/design-systems-architecture.md)
+2. **Build leverage:** [Internal Developer Platforms](platform-engineering/internal-developer-platforms.md), [Build Graph Scaling](platform-engineering/build-graph-scaling.md), [Design Systems Architecture](platform-engineering/design-systems-architecture.md), and [Server-Driven UI](mobile-system-design/server-driven-ui.md)
 3. **Lead through documents and reviews:** [Writing Technical Documents (RFCs)](career/writing-rfcs.md), [Running a Design Review](leadership/running-a-design-review.md), and [Escalation & Decision Making](leadership/escalation-and-decision-making.md)
 4. **Operate production systems:** [Incident Response & On-Call](leadership/incident-response-on-call.md), [SLOs](observability/slos.md), [Alerting](observability/alerting.md), and [Release Strategy](release-engineering/release-strategy.md)
 5. **Make risk visible:** [Security & Privacy](mobile-system-design/security-and-privacy.md), [Privacy, GDPR & Data Residency](security/privacy-gdpr-data-residency.md), and [Kill Switches](release-engineering/kill-switches.md)
