@@ -98,7 +98,7 @@ Same concept, multiple angles — link between them, never duplicate.
 
 - All filenames are **kebab-case**: `state-machines.md`, `app-startup.md`, `deterministic-resume.md`
 - No spaces, no underscores, no PascalCase
-- ADRs: zero-padded three-digit prefix → `backend-for-mobile/sse-vs-websockets.md`
+- Decision files (ADRs): plain kebab-case named for the decision, co-located in the tree they decide → `backend-for-mobile/sse-vs-websockets.md`. No numeric prefixes.
 
 ### Cross-references
 
@@ -127,6 +127,8 @@ Instead:
 
 If a canonical file finds itself naming a specific version, that detail belongs in an application file instead.
 
+**Release digests** (e.g. `kotlin/version-updates/kotlin-2-4-update.md`) are **Application files** under this strategy: they exist precisely to hold version-specific detail, and they follow the application lifecycle — revised or superseded as releases land. When a feature described in a digest becomes stable, long-lived guidance about it graduates into the owning canonical file; the digest keeps only the release-delta framing.
+
 ---
 
 ## How to Add a New File
@@ -138,6 +140,21 @@ If a canonical file finds itself naming a specific version, that detail belongs 
 5. **Fill it in.** For canonical files, follow all relevant sections. For application files, link to the canonical owner instead of redefining.
 6. **Cross-reference.** Add links from related files to the new one, and vice versa.
 7. **Update the top-level TOC** for the tree the file belongs to.
+
+---
+
+## Quality Gates (CI)
+
+Every PR runs `python3 scripts/check_docs.py` via GitHub Actions ([`.github/workflows/quality.yml`](.github/workflows/quality.yml)). It fails the build on:
+
+1. **Broken internal links** — a relative link whose target doesn't exist.
+2. **Stale redirects** — link text naming `foo.md` while the target is `bar.md`.
+3. **Unfinished content** — literal `*TODO: …*` or standalone `TBD` markers.
+4. **Near-empty files** — non-stub content files under 400 words (expand them, or allowlist in the script with a reason).
+
+Run it locally before pushing. A green check is a merge precondition, not a suggestion.
+
+**Fact verification.** Any claim about compiler/runtime/API behavior, versions, or platform policy must be verified against current official documentation or source (developer.android.com, kotlinlang.org, AOSP) at writing time — not written from memory. Cite the sources in Further Reading.
 
 ---
 
