@@ -138,5 +138,5 @@ When designing a real-time feature, a Staff engineer focuses on the State Machin
 ## Further Reading
 
 - [`transport-protocols.md`](transport-protocols.md) — How HTTP/2 multiplexing impacts SSE and Polling.
-- [`process-death-and-state-restoration.md`](../android/architecture/viewmodel.md) — How the Android OS aggressively kills background apps, destroying WebSockets.
-- [`003-sse-vs-websockets.md`](../backend-for-mobile/sse-vs-websockets.md) — The specific Architecture Decision Record detailing why SSE was chosen over WebSockets for one-way streams.
+- [`process-death-and-state-restoration.md`](../android/architecture/process-death-and-state-restoration.md) — How the Android OS aggressively kills background apps, destroying WebSockets.
+- [`sse-vs-websockets.md`](sse-vs-websockets.md) — The specific Architecture Decision Record detailing why SSE was chosen over WebSockets for one-way streams.

@@ -67,16 +67,21 @@ For perf-critical code, prefer `IntArray` / `LongArray` / `FloatArray` over `Lis
 
 ### Escape analysis
 
-The JIT compiler can sometimes "scalar replace" an object — if it can prove the object never escapes the function, it splits the fields onto the stack:
+Optimizing compilers can sometimes eliminate an allocation entirely — if the compiler proves the object never escapes the method, it can replace the object with its fields and never touch the heap:
 
 ```kotlin
 fun area(): Int {
-    val box = Rect(0, 0, 10, 20)   // looks like heap allocation
-    return box.width * box.height   // ...but JIT may inline + stack-allocate
+    val box = Rect(0, 0, 10, 20)   // looks like a heap allocation
+    return box.width * box.height   // ...but the compiler may eliminate it entirely
 }
 ```
 
-You can't rely on escape analysis — write code that doesn't allocate in hot paths, and don't expect the JIT to bail you out.
+The mechanism differs by runtime, and the difference matters on Android:
+
+- **HotSpot (server JVM)** does aggressive escape analysis with scalar replacement in the C2 JIT — this is the behavior most JVM blog posts describe.
+- **ART** (both JIT and AOT `dex2oat`) has its own escape analysis (`compiler/optimizing/escape.cc`), used by the load-store-elimination pass to remove allocations of non-escaping "singleton" objects and to sink partially-escaping allocations closer to their escape points. It is real, but considerably more conservative than HotSpot's — an object that is stored to the heap, passed to another method, or returned is never eliminated.
+
+Either way the engineering conclusion is the same: **you can't rely on escape analysis** — write code that doesn't allocate in hot paths, and don't expect the compiler to bail you out. Verify with the Memory Profiler / allocation tracking, not with assumptions about what the JIT "should" do.
 
 ---
 

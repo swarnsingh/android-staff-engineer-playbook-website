@@ -73,7 +73,7 @@ class ProfileActivity : AppCompatActivity() {
 
 ### The Staff Fix (Cancellation)
 
-The solution is [Structured Concurrency](../concurrency/coroutines-under-the-hood.md). You must cut the rope when the Activity dies.
+The solution is [Structured Concurrency](../architecture/structured-concurrency.md). You must cut the rope when the Activity dies.
 
 ```kotlin
 class ProfileActivity : AppCompatActivity() {
@@ -174,5 +174,5 @@ When attacking an `OutOfMemoryError` spike in production, a Staff engineer focus
 ## Further Reading
 
 - [`jank.md`](jank.md) — How Garbage Collection events (caused by bad memory management) pause the Main Thread and drop frames.
-- [`process-death-and-state-restoration.md`](../architecture/viewmodel.md) — How the OS brutally kills apps that consume too much RAM.
+- [`process-death-and-state-restoration.md`](../architecture/process-death-and-state-restoration.md) — How the OS brutally kills apps that consume too much RAM.
 - [Android Developers: Memory Management](https://developer.android.com/topic/performance/memory)

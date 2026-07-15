@@ -194,5 +194,5 @@ Certificate pinning is appropriate for banking, wallets, auth, and high-value AP
 ## Further Reading
 
 - [`retrofit-and-okhttp.md`](retrofit-and-okhttp.md) — The network client where Certificate Pinning is implemented.
-- [`datastore.md`](../../mobile-system-design/caching-library.md) — The asynchronous data storage solution that currently lacks a built-in Jetpack Security wrapper.
+- [`datastore.md`](../data-and-di/datastore.md) — The asynchronous data storage solution that currently lacks a built-in Jetpack Security wrapper.
 - [Android Developers: Security Best Practices](https://developer.android.com/topic/security/best-practices)

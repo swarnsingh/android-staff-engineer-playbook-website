@@ -53,7 +53,7 @@ data class User(val id: Int, val name: String) : Parcelable
 
 ### 2. The Transaction Limits
 
-The Binder kernel driver allocates a fixed, shared memory buffer for IPC transactions. Crucially, this buffer is limited to **1 Megabyte per process**. This single 1MB pool is shared by *all* in-flight transactions happening simultaneously for that specific app process.
+The Binder kernel driver allocates a fixed, shared memory buffer for IPC transactions. Crucially, this buffer is limited to **just under 1 Megabyte per process** (`BINDER_VM_SIZE` = 1 MB minus two pages in AOSP's `ProcessState.cpp`). This single pool is shared by *all* in-flight transactions happening simultaneously for that specific app process — and asynchronous (`oneway`) transactions are restricted to half of it.
 
 ```kotlin
 val intent = Intent(this, TargetActivity::class.java)
@@ -110,7 +110,7 @@ The Android build system generates a `Stub` and a `Proxy`.
 2. The UI Process calls `bindService()`. The OS returns the `Proxy` object.
 3. The UI Process calls `proxy.pauseMusic()`. The Binder routes the call across the process boundary.
 
-*(Staff Note: AIDL is notoriously difficult to maintain because you cannot change the method signatures once external apps start relying on them, otherwise the Parcel byte-packing offsets will misalign and crash).*
+*(Staff Note: AIDL interfaces are **append-only**. Each method is assigned a transaction code from its declaration order, so reordering methods, inserting one in the middle, or changing an existing signature breaks every already-compiled client — the caller invokes transaction N expecting the old method and reaches a different one. The only safe evolutions are adding new methods at the end (or with explicitly assigned serials) and — **for structured/stable AIDL parcelables only** — adding new fields with defaults, because their generated read code tolerates missing trailing fields. An ordinary `Parcelable`/`@Parcelize` class gets no such protection: both sides must read the exact same sequential byte layout, so adding a field to a plain parcelable shared across an app/SDK boundary breaks old readers unless you version the parcel format yourself. This is why long-lived AIDL surfaces feel frozen in time.)*
 
 ## Tradeoffs
 
@@ -131,7 +131,7 @@ The Android build system generates a `Stub` and a `Proxy`.
   Passing massive Lists, Bitmaps, or deep Object Graphs between Activities or Fragments using `Intent.putExtra` or `Bundle`. The OS attempts to push it through the 1MB Binder buffer and kills your app.
   *(Fix: Only pass primitive IDs (`userId: String`) through Intents or Navigation arguments. The receiving Activity uses the ID to query a local SQLite database or Repository singleton).*
 - **The Binder Thread Pool Exhaustion:**
-  The receiving process (e.g., the System Server) has a fixed pool of Binder threads (usually 16). If 20 different apps hit the System Server at the exact same millisecond with complex requests, the pool is exhausted. App 21 is blocked and ANRs.
+  The receiving process has a fixed pool of Binder threads (`DEFAULT_MAX_BINDER_THREADS` = 15 in AOSP, plus the main binder thread; system-critical processes raise their own limit). If more clients hit a busy service at the exact same moment with complex requests, the pool is exhausted. The next caller is blocked and ANRs.
   *(Fix: You cannot control the OS, but you can control your own AIDL Bound Services. Never perform long-running disk I/O on a Binder thread. Hand the request to a background Coroutine and return immediately).*
 
 ## Staff Engineer Thinking
@@ -163,5 +163,5 @@ When reviewing code that crosses process boundaries, a Staff engineer focuses on
 ## Further Reading
 
 - [`anrs.md`](../performance/anrs.md) — How synchronous Binder calls to busy system services block the Main Thread and cause ANRs.
-- [`process-death-and-state-restoration.md`](../architecture/viewmodel.md) — How the `SavedStateHandle` pushes its bundles through the Binder to survive OS process death.
-- [Android Open Source Project: Binder IPC](https://source.android.com/docs/core/architecture/hidl)
+- [`process-death-and-state-restoration.md`](../architecture/process-death-and-state-restoration.md) — How the `SavedStateHandle` pushes its bundles through the Binder to survive OS process death.
+- [Android Open Source Project: AIDL and Binder IPC](https://source.android.com/docs/core/architecture/aidl)

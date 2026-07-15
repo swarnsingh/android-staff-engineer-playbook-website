@@ -201,5 +201,5 @@ When reviewing Compose code, a Staff engineer heavily interrogates the use of Ef
 ## Further Reading
 
 - [`recomposition-and-state.md`](recomposition-and-state.md) — How state changes trigger the Effect Handlers to re-evaluate their keys.
-- [`structured-concurrency.md`](../concurrency/coroutines-under-the-hood.md) — The underlying Coroutine mechanics that power `LaunchedEffect` cancellation.
+- [`structured-concurrency.md`](../architecture/structured-concurrency.md) — The underlying Coroutine mechanics that power `LaunchedEffect` cancellation.
 - [Android Developers: Side-effects in Compose](https://developer.android.com/jetpack/compose/side-effects)

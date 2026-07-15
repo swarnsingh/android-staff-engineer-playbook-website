@@ -54,9 +54,9 @@ The Compose compiler classifies these as stable **without any annotation**:
 @Composable fun Button(onClick: () -> Unit) { /* depends */ }
 ```
 
-If `onClick` is a method reference (`vm::onClick`) or a stable function (`{ navigate() }` with no captures of unstable state), it's stable. If it captures a `var`, an unstable `List`, or a state object directly, it can become unstable.
+Lambda expressions compile to stable types, and the Compose compiler **automatically memoizes** a lambda — wraps it in `remember`, keyed on its captures — when everything it captures is stable. So `{ vm.processIntent(it) }` reuses the same instance across recompositions as long as `vm` is stable. If a lambda captures a `var` or an unstable value, it can't be memoized (before Strong Skipping) and a fresh instance is allocated per recomposition, breaking skipping in every child it's passed to.
 
-Pro tip: pass method references (`vm::processIntent`) instead of lambdas (`{ vm.processIntent(it) }`). Method references are stable; lambdas allocated per recomposition aren't.
+What matters is **what the lambda captures**, not lambda-vs-reference syntax. Method references (`vm::processIntent`) behave equivalently on current compilers — but note they were historically the *buggy* case: the Compose compiler failed to memoize (adapted) function references until fixes landed in Compose compiler 1.5.1 and 1.5.5, so on older toolchains `vm::processIntent` allocated a new instance every recomposition while the equivalent lambda did not. If you're on a pre-1.5.5 compiler, prefer lambdas; on anything current, pick whichever reads better and audit the captures instead.
 
 ### Data classes where every property is stable
 
@@ -180,19 +180,20 @@ When to use:
 
 Modern Compose Compiler ships with **Strong Skipping Mode**, enabled by default in Compose 1.7+.
 
-Key change: **Composable functions become skippable even with unstable parameters, as long as those parameters are equal to their previous value via `equals()`.**
+Key change: **Composable functions become skippable even with unstable parameters — but unstable parameters are compared with instance equality (`===`), not `equals()`.** Stable parameters keep the `equals()` comparison.
 
 What this means in practice:
 
 | Before Strong Skipping | After Strong Skipping |
 |---|---|
-| `@Composable fun List(items: List<Item>)` — never skips | Skips when `items.equals(previousItems)` |
-| Lambdas capturing unstable state — never stable | Stable as long as their equality is stable |
-| Required `@Immutable` annotations for `List<T>` use cases | Often unnecessary |
+| `@Composable fun List(items: List<Item>)` — never skips | Skips when `items === previousItems` (same instance) |
+| Lambdas capturing unstable state — never memoized | Memoized, keyed on the captured values (compared with `===` for unstable captures) |
+| Required `@Immutable` annotations for `List<T>` use cases | Often unnecessary — *if* you pass the same instance across recompositions |
+| Deep `equals()` on large stable lists on every recomposition | Unstable params get a cheap identity check instead |
 
 This is a huge improvement and significantly reduces the need for `@Immutable` annotations on every domain type. **Verify your Compose Compiler version supports it before relying on it.**
 
-Even with Strong Skipping, deeply unstable types still cost — the `equals()` check has to run, and if the unstable parameter is recomputed per recomposition (a new `List` allocated each time), it still won't skip.
+The `===` detail is the practical catch: a structurally-equal-but-freshly-allocated `List` (e.g., rebuilt from a `.map { }` in the parent on every recomposition) is a **new instance**, fails the identity check, and never skips. Strong Skipping rewards *instance reuse*, not structural equality. If you can't guarantee the same instance flows through, stability annotations and `ImmutableList` still earn their keep — a stable parameter gets the `equals()` comparison, which a structurally-equal new instance *does* pass.
 
 ---
 
@@ -225,7 +226,7 @@ TagList(tags = tags)
 
 ```kotlin
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.7")
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.5.1")  // check for the latest release
 }
 ```
 
@@ -261,10 +262,20 @@ Listed types are treated as stable. Use for value-types from libraries that you'
 
 ## Reading the Compose Compiler Metrics
 
-Enable per-module metrics:
+Enable per-module metrics. On Kotlin 2.0+ (Compose Compiler Gradle plugin), use the DSL:
 
 ```kotlin
-// build-logic/convention/.../ComposeMetrics.kt
+// build.gradle.kts (per module, or centralized in a convention plugin)
+composeCompiler {
+    metricsDestination = layout.buildDirectory.dir("compose_compiler")
+    reportsDestination = layout.buildDirectory.dir("compose_compiler")
+}
+```
+
+On pre-2.0 toolchains, the same outputs are enabled via raw compiler flags:
+
+```kotlin
+// build-logic/convention/.../ComposeMetrics.kt (legacy, Kotlin < 2.0)
 tasks.withType<KotlinCompile>().configureEach {
     if (System.getenv("ENABLE_COMPOSE_METRICS") == "true") {
         kotlinOptions.freeCompilerArgs += listOf(
@@ -275,7 +286,7 @@ tasks.withType<KotlinCompile>().configureEach {
 }
 ```
 
-Run a build with `ENABLE_COMPOSE_METRICS=true ./gradlew :app:assembleRelease`. Inspect:
+Run a **release** build (debug builds skip optimizations and skew the reports). Inspect:
 
 ### `<module>-classes.txt`
 
@@ -338,7 +349,7 @@ fun CartScreen(vm: CartViewModel) {
     val state by vm.state.collectAsStateWithLifecycle()
     CartContent(
         state = state,
-        onAddItem = vm::addItem,    // ← method reference; stable
+        onAddItem = vm::addItem,    // ← stable & memoized (Compose compiler ≥ 1.5.5; use lambdas on older toolchains)
         onRemoveItem = vm::removeItem,
     )
 }
@@ -379,7 +390,7 @@ Crude but effective. Or use the stability config file.
 | Compose metrics output is empty | Plugin args not added to module's kotlinc | Verify `freeCompilerArgs` in build-logic |
 | Strong Skipping Mode doesn't kick in | Compiler version too old | Update to Compose Compiler 1.5.4+ / Compose 1.7+ |
 | State change in ViewModel doesn't update UI | Used `@Stable` annotation but class isn't truly stable | Re-audit — `@Stable` is a contract you must keep |
-| Recomposition skip works locally but not in release | R8 may strip `@Stable` annotations | Add `consumerProguardFiles` rule to keep them |
+| Type from a minified library AAR shows unstable downstream | Library author's own R8 pass stripped stability annotations before publishing | Library must keep annotations in its published AAR; consumers can use the stability config file as a workaround |
 | `LocalContext.current` reads cause cascading recomposition | Reading too high in the tree | Move read closer to the consuming Composable |
 | `derivedStateOf` doesn't reduce recomposition | Block accessed mutable state outside it | Move all reads inside `derivedStateOf { }` |
 | `@Composable` with `Modifier` param recomposes every frame | Custom modifier creates new instance per recomposition | Use `Modifier.composed { }` carefully; `remember { }` static modifiers |
@@ -393,7 +404,7 @@ Crude but effective. Or use the stability config file.
 - **Annotating `@Immutable` without enforcing it.** If your "immutable" `User` has a `MutableList<String>` you populate later — Compose's assumption breaks; UI shows stale state.
 - **Adding `@Stable` to fix metrics output.** Don't bandage. Ask: *why* is this unstable? Often the fix is `var` → `val` or `List` → `ImmutableList`.
 - **Mutating an `ImmutableList`.** It's actually immutable — operations return new instances. `list.add(x)` doesn't exist; use `list + x` or `PersistentList.Builder`.
-- **Per-row inline `onClick = { onItem(item) }`.** Allocates a new lambda per row per recomposition. Pre-allocate or use `key { onClick = { onItem(item) } }`.
+- **Per-row inline `onClick = { onItem(item) }` with unstable captures.** When `item` and `onItem` are stable, the compiler memoizes this lambda keyed on its captures — it's fine. But if `item` is unstable on a pre-Strong-Skipping compiler, the lambda reallocates on every recomposition and the row never skips. Fix the capture's stability rather than the lambda syntax.
 - **Reading `vm` properties inside a `@Composable` instead of `by state.collectAsStateWithLifecycle()`.** Direct ViewModel reads cause leaks and don't participate in recomposition properly.
 - **Putting state directly in a `var` field.** Compose can't observe non-`State` mutations.
 - **Forgetting to instrument compose-metrics in CI.** Without trend tracking, stability regressions go unnoticed for months.

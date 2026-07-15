@@ -145,5 +145,5 @@ When thinking about the Zygote, a Staff engineer focuses on the architectural im
 ## Further Reading
 
 - [`art-and-dalvik.md`](art-and-dalvik.md) — The runtime engine that the Zygote initializes and clones.
-- [`process-death-and-state-restoration.md`](../architecture/viewmodel.md) — Why the Zygote's speed makes process death an acceptable OS-level memory strategy.
-- [`baseline-profiles.md`](../performance/jank.md) — How AOT compilation bypasses the need for the Zygote to JIT compile your specific app code.
+- [`process-death-and-state-restoration.md`](../architecture/process-death-and-state-restoration.md) — Why the Zygote's speed makes process death an acceptable OS-level memory strategy.
+- [`baseline-profiles.md`](../performance/baseline-profiles.md) — How AOT compilation bypasses the need for the Zygote to JIT compile your specific app code.

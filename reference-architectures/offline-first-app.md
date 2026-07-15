@@ -18,7 +18,7 @@ This blueprint describes the architectural shape of an app designed to function 
 
 - **Read latency:** sub-frame (<16ms) for typical operations. Reads are local.
 - **Write latency:** sub-frame for the local write. Server-side acknowledgment is asynchronous.
-- **Sync convergence:** eventual, bounded by *TODO: target convergence window — typically minutes when online*.
+- **Sync convergence:** eventual, with an explicit target scoped to **foreground (or expedited) sync**: with the app in the foreground and connectivity available, the active working set converges within seconds (p95 < 30s) and the full dataset within minutes (p95 < 5 min). Treat sustained foreground convergence beyond that window as an incident signal, not a tuning knob — alert on it. Background sync is explicitly excluded from this SLO: under Doze/App Standby the OS may legally defer WorkManager runs far past these windows, and paging on OS-scheduled deferral is a false alarm, not a sync incident.
 - **Storage:** the full user-relevant data set must fit on-device. Partial datasets are a different architecture (offline-tolerant, not offline-first).
 - **Battery:** background sync must not drain the device. Use [WorkManager](../android/concurrency/workmanager.md) constraints (charging, unmetered network) where appropriate.
 - **Conflict semantics:** deterministic. See *Sync Strategy* below.
@@ -195,7 +195,7 @@ The choice is recorded in an ADR (e.g., [`../distributed-systems/lww-vs-crdt.md`
 
 ## Failure Modes
 
-**Outbox grows unboundedly.** The server is unreachable for an extended period; mutations accumulate. The local DB fills the device storage. Mitigation: bounded outbox size with a user-facing warning at *TODO: threshold*; refuse further writes when full (or evict oldest with explicit user warning).
+**Outbox grows unboundedly.** The server is unreachable for an extended period; mutations accumulate. The local DB fills the device storage. Mitigation: bounded outbox with two thresholds — a soft warning surfaced to the user (sensible default: ~1,000 pending mutations or ~50 MB, whichever comes first) and a hard cap (~5,000 mutations) at which the app refuses further writes (or evicts oldest with an explicit user warning). Tune both to your mutation size and offline-duration profile; the point is that both limits exist and are user-visible before data is at risk.
 
 **Schema drift between client and server.** Server adds a required field; old clients submit mutations missing it. Mitigation: schema versioning on both sides; reject incompatible mutations server-side with a structured error that the client can interpret.
 
@@ -217,7 +217,7 @@ The choice is recorded in an ADR (e.g., [`../distributed-systems/lww-vs-crdt.md`
 
 - Partition the local DB by recency or by entity type; load only the working set into memory. Most reads should be hot-set.
 - Use [Paging](../android/data-and-di/paging.md) for large lists.
-- Push older data to a cold tier (still on-device but not eagerly loaded) when the working set exceeds *TODO: threshold*.
+- Push older data to a cold tier (still on-device but not eagerly loaded) once the working set stops fitting comfortably in memory — a practical trigger is ~10k rows in the hot set, ~100 MB of on-device data, or hot-path queries exceeding the frame budget. The trigger you pick matters less than measuring it: instrument working-set size and query latency, and tier when the p95 read stops being sub-frame.
 
 ### Scaling out (more users)
 

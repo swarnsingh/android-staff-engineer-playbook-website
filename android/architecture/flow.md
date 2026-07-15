@@ -2,7 +2,7 @@
 
 ## Overview
 
-`Flow` is Kotlin's native solution for asynchronous, reactive data streams. It is built directly on top of [Structured Concurrency](../concurrency/coroutines-under-the-hood.md). 
+`Flow` is Kotlin's native solution for asynchronous, reactive data streams. It is built directly on top of [Structured Concurrency](structured-concurrency.md). 
 
 While standard coroutines (`suspend` functions) return a *single* value asynchronously, a `Flow` returns *multiple* values asynchronously over time. It is the modern replacement for RxJava and `LiveData` in the Android ecosystem.
 
@@ -179,6 +179,6 @@ When reviewing reactive architectures, a Staff engineer focuses on the "Cold to 
 
 ## Further Reading
 
-- [`structured-concurrency.md`](../concurrency/coroutines-under-the-hood.md) — The foundation that makes Flow cancellation safe.
+- [`structured-concurrency.md`](structured-concurrency.md) — The foundation that makes Flow cancellation safe.
 - [`viewmodel.md`](viewmodel.md) — The layer where Cold flows are converted to Hot `StateFlows`.
 - [Android Developers: StateFlow and SharedFlow](https://developer.android.com/kotlin/flow/stateflow-and-sharedflow)

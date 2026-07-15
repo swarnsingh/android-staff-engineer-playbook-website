@@ -12,7 +12,7 @@ If you believe a coroutine is a thread, you will write buggy, leaking code.
 
 When you call a `suspend` function, the current thread is *not* blocked. It is completely freed to do other work. But how does the JVM know where to resume your code when the network request finishes? Where are your local variables stored while the thread is doing something else? 
 
-If you do not understand the `Continuation` and the `CoroutineContext`, you cannot properly implement [Structured Concurrency](../concurrency/coroutines-under-the-hood.md), and you will not understand why `ThreadLocal` variables (like MDC logging contexts) disappear when crossing suspension points.
+If you do not understand the `Continuation` and the `CoroutineContext`, you cannot properly implement [Structured Concurrency](../architecture/structured-concurrency.md), and you will not understand why `ThreadLocal` variables (like MDC logging contexts) disappear when crossing suspension points.
 
 ## Historical Context
 
@@ -217,6 +217,6 @@ When interviewing or reviewing low-level concurrency, a Staff engineer focuses o
 
 ## Further Reading
 
-- [`structured-concurrency.md`](../concurrency/coroutines-under-the-hood.md) — How these state machines are organized into a strict hierarchy.
+- [`structured-concurrency.md`](../architecture/structured-concurrency.md) — How these state machines are organized into a strict hierarchy.
 - [`threads-and-looper.md`](threads-and-looper.md) — The legacy OS threads that these Coroutines actually run on top of.
 - [Kotlin Docs: Coroutines Under the Hood](https://kotlinlang.org/docs/coroutines-under-the-hood.html)

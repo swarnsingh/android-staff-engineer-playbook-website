@@ -36,6 +36,7 @@ All tracked roadmap and structural cleanup milestones are complete.
 | G9 Staff/Principal expansion | ✅ | API evolution, sync protocol evolution, observability, release decision trees, testing strategy, platform engineering, security/privacy, architecture governance |
 | G10 one-place depth expansion | ✅ | Correctness fixes, CS foundations, Android OS primitives, coroutine/Flow mastery, Compose/performance, data/networking/KMP production, distributed backend contracts |
 | G11 Kotlin folder structure | ✅ | Flat Kotlin files moved into learning-domain subfolders; links updated; canonical ownership preserved |
+| G12 correctness pass | ✅ | Fixed Strong Skipping semantics (`===` for unstable params), lambda/method-reference memoization guidance, R8/`@Stable` failure mode, AIDL append-only evolution rules, ART escape-analysis nuance, Binder buffer/thread-pool precision; repaired 16 stale link redirects; filled 3 TODO placeholders in offline-first blueprint; refreshed stale versions/DSLs. All factual changes verified against current official docs/AOSP source |
 
 Latest cleanup/audit commits:
 

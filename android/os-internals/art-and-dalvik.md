@@ -53,7 +53,7 @@ Think of your app's DEX code as a **French Novel**. The CPU only speaks **Englis
 Google realized that waiting for *your* phone to generate a profile took too long. 
 When millions of users use your app, Google Play aggregates their profiles into a "Cloud Profile." Now, when a new user downloads your app, Google Play sends the `.apk` *and* the Cloud Profile. The phone AOT compiles the critical path *during installation*, completely skipping the slow JIT phase on Day 1.
 
-*(Staff Note: We can manually inject a [Baseline Profile](../performance/jank.md) directly into the APK to bypass Cloud Profile aggregation delays entirely).*
+*(Staff Note: We can manually inject a [Baseline Profile](../performance/baseline-profiles.md) directly into the APK to bypass Cloud Profile aggregation delays entirely).*
 
 ## Architecture
 
@@ -120,7 +120,7 @@ Why did Android use a Register-based VM (Dalvik/ART) instead of a Stack-based VM
 When thinking about the Runtime, a Staff engineer focuses on how code translates to bare-metal execution.
 
 1.  **DEX Method Limits (64k Limit):** The original Dalvik format used a 16-bit integer to reference methods, meaning an app could only have 65,536 methods. If you hit 65,537, the build failed. We had to enable `Multidex`, which split the app into multiple `.dex` files. Dalvik struggled immensely with Multidex, causing massive startup crashes. ART handles Multidex natively and effortlessly by flattening multiple DEX files into a single `.oat` file during compilation.
-2.  **`dex2oat` Monitoring:** If I see a spike in "App Not Responding" (ANR) reports immediately after an app update, I know that `dex2oat` is likely thrashing in the background, starving the CPU while it AOT compiles the new update. I mandate the inclusion of [Baseline Profiles](../performance/jank.md) in the APK to give `dex2oat` an exact blueprint, stopping it from blindly compiling the entire app.
+2.  **`dex2oat` Monitoring:** If I see a spike in "App Not Responding" (ANR) reports immediately after an app update, I know that `dex2oat` is likely thrashing in the background, starving the CPU while it AOT compiles the new update. I mandate the inclusion of [Baseline Profiles](../performance/baseline-profiles.md) in the APK to give `dex2oat` an exact blueprint, stopping it from blindly compiling the entire app.
 3.  **String Pooling:** I write code knowing that DEX files pool strings. If you have the string `"Authorization"` in 500 different Kotlin files, it only appears *once* in the compiled DEX file. However, if you dynamically generate strings `("Auth_" + index)`, they cannot be pooled at compile time and will explode your heap memory at runtime.
 
 ## Common Misconceptions
@@ -144,5 +144,5 @@ When thinking about the Runtime, a Staff engineer focuses on how code translates
 ## Further Reading
 
 - [`the-zygote.md`](the-zygote.md) — The master process that initializes ART and preloads classes to avoid booting the JVM from scratch for every app.
-- [`baseline-profiles.md`](../performance/jank.md) — How developers manually generate the Profile text file to guarantee Day-1 AOT compilation.
+- [`baseline-profiles.md`](../performance/baseline-profiles.md) — How developers manually generate the Profile text file to guarantee Day-1 AOT compilation.
 - [Android Open Source Project: Android Runtime (ART) and Dalvik](https://source.android.com/docs/core/runtime)

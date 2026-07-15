@@ -74,7 +74,7 @@ graph TD
 
 **The CoroutineWorker**
 
-The most common Worker type in modern Android is the `CoroutineWorker`, which natively supports `suspend` functions and integrates perfectly with [Structured Concurrency](../concurrency/coroutines-under-the-hood.md).
+The most common Worker type in modern Android is the `CoroutineWorker`, which natively supports `suspend` functions and integrates perfectly with [Structured Concurrency](../architecture/structured-concurrency.md).
 
 ```kotlin
 // 1. Define the Work
