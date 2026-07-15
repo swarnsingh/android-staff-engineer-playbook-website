@@ -10,8 +10,8 @@ Use this when you need to design mobile systems under interview or architecture-
 
 1. **Start with the framework:** [Mobile System Design Framework](mobile-system-design/design-framework.md)
 2. **Learn the mobile/backend contract:** [API Design for Mobile](backend-for-mobile/api-design-for-mobile.md), [Transport Protocols](backend-for-mobile/transport-protocols.md), and [Versioning & Backward Compatibility](mobile-system-design/versioning-and-backward-compatibility.md)
-3. **Study the hard mobile constraints:** [Offline Sync](mobile-system-design/offline-sync.md), [Pagination](mobile-system-design/pagination.md), [Image Loading](mobile-system-design/image-loading.md), and [Push Notifications](mobile-system-design/push-notifications.md)
-4. **Practice full designs:** [Ride-Hailing](mobile-system-design/ride-hailing.md), [Chat / Messaging](mobile-system-design/chat-messaging.md), [News Feed](mobile-system-design/news-feed.md), and [Payment Flow](mobile-system-design/payment-flow.md)
+3. **Study the hard mobile constraints:** [Offline Sync](mobile-system-design/offline-sync.md), [Pagination](mobile-system-design/pagination.md), [Image Loading](mobile-system-design/image-loading.md), [Push Notifications](mobile-system-design/push-notifications.md), and [On-Device AI](mobile-system-design/on-device-ai.md)
+4. **Practice full designs:** [Ride-Hailing](mobile-system-design/ride-hailing.md), [Chat / Messaging](mobile-system-design/chat-messaging.md), [News Feed](mobile-system-design/news-feed.md), [Payment Flow](mobile-system-design/payment-flow.md), and [Play Billing: IAP & Subscriptions](mobile-system-design/play-billing-and-subscriptions.md)
 5. **Read the blueprints:** [Reference Architectures](reference-architectures.md) shows how the same tradeoffs become buildable systems.
 
 ---
@@ -21,10 +21,10 @@ Use this when you need to design mobile systems under interview or architecture-
 Use this when you are already a strong Senior engineer and want to understand Staff-level scope, leverage, and decision quality.
 
 1. **Calibrate the level change:** [Senior to Staff Progression](career/senior-to-staff-progression.md) and [Scope and Ambiguity](career/scope-and-ambiguity.md)
-2. **Build leverage:** [Internal Developer Platforms](platform-engineering/internal-developer-platforms.md), [Build Graph Scaling](platform-engineering/build-graph-scaling.md), [Design Systems Architecture](platform-engineering/design-systems-architecture.md), and [Server-Driven UI](mobile-system-design/server-driven-ui.md)
+2. **Build leverage:** [Internal Developer Platforms](platform-engineering/internal-developer-platforms.md), [Build Graph Scaling](platform-engineering/build-graph-scaling.md), [Design Systems Architecture](platform-engineering/design-systems-architecture.md), [Server-Driven UI](mobile-system-design/server-driven-ui.md), and [Custom Lint Rules & Static Analysis](platform-engineering/custom-lint-and-static-analysis.md)
 3. **Lead through documents and reviews:** [Writing Technical Documents (RFCs)](career/writing-rfcs.md), [Running a Design Review](leadership/running-a-design-review.md), and [Escalation & Decision Making](leadership/escalation-and-decision-making.md)
 4. **Operate production systems:** [Incident Response & On-Call](leadership/incident-response-on-call.md), [SLOs](observability/slos.md), [Alerting](observability/alerting.md), and [Release Strategy](release-engineering/release-strategy.md)
-5. **Make risk visible:** [Security & Privacy](mobile-system-design/security-and-privacy.md), [Privacy, GDPR & Data Residency](security/privacy-gdpr-data-residency.md), and [Kill Switches](release-engineering/kill-switches.md)
+5. **Make risk visible:** [Security & Privacy](mobile-system-design/security-and-privacy.md), [Privacy, GDPR & Data Residency](security/privacy-gdpr-data-residency.md), [Privacy Sandbox: Rise, Retirement & What Replaces It](security/privacy-sandbox.md), and [Kill Switches](release-engineering/kill-switches.md)
 
 ---
 
@@ -36,7 +36,7 @@ Use this when you want to become the person who can explain crashes, freezes, me
 2. **Master concurrency:** [Coroutines](kotlin/coroutines-and-flow/coroutines.md), [Coroutines Under the Hood](android/concurrency/coroutines-under-the-hood.md), [SharedFlow & StateFlow](android/concurrency/shared-flow-and-state-flow.md), and [Threads & Looper](android/concurrency/threads-and-looper.md)
 3. **Measure UI performance:** [Jank](android/performance/jank.md), [Rendering](android/performance/rendering.md), [Compose Performance Tooling](android/compose/compose-performance-tooling.md), and [Macrobenchmark & Perfetto](android/performance/macrobenchmark-and-perfetto.md)
 4. **Control resource pressure:** [Memory Management & Leaks](android/performance/memory-management-and-leaks.md), [Native Memory & Bitmaps](android/performance/native-memory-bitmaps.md), [Battery & Power Profiling](android/performance/battery-power-profiling.md), and [Network Radio Wakeups](android/performance/network-radio-wakeups.md)
-5. **Close the loop with observability:** [Crash Monitoring](android/observability/crash-monitoring.md), [SLIs](observability/slis.md), [SLOs](observability/slos.md), and [Dashboards](observability/dashboards.md)
+5. **Close the loop with observability:** [Crash Monitoring](android/observability/crash-monitoring.md), [Mobile APM & RUM](android/observability/mobile-apm-and-rum.md), [SLIs](observability/slis.md), [SLOs](observability/slos.md), and [Dashboards](observability/dashboards.md)
 
 ---
 

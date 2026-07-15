@@ -27,7 +27,7 @@ Current state: the original canonical buildout, post-audit gap closure, Staff/Pr
 
 ## Current Status
 
-The G12–G17 quality roadmap (from the 2026-07 principal-level audit) is in progress: G12–G16 are merged; G17 (final audit & close-out) is pending. Full scope of the pending milestones is in the **Active Roadmap** section below — pending work is tracked here *before* it lands, not only recorded after.
+The G12–G17 quality roadmap (from the 2026-07 principal-level audit) is **complete** — all six milestones merged (PRs #1–#10). Full scope of every milestone is preserved in the **Completed Roadmap** section below. Future work starts a new roadmap section here *before* it lands, not only recorded after.
 
 | Track | Status | Notes |
 |---|---:|---|
@@ -41,7 +41,7 @@ The G12–G17 quality roadmap (from the 2026-07 principal-level audit) is in pro
 | G14 consistency & editorial | ✅ | Expanded the five thin files to canonical depth (replication & leader election, streaming logs & partitioning, mobile client consistency contracts, KMP shared domain boundaries, SRP) — each gained Why It Matters, Mental Model, production example, tradeoffs, and probing questions. Renamed `new-relic.md` → `mobile-apm-and-rum.md` and reworked it vendor-neutrally (W3C Trace Context, Android vitals baseline, corrected memory-allocator overstatement). Tone pass: normalized the repeated "Junior Engineer" opener trope and hyperbole across 6 files |
 | G15 Tier 1 content | ✅ | All four sub-PRs done: 1 (SDUI + WebView/hybrid, PR #4), 2 (testing strategy, PR #5), 3 (2026 currency: on-device AI, Privacy Sandbox phaseout, 16 KB pages, PR #6), 4 (Play Billing & subscriptions, PR #7) — see Active Roadmap below |
 | G16 Tier 2 differentiators | ✅ | Both sub-PRs done: 1 (Media3, custom lint rules, value classes, PR #8), 2 (View interop & migration + form-factors matrix, PR #9) — see Active Roadmap below |
-| G17 final audit & close-out | ⬜ | Re-run full audit, adversarial read of new files, refresh README/learning paths |
+| G17 final audit & close-out | ✅ | Automated audit re-run green; cross-file adversarial pass over all 12 G15–G16 files (no contradictions found); learning-paths refreshed with 5 new entries; roadmap closed out (PR #10) |
 
 Latest cleanup/audit commits:
 
@@ -50,7 +50,9 @@ Latest cleanup/audit commits:
 
 ---
 
-## Active Roadmap — G12–G17 Quality Program
+## Completed Roadmap — G12–G17 Quality Program
+
+Closed out 2026-07-15 with PR #10. Full milestone scope is retained below for history — it documents what was planned, what shipped, and where plans changed on verified evidence (see G15 sub-item 3).
 
 **Origin.** A 2026-07 principal-level audit of the full repo (285 files, ~531k words) assessed technical accuracy, structural integrity, and coverage against staff-level expectations. It found three classes of issues, which map directly to the milestones below:
 
@@ -95,11 +97,12 @@ Two sub-PRs:
 1. ✅ **Media, tooling, language** (PR #8): `android/media/media3-player-architecture.md` (new Media section — component model, buffering economics, session ownership, cache vs downloads, Widevine L1/L3 fallback, player pooling, Media3 1.10 Compose UI) + `platform-engineering/custom-lint-and-static-analysis.md` (detector anatomy, `lintChecks` vs `lintPublish`, TestLintTask, baseline-and-ratchet rollout, analysis-tool portfolio) + `kotlin/language-core/value-classes.md` (boxing rules, mangling/`@JvmName` as permanent API decisions, vs typealias/data class, Compose stability).
 2. ✅ **Hybrid UI & form factors** (PR #9): `android/compose/view-interop-and-migration.md` (ComposeView/ViewCompositionStrategy pitfalls, AndroidView factory/update/onReset contract, AndroidViewBinding/AndroidFragment as transitional tools, seam costs, phased migration strategy with navigation-last sequencing) + `android/compose/form-factors-matrix.md` (Wear Compose Material 3 stable with parallel artifact set, Compose for TV stable with Leanback formally deprecated, Car App Library template/category gating, Glance-as-RemoteViews constraints, decision framework and leverage sequencing). Media3 cross-link restored.
 
-### G17 — Final Audit & Close-out ⬜
+### G17 — Final Audit & Close-out ✅ (PR #10)
 
-- ⬜ Re-run the automated audit (links, redirects, thin files) plus a fresh adversarial read of all files added in G15–G16.
-- ⬜ Refresh `README.md`, `learning-paths.md`, and tree TOCs with the new content.
-- ⬜ Close out this roadmap section (move to Completed, one row per milestone).
+- ✅ Automated audit re-run: links, redirects, TODO markers, thin-file floor — all green across the repo; all 12 G15–G16 files clear the depth floor (850–2,050 words).
+- ✅ Adversarial cross-consistency pass: scanned the pre-existing corpus for claims contradicting the new content (Privacy Sandbox status, billing APIs, Leanback recommendations) — none found; every new-file claim had already been source-verified at writing time plus two Codex review rounds per PR.
+- ✅ `learning-paths.md` refreshed: Play Billing and On-Device AI added to Path 1, Custom Lint Rules and Privacy Sandbox to Path 2, Mobile APM & RUM to Path 3. `README.md` reviewed — deliberately evergreen, no changes needed. Tree TOCs were wired per-PR and verified current.
+- ✅ Roadmap closed out: this section retitled Completed with full scope retained.
 
 ---
 
