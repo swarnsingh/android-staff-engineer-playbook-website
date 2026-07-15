@@ -115,6 +115,7 @@ Architecture and lifecycle first (you cannot reason about anything else without 
 
 ### Testing
 
+- [Testing Strategy at Scale](android/testing/testing-strategy.md)
 - [Unit Testing (JUnit, MockK, Turbine)](android/testing/unit-testing.md)
 - [UI Testing (Compose, Robolectric, Paparazzi)](android/testing/ui-testing.md)
 
