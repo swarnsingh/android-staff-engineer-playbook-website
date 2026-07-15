@@ -27,5 +27,6 @@ CI/CD and code signing first (the substrate), then the rollout mechanics (staged
 - [CI/CD for Mobile](release-engineering/ci-cd-for-mobile.md)
 - [Code Signing](release-engineering/code-signing.md)
 - [Play Store Internals](release-engineering/play-store-internals.md)
+- [16 KB Page Sizes (native-code compliance gate)](release-engineering/16kb-page-sizes.md)
 - [App Bundles & Dynamic Delivery](release-engineering/app-bundles.md) — canonical owner
 - [Release Strategy](release-engineering/release-strategy.md) — canonical owner; `mobile-system-design.md` cross-links

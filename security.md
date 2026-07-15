@@ -22,6 +22,7 @@ Start with privacy and data residency because they shape what data should exist 
 ## Topics
 
 - [Privacy, GDPR & Data Residency](security/privacy-gdpr-data-residency.md)
+- [Privacy Sandbox: Rise, Retirement & What Replaces It](security/privacy-sandbox.md)
 - [Authentication on Mobile](security/auth-on-mobile.md)
 - [Secure Storage](security/secure-storage-on-android.md)
 - [Key Management](security/key-management.md)
