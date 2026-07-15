@@ -14,6 +14,13 @@ Use this when you need to design mobile systems under interview or architecture-
 4. **Practice full designs:** [Ride-Hailing](mobile-system-design/ride-hailing.md), [Chat / Messaging](mobile-system-design/chat-messaging.md), [News Feed](mobile-system-design/news-feed.md), [Payment Flow](mobile-system-design/payment-flow.md), and [Play Billing: IAP & Subscriptions](mobile-system-design/play-billing-and-subscriptions.md)
 5. **Read the blueprints:** [Reference Architectures](reference-architectures.md) shows how the same tradeoffs become buildable systems.
 
+**Checkpoint** — you're ready to move on when you can answer these without reopening the files:
+
+1. Why must an idempotency key be generated on the client *before* the first attempt, and survive process death — what breaks if the server generates it?
+2. A client receives an SDUI component type it doesn't recognize. Walk through what renders, and who decided that.
+3. Play reports a subscription `ON_HOLD`. What should the app show, and why is routing the user to the resubscribe paywall a double-charge bug?
+4. Two offline devices edit the same entity. Where does the merge run, what wins, and what does the user see on the loser?
+
 ---
 
 ## Path 2: Senior to Staff Track
@@ -25,6 +32,13 @@ Use this when you are already a strong Senior engineer and want to understand St
 3. **Lead through documents and reviews:** [Writing Technical Documents (RFCs)](career/writing-rfcs.md), [Running a Design Review](leadership/running-a-design-review.md), and [Escalation & Decision Making](leadership/escalation-and-decision-making.md)
 4. **Operate production systems:** [Incident Response & On-Call](leadership/incident-response-on-call.md), [SLOs](observability/slos.md), [Alerting](observability/alerting.md), and [Release Strategy](release-engineering/release-strategy.md)
 5. **Make risk visible:** [Security & Privacy](mobile-system-design/security-and-privacy.md), [Privacy, GDPR & Data Residency](security/privacy-gdpr-data-residency.md), [Privacy Sandbox: Rise, Retirement & What Replaces It](security/privacy-sandbox.md), and [Kill Switches](release-engineering/kill-switches.md)
+
+**Checkpoint** — you're ready to move on when you can answer these without reopening the files:
+
+1. Why does a lint rule outleverage a design-review comment, and what rollout sequence gets it to `error` severity without a baseline revolt?
+2. Privacy Sandbox died while scoped storage shipped. What structural difference between the two migrations predicted both outcomes?
+3. Your crash SLO burns during a 10% staged rollout. Talk through halt vs hotfix vs kill switch — and what information decides between them.
+4. What did the last RFC you wrote deliberately *not* decide — and did the document say so explicitly?
 
 ---
 
@@ -38,6 +52,13 @@ Use this when you want to become the person who can explain crashes, freezes, me
 4. **Control resource pressure:** [Memory Management & Leaks](android/performance/memory-management-and-leaks.md), [Native Memory & Bitmaps](android/performance/native-memory-bitmaps.md), [Battery & Power Profiling](android/performance/battery-power-profiling.md), and [Network Radio Wakeups](android/performance/network-radio-wakeups.md)
 5. **Close the loop with observability:** [Crash Monitoring](android/observability/crash-monitoring.md), [Mobile APM & RUM](android/observability/mobile-apm-and-rum.md), [SLIs](observability/slis.md), [SLOs](observability/slos.md), and [Dashboards](observability/dashboards.md)
 
+**Checkpoint** — you're ready to move on when you can answer these without reopening the files:
+
+1. Trace one tap from your UI process into a system service and back: which threads, which Binder pools, and where can it block?
+2. A composable recomposes although none of *your* state changed. Give two mechanisms that explain it, and how Strong Skipping changes the answer.
+3. Cold start regressed 20% with no app release. Name three plausible causes and the telemetry that separates them.
+4. Why do playback rebuffer ratio and app startup time each need alerts that fire independently of release monitoring?
+
 ---
 
 ## Path 4: Foundations First
@@ -49,3 +70,10 @@ Use this when you want the mental model underneath Android, Kotlin, distributed 
 3. **Build system intuition:** [State Machines](engineering-fundamentals/state-machines.md), [Queues](engineering-fundamentals/queues.md), [Backpressure](engineering-fundamentals/backpressure.md), [Fault Tolerance](engineering-fundamentals/fault-tolerance.md), and [Time & Clocks](engineering-fundamentals/time-and-clocks.md)
 4. **Connect to distributed reality:** [Idempotency](distributed-systems/idempotency.md), [Delivery Semantics](distributed-systems/delivery-semantics.md), [Consistency Models](distributed-systems/consistency-models.md), and [Mobile Client Consistency Contracts](distributed-systems/mobile-client-consistency-contracts.md)
 5. **Finish with principles:** [Principles](principles.md) turns the mechanics into judgment.
+
+**Checkpoint** — you're ready to move on when you can answer these without reopening the files:
+
+1. Your producer outruns your consumer. When is dropping data the *correct* backpressure strategy, and when is it a bug?
+2. Why is exactly-once delivery impossible across a network, and what combination of primitives do we build instead?
+3. Model a payment submission as a state machine: which transitions are safe to retry, and which state makes retry a double charge?
+4. Your offline-first app claims "eventual consistency." What does the user actually observe during the "eventual" window, and where is that promise written down?

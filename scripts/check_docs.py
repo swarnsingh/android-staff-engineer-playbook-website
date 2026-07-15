@@ -10,15 +10,21 @@ Checks (each maps to a defect class that has actually occurred in this repo):
   3. Unfinished-content markers — literal `*TODO: ...*` or standalone `TBD` shipped in content.
   4. Thin-file guard            — non-stub content files under the word floor must either be
                                   expanded or explicitly allowlisted below (visible debt).
+  5. Currency reminder (WARN-ONLY) — rows in the milestones.md Currency Watchlist whose
+                                  last-checked date is older than STALE_DAYS. Never fails
+                                  the build: the passage of time must not break unrelated
+                                  PRs. It nags until the row is re-verified and re-dated.
 
 Exit code 0 = all clean; 1 = at least one violation (CI fails).
 """
 
+import datetime
 import os
 import re
 import sys
 
 WORD_FLOOR = 400
+STALE_DAYS = 180
 
 # Files that are known-thin and tracked for expansion (see milestones.md, G14).
 # Remove entries as they are expanded. Adding to this list requires a reason.
@@ -34,6 +40,27 @@ def iter_md_files():
         for f in sorted(files):
             if f.endswith(".md"):
                 yield os.path.normpath(os.path.join(root, f))
+
+
+def currency_warnings() -> list[str]:
+    """Warn-only: watchlist rows in milestones.md older than STALE_DAYS."""
+    warnings = []
+    try:
+        with open("milestones.md", encoding="utf-8") as fh:
+            text = fh.read()
+    except OSError:
+        return warnings
+    section = re.search(r"## Currency Watchlist(.*?)(?:\n## |\Z)", text, flags=re.DOTALL)
+    if not section:
+        return warnings
+    today = datetime.date.today()
+    for m in re.finditer(r"^\|\s*`([^`|]+)`[^|]*\|[^|]*\|[^|]*\|\s*(\d{4}-\d{2}-\d{2})\s*\|",
+                         section.group(1), flags=re.MULTILINE):
+        path, date_str = m.group(1), m.group(2)
+        age = (today - datetime.date.fromisoformat(date_str)).days
+        if age > STALE_DAYS:
+            warnings.append(f"{path}: last checked {date_str} ({age} days ago)")
+    return warnings
 
 
 def main() -> int:
@@ -91,6 +118,14 @@ def main() -> int:
                 print(f"    {item}")
         else:
             print(f"✓ {title}: none")
+
+    stale = currency_warnings()
+    if stale:
+        print(f"\n⚠ Currency watchlist rows past {STALE_DAYS} days (warning only, build not failed):")
+        for item in stale:
+            print(f"    {item}")
+    else:
+        print("✓ Currency watchlist: all rows fresh")
 
     return 1 if failed else 0
 

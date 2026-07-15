@@ -4,3 +4,4 @@
 *.swo
 .vscode/
 .obsidian/
+__pycache__/

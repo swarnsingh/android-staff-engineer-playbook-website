@@ -42,11 +42,46 @@ The G12–G17 quality roadmap (from the 2026-07 principal-level audit) is **comp
 | G15 Tier 1 content | ✅ | All four sub-PRs done: 1 (SDUI + WebView/hybrid, PR #4), 2 (testing strategy, PR #5), 3 (2026 currency: on-device AI, Privacy Sandbox phaseout, 16 KB pages, PR #6), 4 (Play Billing & subscriptions, PR #7) — see Active Roadmap below |
 | G16 Tier 2 differentiators | ✅ | Both sub-PRs done: 1 (Media3, custom lint rules, value classes, PR #8), 2 (View interop & migration + form-factors matrix, PR #9) — see Active Roadmap below |
 | G17 final audit & close-out | ✅ | Automated audit re-run green; cross-file adversarial pass over all 12 G15–G16 files (no contradictions found); learning-paths refreshed with 5 new entries; roadmap closed out (PR #10) |
+| G18 world-class hardening | ✅ | Glossary +16 terms (all G12–G16 vocabulary); Currency Watchlist (9 rows) + CONTRIBUTING pointer + warn-only CI staleness reminder; self-assessment checkpoints on all 4 learning paths (PR #11) |
 
 Latest cleanup/audit commits:
 
 - `26d8a97` — fixed one broken internal docs link and updated outdated Swift export wording.
 - `fd420ce` — cleaned up this milestone tracker.
+
+---
+
+## Active Roadmap — Maintenance
+
+### G18 — World-Class Hardening ✅ (PR #11)
+
+Post-program hardening from the "what's still pending for world-class" review. In-repo items only; human expert review and going public are owner-driven and tracked outside this file.
+
+- ✅ `glossary.md`: 16 new terms covering all G12–G16 vocabulary (AICore, LiteRT, SDUI, Strong Skipping, RTDN, entitlement, grace period/account hold, replacement mode, value class, ViewCompositionStrategy, Widevine L1/L3, UAST, lint baseline, Glance, GMD, W3C Trace Context, 16 KB pages) with cross-links.
+- ✅ Currency process: **Currency Watchlist** below (9 rows: file → fast-moving claims → primary source → last-checked date), pointer from CONTRIBUTING's Staleness Strategy (per-file footers stay banned), and a warn-only check in `scripts/check_docs.py` that nags when a row passes 180 days without ever failing the build.
+- ✅ `learning-paths.md`: a 4-question self-assessment **Checkpoint** at the end of each of the four paths, answerable only from the linked material.
+
+Deliberately not done here: per-file "Last verified" footers (contradict the documented Staleness Strategy), external-contributor templates (deferred until the repo goes public), and worked "wrong answers" per design topic (large content effort — candidate for a future milestone).
+
+---
+
+## Currency Watchlist
+
+The fastest-moving files in the repo, per the [Staleness Strategy](CONTRIBUTING.md#staleness-strategy). Each names a specific version, deadline, or platform policy that *will* change. Re-verify against the listed source on roughly a quarterly cadence (the CI script prints a reminder when a row goes stale past 180 days) and update the date when done.
+
+| File | Fast-moving claims | Primary source | Last checked |
+|---|---|---|---|
+| `mobile-system-design/on-device-ai.md` | ML Kit GenAI API statuses (Beta/Alpha), Gemini Nano generations, device coverage | developers.google.com/ml-kit/genai | 2026-07-15 |
+| `security/privacy-sandbox.md` | Phaseout status, what remains supported | privacysandbox.google.com/overview/status | 2026-07-15 |
+| `release-engineering/16kb-page-sizes.md` | Play deadlines, AGP/NDK version floors, backcompat behavior | developer.android.com/guide/practices/page-sizes | 2026-07-15 |
+| `mobile-system-design/play-billing-and-subscriptions.md` | PBL current version, PBL 8+ deadline, replacement-mode APIs | developer.android.com/google/play/billing/release-notes | 2026-07-15 |
+| `android/media/media3-player-architecture.md` | Media3 version, Compose UI artifact split | developer.android.com/jetpack/androidx/releases/media3 | 2026-07-15 |
+| `android/compose/form-factors-matrix.md` | Wear/TV/Glance artifact versions and stability, car category rules | developer.android.com/jetpack/androidx/releases | 2026-07-15 |
+| `android/compose/stability.md` | Compose compiler behavior (Strong Skipping), collections-immutable version | developer.android.com + kotlinlang.org | 2026-07-15 |
+| `android/testing/testing-strategy.md` | GMD/ATD APIs, sharding property (experimental namespace) | developer.android.com/studio/test/gradle-managed-devices | 2026-07-15 |
+| `kotlin/version-updates/` (all digests) | Release-delta claims by construction | kotlinlang.org release notes | 2026-07-15 |
+
+Rows are added when a new file names a version/deadline/policy; rows are never removed while the file keeps such claims.
 
 ---
 

@@ -127,6 +127,8 @@ Instead:
 
 If a canonical file finds itself naming a specific version, that detail belongs in an application file instead.
 
+**Currency watchlist.** Application files whose claims are *guaranteed* to move — version numbers, platform deadlines, API stability levels — are tracked in the [Currency Watchlist in `milestones.md`](milestones.md#currency-watchlist) with their primary source and a last-checked date. That table (maintainer-facing, not reader-facing footers) is the re-verification queue: work through stale rows quarterly, re-verify against the listed source, and update the date. The CI script prints a non-failing reminder when a row passes 180 days.
+
 **Release digests** (e.g. `kotlin/version-updates/kotlin-2-4-update.md`) are **Application files** under this strategy: they exist precisely to hold version-specific detail, and they follow the application lifecycle — revised or superseded as releases land. When a feature described in a digest becomes stable, long-lived guidance about it graduates into the owning canonical file; the digest keeps only the release-delta framing.
 
 ---
