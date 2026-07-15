@@ -2,7 +2,7 @@
 
 ## Overview
 
-A Junior Engineer views Gradle as a mysterious, frustrating black box that occasionally takes 10 minutes to turn Kotlin code into an APK, and frequently crashes with incomprehensible `Daemon` errors.
+For most engineers, Gradle is a mysterious, frustrating black box that occasionally takes 10 minutes to turn Kotlin code into an APK, and crashes with incomprehensible `Daemon` errors.
 
 A Staff Engineer understands that Gradle is not a black box; it is a **Directed Acyclic Graph (DAG) Execution Engine**. Gradle itself knows absolutely nothing about Android, Kotlin, or Java. It is simply a task runner. It relies entirely on **Plugins** (like the Android Gradle Plugin - AGP) to provide the actual tasks (compile Kotlin, shrink resources, zip the APK) and wire them together in the correct dependency order.
 

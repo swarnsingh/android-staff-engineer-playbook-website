@@ -179,5 +179,5 @@ Every top crash cluster should have an owner, a first-seen version, a last-seen 
 ## Further Reading
 
 - [`app-size-and-r8.md`](../performance/app-size-and-r8.md) — The compiler that necessitates the upload of the `mapping.txt` file for Crashlytics to function.
-- [`new-relic.md`](new-relic.md) — The APM tool used to monitor performance when the app *isn't* crashing.
+- [`mobile-apm-and-rum.md`](mobile-apm-and-rum.md) — The APM/RUM layer that monitors performance when the app *isn't* crashing.
 - [Firebase: Crashlytics Documentation](https://firebase.google.com/docs/crashlytics)

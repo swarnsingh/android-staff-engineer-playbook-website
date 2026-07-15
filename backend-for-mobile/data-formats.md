@@ -2,7 +2,7 @@
 
 ## Overview
 
-A Junior Engineer assumes that `JSON` is the only way applications communicate over the internet, and that `Gson` or `Moshi` are just magic black boxes that turn text into Kotlin objects.
+It's easy to assume `JSON` is the only way applications communicate over the internet, and that `Gson` or `Moshi` are magic black boxes that turn text into Kotlin objects.
 
 A Staff Engineer understands that translating data from a network transport format into physical RAM (Heap Allocation) is one of the most CPU-intensive and Garbage Collection (GC) heavy operations a mobile device performs. If you are rendering a high-speed 60fps graph, waiting 300ms for a massive JSON string to parse will destroy the user experience.
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-A Junior Engineer uses `Retrofit` to make an API call and assumes the data magically teleports from the server to the phone.
+It's easy to call an API through `Retrofit` and treat everything below it as magic — as if the data teleports from the server to the phone.
 
 A Staff Engineer understands that `Retrofit` is just a high-level facade over `OkHttp`, which is a facade over a raw Linux Socket, which transmits physical radio waves to a cell tower. The protocol that governs *how* those bytes are packed, ordered, and acknowledged across that radio link dictates whether the app feels fast or broken.
 

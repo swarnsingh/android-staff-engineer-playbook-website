@@ -4,7 +4,7 @@
 
 Logging is the fundamental heartbeat of debugging. It is the act of printing text to a console so that a developer can understand the state of the application at a specific moment in time.
 
-A Junior Engineer uses `System.out.println("Here")` or `Log.d("TAG", "Value: " + value)`.
+The starting point for most of us is `System.out.println("Here")` or `Log.d("TAG", "Value: " + value)`.
 
 A Staff Engineer understands that `Log.d` is a dangerous, blocking system call that crosses the JNI boundary into C++ and writes to a circular memory buffer managed by the Linux kernel. If you leave `Log.d` calls in your production release build, you are actively degrading the user's battery life, slowing down the Main Thread, and potentially leaking highly sensitive Personal Identifiable Information (PII) to malicious third-party apps reading the system log.
 

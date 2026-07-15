@@ -2,7 +2,7 @@
 
 ## Overview
 
-A Junior Engineer building a Chat app uses a `while(true)` loop to make an HTTP `GET` request every 3 seconds to see if there are new messages. The phone's battery dies in an hour, and the backend server crashes from the DDOS attack.
+The naive way to build a chat app is a `while(true)` loop making an HTTP `GET` every 3 seconds to check for new messages. The phone's battery dies in an hour, and the fleet of polling clients does to the backend what a DDoS attack would.
 
 A Staff Engineer understands that HTTP was fundamentally designed as a Request-Response protocol. The Client must ask. The Server cannot speak unless spoken to. To achieve "Real-Time" synchronization (Chat, Live Scores, Ride-Hailing GPS), we must break or bend this rule. 
 

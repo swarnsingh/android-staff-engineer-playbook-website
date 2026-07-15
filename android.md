@@ -143,7 +143,7 @@ Architecture and lifecycle first (you cannot reason about anything else without 
 
 Canonical observability concepts live in [`observability/`](observability.md). These are the Android-specific implementations.
 
-- [New Relic](android/observability/new-relic.md)
+- [Mobile APM & RUM](android/observability/mobile-apm-and-rum.md)
 - [Crash Monitoring](android/observability/crash-monitoring.md)
 - [Logging](android/observability/logging.md)
 

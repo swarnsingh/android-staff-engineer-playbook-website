@@ -27,7 +27,7 @@ Current state: the original canonical buildout, post-audit gap closure, Staff/Pr
 
 ## Current Status
 
-All tracked roadmap and structural cleanup milestones are complete.
+The G12–G17 quality roadmap (from the 2026-07 principal-level audit) is in progress: G12–G14 are merged; G15–G17 are pending. Full scope of the pending milestones is in the **Active Roadmap** section below — pending work is tracked here *before* it lands, not only recorded after.
 
 | Track | Status | Notes |
 |---|---:|---|
@@ -38,11 +38,44 @@ All tracked roadmap and structural cleanup milestones are complete.
 | G11 Kotlin folder structure | ✅ | Flat Kotlin files moved into learning-domain subfolders; links updated; canonical ownership preserved |
 | G12 correctness pass | ✅ | Fixed Strong Skipping semantics (`===` for unstable params), lambda/method-reference memoization guidance, R8/`@Stable` failure mode, AIDL append-only evolution rules, ART escape-analysis nuance, Binder buffer/thread-pool precision; repaired 16 stale link redirects; filled 3 TODO placeholders in offline-first blueprint; refreshed stale versions/DSLs. All factual changes verified against current official docs/AOSP source |
 | G13 quality infrastructure | ✅ | CI quality gates on every PR (`scripts/check_docs.py` via GitHub Actions): broken links, stale text/target redirects, TODO/TBD markers, thin-file floor. PR template with kind/canonical-owner/fact-verification checklist. CONTRIBUTING: documented the gates, fixed the self-contradicting ADR naming rule, classified release digests (`kotlin/version-updates/`) as Application files under the Staleness Strategy |
+| G14 consistency & editorial | ✅ | Expanded the five thin files to canonical depth (replication & leader election, streaming logs & partitioning, mobile client consistency contracts, KMP shared domain boundaries, SRP) — each gained Why It Matters, Mental Model, production example, tradeoffs, and probing questions. Renamed `new-relic.md` → `mobile-apm-and-rum.md` and reworked it vendor-neutrally (W3C Trace Context, Android vitals baseline, corrected memory-allocator overstatement). Tone pass: normalized the repeated "Junior Engineer" opener trope and hyperbole across 6 files |
+| G15 Tier 1 content | ⬜ | Seven missing staff-level topics — see Active Roadmap below |
+| G16 Tier 2 differentiators | ⬜ | Media3, custom lint rules, View interop, value classes, form factors — see Active Roadmap below |
+| G17 final audit & close-out | ⬜ | Re-run full audit, adversarial read of new files, refresh README/learning paths |
 
 Latest cleanup/audit commits:
 
 - `26d8a97` — fixed one broken internal docs link and updated outdated Swift export wording.
 - `fd420ce` — cleaned up this milestone tracker.
+
+---
+
+## Active Roadmap — G12–G17 Quality Program
+
+Origin: 2026-07 principal-level audit of the full repo (technical accuracy, structural integrity, coverage vs. staff-level expectations). Each milestone lands as one reviewed PR (Codex review + merge gate) before the next begins. One PR per milestone; every factual claim verified against current official docs/source at writing time.
+
+### G15 — Tier 1 Content: The Seven Missing Topics ⬜
+
+Staff-level topics with no dedicated treatment anywhere in the repo, ordered by interview/production impact. Planned as four sub-PRs:
+
+1. ⬜ **Platform architecture:** `mobile-system-design/server-driven-ui.md` (schema versioning, component registry, forward compatibility, release-cycle bypass — the #1 gap) + `android/networking-and-security/webview-and-hybrid.md` (JS bridge security, process model, 3-DS/payment webviews).
+2. ⬜ **Testing at scale:** `android/testing/testing-strategy.md` — test pyramid economics, flakiness management (quarantine/retry/blame), CI device labs vs emulators, sharding, contract tests against BFFs.
+3. ⬜ **2026 currency:** `mobile-system-design/on-device-ai.md` (Gemini Nano/AICore, LiteRT, on-device vs cloud inference trade-offs) + `security/privacy-sandbox.md` (attribution, SDK runtime) + 16 KB page-size compatibility (in `release-engineering/`, Play requirement for Android 15+ targets).
+4. ⬜ **Commerce:** Play Billing / IAP / subscriptions (extend `mobile-system-design/payment-flow.md` or sibling file — RTDN, server-side verification, grace periods, proration).
+
+### G16 — Tier 2 Differentiators ⬜
+
+- ⬜ Media3/ExoPlayer player architecture (buffering, cache, DRM levels, offline downloads).
+- ⬜ Custom lint rules & static analysis as platform leverage.
+- ⬜ View-system interop & Compose migration strategy for hybrid codebases.
+- ⬜ Kotlin value classes (dedicated `kotlin/language-core/` treatment).
+- ⬜ Form-factors decision matrix (Wear/Auto/TV/Glance widgets).
+
+### G17 — Final Audit & Close-out ⬜
+
+- ⬜ Re-run the automated audit (links, redirects, thin files) plus a fresh adversarial read of all files added in G15–G16.
+- ⬜ Refresh `README.md`, `learning-paths.md`, and tree TOCs with the new content.
+- ⬜ Close out this roadmap section (move to Completed, one row per milestone).
 
 ---
 
