@@ -22,7 +22,7 @@
 | Maximum binary size sensitivity | **Retrofit + OkHttp** (Ktor pulls more code) |
 | Easy WebSocket + SSE + HTTP in one client | **Ktor** |
 
-Most Android teams in 2025 still pick Retrofit + OkHttp; KMP-shared business logic teams pick Ktor; both are correct.
+Retrofit + OkHttp remains a strong Android-focused default; KMP-shared networking makes Ktor's multiplatform client model compelling. Both choices are valid when they match the actual boundary and operational needs.
 
 ---
 
@@ -667,7 +667,7 @@ Same `UserRepository` runs on iOS, Android, JVM, and JS. Retrofit can't do this.
 - [`../../platform-engineering/library-versioning.md`](../../platform-engineering/library-versioning.md) — versioning shared HTTP clients.
 - [`../../kotlin/coroutines-and-flow/coroutines.md`](../../kotlin/coroutines-and-flow/coroutines.md) — coroutine cancellation semantics.
 - [Ktor client documentation](https://ktor.io/docs/getting-started-ktor-client.html) — official.
-- [Retrofit documentation](https://square.github.io/retrofit/) — official.
-- [OkHttp documentation](https://square.github.io/okhttp/) — official.
+- [Retrofit repository and documentation](https://github.com/square/retrofit) — official.
+- [OkHttp repository and documentation](https://github.com/square/okhttp) — official.
 - [Ktor + KMP guide](https://kotlinlang.org/docs/multiplatform-mobile-ktor-sqldelight.html) — KMP integration.
 - [Roman Elizarov — Network architecture in KMP apps](https://elizarov.medium.com/) — design patterns.

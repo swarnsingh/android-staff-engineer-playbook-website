@@ -190,4 +190,4 @@ When reviewing the Network layer, a Staff engineer focuses on resilience and glo
 
 - [`dependency-injection.md`](../data-and-di/dependency-injection.md) — How we provide singletons of Retrofit via Hilt.
 - [`coroutines-under-the-hood.md`](../concurrency/coroutines-under-the-hood.md) — How Retrofit automatically bridges `Call<T>` into Coroutine State Machines.
-- [OkHttp Interceptors Documentation](https://square.github.io/okhttp/features/interceptors/)
+- [OkHttp Interceptor API](https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Interceptor.kt)

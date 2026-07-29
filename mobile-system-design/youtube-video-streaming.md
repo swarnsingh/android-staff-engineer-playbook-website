@@ -460,7 +460,6 @@ Media3's `DownloadService` manages segment download, retry, persistence. For DRM
 
 - [Android Developers — Media3 overview](https://developer.android.com/media/media3) — official docs.
 - [ExoPlayer DRM guide](https://developer.android.com/media/media3/exoplayer/drm) — Widevine integration.
-- [Bitmovin — Adaptive Streaming primer](https://bitmovin.com/) — ABR fundamentals.
 - [Cast SDK for Android](https://developers.google.com/cast/docs/android_sender) — sender app integration.
 - [HLS spec (RFC 8216)](https://datatracker.ietf.org/doc/html/rfc8216) — for HLS internals.
 

@@ -12,7 +12,7 @@
 | Key-value flags, < 10 keys, no schema needed | Preferences DataStore (or Proto) | Suspend, async, no SP synchronicity issues |
 | List of 10+ items with queries / filters | Room | SQL indexes; partial updates; joins |
 | Single-source-of-truth cache (offline-first) | Room | Reactive `Flow` from queries; partial updates |
-| Encrypted secrets (token, refresh) | EncryptedSharedPreferences or Tink | Hardware-backed; small payload |
+| Encrypted secrets (token, refresh) | Keystore-backed ciphertext envelope | Small payload; versioned migration and key-invalidation handling |
 | Binary blobs (photos, audio) | File system + path in Room | Don't put blobs in either; reference by path |
 | Logs / analytics events queue | Room with TTL | Append-only, query for unsent, batch upload |
 
@@ -296,18 +296,7 @@ No built-in encryption. Two paths:
 No built-in encryption either, but easier to layer:
 
 - For **Proto DataStore**, wrap the `Serializer` to encrypt/decrypt the bytes via Tink (`AndroidKeysetManager`).
-- For **secrets** (tokens, keys), use `EncryptedSharedPreferences` directly — small payload, hardware-backed master key:
-  ```kotlin
-  val masterKey = MasterKey.Builder(context)
-      .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-      .build()
-  val encryptedPrefs = EncryptedSharedPreferences.create(
-      context, "secret_prefs", masterKey,
-      EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-      EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-  )
-  ```
-  Mature, well-vetted, the right tool for OAuth refresh tokens and the like.
+- For **secrets** (tokens, keys), keep the storage decision separate from key custody. AndroidX Security Crypto deprecated `EncryptedSharedPreferences`; new code should use direct Android Keystore keys and store a versioned ciphertext envelope in an app-private store. See [Secure Storage on Android](../../security/secure-storage-on-android.md). Room vs DataStore does not decide this security boundary.
 
 ---
 

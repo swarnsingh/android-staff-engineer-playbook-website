@@ -79,7 +79,10 @@ The fastest-moving files in the repo, per the [Staleness Strategy](CONTRIBUTING.
 | `android/compose/form-factors-matrix.md` | Wear/TV/Glance artifact versions and stability, car category rules | developer.android.com/jetpack/androidx/releases | 2026-07-15 |
 | `android/compose/stability.md` | Compose compiler behavior (Strong Skipping), collections-immutable version | developer.android.com + kotlinlang.org | 2026-07-15 |
 | `android/testing/testing-strategy.md` | GMD/ATD APIs, sharding property (experimental namespace) | developer.android.com/studio/test/gradle-managed-devices | 2026-07-15 |
+| `android/testing/ui-testing.md` | Compose Preview Screenshot Testing plugin status, version, and requirements | developer.android.com/studio/preview/compose-screenshot-testing | 2026-07-29 |
 | `kotlin/version-updates/` (all digests) | Release-delta claims by construction | kotlinlang.org release notes | 2026-07-15 |
+| `release-engineering/android-platform-compatibility.md` | Target API deadlines, toolchain/API compatibility | developer.android.com/google/play/requirements/target-sdk | 2026-07-29 |
+| `release-engineering/android-developer-verification.md` | Enforcement dates, regions, registration workflows, account limits | developer.android.com/developer-verification | 2026-07-29 |
 
 Rows are added when a new file names a version/deadline/policy; rows are never removed while the file keeps such claims.
 
@@ -311,8 +314,9 @@ Validation result:
 These are not active milestone blockers, but they are worth handling in a future polish pass:
 
 - `reference-architectures/offline-first-app.md` still has product-specific threshold and convergence-window choices to resolve in a future polish pass.
-- External web links have not been fully crawled. Internal Markdown links were checked after G10 and reported `0` broken links across `1,569` local links.
-- A full human grammar/technical review across all 285 Markdown files is still stronger than automated grep checks.
+- Probing-question answer keys are an active migration: the quality script reports the exact remaining count without failing unrelated pull requests. Updated and new topics must add keys under the contribution standard.
+- External resources are now crawled by `scripts/check_external_links.py` on a weekly schedule and manual dispatch; the July 29, 2026 remediation pass found no remaining definitive 404/410 responses.
+- A full human grammar and technical review across the whole corpus remains stronger than automated checks and should proceed domain by domain.
 
 ---
 

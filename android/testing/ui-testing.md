@@ -407,17 +407,16 @@ A newer Android-official screenshot testing alternative to Paparazzi:
 
 ```kotlin
 plugins {
-    id("com.android.compose.screenshot") version "0.0.1-alpha04"
+    id("com.android.compose.screenshot") version "0.0.1-alpha15"
 }
 
-androidComponents {
-    onVariants { variant ->
-        variant.screenshotTest?.enabled = true
-    }
+android {
+    experimentalProperties["android.experimental.enableScreenshotTest"] = true
 }
 ```
 
 ```kotlin
+@PreviewTest
 @Preview(showBackground = true)
 @Composable
 fun CartItemPreview() {
@@ -427,14 +426,14 @@ fun CartItemPreview() {
 }
 ```
 
-The plugin renders all `@Preview` functions during `./gradlew :feature:cart:impl:validateDebugScreenshotTest` and compares to baselines.
+Place `@PreviewTest`-annotated previews in the `screenshotTest` source set. The plugin renders them during `./gradlew :feature:cart:impl:validateDebugScreenshotTest` and compares the output with approved references.
 
 Trade-off vs Paparazzi:
 - Google-official; first-class IDE support.
 - Slower than Paparazzi.
-- Currently alpha; subject to change.
+- Still experimental/alpha as of the official June 2026 documentation; APIs and required versions can change.
 
-Most teams use Paparazzi today. The screenshot-testing plugin will likely become the default in 2025+.
+Paparazzi remains a mature third-party option. Choose based on IDE integration, rendering fidelity, execution cost, KMP constraints, and the Android plugin's experimental status; do not base the decision on a predicted graduation date.
 
 ---
 
@@ -745,7 +744,7 @@ Catches RTL bugs early. Most apps test LTR, dark mode, and one RTL locale per co
 - [`../compose/snapshot-system.md`](../compose/snapshot-system.md) — state changes during test.
 - [`../data-and-di/hilt-vs-koin-vs-manual-di.md`](../data-and-di/hilt-vs-koin-vs-manual-di.md) — `@TestInstallIn` patterns.
 - [`../performance/rendering.md`](../performance/rendering.md) — rendering tests catch.
-- [`../os-internals/multi-module.md`](../os-internals/multi-module.md) — `:test:fixtures` shared fakes.
+- [`../build-tooling/multi-module.md`](../build-tooling/multi-module.md) — `:test:fixtures` shared fakes.
 - [Compose UI testing official docs](https://developer.android.com/jetpack/compose/testing) — official.
 - [Robolectric](http://robolectric.org/) — official.
 - [Paparazzi](https://github.com/cashapp/paparazzi) — screenshot tests.

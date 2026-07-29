@@ -179,7 +179,7 @@ The cart's offline write-queue is the most user-visible compromise. Tradeoff: en
 ## Security
 
 - **Payment SDK isolation.** All card capture happens in the PSP SDK's surface; never in your app's TextField. PCI scope: SAQ-A.
-- **Token storage.** OAuth tokens in `EncryptedSharedPreferences`; payment-method tokens (e.g., `pm_xxx`) treated as session-scoped — refreshed on each cart view.
+- **Token storage.** Keep OAuth tokens in memory where possible; persist only a versioned ciphertext envelope protected by Android Keystore. Payment-method tokens (for example, `pm_xxx`) remain session-scoped and refresh on each cart view.
 - **Idempotency-Key on every mutation.** Cart-add, address-change, payment-confirm, refund-request.
 - **Replay protection.** Server-issued nonces for high-value or sensitive actions.
 - **HTTPS only with cert pinning** at the BFF and PSP endpoints. See [`security/certificate-pinning.md`](../security/certificate-pinning.md).
@@ -275,7 +275,7 @@ See [`observability/slis.md`](../observability/slis.md), [`observability/dashboa
 | Cart truth | Server (BFF + canonical cart service) | Cross-device durability |
 | Payment | PSP SDK (Stripe / Adyen / Razorpay) | PCI scope reduction |
 | Network | OkHttp + Retrofit | Mature; Idempotency-Key interceptor |
-| Tokens | EncryptedSharedPreferences | Keystore-wrapped |
+| Tokens | Private ciphertext envelope | Direct Android Keystore key |
 | DI | Hilt | Standard |
 | Background | WorkManager | Outbox drain, analytics flush |
 | Push | FCM (data + notification messages) | Order updates, promotions |

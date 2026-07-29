@@ -1,6 +1,6 @@
 # Dependency Injection: Hilt vs Koin vs Manual DI
 
-> Every Android app has DI — the question is whether it's intentional. Done well, DI gives you fast tests, swappable implementations, and clean module boundaries. Done badly, it tanks your build time, crashes on first launch with `NullPointerException`, or forces every test to spin up the entire object graph. The 2025 picture: **Hilt** is still the default for Android-only apps, **Koin** (with its new compiler plugin) is now a serious competitor for KMP + fast-build needs, and **manual DI** is the only sane choice for SDKs.
+> Every Android app has DI — the question is whether it's intentional. Done well, DI gives you fast tests, swappable implementations, and clean module boundaries. Done badly, it tanks build time, crashes on first launch, or forces every test to construct the entire object graph. **Hilt** is the conventional Android-integrated choice, **Koin** is a serious option for KMP and runtime-configured graphs, and **manual DI** is often the smallest and most transparent choice for libraries and modest graphs. Verify current compiler/plugin capabilities before choosing.
 
 ---
 

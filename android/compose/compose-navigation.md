@@ -1,6 +1,6 @@
 # Compose Navigation — Nav 2 and Nav 3
 
-> Compose Navigation isn't one library — it's two competing paradigms. **Navigation Compose 2.x** (stable) is the Jetpack-blessed default most apps ship today: declarative graph, `NavController`, `NavHost`. **Navigation 3** (alpha as of 2024) is a fundamental rewrite where *you* own the back stack as a list, and the framework is just a renderer. Staff-level mastery is knowing which to use today, where each shines, and how to migrate without rewriting your entire app.
+> Compose Navigation has two supported paradigms. **Navigation Compose 2.x** remains mature and widely deployed: declarative graph, `NavController`, `NavHost`. **Navigation 3** reached stable 1.0 in November 2025 and uses an app-owned back stack rendered by `NavDisplay`. Staff-level mastery is choosing based on architecture and migration cost, not on an obsolete stability label.
 
 ---
 
@@ -8,14 +8,14 @@
 
 | Need | Pick |
 |---|---|
-| Shipping production app today | **Nav 2.8+** (stable, type-safe via kotlinx.serialization) |
-| Greenfield KMP project | **Nav 3** (alpha but KMP-native) |
+| Existing production app working well on Nav 2 | **Stay on Nav 2.x**; migrate only for a concrete benefit |
+| Greenfield Compose or KMP project | **Nav 3 stable** |
 | Need precise control over back stack (multi-pane, custom scenes) | **Nav 3** |
 | Team unfamiliar with Compose's runtime | **Nav 2.8+** (more guard rails) |
-| Want least churn over next 18 months | **Nav 2.8+** |
-| Building a fresh app, want to bet on Google's future direction | **Nav 3** with awareness it's alpha |
+| Want least migration churn | Keep the navigation generation already in production |
+| Building a fresh Compose app | **Nav 3 stable** unless a required integration is Nav 2-only |
 
-Most production Android apps in 2024–2025 are on Nav 2.8+. Nav 3 is the future direction Google has committed to, but it's not the default yet.
+Nav 2 remains supported and common in existing apps. Nav 3 is production-ready, Compose-first, and the better default to evaluate for greenfield Compose applications. Stable does not mean feature-identical: inventory deep links, Hilt integration, adaptive scenes, and third-party navigation tooling before migrating.
 
 ---
 
@@ -25,7 +25,7 @@ Most production Android apps in 2024–2025 are on Nav 2.8+. Nav 3 is the future
 - **Navigation Component (XML era):** Jetpack visual graph editor + SafeArgs generation. Stable.
 - **Compose Navigation 1.x (string routes):** Pure-Kotlin DSL, but `navigate("details/${id}")` was brittle string-parsing.
 - **Navigation Compose 2.8+ (typed routes):** `kotlinx.serialization`-based type-safe routes. The current stable.
-- **Navigation 3 (2024 alpha):** Complete rewrite. NavController is gone; you control the back stack as a list. KMP-friendly, multi-pane-friendly, more verbose but more flexible.
+- **Navigation 3 1.0 (stable since November 2025):** Compose-first rewrite. `NavController` is replaced by an app-owned back stack rendered by `NavDisplay`; adaptive scenes and KMP runtime support are first-class concerns.
 
 ---
 
@@ -414,7 +414,7 @@ More code than Nav 2's `deepLinks = listOf(...)`, but you control:
 
 | Concern | Nav 2.8+ | Nav 3 |
 |---|---|---|
-| Maturity | Stable | Alpha (2024+) |
+| Maturity | Stable and mature | Stable since 1.0.0 (November 2025) |
 | Back-stack ownership | Framework | App |
 | Source of truth | `NavController` (opaque) | `SnapshotStateList<NavKey>` (transparent) |
 | Type safety | `@Serializable` routes | `@Serializable` + `NavKey` marker |
@@ -424,7 +424,7 @@ More code than Nav 2's `deepLinks = listOf(...)`, but you control:
 | Deep links | Declarative `deepLinks = [...]` | Imperative parse + back-stack mutation |
 | ViewModel scoping | Automatic via NavBackStackEntry | Explicit via decorators |
 | Boilerplate | Lower | Higher |
-| Production readiness | All apps | Greenfield + KMP only (for now) |
+| Production readiness | Existing and greenfield apps | Production-ready; strongest fit for greenfield Compose, adaptive, or KMP work |
 | Migration path | Stay on it | Migrate later via incremental adapter |
 
 ---
@@ -454,7 +454,7 @@ Realistic timeline: a small app (10 screens) in 1 week; a 50-screen app in 1–2
 - Single-platform Android app.
 - Phone-only target (no tablet/foldable adaptive layouts needed).
 - Team productive on Nav 2; no specific friction.
-- Risk-averse about alpha APIs.
+- A required library or internal platform integration supports Nav 2 only.
 - Migration cost > expected benefit.
 
 ### Adopt Nav 3 if
@@ -462,7 +462,7 @@ Realistic timeline: a small app (10 screens) in 1 week; a 50-screen app in 1–2
 - KMP project (Nav 2 can't compile to iOS).
 - Multi-pane / foldable / Wear OS is core UX.
 - You're hitting Nav 2's limitations (custom back behavior, shared elements with state).
-- Greenfield app; can absorb alpha churn.
+- Greenfield Compose app that benefits from app-owned navigation state.
 - Team has Compose runtime depth (you'll work closer to the metal).
 
 ---
@@ -604,7 +604,7 @@ When reviewing Compose Navigation code:
 3. **Deep link without analytics?** Each major deep link should fire an analytics event. Add to the navigation observer.
 4. **Logout missing `popUpTo(0)`?** Reject. Back-button bypass is a security bug.
 5. **`saveState = true` missing for bottom nav?** Reject. Tab switching loses state otherwise.
-6. **Choosing Nav 3 for a non-KMP, phone-only app?** Push back. The alpha tax outweighs the benefit.
+6. **Choosing Nav 3 for a non-KMP, phone-only app?** Do not reject it on maturity grounds: 1.0 is stable. Ask whether app-owned state, migration cost, team familiarity, and integration support justify the choice.
 7. **`@Serializable` route classes scattered across modules?** Centralize in a `:feature:X:api` module so navigation is type-safe across module boundaries.
 8. **`backStack.removeLast()` (Nav 3) without null check?** Reject. Use `removeLastOrNull()`; back from root must be a no-op or a deliberate exit.
 
@@ -612,12 +612,12 @@ When reviewing Compose Navigation code:
 
 ## Common Misconceptions
 
-- **"Nav 3 deprecates Nav 2."** Not yet. Nav 2 will be supported for years; Nav 3 is the future direction, not an immediate replacement.
+- **"Nav 3 deprecates Nav 2."** No. Nav 3 is stable, but Nav 2 remains supported; stable availability is not a forced migration.
 - **"Compose Navigation is slower than Fragments."** False. Nav 2 swaps a state flag and recomposes; Fragments invoke reflection-heavy `FragmentManager` transactions on Main.
 - **"`if/else` is good enough for simple apps."** No. You lose: Android back button integration, deep-link support, ViewModel scoping, process death restoration, analytics integration.
 - **"I can pass any `@Serializable` as a route argument."** Theoretically yes, practically no. Serialized arguments hit the OS Bundle limit; pass IDs.
 - **"Nav 3 means I have to rewrite my app."** No — Nav 2 still works. Migrate when there's a reason (KMP, multi-pane, custom back stack).
-- **"Nav 3 has fewer features than Nav 2."** During alpha — yes for some niche features. But the API is more extensible; new features are easier to add by composing primitives.
+- **"Nav 3 being stable means it has every Nav 2 integration."** No. Stability protects the 1.x API contract; teams must still inventory feature and ecosystem differences before migrating.
 
 ---
 
@@ -637,6 +637,25 @@ When reviewing Compose Navigation code:
 12. Custom transitions in Nav 3 — how do you add a shared-element animation between list and detail?
 13. Why is `NavController` an architectural smell when passed deep into a Composable?
 14. A Nav 2 nested `navigation<CheckoutGraph>` block — what does it buy you vs flat composable entries?
+
+---
+
+## Answer Key
+
+1. A serializable route type supplies the route schema; Navigation encodes and decodes its fields instead of relying on hand-built strings.
+2. Nav 2 asks a controller to mutate framework-owned state; Nav 3 mutates application-owned back-stack state that the UI renders.
+3. The application owns a `SnapshotStateList` or equivalent state holder. That makes navigation state portable, testable, and easier to share across KMP boundaries.
+4. Nav 2 navigates to the signed-out graph while popping the authenticated graph inclusively; Nav 3 clears the authenticated entries and inserts the signed-out root.
+5. Large or mutable objects exceed argument limits, serialize poorly, and become stale. Pass a stable identifier and load the current object from the source of truth.
+6. `saveState` preserves popped destination state and `restoreState` reattaches it when reselecting a tab, while `launchSingleTop` avoids duplicate tab roots.
+7. A scene strategy maps one or more entries to an adaptive scene, enabling layouts such as list-detail without pretending every entry is a separate full-screen destination.
+8. Nav 3 is stable, so alpha status is no longer a reason to reject it. Decide on migration cost, ecosystem integration, deep links, ViewModel ownership, adaptive needs, and team readiness.
+9. Nav 2 supplies `NavBackStackEntry`-scoped stores automatically. Nav 3 requires the chosen entry decorator or explicit owner strategy, making lifetime policy visible.
+10. Type routes first, isolate navigation behind callbacks, migrate a bounded graph, add parity tests and telemetry, then expand graph by graph with a rollback path.
+11. Nav 2 declares deep links on destinations and lets the controller reconstruct a route. Nav 3 code parses an external intent into the application-owned entry list.
+12. Install the appropriate scene/transition support, attach shared-element keys to corresponding content, and define the scene transition rather than smuggling animation state through routes.
+13. It couples reusable UI to graph mechanics and makes previews/tests harder. Pass semantic callbacks such as `onProfileSelected(id)`.
+14. The nested graph establishes a scoped flow boundary, graph-level start destination, shared ViewModel lifetime, and a single unit to pop or deep link into.
 
 ---
 
@@ -669,6 +688,7 @@ When reviewing Compose Navigation code:
 - [`../data-and-di/scopes.md`](../data-and-di/scopes.md) — coroutine scopes per `NavBackStackEntry`.
 - [`../../kotlin/language-core/sealed-classes.md`](../../kotlin/language-core/sealed-classes.md) — `sealed interface AppKey : NavKey`.
 - [Navigation Compose 2.8+ (Type Safety)](https://developer.android.com/guide/navigation/design/type-safety) — official Nav 2 docs.
-- [Navigation 3 announcement](https://android-developers.googleblog.com/) — Google blog (search "Navigation 3").
-- [Navigation 3 docs](https://developer.android.com/guide/navigation/navigation-3) — official Nav 3 docs (alpha).
+- [Navigation 3 stable announcement](https://developer.android.com/blog/posts/jetpack-navigation-3-is-stable) — 1.0 production-readiness announcement.
+- [Navigation 3 docs](https://developer.android.com/guide/navigation/navigation-3) — official guide.
+- [Navigation 3 releases](https://developer.android.com/jetpack/androidx/releases/navigation3) — current stable and prerelease channels.
 - [Navigation 3 samples](https://github.com/android/nav3-recipes) — official sample patterns.

@@ -282,7 +282,7 @@ internal fun writeAtomic(file: File, bytes: ByteArray) {
 - **Disk pressure.** Byte budget (e.g., 50 MB). Evict from oldest `lastAccessedAt`. Compact index on threshold.
 - **Cold start.** Don't load the index on app launch synchronously. Lazy-load on first cache touch.
 - **Serializer drift.** Versioned envelope: `{ "v": 2, "payload": ... }`. Unknown version → cache miss (don't crash).
-- **Privacy.** Caller is responsible for not putting sensitive values; offer an encrypted serializer adapter (`EncryptedFileSerializer`).
+- **Privacy.** Caller is responsible for not putting sensitive values; if required, offer a reviewed serializer that emits a versioned ciphertext envelope backed by a platform Keystore key.
 - **Testing.** Inject `Clock`; use `MemoryCache` only in tests; assert hit rates.
 - **Observability.** `CacheStats` `StateFlow` exposes hits/misses/evictions. Caller wires into telemetry SDK.
 

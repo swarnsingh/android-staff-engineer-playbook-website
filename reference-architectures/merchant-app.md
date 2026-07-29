@@ -180,7 +180,7 @@ Store-and-forward card transactions are the highest-stakes offline path. The PIN
 - **Staff authentication.** PIN-based shift login (numeric pad, not OS keyboard, to avoid keylogger spoofing). Session bound to staff ID; every action logged.
 - **Permission roles** enforced server-side; client-side checks are UX hints, not security boundaries.
 - **Tablet kiosk mode.** Many merchants run the app in `LOCK_TASK` mode so cashiers can't exit to other apps. Configured via Android MDM (Knox / Android Enterprise).
-- **Encrypted local store** for any cached merchant data (sales reports, inventory). `EncryptedSharedPreferences` for tokens; SQLCipher for Room if regulatory needs.
+- **Encrypted local store** for cached merchant data when the threat model or regulation requires it. Persist tokens as a private ciphertext envelope protected by Android Keystore; use database encryption such as SQLCipher only when its operational costs are justified.
 - **No PAN in logs**, ever. PIN-Pad SDK isolates this; the app only sees tokens like `tok_xxx`.
 - **Audit log immutability.** Append-only Room table. Synced to server at end of shift; the local copy is the disputed-transaction trail.
 - See [`security/secure-storage-on-android.md`](../security/secure-storage-on-android.md), [`mobile-system-design/security-and-privacy.md`](../mobile-system-design/security-and-privacy.md).
@@ -265,7 +265,7 @@ See [`release-engineering/release-strategy.md`](../release-engineering/release-s
 | Persistence | Room | Order mirror, audit log, inventory cache |
 | Real-time | OkHttp WebSocket | Persistent connection while open |
 | Network | OkHttp + Retrofit (REST fallback) | Mature; Idempotency-Key interceptor |
-| Tokens | EncryptedSharedPreferences | Keystore-wrapped |
+| Tokens | Private ciphertext envelope | Direct Android Keystore key |
 | Payment | Vendor PIN-Pad SDK + PSP SDK | PCI scope reduction |
 | Peripheral | Vendor SDK behind unified interface | Printer / scanner / cash drawer |
 | Kiosk | Android LOCK_TASK + MDM (Knox / Android Enterprise) | Single-app deployments |

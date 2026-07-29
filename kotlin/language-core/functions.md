@@ -694,4 +694,4 @@ External:
 - Kotlin Documentation: [Higher-order functions and lambdas](https://kotlinlang.org/docs/lambdas.html) — canonical reference.
 - Kotlin Documentation: [Inline functions](https://kotlinlang.org/docs/inline-functions.html) — when to inline and what crossinline/noinline mean.
 - *Effective Kotlin* by Marcin Moskała — Items 19–25 on functional programming idioms.
-- KEEP-110: [Functional interfaces (`fun interface`)](https://github.com/Kotlin/KEEP/blob/master/proposals/fun-interfaces.md) — the proposal document.
+- [Kotlin functional interfaces (`fun interface`)](https://kotlinlang.org/docs/fun-interfaces.html) — current language documentation.

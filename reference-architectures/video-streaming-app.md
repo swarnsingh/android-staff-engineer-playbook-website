@@ -235,7 +235,7 @@ The downloads-for-offline subsystem is the largest engineering investment relati
 - **No screen capture** during playback. `FLAG_SECURE` on the player surface (and HDCP downstream).
 - **TLS 1.3 + cert pinning** at the BFF and the DRM license server. See [`security/certificate-pinning.md`](../security/certificate-pinning.md).
 - **Encrypted offline cache.** Segments stored in encrypted form (SimpleCache + custom Cipher provider); license also encrypted at rest.
-- **OAuth tokens** in `EncryptedSharedPreferences`. PSP tokens for subscription billing similarly protected.
+- **OAuth tokens** remain in memory where possible; persisted tokens use a versioned ciphertext envelope protected by Android Keystore. PSP tokens for subscription billing receive the same treatment.
 - **Multi-profile privacy.** Per-profile watchlists, watch history, recommendations are isolated server-side. Kids profiles enforce parental controls server-validated.
 
 ---
@@ -329,7 +329,7 @@ See [`observability/slis.md`](../observability/slis.md), [`observability/dashboa
 | ABR | Media3 `DefaultTrackSelector` | Configurable bandwidth-based |
 | Offline | Media3 `DownloadManager` + `OfflineLicenseHelper` | License + segments durably stored |
 | Network | OkHttp + Retrofit + Cronet (where used) | Standard plus QUIC support for streaming |
-| Tokens | EncryptedSharedPreferences | Subscription auth |
+| Tokens | Private ciphertext envelope + Android Keystore | Subscription auth |
 | DI | Hilt | Standard |
 | Background | WorkManager | License refresh, download orchestration |
 | Push | FCM | Episode availability, new content alerts |

@@ -148,4 +148,4 @@ When reviewing a new feature, a Staff engineer's first instinct is to ask: "How 
 
 - [`circuit-breaker.md`](../patterns/circuit-breaker.md) and [`retry.md`](../patterns/retry.md) — The mechanical implementations of this philosophy.
 - [`../reference-architectures/offline-first-app.md`](../reference-architectures/offline-first-app.md) — The ultimate expression of Design for Failure.
-- AWS Architecture: [Design for Failure](https://aws.amazon.com/builders-library/making-retries-safe-with-jitter/)
+- AWS Builders' Library: [Timeouts, retries, and backoff with jitter](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/)

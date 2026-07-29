@@ -502,4 +502,4 @@ fun Underline(color: Color, modifier: Modifier = Modifier) {
 - [Romain Guy — Android graphics & UI](https://www.curious-creature.com/) — engineer's blog.
 - [Skia documentation](https://skia.org/) — 2D engine reference.
 - [Perfetto](https://perfetto.dev/) — system tracing.
-- [GPU profiling tools](https://developer.android.com/develop/ui/views/graphics/profile-rendering) — official guide.
+- [Profile GPU rendering](https://developer.android.com/topic/performance/rendering/profile-gpu) — official guide.

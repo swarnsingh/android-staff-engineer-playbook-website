@@ -202,4 +202,4 @@ When reviewing synchronization code, a Staff engineer looks for performance bott
 
 - [`coroutines-under-the-hood.md`](../concurrency/coroutines-under-the-hood.md) — How the Mutex utilizes the Continuation state machine to yield threads.
 - [`shared-flow-and-state-flow.md`](shared-flow-and-state-flow.md) — How `StateFlow` acts as a thread-safe atomic reference for UI state.
-- [Kotlin Docs: Shared mutable state and concurrency](https://kotlinlang.org/docs/shared-state.html)
+- [Kotlin Docs: Shared mutable state and concurrency](https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html)

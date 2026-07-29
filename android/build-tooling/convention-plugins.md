@@ -164,7 +164,7 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
         with(pluginManager) {
             apply("com.android.library")
-            apply("org.jetbrains.kotlin.android")
+            // AGP 9+ supplies built-in Kotlin for Android modules.
         }
 
         extensions.configure<LibraryExtension> {
@@ -650,7 +650,7 @@ class BuildCacheConventionPlugin : Plugin<Project> {
 | Different modules get different `compileSdk` | Some modules opt out by overriding after `apply` | Be intentional about override-vs-shared config |
 | Build time increases after convention plugin migration | Plugin configures expensive things unconditionally | Use `pluginManager.apply` with care; avoid eager configuration |
 | Sync fails: `Cannot compare against project property` | Wrong DSL (e.g., `project.objects.directoryProperty()` vs `layout.projectDirectory`) | Use modern provider/lazy property APIs |
-| KSP version mismatch warning everywhere | Compose vs KSP vs Kotlin versions out of sync | Pin all in `libs.versions.toml`; bump together |
+| KSP compatibility warning everywhere | KSP, Kotlin, AGP, Gradle, or a processor combination is unsupported | Check current compatibility notes; pin the independently versioned KSP release and upgrade the tested toolchain together |
 | `Plugin uses unsupported APIs` warning | Using deprecated Gradle APIs | Migrate to current Gradle API equivalents |
 | `apply(plugin = "...")` order issue | Inter-plugin dependencies | Use `pluginManager.withPlugin("X") { ... }` to wait |
 | Plugin in `build-logic` can't access `libs.versions.toml` | Catalog not configured for composite build | Configure in `build-logic/settings.gradle.kts` |

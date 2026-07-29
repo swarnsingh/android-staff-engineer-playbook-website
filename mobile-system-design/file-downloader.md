@@ -450,7 +450,7 @@ object progressBus {
 
 - [weeeBox/mobile-system-design — file-downloader-library](https://github.com/weeeBox/mobile-system-design/blob/master/exercises/file-downloader-library.md) — reference format.
 - [Android Developers — WorkManager](https://developer.android.com/topic/libraries/architecture/workmanager) — official guide, expedited + constraints.
-- [OkHttp recipes — Range requests](https://square.github.io/okhttp/recipes/) — `Range` header usage.
+- [OkHttp recipes](https://github.com/square/okhttp/tree/master/samples/guide/src/main/java/okhttp3/recipes) — request examples, including headers and streaming.
 - [Cronet / QUIC for Android](https://developer.android.com/develop/connectivity/cronet) — for next-gen transport.
 - [Android Developers — Foreground services](https://developer.android.com/develop/background-work/services/foreground-services) — when to escalate from worker.
 

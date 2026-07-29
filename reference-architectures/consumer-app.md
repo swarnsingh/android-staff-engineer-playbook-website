@@ -171,7 +171,7 @@ The general rule: **anything the user already saw remains visible offline; anyth
 ## Security
 
 - **TLS 1.3 + cert pinning** at the BFF. Pinning the leaf + intermediate; rotation discipline documented. See [`security/certificate-pinning.md`](../security/certificate-pinning.md).
-- **Authentication:** OAuth + PKCE; tokens in `EncryptedSharedPreferences`. Anonymous sessions allowed; account creation deferred to engagement moment.
+- **Authentication:** OAuth + PKCE; keep tokens in memory when possible and use a Keystore-protected ciphertext envelope only when continuity requires persistence. Anonymous sessions are allowed; account creation is deferred to an engagement moment.
 - **App Check / Play Integrity** to deter scripted account creation and bot engagement. Verdicts evaluated server-side; client never trusts its own verdict.
 - **No FLAG_SECURE** on most screens (consumer apps share screenshots happily). Reserve for the rare sensitive screen (DM containing financial info — but that's an edge case).
 - **R8 minify + obfuscate.** Not a security boundary, but raises the bar for casual reverse engineering and stops API endpoints from leaking as plain strings.
@@ -260,7 +260,7 @@ See [`observability/dashboards.md`](../observability/dashboards.md), [`observabi
 | Video | Media3 / ExoPlayer | Adaptive bitrate, player pooling |
 | Network | OkHttp + Retrofit | Mature; interceptor model for telemetry |
 | Persistence | Room | Page cache, like state, drafts |
-| Encrypted storage | EncryptedSharedPreferences | Tokens, user prefs |
+| Protected storage | Private ciphertext envelope + Android Keystore | Persisted tokens; preferences only when sensitive |
 | DI | Hilt | Standard |
 | Background | WorkManager | Outbox drain, analytics flush |
 | Push | FCM (data messages) | Custom rendering, channels |

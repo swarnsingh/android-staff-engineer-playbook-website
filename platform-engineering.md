@@ -15,15 +15,15 @@ Staff Mobile Platform Engineers spend most of their time building leverage — n
 - Design internal platforms that are useful enough to be adopted voluntarily and opinionated enough to prevent architectural drift.
 - Evaluate platform work by leverage: fewer repeated decisions, faster feedback loops, safer migrations, and clearer ownership boundaries.
 
-## Learning Order
+## Guided Reading Sequence
 
-Start with internal developer platforms, because paved roads define how other teams experience architecture. Then study design systems, library versioning, and SDK distribution. Finish with build graph scaling, where platform choices become daily developer productivity.
+Prerequisites: complete the core [Android](android.md) path and understand [Release Engineering](release-engineering.md). Move from platform purpose to reusable interfaces, then enforcement and build-scale feedback.
 
-## Topics
+1. [Internal Developer Platforms (IDP)](platform-engineering/internal-developer-platforms.md)
+2. [Design Systems Architecture](platform-engineering/design-systems-architecture.md)
+3. [Library Versioning](platform-engineering/library-versioning.md)
+4. [SDK Distribution](platform-engineering/sdk-distribution.md)
+5. [Custom Lint Rules & Static Analysis](platform-engineering/custom-lint-and-static-analysis.md)
+6. [Build Graph Scaling](platform-engineering/build-graph-scaling.md)
 
-- [Internal Developer Platforms (IDP)](platform-engineering/internal-developer-platforms.md)
-- [Design Systems Architecture](platform-engineering/design-systems-architecture.md)
-- [Library Versioning](platform-engineering/library-versioning.md)
-- [SDK Distribution](platform-engineering/sdk-distribution.md)
-- [Build Graph Scaling](platform-engineering/build-graph-scaling.md)
-- [Custom Lint Rules & Static Analysis](platform-engineering/custom-lint-and-static-analysis.md)
+**Next:** continue to [Leadership](leadership.md) to scale adoption across organizational boundaries.

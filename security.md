@@ -15,16 +15,16 @@ Mobile is the attack surface for financial, identity, and personal-data systems.
 - Know where mobile security ends: the client can raise confidence and reduce exposure, but the server must enforce authorization, risk scoring, revocation, and auditability.
 - Review product features for minimization, consent, retention, observability redaction, and failure behavior before sensitive data ships.
 
-## Learning Order
+## Guided Reading Sequence
 
-Start with privacy and data residency because they shape what data should exist at all. Then move through authentication, secure storage, and key management. Finish with certificate pinning and attestation, where threat models meet mobile device reality.
+Prerequisites: Android storage/networking fundamentals and basic backend authentication. Begin with minimization—data that does not exist cannot leak—then move from identity and local custody to transport and device trust.
 
-## Topics
+1. [Privacy, GDPR & Data Residency](security/privacy-gdpr-data-residency.md)
+2. [Privacy Sandbox: Rise, Retirement & What Replaces It](security/privacy-sandbox.md) — policy-history application.
+3. [Authentication on Mobile](security/auth-on-mobile.md)
+4. [Secure Storage](security/secure-storage-on-android.md)
+5. [Key Management](security/key-management.md)
+6. [Certificate Pinning](security/certificate-pinning.md)
+7. [App & Device Attestation](security/attestation.md)
 
-- [Privacy, GDPR & Data Residency](security/privacy-gdpr-data-residency.md)
-- [Privacy Sandbox: Rise, Retirement & What Replaces It](security/privacy-sandbox.md)
-- [Authentication on Mobile](security/auth-on-mobile.md)
-- [Secure Storage](security/secure-storage-on-android.md)
-- [Key Management](security/key-management.md)
-- [Certificate Pinning](security/certificate-pinning.md)
-- [App & Device Attestation](security/attestation.md)
+**Next:** revisit a [Reference Architecture](reference-architectures.md) and threat-model it end to end.

@@ -15,14 +15,14 @@ Staff is partly a leadership role. How you behave during incidents, how you run 
 - Communicate risk clearly to engineers, managers, product partners, and executives without hiding behind jargon.
 - Build trust as a Staff engineer by making decisions legible, reversible where possible, and grounded in production reality.
 
-## Learning Order
+## Guided Reading Sequence
 
-Begin with incident response and on-call as the operational baseline. Then study design reviews and influence without authority, followed by mentorship and escalation. That order mirrors how Staff engineers first stabilize systems, then scale judgment across teams.
+Prerequisite: experience owning at least one production feature or system. Stabilize operations first, then learn to scale decisions and people across team boundaries.
 
-## Topics
+1. [Incident Response & On-Call](leadership/incident-response-on-call.md)
+2. [Running a Design Review (RFCs)](leadership/running-a-design-review.md)
+3. [Influence Without Authority](leadership/influence-without-authority.md)
+4. [Technical Mentorship](leadership/technical-mentorship.md)
+5. [Escalation & Decision Making](leadership/escalation-and-decision-making.md)
 
-- [Incident Response & On-Call](leadership/incident-response-on-call.md)
-- [Running a Design Review (RFCs)](leadership/running-a-design-review.md)
-- [Influence Without Authority](leadership/influence-without-authority.md)
-- [Technical Mentorship](leadership/technical-mentorship.md)
-- [Escalation & Decision Making](leadership/escalation-and-decision-making.md)
+**Next:** continue to [Career](career.md) to connect these behaviors to Staff-level scope and evidence.

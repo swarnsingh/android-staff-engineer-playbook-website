@@ -81,24 +81,25 @@ user.name = "Alice"
                                                         (user is NOT freed — still reachable)
 ```
 
-**Key difference from JVM GC:**
-- JVM GC (G1, ZGC) uses **safepoints** — it pauses all application threads briefly to scan roots.
-- K/Native GC uses **write barriers** — application threads notify the GC when references change, avoiding full pauses.
+**Comparison with JVM collectors:** both Kotlin/Native and JVM collectors use safepoints and barriers as implementation tools. The current Kotlin/Native collector is non-generational concurrent mark-and-sweep; application threads can participate in marking and short stop-the-world phases still exist. Do not use "Native has barriers, JVM has safepoints" as the distinction.
 
 ### GC Configuration
 
 You can tune the K/Native GC via `gradle.properties`:
 
 ```properties
-# Set the GC threshold (trigger collection when heap reaches this size)
-kotlin.native.gc.threshold = 512K
+# Current default is concurrent mark-and-sweep (CMS).
+# Use PMCS only as a measured fallback when diagnosing a CMS regression.
+kotlin.native.binary.gc=pmcs
 
-# Set the GC type (default: concurrent mark-and-sweep)
-kotlin.native.gc.type = CMS
+# Disable allocator paging only after profiling memory behavior.
+kotlin.native.binary.pagedAllocator=false
 
-# Enable the mimalloc allocator (faster allocation, more memory)
-kotlin.native.allocator = mimalloc
+# Emit Apple-platform GC safepoints to Instruments.
+kotlin.native.binary.enableSafepointSignposts=true
 ```
+
+Allocator selection such as mimalloc is a compiler option (`-Xallocator=mimalloc`), not the obsolete `kotlin.native.allocator` property. These knobs evolve; verify them against the Kotlin/Native memory-manager documentation for the Kotlin version you ship.
 
 **Staff Rule:** Do not tune the GC unless you have profiled a specific memory problem. The defaults are well-chosen for typical mobile apps.
 
@@ -376,9 +377,19 @@ On Android, `Dispatchers.Main.immediate` skips dispatch if you're already on the
 4.  **StateFlow Collection:** Without SKIE, trace the exact sequence of events when a SwiftUI `View` disappears while a Kotlin `StateFlow` is being collected via a manual `FlowCollector`. What object is leaked if `close()` isn't called?
 5.  **GC Tuning:** Your KMP app on iOS shows 15ms GC pauses in Instruments. These pauses cause dropped frames in a scrolling list. What K/Native GC configuration options are available, and what tradeoff does each represent?
 
+## Answer Key
+
+1. Replace the atomic container-of-mutable-state with immutable snapshots exposed through `StateFlow`, and serialize mutations with a `Mutex`, actor, or single owner. Atomics remain useful only for genuinely lock-free scalar coordination.
+2. Swift retains the Kotlin object, Kotlin retains the closure, and the closure retains Swift. ARC cannot see through Kotlin GC ownership and Kotlin GC cannot release an externally retained Swift object; explicitly break the closure/reference cycle.
+3. CPU-bound work can occupy the Default pool and delay the short query. Bound image parallelism, move blocking database calls to an appropriate dispatcher, and prioritize/partition workloads instead of launching unbounded jobs.
+4. Manual bridging continues until its collection job is cancelled. If `close()` is omitted, the collector/bridge and captured Swift view model can remain reachable after the view disappears.
+5. Measure before tuning. The supported default is the `pmcs` collector; allocator paging can be disabled with `kotlin.native.binary.pagedAllocator=false`, safepoint signposts aid Instruments analysis, and `-Xallocator=mimalloc` changes allocator behavior. Each option trades pause/throughput/memory characteristics and must be benchmarked on target devices.
+
 ## Further Reading
 
 - [`swift-interop.md`](../tooling/swift-interop.md) — How SKIE bridges Kotlin `Job` cancellation to Swift `Task` cancellation.
 - [`../../kotlin/coroutines-and-flow/coroutines.md`](../../../kotlin/coroutines-and-flow/coroutines.md) — Deep dive into Job hierarchies, SupervisorJob, and cancellation propagation.
 - [`../../kotlin/runtime-and-jvm/memory-model.md`](../../../kotlin/runtime-and-jvm/memory-model.md) — The JVM memory model (compare with the K/Native GC described here).
+- [Kotlin/Native memory management](https://kotlinlang.org/docs/native-memory-manager.html) — current collector behavior and supported binary options.
+- [Swift/Objective-C ARC integration](https://kotlinlang.org/docs/native-arc-integration.html) — cross-runtime lifecycle and retain-cycle behavior.
 - [`testing-and-mocking.md`](testing-and-mocking.md) — How to test concurrent code in `commonTest` across both runtimes.

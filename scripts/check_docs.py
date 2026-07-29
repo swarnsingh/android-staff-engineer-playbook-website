@@ -5,15 +5,19 @@ Run from the repo root:  python3 scripts/check_docs.py
 
 Checks (each maps to a defect class that has actually occurred in this repo):
   1. Broken internal links      — relative link targets that don't exist.
-  2. Link text/target mismatch  — link text names `foo.md` but the target is `bar.md`
+  2. Broken heading anchors     — internal fragments that do not match a Markdown heading.
+  3. Link text/target mismatch  — link text names `foo.md` but the target is `bar.md`
                                   (stale redirects left behind when files are created later).
-  3. Unfinished-content markers — literal `*TODO: ...*` or standalone `TBD` shipped in content.
-  4. Thin-file guard            — non-stub content files under the word floor must either be
+  4. Unfinished-content markers — literal `*TODO: ...*` or standalone `TBD` shipped in content.
+  5. Thin-file guard            — non-stub content files under the word floor must either be
                                   expanded or explicitly allowlisted below (visible debt).
-  5. Currency reminder (WARN-ONLY) — rows in the milestones.md Currency Watchlist whose
+  6. Currency reminder (WARN-ONLY) — rows in the milestones.md Currency Watchlist whose
                                   last-checked date is older than STALE_DAYS. Never fails
                                   the build: the passage of time must not break unrelated
                                   PRs. It nags until the row is re-verified and re-dated.
+  7. Answer-key debt (WARN-ONLY) — topic files with probing questions but no answer key.
+                                  Existing debt is reported while touched topics migrate.
+  8. Guided-index coverage     — every topic file appears in its tree's parent sequence.
 
 Exit code 0 = all clean; 1 = at least one violation (CI fails).
 """
@@ -33,6 +37,44 @@ THIN_FILE_ALLOWLIST: set[str] = set()
 # Top-level TOC/index files and templates are exempt from the word floor.
 EXEMPT_DIRS = {"templates"}
 
+TREE_INDEXES = {
+    "android.md",
+    "backend-for-mobile.md",
+    "career.md",
+    "computer-science.md",
+    "distributed-systems.md",
+    "engineering-fundamentals.md",
+    "kotlin.md",
+    "leadership.md",
+    "mobile-system-design.md",
+    "observability.md",
+    "patterns.md",
+    "platform-engineering.md",
+    "principles.md",
+    "reference-architectures.md",
+    "release-engineering.md",
+    "security.md",
+}
+
+TREE_INDEX_FOLDERS = {
+    "android.md": "android",
+    "backend-for-mobile.md": "backend-for-mobile",
+    "career.md": "career",
+    "computer-science.md": "computer-science",
+    "distributed-systems.md": "distributed-systems",
+    "engineering-fundamentals.md": "engineering-fundamentals",
+    "kotlin.md": "kotlin",
+    "leadership.md": "leadership",
+    "mobile-system-design.md": "mobile-system-design",
+    "observability.md": "observability",
+    "patterns.md": "patterns",
+    "platform-engineering.md": "platform-engineering",
+    "principles.md": "principles",
+    "reference-architectures.md": "reference-architectures",
+    "release-engineering.md": "release-engineering",
+    "security.md": "security",
+}
+
 
 def iter_md_files():
     for root, dirs, files in os.walk("."):
@@ -40,6 +82,23 @@ def iter_md_files():
         for f in sorted(files):
             if f.endswith(".md"):
                 yield os.path.normpath(os.path.join(root, f))
+
+
+def github_heading_anchors(text: str) -> set[str]:
+    """Approximate GitHub's Markdown heading IDs, including duplicate suffixes."""
+    anchors, counts = set(), {}
+    for line in text.splitlines():
+        match = re.match(r"^#{1,6}\s+(.+?)\s*#*$", line)
+        if not match:
+            continue
+        heading = re.sub(r"<[^>]+>", "", match.group(1).strip().lower())
+        heading = re.sub(r"[`*_~]", "", heading)
+        base = "".join(ch for ch in heading if ch.isalnum() or ch in " -_")
+        base = re.sub(r"\s", "-", base)
+        occurrence = counts.get(base, 0)
+        counts[base] = occurrence + 1
+        anchors.add(base if occurrence == 0 else f"{base}-{occurrence}")
+    return anchors
 
 
 def currency_warnings() -> list[str]:
@@ -63,24 +122,62 @@ def currency_warnings() -> list[str]:
     return warnings
 
 
-def main() -> int:
-    broken, mismatches, todos, thin = [], [], [], []
+def orphaned_topics() -> list[str]:
+    """Return topic files not linked from their owning top-level guided index."""
+    orphaned = []
+    for index, folder in TREE_INDEX_FOLDERS.items():
+        try:
+            with open(index, encoding="utf-8") as fh:
+                text = fh.read()
+        except OSError:
+            orphaned.append(f"{index}: index is missing")
+            continue
 
-    for path in iter_md_files():
+        linked = set()
+        for match in re.finditer(r"\[[^\]]*\]\(([^)\s]+\.md)(?:#[^)]*)?\)", text):
+            target = match.group(1).split("#", 1)[0]
+            linked.add(os.path.normpath(os.path.join(os.path.dirname(index), target)))
+
+        for root, dirs, files in os.walk(folder):
+            dirs[:] = [d for d in dirs if d not in {".git", "node_modules"}]
+            for name in files:
+                if name.endswith(".md"):
+                    path = os.path.normpath(os.path.join(root, name))
+                    if path not in linked:
+                        orphaned.append(f"{path}: not linked from {index}")
+    return orphaned
+
+
+def main() -> int:
+    paths = list(iter_md_files())
+    anchors_by_path = {}
+    for path in paths:
+        with open(path, encoding="utf-8") as fh:
+            anchors_by_path[path] = github_heading_anchors(fh.read())
+
+    broken, broken_anchors, mismatches, todos, thin = [], [], [], [], []
+    missing_answer_keys, unordered_indexes = [], []
+
+    for path in paths:
         with open(path, encoding="utf-8") as fh:
             text = fh.read()
 
         # 1. Broken internal links
         for m in re.finditer(r"\[[^\]]*\]\(([^)\s]+)\)", text):
             link = m.group(1)
-            if link.startswith(("http://", "https://", "mailto:", "#")):
+            if link.startswith(("http://", "https://", "mailto:")):
                 continue
-            target = link.split("#")[0]
-            if not target:
-                continue
-            resolved = os.path.normpath(os.path.join(os.path.dirname(path), target))
-            if not os.path.exists(resolved):
+            target, separator, fragment = link.partition("#")
+            resolved = path if not target else os.path.normpath(
+                os.path.join(os.path.dirname(path), target)
+            )
+            if target and not os.path.exists(resolved):
                 broken.append(f"{path}: {link}")
+                continue
+            if separator and fragment and resolved.endswith(".md"):
+                anchors = anchors_by_path.get(resolved, set())
+                if fragment not in anchors:
+                    broken_anchors.append(f"{path}: {link}")
 
         # 2. Link text/target mismatch (text looks like a filename but names a different file)
         for m in re.finditer(r"\[`?([a-z0-9][a-z0-9-]*\.md)`?\]\(([^)#\s]+\.md)", text):
@@ -96,6 +193,14 @@ def main() -> int:
         for m in re.finditer(r"\*TODO:[^*]*\*|(?<![\w/])TBD(?![\w/])", prose):
             todos.append(f"{path}: {m.group(0)[:70]}")
 
+        if re.search(r"^## Probing Questions\s*$", text, flags=re.MULTILINE):
+            if not re.search(r"^## Answer Key\s*$", text, flags=re.MULTILINE):
+                missing_answer_keys.append(path)
+
+        if path.removeprefix("./") in TREE_INDEXES:
+            if not re.search(r"^## Guided Reading Sequence\s*$", text, flags=re.MULTILINE):
+                unordered_indexes.append(path)
+
         # 4. Thin-file guard (content files only: depth > 1, not stubs, not templates)
         rel_parts = path.split(os.sep)
         if len(rel_parts) > 1 and rel_parts[0] not in EXEMPT_DIRS:
@@ -104,12 +209,16 @@ def main() -> int:
                 if words < WORD_FLOOR:
                     thin.append(f"{path}: {words} words (floor {WORD_FLOOR})")
 
+    unindexed_topics = orphaned_topics()
     failed = False
     for title, items in [
         ("Broken internal links", broken),
+        ("Broken internal heading anchors", broken_anchors),
         ("Link text/target mismatches (stale redirects)", mismatches),
         ("Unfinished-content markers (TODO/TBD)", todos),
         ("Thin content files (expand, or allowlist with a reason)", thin),
+        ("Tree indexes without a Guided Reading Sequence", unordered_indexes),
+        ("Topic files missing from their guided tree index", unindexed_topics),
     ]:
         if items:
             failed = True
@@ -126,6 +235,14 @@ def main() -> int:
             print(f"    {item}")
     else:
         print("✓ Currency watchlist: all rows fresh")
+
+    if missing_answer_keys:
+        print(
+            f"⚠ Answer-key migration debt: {len(missing_answer_keys)} topic files have "
+            "probing questions but no answer key (warning only)"
+        )
+    else:
+        print("✓ Probing questions: every topic has an answer key")
 
     return 1 if failed else 0
 

@@ -183,7 +183,7 @@ interface TokenVault {
 }
 ```
 
-Implementation lives in `secure-storage-on-android.md`. The vault wraps `EncryptedSharedPreferences` (or DataStore+Tink). Access tokens survive process death; refresh tokens survive reboots.
+Implementation lives in `secure-storage-on-android.md`. New vaults use a versioned ciphertext envelope backed by a direct Android Keystore key; legacy `EncryptedSharedPreferences` installations need an explicit migration. Persist access or refresh tokens only when product continuity requires it.
 
 ---
 
@@ -278,7 +278,7 @@ class TokenRefresher @Inject constructor(
 
 ```kotlin
 suspend fun atomicSwap(new: Tokens) {
-    vault.save(new)        // EncryptedSharedPreferences.commit() = atomic
+    vault.save(new)        // durable, versioned ciphertext write
 }
 ```
 

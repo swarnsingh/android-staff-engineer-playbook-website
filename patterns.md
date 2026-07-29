@@ -17,26 +17,26 @@ State machines have a canonical owner in [`engineering-fundamentals/state-machin
 - Apply resilience patterns such as Retry and Circuit Breaker with mobile constraints like battery, offline mode, idempotency, and user-visible fallback.
 - Review whether a pattern reduces complexity or merely adds vocabulary around code that should stay simple.
 
-## Learning Order
+## Guided Reading Sequence
 
-Design patterns first (the classics), then resilience patterns (the production-engineering set).
+Prerequisites: [Engineering Fundamentals](engineering-fundamentals.md) and [Principles](principles.md). Patterns are reusable implementation shapes, not substitutes for the mechanics and tradeoffs underneath them.
 
-## Topics
+### Phase 1 — Boundaries and object collaboration
 
-### Design Patterns
+1. [Repository](patterns/repository.md)
+2. [Adapter](patterns/adapter.md)
+3. [Factory](patterns/factory.md)
+4. [Builder](patterns/builder.md)
+5. [Strategy](patterns/strategy.md)
+6. [Decorator](patterns/decorator.md)
+7. [Observer](patterns/observer.md)
+8. [State](patterns/state.md) — implementation; read state-machine mechanics first.
+9. [Command](patterns/command.md)
 
-- [Repository](patterns/repository.md)
-- [Adapter](patterns/adapter.md)
-- [Factory](patterns/factory.md)
-- [Strategy](patterns/strategy.md)
-- [Observer](patterns/observer.md)
-- [State](patterns/state.md) — implementation; mechanics in `engineering-fundamentals/state-machines.md`
-- [Builder](patterns/builder.md)
-- [Decorator](patterns/decorator.md)
-- [Command](patterns/command.md)
+### Phase 2 — Resilience and distributed recovery
 
-### Resilience Patterns
+10. [Retry](patterns/retry.md)
+11. [Circuit Breaker](patterns/circuit-breaker.md)
+12. [Saga](patterns/saga.md)
 
-- [Circuit Breaker](patterns/circuit-breaker.md)
-- [Retry](patterns/retry.md)
-- [Saga](patterns/saga.md)
+**Next:** apply these patterns in [Android](android.md) and [Mobile System Design](mobile-system-design.md).

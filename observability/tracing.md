@@ -245,6 +245,6 @@ The mobile-distinct concerns:
 
 - [`distributed-tracing.md`](distributed-tracing.md) — How to pass the Trace ID from the mobile device to the backend server.
 - [`structured-logging.md`](structured-logging.md) — How to embed the Trace ID into every log.
-- [OpenTelemetry Android](https://opentelemetry.io/docs/instrumentation/android/) — full OTel SDK for mobile.
+- [OpenTelemetry documentation](https://opentelemetry.io/docs/) — current instrumentation and specification entry point.
 - [Firebase Performance Monitoring](https://firebase.google.com/docs/perf-mon) — auto-instrumented spans + custom traces.
 - [JankStats](https://developer.android.com/topic/performance/jankstats) — frame-level perf events.

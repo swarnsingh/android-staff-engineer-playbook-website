@@ -282,4 +282,4 @@ fun hasCycle(graph: Map<String, List<String>>): Boolean {
 - [`trees.md`](trees.md)
 - [`graphs.md`](graphs.md)
 - [`dynamic-programming.md`](dynamic-programming.md)
-- [`../android/os-internals/gradle-and-build-systems.md`](../android/os-internals/gradle-and-build-systems.md)
+- [`../android/build-tooling/gradle-and-build-systems.md`](../android/build-tooling/gradle-and-build-systems.md)

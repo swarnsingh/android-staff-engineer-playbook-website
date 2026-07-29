@@ -445,7 +445,7 @@ Triggered: on FCM hint, on app foreground, on periodic 30-min schedule.
 ## 12. Further Reading
 
 - [Android Developers — Notifications overview](https://developer.android.com/develop/ui/views/notifications) — channels, importance, runtime permission.
-- [Firebase Cloud Messaging — best practices](https://firebase.google.com/docs/cloud-messaging/concept-options) — payload limits, priorities.
+- [Firebase Cloud Messaging — message types](https://firebase.google.com/docs/cloud-messaging/customize-messages/set-message-type) — notification and data payload behavior.
 - [Iterable engineering — Designing a notification platform](https://iterable.com/blog/) — vendor perspective on triggers and routing.
 - [GDPR — push notifications](https://gdpr.eu/) — consent and opt-in framing.
 - [Don't kill my app](https://dontkillmyapp.com/) — OEM impact on actual delivery rates.

@@ -40,7 +40,7 @@ flowchart TB
     Api --> BFF[BFF / Gateway]
     BFF --> Core["Core Banking<br/>ledger, fraud, SCA"]
     BiometricGate --> Keystore["Android Keystore<br/>StrongBox where avail"]
-    SessionMgr --> EncStore[(EncryptedSharedPreferences<br/>Keystore-wrapped)]
+    SessionMgr --> EncStore[(Private ciphertext envelope<br/>Android Keystore key)]
     Repo --> Attest["Play Integrity<br/>Key Attestation"]
     Repo --> Telemetry[Audit Telemetry]
 ```
@@ -65,7 +65,7 @@ See [`mobile-system-design/security-and-privacy.md`](../mobile-system-design/sec
 Owns the two-token model:
 
 - **Access token** (JWT, ~15 min lifetime) — attached to every request. Server validates cryptographically; no DB lookup.
-- **Refresh token** (~30 days, rotating on every refresh) — long-lived; stored in `EncryptedSharedPreferences` (Keystore-wrapped). When the access token returns 401, the OkHttp `Authenticator` runs `refreshNow()` single-flight to swap.
+- **Refresh token** (~30 days, rotating on every refresh) — long-lived; when persistence is required, store a versioned ciphertext envelope protected by Android Keystore. When the access token returns 401, the OkHttp `Authenticator` runs `refreshNow()` single-flight to swap.
 
 Single-flight is critical: 8 concurrent requests must NOT trigger 8 refresh calls. The first acquires a `Mutex`, calls `/v1/refresh`, persists the new tokens, and releases. The waiting 7 read the new token from the vault.
 
@@ -101,7 +101,7 @@ Each domain (accounts, transfers, cards, statements) has one repository. Reposit
 ### Data Layer
 
 - **No Room database for PII or financial data.** A Banking app generally bans Room for balances and transactions. The user sees data fetched on demand; nothing persists beyond the session.
-- **EncryptedSharedPreferences** for: auth tokens, biometric-key handles, device-bound EC key alias, user preferences.
+- **Private app storage plus Android Keystore** for token ciphertext envelopes and aliases. Key material remains non-exportable; ordinary preferences do not need cryptographic storage unless the threat model requires it.
 - **Session-scoped in-memory caches** for UI affordances (avatars, account display names). Wiped on logout, on lock, on inactivity timeout.
 
 ---
@@ -268,7 +268,7 @@ See [`observability/alerting.md`](../observability/alerting.md), [`observability
 | UI | Compose + `FLAG_SECURE` | Modern UI; screen capture defense |
 | State | ViewModel + StateFlow | Standard Android architecture |
 | Network | OkHttp + Retrofit + Network Security Config | Pinning, TLS 1.3 enforcement |
-| Tokens | EncryptedSharedPreferences | Keystore-wrapped, biometric-bound |
+| Tokens | Private ciphertext envelope | Keystore-backed; biometric-bound where policy requires |
 | Crypto | Android Keystore (StrongBox where available) | Hardware-backed; non-exportable keys |
 | Biometric | AndroidX `BiometricPrompt` + `CryptoObject` | Class-3 cryptographic binding |
 | Attestation | Play Integrity + Key Attestation | Both per-call and durable identity |

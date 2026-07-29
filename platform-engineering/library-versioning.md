@@ -58,7 +58,6 @@ networking = ["retrofit-core", "retrofit-converter-moshi", "okhttp-core", "okhtt
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ```
 

@@ -384,7 +384,7 @@ The `Idempotency-Key` is the only thing standing between the user and a double-b
 
 - [weeeBox/mobile-system-design](https://github.com/weeeBox/mobile-system-design) — reference format.
 - [Android Developers — WorkManager idempotency patterns](https://developer.android.com/topic/libraries/architecture/workmanager) — official guide.
-- [OkHttp WebSocket API](https://square.github.io/okhttp/4.x/okhttp/okhttp3/-web-socket/) — connection lifecycle.
+- [OkHttp WebSocket API](https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/WebSocket.kt) — connection lifecycle.
 - [Stripe API — Idempotency Keys](https://stripe.com/docs/api/idempotent_requests) — canonical reference for the pattern.
 - [Robinhood Engineering blog](https://robinhood.engineering/) — production stories on quote throughput and order pipelines.
 

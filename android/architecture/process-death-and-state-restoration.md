@@ -147,7 +147,7 @@ The OS `Bundle` is incredibly constrained. It is sent over the Binder (IPC limit
       }
   }
   ```
-  *(Fix: The `DashboardActivity` must check if `currentUser` is null. If it is, the app suffered Process Death. The Activity should automatically route the user back to the Splash/Login screen to re-authenticate, or silently restore the user from an EncryptedSharedPreferences token).*
+  *(Fix: The `DashboardActivity` must check durable session state after process death, restore a valid session from the app's reviewed token vault when allowed, or route to re-authentication. Do not depend on an in-memory singleton.)*
 - **`TransactionTooLargeException`:** Attempting to `parcel` a massive API response into the `SavedStateHandle`. *(Fix: Only save primitive IDs or tiny strings).*
 
 ## Staff Engineer Thinking

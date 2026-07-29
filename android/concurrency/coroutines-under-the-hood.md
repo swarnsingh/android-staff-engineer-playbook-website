@@ -219,4 +219,4 @@ When interviewing or reviewing low-level concurrency, a Staff engineer focuses o
 
 - [`structured-concurrency.md`](../architecture/structured-concurrency.md) — How these state machines are organized into a strict hierarchy.
 - [`threads-and-looper.md`](threads-and-looper.md) — The legacy OS threads that these Coroutines actually run on top of.
-- [Kotlin Docs: Coroutines Under the Hood](https://kotlinlang.org/docs/coroutines-under-the-hood.html)
+- [Kotlin coroutines guide](https://kotlinlang.org/docs/coroutines-guide.html)

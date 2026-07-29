@@ -15,18 +15,20 @@ Mobile release engineering is harder than web — you can't roll back instantly,
 - Decide when to halt, hotfix, remote-disable, force-upgrade, or continue rollout based on user impact and observability.
 - Communicate release risk with product, support, backend, and leadership teams before a bad release becomes an incident.
 
-## Learning Order
+## Guided Reading Sequence
 
-CI/CD and code signing first (the substrate), then the rollout mechanics (staged rollouts, kill switches, crash gating), then the distribution layer (Play Store, app bundles), then release strategy as the synthesis.
+Prerequisites: basic Android build knowledge and [Observability](observability.md) through SLIs/SLOs. Learn artifact trust and automation before rollout controls and policy.
 
-## Topics
+1. [Code Signing](release-engineering/code-signing.md)
+2. [CI/CD for Mobile](release-engineering/ci-cd-for-mobile.md)
+3. [App Bundles & Dynamic Delivery](release-engineering/app-bundles.md) — canonical owner.
+4. [Play Store Internals](release-engineering/play-store-internals.md)
+5. [Android Developer Verification](release-engineering/android-developer-verification.md)
+6. [Android Platform Compatibility Program](release-engineering/android-platform-compatibility.md)
+7. [16 KB Page Sizes](release-engineering/16kb-page-sizes.md) — native-code compliance application.
+8. [Staged Rollouts](release-engineering/staged-rollouts.md)
+9. [Crash-Rate Gating](release-engineering/crash-rate-gating.md)
+10. [Kill Switches](release-engineering/kill-switches.md)
+11. [Release Strategy](release-engineering/release-strategy.md) — synthesis; read last.
 
-- [Staged Rollouts](release-engineering/staged-rollouts.md)
-- [Kill Switches](release-engineering/kill-switches.md)
-- [Crash-Rate Gating](release-engineering/crash-rate-gating.md)
-- [CI/CD for Mobile](release-engineering/ci-cd-for-mobile.md)
-- [Code Signing](release-engineering/code-signing.md)
-- [Play Store Internals](release-engineering/play-store-internals.md)
-- [16 KB Page Sizes (native-code compliance gate)](release-engineering/16kb-page-sizes.md)
-- [App Bundles & Dynamic Delivery](release-engineering/app-bundles.md) — canonical owner
-- [Release Strategy](release-engineering/release-strategy.md) — canonical owner; `mobile-system-design.md` cross-links
+**Next:** connect these controls to [Security](security.md) and [Platform Engineering](platform-engineering.md).

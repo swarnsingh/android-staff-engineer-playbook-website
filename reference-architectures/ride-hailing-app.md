@@ -333,7 +333,7 @@ The driver-side location buffer is the architectural keystone. Without it, a 90-
 | Persistence | Room | Trip state mirror, location buffer |
 | Real-time | OkHttp WebSocket | Bidirectional, low overhead |
 | Network | OkHttp + Retrofit | REST mutations; WS for streaming |
-| Tokens | EncryptedSharedPreferences | Keystore-wrapped |
+| Tokens | Private ciphertext envelope | Direct Android Keystore key |
 | Location | FusedLocationProviderClient + foreground service | Best accuracy/battery balance |
 | Maps | Google Maps SDK (or Mapbox in some markets) | Mature, tile caching |
 | Navigation | Google Routes API + voice cues | Offline-cached on accept |

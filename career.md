@@ -15,14 +15,14 @@ Most engineers don't get to Staff by being better at coding. They get there by c
 - Write promotion and performance-review evidence that connects technical decisions to business, reliability, platform, and organizational outcomes.
 - Navigate ambiguity, influence, and long-running technical bets without waiting for perfect authority or perfect requirements.
 
-## Learning Order
+## Guided Reading Sequence
 
-Start with the Senior to Staff progression to understand the level change. Then study scope and ambiguity, technical leadership, RFC writing, and promotion packets. The path is intentionally ordered from self-calibration to visible organizational impact.
+Prerequisite: read [Leadership](leadership.md) and bring examples from your own work. Move from level calibration to ambiguous scope, visible technical leadership, written alignment, and evidence.
 
-## Topics
+1. [Senior to Staff Progression](career/senior-to-staff-progression.md)
+2. [Scope and Ambiguity](career/scope-and-ambiguity.md)
+3. [Technical Leadership](career/technical-leadership.md)
+4. [Writing Technical Documents (RFCs)](career/writing-rfcs.md)
+5. [Performance Reviews & Promotion](career/performance-reviews-and-promotion.md)
 
-- [Senior to Staff Progression](career/senior-to-staff-progression.md)
-- [Scope and Ambiguity](career/scope-and-ambiguity.md)
-- [Technical Leadership](career/technical-leadership.md)
-- [Writing Technical Documents (RFCs)](career/writing-rfcs.md)
-- [Performance Reviews & Promotion](career/performance-reviews-and-promotion.md)
+**Finish:** choose one cross-team problem and apply the technical, operational, and leadership paths to a real proposal and rollout.

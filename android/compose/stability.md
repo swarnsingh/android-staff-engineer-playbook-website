@@ -176,9 +176,9 @@ When to use:
 
 ---
 
-## Strong Skipping Mode (Compose Compiler 1.5.4+)
+## Strong Skipping Mode
 
-Modern Compose Compiler ships with **Strong Skipping Mode**, enabled by default in Compose 1.7+.
+Modern Compose Compiler ships with **Strong Skipping Mode**, enabled by default starting with Kotlin 2.0.20. For older Compose Compiler configurations it was an opt-in, so key the advice to the compiler/Kotlin toolchain rather than the Compose UI artifact version.
 
 Key change: **Composable functions become skippable even with unstable parameters — but unstable parameters are compared with instance equality (`===`), not `equals()`.** Stable parameters keep the `equals()` comparison.
 
@@ -388,7 +388,7 @@ Crude but effective. Or use the stability config file.
 | `@Immutable` annotation has no effect | Class has a `var` somewhere | Cannot mix `@Immutable` and `var`; refactor to `val` |
 | Performance regression after migrating to `kotlinx.collections.immutable` | Excessive copying when building lists | Use `PersistentList` builder pattern |
 | Compose metrics output is empty | Plugin args not added to module's kotlinc | Verify `freeCompilerArgs` in build-logic |
-| Strong Skipping Mode doesn't kick in | Compiler version too old | Update to Compose Compiler 1.5.4+ / Compose 1.7+ |
+| Strong Skipping Mode doesn't kick in | Compiler version/configuration too old | Use Kotlin 2.0.20+ or explicitly enable it on an older supported compiler |
 | State change in ViewModel doesn't update UI | Used `@Stable` annotation but class isn't truly stable | Re-audit — `@Stable` is a contract you must keep |
 | Type from a minified library AAR shows unstable downstream | Library author's own R8 pass stripped stability annotations before publishing | Library must keep annotations in its published AAR; consumers can use the stability config file as a workaround |
 | `LocalContext.current` reads cause cascading recomposition | Reading too high in the tree | Move read closer to the consuming Composable |
@@ -419,7 +419,7 @@ Crude but effective. Or use the stability config file.
 1. Walk through Compose's smart recomposition decision flow. What happens at each step when a parent recomposes?
 2. Why is `List<T>` inferred as unstable but `String` is stable? Walk through the reasoning.
 3. Compare `@Immutable` vs `@Stable`. Give an example where you'd pick each.
-4. Strong Skipping Mode (Compose 1.7+) — what changed, and where does it still fall short?
+4. Strong Skipping Mode (default since Kotlin 2.0.20) — what changed, and where does it still fall short?
 5. `ImmutableList` vs `@Immutable data class Foo(val items: List<T>)` — both work. When pick each?
 6. Read this `<module>-composables.txt` snippet and identify the perf bug: `restartable fun Row(stable id: String, unstable tags: List<String>)`.
 7. Why is `onClick = { vm.process(item) }` worse than `onClick = vm::process` in a `LazyColumn`?
@@ -428,6 +428,23 @@ Crude but effective. Or use the stability config file.
 10. `MutableState<T>` is `@Stable` even though it's mutable. Explain why this is consistent.
 11. Why does `data class User(val id: String, var name: String)` (note the `var`) ruin stability for the entire class?
 12. Track skippability % over time in CI. Walk through your dashboard design and what regression looks like.
+
+---
+
+## Answer Key
+
+1. Compose compares stable parameters at a restartable group; unchanged inputs allow skipping, while changed/unstable inputs execute the group and record new state reads.
+2. `String` is immutable with stable equality. The `List` interface does not guarantee immutability, so the compiler cannot trust that its contents stayed unchanged.
+3. Use `@Immutable` when every observable property is deeply immutable; use `@Stable` for a type whose mutations are observable by Compose and whose equality contract is stable.
+4. Strong skipping makes restartable composables skippable even with unstable parameters and memoizes many lambdas. In-place mutation, expensive equality, changing captures, and incorrectly annotated types can still produce bugs or work.
+5. Prefer immutable collections when the data model really needs an immutable collection contract. Annotate a wrapper only when you own and can enforce its entire immutability promise.
+6. `tags` prevents ordinary stability inference and may cause avoidable work; use an immutable collection or a correctly enforced stable wrapper, then verify compiler reports.
+7. A capturing lambda may create a new object for every item/recomposition; a stable method reference is more likely to retain identity. Measure before treating the syntax as a universal rule.
+8. Inspect recomposition/highlight tooling, compiler reports, changing parameters, state reads, lambda captures, keys, and in-place mutations; then benchmark the smallest suspected group.
+9. Use the configuration file for external types whose stability contract you have verified but cannot annotate. Prefer modeling the contract in owned types.
+10. `MutableState` reports changes through the snapshot system, so Compose can safely observe mutation instead of assuming the object never changes.
+11. A public `var` can change without an immutable value contract, so the compiler cannot infer that equal-looking instances remain stable.
+12. Publish restartable/skippable counts by module and compiler version, normalize for generated code, alert on meaningful deltas, and correlate regressions with frame metrics rather than optimizing a percentage alone.
 
 ---
 
@@ -441,7 +458,7 @@ Crude but effective. Or use the stability config file.
 - [`../../kotlin/language-core/null-safety.md`](../../kotlin/language-core/null-safety.md) — `var` traps that ruin stability.
 - [`../architecture/mvvm-vs-mvi.md`](../architecture/mvvm-vs-mvi.md) — UI state design with stability in mind.
 - [Compose Compiler — Stability documentation](https://developer.android.com/jetpack/compose/performance/stability) — official.
-- [Strong Skipping Mode — Compose 1.7+](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping) — official.
+- [Strong Skipping Mode](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping) — official behavior and configuration.
 - [Chris Banes — Composable metrics](https://chris.banes.dev/composable-metrics/) — practitioner's audit guide.
 - [kotlinx.collections.immutable](https://github.com/Kotlin/kotlinx.collections.immutable) — `ImmutableList` / `PersistentList`.
-- [Jorge Castillo — Jetpack Compose Internals (book)](https://jorgecastillo.dev/book-jetpack-compose-internals) — chapter on stability and skipping.
+- [Compose stability guide](https://developer.android.com/develop/ui/compose/performance/stability) — current compiler stability model and remediation guidance.

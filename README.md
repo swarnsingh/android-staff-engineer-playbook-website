@@ -35,7 +35,7 @@ Every file is exactly one of four kinds. Each kind has its own template in [`tem
 |---|---|---|---|
 | **Canonical** | The single source of truth for a concept | `distributed-systems/idempotency.md` | [`templates/canonical.md`](templates/canonical.md) |
 | **Application** | Applies a canonical concept to a concrete system | `mobile-system-design/offline-sync.md` | [`templates/application.md`](templates/application.md) |
-| **Decision** | A recorded tradeoff and choice (ADR) | `backend-for-mobile/sse-vs-websockets.md` | [`templates/decision.md`](templates/decision.md) |
+| **Decision** | A reusable comparison with criteria, defaults, and exceptions | `backend-for-mobile/sse-vs-websockets.md` | [`templates/decision.md`](templates/decision.md) |
 | **Blueprint** | A complete end-to-end system reference | `reference-architectures/e-commerce-app.md` | [`templates/blueprint.md`](templates/blueprint.md) |
 
 Two rules govern the whole repo. Both live in [`CONTRIBUTING.md`](CONTRIBUTING.md):
@@ -47,13 +47,14 @@ Two rules govern the whole repo. Both live in [`CONTRIBUTING.md`](CONTRIBUTING.m
 
 ## Where to Start
 
-- New to the repo? Read [`CONTRIBUTING.md`](CONTRIBUTING.md) first — it's short and explains how files relate.
-- Looking for a study sequence? See [`learning-paths.md`](learning-paths.md).
+- New to the subject? Start with the [Complete Curriculum](learning-paths.md#path-0-complete-curriculum-for-new-learners), which orders the whole repository from foundations to Staff-level application.
+- Entering a specific tree such as Android or Kotlin? Open its parent index and follow its numbered **Guided Reading Sequence** top to bottom.
+- Contributing content? Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for ownership, structure, sources, and answer-key rules.
 - Need a term defined? See [`glossary.md`](glossary.md).
 
 ## The Knowledge Trees
 
-Each top-level file is a table of contents for its tree. Start with whichever matches the question you're answering.
+Each top-level file is a guided index for its tree: prerequisites, numbered reading order, checkpoints, and the next recommended tree. Use the catalog below for orientation; use the parent index for study order.
 
 **Foundations**
 - [`engineering-fundamentals.md`](engineering-fundamentals.md) — timeless concepts (state machines, backpressure, fault tolerance)
@@ -81,7 +82,7 @@ Each top-level file is a table of contents for its tree. Start with whichever ma
 - [`leadership.md`](leadership.md) — incident response, technical leadership
 - [`career.md`](career.md) — senior → staff progression
 
-Decision files (the `Decision` kind in the table above) live alongside the topic they decide. For example, `backend-for-mobile/sse-vs-websockets.md` decides a transport choice and sits in the BFM tree, not in a separate `adr/` folder. This co-location keeps the decision next to the canonical concept it relates to. See [`templates/decision.md`](templates/decision.md) for the template.
+Decision files live alongside the topic they compare. For example, `backend-for-mobile/sse-vs-websockets.md` compares transport choices and sits in the BFM tree, not in a separate `decisions/` folder. Repository Decision files teach a repeatable decision method; a real organization should record its selected outcome, owner, date, and revisit trigger in its own ADR/RFC. See [`templates/decision.md`](templates/decision.md).
 
 ---
 

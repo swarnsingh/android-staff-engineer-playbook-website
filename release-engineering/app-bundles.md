@@ -84,7 +84,7 @@ include(":app", ":feature:premium", ":feature:onboarding-rich")
 // feature/premium/build.gradle.kts
 plugins {
     id("com.android.dynamic-feature")
-    id("org.jetbrains.kotlin.android")
+    // AGP 9+ provides built-in Kotlin; do not also apply kotlin-android.
 }
 
 android {
