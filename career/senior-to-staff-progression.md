@@ -70,15 +70,8 @@ The shorthand: deep in one specialty, broad across many adjacent ones.
 
 ```mermaid
 flowchart TB
-    subgraph breadth["Breadth across adjacent domains"]
-        direction LR
-        api["API design"]
-        ios["iOS"]
-        backend["Backend"]
-        ml["ML"]
-        infra["Infrastructure"]
-    end
-    backend -->|"Depth in one specialty"| android["Android UI internals"]
+    breadth["Breadth across adjacent domains<br/>API design · iOS · Backend · ML · Infrastructure"]
+    breadth -->|"Depth in one specialty"| android["Android UI internals"]
     android --> internals["Compose internals<br/>ART rendering pipeline<br/>GPU surface lifecycle<br/>snapshot system"]
 ```
 

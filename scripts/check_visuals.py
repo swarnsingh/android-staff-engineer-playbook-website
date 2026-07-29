@@ -106,7 +106,7 @@ def count_legacy_ascii(paths: list[Path]) -> tuple[int, list[str]]:
         for match in re.finditer(r"```([^\n]*)\n(.*?)```", text, flags=re.DOTALL):
             info = match.group(1).strip().split(maxsplit=1)
             language = info[0].lower() if info else ""
-            is_visual_fence = language in {"", "text", "plain", "ascii"}
+            is_visual_fence = language in {"", "text", "plain", "plaintext", "ascii"}
             if is_visual_fence and BOX_DRAWING.search(match.group(2)):
                 count += 1
                 if path.parts and path.parts[0] == "mobile-system-design":
