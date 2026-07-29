@@ -6,21 +6,16 @@
 
 ## 1. The Compilation Pipeline
 
+```mermaid
+flowchart TD
+    Kotlin["Kotlin source"] -->|"Kotlin compiler"| Class["JVM .class bytecode"]
+    Class -->|"D8 / R8 desugar, shrink, optimize"| Dex["DEX in APK / App Bundle"]
+    Dex --> Install["ART install and load"]
+    Profile["Baseline / runtime profiles"] --> Compile["Profile-guided compilation"]
+    Install --> Compile --> Runtime["Execution in ART"]
 ```
-.kt files
-   │ kotlinc → .class (Java bytecode)
-   ▼
-.class files
-   │ d8 / r8 → .dex (Dalvik bytecode)
-   ▼
-classes.dex in the APK
-   │ on-device: ART loads .dex
-   ▼
-Cloud / on-device AOT (optional)
-   │ baseline profile → AOT-compiled hot paths
-   ▼
-Runs in ART
-```
+
+Kotlin first becomes JVM bytecode, Android build tools transform it into DEX, and ART combines interpretation, JIT, and profile-guided compilation according to device and install state.
 
 You read **Java bytecode** (not DEX) for almost all Kotlin reasoning. DEX is the device-format conversion. The compiler tricks happen at `kotlinc` time; nothing about Kotlin's design is DEX-specific.
 

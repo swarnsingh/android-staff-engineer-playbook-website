@@ -20,42 +20,21 @@ If you haven't read modularization-strategies.md yet, start there.
 
 A mature Android project ends up with this shape:
 
+```mermaid
+flowchart TD
+    App[":app<br/>composition + DI root"] --> Feature[":feature:*:impl"]
+    Feature --> API[":feature:*:api"]
+    Feature --> Data[":data:*<br/>repositories + persistence"]
+    Feature --> Core[":core:*<br/>model, network, UI, observability"]
+    Data --> Core
+    Test[":test:* fixtures"] -. "test only" .-> Feature
+    Benchmark[":benchmark"] -. "measures" .-> App
+    Logic["build-logic convention plugins"] -. "configures" .-> App
+    Logic -.-> Feature
+    Logic -.-> Core
 ```
-yourapp/
-├── build-logic/
-│   └── convention/                       # Gradle convention plugins
-├── app/                                  # The Application class + DI root
-├── feature/
-│   ├── cart/
-│   │   ├── api/                          # Interfaces, sealed UI states
-│   │   └── impl/                         # ViewModels, Composables, Hilt modules
-│   ├── checkout/
-│   │   ├── api/
-│   │   └── impl/
-│   ├── profile/
-│   │   ├── api/
-│   │   └── impl/
-│   └── ...
-├── core/
-│   ├── model/                            # Pure-Kotlin domain types
-│   ├── common/                           # Date, formatting, math (no Android)
-│   ├── design-system/                    # Compose tokens + components
-│   ├── network/                          # Retrofit/Apollo client
-│   ├── analytics/                        # Analytics SDK wrapper
-│   ├── logging/                          # Log wrapper
-│   ├── ui/                               # Reusable Composables not in DS
-│   └── notifications/                    # Notification channel + builders
-├── data/
-│   ├── auth/                             # AuthRepository + tokens
-│   ├── cart/                             # Cart persistence + sync
-│   ├── catalog/                          # Catalog data layer
-│   └── user/                             # User profile data layer
-├── test/
-│   ├── fixtures/                         # Shared fakes
-│   ├── utils/                            # Test helpers (rules, dispatchers)
-│   └── screenshots/                      # Paparazzi config
-└── benchmark/                            # Macrobenchmark module
-```
+
+Module direction matters more than the folder tree: the app composes features, implementations depend on narrow APIs and shared capabilities, and build logic configures modules without entering the runtime graph.
 
 Every Android module's `build.gradle.kts` then looks like:
 

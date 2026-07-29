@@ -14,27 +14,17 @@ There are two fundamentally different KMP paradigms. Every team must choose one 
 
 In this model, KMP is used strictly for the "headless" portion of the app. The UI is fully native on each platform.
 
-```text
-┌─────────────────────────────────────────────────────────┐
-│                  Shared KMP Module                      │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐  │
-│  │ Networking  │  │ Database    │  │ Domain/UseCases │  │
-│  │ (Ktor)      │  │(SQLDelight) │  │ (pure Kotlin)   │  │
-│  └─────────────┘  └─────────────┘  └─────────────────┘  │
-│  ┌─────────────────────────────────────────────────────┐│
-│  │ ViewModels (StateFlow emissions)                    ││
-│  └─────────────────────────────────────────────────────┘│
-└──────────────────────────┬──────────────────────────────┘
-                           │ StateFlow<UiState>
-              ┌────────────┴────────────┐
-              │                         │
-    ┌─────────▼──────────┐   ┌─────────▼──────────┐
-    │  Android App       │   │  iOS App           │
-    │  Jetpack Compose   │   │  SwiftUI           │
-    │  Hilt (app-level)  │   │  Native Navigatio  │
-    │  Google Maps SDK   │   │  MapKit            │
-    └────────────────────┘   └────────────────────┘
+```mermaid
+flowchart TD
+    Domain["Shared domain and use cases"]
+    Network["Shared networking"] --> Domain
+    Database["Shared persistence"] --> Domain
+    Domain --> State["Shared state / StateFlow"]
+    State --> Android["Android UI<br/>Compose + Android integrations"]
+    State --> IOS["iOS UI<br/>SwiftUI + Apple integrations"]
 ```
+
+Logic-only sharing centralizes contracts and state transitions while each platform retains native UI, navigation, lifecycle, dependency injection, and platform SDK ownership.
 
 ### What Gets Shared
 
@@ -411,37 +401,18 @@ actual fun platformModule() = module {
 
 A Staff-level KMP project does not use a single monolithic `shared` module. It mirrors the modularization strategies from pure Android projects.
 
-```text
-root/
- ├── build-logic/                    # Gradle convention plugins
- │    └── convention/
- │         ├── KmpLibraryPlugin.kt   # Reusable KMP module config
- │         └── KmpFeaturePlugin.kt   # KMP + ViewModel + DI
- │
- ├── core/
- │    ├── core-network/              # Ktor HttpClient singleton
- │    │    └── src/commonMain/       
- │    ├── core-database/             # SQLDelight driver factory
- │    │    └── src/commonMain/
- │    ├── core-model/                # DTOs, domain entities
- │    │    └── src/commonMain/
- │    └── core-common/               # Shared utils, Result wrappers
- │         └── src/commonMain/
- │
- ├── feature/
- │    ├── feature-auth/              # Login/signup shared logic
- │    │    └── src/commonMain/
- │    ├── feature-checkout/          # Checkout shared logic  
- │    │    └── src/commonMain/
- │    └── feature-profile/           # Profile shared logic
- │         └── src/commonMain/
- │
- ├── androidApp/                     # Jetpack Compose shell
- │    └── src/main/
- │
- └── iosApp/                         # SwiftUI shell (Xcode project)
-      └── iosApp/
+```mermaid
+flowchart TD
+    Logic["build-logic conventions"] -.-> Core["core-* shared capabilities"]
+    Logic -.-> Feature["feature-* shared logic"]
+    Core --> Feature
+    Feature --> Android["androidApp shell"]
+    Feature --> IOS["iosApp shell"]
+    Core --> Android
+    Core --> IOS
 ```
+
+Shared feature modules depend on reusable core capabilities, and platform apps remain composition roots; platform shells must not become dependencies of shared code.
 
 ### Why Multi-Module Matters for Build Time
 

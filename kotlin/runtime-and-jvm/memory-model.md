@@ -316,20 +316,15 @@ That's it. LeakCanary installs as a `ContentProvider`, watches every `Activity` 
 
 A typical LeakCanary report:
 
+```mermaid
+flowchart LR
+    Root["GC root<br/>system class"] --> Thread["ActivityThread singleton"]
+    Thread --> Map["mActivities map"]
+    Map --> Record["LocalActivityRecord"]
+    Record --> Activity["Destroyed MainActivity<br/>retained unexpectedly"]
 ```
-┬───
-│ GC Root: System class
-│
-├─ android.app.ActivityThread instance
-│    Leaking: NO (a singleton)
-│    ↓ ActivityThread.mActivities
-├─ android.util.ArrayMap instance
-│    ↓ ArrayMap[1]
-├─ android.app.LocalActivityManager$LocalActivityRecord instance
-│    ↓ LocalActivityRecord.activity
-├─ com.yourapp.MainActivity instance
-│      Leaking: YES (Activity#mDestroyed is true and ObjectWatcher was watching this)
-```
+
+LeakCanary reports the shortest strong-reference path from a GC root to the watched destroyed object; the actionable fix is the first ownership edge that should have been cleared.
 
 Read the chain bottom-up: "MainActivity is held by LocalActivityRecord, which is in an ArrayMap, which is in ActivityThread, which is a GC root." Trace each hop to find which of *your* references caused it.
 
