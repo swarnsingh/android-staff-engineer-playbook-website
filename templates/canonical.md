@@ -54,7 +54,7 @@ Avoid black boxes.
 
 Explain the architecture.
 
-Include diagrams.
+Include a focused Mermaid diagram when three or more components, states, or steps interact. Follow it with a text takeaway and cite a primary source when the model depends on current platform behavior.
 
 ---
 

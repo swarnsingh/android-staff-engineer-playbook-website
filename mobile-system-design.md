@@ -19,6 +19,21 @@ Design is a Staff-level leverage point. Good mobile design turns a vague prompt 
 
 Prerequisites: the Android core through concurrency/data/networking, plus [Distributed Systems](distributed-systems.md) through delivery semantics and [Backend for Mobile](backend-for-mobile.md). Read each phase top to bottom; later problems assume earlier mechanisms.
 
+```mermaid
+flowchart TD
+    PRE["Prerequisites<br/>Android + distributed systems + backend for mobile"]
+    P1["1. Design method and NFRs"]
+    P2["2. Common mobile platform building blocks"]
+    P3["3. Bounded data and delivery problems"]
+    P4["4. Offline, feed, and real-time state"]
+    P5["5. Location, money, and media systems"]
+    P6["6. Advanced platforms and experimentation"]
+
+    PRE --> P1 --> P2 --> P3 --> P4 --> P5 --> P6
+```
+
+The path starts with a repeatable design method, then introduces reusable mechanisms before combining them in stateful, regulated, and organization-scale systems. Each later phase assumes the contracts and failure vocabulary established earlier.
+
 ### Phase 1 — The design method and non-functional requirements
 
 1. [Design Framework](mobile-system-design/design-framework.md) — requirements → estimation → API/data → architecture → deep dive.

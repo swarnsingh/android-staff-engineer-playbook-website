@@ -7,6 +7,21 @@ This repository has two navigation layers:
 
 The other paths are shorter role- or goal-specific routes for readers who already know their gaps.
 
+```mermaid
+flowchart TD
+    P1["1. Engineering vocabulary<br/>Fundamentals + computer science"]
+    P2["2. Implementation judgment<br/>Kotlin + principles + patterns"]
+    P3["3. Android platform depth"]
+    P4["4. Networked-system correctness<br/>Distributed systems + backend for mobile"]
+    P5["5. Complete mobile systems<br/>System designs + reference architectures"]
+    P6["6. Production governance<br/>Observe + release + secure + scale teams"]
+    P7["7. Staff-level impact<br/>Leadership + career evidence"]
+
+    P1 --> P2 --> P3 --> P4 --> P5 --> P6 --> P7
+```
+
+The complete curriculum moves from shared vocabulary to implementation, platform depth, distributed correctness, whole-system design, production operation, and finally organizational leverage. The numbered phases below are the source of truth for the detailed order.
+
 ---
 
 ## Path 0: Complete Curriculum for New Learners

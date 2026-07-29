@@ -88,8 +88,10 @@ Decision files live alongside the topic they compare. For example, `backend-for-
 
 ## Technical Constraints
 
-- Raw Markdown only. Mermaid and ASCII diagrams. No PNG, no HTML, no MDX.
-- Must render correctly in GitHub.
+- Raw Markdown content. Mermaid is the default visual format; local SVG and narrowly justified raster screenshots are allowed under the repository's [visual and attribution rules](CONTRIBUTING.md#diagrams-images-and-attribution).
+- No externally hosted or hotlinked images. Third-party assets must be stored locally, licensed for reuse, and recorded in [`assets/ATTRIBUTION.md`](assets/ATTRIBUTION.md).
+- Markdown and visuals must render correctly in GitHub. Every diagram also needs a nearby text explanation so the lesson does not depend on the rendering alone.
+- No HTML or MDX.
 - File naming: kebab-case throughout.
 - Cross-references: relative GitHub-rendered links.
 

@@ -22,6 +22,8 @@ Which system, which subsystem, which problem inside that system. One paragraph.
 
 How the canonical concept is applied here. Concrete, specific, with diagrams.
 
+Use Mermaid for component and runtime flows. Follow each diagram with the takeaway it proves, and link the primary source when the visual depends on versioned platform behavior.
+
 Include code only if it sharpens the explanation; otherwise, prose and diagrams.
 
 ---

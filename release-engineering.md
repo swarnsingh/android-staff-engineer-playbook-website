@@ -19,6 +19,21 @@ Mobile release engineering is harder than web — you can't roll back instantly,
 
 Prerequisites: basic Android build knowledge and [Observability](observability.md) through SLIs/SLOs. Learn artifact trust and automation before rollout controls and policy.
 
+```mermaid
+flowchart TD
+    PRE["Prerequisites<br/>Android builds + observability"]
+    TRUST["Artifact trust<br/>Signing + CI/CD"]
+    DELIVERY["Delivery mechanics<br/>Bundles + Play + developer verification"]
+    COMPAT["Platform compatibility<br/>Program requirements + 16 KB pages"]
+    EXPOSURE["Controlled exposure<br/>Staged rollouts"]
+    SAFETY["Safety controls<br/>Crash gates + kill switches"]
+    STRATEGY["Release strategy<br/>Synthesize the system"]
+
+    PRE --> TRUST --> DELIVERY --> COMPAT --> EXPOSURE --> SAFETY --> STRATEGY
+```
+
+Safe delivery begins by proving artifact identity, automates distribution and compatibility checks, limits exposure, and closes the loop with measurable halt and disable controls. Release strategy is read last because it coordinates every preceding mechanism.
+
 1. [Code Signing](release-engineering/code-signing.md)
 2. [CI/CD for Mobile](release-engineering/ci-cd-for-mobile.md)
 3. [App Bundles & Dynamic Delivery](release-engineering/app-bundles.md) — canonical owner.
