@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Repo quality gates for the Android Staff Engineer Playbook.
 
-Run from the repo root:  python3 scripts/check_docs.py
+Run from the repo root after installing requirements-quality.txt:
+  python3 scripts/check_docs.py
 
 Checks (each maps to a defect class that has actually occurred in this repo):
   1. Broken internal links      — relative link targets that don't exist.
@@ -26,6 +27,8 @@ import datetime
 import os
 import re
 import sys
+
+from markdown_it import MarkdownIt
 
 WORD_FLOOR = 400
 STALE_DAYS = 180
@@ -75,6 +78,8 @@ TREE_INDEX_FOLDERS = {
     "security.md": "security",
 }
 
+MARKDOWN = MarkdownIt("commonmark")
+
 
 def iter_md_files():
     for root, dirs, files in os.walk("."):
@@ -102,10 +107,20 @@ def github_heading_anchors(text: str) -> set[str]:
 
 
 def numbered_ordinals(section: str) -> list[int]:
-    """Return ordered-list numbers using either Markdown delimiter (`1.` or `1)`)."""
+    """Return ordered-list numbers rendered at the document root.
+
+    CommonMark list parsing depends on container context, interruption rules, marker
+    width, and indentation. Delegating those rules to a CommonMark parser avoids
+    treating nested lists, block quotes, or code examples as questions or answers.
+    A root ordered list emits ``list_item_open`` tokens at level 1; items inside any
+    other block container have a greater level.
+    """
     return [
-        int(value)
-        for value in re.findall(r"^(\d+)[.)]\s+", section, flags=re.MULTILINE)
+        int(token.info)
+        for token in MARKDOWN.parse(section)
+        if token.type == "list_item_open"
+        and token.level == 1
+        and token.markup in {".", ")"}
     ]
 
 

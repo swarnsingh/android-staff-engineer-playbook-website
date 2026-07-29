@@ -16,6 +16,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install quality-gate dependencies
+        run: python3 -m pip install --requirement requirements-quality.txt
+      - name: Test quality-gate behavior
+        run: python3 -m unittest discover --start-directory scripts --pattern "test_*.py"
       - name: Run quality gates (links, anchors, guided indexes, content)
         run: python3 scripts/check_docs.py
       - uses: actions/setup-node@v4

@@ -180,7 +180,7 @@ If a canonical file finds itself naming a specific version, that detail belongs 
 
 ## Quality Gates (CI)
 
-Every PR runs `python3 scripts/check_docs.py` via GitHub Actions ([`.github/workflows/quality.yml`](.github/workflows/quality.yml)). It fails the build on:
+Every PR installs `requirements-quality.txt`, runs the regression tests under `scripts/`, and then runs `python3 scripts/check_docs.py` via GitHub Actions ([`.github/workflows/quality.yml`](.github/workflows/quality.yml)). It fails the build on:
 
 1. **Broken internal links and anchors** — a relative target or heading fragment doesn't exist.
 2. **Stale redirects** — link text naming `foo.md` while the target is `bar.md`.
@@ -190,7 +190,15 @@ Every PR runs `python3 scripts/check_docs.py` via GitHub Actions ([`.github/work
 6. **Visual integrity** — Mermaid blocks are rendered, local images must exist under `assets/`, alt text is required, hotlinks are rejected, and reused assets must appear in the attribution registry.
 7. **External-link health** — a scheduled and manually runnable job checks cited web resources. Definitive 404/410 responses fail; access controls and transient network failures are reported without making ordinary pull requests flaky.
 
-Run it locally before pushing. A green check is a merge precondition, not a suggestion.
+Run the same checks locally before pushing:
+
+```bash
+python3 -m pip install --requirement requirements-quality.txt
+python3 -m unittest discover --start-directory scripts --pattern "test_*.py"
+python3 scripts/check_docs.py
+```
+
+A green check is a merge precondition, not a suggestion.
 
 **Fact verification.** Any claim about compiler/runtime/API behavior, versions, or platform policy must be verified against current official documentation or source (developer.android.com, kotlinlang.org, AOSP) at writing time — not written from memory. Cite the sources in Further Reading.
 

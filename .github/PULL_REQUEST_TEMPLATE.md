@@ -9,7 +9,7 @@
 - [ ] **Facts verified against current sources.** Any claim about compiler/runtime/API behavior, versions, or platform policy was checked against current official docs or source (not memory). Sources are cited in Further Reading.
 - [ ] **TOC + learning paths updated.** The tree's top-level index lists the new file; `learning-paths.md` updated if the file belongs in a path.
 - [ ] **Links are relative** and section anchors use GitHub slugs.
-- [ ] **Quality gates pass locally:** `python3 scripts/check_docs.py`
+- [ ] **Quality gates pass locally:** install `requirements-quality.txt`, run `python3 -m unittest discover --start-directory scripts --pattern "test_*.py"`, then run `python3 scripts/check_docs.py`.
 
 ## Verification sources
 
