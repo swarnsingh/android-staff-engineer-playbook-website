@@ -318,6 +318,16 @@ These are not active milestone blockers, but they are worth handling in a future
 - External resources are now crawled by `scripts/check_external_links.py` on a weekly schedule and manual dispatch; the July 29, 2026 remediation pass found no remaining definitive 404/410 responses.
 - A full human grammar and technical review across the whole corpus remains stronger than automated checks and should proceed domain by domain.
 
+### Visual quality baseline
+
+The July 29, 2026 visual pass established a maintainable baseline:
+
+- 251 Mermaid diagrams render successfully through the pinned Mermaid CLI.
+- All 65 legacy ASCII blocks in `mobile-system-design/` were replaced with Mermaid architecture, sequence, pipeline, or state diagrams plus text takeaways.
+- High-value Android, Compose, performance, testing, Kotlin, KMP, build, security, release, and resilience topics received focused visual upgrades.
+- 44 older ASCII blocks remain in 31 files outside mobile system design. They are valid fixed-width content, but the visual checker prevents this count from increasing and contributors must migrate a block when touching it.
+- Local image assets require meaningful alt text, repository-local storage, explicit attribution, and verified reuse rights; no third-party image assets were needed for this pass.
+
 ---
 
 ## How To Update This File

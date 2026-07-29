@@ -30,6 +30,8 @@ MERMAID_START = re.compile(r"^```mermaid[ \t]*$", re.MULTILINE)
 MARKDOWN_IMAGE = re.compile(r"!\[([^\]]*)\]\(([^)\s]+)(?:\s+['\"][^'\"]*['\"])?\)")
 ALLOWED_ASSET_SUFFIXES = {".jpeg", ".jpg", ".png", ".svg", ".webp"}
 SKIPPED_DIRS = {".git", "node_modules"}
+BOX_DRAWING = re.compile(r"[┌┐└┘─│▼▲►◄]")
+ASCII_BLOCK_BASELINE = 44
 
 
 def markdown_files() -> list[Path]:
@@ -95,6 +97,20 @@ def check_images(paths: list[Path]) -> list[str]:
     return errors
 
 
+def count_legacy_ascii(paths: list[Path]) -> tuple[int, list[str]]:
+    """Count fenced box-drawing diagrams so migrations cannot regress."""
+    count = 0
+    mobile_system_design = []
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        for match in re.finditer(r"```[^\n]*\n(.*?)```", text, flags=re.DOTALL):
+            if BOX_DRAWING.search(match.group(1)):
+                count += 1
+                if path.parts and path.parts[0] == "mobile-system-design":
+                    mobile_system_design.append(str(path))
+    return count, sorted(set(mobile_system_design))
+
+
 def render(blocks: list[tuple[Path, int, str]], renderer: str) -> list[str]:
     if not blocks:
         return []
@@ -153,6 +169,17 @@ def main() -> int:
     paths = markdown_files()
     blocks, errors = collect_mermaid(paths)
     errors.extend(check_images(paths))
+    ascii_count, mobile_ascii = count_legacy_ascii(paths)
+    if ascii_count > ASCII_BLOCK_BASELINE:
+        errors.append(
+            f"legacy ASCII diagrams increased from the {ASCII_BLOCK_BASELINE} block baseline "
+            f"to {ascii_count}"
+        )
+    if mobile_ascii:
+        errors.append(
+            "mobile-system-design must remain Mermaid-only; ASCII found in: "
+            + ", ".join(mobile_ascii)
+        )
     if not errors:
         errors.extend(render(blocks, args.renderer))
 
@@ -162,7 +189,10 @@ def main() -> int:
             print(f"    {error}")
         return 1
 
-    print(f"✓ Visual validation passed: rendered {len(blocks)} Mermaid diagram(s)")
+    print(
+        f"✓ Visual validation passed: rendered {len(blocks)} Mermaid diagram(s); "
+        f"legacy ASCII baseline {ascii_count}/{ASCII_BLOCK_BASELINE}"
+    )
     return 0
 
 
