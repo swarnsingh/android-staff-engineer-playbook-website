@@ -225,13 +225,15 @@ sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 
 Before the KMP plugin introduced automatic intermediate source sets, every iOS target was isolated:
 
-```text
-OLD (Pre-2023):
-  commonMain
-       ├── iosX64Main        (Intel simulator)
-       ├── iosArm64Main      (Physical device)
-       └── iosSimulatorArm64Main  (Apple Silicon simulator)
+```mermaid
+flowchart TD
+    Common["commonMain"]
+    Common --> X64["iosX64Main<br/>Intel simulator"]
+    Common --> Arm["iosArm64Main<br/>physical device"]
+    Common --> SimArm["iosSimulatorArm64Main<br/>Apple Silicon simulator"]
 ```
+
+Without an intermediate Apple source set, shared iOS code had to be duplicated or lifted into `commonMain` even when it depended on Apple-only APIs.
 
 If you wrote a Kotlin file in `iosArm64Main` to wrap `NSDate`, you had to **copy** that exact same file into `iosX64Main` and `iosSimulatorArm64Main`. Three copies of the same code. Every change = three files to update.
 
@@ -239,14 +241,15 @@ If you wrote a Kotlin file in `iosArm64Main` to wrap `NSDate`, you had to **copy
 
 The KMP plugin now automatically creates `iosMain` as a shared parent:
 
-```text
-MODERN (Kotlin 1.9+):
-  commonMain
-       └── iosMain           (shared iOS code — write once)
-             ├── iosX64Main
-             ├── iosArm64Main
-             └── iosSimulatorArm64Main
+```mermaid
+flowchart TD
+    Common["commonMain"] --> IOS["iosMain<br/>shared Apple implementation"]
+    IOS --> X64["iosX64Main"]
+    IOS --> Arm["iosArm64Main"]
+    IOS --> SimArm["iosSimulatorArm64Main"]
 ```
+
+The default hierarchy gives all iOS targets one intermediate source set, keeping Apple-specific implementations shared while preserving target-specific escape hatches.
 
 You write all iOS-specific code in `iosMain`. The leaf source sets (`iosX64Main`, `iosArm64Main`, `iosSimulatorArm64Main`) are almost always empty — they exist only for the rare case where you need architecture-specific behavior (e.g., different SIMD optimizations for x86 vs ARM64).
 

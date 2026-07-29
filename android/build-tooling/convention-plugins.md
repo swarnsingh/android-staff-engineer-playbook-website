@@ -27,33 +27,19 @@ This is build-logic as **first-class code**, not config-file copy-paste.
 
 ## The Composite Build Structure
 
+```mermaid
+flowchart LR
+    Catalog["Version catalog"] --> Plugins["build-logic composite build<br/>small convention plugins"]
+    Plugins --> App["Application modules"]
+    Plugins --> Library["Android / JVM library modules"]
+    Plugins --> Feature["Feature modules"]
+    Base["Base conventions"] --> Compose["Compose convention"]
+    Base --> Hilt["Hilt convention"]
+    Compose --> Feature
+    Hilt --> Feature
 ```
-yourapp/
-├── build-logic/
-│   ├── settings.gradle.kts                # composite build root
-│   ├── convention/
-│   │   ├── build.gradle.kts               # the plugin module itself
-│   │   └── src/main/kotlin/
-│   │       ├── AndroidApplicationConventionPlugin.kt
-│   │       ├── AndroidLibraryConventionPlugin.kt
-│   │       ├── AndroidFeatureConventionPlugin.kt
-│   │       ├── AndroidComposeConventionPlugin.kt
-│   │       ├── AndroidHiltConventionPlugin.kt
-│   │       ├── KotlinJvmConventionPlugin.kt
-│   │       └── (other plugins)
-│   └── gradle.properties
-├── settings.gradle.kts                    # root project
-├── gradle/
-│   └── libs.versions.toml
-├── app/
-├── feature/
-│   ├── cart/
-│   │   ├── api/
-│   │   └── impl/
-│   └── ...
-└── core/
-    └── ...
-```
+
+Convention plugins encode small composable capabilities; modules opt into the minimum set they need instead of inheriting one opaque plugin that couples every build feature.
 
 **`build-logic/`** is a separate Gradle composite build. It compiles BEFORE the main project (Gradle resolves convention plugins, then uses them).
 
