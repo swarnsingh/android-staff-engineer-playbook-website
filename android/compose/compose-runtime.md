@@ -6,6 +6,18 @@
 
 ## Compose Has Three Layers
 
+```mermaid
+flowchart TD
+    Source["@Composable source"] --> Compiler["Compose compiler plugin<br/>restart and change tracking"]
+    Compiler --> Composer["Composer<br/>groups + slot table"]
+    State["Observed snapshot state"] --> Recomposer["Recomposer<br/>invalidated scopes"]
+    Recomposer --> Composer
+    Composer --> Slot["Slot table<br/>remembered structure and values"]
+    Composer --> Applier["Applier"] --> UI["Compose UI tree"]
+```
+
+The compiler records restart and change information, the runtime stores composition structure in the slot table, and state invalidation lets the Recomposer rerun affected scopes before the Applier updates the UI tree.
+
 | Layer | What it is | Lives in |
 |---|---|---|
 | **Compose Compiler** | A Kotlin compiler plugin. Rewrites `@Composable` functions to take a hidden `Composer` parameter, inserts group calls, computes skippability. | `androidx.compose.compiler:compiler` |

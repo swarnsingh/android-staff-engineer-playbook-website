@@ -21,19 +21,20 @@ This is the same pattern PostgreSQL uses internally (MVCC). Compose adapted it f
 
 ## The Three Conceptual Layers
 
+```mermaid
+flowchart TD
+    State["Snapshot state objects<br/>versioned StateRecords"]
+    Snapshot["Snapshot view<br/>global, mutable, or nested"]
+    Observe["Read observation<br/>Recomposer or snapshotFlow"]
+    Write["Mutable snapshot writes"]
+    Apply["Atomic apply / conflict check"]
+    Snapshot -->|"select visible records"| State
+    State -->|"reads register dependencies"| Observe
+    Write --> State
+    Write --> Apply --> Snapshot
 ```
-┌────────────────────────────────────────────────────────┐
-│  State (mutableStateOf, mutableStateListOf, …)         │
-│   ▲                                                    │
-│   │ holds list of StateRecords                         │
-│   ▼                                                    │
-│  Snapshot (global, MutableSnapshot, child snapshots)   │
-│   ▲                                                    │
-│   │ frames the version every reader sees               │
-│   ▼                                                    │
-│  Observation (snapshotFlow, Recomposer subscriptions)  │
-└────────────────────────────────────────────────────────┘
-```
+
+State objects retain versioned records, a snapshot selects the visible version, and observation connects reads to invalidation; applying a mutable snapshot publishes compatible writes atomically.
 
 - A `MutableState<T>` is backed by a `SnapshotMutableState<T>` (or similar `SnapshotStateObject`).
 - It holds a linked list of `StateRecord` instances — one per concurrent snapshot that has written to it.

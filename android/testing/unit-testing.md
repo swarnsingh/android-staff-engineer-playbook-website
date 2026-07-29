@@ -6,18 +6,15 @@
 
 ## The Test Pyramid (Android Edition)
 
+```mermaid
+flowchart BT
+    Unit["Many unit tests<br/>pure JVM, fast, narrow"]
+    Integration["Fewer integration and UI tests<br/>Robolectric, Compose, screenshots"]
+    Journey["Small set of end-to-end journeys<br/>real devices / Test Lab"]
+    Unit --> Integration --> Journey
 ```
-                ▲
-               / \      End-to-end / Journey (dozens)
-              /   \     - Real device or Firebase Test Lab
-             /─────\
-            /       \   Integration / UI (hundreds)
-           /         \  - Robolectric, Compose UI tests, screenshot tests
-          /───────────\
-         /             \ Unit (thousands)
-        /               \ - Pure JVM, milliseconds
-       ─────────────────
-```
+
+The useful pyramid is an economics model: broad behavior gets cheap deterministic tests, boundary integration gets fewer higher-fidelity tests, and only critical journeys pay the full device cost.
 
 The trade-off: speed vs realism.
 

@@ -41,6 +41,16 @@ Think of memory management as a **Rock Climber (The Object) and a Rope (The Refe
 
 ### How an Activity Leaks
 
+```mermaid
+flowchart LR
+    Root["GC root<br/>singleton, thread, native ref"] --> Owner["Long-lived owner"]
+    Owner --> Callback["Listener / callback / coroutine"]
+    Callback --> Activity["Destroyed Activity or Fragment"]
+    Activity --> Views["View hierarchy + bitmaps + resources"]
+```
+
+A leak is a live reference path from a GC root to an object whose lifecycle has ended. Fix the owner or registration boundary that retains the path rather than trying to force garbage collection.
+
 An `Activity` is massive. It holds a reference to the `Context`, which holds the `Window`, which holds the View hierarchy.
 
 ```kotlin

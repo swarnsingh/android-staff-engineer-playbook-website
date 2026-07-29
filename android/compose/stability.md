@@ -22,6 +22,19 @@ Smart recomposition is what makes Compose performant. Stability is what unlocks 
 
 ## The Skipping Decision — Compose Compiler Output
 
+```mermaid
+flowchart TD
+    Call["Composable call"] --> Restartable{"Restartable scope?"}
+    Restartable -->|"no"| Run["Execute body"]
+    Restartable -->|"yes"| Required{"Scope invalidated or required?"}
+    Required -->|"yes"| Run
+    Required -->|"no"| Changed{"Parameters changed under compiler rules?"}
+    Changed -->|"yes"| Run
+    Changed -->|"no"| Skip["Skip body and retain prior composition"]
+```
+
+Stability affects how parameter changes are evaluated; it does not make mutable data observable. A composable runs whenever its scope is invalidated or its inputs are considered changed.
+
 Every `@Composable` function ends up in one of these classifications (visible in `compose-metrics/<module>-classes.txt`):
 
 | Classification | Re-runs when parent recomposes? | Re-runs when own state changes? |

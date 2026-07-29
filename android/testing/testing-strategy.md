@@ -70,23 +70,16 @@ Flaky tests get fixed when exactly one team is on the hook. Ownership maps from 
 
 ## CI Topology
 
+```mermaid
+flowchart TD
+    PR["PR gate<br/>static checks + affected fast tests + smoke"]
+    Main["Per-merge main<br/>full JVM + sharded managed devices"]
+    Nightly["Nightly<br/>real-device journeys + performance"]
+    Release["Release qualification<br/>full matrix + stress + visual diff"]
+    PR --> Main --> Nightly --> Release
 ```
-PR opened ──► PR gate (budget: ~15 min)
-│              • lint + detekt + api-check
-│              • JVM unit + Robolectric + Paparazzi (affected modules)
-│              • instrumented smoke subset (ATD, affected modules)
-▼
-Merge queue ──► per-merge on main
-│              • full JVM suite
-│              • instrumented suite on Gradle Managed Devices (sharded)
-▼
-Nightly ──────► real-device matrix (Test Lab: OEM × API spread)
-│              • full E2E journeys
-│              • performance/macrobenchmark suites
-▼
-Release branch ► release qualification
-               • full matrix + monkey/stress + screenshot full-diff
-```
+
+Feedback cost rises with fidelity: keep deterministic, high-signal checks close to the PR and reserve broad device, journey, stress, and performance coverage for later gates.
 
 - **Merge queue** (batching merges and testing the *combined* result) prevents the "two green PRs, red main" problem that otherwise burns the platform team's mornings.
 - **Device strategy:** Gradle Managed Devices with ATD images are the modern default for CI emulators — AGP provisions/tears down devices, ATD images strip non-test services for lower CPU/memory, snapshots cut startup, and sharding is one `gradle.properties` entry (`android.experimental.androidTest.numManagedDeviceShards=<n>` — note it provisions shards × devices in the group, so budget CI resources accordingly). Note ATD's documented limit: hardware-rendering-dependent screenshot tests aren't supported — another reason screenshot testing belongs on JVM. Real-device labs cover what emulators can't: OEM skins, thermal behavior, real cameras/radios.

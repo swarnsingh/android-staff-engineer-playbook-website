@@ -6,6 +6,18 @@
 
 ## The UI-Test Landscape
 
+```mermaid
+flowchart TD
+    Question{"What confidence is needed?"}
+    Question -->|"state and semantics"| Compose["Compose UI test"]
+    Question -->|"Android integration on JVM"| Robo["Robolectric"]
+    Question -->|"visual regression"| Shot["Paparazzi / screenshot test"]
+    Question -->|"framework + device behavior"| Device["Instrumented device test"]
+    Device --> Matrix["Small representative device matrix"]
+```
+
+Choose the cheapest layer that can observe the failure mode. Device tests are essential for platform integration, but using them for pure state or semantics makes feedback slower without adding confidence.
+
 | Tool | Runs on | Speed | What it tests |
 |---|---|---|---|
 | **Compose UI Tests** | Device or emulator | ~1s/test | Real Compose with framework |
