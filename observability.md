@@ -15,23 +15,23 @@ You cannot operate a system you cannot see. SLOs and error budgets are how Staff
 - Connect mobile symptoms to backend causes through trace propagation, sampling, correlation IDs, crash signals, and performance cohorts.
 - Avoid observability traps: noisy alerts, PII leakage, unbounded logging cost, vanity dashboards, and metrics that cannot drive action.
 
-## Learning Order
+## Guided Reading Sequence
 
-Logging and structured logging first (the lowest layer), then metrics and tracing (the middle), then SLIs/SLOs/error budgets (the framing), then alerting and dashboards (how it reaches humans).
+Prerequisite: understand one production system well enough to name its user journeys and failures. Learn signals first, then reliability framing, then human response.
 
-## Topics
+1. [Logging](observability/logging.md)
+2. [Structured Logging](observability/structured-logging.md)
+3. [Metrics](observability/metrics.md)
+4. [Tracing](observability/tracing.md)
+5. [Distributed Tracing](observability/distributed-tracing.md) — canonical; `distributed-systems/` cross-references.
+6. [SLIs](observability/slis.md)
+7. [SLOs](observability/slos.md)
+8. [Error Budgets](observability/error-budgets.md)
+9. [Alerting](observability/alerting.md)
+10. [Dashboards](observability/dashboards.md)
 
-- [Logging](observability/logging.md)
-- [Structured Logging](observability/structured-logging.md)
-- [Metrics](observability/metrics.md)
-- [Tracing](observability/tracing.md)
-- [Distributed Tracing](observability/distributed-tracing.md) — canonical; `distributed-systems/` cross-references
-- [SLIs](observability/slis.md)
-- [SLOs](observability/slos.md)
-- [Error Budgets](observability/error-budgets.md)
-- [Alerting](observability/alerting.md)
-- [Dashboards](observability/dashboards.md)
+**Next:** apply the signals in [Release Engineering](release-engineering.md) and Android's application-specific observability topics.
 
 ## Application Files
 
-Android-specific implementations live under `android/observability/` and are listed in [`android.md`](android.md#observability-application-files). Those are application files that link back here.
+Android-specific implementations live under `android/observability/` and are sequenced in [Android Phase 7](android.md#phase-7-performance-and-android-observability). Those application files link back here.

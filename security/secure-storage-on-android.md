@@ -1,440 +1,186 @@
-# Security: Secure Storage on Android
+# Secure Storage on Android
 
-> How to store secrets on Android so that a rooted device, an `adb backup`, or a compromised TLS proxy can't lift them. Keystore is the foundation; everything else is a wrapper around it.
+> Canonical owner for Android secret-at-rest decisions. Android Keystore protects cryptographic key material; it is not a general-purpose secret database. Store only what the product truly needs, keep server credentials off the client, and choose encryption from a written threat model.
 
----
+## Current Platform Position
 
-## 1. The Threat Model
+AndroidX Security Crypto 1.1.0 deprecated `EncryptedSharedPreferences`, `EncryptedFile`, `MasterKey`, and the rest of that artifact's crypto API in favor of platform storage APIs and direct use of Android Keystore. Existing installations do not become insecure merely because an API is deprecated, but new architecture should not present those wrappers as the default.
 
-Android isolates apps by UID — App A can't read App B's files. That promise dies when:
+This distinction matters throughout this repository:
 
-- The device is **rooted** (user or malware has UID 0).
-- The user installs an **MDM profile** or **debugging proxy** that bypasses sandbox.
-- An attacker pulls the data partition via **fastboot** or **physical extraction**.
-- **`adb backup`** dumps app data (off by default since Android 6+, but still possible).
-- A bug in the OS lets one app **MAP another app's files** (rare but real).
+- **Legacy application:** keep an existing `EncryptedSharedPreferences` vault working, exclude it from backup, and plan an observable migration.
+- **New application:** generate a non-exportable key with `AndroidKeyStore`; encrypt only when the threat model requires encryption at rest; store the resulting IV and ciphertext in an ordinary private file, DataStore, SharedPreferences, or database.
+- **High-value service secret:** do not store it on the device. Put it behind a backend and issue short-lived, scoped client credentials.
 
-The goal of secure storage: even if the file on disk is stolen, the secret inside is useless without a key that the attacker can't extract. That key lives in the **Android Keystore**.
+## Threat Model
 
----
+Separate threats before choosing a mechanism:
 
-## 2. The Storage Tiers
+| Threat | App-private storage | Keystore-backed encryption | Server control |
+|---|---|---|---|
+| Another normal app reads the file | Protected by Android UID sandbox | Protected | Protected |
+| Backup or copied data file leaks | Depends on backup rules | Ciphertext remains protected while the key is unavailable | Protected |
+| Rooted/compromised OS uses the app's key | Weak | The attacker may invoke a usable key even when it is non-exportable | Revoke or reject server-side |
+| App process is compromised after decryption | Weak | Weak; plaintext exists in the process | Short TTL and step-up limit impact |
+| APK contains a vendor/server secret | Exposed | Exposed before Keystore enrollment | Keep the secret on the server |
 
-| Tier | Use for | Backed by |
-|---|---|---|
-| **In-memory only** | Short-lived secrets that re-fetch | RAM (lost on process death) |
-| **`SharedPreferences` / `DataStore` plain** | Non-sensitive (theme, locale, last screen) | Plain XML / Protobuf on disk |
-| **`EncryptedSharedPreferences`** | Tokens, PII, app secrets | Keystore-wrapped AES-GCM |
-| **`DataStore` + Tink** | Tokens (modern alternative to EncryptedSharedPreferences) | Keystore-wrapped AEAD |
-| **Room + SQLCipher** | Queryable encrypted data (messages, notes) | Keystore-wrapped passphrase |
-| **Keystore direct** | Cryptographic keys themselves | Hardware TEE / StrongBox |
+Keystore makes key extraction more difficult and can bind a key to TEE or StrongBox hardware. It does not make extraction or misuse “physically impossible,” and hardware backing is not guaranteed for every device, algorithm, or configuration. Inspect `KeyInfo.securityLevel` on supported API levels when policy depends on the result.
 
-> **Rule of thumb:** don't roll your own Keystore + Cipher code. The Jetpack Security and Tink libraries get IV management, padding, and authentication-tag handling correct. Direct Keystore API is for cases where the higher-level libraries don't fit.
+## Storage Decision
 
-### Storage decision matrix
+| Data | Recommended treatment |
+|---|---|
+| Theme, locale, onboarding state | Plain private DataStore |
+| Short-lived access token | Prefer memory; persist only if required for product continuity |
+| Refresh token | Private storage plus short rotation/reuse controls; add Keystore-backed encryption when the threat model justifies it |
+| Device signing key | Generate directly in Android Keystore; keep key material non-exportable |
+| Offline user content | Room/files; encrypt selectively or use a reviewed database-encryption product |
+| Third-party billing secret or signing private key | Never ship it in the APK; proxy or sign server-side |
+| Biometric-gated high-risk action | Authentication-bound Keystore key plus server-side authorization |
 
-Pick storage by consequence of compromise, not by convenience.
+Encryption is not a substitute for minimization, token expiry, revocation, backup policy, log redaction, or server authorization.
 
-| Data | Storage | Additional control |
-|---|---|---|
-| Theme, locale, onboarding flags | Plain DataStore | None |
-| Access token | Encrypted DataStore or EncryptedSharedPreferences | Short TTL |
-| Refresh token | Encrypted storage + rotation | Reuse detection server-side |
-| Drafts / offline user content | Room, optionally SQLCipher | Backup/delete policy |
-| Payment or wallet material | Biometric-bound Keystore key or server custody | Step-up and attestation |
-| Analytics/user identifiers | Minimized plain or encrypted store | Consent and reset path |
+## Direct Keystore Envelope
 
-No storage tier protects against a malicious app process that already has the token in memory. Do not log decrypted values, expose them through crash breadcrumbs, or keep them in singleton fields longer than needed.
-
----
-
-## 3. EncryptedSharedPreferences (the default for tokens)
+The platform primitive is a non-exportable key. The application stores the ciphertext and IV, not the key bytes.
 
 ```kotlin
-// build.gradle.kts
-dependencies {
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
-}
-```
-
-```kotlin
-class KeystoreTokenVault @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
-    private val masterKey: MasterKey by lazy {
-        MasterKey.Builder(context, "app_master_key")
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .setRequestStrongBoxBacked(true)        // dedicated security chip if available
-            .build()
-    }
-
-    private val prefs: SharedPreferences by lazy {
-        EncryptedSharedPreferences.create(
-            context,
-            "secure_tokens",
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-        )
-    }
-
-    suspend fun saveAccessToken(token: String) = withContext(Dispatchers.IO) {
-        prefs.edit().putString(KEY_ACCESS, token).commit()
-    }
-
-    suspend fun loadAccessToken(): String? = withContext(Dispatchers.IO) {
-        prefs.getString(KEY_ACCESS, null)
-    }
-
-    suspend fun clear() = withContext(Dispatchers.IO) {
-        prefs.edit().clear().commit()
-    }
-
-    companion object {
-        private const val KEY_ACCESS = "access_token"
-    }
-}
-```
-
-### What's happening underneath
-
-1. `MasterKey.Builder` requests a Keystore-resident AES-256-GCM key. On StrongBox-capable devices (Pixel 3+, Samsung S20+, etc.), the key lives in a dedicated tamper-resistant chip.
-2. `EncryptedSharedPreferences.create` derives sub-keys from the master key for *keys* (deterministic AES-SIV so the same logical key always hashes the same way) and *values* (randomized AES-GCM so the same value encrypts differently each time).
-3. Files on disk look like: `secure_tokens.xml` containing base64 ciphertext. Useless without the Keystore master key.
-
-### What it does NOT protect against
-
-- A user-confirmed biometric prompt unlocks the device → the master key is available → the cipher works. Lock screen is your last line of defense against physical theft.
-- Memory dumps while the app is running (the decrypted plaintext is in heap briefly).
-- Logic bugs (logging the token after decrypting).
-
----
-
-## 4. DataStore + Tink (modern alternative)
-
-`EncryptedSharedPreferences` is in maintenance mode. For new code, prefer DataStore with a Tink-wrapped serializer:
-
-```kotlin
-// build.gradle.kts
-implementation("androidx.datastore:datastore:1.1.1")
-implementation("com.google.crypto.tink:tink-android:1.13.0")
-```
-
-```kotlin
-object TokensSerializer : Serializer<Tokens> {
-    override val defaultValue: Tokens = Tokens.getDefaultInstance()
-
-    override suspend fun readFrom(input: InputStream): Tokens {
-        val bytes = input.readBytes()
-        val plaintext = aead.decrypt(bytes, /* associatedData = */ null)
-        return Tokens.parseFrom(plaintext)
-    }
-
-    override suspend fun writeTo(t: Tokens, output: OutputStream) {
-        val plaintext = t.toByteArray()
-        val ciphertext = aead.encrypt(plaintext, null)
-        output.write(ciphertext)
-    }
-
-    private val aead: Aead by lazy {
-        AeadConfig.register()
-        AndroidKeysetManager.Builder()
-            .withSharedPref(context, "tokens_keyset", "tokens_prefs")
-            .withKeyTemplate(KeyTemplates.get("AES256_GCM"))
-            .withMasterKeyUri("android-keystore://app_master_key")
-            .build()
-            .keysetHandle
-            .getPrimitive(Aead::class.java)
-    }
-}
-
-val Context.tokensStore: DataStore<Tokens> by dataStore(
-    fileName = "tokens.pb",
-    serializer = TokensSerializer,
+data class EncryptedBlob(
+    val iv: ByteArray,
+    val ciphertext: ByteArray,
 )
-```
 
-Pros: typed (Proto), coroutine-native, no `SharedPreferences` legacy footguns.
-Cons: more setup; Tink dependency.
-
----
-
-## 5. Room + SQLCipher (encrypted database)
-
-For queryable encrypted data (e.g., chat messages, notes):
-
-```kotlin
-// build.gradle.kts
-implementation("net.zetetic:android-database-sqlcipher:4.5.4")
-implementation("androidx.sqlite:sqlite-ktx:2.4.0")
-```
-
-```kotlin
-class EncryptedRoomBuilder @Inject constructor(
-    @ApplicationContext private val context: Context,
-    private val passphraseVault: PassphraseVault,
+class AndroidKeystoreAead(
+    private val alias: String = "token_vault_key",
 ) {
-    fun build(): AppDatabase {
-        val passphrase: ByteArray = passphraseVault.getOrCreate()
-        val factory = SupportFactory(passphrase, /* hook = */ null, /* clearPassphrase = */ true)
-        return Room.databaseBuilder(context, AppDatabase::class.java, "encrypted.db")
-            .openHelperFactory(factory)
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
-            .fallbackToDestructiveMigrationOnDowngrade()
-            .build()
-    }
-}
+    private val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
 
-class PassphraseVault @Inject constructor(@ApplicationContext ctx: Context) {
-    private val prefs = EncryptedSharedPreferences.create(
-        ctx, "db_passphrase",
-        MasterKey.Builder(ctx).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-    )
+    private fun getOrCreateKey(): SecretKey {
+        (keyStore.getKey(alias, null) as? SecretKey)?.let { return it }
 
-    fun getOrCreate(): ByteArray {
-        prefs.getString(KEY_PASSPHRASE, null)?.let {
-            return Base64.decode(it, Base64.NO_WRAP)
-        }
-        val bytes = ByteArray(32).also { SecureRandom().nextBytes(it) }
-        prefs.edit().putString(KEY_PASSPHRASE, Base64.encodeToString(bytes, Base64.NO_WRAP)).commit()
-        return bytes
-    }
-
-    companion object { private const val KEY_PASSPHRASE = "passphrase" }
-}
-```
-
-The passphrase is 32 random bytes, generated once on install, wrapped by the Keystore master key (via `EncryptedSharedPreferences`), used to open SQLCipher. The on-disk `.db` file is AES-256-CBC encrypted; queries work normally.
-
----
-
-## 6. Biometric-Bound Keys (the strongest tier)
-
-For high-stakes secrets (banking auth, wallet seeds), the Keystore key itself should require biometric auth to use:
-
-```kotlin
-class BiometricKeystoreKey @Inject constructor() {
-
-    fun createKey() {
-        val keyGen = KeyGenerator.getInstance(
-            KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore"
-        )
-        keyGen.init(
-            KeyGenParameterSpec.Builder(
-                "biometric_key",
-                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-            )
-                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .setUserAuthenticationRequired(true)
-                .setUserAuthenticationParameters(
-                    /* timeoutSeconds = */ 0,
-                    KeyProperties.AUTH_BIOMETRIC_STRONG
+        return KeyGenerator.getInstance(
+            KeyProperties.KEY_ALGORITHM_AES,
+            "AndroidKeyStore",
+        ).run {
+            init(
+                KeyGenParameterSpec.Builder(
+                    alias,
+                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
                 )
-                .setInvalidatedByBiometricEnrollment(true)
-                .setIsStrongBoxBacked(true)        // request StrongBox; falls back silently
-                .build()
-        )
-        keyGen.generateKey()
-    }
-
-    suspend fun encrypt(activity: FragmentActivity, plaintext: ByteArray): ByteArray? {
-        val key = (KeyStore.getInstance("AndroidKeyStore")
-            .apply { load(null) })
-            .getKey("biometric_key", null) as SecretKey
-
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply {
-            init(Cipher.ENCRYPT_MODE, key)
-        }
-
-        val result = authenticate(activity, cipher) ?: return null
-
-        return result.cipher!!.doFinal(plaintext).let { ct ->
-            // Prepend IV for later decryption
-            cipher.iv + ct
+                    .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                    .setKeySize(256)
+                    .build(),
+            )
+            generateKey()
         }
     }
 
-    private suspend fun authenticate(
-        activity: FragmentActivity,
-        cipher: Cipher,
-    ): BiometricPrompt.AuthenticationResult? = suspendCancellableCoroutine { cont ->
-        val prompt = BiometricPrompt(
-            activity, ContextCompat.getMainExecutor(activity),
-            object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    cont.resume(result) {}
-                }
-                override fun onAuthenticationError(code: Int, msg: CharSequence) {
-                    cont.resume(null) {}
-                }
-            }
-        )
-        prompt.authenticate(
-            BiometricPrompt.PromptInfo.Builder()
-                .setTitle("Authenticate to access")
-                .setNegativeButtonText("Cancel")
-                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-                .build(),
-            BiometricPrompt.CryptoObject(cipher)
-        )
+    fun encrypt(plaintext: ByteArray, associatedData: ByteArray? = null): EncryptedBlob {
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
+        associatedData?.let(cipher::updateAAD)
+        return EncryptedBlob(cipher.iv, cipher.doFinal(plaintext))
+    }
+
+    fun decrypt(blob: EncryptedBlob, associatedData: ByteArray? = null): ByteArray {
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.DECRYPT_MODE, getOrCreateKey(), GCMParameterSpec(128, blob.iv))
+        associatedData?.let(cipher::updateAAD)
+        return cipher.doFinal(blob.ciphertext)
     }
 }
 ```
 
-Key properties to call out:
-- `setUserAuthenticationRequired(true)`: every use of the key requires biometric.
-- `setUserAuthenticationParameters(0, AUTH_BIOMETRIC_STRONG)`: 0 timeout = per-use auth; Class 3 (strong).
-- `setInvalidatedByBiometricEnrollment(true)`: adding a new fingerprint **destroys** the key — handle `KeyPermanentlyInvalidatedException`.
+Production code must define a versioned binary format for `iv + ciphertext`, use associated data to bind ciphertext to its user/account/purpose, serialize access to first-use key creation, and convert authentication failures into a deliberate re-authentication path. Do not reuse an IV with the same GCM key.
 
----
+## StrongBox and Hardware Backing
 
-## 7. Key Invalidation Recovery
+`setIsStrongBoxBacked(true)` is a request, not a transparent fallback. Key generation can throw `StrongBoxUnavailableException`; the application must decide whether to retry without StrongBox, disable the feature, or block enrollment. That decision belongs to product security policy.
 
-```kotlin
-suspend fun safeDecrypt(activity: FragmentActivity, ciphertext: ByteArray): ByteArray? {
-    return try {
-        biometricKey.decrypt(activity, ciphertext)
-    } catch (e: KeyPermanentlyInvalidatedException) {
-        // User added/removed a fingerprint, or removed lockscreen — the key is dead.
-        // Wipe ciphertext that depended on it, re-create the key, force re-enroll.
-        tokenVault.clear()
-        biometricKey.deleteKey()
-        biometricKey.createKey()
-        navigator.replaceWithReAuth(reason = ReAuthReason.BIOMETRIC_ENROLLMENT)
-        null
-    } catch (e: UserNotAuthenticatedException) {
-        // Lockscreen-bound key, user hasn't unlocked recently. Prompt then retry.
-        biometricKey.decrypt(activity, ciphertext)
-    }
-}
-```
-
-If you don't handle `KeyPermanentlyInvalidatedException`, the user crashes the app every time they pull down notifications after enrolling a new face.
-
----
-
-## 8. Backup Exclusion
-
-Auto Backup propagates `SharedPreferences` to Google Drive by default. Tokens stored there land on every other device the user signs into.
-
-```xml
-<!-- AndroidManifest.xml -->
-<application
-    android:allowBackup="true"
-    android:fullBackupContent="@xml/backup_rules"
-    android:dataExtractionRules="@xml/data_extraction_rules"
-    ...>
-```
-
-```xml
-<!-- res/xml/backup_rules.xml (Android 11 and below) -->
-<full-backup-content>
-    <exclude domain="sharedpref" path="secure_tokens.xml" />
-    <exclude domain="sharedpref" path="db_passphrase.xml" />
-    <exclude domain="file" path="encrypted.db" />
-    <exclude domain="file" path="encrypted.db-journal" />
-</full-backup-content>
-```
-
-```xml
-<!-- res/xml/data_extraction_rules.xml (Android 12+) -->
-<data-extraction-rules>
-    <cloud-backup>
-        <exclude domain="sharedpref" path="secure_tokens.xml" />
-        <exclude domain="sharedpref" path="db_passphrase.xml" />
-        <exclude domain="file" path="encrypted.db" />
-    </cloud-backup>
-    <device-transfer>
-        <!-- Same exclusions; device transfer also copies user data. -->
-        <exclude domain="sharedpref" path="secure_tokens.xml" />
-        <exclude domain="sharedpref" path="db_passphrase.xml" />
-        <exclude domain="file" path="encrypted.db" />
-    </device-transfer>
-</data-extraction-rules>
-```
-
-Test by triggering backup: `adb shell bmgr backupnow <your-package>`.
-
----
-
-## 9. StrongBox vs TEE vs Software
-
-| Backing | Where | Pixel | Samsung | Mid-range |
-|---|---|---|---|---|
-| **StrongBox** | Dedicated secure chip (Titan M on Pixel, Knox on Samsung) | 3+ | S20+ | varies |
-| **TEE** | ARM TrustZone inside the SoC | All | All | Most modern |
-| **Software** | JVM heap (basically plaintext) | Pre-7.0 | Pre-7.0 | Some emulators |
-
-Code defensively: `setRequestStrongBoxBacked(true)` requests StrongBox but silently falls back. You can detect what backing you got via `KeyInfo.isInsideSecureHardware`.
+For API 29 and newer, inspect `KeyInfo.securityLevel`:
 
 ```kotlin
-fun keyBacking(alias: String): KeyBacking {
-    val key = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-        .getKey(alias, null) as SecretKey
+fun securityLevel(alias: String): Int {
+    val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+    val key = store.getKey(alias, null) as SecretKey
     val factory = SecretKeyFactory.getInstance(key.algorithm, "AndroidKeyStore")
     val info = factory.getKeySpec(key, KeyInfo::class.java) as KeyInfo
-    return when {
-        info.securityLevel == KeyProperties.SECURITY_LEVEL_STRONGBOX -> KeyBacking.STRONGBOX
-        info.isInsideSecureHardware -> KeyBacking.TEE
-        else -> KeyBacking.SOFTWARE
-    }
+    return info.securityLevel
 }
 ```
 
-Surface this in telemetry — fleets with high software-backing rates need policy decisions (block? warn? accept?).
+`SECURITY_LEVEL_STRONGBOX` and `SECURITY_LEVEL_TRUSTED_ENVIRONMENT` indicate secure-hardware backing. Software backing can still provide non-exportability through the system process, but it does not meet the same assurance level.
 
----
+## Authentication-Bound Keys
 
-## 10. Common Pitfalls
+For a high-risk operation, bind a key to recent or per-use user authentication with `setUserAuthenticationRequired(true)` and `setUserAuthenticationParameters(...)`. Design recovery before enabling invalidation:
 
-- **Hardcoding secrets in source.** `const val API_KEY = "..."` survives R8 obfuscation but not `jadx`. Never embed long-lived secrets; generate per-device via Keystore or fetch from server post-auth.
-- **Storing the encryption key alongside ciphertext.** `EncryptedSharedPreferences` does this correctly (key in Keystore). DIY implementations often store the key in plain `SharedPreferences` next to the ciphertext — useless.
-- **Not handling `KeyPermanentlyInvalidatedException`.** Users add fingerprints. Your app must recover.
-- **Forgetting `clearPassphrase = true`** on SQLCipher's `SupportFactory`. Without it, the passphrase ByteArray stays in heap.
-- **Using `EncryptedSharedPreferences` for high-frequency reads.** Each `getString` decrypts. Cache the result in memory for the session.
-- **Not excluding secure files from backup.** Tokens replicate to every device on the user's Google account.
-- **Logging tokens in OkHttp interceptors.** `HttpLoggingInterceptor.Level.HEADERS` includes `Authorization`. Use a redacting interceptor in production.
-- **Trusting `BuildConfig.DEBUG` for security gating.** R8 strips `if (BuildConfig.DEBUG)` blocks but only if `isMinifyEnabled = true`. Verify.
-- **Assuming root detection is a security boundary.** It's a deterrent at best. Defend at the data layer (Keystore), not at the process layer.
+- biometric enrollment can invalidate a configured key;
+- removing the secure lock screen can invalidate keys;
+- authentication state can expire;
+- device restore does not restore the old Keystore key;
+- StrongBox can be unavailable or temporarily fail.
 
----
+Catch `KeyPermanentlyInvalidatedException`, delete ciphertext that can no longer be opened, create a new key, and require account re-authentication. Never trap the user in an infinite biometric prompt.
 
-## 11. Testing
+## Backup and Device Transfer
 
-```kotlin
-@RunWith(AndroidJUnit4::class)
-class KeystoreTokenVaultTest {
-    @Test
-    fun roundTrip_preservesToken() = runBlocking {
-        val vault = KeystoreTokenVault(InstrumentationRegistry.getInstrumentation().targetContext)
-        vault.saveAccessToken("eyJhbGc...")
-        assertEquals("eyJhbGc...", vault.loadAccessToken())
-        vault.clear()
-        assertNull(vault.loadAccessToken())
-    }
-}
-```
+Keystore keys are device-bound while application files may participate in cloud backup or device transfer. Restoring ciphertext without its key produces permanent decryption failures. Exclude encrypted vault files and keyset metadata through both legacy `fullBackupContent` rules and Android 12+ `dataExtractionRules`, then test backup and restore on real devices.
 
-Run on a real device (emulators have weaker Keystore guarantees; some emulators are software-only).
+Disabling all backup is not automatically the right answer: user-created content may deserve backup while tokens and encrypted key material do not. Classify files individually.
 
-For pen-test simulation:
-- Pull `secure_tokens.xml` via `adb` from a rooted emulator.
-- Try to decrypt without the Keystore — should be infeasible.
-- Try `KeyPermanentlyInvalidatedException` flow by enrolling a new fingerprint mid-session.
+## Migration from EncryptedSharedPreferences
 
----
+Treat migration as a data migration, not a dependency substitution:
 
-## 12. Further Reading
+1. Ship code that can read the legacy vault and write the new versioned ciphertext format.
+2. On successful read, write and verify the new record before deleting the old one.
+3. Record only non-sensitive migration outcomes: migrated, legacy-corrupt, key-invalidated, or re-auth-required.
+4. Keep rollback compatibility for the release window; avoid alternating writers.
+5. Remove AndroidX Security Crypto only after telemetry shows the legacy population is negligible.
 
-- [Android Developers — Encrypt and authenticate stored data](https://developer.android.com/topic/security/data) — official guide for AndroidX Security.
-- [Android Developers — Android Keystore system](https://developer.android.com/training/articles/keystore) — Keystore concepts.
-- [SQLCipher for Android](https://www.zetetic.net/sqlcipher/sqlcipher-for-android/) — encrypted SQLite.
-- [Google Tink](https://developers.google.com/tink) — modern crypto wrapper used in DataStore patterns.
-- [OWASP Mobile Top 10 — M9 Insecure Data Storage](https://owasp.org/www-project-mobile-top-10/) — checklist of common storage failures.
+Do not silently fall back to plaintext when migration or decryption fails.
 
----
+## Failure Modes and Observability
 
-> **In short:** Keystore-resident keys + library-managed encryption (`EncryptedSharedPreferences`, DataStore+Tink, SQLCipher). Never roll your own cipher. Always exclude from backup. Always handle key invalidation. Always log telemetry on key backing so you know what your fleet runs on.
+| Failure | Response | Safe telemetry |
+|---|---|---|
+| Key permanently invalidated | Wipe dependent ciphertext and re-authenticate | Exception class, key generation, app version |
+| AEAD authentication failure | Treat as corruption/tampering; never return partial plaintext | Format version and outcome only |
+| StrongBox unavailable | Apply documented fallback policy | Requested and actual security level |
+| Restored ciphertext lacks key | Clear vault and re-authenticate | Restore-detected outcome |
+| Token appears in logs | Incident response and token revocation | Never log the token itself |
+
+Never send aliases, ciphertext, IVs, plaintext lengths for sensitive records, or key material to analytics unless a security review explicitly approves it.
+
+## Probing Questions
+
+1. What guarantee does Android Keystore provide that an encrypted preferences file alone cannot?
+2. Why can a rooted attacker sometimes use a non-exportable key even if they cannot extract its bytes?
+3. When is plain app-private storage a reasonable choice for an access token?
+4. How do you distinguish TEE, StrongBox, and software-backed keys at runtime?
+5. Why must ciphertext backup policy be coordinated with Keystore key lifecycle?
+6. Design a rollback-safe migration from `EncryptedSharedPreferences` to a versioned Keystore-backed envelope.
+7. What data belongs in associated authenticated data for a token record?
+8. Which failures require silent retry, and which require user re-authentication?
+
+## Answer Key
+
+1. Keystore keeps key material non-exportable and can enforce use restrictions outside the app process; an encrypted file merely stores ciphertext.
+2. Non-exportability prevents copying key bytes, not invoking an authorized key through a compromised process or OS.
+3. When the UID sandbox and short token lifetime satisfy the threat model, backups are controlled, and extra encryption would not reduce the dominant risk.
+4. Retrieve `KeyInfo` and inspect `securityLevel` on API 29+; never infer backing from device model.
+5. Ciphertext can be restored while its device-bound key cannot, creating an unrecoverable record unless the app clears it and re-authenticates.
+6. Dual-read, single-write to the new format; verify before deleting legacy data; instrument outcomes; keep rollback compatibility for a bounded window.
+7. Stable context that must not be swapped—such as account ID, record purpose, and schema version—but no secret that must later be recovered from the ciphertext.
+8. Transient provider failures may be retried with limits; invalidated/missing keys and authentication failures require an explicit recovery or re-authentication path.
+
+## Further Reading
+
+- [Android Keystore system](https://developer.android.com/privacy-and-security/keystore) — guarantees, security levels, and key authorizations.
+- [AndroidX Security releases](https://developer.android.com/jetpack/androidx/releases/security) — Security Crypto deprecation record.
+- [EncryptedSharedPreferences API](https://developer.android.com/reference/androidx/security/crypto/EncryptedSharedPreferences) — legacy API and backup warning.
+- [Key attestation](https://developer.android.com/privacy-and-security/security-key-attestation) — server verification for hardware-backed asymmetric keys.
+- [Google Tink](https://developers.google.com/tink) — optional reviewed cryptographic library; validate current Android integration separately.
+- [`key-management.md`](key-management.md) — server/client secret classification and signing-key custody.

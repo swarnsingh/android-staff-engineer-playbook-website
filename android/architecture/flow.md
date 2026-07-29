@@ -2,7 +2,7 @@
 
 ## Overview
 
-`Flow` is Kotlin's native solution for asynchronous, reactive data streams. It is built directly on top of [Structured Concurrency](structured-concurrency.md). 
+`Flow` is the asynchronous-stream API from the `kotlinx.coroutines` library; it is not a Kotlin language feature. Canonical operator and backpressure mechanics live in [Flow Operators and Backpressure](../../kotlin/coroutines-and-flow/flow-operators-and-backpressure.md). This page owns the Android application: repository streams, ViewModel state, and lifecycle-aware UI collection.
 
 While standard coroutines (`suspend` functions) return a *single* value asynchronously, a `Flow` returns *multiple* values asynchronously over time. It is the modern replacement for RxJava and `LiveData` in the Android ecosystem.
 
@@ -12,7 +12,7 @@ Mobile applications are fundamentally reactive. The UI must react to the user ta
 
 Before `Flow`, Android developers relied heavily on RxJava to manage these streams. RxJava is incredibly powerful but famously complex, bloated, and entirely disconnected from Kotlin's Coroutine scopes, leading to severe memory leaks if subscriptions weren't manually cleared. 
 
-`Flow` solves this by integrating reactive streams directly into the Kotlin language. Because it uses `suspend` under the hood, it automatically respects `CoroutineScope` cancellation. If the `viewModelScope` dies, the `Flow` instantly stops emitting and cleans itself up.
+`Flow` composes with suspending functions and coroutine cancellation. A collection launched in `viewModelScope` is cancelled when that scope is cancelled; this does not imply that every upstream producer or separately-owned hot flow stops. Producer lifetime is determined by its owning scope and, for `shareIn`/`stateIn`, its `SharingStarted` policy.
 
 ## Historical Context
 
@@ -29,9 +29,9 @@ In 2019, Kotlin introduced `Flow`. It was pure Kotlin (platform-agnostic), threa
 
 1.  **Cold vs Hot:** 
     - **Cold Stream (Standard `Flow`):** It does nothing until someone explicitly calls `.collect()` on it. If two people collect it, the code runs twice independently. (Think: A Netflix video).
-    - **Hot Stream (`StateFlow` / `SharedFlow`):** It runs constantly, regardless of whether anyone is watching. (Think: A live TV broadcast).
+    - **Hot Stream (`StateFlow` / `SharedFlow`):** The stream exists independently of any one collector. Emission or upstream work may still start and stop according to the producer scope, subscribers, and `SharingStarted` configuration.
 2.  **Suspending Iteration:** Emitting a value (`emit()`) and collecting a value (`collect()`) are both `suspend` functions. They pause execution without blocking threads.
-3.  **Backpressure:** If the producer generates data faster than the consumer can process it, `Flow` naturally pauses the producer using the `suspend` mechanism.
+3.  **Backpressure:** A sequential cold `flow { emit(...) }` suspends its producer until downstream is ready. Buffers, channels, `SharedFlow`, concurrency operators, and overflow policies deliberately change that behavior.
 
 ## Mental Model
 
@@ -169,13 +169,26 @@ When reviewing reactive architectures, a Staff engineer focuses on the "Cold to 
 1.  Explain the fundamental difference between a Cold Flow and a Hot Flow (StateFlow/SharedFlow).
 2.  What happens to a standard `flow { }` block if no one ever calls `.collect()` on it?
 3.  Why does modern Android guidance favor `Flow`/`StateFlow` over `LiveData` for new Kotlin-first architectures? Give at least two reasons.
-4.  Explain how Backpressure is handled naturally in Kotlin Flow compared to RxJava. (Hint: Look at the `suspend` keyword).
+4.  Explain backpressure in a sequential cold Flow, then identify which buffering and hot-stream operators change that behavior.
 5.  What is the `StateFlow` conflation property, and why does it make `StateFlow` inappropriate for emitting "One-off Events" like Navigation triggers?
 6.  Describe the memory leak that occurs when collecting a Flow in a Fragment using `lifecycleScope.launch` instead of `viewLifecycleOwner.repeatOnLifecycle`.
 7.  What is the purpose of the `SharingStarted.WhileSubscribed(5000)` parameter when converting a flow via `stateIn()`?
 8.  If you have a heavy database query modeled as a Flow, and you want to ensure the query runs on a background thread regardless of where it is collected, which Flow operator must you use?
 9.  Describe a scenario where multiple UI components collecting a Cold Flow would result in catastrophic battery drain or API quota exhaustion.
 10. How does Structured Concurrency guarantee that an active Flow collection will be cleanly aborted when a user navigates away from a screen?
+
+## Answer Key
+
+1. A cold flow runs upstream work separately for each collector; a hot flow exists independently and broadcasts shared state or events.
+2. Nothing: the builder is lazy and its block does not execute until collection.
+3. Flow is platform-neutral Kotlin, composes through rich operators, supports structured cancellation, and works naturally with suspending repositories; Android lifecycle APIs provide safe UI collection.
+4. A normal cold flow suspends the producer behind a slow collector. `buffer`, `conflate`, `collectLatest`, and hot sharing alter queueing, cancellation, or delivery semantics.
+5. `StateFlow` retains and conflates the latest value. A transient event may be replayed after recreation or overwritten before observation; model durable UI state or use an explicitly designed event channel.
+6. The Fragment's lifecycle can outlive its view. Collection keeps touching old view references after `onDestroyView`; collect under `viewLifecycleOwner.repeatOnLifecycle`.
+7. It keeps a shared upstream alive briefly across short collector gaps, avoiding needless restart while still stopping work after sustained inactivity.
+8. Use `flowOn` to move the upstream query context; downstream collection remains in the collector's context.
+9. If each collector starts polling, GPS, a socket, or a metered API independently, N UI collectors multiply resource consumption; share the upstream with a deliberate lifetime.
+10. Collection is a child job of the screen/lifecycle scope. Cancelling that parent propagates cancellation through suspending operators and upstream work, assuming code does not swallow cancellation.
 
 ## Further Reading
 

@@ -17,7 +17,7 @@
 - **Re-authenticate** (biometric or password) for sensitive actions.
 
 ### Non-Functional Requirements
-- **Tokens never on disk in plaintext** (Keystore-wrapped or EncryptedSharedPreferences).
+- **Persisted tokens follow the storage threat model** (direct Keystore-backed envelope when encryption at rest is required; legacy wrappers have a migration plan).
 - **No password through the app** (use OAuth + browser tab for federated; capture only on first-party login).
 - **Resilient to clock skew** (refresh treats `exp` as advisory; server is the truth).
 - **Sign-out within seconds**, even offline (clear local).
@@ -172,7 +172,7 @@ class AuthInterceptor(private val refresher: TokenRefresher) : Interceptor {
 
 ## 6. Local Storage (Token vault)
 
-Tokens live in `EncryptedSharedPreferences` (built on Android Keystore-managed AES key) or DataStore with a manual Tink-wrapped serializer.
+Tokens should stay in memory when possible. If persistence is required, store a versioned ciphertext envelope protected by a direct Android Keystore key; treat `EncryptedSharedPreferences` as legacy migration input.
 
 ```kotlin
 data class Tokens(
@@ -183,17 +183,22 @@ data class Tokens(
     val obtainedAt: Long
 )
 
-class KeystoreTokenVault @Inject constructor(@ApplicationContext ctx: Context) : TokenVault {
-    private val prefs = EncryptedSharedPreferences.create(
-        ctx, "auth", masterKey(ctx),
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
-    // save/load/clear
+class TokenVault(
+    private val aead: AndroidKeystoreAead,
+    private val store: PrivateCiphertextStore,
+) {
+    suspend fun save(tokens: Tokens) =
+        store.write(aead.encrypt(json.encodeToString(tokens).encodeToByteArray()))
+
+    suspend fun load(): Tokens? = store.read()?.let { encrypted ->
+        json.decodeFromString(aead.decrypt(encrypted).decodeToString())
+    }
 }
 ```
 
-> **Probing Q:** "Why not Room?" Room is for queries. Tokens are key-value, sensitive, and benefit from the AndroidX-Security wrapper. Wrong tool fit for Room.
+`PrivateCiphertextStore` owns a versioned `IV + ciphertext` representation; the direct Keystore implementation and migration rules live in [Secure Storage on Android](../security/secure-storage-on-android.md).
+
+> **Probing Q:** "Why not Room?" Room is useful only if the token data needs relational queries. Storage shape and encryption key custody are separate decisions.
 
 ---
 
@@ -351,7 +356,7 @@ suspend fun signOut() {
 
 | Option | Verdict |
 |---|---|
-| **EncryptedSharedPreferences** | Pick — AndroidX-Security, Keystore-managed master key |
+| **Token vault** | Direct Android Keystore key + versioned ciphertext in private storage |
 | DataStore + Tink-wrapped serializer | Acceptable; more code |
 | Plain SharedPreferences | Don't — plaintext on disk |
 | Keystore-wrapped per-token AES-GCM | Strongest; complex; warranted for banking |
@@ -389,9 +394,9 @@ suspend fun signOut() {
 - **Token exfiltration.** Never log tokens. Strip from headers in any error reporting.
 - **Biometric binding.** For high-stakes apps, bind a Keystore-resident key with `setUserAuthenticationRequired(true)` so the access token decryption requires biometric.
 - **Clock skew.** Don't trust the device clock for `exp` enforcement. Use it as a hint; 401 is the truth.
-- **Sign-out hygiene.** Clear Room, EncryptedSharedPreferences, work, cookies. Cancel `WorkManager` tags by user.
+- **Sign-out hygiene.** Clear Room, the token vault, work, and cookies. Cancel `WorkManager` tags by user.
 - **Multi-account.** If supported, namespace the vault by account id; never mix tokens.
-- **Backups.** `allowBackup="false"` on the manifest, or exclude `EncryptedSharedPreferences` from auto-backup.
+- **Backups.** Exclude token-vault ciphertext and metadata from cloud backup/device transfer, or deliberately disable backup when product requirements allow it.
 - **Phishing.** Don't render IdP UI in WebView. Custom Tabs only.
 
 ---
@@ -433,7 +438,7 @@ suspend fun signOut() {
 - [OAuth 2.0 for Native Apps (RFC 8252)](https://www.rfc-editor.org/rfc/rfc8252) — canonical mobile guidance.
 - [OAuth 2.0 PKCE (RFC 7636)](https://www.rfc-editor.org/rfc/rfc7636) — PKCE spec.
 - [AppAuth for Android](https://github.com/openid/AppAuth-Android) — reference OIDC + PKCE client library.
-- [Android Developers — EncryptedSharedPreferences](https://developer.android.com/topic/security/data) — secure key-value storage.
+- [Android Developers — Android Keystore](https://developer.android.com/privacy-and-security/keystore) — current key-custody primitive.
 - [Android Developers — Biometric authentication](https://developer.android.com/training/sign-in/biometric-auth) — Class-3 prompts.
 
 ---

@@ -191,4 +191,4 @@ Sponsorship is where Staff engineers' influence becomes generational. The engine
 - [`../leadership/technical-mentorship.md`](../leadership/technical-mentorship.md) — how mentorship becomes leadership.
 - [Tanya Reilly — "Being Glue"](https://noidea.dog/glue) — the canonical talk.
 - [Charity Majors — "The Engineer/Manager Pendulum"](https://charity.wtf/2017/05/11/the-engineer-manager-pendulum/) — why these are different jobs.
-- [Lara Hogan — "Influence Maps"](https://larahogan.me/blog/influence-maps/) — practical tool for navigating org influence.
+- [Lara Hogan — Influence and managing up resources](https://larahogan.me/resources/influence-manage-up/) — practical tools for navigating organizational influence.

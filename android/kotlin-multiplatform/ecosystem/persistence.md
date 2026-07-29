@@ -343,7 +343,7 @@ class UserPreferences(private val settings: ObservableSettings) {
 | Observation | `OnSharedPreferenceChangeListener` | `NSNotification` (KVO) |
 | App Groups sharing | Not applicable | Can share across app extensions |
 | Backup | Included in Android backup by default | Included in iCloud backup by default |
-| Encryption | None (use EncryptedSharedPreferences) | None (use Keychain for secrets) |
+| Encryption | None; use a platform vault backed by Android Keystore | None; use Keychain for secrets |
 
 **Staff Warning:** Do NOT store auth tokens in Multiplatform Settings in production. Use `expect/actual` to access the Android Keystore / iOS Keychain for sensitive data.
 

@@ -203,4 +203,4 @@ Mobile-distinct concerns:
 - [`structured-logging.md`](structured-logging.md) — How to embed the Trace ID into logs as a fallback mechanism.
 - [W3C Trace Context Specification](https://www.w3.org/TR/trace-context/) — the wire format.
 - [OpenTelemetry Android SDK](https://github.com/open-telemetry/opentelemetry-android) — exporters, sampling, instrumentation.
-- [OkHttp interceptors](https://square.github.io/okhttp/features/interceptors/) — where to inject `traceparent`.
+- [OkHttp Interceptor API](https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Interceptor.kt) — where to inject `traceparent`.

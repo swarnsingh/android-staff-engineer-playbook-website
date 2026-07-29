@@ -41,7 +41,7 @@ KAPT (Kotlin Annotation Processing Tool) was the original way to use Java-style 
 | **Speed** | Baseline | ~2× faster |
 | **Incremental** | Broken in many edge cases | First-class |
 | **Multiplatform** | JVM only | KMP-ready |
-| **Adoption** | Sunset; in maintenance | All new processors |
+| **Adoption** | Mature ecosystem but maintenance-oriented | Preferred for new Kotlin-aware processors |
 
 The KAPT stub-generation step is the killer: KAPT must produce Java stubs that approximate your Kotlin source, then a Java-based annotation processor reads them. This means:
 - A 50ms KAPT step turns into a 200ms KAPT step in larger modules.
@@ -50,16 +50,16 @@ The KAPT stub-generation step is the killer: KAPT must produce Java stubs that a
 
 KSP skips stub generation entirely. The Kotlin compiler exposes its own symbol resolution; KSP processors read symbols directly. Faster, more accurate, incremental.
 
-**Migration is virtually always a win.** In 2024+, every major annotation-processed library has KSP support.
+**Migration is usually worthwhile when every required processor supports the features you use.** Verify each processor's current KSP support and incremental behavior; mixed KAPT/KSP builds can erase some of the speed benefit.
 
 ---
 
-## Library Support Matrix (2024+)
+## Library Support Matrix
 
 | Library | KAPT | KSP |
 |---|---|---|
-| Hilt | Until 2.48 (legacy) | 2.48+ (stable) |
-| Dagger 2 | Yes (legacy) | 2.48+ (stable) |
+| Hilt | Supported, but legacy for new pipelines | Supported; verify current Dagger/Hilt limitations before migration |
+| Dagger 2 | Supported, but legacy for new pipelines | Supported; verify current processor limitations |
 | Room | Yes (legacy) | 2.5+ (stable) |
 | Moshi | Yes (legacy) | 1.13+ (stable) |
 | Glide | Yes (legacy) | Beta / Glide Compose recommended over Glide-KSP |
@@ -67,7 +67,7 @@ KSP skips stub generation entirely. The Kotlin compiler exposes its own symbol r
 | Lifecycle (sources annotation processor) | n/a | n/a |
 | Kotlin Symbol Processing itself | n/a | yes |
 
-The only stragglers are some legacy Square libraries (Wire, AutoValue) and bespoke internal generators. By the end of 2024, the entire AndroidX + Square + Google catalog supports KSP.
+Library support is not uniform and changes independently of KSP itself. Check each processor's current documentation and test generated output before removing KAPT; do not infer compatibility from vendor or ecosystem membership.
 
 ---
 
@@ -76,7 +76,7 @@ The only stragglers are some legacy Square libraries (Wire, AutoValue) and bespo
 ```kotlin
 // build.gradle.kts (root)
 plugins {
-    id("com.google.devtools.ksp") version "2.0.0-1.0.21" apply false
+    id("com.google.devtools.ksp") version "2.3.10" apply false
 }
 
 // :feature:cart:impl/build.gradle.kts
@@ -86,20 +86,20 @@ plugins {
 }
 
 dependencies {
-    implementation("com.google.dagger:hilt-android:2.50")
-    ksp("com.google.dagger:hilt-android-compiler:2.50")   // was: kapt(...)
+    implementation("com.google.dagger:hilt-android:<current-version>")
+    ksp("com.google.dagger:hilt-android-compiler:<current-version>")
 
-    implementation("androidx.room:room-runtime:2.6.1")
-    ksp("androidx.room:room-compiler:2.6.1")              // was: kapt(...)
+    implementation("androidx.room:room-runtime:<current-version>")
+    ksp("androidx.room:room-compiler:<current-version>")  // was: kapt(...)
 
-    implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
-    ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.0") // was: kapt(...)
+    implementation("com.squareup.moshi:moshi-kotlin:<current-version>")
+    ksp("com.squareup.moshi:moshi-kotlin-codegen:<current-version>")
 }
 ```
 
-Migration from KAPT is mostly `kapt(...)` → `ksp(...)` and removing the KAPT plugin block. Most projects migrate in 30 minutes.
+The mechanical change starts with `kapt(...)` → `ksp(...)`, but a production migration must also verify processor feature parity, generated ABI, incremental behavior, tests, and AGP compatibility.
 
-The KSP plugin version aligns with the Kotlin compiler version — `2.0.0-1.0.21` means Kotlin 2.0.0 + KSP 1.0.21. Check [ksp-releases](https://github.com/google/ksp/releases) for the right pair.
+Since KSP 2.3, the plugin uses its own version sequence rather than the old `<kotlin-version>-<ksp-version>` format. KSP2 is not a Kotlin compiler plugin and has a looser compiler dependency, but you must still check its release notes for supported Kotlin, AGP, and Gradle combinations. Check [KSP releases](https://github.com/google/ksp/releases) rather than constructing a version string.
 
 ---
 
@@ -179,7 +179,7 @@ plugins {
 }
 
 dependencies {
-    implementation("com.google.devtools.ksp:symbol-processing-api:2.0.0-1.0.21")
+    implementation("com.google.devtools.ksp:symbol-processing-api:2.3.10")
     implementation("com.squareup:kotlinpoet:1.16.0")
     implementation("com.squareup:kotlinpoet-ksp:1.16.0")
 }
@@ -409,7 +409,7 @@ For a typical Android project:
 2. **Add KSP plugin**:
    ```kotlin
    plugins {
-       id("com.google.devtools.ksp") version "2.0.0-1.0.21" apply false
+       id("com.google.devtools.ksp") version "2.3.10" apply false
    }
    ```
 
@@ -457,7 +457,7 @@ Expected savings: 20–40% on cold builds in a large project. Sometimes more if 
 | Build error "annotation processor not found" after KSP migration | Forgot to apply the KSP plugin to the module | `id("com.google.devtools.ksp")` per module |
 | Generated code missing | Processor failed silently | Check Gradle output for `e:` and `w:` lines from KSP |
 | Generated code references unresolved types | Annotation processing order issue (rare with KSP) | Use multi-round processing; return invalid symbols |
-| KSP version mismatch | Kotlin version updated; KSP version didn't | Match KSP to Kotlin — see KSP release notes |
+| KSP compatibility error | Unsupported Kotlin/AGP/KSP combination | Read KSP release notes; do not construct a compiler-prefixed version |
 | Build slower after KSP migration | Processor configured as aggregating but didn't need to be | Switch to isolating mode where possible |
 | `kotlinpoet-ksp` import not found | Missing dep in the processor module | Add `implementation("com.squareup:kotlinpoet-ksp:1.16.0")` |
 | Service file not picked up | `META-INF/services/...` path wrong or class name typo | Path must be `META-INF/services/com.google.devtools.ksp.processing.SymbolProcessorProvider` |
@@ -480,7 +480,7 @@ Expected savings: 20–40% on cold builds in a large project. Sometimes more if 
 - **Forgetting `Dependencies`.** Every generated file must declare its dependencies so KSP knows when to re-run.
 - **Hand-rolling string concatenation.** Use KotlinPoet. The generated code will be clean, formatted, and won't break on edge cases.
 - **No `consumerProguardFiles` for generated code.** Reflection-using generated code (rare) might be stripped by R8.
-- **KSP plugin version mismatch with Kotlin.** Manifests as cryptic errors. Always pair them.
+- **Assuming KSP versions still mirror Kotlin versions.** That scheme ended with KSP 2.3. Read the KSP release compatibility notes and test the full Kotlin/AGP/processor combination.
 - **Treating KSP as a black box.** Inspect `build/generated/ksp/`. The source is human-readable.
 
 ---
@@ -496,9 +496,26 @@ Expected savings: 20–40% on cold builds in a large project. Sometimes more if 
 7. A KSP processor compiles fine in IntelliJ but fails on CI. What are the likely causes?
 8. KAPT generates Java stubs from Kotlin source. Why is this fundamentally inferior to KSP's approach?
 9. Why does Hilt use aggregating but Room uses isolating?
-10. You see "KSP version mismatch" warnings. Walk through diagnosing and fixing.
+10. You see a KSP compatibility error. Walk through checking the independent KSP release, Kotlin, AGP, Gradle, and processor versions.
 11. KotlinPoet vs hand-written string templates for code generation — when does the difference matter?
 12. KSP's `validate()` — what does it check, and what happens if you misuse it?
+
+---
+
+## Answer Key
+
+1. KAPT compiles Kotlin-shaped Java stubs for annotation processors; KSP exposes Kotlin symbols directly, avoiding stub generation and preserving Kotlin semantics.
+2. The resolver exposes the annotated declaration, Moshi's processor validates its shape, models properties/types, and emits an adapter source that a later compilation round compiles.
+3. Isolating output depends on one source and can be invalidated narrowly; aggregating output depends on many symbols and invalidates more broadly. Room entity adapters are typically isolating, while a registry over all bindings is aggregating.
+4. Register a `SymbolProcessorProvider`, query `getSymbolsWithAnnotation`, filter/validate class declarations, inspect constructor properties, build output with KotlinPoet, and create it through `CodeGenerator` with accurate dependencies.
+5. Defer a symbol when one of its referenced generated types is not available yet; KSP invokes another round after new files appear.
+6. Apply KSP, replace supported `kapt` configurations, remove KAPT when unused, align current plugin/processor releases, clean-build, inspect generated sources, and run incremental/CI/release builds.
+7. Check JDK and Gradle parity, case-sensitive paths, committed generated-code assumptions, dependency resolution, cache poisoning, version alignment, and processor nondeterminism.
+8. Stubs lose or approximate Kotlin-only concepts and add a compilation phase. Direct symbols provide nullability, declarations, and types without pretending Kotlin is Java.
+9. Hilt must assemble bindings/components across declarations, while Room can generate much of its output from an individual DAO/entity. Actual incrementality depends on the processor version and feature used.
+10. Treat KSP 2.3+ as independently versioned: consult its compatibility notes, then verify the Kotlin compiler, AGP/Gradle/JDK matrix and each processor's declared support.
+11. Typed builders matter once names, escaping, generics, nullability, annotations, or imports become nontrivial; string output is acceptable only for tightly controlled trivial files.
+12. `validate()` checks whether referenced declarations are resolvable in the current round. Return unresolved symbols for a later round; generating from invalid symbols causes incomplete or nondeterministic output.
 
 ---
 
@@ -514,5 +531,6 @@ Expected savings: 20–40% on cold builds in a large project. Sometimes more if 
 - [`../../kotlin/type-system/generics.md`](../../kotlin/type-system/generics.md) — generic type representation.
 - [KSP — Google official docs](https://kotlinlang.org/docs/ksp-overview.html) — overview.
 - [KSP GitHub releases](https://github.com/google/ksp/releases) — version matrix.
+- [KSP migration guide](https://kotlinlang.org/docs/ksp-kapt-migration.html) — current standalone plugin example.
 - [KotlinPoet](https://square.github.io/kotlinpoet/) — code generation library.
 - [Migrating from KAPT to KSP](https://developer.android.com/build/migrate-to-ksp) — Android Developers guide.

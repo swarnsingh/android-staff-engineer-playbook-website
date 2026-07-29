@@ -15,17 +15,17 @@ Mobile clients have different needs than web clients: battery, intermittent conn
 - Reason about payload size, radio wakeups, cacheability, rate limits, idempotency keys, pagination, and offline recovery from the client side of the contract.
 - Partner with backend teams from a Staff position: make compatibility guarantees explicit, define failure envelopes, and prevent backend velocity from becoming mobile fragility.
 
-## Learning Order
+## Guided Reading Sequence
 
-BFF pattern and API design first (the shape), then transport protocols (the wire), then push-vs-poll and rate limiting (the operational concerns).
+Prerequisite: [Distributed Systems](distributed-systems.md), through delivery semantics and mobile consistency contracts. Read API shape before transport and operational choices.
 
-## Topics
+1. [BFF Pattern](backend-for-mobile/bff-pattern.md)
+2. [API Design for Mobile](backend-for-mobile/api-design-for-mobile.md)
+3. [Data Formats (JSON / Protobuf)](backend-for-mobile/data-formats.md)
+4. [Transport Protocols (REST / gRPC / GraphQL)](backend-for-mobile/transport-protocols.md)
+5. [GraphQL vs REST](backend-for-mobile/graphql-vs-rest.md)
+6. [Push vs Poll vs SSE vs WebSockets](backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md)
+7. [SSE vs WebSockets](backend-for-mobile/sse-vs-websockets.md)
+8. [Rate Limiting](backend-for-mobile/rate-limiting.md)
 
-- [BFF Pattern](backend-for-mobile/bff-pattern.md)
-- [API Design for Mobile](backend-for-mobile/api-design-for-mobile.md)
-- [Transport Protocols (REST / gRPC / GraphQL)](backend-for-mobile/transport-protocols.md)
-- [GraphQL vs REST](backend-for-mobile/graphql-vs-rest.md)
-- [Push vs Poll vs SSE vs WebSockets](backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md)
-- [SSE vs WebSockets](backend-for-mobile/sse-vs-websockets.md)
-- [Rate Limiting](backend-for-mobile/rate-limiting.md)
-- [Data Formats (JSON / Protobuf)](backend-for-mobile/data-formats.md)
+**Next:** continue to [Mobile System Design](mobile-system-design.md).

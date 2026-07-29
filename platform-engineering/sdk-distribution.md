@@ -100,7 +100,7 @@ Android library (AAR):
 // :sdk:auth/build.gradle.kts
 plugins {
     id("com.android.library")
-    kotlin("android")
+    // AGP 9+ provides built-in Kotlin for Android modules.
     `maven-publish`
     id("org.jetbrains.kotlinx.binary-compatibility-validator")
 }

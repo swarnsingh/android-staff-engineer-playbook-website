@@ -1,6 +1,74 @@
 # Learning Paths
 
-This repository is large enough that reading it linearly from `android.md` to `security.md` is a recipe for burnout. Use these paths based on the question you are trying to answer.
+This repository has two navigation layers:
+
+1. **Whole-repository sequence:** use Path 0 when you want a complete beginner-to-Staff curriculum.
+2. **Folder sequence:** when Path 0 sends you to a knowledge tree, open its parent `.md` file and follow the numbered **Guided Reading Sequence**. Read links top to bottom unless a step is explicitly marked optional.
+
+The other paths are shorter role- or goal-specific routes for readers who already know their gaps.
+
+---
+
+## Path 0: Complete Curriculum for New Learners
+
+Use this if you are unsure where to begin. Do not open random topic files from the directory tree. Each phase has one parent index; that index owns the detailed order inside its folder.
+
+### Phase 1 — Engineering vocabulary
+
+1. [Engineering Fundamentals](engineering-fundamentals.md) — complexity, latency, asynchrony, state, queues, serialization, time, backpressure, and failure.
+2. [Computer Science](computer-science.md) — data structures and algorithms after you understand the shared complexity vocabulary.
+
+**Exit check:** explain how data shape, latency goals, queueing, and failure behavior influence a design before naming an Android library.
+
+### Phase 2 — Language and implementation judgment
+
+3. [Kotlin](kotlin.md) — language core, type system, compiler features, coroutines/Flow, and runtime behavior.
+4. [Principles](principles.md) — the heuristics used to review designs.
+5. [Patterns](patterns.md) — implementation and resilience patterns; study these after the underlying mechanics so pattern names do not replace reasoning.
+
+**Exit check:** model state with Kotlin types, choose a concurrency boundary, and explain why a pattern reduces rather than hides complexity.
+
+### Phase 3 — Android platform depth
+
+6. [Android](android.md) — follow its phases from lifecycle and architecture through Compose, concurrency, data, platform APIs, performance, testing, build tooling, and internals.
+
+**Exit check:** trace a feature across UI state, lifecycle/process death, persistence, background work, networking, performance, security, testing, and release constraints.
+
+### Phase 4 — Networked-system correctness
+
+7. [Distributed Systems](distributed-systems.md) — consistency, idempotency, delivery, conflict handling, replication, and logs.
+8. [Backend for Mobile](backend-for-mobile.md) — turn those guarantees into mobile API, transport, compatibility, rate-limit, and real-time contracts.
+
+**Exit check:** describe retry safety, offline conflict behavior, backward compatibility, and the user-visible effect of an unavailable backend.
+
+### Phase 5 — Design complete mobile systems
+
+9. [Mobile System Design](mobile-system-design.md) — begin with its framework, then mechanisms, worked problems, and platform/SDK designs.
+10. [Reference Architectures](reference-architectures.md) — read complete blueprints only after the component-level design topics.
+
+**Exit check:** produce an end-to-end design with requirements, APIs, state, offline behavior, failure recovery, observability, security, and rollout.
+
+### Phase 6 — Operate and govern production
+
+11. [Observability](observability.md) — signals, SLIs/SLOs, alerting, and dashboards.
+12. [Release Engineering](release-engineering.md) — signing, CI/CD, compatibility, rollout, and recovery controls.
+13. [Security](security.md) — minimization, authentication, storage, keys, transport, and attestation.
+14. [Platform Engineering](platform-engineering.md) — scale safe defaults and developer workflows across teams.
+
+**Exit check:** define how a release is measured, halted, recovered, secured, and made repeatable across an organization.
+
+### Phase 7 — Staff-level organizational impact
+
+15. [Leadership](leadership.md) — incidents, reviews, influence, mentorship, and escalation.
+16. [Career](career.md) — scope, ambiguity, technical strategy, written decisions, and promotion evidence.
+
+**Exit check:** make a cross-team decision legible, create leverage beyond your own code, and show durable organizational impact.
+
+### How to use checkpoints
+
+- If you can answer a phase's exit check with a concrete production example, skim its fundamentals and spend time on weak topics.
+- If you cannot, follow the parent index exactly rather than jumping to advanced files.
+- Complete probing questions before opening the answer key. Use official sources in Further Reading to verify fast-moving behavior.
 
 ---
 

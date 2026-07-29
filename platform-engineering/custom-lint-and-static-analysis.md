@@ -48,7 +48,7 @@ class GlobalScopeDetector : Detector(), SourceCodeScanner {
 
 Two Gradle configurations with confusingly similar names:
 
-- **`lintChecks`** — wires a checks module into the *consuming module's own analysis*. Use it inside your repo: `lintChecks(project(":lint-rules"))`, typically applied everywhere via a [convention plugin](../android/os-internals/convention-plugins.md) so no module can opt out.
+- **`lintChecks`** — wires a checks module into the *consuming module's own analysis*. Use it inside your repo: `lintChecks(project(":lint-rules"))`, typically applied everywhere via a [convention plugin](../android/build-tooling/convention-plugins.md) so no module can opt out.
 - **`lintPublish`** — *embeds* the checks as `lint.jar` inside your AAR, so external consumers of your library get your rules automatically with a plain `implementation` dependency. This is how an SDK or design-system team ships guardrails with the artifact ([SDK Distribution](sdk-distribution.md)).
 
 The platform-leverage move is both: internal enforcement via `lintChecks` in the convention plugin, external enforcement via `lintPublish` on the libraries you distribute.

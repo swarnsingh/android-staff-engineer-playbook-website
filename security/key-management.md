@@ -281,7 +281,7 @@ Benefits:
 
 - **`google-services.json` committed and confused for "a secret".** It's an identifier, not a secret. The actual security comes from Firebase Security Rules + App Check. But `firebase_credentials.json` (the *server* private key) IS a secret — don't confuse them.
 - **Single shared API key for all users.** A leak means rotation breaks every install. Issue per-user, per-session tokens instead.
-- **Storing the *unwrapped* key alongside the ciphertext.** EncryptedSharedPreferences gets this right; DIY usually doesn't.
+- **Storing the *unwrapped* key alongside the ciphertext.** A direct Android Keystore design stores only the key alias/handle plus versioned ciphertext and IV; raw key bytes never enter the file.
 - **No `setRandomizedEncryptionRequired(true)`.** Identical plaintexts encrypt to identical ciphertexts — an attacker observes "ah, that's another `4242 4242` card number."
 - **AES-CBC without HMAC.** Authenticate or use GCM. CBC alone is a footgun.
 - **Embedding the upload key in the repo.** Even password-protected. Use Play App Signing + HSM-backed CI secrets.

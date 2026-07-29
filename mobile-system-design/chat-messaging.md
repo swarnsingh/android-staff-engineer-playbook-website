@@ -209,7 +209,7 @@ data class MessageEntity(
 
 Three tables total: `conversations`, `messages`, `outbox` (mirrors PENDING rows for the worker). One DAO each. Migrations are exhaustive — never `fallbackToDestructiveMigration` in production.
 
-**Encryption.** Room is opened with SQLCipher; passphrase is generated once, wrapped by an AES key in the Android Keystore (StrongBox where available), stored in `EncryptedSharedPreferences`.
+**Encryption.** When the threat model requires database encryption, Room is opened through a reviewed SQLCipher integration; a random passphrase is wrapped by a direct Android Keystore key and the versioned ciphertext is stored in app-private storage. StrongBox is requested only under an explicit fallback policy.
 
 > **Probing question you should expect:** "What's the single source of truth?" Answer: Room. Network writes go to Room first; UI observes Room.
 

@@ -352,7 +352,7 @@ Integration test on a real device against staging with intentionally wrong pin �
 ## 13. Further Reading
 
 - [Android Developers — Network Security Configuration](https://developer.android.com/training/articles/security-config) — official guide.
-- [OkHttp CertificatePinner docs](https://square.github.io/okhttp/4.x/okhttp/okhttp3/-certificate-pinner/) — programmatic API.
+- [OkHttp CertificatePinner API](https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/CertificatePinner.kt) — programmatic API.
 - [OWASP — Certificate and Public Key Pinning](https://owasp.org/www-community/controls/Certificate_and_Public_Key_Pinning) — threat model and tradeoffs.
 - [HPKP retrospective (Mozilla)](https://blog.mozilla.org/security/2018/10/09/) — why HTTP Public Key Pinning failed on the web (relevant context for mobile pinning).
 - [Cronet PublicKeyPins API](https://developer.android.com/develop/connectivity/cronet) — for Cronet-based stacks.

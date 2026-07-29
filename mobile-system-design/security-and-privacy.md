@@ -119,27 +119,13 @@ Hard fail if any code path tries `http://`.
 
 ---
 
-## 5. Storage (Keystore, EncryptedSharedPrefs, SQLCipher)
+## 5. Storage (Keystore, Private Storage, SQLCipher)
 
 ### Token storage
 
-```kotlin
-val masterKey = MasterKey.Builder(context)
-    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-    .build()
+Keep access tokens in memory when possible. When persistence is required, generate a direct `AndroidKeyStore` key, encrypt into a versioned `IV + ciphertext` envelope, and store that envelope in private storage. AndroidX Security Crypto deprecated `EncryptedSharedPreferences`; existing installations need a migration rather than being copied into new designs. See [Secure Storage on Android](../security/secure-storage-on-android.md).
 
-val prefs = EncryptedSharedPreferences.create(
-    context,
-    "secure-tokens",
-    masterKey,
-    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-)
-
-prefs.edit().putString("access_token", token).apply()
-```
-
-The master key lives in Android Keystore. The actual prefs values are encrypted with that key. Keystore keys cannot be extracted (even with root on most devices).
+Non-exportable does not mean unusable by a compromised process. Token TTL, rotation, revocation, audience restriction, and server-side anomaly controls remain mandatory.
 
 ### Room with SQLCipher
 
@@ -151,7 +137,7 @@ val db = Room.databaseBuilder(context, AppDatabase::class.java, "app.db")
     .build()
 ```
 
-The passphrase is generated once, wrapped by a Keystore AES key, stored in EncryptedSharedPrefs.
+The passphrase is generated once and wrapped by a direct Keystore AES key. Store only the versioned passphrase ciphertext in app-private storage.
 
 ### Keystore-bound biometric key
 
@@ -259,59 +245,38 @@ For sensitive constants:
 
 ---
 
-## 9. Deep Dive: Token Storage with Keystore Wrap (~15 min)
+## 9. Deep Dive: Token Storage with a Keystore Envelope (~15 min)
 
 > *I'd pick this as the deep dive because token storage is the most-attacked surface — credentials live forever and unlock everything else.*
 
 ### Why Keystore?
 
-A token stored in `SharedPreferences` is a plain file. On a rooted device, anyone can read it. Keystore-wrapped storage means: even root + adb can't read the value without invoking the Keystore, and Keystore can be configured to require biometric/PIN to release the key.
+A token stored in ordinary private storage is protected by the UID sandbox but is plaintext if that file is extracted. A Keystore-backed envelope adds a non-exportable encryption key and optional authentication requirements. A compromised app process may still invoke an authorized key, so this is one layer rather than a complete root defense.
 
 ### The layering
 
 ```
 User token (string)
     ↓ encrypted with
-EncryptedSharedPreferences value key (AES-GCM)
-    ↓ key encrypted with
-MasterKey (Keystore-resident AES)
-    ↓ key protected by
-Android Keystore (StrongBox-backed where available)
+AES-GCM using a non-exportable key handle
+    ↓ ciphertext + IV stored in
+Private file / DataStore / SharedPreferences / database
+    ↓ key material held by
+Android Keystore (TEE or StrongBox only when verified)
 ```
 
-### Master key creation
+### Key and envelope ownership
 
-```kotlin
-val masterKey = MasterKey.Builder(context, "app-master-key")
-    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-    .setUserAuthenticationRequired(false)        // true for biometric-required apps
-    .setRequestStrongBoxBacked(true)              // dedicated security chip if available
-    .build()
-```
-
-`setRequestStrongBoxBacked(true)` requests Titan-class hardware on Pixel, Knox on Samsung. Falls back to TEE elsewhere.
+Use the direct `KeyGenerator` + `KeyGenParameterSpec` pattern in the canonical secure-storage page. If StrongBox is requested, handle `StrongBoxUnavailableException`; the platform does not promise a silent fallback. Record the envelope schema version, IV, ciphertext, key generation, and associated-data contract.
 
 ### Reading the token
 
 ```kotlin
-class KeystoreTokenVault @Inject constructor(@ApplicationContext ctx: Context) : TokenVault {
-    private val prefs by lazy {
-        val key = MasterKey.Builder(ctx).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
-        EncryptedSharedPreferences.create(
-            ctx, "tokens", key,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
-    }
-
-    override suspend fun load(): Tokens? = withContext(Dispatchers.IO) {
-        prefs.getString("tokens", null)?.let { json.decodeFromString<Tokens>(it) }
-    }
-
-    override suspend fun save(tokens: Tokens) = withContext(Dispatchers.IO) {
-        prefs.edit().putString("tokens", json.encodeToString(tokens)).apply()
-    }
-}
+val encrypted = keystoreAead.encrypt(
+    plaintext = json.encodeToString(tokens).encodeToByteArray(),
+    associatedData = accountId.encodeToByteArray(),
+)
+privateStore.write(encrypted)
 ```
 
 ### Biometric-bound variant
@@ -323,25 +288,24 @@ suspend fun loadTokenWithBiometric(activity: FragmentActivity): String? {
     val cipher = createCipherForKeystoreKey("biometric-key")
     val ok = biometricPrompt.authenticate(activity, BiometricPrompt.CryptoObject(cipher))
     if (!ok) return null
-    val encrypted = prefs.getString("encrypted-token", null) ?: return null
-    return cipher.doFinal(Base64.decode(encrypted, Base64.NO_WRAP)).toString(Charsets.UTF_8)
+    val encrypted = privateStore.read() ?: return null
+    return decryptAuthenticatedBlob(cipher, encrypted).decodeToString()
 }
 ```
 
-Without successful biometric auth, the cipher can't decrypt. The token is inaccessible.
+`decryptAuthenticatedBlob` restores the stored IV before calling `doFinal`. Without successful biometric authentication, the configured key cannot perform the operation.
 
 ### Backup exclusion
 
 ```xml
-<application android:allowBackup="false"
-             android:fullBackupContent="@xml/backup_rules">
+<application android:fullBackupContent="@xml/backup_rules"
+             android:dataExtractionRules="@xml/data_extraction_rules">
 ```
 
 ```xml
 <!-- backup_rules.xml -->
 <full-backup-content>
-    <exclude domain="sharedpref" path="tokens.xml" />
-    <exclude domain="sharedpref" path="secure-tokens.xml" />
+    <exclude domain="file" path="token-vault.bin" />
 </full-backup-content>
 ```
 
@@ -395,7 +359,7 @@ Gate every category through `Consent`. Default `false` for non-essential.
 suspend fun handleDeleteRequest() {
     api.deleteAccount()                    // server cascade
     db.clearAllTables()                    // local Room
-    EncryptedSharedPreferences.clear()    // local secrets
+    tokenVault.clear()                    // local secrets and dependent ciphertext
     notifierClear.cancelAll()              // active notifications
     workManager.cancelAllWork()            // pending workers
     auth.signOut()                          // session
@@ -418,7 +382,7 @@ NotificationCompat.Builder(ctx, CHANNEL_SENSITIVE)
 
 | Miss | Fix |
 |---|---|
-| Token in plain `SharedPreferences` | EncryptedSharedPreferences |
+| Token in plain storage without a threat-model decision | Direct Keystore-backed vault when encryption is required; otherwise short-lived private storage with server controls |
 | No pinning | Network Security Config + pin set |
 | `usesCleartextTraffic=true` | Set to false |
 | `allowBackup=true` carrying tokens | Exclude in backup rules |

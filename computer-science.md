@@ -15,24 +15,24 @@ You will rarely write a custom hash table, but you will frequently decide betwee
 - Estimate CPU, memory, and latency costs before choosing a collection, algorithm, database query, or module graph shape.
 - Recognize when an algorithmic pattern is the right tool and when product constraints, persistence, or network behavior dominate the problem.
 
-## Learning Order
+## Guided Reading Sequence
 
-Big-O first (it's the language everything else uses), then arrays/strings and sequence structures, then hashing/trees/graphs/heaps, then algorithmic patterns, then `system-complexity` which ties data-structure choice to real-system performance.
+Prerequisite: [Engineering Fundamentals](engineering-fundamentals.md). Read the structures before the algorithms that operate on them; finish by reconnecting algorithmic cost to production systems.
 
-## Topics
+1. [Big-O](computer-science/big-o.md) — bridge file; canonical mechanics live in [Complexity Analysis](engineering-fundamentals/complexity-analysis.md).
+2. [Arrays and Strings](computer-science/arrays-and-strings.md)
+3. [Linked Lists, Stacks, and Queues](computer-science/linked-lists-stacks-queues.md)
+4. [Hashing](computer-science/hashing.md)
+5. [Trees](computer-science/trees.md)
+6. [Graphs](computer-science/graphs.md)
+7. [Heaps and Priority Queues](computer-science/heaps-and-priority-queues.md)
+8. [Sorting and Searching](computer-science/sorting-and-searching.md)
+9. [Recursion and Backtracking](computer-science/recursion-backtracking.md)
+10. [Dynamic Programming](computer-science/dynamic-programming.md)
+11. [Greedy Algorithms and Intervals](computer-science/greedy-and-intervals.md)
+12. [System Complexity](computer-science/system-complexity.md) — how data-structure choices shape real systems.
 
-- [Big-O](computer-science/big-o.md) — bridge file; canonical is [`engineering-fundamentals/complexity-analysis.md`](engineering-fundamentals/complexity-analysis.md)
-- [Arrays and Strings](computer-science/arrays-and-strings.md)
-- [Linked Lists, Stacks, and Queues](computer-science/linked-lists-stacks-queues.md)
-- [Hashing](computer-science/hashing.md)
-- [Trees](computer-science/trees.md)
-- [Graphs](computer-science/graphs.md)
-- [Heaps and Priority Queues](computer-science/heaps-and-priority-queues.md)
-- [Sorting and Searching](computer-science/sorting-and-searching.md)
-- [Recursion and Backtracking](computer-science/recursion-backtracking.md)
-- [Dynamic Programming](computer-science/dynamic-programming.md)
-- [Greedy Algorithms and Intervals](computer-science/greedy-and-intervals.md)
-- [System Complexity](computer-science/system-complexity.md) — how data-structure choices shape real systems
+**Next:** continue to [Kotlin](kotlin.md).
 
 ## What This Tree Avoids
 

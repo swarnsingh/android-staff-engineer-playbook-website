@@ -647,4 +647,4 @@ External:
 - Roman Elizarov, *"Immutability we can afford"* (KotlinConf 2018) — design rationale for `val`/`var` and concurrency implications.
 - *Effective Kotlin* by Marcin Moskała — Items 1–5 cover mutability and Kotlin's safety story.
 - *Kotlin in Action* by Dmitry Jemerov & Svetlana Isakova — Chapter 4 on classes, objects, and properties.
-- KEEP-184: [Improved smart casts for properties](https://github.com/Kotlin/KEEP/blob/master/proposals/improved-smartcasts.md) — discussion of why smart-cast on `var` is limited.
+- [Kotlin type checks and casts](https://kotlinlang.org/docs/typecasts.html) — current smart-cast rules and limitations.

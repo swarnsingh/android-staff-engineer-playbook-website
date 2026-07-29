@@ -245,5 +245,5 @@ This is how engineering cultures of learning scale. Without it, mentorship stays
 - [`running-a-design-review.md`](running-a-design-review.md) — mentorship in the review setting.
 - [Lara Hogan — "Mentorship vs Sponsorship"](https://larahogan.me/blog/) — the canonical distinction.
 - [Tanya Reilly — "Being Glue"](https://noidea.dog/glue) — mentorship as glue work.
-- [Cate Huston — "How to Mentor"](https://blog.cate.io/) — practical patterns.
+- [Cate Huston — "DRI Your Support System"](https://cate.blog/2021/11/22/dri-your-support-system/) — practical mentoring and sponsorship distinctions.
 - [Will Larson — "Sponsoring is more important than mentoring"](https://lethain.com/) — the case for sponsorship.

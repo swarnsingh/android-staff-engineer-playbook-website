@@ -19,15 +19,17 @@ Every architecture has solved problems baked in. Reading a clean blueprint compr
 - Study how priorities change by domain: conversion, compliance, offline durability, real-time location, feed scale, playback quality, operational continuity, and reliability.
 - Reuse proven blueprints as starting points while still adapting them to your own product constraints, org structure, and backend maturity.
 
-## Topics
+## Guided Reading Sequence
 
-Each file follows the [blueprint template](templates/blueprint.md).
+Prerequisite: complete at least the core [Mobile System Design](mobile-system-design.md) framework and two worked problems. Each file follows the [blueprint template](templates/blueprint.md). Read from general product architecture toward domains with stronger offline, compliance, real-time, scale, and media constraints.
 
-- [Consumer App](reference-architectures/consumer-app.md)
-- [Merchant App](reference-architectures/merchant-app.md)
-- [Offline-First App](reference-architectures/offline-first-app.md)
-- [Banking App](reference-architectures/banking-app.md)
-- [E-commerce App](reference-architectures/e-commerce-app.md)
-- [Ride-Hailing App](reference-architectures/ride-hailing-app.md)
-- [Social Media App](reference-architectures/social-media-app.md)
-- [Video Streaming App](reference-architectures/video-streaming-app.md)
+1. [Consumer App](reference-architectures/consumer-app.md) — general baseline.
+2. [E-commerce App](reference-architectures/e-commerce-app.md) — catalog, cart, checkout, and payment boundaries.
+3. [Merchant App](reference-architectures/merchant-app.md) — operational workflows and business data.
+4. [Offline-First App](reference-architectures/offline-first-app.md) — durable local writes and convergence.
+5. [Banking App](reference-architectures/banking-app.md) — high-security and regulated workflows.
+6. [Ride-Hailing App](reference-architectures/ride-hailing-app.md) — real-time location and trip state.
+7. [Social Media App](reference-architectures/social-media-app.md) — feed, media, engagement, and scale.
+8. [Video Streaming App](reference-architectures/video-streaming-app.md) — playback, media delivery, and QoE.
+
+**Finish:** compare two blueprints and explain which constraints—not product names—caused their architectural differences.

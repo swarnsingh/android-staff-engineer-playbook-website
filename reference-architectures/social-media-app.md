@@ -197,7 +197,7 @@ The general rule, like consumer apps: **anything previously seen is available; n
 ## Security
 
 - **TLS 1.3 + cert pinning** at the BFF. See [`security/certificate-pinning.md`](../security/certificate-pinning.md).
-- **OAuth + PKCE** for sign-in; tokens in `EncryptedSharedPreferences`. Anonymous browsing typically allowed for discovery.
+- **OAuth + PKCE** for sign-in; persist tokens only when required, using a versioned ciphertext envelope protected by Android Keystore. Anonymous browsing is typically allowed for discovery.
 - **Play Integrity** to deter bot accounts and scripted engagement. Server-side evaluation. See [`security/attestation.md`](../security/attestation.md).
 - **Content moderation hooks.** Image / video uploads server-scanned for policy violations before publishing. Client merely uploads; server gates.
 - **Per-account visibility.** Private accounts, blocked users, muted users — server-enforced. Client renders the server's authoritative visibility decisions.
@@ -292,7 +292,7 @@ See [`observability/dashboards.md`](../observability/dashboards.md), [`observabi
 | Network | OkHttp + Retrofit | Mature; interceptor stack |
 | Real-time (DM) | OkHttp WebSocket | Bidirectional, low overhead |
 | Persistence | Room | Feed cache, engagement state, DM history |
-| Tokens | EncryptedSharedPreferences | Keystore-wrapped |
+| Tokens | Private ciphertext envelope | Direct Android Keystore key; excluded from backup |
 | DI | Hilt | Standard |
 | Background | WorkManager | Outbox drain, analytics flush |
 | Push | FCM (data messages) | Custom rendering, channels |

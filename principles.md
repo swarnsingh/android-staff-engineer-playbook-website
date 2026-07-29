@@ -19,20 +19,20 @@ You can't memorize the right answer to every design question. You can internaliz
 - Use principles as review tools: identify when a module has too many reasons to change, when knowledge leaks across boundaries, and when an abstraction hides more than it helps.
 - Balance principles against each other, because Staff-level decisions often involve choosing which good rule matters most in a specific context.
 
-## Learning Order
+## Guided Reading Sequence
 
-The simplest first — Simplicity, Single Responsibility, Composition over Inheritance — then the operational ones — Design for Failure, Prefer Deletion — then the more abstract ones — Determinism, Optimize for Change.
+Prerequisites: [Engineering Fundamentals](engineering-fundamentals.md) and the language/API-design portion of [Kotlin](kotlin.md). Apply each principle to a design you already know before continuing.
 
-## Topics
+1. [Simplicity](principles/simplicity.md)
+2. [Single Responsibility](principles/single-responsibility.md)
+3. [Least Knowledge (Law of Demeter)](principles/least-knowledge.md)
+4. [Composition over Inheritance](principles/composition-over-inheritance.md)
+5. [Make Invalid States Impossible](principles/make-invalid-states-impossible.md)
+6. [Locality of Reference](principles/locality-of-reference.md)
+7. [Progressive Disclosure](principles/progressive-disclosure.md)
+8. [Prefer Deletion](principles/prefer-deletion.md)
+9. [Design for Failure](principles/design-for-failure.md)
+10. [Determinism](principles/determinism.md) — reused by idempotency and offline sync.
+11. [Optimize for Change](principles/optimize-for-change.md)
 
-- [Simplicity](principles/simplicity.md)
-- [Least Knowledge (Law of Demeter)](principles/least-knowledge.md)
-- [Single Responsibility](principles/single-responsibility.md)
-- [Composition over Inheritance](principles/composition-over-inheritance.md)
-- [Prefer Deletion](principles/prefer-deletion.md)
-- [Make Invalid States Impossible](principles/make-invalid-states-impossible.md)
-- [Locality of Reference](principles/locality-of-reference.md)
-- [Optimize for Change](principles/optimize-for-change.md)
-- [Design for Failure](principles/design-for-failure.md)
-- [Determinism](principles/determinism.md) — referenced from `distributed-systems/idempotency.md`, `mobile-system-design/offline-sync.md`
-- [Progressive Disclosure](principles/progressive-disclosure.md)
+**Next:** continue to [Patterns](patterns.md), then [Android](android.md).

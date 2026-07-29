@@ -193,9 +193,8 @@ android.defaults.buildfeatures.shaders=false
 ```kotlin
 // gradle/libs.versions.toml — Version Catalog
 [versions]
-kotlin = "2.1.20"
-agp = "8.9.1"
-compose-bom = "2025.04.00"
+agp = "9.3.0"
+compose-bom = "2026.06.00"
 hilt = "2.55"
 
 [libraries]
@@ -206,7 +205,6 @@ hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ```
 
@@ -216,7 +214,6 @@ Every module reads from the catalog:
 // app/build.gradle.kts
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt)
 }
 

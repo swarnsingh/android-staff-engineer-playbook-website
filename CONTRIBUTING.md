@@ -14,7 +14,7 @@ Every file is exactly one of:
 |---|---|---|
 | **Canonical** | The single source of truth for a concept | [`templates/canonical.md`](templates/canonical.md) |
 | **Application** | Applies a canonical concept to a concrete system | [`templates/application.md`](templates/application.md) |
-| **Decision** | An ADR — recorded tradeoff and choice | [`templates/decision.md`](templates/decision.md) |
+| **Decision** | A reusable comparison with decision criteria and contextual defaults | [`templates/decision.md`](templates/decision.md) |
 | **Blueprint** | A complete end-to-end reference architecture | [`templates/blueprint.md`](templates/blueprint.md) |
 
 If a new file doesn't fit one of these, it doesn't belong in this repo.
@@ -98,7 +98,7 @@ Same concept, multiple angles — link between them, never duplicate.
 
 - All filenames are **kebab-case**: `state-machines.md`, `app-startup.md`, `deterministic-resume.md`
 - No spaces, no underscores, no PascalCase
-- Decision files (ADRs): plain kebab-case named for the decision, co-located in the tree they decide → `backend-for-mobile/sse-vs-websockets.md`. No numeric prefixes.
+- Decision files: plain kebab-case named for the comparison, co-located in the tree they inform → `backend-for-mobile/sse-vs-websockets.md`. No numeric prefixes. Project-specific ADRs should live in the consuming project's decision log, because status, owner, and date cannot be truthfully generalized in this educational repository.
 
 ### Cross-references
 
@@ -113,6 +113,22 @@ Same concept, multiple angles — link between them, never duplicate.
 - Mermaid first, ASCII second
 - No PNG, screenshots, or external image hosts
 - Must render in GitHub
+
+### Probing questions and answer keys
+
+- Probing questions are retrieval and reasoning checks, not links that send the reader elsewhere to discover the basic answer.
+- Put a concise `## Answer Key` after `## Probing Questions` in the same file. Number answers in the same order as the questions.
+- Explain the expected reasoning, decision criteria, or failure mode. Do not copy the chapter into the answer key and do not paste official documentation.
+- Cite current primary sources in `## Further Reading` for claims about platform behavior, policies, versions, compiler behavior, or APIs. The repository teaches the answer; the official source proves and deepens it.
+- When updating an older topic that has questions but no key, add the key as part of that change. Existing files are migrated incrementally and tracked as documentation debt.
+
+### Guided reading sequences
+
+- Every top-level knowledge-tree index (`android.md`, `kotlin.md`, `security.md`, and peers) must contain a `## Guided Reading Sequence`.
+- The sequence is normative: number phases and topics in prerequisite order. A reader following links top to bottom should not need knowledge introduced only later.
+- State prerequisites that live in another tree, identify optional/specialist branches, and finish with a clear next tree or checkpoint.
+- Keep the complete catalog in the same parent index. Do not create a second unordered list that conflicts with the guided order.
+- When adding a topic, insert it at the correct learning point instead of appending it for convenience. Update [`learning-paths.md`](learning-paths.md) only when the whole-repository phase order changes.
 
 ---
 
@@ -141,7 +157,7 @@ If a canonical file finds itself naming a specific version, that detail belongs 
 4. **Rename** the file in kebab-case.
 5. **Fill it in.** For canonical files, follow all relevant sections. For application files, link to the canonical owner instead of redefining.
 6. **Cross-reference.** Add links from related files to the new one, and vice versa.
-7. **Update the top-level TOC** for the tree the file belongs to.
+7. **Place it in the guided sequence.** Add it to the owning top-level index at the correct prerequisite point, not merely at the end.
 
 ---
 
@@ -149,10 +165,12 @@ If a canonical file finds itself naming a specific version, that detail belongs 
 
 Every PR runs `python3 scripts/check_docs.py` via GitHub Actions ([`.github/workflows/quality.yml`](.github/workflows/quality.yml)). It fails the build on:
 
-1. **Broken internal links** — a relative link whose target doesn't exist.
+1. **Broken internal links and anchors** — a relative target or heading fragment doesn't exist.
 2. **Stale redirects** — link text naming `foo.md` while the target is `bar.md`.
 3. **Unfinished content** — literal `*TODO: …*` or standalone `TBD` markers.
 4. **Near-empty files** — non-stub content files under 400 words (expand them, or allowlist in the script with a reason).
+5. **Learning-order integrity** — every knowledge-tree index has a guided sequence and every topic appears in its owning index.
+6. **External-link health** — a scheduled and manually runnable job checks cited web resources. Definitive 404/410 responses fail; access controls and transient network failures are reported without making ordinary pull requests flaky.
 
 Run it locally before pushing. A green check is a merge precondition, not a suggestion.
 

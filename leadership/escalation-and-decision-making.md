@@ -231,4 +231,4 @@ Never: silent resistance, smug "I told you so" after the fact, recruiting allies
 - [`../career/writing-rfcs.md`](../career/writing-rfcs.md) — the artifact that records the decision.
 - [Atlassian — DACI Decision Framework](https://www.atlassian.com/team-playbook/plays/daci) — practical template.
 - [Lara Hogan — "Disagree and Commit"](https://larahogan.me/blog/) — how to do it well.
-- [Amazon's "Type 1 / Type 2" framing](https://www.amazon.com/shareholder-letter-2015) — Bezos's 1997 shareholder letter introduced it.
+- [Amazon's 2015 shareholder letter](https://ir.aboutamazon.com/files/doc_financials/annual/2015-Letter-to-Shareholders.PDF) — the primary source for the Type 1 / Type 2 framing.

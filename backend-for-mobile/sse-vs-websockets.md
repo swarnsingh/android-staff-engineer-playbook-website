@@ -443,7 +443,7 @@ These don't usually live in app code, but staff engineers must know them:
 - [`../android/concurrency/services.md`](../android/concurrency/services.md) — foreground service for persistent connections.
 - [`../android/networking-and-security/retrofit-and-okhttp.md`](../android/networking-and-security/retrofit-and-okhttp.md) — OkHttp configuration.
 - [`../distributed-systems/lww-vs-crdt.md`](../distributed-systems/lww-vs-crdt.md) — conflict resolution for live state.
-- [OkHttp WebSockets docs](https://square.github.io/okhttp/4.x/okhttp/okhttp3/-web-socket/) — official reference.
+- [OkHttp WebSocket API](https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/WebSocket.kt) — official reference.
 - [OkHttp SSE module](https://github.com/square/okhttp/tree/master/okhttp-sse) — official.
 - [FCM HTTP v1 API](https://firebase.google.com/docs/cloud-messaging) — server side.
 - [WHATWG — Server-Sent Events spec](https://html.spec.whatwg.org/multipage/server-sent-events.html) — protocol details.

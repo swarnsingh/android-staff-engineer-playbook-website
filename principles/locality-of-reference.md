@@ -537,7 +537,7 @@ In this repository:
 - [`single-responsibility.md`](single-responsibility.md) — SRP at file level; locality at module level.
 - [`../engineering-fundamentals/caching.md`](../engineering-fundamentals/caching.md) — temporal locality is the foundation of all caches.
 - [`../android/compose/recomposition-and-state.md`](../android/compose/recomposition-and-state.md) — state locality and recomposition scopes.
-- [`../android/os-internals/gradle-and-build-systems.md`](../android/os-internals/gradle-and-build-systems.md) — module boundaries and build performance.
+- [`../android/build-tooling/gradle-and-build-systems.md`](../android/build-tooling/gradle-and-build-systems.md) — module boundaries and build performance.
 
 External:
 

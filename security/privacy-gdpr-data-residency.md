@@ -62,7 +62,7 @@ The mobile app remains ignorant of topology; it relies on the infrastructure to 
 1. When the user clicks 'Delete Account' on the web, the backend revokes their OAuth Refresh Token.
 2. The backend sends a Silent Push Notification (FCM Data payload) to all registered mobile devices for that user: `{"action": "WIPE_DATA"}`.
 3. When the mobile app receives the push (or when the next API call fails with HTTP 401 Unauthorized), the `SessionManager` executes a localized wipe.
-4. It calls `clearAllTables()` on the Room DB, wipes the `EncryptedSharedPreferences`, and calls `WorkManager.cancelAllWork()`.
+4. It calls `clearAllTables()` on the Room DB, wipes the token vault and dependent ciphertext, and calls `WorkManager.cancelAllWork()`.
 5. It then navigates the user back to the Login screen."
 
 ## 4. Failure Modes & Bottlenecks

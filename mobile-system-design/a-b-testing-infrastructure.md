@@ -414,8 +414,8 @@ class Layer(val id: String, val experiments: List<Experiment<*>>) {
 
 ## 12. Further Reading
 
-- [GrowthBook — Experimentation overview](https://docs.growthbook.io/experiment-results) — vendor reference.
-- [Statsig — Experimentation framework](https://docs.statsig.com/experiments/quickstart) — modern reference.
+- [GrowthBook documentation](https://docs.growthbook.io/) — open-source experimentation implementation reference.
+- [Statsig documentation](https://docs.statsig.com/welcome) — current experimentation and feature-gating entry point.
 - [Microsoft — Trustworthy Online Controlled Experiments](https://exp-platform.com/) — research papers.
 - [Spotify — feature flags layered experiments](https://engineering.atspotify.com/) — blog on layering at scale.
 - [Airbnb — Experimentation platform principles](https://medium.com/airbnb-engineering/) — practitioner perspective.

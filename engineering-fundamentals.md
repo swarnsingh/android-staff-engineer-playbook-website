@@ -15,25 +15,25 @@ A Staff Mobile Platform Engineer is differentiated less by knowing a specific fr
 - Spot design failure modes early: unbounded queues, hidden shared mutable state, cache incoherence, retry storms, clock assumptions, and serialization brittleness.
 - Use one shared vocabulary across the repo so application files can stay focused on concrete systems instead of redefining fundamentals.
 
-## Learning Order
+## Guided Reading Sequence
 
-Start with the building blocks (complexity, sync vs async, latency vs throughput), then move to state and coordination (state machines, queues, time & clocks), then to operational concerns (caching, backpressure, fault tolerance).
+This is the first tree in the [Complete Curriculum](learning-paths.md#path-0-complete-curriculum-for-new-learners). Read in order: vocabulary first, state and coordination next, then production failure behavior.
 
-## Topics
+1. [Complexity Analysis](engineering-fundamentals/complexity-analysis.md) — canonical owner; `computer-science/big-o.md` cross-references.
+2. [Latency vs Throughput](engineering-fundamentals/latency-vs-throughput.md)
+3. [Sync vs Async](engineering-fundamentals/sync-vs-async.md)
+4. [Coupling vs Cohesion](engineering-fundamentals/coupling-vs-cohesion.md)
+5. [Immutability](engineering-fundamentals/immutability.md)
+6. [State Machines](engineering-fundamentals/state-machines.md) — canonical owner; all application FSMs link here.
+7. [Queues](engineering-fundamentals/queues.md)
+8. [Event-Driven Architecture](engineering-fundamentals/event-driven-architecture.md)
+9. [Serialization](engineering-fundamentals/serialization.md)
+10. [Caching](engineering-fundamentals/caching.md)
+11. [Backpressure](engineering-fundamentals/backpressure.md)
+12. [Time & Clocks](engineering-fundamentals/time-and-clocks.md)
+13. [Fault Tolerance](engineering-fundamentals/fault-tolerance.md)
 
-- [Complexity Analysis](engineering-fundamentals/complexity-analysis.md) — canonical owner; `computer-science/big-o.md` cross-references
-- [Latency vs Throughput](engineering-fundamentals/latency-vs-throughput.md)
-- [Sync vs Async](engineering-fundamentals/sync-vs-async.md)
-- [Coupling vs Cohesion](engineering-fundamentals/coupling-vs-cohesion.md)
-- [Immutability](engineering-fundamentals/immutability.md)
-- [State Machines](engineering-fundamentals/state-machines.md) — canonical owner; all application FSMs link here
-- [Queues](engineering-fundamentals/queues.md)
-- [Event-Driven Architecture](engineering-fundamentals/event-driven-architecture.md)
-- [Caching](engineering-fundamentals/caching.md)
-- [Serialization](engineering-fundamentals/serialization.md)
-- [Backpressure](engineering-fundamentals/backpressure.md)
-- [Time & Clocks](engineering-fundamentals/time-and-clocks.md)
-- [Fault Tolerance](engineering-fundamentals/fault-tolerance.md)
+**Next:** continue to [Computer Science](computer-science.md).
 
 ## Wiring Examples
 

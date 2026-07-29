@@ -87,7 +87,7 @@ Devices can run a 4 KB-aligned app on a 16 KB kernel in a compatibility mode, bu
 ## 8. The staff-level rollout playbook
 
 1. **Inventory:** enumerate every `.so` in the release artifact and map each to an owning team or vendor. The mapping is the hard part and pays off for every future platform migration.
-2. **Upgrade the toolchain floor:** AGP 8.5.1+ and NDK r28+ across all modules (convention plugins make this one change — see [Convention Plugins](../android/os-internals/convention-plugins.md)).
+2. **Upgrade the toolchain floor:** use a current AGP and NDK across all modules (convention plugins make this one change — see [Convention Plugins](../android/build-tooling/convention-plugins.md)). For Play submissions targeting Android 15+, verify 16 KB support against the current Android guidance rather than treating the historical minimum as a permanent recommendation.
 3. **Chase vendors:** file upgrade tickets for every misaligned third-party SDK with the submission deadline as leverage; track them like any other launch blocker.
 4. **Gate:** add the CI check (§5) before the first compliant release ships, so compliance can't silently regress.
 5. **Test:** one full pass on a 16 KB emulator image per release; targeted native-code tests for anything that does page-size math.

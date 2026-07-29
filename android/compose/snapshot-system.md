@@ -467,5 +467,5 @@ Almost no app developer needs this. Useful only if you're building a Compose-awa
 - [Compose Snapshot System (Android Developers)](https://developer.android.com/develop/ui/compose/state) — overview.
 - [Snapshot APIs in Compose Runtime](https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/package-summary) — reference.
 - [Zach Klippenstein — Snapshots in Compose](https://dev.to/zachklipp) — engineer's deep dive.
-- [Jorge Castillo — Jetpack Compose Internals (book)](https://jorgecastillo.dev/book-jetpack-compose-internals) — chapter on snapshots and MVCC.
+- [Compose snapshot API reference](https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/package-summary) — current platform API and source links.
 - [Leland Richardson — The State of State (Android Dev Summit)](https://www.youtube.com/results?search_query=leland+richardson+compose+state) — Compose architect's talk.

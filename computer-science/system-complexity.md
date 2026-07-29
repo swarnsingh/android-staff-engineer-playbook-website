@@ -544,7 +544,7 @@ In this repository:
 - [`../principles/single-responsibility.md`](../principles/single-responsibility.md) — cohesion at the class level.
 - [`../principles/least-knowledge.md`](../principles/least-knowledge.md) — Demeter as coupling reduction.
 - [`../principles/locality-of-reference.md`](../principles/locality-of-reference.md) — common-closure principle.
-- [`../android/os-internals/gradle-and-build-systems.md`](../android/os-internals/gradle-and-build-systems.md) — build performance and module complexity.
+- [`../android/build-tooling/gradle-and-build-systems.md`](../android/build-tooling/gradle-and-build-systems.md) — build performance and module complexity.
 
 External:
 

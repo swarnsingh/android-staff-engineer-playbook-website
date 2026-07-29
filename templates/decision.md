@@ -1,53 +1,47 @@
-# ADR NNN — Decision Title
+# Option A vs Option B — Decision Guide
 
-## Status
+## Decision Context
 
-Proposed | Accepted | Superseded by ADR NNN | Deprecated
+Define the concrete problem and scope. State which constraints materially change the answer.
 
-## Owner
+## Default Recommendation
 
-Who owns the decision, migration, and future revisit?
+Give the safe default for the most common context, then name the condition that flips it. Do not pretend there is one universal winner.
 
-## Date
+## Decision Criteria
 
-YYYY-MM-DD
+List the criteria that should drive the choice: requirements, scale, platform support, reliability, security, team ownership, ecosystem maturity, and migration cost.
 
-## Context
+## Options
 
-What is the situation? Why is a decision needed now?
+Explain each serious option from first principles. Include “keep the current system” when it is viable.
 
-## Problem
+## Comparison Matrix
 
-What specifically must be decided?
+Compare the options against the decision criteria. Distinguish hard constraints from preferences.
 
-## Alternatives
+## Failure Modes and Hidden Costs
 
-Each alternative considered, with a short description.
+Describe how each option fails in production and which operational burden it creates.
 
-- Alternative A — why it works, why it fails.
-- Alternative B — why it works, why it fails.
-- Do nothing — what happens if we defer.
+## Migration and Reversibility
 
-## Decision
+Explain how to move from the common starting point, how to stage the change, and what makes reversal expensive.
 
-The choice made, stated plainly.
+## Staff Engineer Review
 
-## Rollout / Migration
+Name the evidence, experiments, owners, and cross-team consequences required before choosing.
 
-How will existing code, clients, teams, or users move to this decision?
+## Probing Questions
 
-## Consequences
+Questions that force the reader to apply the criteria to different contexts.
 
-What this implies — positive and negative — going forward.
+## Answer Key
 
-## Tradeoffs
+Give concise numbered answer criteria. Context-dependent questions should state what evidence would change the choice.
 
-What we accept by choosing this. What we give up.
+## Further Reading
 
-## Future Revisit Conditions
+Link canonical owners in this repository and current primary sources.
 
-Under what conditions would we re-open this decision?
-
-## Supersedes / Links
-
-Related RFCs, ADRs, dashboards, incident reviews, or follow-up tickets.
+> When applying this guide in a real project, create an ADR/RFC that records the selected option, status, owner, date, rollout, consequences, and explicit revisit conditions.

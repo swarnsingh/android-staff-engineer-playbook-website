@@ -510,7 +510,7 @@ In this repository:
 - [`../engineering-fundamentals/state-machines.md`](../engineering-fundamentals/state-machines.md) — state machines as labeled directed graphs.
 - [`../android/architecture/navigation.md`](../android/architecture/navigation.md) — Jetpack Navigation as a graph.
 - [`../android/data-and-di/dependency-injection.md`](../android/data-and-di/dependency-injection.md) — DI as DAG construction.
-- [`../android/os-internals/gradle-and-build-systems.md`](../android/os-internals/gradle-and-build-systems.md) — Gradle's DAG-based build engine.
+- [`../android/build-tooling/gradle-and-build-systems.md`](../android/build-tooling/gradle-and-build-systems.md) — Gradle's DAG-based build engine.
 - [`../mobile-system-design/google-maps-location-system.md`](../mobile-system-design/google-maps-location-system.md) — map routing in practice.
 - [`../mobile-system-design/ride-hailing.md`](../mobile-system-design/ride-hailing.md) — driver-rider matching on geographic graphs.
 

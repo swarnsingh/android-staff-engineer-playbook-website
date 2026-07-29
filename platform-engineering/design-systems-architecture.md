@@ -436,4 +436,4 @@ Publish adoption like any platform metric. If only half the org uses the design 
 - [Material Design 3 — Design tokens](https://m3.material.io/foundations/design-tokens/overview) — Google's reference vocabulary.
 - [Tokens Studio for Figma](https://tokens.studio/) — token authoring and export.
 - [Now in Android — DS module](https://github.com/android/nowinandroid/tree/main/core/designsystem) — Google's canonical Compose DS structure.
-- [Airbnb — Building a Visual Language](https://airbnb.design/building-a-visual-language/) — the cultural and technical reasoning.
+- [Airbnb Design](https://airbnb.design/) — current official design practice and systems writing.

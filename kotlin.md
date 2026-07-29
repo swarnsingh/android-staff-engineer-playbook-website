@@ -2,65 +2,75 @@
 
 ## Purpose
 
-The Kotlin language — from design choices to bytecode. Owns the canonical treatment of coroutines as a language feature; Android's coroutine application file links here.
+The Kotlin language—from design choices to bytecode. This tree owns coroutine and Flow language mechanics; Android application guidance links back here.
 
 ## Why It Matters
 
-Kotlin is the substrate for everything written in this repo's Android tree. Knowing it deeply — null safety, variance, inline functions, the memory model, JVM interop — is what separates engineers who write Android code from engineers who shape Android codebases.
+Kotlin is the substrate of the Android tree. Deep knowledge of nullability, variance, inline code, suspend state machines, memory, and JVM interop separates engineers who write Kotlin syntax from engineers who can shape safe, evolvable Kotlin codebases.
 
 ## What This Folder Helps You Do
 
-- Write Kotlin APIs that are null-safe, type-safe, binary-conscious, coroutine-friendly, and pleasant for other engineers to consume.
-- Understand what the compiler generates: data-class methods, inline functions, reified type access, suspend state machines, bytecode, and Java interop surfaces.
-- Reason about runtime behavior: heap allocation, captured continuations, cancellation, Flow backpressure, dispatcher boundaries, and test-time virtual time.
-- Review Android and KMP code with Staff-level judgment: where abstractions leak, where variance matters, where public APIs become compatibility promises, and where coroutine misuse becomes a production incident.
+- Write null-safe, type-safe, binary-conscious, coroutine-friendly APIs.
+- Understand compiler output for data/value classes, inline/reified functions, suspend functions, and Java-facing APIs.
+- Reason about allocation, continuations, cancellation, backpressure, dispatchers, and virtual time.
+- Review Android and KMP code for abstraction leaks, compatibility promises, and production concurrency failures.
 
-## Learning Order
+## Guided Reading Sequence
 
-Language basics -> type system depth -> API design and metaprogramming -> coroutines and Flow -> runtime/JVM behavior -> version and KMP updates.
+Prerequisite: [Engineering Fundamentals](engineering-fundamentals.md) through immutability, state machines, and backpressure. Follow phases in order and read each numbered list top to bottom.
 
-## Organization Note
+### Phase 1 — Language core
 
-The `kotlin/` folder is organized by learning domain. Each subfolder keeps a focused slice of the language: core syntax, type-system design, compiler features, coroutine/Flow mechanics, runtime/JVM behavior, and version-specific updates.
+1. [Variables](kotlin/language-core/variables.md)
+2. [Null Safety](kotlin/language-core/null-safety.md)
+3. [Functions](kotlin/language-core/functions.md)
+4. [Extensions](kotlin/language-core/extensions.md)
+5. [Data Classes](kotlin/language-core/data-classes.md)
+6. [Value Classes](kotlin/language-core/value-classes.md)
+7. [Sealed Classes](kotlin/language-core/sealed-classes.md)
+8. [Delegation](kotlin/language-core/delegation.md)
 
-## Topics
+**Checkpoint:** model a UI or domain state so illegal states are difficult to construct, and explain its nullability and equality contracts.
 
-### Language Core
+### Phase 2 — Type-system and API design
 
-- [Variables](kotlin/language-core/variables.md)
-- [Null Safety](kotlin/language-core/null-safety.md)
-- [Functions](kotlin/language-core/functions.md)
-- [Extensions](kotlin/language-core/extensions.md)
-- [Data Classes](kotlin/language-core/data-classes.md)
-- [Value Classes](kotlin/language-core/value-classes.md)
-- [Sealed Classes](kotlin/language-core/sealed-classes.md)
-- [Delegation](kotlin/language-core/delegation.md)
+1. [Generics](kotlin/type-system/generics.md)
+2. [Variance](kotlin/type-system/variance.md)
 
-### Type System and API Design
+**Checkpoint:** design a producer/consumer API and explain every `in`, `out`, star projection, and public compatibility consequence.
 
-- [Generics](kotlin/type-system/generics.md)
-- [Variance](kotlin/type-system/variance.md)
+### Phase 3 — Compiler features and metaprogramming
 
-### Compiler Features and Metaprogramming
+1. [Inline Functions](kotlin/compiler-features/inline-functions.md)
+2. [Reified Types](kotlin/compiler-features/reified-types.md)
 
-- [Inline Functions](kotlin/compiler-features/inline-functions.md)
-- [Reified Types](kotlin/compiler-features/reified-types.md)
+**Checkpoint:** explain what is copied at a call site, which allocations may disappear, and why reified access requires inlining.
 
-### Coroutines and Flow
+### Phase 4 — Coroutines and Flow
 
-- [Coroutines](kotlin/coroutines-and-flow/coroutines.md) — canonical owner; platform application lives in [`android/concurrency/coroutines-under-the-hood.md`](android/concurrency/coroutines-under-the-hood.md)
-- [Channels and Select](kotlin/coroutines-and-flow/channels-and-select.md)
-- [Flow Operators and Backpressure](kotlin/coroutines-and-flow/flow-operators-and-backpressure.md)
-- [callbackFlow and Bridging Callbacks](kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks.md)
-- [Coroutines Debugging and Profiling](kotlin/coroutines-and-flow/coroutines-debugging-and-profiling.md)
-- [Test Dispatchers and Virtual Time](kotlin/coroutines-and-flow/test-dispatchers-virtual-time.md)
+1. [Coroutines](kotlin/coroutines-and-flow/coroutines.md) — canonical owner; Android internals apply it later.
+2. [Channels and Select](kotlin/coroutines-and-flow/channels-and-select.md)
+3. [Flow Operators and Backpressure](kotlin/coroutines-and-flow/flow-operators-and-backpressure.md)
+4. [callbackFlow and Bridging Callbacks](kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks.md)
+5. [Coroutines Debugging and Profiling](kotlin/coroutines-and-flow/coroutines-debugging-and-profiling.md)
+6. [Test Dispatchers and Virtual Time](kotlin/coroutines-and-flow/test-dispatchers-virtual-time.md)
 
-### Runtime and JVM Interop
+**Checkpoint:** draw a coroutine job tree, show cancellation propagation, and explain queueing/dropping behavior when a Flow producer outruns its consumer.
 
-- [Memory Model](kotlin/runtime-and-jvm/memory-model.md)
-- [JVM Interop](kotlin/runtime-and-jvm/jvm-interop.md)
-- [Bytecode](kotlin/runtime-and-jvm/bytecode.md)
+### Phase 5 — Runtime and JVM interoperability
 
-### Version Updates
+1. [Memory Model](kotlin/runtime-and-jvm/memory-model.md)
+2. [JVM Interop](kotlin/runtime-and-jvm/jvm-interop.md)
+3. [Bytecode](kotlin/runtime-and-jvm/bytecode.md)
 
-- [Kotlin 2.4 Update for Android and KMP](kotlin/version-updates/kotlin-2-4-update.md)
+**Checkpoint:** inspect a Kotlin API from Java and bytecode perspectives, identify allocations/boxing, and predict its binary compatibility risk.
+
+### Phase 6 — Current release delta (read last and re-check regularly)
+
+1. [Kotlin 2.4 Update for Android and KMP](kotlin/version-updates/kotlin-2-4-update.md)
+
+Release digests assume the stable mechanics above and are not substitutes for them.
+
+## Continue the Complete Curriculum
+
+Continue to [Principles](principles.md), [Patterns](patterns.md), and then the [Android guided sequence](android.md#guided-reading-sequence).

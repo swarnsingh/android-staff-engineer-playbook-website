@@ -206,7 +206,7 @@ Never log SSIDs, IP addresses, tokens, or full URLs with PII without a privacy r
 ## Further Reading
 
 - [Android Developers: Read network state](https://developer.android.com/develop/connectivity/network-ops/reading-network-state)
-- [Android Developers: Manage network usage](https://developer.android.com/develop/connectivity/network-ops/manage-network-usage)
+- [Android Developers: Manage network usage](https://developer.android.com/develop/connectivity/network-ops/managing)
 - [Android Developers: Monitor connectivity status and connection metering](https://developer.android.com/develop/connectivity/network-ops/reading-network-state)
 - [`../performance/network-radio-wakeups.md`](../performance/network-radio-wakeups.md) - radio and battery cost.
 - [`../concurrency/workmanager.md`](../concurrency/workmanager.md) - scheduled durable work.
