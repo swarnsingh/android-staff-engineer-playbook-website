@@ -160,8 +160,23 @@ When reviewing Navigation architecture, a Staff engineer looks for decoupling:
 9.  What is `SafeArgs` in the context of XML-based Jetpack Navigation, and what problem does it solve?
 10. If an Android application is killed in the background by the Low Memory Killer (Process Death), how does the Navigation Component know which screen to restore when the user reopens the app?
 
+## Answer Key
+
+1. A `NavBackStackEntry` represents one destination instance and owns its lifecycle, saved state, and `ViewModelStore`. Because it is a `ViewModelStoreOwner`, a ViewModel can live exactly as long as that entry or its navigation graph instead of being forced into Activity scope.
+2. Passing the controller couples reusable UI to navigation infrastructure and makes previews/tests harder. Pass typed state and event callbacks; let the route-level composable or navigation host translate callbacks into navigation operations.
+3. Navigation arguments use saved-state/Binder transactions, so a huge payload can exceed the transaction buffer and throw `TransactionTooLargeException`. Pass a stable identifier or compact typed route and reload the data from a repository or cache.
+4. Scope the ViewModel to the checkout graph's back-stack entry rather than each destination entry. Every screen resolving the ViewModel with that same graph owner receives the same instance until the graph is removed.
+5. `saveState` preserves the popped tab stack and destination state; `restoreState` reattaches it when the tab is selected again. Together they let each bottom-navigation tab retain its own navigation position and UI state.
+6. A serializable route type defines arguments in Kotlin, and typed encoding/decoding replaces hand-built strings and key casts. Missing or renamed required arguments become compile-time/API migration issues rather than malformed-route crashes.
+7. A matched deep link builds the destination's expected task/back stack according to the graph and launch context. Back pops toward the graph's parent/start hierarchy; explicit and implicit deep links can build different stacks, so both require tests.
+8. A single Activity avoids OS-level Activity launches for every screen and provides one navigation model, shared graph scoping, and consistent transitions/deep links. Navigation supplies back-stack semantics without exposing Fragment transactions to each screen.
+9. Safe Args is the Gradle code generator for XML navigation graphs. It creates typed direction and argument classes so callers do not manually construct Bundles or cast keys at runtime.
+10. `NavController` participates in its host's saved-state restoration and stores the destination back stack plus small destination state. After process death the recreated host restores it; large screen data must still be reconstructed from IDs through the data layer.
+
 ## Further Reading
 
 - [`viewmodel.md`](viewmodel.md) — How ViewModels are scoped to `NavBackStackEntries`.
 - [`savedstatehandle.md`](savedstatehandle.md) — How Navigation arguments are automatically injected into ViewModels.
 - [Android Developers: Navigation](https://developer.android.com/guide/navigation)
+- [Android Developers: Navigation and the back stack](https://developer.android.com/guide/navigation/backstack)
+- [Android Developers: Support multiple back stacks](https://developer.android.com/guide/navigation/backstack/multi-back-stacks)

@@ -378,6 +378,22 @@ See [`../../platform-engineering/build-graph-scaling.md`](../../platform-enginee
 12. Multi-module testing: where should `FakeUserRepository` live, and why not in `:feature:profile:impl`?
 13. The Dependency Analysis plugin flags an `api` leak in `:core:design-system`. Walk through the audit and fix.
 
+## Answer Key
+
+1. Horizontal layer modules form a serial critical path and mix unrelated features inside each layer. Vertical feature modules compile in parallel and limit invalidation to the changed feature; stable API modules preserve that parallelism when features collaborate.
+2. Checkout now inherits Profile's high-churn implementation classpath, so Profile changes invalidate Checkout and a reverse edge can create a cycle. Replace the dependency with `:feature:profile:api` and provide the implementation at the app/DI composition root.
+3. `internal` makes implementation classes inaccessible outside their Gradle module, forcing consumers through the public contract. Without it, callers can import concrete navigators, repositories, or screens directly, leaving the API/implementation boundary unenforced.
+4. Split along cohesion and stability boundaries: look for groups with a distinct responsibility, dependency set, ownership, and change cadence. A useful extraction reduces fan-out or critical-path churn; turning every package into a module merely adds configuration cost.
+5. `implementation` hides a dependency from consumers' compile classpaths; `api` exposes it because it participates in the module's public ABI. An accidental `api` edge expands coupling and makes downstream modules recompile when that dependency's ABI changes.
+6. Define `ProfileNavigator` and its route types in `:feature:profile:api`. Implement and bind it from an internal Hilt module in `:feature:profile:impl`; Checkout depends only on the API, while the app includes the implementation for graph assembly.
+7. Put the serializable route class in the feature API and the destination UI/graph in the implementation. Callers need the stable route contract to navigate, but should not compile against the destination implementation.
+8. Measure downloadable size saved, usage, install latency, offline behavior, DI/resource boundaries, testing, and operational support. Adopt Play Feature Delivery only when a large, low-use or conditional feature justifies that complexity.
+9. Establish convention plugins and dependency rules first, then extract stable shared models/design primitives and data boundaries. Move one stable feature at a time into API/implementation modules, measuring after each extraction; migrate navigation and DI after multiple feature boundaries exist.
+10. The graph likely still has a wide invalidation edge or long critical path—usually a frequently changing `:core` module, leaked `api` dependencies, or heavy code generation. A build scan must identify the actual critical path; module count alone is not an optimization.
+11. Require ownership and evidence that the utility is cohesive, broadly reused, stable, and belongs there; otherwise keep it with its feature or create a narrowly named leaf module. Gate core additions so `:core:common` cannot become a dumping ground.
+12. Put a reusable fake in `:test:fixtures` and depend only on its contract/API module. Housing it in Profile's implementation makes other tests depend on production internals and lets the fake drift with one feature rather than the shared contract.
+13. Inspect public signatures and the Gradle dependency report to see whether design-system types truly escape the ABI. Change the edge to `implementation` when they do not; otherwise move the necessary contract to a smaller API module, then rerun dependency analysis and measure affected builds.
+
 ---
 
 ## Further Reading

@@ -185,8 +185,23 @@ When reviewing ViewModel architectures, a Staff engineer focuses on purity and f
 9.  If you absolutely need to access an Android system service (like `LocationManager`) to feed data to your ViewModel, how should you architect that without polluting the ViewModel with Android dependencies?
 10. Describe the specific condition that triggers the `ViewModel.onCleared()` callback.
 
+## Answer Key
+
+1. `ComponentActivity` retains its `ViewModelStore` as non-configuration state and gives that same store to the recreated Activity. The ViewModel stays in the app process; the OS does not serialize it, and process death removes it.
+2. MVVM is a presentation architecture separating a View and presentation model, whereas Jetpack `ViewModel` is a lifecycle/scoping state-holder type. A Jetpack ViewModel can participate in MVVM, MVI, or another UDF design; Compose does not make the terms equivalent.
+3. The ViewModel normally outlives a destroyed Activity/View during configuration change. A hard reference keeps that obsolete UI tree reachable through the retained ViewModel, leaking its window/context and risking updates to dead UI.
+4. A ViewModel only retains in-memory state across owner recreation inside the same process. Use `SavedStateHandle` for small reconstruction input after process death and a repository/persistent store for durable or large data.
+5. `viewModelScope` is a supervisor-backed scope owned by the ViewModel. Its children are canceled when that ViewModel is cleared; Back does this only when it removes the ViewModel's Activity, destination, or graph owner from its store.
+6. The ViewModel exposes immutable `StateFlow` state downward, receives user events through methods/intents, delegates data work, and atomically produces the next state. The UI renders state and does not mutate the backing flow directly.
+7. A screen-level `LaunchedEffect` can restart after recreation/key changes and makes UI responsible for business initialization. Prefer an idempotent ViewModel state pipeline, `init`, or lazily shared flow; UI effects remain appropriate for genuinely UI-owned keyed events.
+8. Resolve the ViewModel from the same `ViewModelStoreOwner`: an Activity for Activity-wide sharing or a navigation graph/back-stack entry for flow-wide sharing. That owner's store determines identity and clearing.
+9. Put the system service behind a data-source/repository interface whose Android implementation owns `Context`, permissions, callbacks, dispatcher, and cleanup. Inject the interface so ViewModel logic remains platform-light and testable.
+10. `onCleared()` runs when the owning `ViewModelStore` permanently removes or clears the ViewModel—for example, an Activity finishes or a navigation entry is popped. It is not called for configuration change, and no callback is guaranteed on process kill.
+
 ## Further Reading
 
 - [`activity.md`](activity.md) — The lifecycle controller that owns the ViewModel.
 - [`savedstatehandle.md`](savedstatehandle.md) — How to make the ViewModel survive true Process Death.
 - [`flow.md`](flow.md) — The reactive streams used inside the ViewModel to expose state.
+- [Android Developers: ViewModel overview](https://developer.android.com/topic/libraries/architecture/viewmodel)
+- [Android Developers: Recommendations for Android architecture](https://developer.android.com/topic/architecture/recommendations)

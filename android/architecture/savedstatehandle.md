@@ -181,6 +181,19 @@ When reviewing state management, a Staff engineer focuses on recovery paths:
 9.  In what scenario would you choose to persist data to a Room database instead of using the `SavedStateHandle`?
 10. Can you put a custom, non-primitive Kotlin data class into a `SavedStateHandle`? If so, what interface must it implement?
 
+## Answer Key
+
+1. A normal ViewModel field is an in-memory cache that survives configuration change with that ViewModel but disappears with the process. `SavedStateHandle` writes small restorable values into saved state so a newly created ViewModel can recover them after system-initiated process death.
+2. The handle is a ViewModel-facing abstraction backed by `SavedStateRegistry`; at save time its supported values are placed into the host's Bundle state. The default factory merges restored state and default/navigation arguments into the handle.
+3. The list increases serialization time and consumes the host's Binder transaction budget shared with other state. Saving can fail with `TransactionTooLargeException`; store records in Room/cache and keep only IDs or query parameters in the handle.
+4. `getStateFlow(key, default)` exposes the handle's value directly as a flow, and updates go through `savedStateHandle[key]`. This removes a second mutable flow that developers would otherwise need to synchronize manually.
+5. No restoration should be assumed after the user removes the task: saved state is tied to that task, and user-initiated dismissal can discard it. Durable data must live in Room, DataStore, or another persistent source.
+6. Destination arguments belong to its back-stack entry and become default values in the ViewModel's handle when created with that entry as owner. The ViewModel reads route inputs without the UI copying them manually.
+7. Mutate every saved field, background the app, kill only its background process, and reopen the retained task from Recents. Assert the new process/ViewModel reconstructs the inputs, then separately test rotation and user task removal.
+8. `onSaveInstanceState()` couples persistence plumbing to an Activity/Fragment while screen business state commonly lives in a ViewModel. The handle integrates saved state with ViewModel construction, navigation scope, reactive APIs, and testing.
+9. Use Room for application records, large collections, relationships, offline data, or anything that must survive task removal/reboot and support transactional queries. Use the handle only for the small input needed to reconstruct a screen.
+10. Yes, if it is a Bundle-supported type—commonly `Parcelable`, with `Serializable` also supported. Type support does not make large graphs appropriate; prefer saving a compact identifier.
+
 ## Further Reading
 
 - [`process-death-and-state-restoration.md`](process-death-and-state-restoration.md) — The brutal OS mechanism that makes `SavedStateHandle` necessary.

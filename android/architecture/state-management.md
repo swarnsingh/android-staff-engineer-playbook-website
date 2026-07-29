@@ -409,32 +409,34 @@ class FeedViewModel(repo: FeedRepository) : ViewModel() {
 }
 ```
 
-### Pattern 2: One-shot events alongside state
+### Pattern 2: Critical UI actions represented as state
 
 ```kotlin
-sealed interface CheckoutEffect {
-    data object NavigateBack : CheckoutEffect
-    data class ShowError(val msg: String) : CheckoutEffect
-}
+data class CheckoutUiState(
+    val submitted: Boolean = false,
+    val userMessage: String? = null,
+)
 
 @HiltViewModel
 class CheckoutViewModel : ViewModel() {
-    val uiState = MutableStateFlow(CheckoutUiState())
-    private val _effects = Channel<CheckoutEffect>(Channel.BUFFERED)
-    val effects: Flow<CheckoutEffect> = _effects.receiveAsFlow()
+    private val _uiState = MutableStateFlow(CheckoutUiState())
+    val uiState = _uiState.asStateFlow()
 
     fun submit() = viewModelScope.launch {
         try {
-            api.submit(uiState.value)
-            _effects.send(CheckoutEffect.NavigateBack)
+            api.submit(_uiState.value)
+            _uiState.update { it.copy(submitted = true) }
         } catch (e: Exception) {
-            _effects.send(CheckoutEffect.ShowError(e.message.orEmpty()))
+            if (e is CancellationException) throw e
+            _uiState.update { it.copy(userMessage = e.message.orEmpty()) }
         }
     }
+
+    fun messageShown() = _uiState.update { it.copy(userMessage = null) }
 }
 ```
 
-State (persistent) and Effects (one-shot) live separately. See [`mvvm-vs-mvi.md`](mvvm-vs-mvi.md).
+The UI observes `submitted` or `userMessage`, performs the UI behavior while active, and reports consumption when needed. This is resilient to collector gaps. Use a `Channel` only for best-effort process-local effects whose loss is explicitly acceptable; see [`mvvm-vs-mvi.md`](mvvm-vs-mvi.md).
 
 ### Pattern 3: SavedStateHandle for form drafts
 
@@ -497,7 +499,7 @@ State persists across the three wizard pages and survives process death.
 | `LaunchedEffect(uiState) { … }` fires on every state change | Effect depends on whole state when only one field matters | Key on the specific field, not whole state |
 | Two sources of truth (ViewModel + Composable both storing the same value) | UDF violation | Pick one owner; the other observes |
 | Composable receives state but never reads it | Dead prop | Remove or move state owner down |
-| Toast/snackbar fires twice (rotation/back) | Modeled one-shot event as state | Use `Channel<Effect>` not `StateFlow` |
+| Toast/snackbar fires twice (rotation/back) | Consumption is not represented | Clear/advance UI state after the UI handles it |
 | App crashes after recreation: "missing required argument" | Forgot `requireNotNull(handle["key"])` for required `SavedStateHandle` values | Provide defaults or validate at boundary |
 | Two Composables share state via `viewModelScope.launch` and step on each other | No synchronization | Use `Mutex` or model as `Flow.distinctUntilChanged` |
 | `LiveData` value is `null` initially even with `MutableLiveData<T>` initialized | LiveData's value can race vs first observer | Prefer `StateFlow<T>` which has a guaranteed initial value |
@@ -515,7 +517,7 @@ State persists across the three wizard pages and survives process death.
 - **Putting scroll position in `FeedUiState`.** Couples business logic to UI rendering details.
 - **Holding the same state in both ViewModel and a Composable's `remember`.** Now there are two sources of truth; they will diverge.
 - **Treating a `MutableStateFlow.update { it.copy(...) }` as expensive.** It's not — it's an atomic CAS. Use it.
-- **Putting transient UI events (snackbar messages) in `UiState`.** They replay on rotation. Use `Channel<Effect>`.
+- **Sending critical UI actions through a `Channel`.** The ViewModel can outlive the collector, so delivery is not durable. Reduce the result to UI state and model consumption.
 - **`SavedStateHandle` for everything.** Bundle size is limited (~1 MB). Use for small typed values; refetch lists from the repository.
 - **Forgetting `WhileSubscribed(5_000)` on `stateIn`.** Without a stop policy, upstream collection runs even when no UI observes.
 - **`SharingStarted.Eagerly` everywhere.** Wastes memory and battery on screens not currently visible.
@@ -535,11 +537,26 @@ State persists across the three wizard pages and survives process death.
 5. UDF: state flows down, events flow up. What's the smell when one is reversed?
 6. When does `SharingStarted.WhileSubscribed(5_000)` make sense over `Eagerly`?
 7. Multiple Fragments need shared cart state. Compare `activityViewModels()` vs `hiltNavGraphViewModels(R.id.shopping_graph)`.
-8. Walk through the Channel<Effect> pattern. Why not `SharedFlow`?
+8. When is `Channel<Effect>` acceptable, how does it differ from `SharedFlow`, and why should critical UI actions usually be state?
 9. `LiveData` vs `StateFlow` — when is each correct?
 10. A Composable in a `LazyColumn` reads `viewModel.uiState.value` directly. Why doesn't the row update on changes?
 11. A `SavedStateHandle` holds a 5 MB list. What goes wrong? When?
 12. You see `LaunchedEffect(uiState) { ... }`. Why is this likely a bug?
+
+## Answer Key
+
+1. Screen state is the business-derived data needed to render a destination, such as feed posts/loading/error; UI element state is presentation-only, such as scroll position or whether a header is expanded. Their owners and required lifetimes differ.
+2. Hoist `count` to the lowest common ancestor that both renders the counter and decides `showWarning`; derive the warning from `count > 5`. The child receives `count` and emits `onIncrement`, so there is one owner.
+3. Use `rememberLazyListState()` for scroll position; `rememberSaveable` for small form text and restorable expand/collapse state; a ViewModel for fetched posts while the destination lives; and `SavedStateHandle` only for small business-logic inputs that must reconstruct after process death. Durable posts still belong in a repository/cache.
+4. Group related fields into cohesive immutable sub-states and check whether the screen itself should split. Expose one screen state if fields share invariants, but pass narrow slices to child composables to contain recomposition.
+5. A child mutating state that should come from its parent reverses “state down”; a parent reaching into a child to pull events/state reverses “events up.” Both create multiple owners or hidden coupling.
+6. `WhileSubscribed(5_000)` fits an upstream stream that should pause after the UI has been absent briefly while tolerating quick configuration/navigation gaps. `Eagerly` fits process/scope-level data that must remain active even with no UI collector.
+7. `activityViewModels()` shares for the entire Activity and can retain unrelated cart state longer than the flow. `hiltNavGraphViewModels()` scopes it to the shopping graph, sharing only among those destinations and clearing when that graph is removed.
+8. A Channel sends each item to one receiver; SharedFlow broadcasts to active collectors and can replay/buffer. Neither guarantees durable processing across missing collectors or process death, so use Channel only for loss-tolerant effects and represent critical navigation/messages as consumable UI state.
+9. `StateFlow` is the normal coroutine/Compose choice because it always has a current value and composes with Flow operators. `LiveData` remains reasonable at legacy View/XML or Java boundaries; avoid exposing both as competing sources of truth.
+10. Reading `.value` is not a Compose-observed state read, so no snapshot subscription triggers row recomposition. Collect with `collectAsStateWithLifecycle()` at an appropriate owner and pass the row's stable slice down.
+11. During state saving, serialization of that list can exceed the Binder transaction buffer and throw `TransactionTooLargeException`, often when the host stops. Persist the list elsewhere and save only the minimum ID/query needed to reload it.
+12. Keying to the whole state restarts the effect for every state change and can repeat navigation, requests, or messages. Key it to the precise stable trigger—or model the action as state with explicit consumption—so unrelated updates do not restart it.
 
 ---
 
@@ -550,6 +567,8 @@ State persists across the three wizard pages and survives process death.
 - [`mvvm-vs-mvi.md`](mvvm-vs-mvi.md) — atomic state updates via MVI.
 - [`process-death-and-state-restoration.md`](process-death-and-state-restoration.md) — what survives what.
 - [`flow.md`](flow.md) — `StateFlow` / `SharedFlow` mechanics.
+- [Android Developers — UI events](https://developer.android.com/topic/architecture/ui-layer/events) — state-first handling for critical UI actions.
+- [Android Developers — Architecture recommendations](https://developer.android.com/topic/architecture/recommendations) — current state-holder and collection guidance.
 - [`structured-concurrency.md`](structured-concurrency.md) — `viewModelScope` lifetime.
 - [`../compose/recomposition-and-state.md`](../compose/recomposition-and-state.md) — Compose-level state mechanics.
 - [`../compose/compose-runtime.md`](../compose/compose-runtime.md) — CompositionLocal deep dive.

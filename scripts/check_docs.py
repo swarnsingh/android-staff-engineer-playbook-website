@@ -15,8 +15,8 @@ Checks (each maps to a defect class that has actually occurred in this repo):
                                   last-checked date is older than STALE_DAYS. Never fails
                                   the build: the passage of time must not break unrelated
                                   PRs. It nags until the row is re-verified and re-dated.
-  7. Answer-key debt (WARN-ONLY) — topic files with probing questions but no answer key.
-                                  Existing debt is reported while touched topics migrate.
+  7. Answer-key coverage        — existing debt is warning-only while topics migrate, but
+                                  every present key must answer each numbered question once.
   8. Guided-index coverage     — every topic file appears in its tree's parent sequence.
 
 Exit code 0 = all clean; 1 = at least one violation (CI fails).
@@ -156,7 +156,7 @@ def main() -> int:
             anchors_by_path[path] = github_heading_anchors(fh.read())
 
     broken, broken_anchors, mismatches, todos, thin = [], [], [], [], []
-    missing_answer_keys, unordered_indexes = [], []
+    missing_answer_keys, answer_key_mismatches, unordered_indexes = [], [], []
 
     for path in paths:
         with open(path, encoding="utf-8") as fh:
@@ -193,9 +193,30 @@ def main() -> int:
         for m in re.finditer(r"\*TODO:[^*]*\*|(?<![\w/])TBD(?![\w/])", prose):
             todos.append(f"{path}: {m.group(0)[:70]}")
 
-        if re.search(r"^## Probing Questions\s*$", text, flags=re.MULTILINE):
-            if not re.search(r"^## Answer Key\s*$", text, flags=re.MULTILINE):
+        questions = re.search(
+            r"^## Probing Questions\s*$(.*?)(?=^## |\Z)",
+            text,
+            flags=re.MULTILINE | re.DOTALL,
+        )
+        if questions:
+            answer_key = re.search(
+                r"^## Answer Key\s*$(.*?)(?=^## |\Z)",
+                text,
+                flags=re.MULTILINE | re.DOTALL,
+            )
+            if not answer_key:
                 missing_answer_keys.append(path)
+            else:
+                question_count = len(
+                    re.findall(r"^\d+\.\s+", questions.group(1), flags=re.MULTILINE)
+                )
+                answer_count = len(
+                    re.findall(r"^\d+\.\s+", answer_key.group(1), flags=re.MULTILINE)
+                )
+                if question_count != answer_count:
+                    answer_key_mismatches.append(
+                        f"{path}: {question_count} question(s), {answer_count} answer(s)"
+                    )
 
         if path.removeprefix("./") in TREE_INDEXES:
             if not re.search(r"^## Guided Reading Sequence\s*$", text, flags=re.MULTILINE):
@@ -217,6 +238,7 @@ def main() -> int:
         ("Link text/target mismatches (stale redirects)", mismatches),
         ("Unfinished-content markers (TODO/TBD)", todos),
         ("Thin content files (expand, or allowlist with a reason)", thin),
+        ("Answer keys whose numbered answers do not match their questions", answer_key_mismatches),
         ("Tree indexes without a Guided Reading Sequence", unordered_indexes),
         ("Topic files missing from their guided tree index", unindexed_topics),
     ]:

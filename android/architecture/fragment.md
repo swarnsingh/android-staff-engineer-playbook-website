@@ -23,7 +23,7 @@ Today, the modern `androidx.fragment` library has solved almost all of these iss
 
 1.  **The Sub-Lifecycle:** A Fragment's lifecycle is tied to, but separate from, its host Activity. An Activity has one lifecycle; a Fragment actually has *two* (The Fragment instance lifecycle, and the Fragment's *View* lifecycle).
 2.  **The FragmentManager:** Fragments are never instantiated and attached directly by you. You ask the `FragmentManager` to do it via a `FragmentTransaction`.
-3.  **State Survival:** Fragments must have an empty constructor. When the OS kills your app and restores it, the `FragmentManager` uses reflection to recreate the Fragment using that empty constructor.
+3.  **State Survival:** The default restoration path needs a public no-argument constructor because `FragmentManager` recreates the Fragment. Constructor injection requires a configured `FragmentFactory`; runtime inputs still belong in arguments or typed navigation routes.
 
 ## Mental Model
 
@@ -32,7 +32,7 @@ Think of the `FragmentManager` as a strict **Stage Director**, and the Fragments
 You (the developer) cannot push an Actor onto the stage. You must write a script (a `FragmentTransaction`):
 *"Director, please take Actor A off the stage, and put Actor B in the spotlight."*
 
-You hand the script to the Director (`commit()`). The Director executes it asynchronously when the OS allows it. If the theater burns down (Process Death), the Director looks at the script, re-hires new actors that look exactly like the old ones (using the empty constructor), and puts them back in their exact positions.
+You hand the script to the Director (`commit()`). The Director executes it asynchronously when the OS allows it. If the theater burns down (Process Death), the Director looks at saved state, recreates the actors through the configured `FragmentFactory` (the default factory uses a no-argument constructor), and puts them back in their saved positions.
 
 ## Internal Mechanics
 
@@ -143,7 +143,7 @@ button.setOnClickListener {
   // DISASTER
   class DetailsFragment(val userId: String) : Fragment() { ... }
   ```
-  *(Fix: When the OS kills the app and restarts it, the `FragmentManager` tries to recreate `DetailsFragment` using reflection: `DetailsFragment::class.java.newInstance()`. It will crash instantly because there is no empty constructor. You must pass data using `Arguments` (a Bundle) or Jetpack Navigation's `SafeArgs`).*
+  *(Fix: With the default factory, restoration fails because there is no public no-argument constructor. Pass runtime data using arguments or typed Navigation routes. If constructor injection is required, install a `FragmentFactory` before restoration and make it able to create that Fragment class.)*
 - **Memory Leaking Views in `onDestroyView`:**
   ```kotlin
   class MyFragment : Fragment() {
@@ -191,8 +191,24 @@ When reviewing Fragment code, a Staff engineer focuses on lifecycle discipline:
 9.  In a purely Jetpack Compose application, do you still need to use Fragments? Why or why not?
 10. If an Activity is destroyed due to a Configuration Change (rotation), what exactly does the `FragmentManager` do to the Fragments attached to it?
 
+## Answer Key
+
+1. A Fragment object has its own lifecycle, and its optional View has a shorter, separate lifecycle. A back-stack Fragment can remain as an object while its no-longer-visible View is destroyed to release UI resources, then receive a new View when it becomes visible again.
+2. `viewLifecycleOwner` is the `LifecycleOwner` for the current Fragment View. Observers tied to it are removed when `onDestroyView()` runs, preventing an observer from retaining or updating an obsolete View while the Fragment object survives.
+3. During restoration, `FragmentManager` must instantiate a new Fragment. A constructor that requires runtime arguments fails unless a configured `FragmentFactory` knows how to create it; the portable default is a public no-argument constructor plus arguments or Navigation types for input.
+4. A `FragmentTransaction` groups add, remove, replace, and lifecycle operations for `FragmentManager`. `commit()` queues that work on the main thread rather than executing it immediately; `commitNow()` is synchronous but cannot be combined with `addToBackStack()`.
+5. Use a shared, correctly scoped `ViewModel` for ongoing shared state, or Fragment Result API for a one-time result. Both avoid direct Fragment references and allow `FragmentManager` to recreate either Fragment independently.
+6. The surviving Fragment keeps its binding field, and the binding keeps the destroyed View hierarchy reachable. Clearing the binding in `onDestroyView()` removes that stale reference and ensures the next View lifecycle gets a fresh binding.
+7. `parentFragmentManager` is the manager that owns this Fragment alongside its siblings; `childFragmentManager` owns Fragments nested inside it. A ViewPager or nested navigation host inside a Fragment must use the child manager so nested lifecycles follow their parent.
+8. Fragment Result API routes keyed, lifecycle-aware results through `FragmentManager` instead of coupling one Fragment instance to another. It survives normal recreation semantics and delivers a stored result when the listener reaches the appropriate lifecycle state.
+9. No. A pure Compose application can use composable destinations and a Compose navigation host directly; Fragments remain useful only at interoperability boundaries or while migrating a View/Fragment application incrementally.
+10. The old Activity and its Fragment Views are destroyed, then the new Activity's `FragmentManager` restores new Fragment instances and their saved state from the manager's state. Application data should come back from a `ViewModel` or data layer rather than relying on the old Fragment object.
+
 ## Further Reading
 
 - [`viewmodel.md`](viewmodel.md) — The proper place to store data that the Fragment displays.
 - [`navigation.md`](navigation.md) — The Jetpack library that manages `FragmentTransactions` for you.
 - [Android Developers: Fragments](https://developer.android.com/guide/fragments)
+- [Android Developers: Fragment lifecycle](https://developer.android.com/guide/fragments/lifecycle)
+- [Android Developers: Fragment transactions](https://developer.android.com/guide/fragments/transactions)
+- [Android Developers: Communicate with fragments](https://developer.android.com/guide/fragments/communicate)
