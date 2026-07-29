@@ -374,21 +374,18 @@ This pattern is widely used in Compose libraries — `LazyListState`, `ScaffoldS
 
 ## Decision Tree — Where Does This State Belong?
 
+```mermaid
+flowchart TD
+    Start{"Must the state survive process death?"}
+    Start -->|"small restorable UI state"| Saved["SavedStateHandle or rememberSaveable"]
+    Start -->|"durable user or business data"| Store["Repository + persistent store"]
+    Start -->|"no"| Config{"Must it survive configuration change?"}
+    Config -->|"business or async state"| VM["ViewModel"]
+    Config -->|"shared UI coordination"| Holder["Remembered plain state holder"]
+    Config -->|"transient presentation"| Local["Local remember state"]
 ```
-Is this data the user expects to survive process death?
-├── Yes (user-typed text, selected tab, scroll position to a specific row)
-│   → SavedStateHandle (ViewModel) or rememberSaveable (Composable)
-└── No
-    │
-    Does it survive configuration change (rotation)?
-    ├── Yes (business data, ongoing operations)
-    │   ├── Is it business logic / async data?
-    │   │   → ViewModel
-    │   └── Pure UI state used by multiple Composables?
-    │       → Plain state holder + remember
-    └── No (animations, transient errors)
-        → remember { mutableStateOf() } in the Composable
-```
+
+Choose ownership by required lifetime and durability: saved-state APIs reconstruct small UI state, while user data belongs in durable storage rather than a ViewModel bundle.
 
 ---
 

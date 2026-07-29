@@ -44,6 +44,22 @@ The Cashier should have radioed a warehouse worker (Background Thread) to get th
 
 ### How the OS Detects an ANR
 
+```mermaid
+sequenceDiagram
+    participant User
+    participant System as Android system
+    participant Main as App main thread
+    participant Trace as ANR diagnostics
+    User->>System: input or component operation
+    System->>Main: dispatch work
+    Main->>Main: blocked, overloaded, or deadlocked
+    System->>System: responsiveness deadline exceeded
+    System->>Trace: capture process and thread evidence
+    System-->>User: ANR handling
+```
+
+An ANR is observed by the system when a monitored operation exceeds its context-specific responsiveness deadline; the main-thread trace explains the block, while surrounding evidence identifies why it occurred.
+
 The OS runs an internal watchdog system called the `InputDispatcher`.
 1.  The user taps the screen. The hardware sends an interrupt to the OS kernel.
 2.  The OS Kernel routes the event to the `InputDispatcher`.

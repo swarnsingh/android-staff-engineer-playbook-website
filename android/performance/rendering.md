@@ -116,17 +116,21 @@ Both can be fast. Both can be janky if abused.
 
 `Choreographer` is the framework class that synchronizes UI work with the display refresh rate.
 
+```mermaid
+sequenceDiagram
+    participant Display
+    participant Main as Main thread / Choreographer
+    participant Render as RenderThread
+    participant SF as SurfaceFlinger
+    Display->>Main: vsync signal
+    Main->>Main: input + animation + measure/layout/draw
+    Main->>Render: display list
+    Render->>SF: rendered buffer
+    Display->>SF: next composition deadline
+    SF-->>Display: composed frame
 ```
-display ──┬── vsync 0 (t=0)
-          │     ├─ input events arrive on UI thread
-          │     ├─ Choreographer.FrameCallback fires
-          │     ├─ animations tick, layout, draw → display list
-          │     └─ display list handed to RenderThread
-          ├── vsync 1 (t=16.67ms)
-          │     ├─ RenderThread completes; buffer ready
-          │     └─ SurfaceFlinger composes; frame shown
-          └── vsync 2 (t=33.3ms)
-```
+
+Main-thread UI work, RenderThread execution, and system composition must collectively meet the display deadline; missing any stage can present an older frame even when the others are fast.
 
 A frame's CPU work targets *finishing before vsync N+1* so it ships on vsync N+2. If the UI thread takes 20ms, the RenderThread is delayed, and vsync N+1 ships the *previous* frame again — visible stutter.
 

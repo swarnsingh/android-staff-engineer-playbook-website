@@ -23,6 +23,18 @@ Furthermore, Jank is cumulative. If your `RecyclerView` item takes 14ms to bind,
 
 ## First Principles
 
+```mermaid
+flowchart LR
+    Input["Input / animation / state change"] --> Main["Main-thread UI work"]
+    Main --> Render["RenderThread + GPU work"]
+    Render --> Deadline{"Frame ready before display deadline?"}
+    Deadline -->|"yes"| Smooth["Present new frame"]
+    Deadline -->|"no"| Jank["Repeat or delay frame"]
+    Jank --> Trace["Inspect frame timeline"]
+```
+
+Jank is a missed presentation deadline, not merely a slow function. Diagnose the exact frame across main-thread, rendering, GPU, and system scheduling evidence.
+
 To eliminate Jank, you must understand the Android Rendering Pipeline:
 
 1.  **Input/Animation:** The OS processes touch events or animation ticks.
