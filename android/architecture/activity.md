@@ -165,8 +165,24 @@ When reviewing Activity code, a Staff engineer focuses on isolation:
 9.  If an Activity is launched with the `singleTop` launch mode, which lifecycle method is invoked instead of `onCreate()` if the Activity is already at the top of the stack?
 10. Describe how the `ActivityManagerService` uses Inter-Process Communication (IPC) to coordinate the creation of an Activity in your app's process.
 
+## Answer Key
+
+1. `onPause()` means the Activity has lost focus but can remain visible, such as behind a permission dialog or in multi-window mode; `onStop()` means it is no longer visible. Keep `onPause()` brief and defer visibility-dependent cleanup to `onStop()`.
+2. A single Activity avoids repeated OS-managed Activity launches and centralizes navigation, shared screen scope, and transitions. The tradeoff is that navigation and deep-link routing must be kept modular so the host Activity does not become a god object.
+3. A non-static inner object captures its outer Activity. If a thread, callback queue, or singleton outlives that Activity, the reference chain keeps the destroyed Activity and its View tree reachable; cancellation, lifecycle-aware scopes, or a non-capturing object breaks the chain.
+4. Rotation is a configuration change, so Android recreates the Activity to let it load resources and layouts for the new configuration. Durable screen state belongs in a `ViewModel`, while the minimum restorable UI state belongs in saved-state APIs.
+5. Persist important application data through the data layer when it changes; do not wait for `onDestroy()`. Use `onStop()` only as a fallback for relatively expensive shutdown persistence, and use `SavedStateHandle` or `rememberSaveable` for small transient UI state rather than durable records.
+6. An Activity context is tied to that Activity and carries its theme, window, and lifecycle, so use it for UI work such as dialogs or inflating themed views. The application context lives for the process and is appropriate for long-lived non-UI dependencies; storing an Activity context in such an object leaks the Activity.
+7. `collectAsStateWithLifecycle()` collects while the associated lifecycle is at least `STARTED`, stops collection below that state, and resumes it when the lifecycle becomes active again. This avoids doing off-screen collection work while still exposing the latest state to Compose.
+8. `onPause()` is on the critical transition path to the next foreground UI. Blocking it with disk I/O delays that transition and can cause visible jank or, for sufficiently long work, an ANR; persist asynchronously or at the data-change boundary instead.
+9. Android calls `onNewIntent()` on the existing top instance. The Activity must handle the new intent explicitly because `onCreate()` is not called for that delivery.
+10. The system-side activity/task service validates and resolves the launch, starts the app process if necessary, then communicates through Binder with the app's `ApplicationThread`. `ActivityThread` schedules the launch on the app's main thread, where instrumentation creates the Activity and dispatches its lifecycle; modern Android places much task coordination in `ActivityTaskManagerService`, so “AMS creates the Activity directly” is an oversimplification.
+
 ## Further Reading
 
 - [`viewmodel.md`](viewmodel.md) — How to survive the nuclear blast of Configuration Changes.
 - [`process-death-and-state-restoration.md`](process-death-and-state-restoration.md) — What happens when the OS kills your entire process, not just the Activity.
 - [Android Developers: The Activity Lifecycle](https://developer.android.com/guide/components/activities/activity-lifecycle)
+- [Android Developers: Tasks and the back stack](https://developer.android.com/guide/components/activities/tasks-and-back-stack)
+- [Android Developers: Recommendations for Android architecture](https://developer.android.com/topic/architecture/recommendations)
+- [Android Developers: Save UI states](https://developer.android.com/topic/libraries/architecture/saving-states)

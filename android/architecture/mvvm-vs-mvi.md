@@ -122,11 +122,11 @@ class CheckoutViewModel : ViewModel() {
 
 ---
 
-## One-Off Events — the MVI Achilles Heel
+## UI Events — State First, Best-Effort Effects by Exception
 
-Some things in a screen aren't *state* — they're transient effects: navigate to detail, show a toast, vibrate, dismiss the keyboard. Putting these in state causes ghost events on rotation: the toast re-fires when the user returns to the screen.
+Navigation and messages are often described as "one-off events," but a ViewModel-produced action that matters to correctness should be reduced to UI state. The UI observes that state, performs the UI behavior while active, then reports consumption as another user event. This avoids losing a critical action when the ViewModel outlives its collector and can be made restorable with saved state.
 
-The standard solution: a **separate one-shot Channel** alongside state.
+Actions originating entirely in the UI, such as opening help after a tap, should normally stay in the UI. A `Channel` is reasonable only for explicitly best-effort, process-local effects whose loss while no collector exists is acceptable:
 
 ```kotlin
 sealed interface CheckoutEffect {
@@ -138,7 +138,7 @@ class CheckoutViewModel : ViewModel() {
     private val _state = MutableStateFlow(CheckoutState())
     val state: StateFlow<CheckoutState> = _state.asStateFlow()
 
-    // Rendezvous channel: not buffered; consumer must collect or events drop
+    // Best-effort process-local effects; not durable across collector gaps/process death.
     private val _effects = Channel<CheckoutEffect>(Channel.BUFFERED)
     val effects: Flow<CheckoutEffect> = _effects.receiveAsFlow()
 
@@ -169,7 +169,7 @@ fun CheckoutScreen(vm: CheckoutViewModel, navController: NavController) {
 }
 ```
 
-`Channel` (not `SharedFlow`) is the right tool — guarantees each effect is delivered exactly once, no late subscribers replay. This is the "MVI + Effect" / "State-Intent-Effect" / "VIE" pattern that most modern Android codebases settle on.
+`Channel` distributes each element to one receiver, while a `SharedFlow` broadcasts to all active collectors and can replay or buffer according to configuration. Neither provides durable "exactly once" UI processing across lifecycle gaps or process death. If losing the action can leave the product inconsistent, model it as state instead.
 
 ---
 
@@ -251,7 +251,7 @@ Checkout / video player / real-time feed / map / wizard
    ↓ multiple fields whose values must agree
    ↓ async writes happening concurrently
    ↓ undo/redo or replay required
-   → MVI is mandatory.
+   → MVI is a strong fit.
 ```
 
 **Default to MVVM. Promote to MVI when one of:**
@@ -314,7 +314,7 @@ For most Android teams: **roll your own.** MVI is small enough that a library mo
 1. Explain the unidirectional data flow rule and how MVI enforces it at the language level (immutable state, sealed intents, pure reducer).
 2. Walk through a concrete MVVM race condition that MVI prevents. Why does `_state.update { it.copy(...) }` succeed where two `MutableStateFlow.value =` writes fail?
 3. How do you handle one-off events (navigation, toast, vibrate) in MVI without re-firing on configuration change?
-4. Why is `Channel<Effect>` the right tool for one-off events, and not `SharedFlow`?
+4. When is `Channel<Effect>` acceptable, how does it differ from `SharedFlow`, and which delivery guarantees does it *not* provide?
 5. When is MVVM the *correct* choice? Give two concrete screen examples where MVI would be overkill.
 6. In Compose, what's the difference between `collectAsState` and `collectAsStateWithLifecycle`? Why does it matter for battery?
 7. How do you test atomicity in MVI with Turbine? Walk through assert + `awaitItem()` for a loading → loaded transition.
@@ -323,6 +323,21 @@ For most Android teams: **roll your own.** MVI is small enough that a library mo
 10. Why is "every intent should be a sealed case" sometimes wrong? When does it devolve into method-call-with-extra-steps?
 11. Compose recomposes the whole screen on every state change. Diagnose: what's likely unstable in the state class, and how do you fix it?
 12. Walk through how you'd integrate analytics middleware that logs every intent without duplicating code in every ViewModel.
+
+## Answer Key
+
+1. UDF sends state down to the UI and user actions up to the state holder. Immutable state prevents in-place mutation, sealed intents make the accepted action set explicit, and a pure reducer centralizes deterministic transitions.
+2. Two independent flows can expose a new promo code with an old total between sequential writes. One `_state.update { it.copy(...) }` atomically updates a single state value, so collectors observe either the old complete state or the new complete state.
+3. Keep UI-originated behavior such as direct navigation in the UI; for a ViewModel-originated critical action, represent the condition or message in UI state and let the UI acknowledge consumption. This avoids both replaying an uncleared action and losing an uncollected one.
+4. A `Channel` sends each element to one receiver and can suit a best-effort process-local effect; a `SharedFlow` broadcasts to active collectors and may replay or buffer. Neither guarantees durable exactly-once processing across an absent collector, lifecycle gap, or process death.
+5. MVVM fits screens with few cross-field invariants and little competing async work—for example, settings toggles and a simple profile form. Intent/reducer ceremony buys little consistency on those screens.
+6. `collectAsState()` collects while the composable is present; `collectAsStateWithLifecycle()` starts and stops with the configured lifecycle state. Lifecycle-aware collection avoids upstream work and recompositions for stopped UI, reducing CPU and battery use.
+7. Assert the initial Turbine item, trigger the intent, then `awaitItem()` for loading and again for loaded. Assert all dependent fields on the final single emission to prove that no torn intermediate result escaped.
+8. Thirty-five flat fields signal excessive screen responsibility and broad invalidation. Split the feature or compose cohesive immutable sub-states, then pass each composable only the smallest state slice it needs.
+9. Route competing intents through one sequential consumer, or protect the whole read/side-effect/write operation with a `Mutex`. Atomic `StateFlow.update` prevents a lost state write but does not serialize surrounding asynchronous work.
+10. Intents should represent meaningful user or external actions, not mechanically wrap every setter. If each field gets a `SetX` case with no policy value, typed methods or a grouped domain action provide the behavior with less indirection.
+11. The state or one of its members is likely unstable, recreated unnecessarily, or passed wholesale to every child. Use immutable/stable types and collections, avoid rebuilding equal values, and pass narrow slices so Compose can skip unaffected call sites.
+12. Put intent handling behind a dispatcher/reducer interface and wrap it with middleware that records the intent before delegation. Inject the wrapper once and enforce a centralized policy that redacts sensitive payloads.
 
 ---
 
@@ -339,5 +354,7 @@ For most Android teams: **roll your own.** MVI is small enough that a library mo
 - [`../../kotlin/language-core/data-classes.md`](../../kotlin/language-core/data-classes.md) — immutable state with `copy()`.
 - [Hannes Dorfmann — "Reactive Apps with Model-View-Intent"](http://hannesdorfmann.com/android/mosby3-mvi-1/) — the seminal series.
 - [Manuel Vivo (Android) — UI layer guidance](https://developer.android.com/topic/architecture/ui-layer) — official Google take.
+- [Android Developers — UI events](https://developer.android.com/topic/architecture/ui-layer/events) — state-first handling and delivery guarantees.
+- [Android Developers — Architecture recommendations](https://developer.android.com/topic/architecture/recommendations) — current ViewModel and UDF guidance.
 - [Orbit MVI documentation](https://orbit-mvi.org/) — battle-tested library reference.
 - [Cash App — Turbine](https://github.com/cashapp/turbine) — flow testing tool MVI tests live on.

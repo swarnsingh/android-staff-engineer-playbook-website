@@ -193,6 +193,19 @@ When reviewing concurrency code, a Staff engineer looks for rogue execution and 
 9.  If you launch three `async` blocks inside a standard `coroutineScope`, and the first one throws a network error, what happens to the other two?
 10. Why is passing a `CoroutineScope` down into a Repository layer considered an anti-pattern?
 
+## Answer Key
+
+1. A zombie task is work that continues after the UI or operation that requested it has ended, retaining resources and possibly delivering into dead state. Structured concurrency makes work a child of a bounded scope so completion and cancellation cannot escape the owner's lifetime.
+2. Downward cancellation means canceling a parent cancels all descendants. Upward failure propagation means an uncaught child failure cancels its parent and therefore siblings in a regular job hierarchy; supervision changes failure propagation, not downward cancellation.
+3. `GlobalScope` has no application-specific owner, so work can outlive screens, sessions, and tests and cannot be joined or canceled as part of the initiating operation. Use a lifecycle scope or an explicitly injected application scope for genuinely process-level work.
+4. Cancellation marks the Job canceled and resumes a suspended child with `CancellationException`; cooperative checks such as suspension points, `ensureActive()`, or `isActive` then stop execution. Blocking or CPU loops that never cooperate will not stop promptly.
+5. In `coroutineScope`, an uncaught child failure cancels the scope and its other children. In `supervisorScope`, one child failure does not automatically cancel siblings, so the caller can collect independent successes/failures while parent cancellation still cancels all children.
+6. `CancellationException` is an `Exception`; swallowing it treats cancellation as a normal failure and lets cleanup/retry logic continue incorrectly. Rethrow it, or catch only the domain exceptions the code can actually handle.
+7. A main-safe suspend function can be called from the main thread without blocking it. The function that performs blocking or CPU-heavy work owns the `withContext` dispatcher switch, so callers do not need to know its implementation details.
+8. `viewModelScope` is owned by the ViewModel and its Job is canceled when the ViewModel is cleared. `onCleared()` occurs when the owner is permanently removed—for example, a destination is popped—not for a configuration change or process kill callback.
+9. The first uncaught error cancels the enclosing `coroutineScope`; the other two children are canceled and awaiting the scope rethrows the failure. Use supervision only when their results are intentionally independent.
+10. A repository should expose main-safe suspend functions or flows and let the caller own the operation lifetime. Accepting an arbitrary scope hides ownership, encourages fire-and-forget work, complicates tests, and lets data work outlive the use case that requested it.
+
 ## Further Reading
 
 - [`viewmodel.md`](viewmodel.md) — The owner of `viewModelScope`.

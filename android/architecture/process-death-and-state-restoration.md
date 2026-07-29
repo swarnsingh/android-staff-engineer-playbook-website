@@ -176,8 +176,22 @@ When reviewing code, a Staff engineer aggressively audits for Process Death surv
 9.  If your `Application` class takes 3 seconds to initialize SDKs in `onCreate()`, how does this negatively impact the State Restoration user experience?
 10. Describe a scenario where you would intentionally NOT want to restore the user's state after Process Death. (Hint: Banking apps, security timeouts).
 
+## Answer Key
+
+1. A configuration change recreates UI components while the process and retained ViewModels remain alive. Process death removes the runtime—objects, statics, singletons, and ViewModels—and restoration starts in a new process from saved and durable state.
+2. Saved instance state is marshalled through Binder with other state in a shared transaction buffer. Large Bundles can exhaust that buffer and produce `TransactionTooLargeException`, so save IDs and compact inputs rather than graphs or payloads.
+3. Background the app, then use Android Studio's process-termination action or `adb shell am kill <package>` so the task remains restorable; reopen it from Recents. `force-stop` changes semantics, and “Don't keep activities” tests Activity recreation rather than process death.
+4. A network response is large, can become stale, and is expensive to serialize. Persist/cache it through the data layer and save only the query, record ID, pagination key, or other minimum input needed to reload it.
+5. Static and singleton values disappear with the process and return to initializer defaults in the new runtime. Any restored screen that assumes an earlier flow populated them is broken.
+6. `SavedStateHandle` exposes the host's saved-state registry to a ViewModel as a key-value and reactive API. The default factory reconstructs it from restored state and navigation arguments when creating the new ViewModel.
+7. Restore the navigation entry and product ID `42`, create a new ViewModel with that ID, emit loading state, and reload product data from Room/cache/network. Restore only small UI details, then render the reconstructed result.
+8. Android can kill a background process during ordinary multitasking, so treating that as exceptional causes crashes and lost work in normal use. Graceful restoration preserves user trust and continuity.
+9. Restoration is a cold process start before the recovered screen can render. Three seconds of synchronous SDK initialization delays first frame; initialize only critical dependencies eagerly and defer the rest.
+10. Do not restore a sensitive banking/admin screen after a session timeout, logout, device-lock policy change, or revoked authorization. Route to authentication or a safe landing destination and discard sensitive transient state.
+
 ## Further Reading
 
 - [`savedstatehandle.md`](savedstatehandle.md) — The modern API used to interface with the OS Bundle.
 - [`viewmodel.md`](viewmodel.md) — Understanding what the ViewModel actually does (and does not) protect you from.
 - [Android Developers: Saving UI States](https://developer.android.com/topic/libraries/architecture/saving-states)
+- [Android Developers: Saved State module for ViewModel](https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-savedstate)
