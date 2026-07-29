@@ -101,6 +101,14 @@ def github_heading_anchors(text: str) -> set[str]:
     return anchors
 
 
+def numbered_ordinals(section: str) -> list[int]:
+    """Return ordered-list numbers using either Markdown delimiter (`1.` or `1)`)."""
+    return [
+        int(value)
+        for value in re.findall(r"^(\d+)[.)]\s+", section, flags=re.MULTILINE)
+    ]
+
+
 def currency_warnings() -> list[str]:
     """Warn-only: watchlist rows in milestones.md older than STALE_DAYS."""
     warnings = []
@@ -207,15 +215,16 @@ def main() -> int:
             if not answer_key:
                 missing_answer_keys.append(path)
             else:
-                question_count = len(
-                    re.findall(r"^\d+\.\s+", questions.group(1), flags=re.MULTILINE)
-                )
-                answer_count = len(
-                    re.findall(r"^\d+\.\s+", answer_key.group(1), flags=re.MULTILINE)
-                )
-                if question_count != answer_count:
+                question_ordinals = numbered_ordinals(questions.group(1))
+                answer_ordinals = numbered_ordinals(answer_key.group(1))
+                expected_ordinals = list(range(1, len(question_ordinals) + 1))
+                if (
+                    question_ordinals != expected_ordinals
+                    or answer_ordinals != expected_ordinals
+                ):
                     answer_key_mismatches.append(
-                        f"{path}: {question_count} question(s), {answer_count} answer(s)"
+                        f"{path}: questions {question_ordinals}, answers {answer_ordinals}; "
+                        f"expected {expected_ordinals}"
                     )
 
         if path.removeprefix("./") in TREE_INDEXES:
