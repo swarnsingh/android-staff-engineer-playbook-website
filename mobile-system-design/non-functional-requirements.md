@@ -12,7 +12,31 @@ This file is the menu. Pick what's relevant per problem; don't recite the whole 
 
 ---
 
-## 2. The 12 NFR Dimensions for Mobile
+## 2. The 13 NFR Dimensions for Mobile
+
+```mermaid
+flowchart TD
+    Journey["Critical user journey"]
+    Experience["Experience<br/>performance + accessibility + localization"]
+    Resources["Device resources<br/>battery + memory + network"]
+    Correctness["Correctness<br/>offline + resilience + compatibility"]
+    Trust["Trust<br/>security + privacy"]
+    Operations["Operations<br/>observability + testability"]
+    Budget["Measurable budgets, failure policy, and owner"]
+
+    Journey --> Experience
+    Journey --> Resources
+    Journey --> Correctness
+    Journey --> Trust
+    Journey --> Operations
+    Experience --> Budget
+    Resources --> Budget
+    Correctness --> Budget
+    Trust --> Budget
+    Operations --> Budget
+```
+
+NFRs are not a recital: start from the journey, select the dimensions that can change its design, and turn each selected concern into a measurable budget, failure policy, and accountable owner.
 
 ### 1. **Performance**
 - TTID / TTFD budgets, frame rate, scroll smoothness.
@@ -38,7 +62,7 @@ This file is the menu. Pick what's relevant per problem; don't recite the whole 
 - Optimistic UI for instant feedback.
 
 ### 6. **Security**
-- TLS 1.3 + cert pinning (prod).
+- TLS with cleartext disabled; use certificate pinning only when the threat model justifies its rotation and recovery cost.
 - Tokens in Keystore-wrapped storage.
 - `FLAG_SECURE` on sensitive screens.
 - No PII in logs; biometric for high-stakes actions.

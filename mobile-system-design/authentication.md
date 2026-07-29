@@ -51,25 +51,24 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    App["Android client<br/>PKCE verifier + session state"]
+    Browser["System browser / Custom Tab"]
+    IdP["Identity provider<br/>authorize + token endpoints"]
+    Vault["Token vault<br/>Keystore-wrapped persistence"]
+    API["BFF / resource API<br/>validates access token"]
+
+    App -->|"authorization request + challenge"| Browser
+    Browser <-->|"user authentication"| IdP
+    IdP -->|"redirect with authorization code"| App
+    App -->|"code + verifier"| IdP
+    IdP -->|"access + refresh + ID tokens"| App
+    App --> Vault
+    App -->|"Bearer access token"| API
 ```
-   ┌────────────────┐
-   │  Android Client│
-   │   (this talk)  │
-   └────────┬───────┘
-            │ HTTPS (Authorization Code + PKCE)
-            ▼
-   ┌────────────────────┐
-   │  Identity Provider │   ← black box (Auth0/Cognito/Keycloak)
-   │  /authorize, /token│
-   └────────────────────┘
-            ▲
-            │ tokens (access + refresh + id)
-            ▼
-   ┌────────────────────┐
-   │   BFF / API        │
-   │ (validates JWT)    │
-   └────────────────────┘
-```
+
+The browser owns interactive authentication, PKCE binds the returned code to the initiating app instance, and the resource API trusts only a validated access token—not the fact that the client displayed a login screen.
 
 **Components on device:**
 - **`AuthBrowserClient`** — Chrome Custom Tabs for the IdP redirect.
@@ -138,16 +137,23 @@ token=…&token_type_hint=refresh_token
 
 ### Layered diagram
 
-```
-   Compose UI ──► AuthViewModel ──► AuthRepository
-                                       │
-                                       ├─► AuthBrowserClient (Custom Tabs)
-                                       ├─► IdPApi (/token, /revoke)
-                                       └─► TokenVault (Keystore-wrapped)
+```mermaid
+flowchart LR
+    UI["Compose UI"] --> VM["AuthViewModel"] --> Repo["AuthRepository"]
+    Repo --> Browser["AuthBrowserClient<br/>Custom Tabs"]
+    Repo --> IdP["IdP API<br/>token + revoke"]
+    Repo --> Vault["TokenVault<br/>Keystore-wrapped"]
 
-   Network call ──► AuthInterceptor ──► attach Bearer
-                                      └─► on 401 → TokenRefresher.refresh()
+    Call["Network call"] --> Interceptor["AuthInterceptor"]
+    Interceptor -->|"attach access token"| API["Resource API"]
+    API -->|"401"| Refresher["Single-flight TokenRefresher"]
+    Refresher --> Vault
+    Refresher -->|"retry once"| Interceptor
 ```
+
+Interactive login and silent refresh share one repository and vault, while the network layer centralizes token attachment and permits only one refresh operation for concurrent 401 responses.
+
+Validated against: [OAuth 2.0 for native apps (RFC 8252)](https://www.rfc-editor.org/rfc/rfc8252) and [OAuth 2.0 PKCE (RFC 7636)](https://www.rfc-editor.org/rfc/rfc7636).
 
 ### Key class signatures
 

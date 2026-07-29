@@ -70,19 +70,17 @@ End by stating assumptions: "I'll assume X, Y, Z."
 
 **ONE** ASCII or whiteboard diagram. Name the server-side components in a paragraph. Don't design the server.
 
+```mermaid
+flowchart TD
+    Client["Android client<br/>primary design scope"]
+    Gateway["BFF / gateway<br/>auth + routing + compatibility"]
+    Services["Backend services<br/>named boundaries, black-box internals"]
+
+    Client <-->|"HTTPS / WSS"| Gateway
+    Gateway --> Services
 ```
-            ┌────────────────┐
-            │  Android Client│
-            │   (this talk)  │
-            └────────┬───────┘
-                     │ WSS / HTTPS
-                     ▼
-       ┌──────────────────────────┐
-       │       BFF / Gateway      │
-       └──┬──────────┬──────┬─────┘
-          │          │      │
-       services... (black box)
-```
+
+Keep the client boundary explicit: name the server contracts the app depends on, but do not spend the mobile-design round inventing backend internals that are outside the agreed scope.
 
 ### 4. API Contract
 

@@ -50,33 +50,24 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    Tap["User taps launcher icon"]
+    Process["Zygote forks app process"]
+    App["Application.onCreate<br/>critical initialization only"]
+    Activity["First Activity<br/>theme + splash + UI composition"]
+    FirstFrame["First frame drawn<br/>TTID milestone"]
+    Ready["Content ready<br/>TTFD milestone"]
+    Deferred["Deferred initialization<br/>after the critical path"]
+
+    Tap --> Process --> App --> Activity --> FirstFrame --> Ready
+    App -. "queue non-critical work" .-> Deferred
+    FirstFrame --> Deferred
 ```
-User taps icon
-     │
-     ▼
-Zygote fork → app process
-     │
-     ▼
-Application.onCreate            [Phase 1]
-     ├── Hilt graph init
-     ├── Critical SDKs (Crash, Analytics, Flags)
-     └── Deferred SDKs queued via AppStartup
-     │
-     ▼
-First Activity launched         [Phase 2]
-     ├── Splash screen
-     ├── Theme + window
-     └── ContentView / setContent { }
-     │
-     ▼
-First frame drawn               [TTID]
-     │
-     ▼
-Content ready (network/disk done) [TTFD]
-     │
-     ▼
-Deferred work fires (after frame)
-```
+
+Treat startup as a critical path with separate milestones: initialize only what must exist before the first frame, then schedule non-critical work without blocking TTID or content readiness.
+
+Validated against: [App startup time](https://developer.android.com/topic/performance/vitals/launch-time).
 
 **Phases to budget separately:**
 - **Cold launch path** (zygote → process start) — minimal control.

@@ -50,27 +50,20 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    Feature["Feature code"] --> Track["Typed Analytics.track"]
+    Track --> Policy["Consent + validation + redaction + sampling"]
+    Policy --> Queue["Durable bounded event queue"]
+    Queue --> Scheduler["Size / age / connectivity scheduler"]
+    Scheduler --> Worker["WorkManager FlushWorker"]
+    Worker --> API["Batch events API"]
+    API --> Ingestion["Server ingestion<br/>black box"]
+    Worker -->|"success: delete acknowledged batch"| Queue
+    Worker -->|"failure: bounded retry/backoff"| Scheduler
 ```
-   App code ──► Analytics.track(event)
-                       │
-                       ▼
-                EventInterceptor (sampling, redaction)
-                       │
-                       ▼
-                   EventQueue (Room)
-                       │
-                       ▼
-                  FlushScheduler
-                       │
-                       ▼
-                FlushWorker (WorkManager)
-                       │
-                       ▼
-                /v1/events (batch POST)
-                       │
-                       ▼
-                Server ingestion ← black box
-```
+
+Analytics is a durable, privacy-gated delivery pipeline: feature code emits typed intent, policy determines whether data may enter the queue, and only acknowledged batches are deleted.
 
 **Components:**
 - **`Analytics`** — public facade.
@@ -137,27 +130,22 @@ POST /v1/events
 
 ### Layered diagram
 
+```mermaid
+flowchart LR
+    Feature["Any feature"] --> API["Analytics API"]
+    API --> Interceptors["Interceptor chain"]
+    Interceptors --> Consent["Consent gate"]
+    Interceptors --> Validate["Schema validation"]
+    Interceptors --> Redact["PII redaction"]
+    Interceptors --> Sample["Sampling"]
+    Consent --> Queue["Room event queue"]
+    Validate --> Queue
+    Redact --> Queue
+    Sample --> Queue
+    Queue --> Scheduler["FlushScheduler"] --> Worker["FlushWorker"] --> Network["Batch API"]
 ```
-   App code (any feature)
-        │
-        ▼
-   Analytics.track(event)            (fire-and-forget; submits to coroutine)
-        │
-        ▼
-   EventInterceptor chain            (sample, redact, consent-gate)
-        │
-        ▼
-   EventQueue (Room)                 (durable, indexed by ts)
-        │
-        ▼
-   FlushScheduler                    (size > 100 OR age > 30s → enqueue work)
-        │
-        ▼
-   FlushWorker                       (@HiltWorker, batches POST)
-        │
-        ▼
-   network success → delete batch    (failure → backoff, retry)
-```
+
+Feature modules depend on a small typed API; the SDK centralizes governance and delivery so consent, schema, privacy, and retry behavior cannot drift independently across teams.
 
 ### Key class signatures
 

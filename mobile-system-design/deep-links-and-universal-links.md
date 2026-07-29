@@ -49,28 +49,21 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    Tap["User taps HTTPS link"] --> Android["Android intent resolution"]
+    Android --> Verified{"Domain verified for this app?"}
+    Verified -->|"no"| Browser["Open browser / user-selected handler"]
+    Verified -->|"yes"| Router["Intent-filtered link router"]
+    Router --> Parse["Parse and validate URI into typed route"]
+    Parse --> Auth{"Route requires authentication?"}
+    Auth -->|"no"| Navigate["Navigate to destination"]
+    Auth -->|"yes, session valid"| Navigate
+    Auth -->|"yes, signed out"| Save["Save pending route, then authenticate"]
+    Save --> Navigate
 ```
-Web Browser ──tap https://example.com/users/42──► Android System
-                                                           │
-                                          (App Links verified for example.com?)
-                                                           │
-                                       ┌───────────────────┴───────────────────┐
-                                       ▼                                       ▼
-                              Yes: open our app                       No: open browser
-                                       │
-                                       ▼
-                            LinkRouterActivity (intent-filtered)
-                                       │
-                                       ▼
-                                 DeepLinkParser
-                                       │
-                                       ▼
-                          NavController.navigate(route)
-                                       │
-                                       ▼
-                              (Auth-gated route?)
-                                  yes / no
-```
+
+Verified App Links decide whether Android can route the HTTPS URL directly to the app; application code must still validate the URI, enforce authentication, and preserve the intended route safely.
 
 **Components:**
 - **`assetlinks.json`** — served at `/.well-known/assetlinks.json` on our domain; lists package + SHA-256 fingerprint.
@@ -147,24 +140,26 @@ Web Browser ──tap https://example.com/users/42──► Android System
 
 ### Layered diagram
 
+```mermaid
+flowchart TD
+    Intent["ACTION_VIEW intent + URI"]
+    Router["LinkRouterActivity"]
+    Parser["DeepLinkParser<br/>URI → typed Route"]
+    Gate["AuthGate"]
+    Pending["PendingRouteStore"]
+    Login["Authentication flow"]
+    Navigator["Navigator"]
+    Nav["Compose NavController"]
+
+    Intent --> Router --> Parser --> Gate
+    Gate -->|"authorized"| Navigator --> Nav
+    Gate -->|"authentication required"| Pending --> Login
+    Login -->|"success"| Pending --> Navigator
 ```
-   Intent (VIEW + uri)
-        │
-        ▼
-   LinkRouterActivity
-        │
-        ▼
-   DeepLinkParser.parse(uri) → Route
-        │
-        ▼
-   AuthGate.check(route) ─ unauthenticated? save + go to login
-        │
-        ▼
-   Navigator.go(route)
-        │
-        ▼
-   Compose NavController navigates
-```
+
+Parsing, authorization, pending-route persistence, and navigation are separate responsibilities so a malicious or unauthenticated link cannot bypass policy by calling the navigation layer directly.
+
+Validated against: [Add Android App Links](https://developer.android.com/training/app-links) and [Verify App Links](https://developer.android.com/training/app-links/verify-android-applinks).
 
 ### Key class signatures
 

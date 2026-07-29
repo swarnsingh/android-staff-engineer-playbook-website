@@ -50,18 +50,19 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    Server["Application server"] --> FCM["Firebase Cloud Messaging"]
+    FCM --> Device["Android device"] --> Service["FirebaseMessagingService"]
+    Service --> State{"Current app/message policy?"}
+    State -->|"foreground"| Banner["Update app state or show in-app UI"]
+    State -->|"durable work needed"| Worker["Enqueue WorkManager"]
+    State -->|"user-visible notification"| Notify["NotificationManagerCompat"]
+    Worker --> Store["Refresh canonical local data"]
+    Notify --> Tap["User taps notification"] --> Link["Validated deep-link route"]
 ```
-   Server ──► FCM (Google) ──► Device ──► FirebaseMessagingService
-                                                       │
-                                                       ├─► Foreground? render in-app banner
-                                                       │
-                                                       └─► Background/killed:
-                                                            ├─► WorkManager handoff
-                                                            └─► NotificationManagerCompat.notify
-                                                                       │
-                                                                       ▼
-                                                                  Tap → deep link
-```
+
+FCM is a delivery hint, not the source of truth: route foreground behavior explicitly, hand durable work to WorkManager, and make notification taps enter through the same validated link path as any external URL.
 
 **Components:**
 - **`FcmTokenService`** — fetches and uploads FCM token to BFF; handles rotation.
@@ -134,21 +135,21 @@ Authorization: Bearer …
 
 ### Layered diagram
 
+```mermaid
+flowchart TD
+    FCM["FCM message"] --> Service["AppFcmMessagingService"]
+    Service --> Dispatcher["PushDispatcher"]
+    Dispatcher --> Policy{"Delivery policy"}
+    Policy -->|"foreground presentation"| InApp["In-app UI event"]
+    Policy -->|"refresh required"| Work["WorkManager request"]
+    Policy -->|"notify now"| Factory["NotificationFactory"] --> Manager["NotificationManagerCompat"]
+    Work --> Repo["Inbox repository / Room"]
+    InApp --> Repo
 ```
-   FCM ─► AppFcmMessagingService.onMessageReceived
-                          │
-                          ▼
-                  PushDispatcher.handle
-                          │
-              ┌───────────┼────────────┐
-              ▼           ▼            ▼
-        foreground?   needs work    just notify
-        in-app banner  → enqueue    → NotificationFactory
-                       Worker        → NotificationManagerCompat.notify
-                          │
-                          ▼
-                  Inbox repo mirror (Room)
-```
+
+The dispatcher converts an untrusted transport payload into an application policy decision; repositories hold durable state, while presentation paths remain replaceable and testable.
+
+Validated against: [Receive messages in an Android app](https://firebase.google.com/docs/cloud-messaging/android/receive) and [WorkManager](https://developer.android.com/topic/libraries/architecture/workmanager).
 
 ### Key class signatures
 

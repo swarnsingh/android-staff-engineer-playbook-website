@@ -49,24 +49,23 @@
 
 ## 3. The Versioning Stack
 
+```mermaid
+flowchart TD
+    App["Installed app version<br/>capabilities + support policy"]
+    Wire["Wire contract version<br/>old and new clients overlap"]
+    Local["Local schema version<br/>ordered, tested migrations"]
+    Config["Compatibility controls<br/>capabilities + flags + minimum version"]
+    User["Safe user experience<br/>degrade, migrate, warn, or block"]
+
+    App --> Config
+    Wire --> Config
+    Local --> Config
+    Config --> User
+    App <--> Wire
+    App --> Local
 ```
-   App version (4.12.1)
-        │
-        ├── Min supported = 4.10 (deprecation banner ≥ 4.9, force-update < 4.8)
-        │
-        ▼
-   Wire version (semver, e.g., v1 → v2)
-        │
-        ├── /v1/feed (legacy support)
-        └── /v2/feed (new shape)
-        │
-        ▼
-   Room version (incremented on each schema change)
-        │
-        ├── Migration_1_to_2
-        ├── Migration_2_to_3
-        └── ...
-```
+
+App, wire, and local-schema versions evolve independently. Compatibility policy must coordinate all three because installed clients cannot be assumed to upgrade when the server or schema changes.
 
 ---
 

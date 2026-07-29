@@ -51,19 +51,30 @@
 
 ## 3. The Security Stack on Android
 
+```mermaid
+flowchart TD
+    Threats["Threat model and data classification"]
+    Transport["Transport<br/>TLS + cleartext policy + justified pinning"]
+    Storage["Storage<br/>Android Keystore + versioned encryption envelope"]
+    Integrity["App integrity<br/>Play App Signing + Play Integrity signals"]
+    Runtime["Runtime controls<br/>biometric gates + secure UI + validated links"]
+    Code["Build controls<br/>R8 + dependency and native-code hardening"]
+    Backend["Server enforcement<br/>short-lived credentials + revocation + risk policy"]
+
+    Threats --> Transport
+    Threats --> Storage
+    Threats --> Integrity
+    Threats --> Runtime
+    Threats --> Code
+    Transport --> Backend
+    Storage --> Backend
+    Integrity --> Backend
+    Runtime --> Backend
 ```
-   ┌─────────────────────────────────────┐
-   │ Transport                            │   TLS 1.3, pinning, HTTPS
-   ├─────────────────────────────────────┤
-   │ Storage                              │   Keystore, EncryptedSharedPrefs, SQLCipher
-   ├─────────────────────────────────────┤
-   │ App integrity                        │   Play App Signing, Play Integrity, SafetyNet
-   ├─────────────────────────────────────┤
-   │ Runtime                              │   Biometric, FLAG_SECURE, deep-link validation
-   ├─────────────────────────────────────┤
-   │ Code                                 │   R8 obfuscation, R8 shrinking, native lib protection
-   └─────────────────────────────────────┘
-```
+
+No layer proves trust alone. Device-side controls reduce exposure and produce signals, while the backend still enforces credential lifetime, authorization, revocation, and risk decisions.
+
+Validated against: [Android security best practices](https://developer.android.com/privacy-and-security/security-best-practices) and [Play Integrity overview](https://developer.android.com/google/play/integrity/overview).
 
 ---
 

@@ -49,23 +49,21 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    Start["App startup"] --> Bootstrap["FlagsRepository.bootstrap"]
+    Bootstrap --> Disk["Load last valid disk snapshot"]
+    Disk --> Memory["Publish immutable in-memory FlagSet"]
+    Memory --> Caller["Typed flag evaluation"]
+    Bootstrap --> Fetch["Background fetch"]
+    Fetch --> Validate["Validate schema, signature, and targeting"]
+    Validate --> Persist["Atomically persist new snapshot"]
+    Persist --> Policy{"Activation policy"}
+    Policy -->|"live-safe"| Memory
+    Policy -->|"next session"| Disk
 ```
-   App startup ──► FlagsRepository.bootstrap()
-                            │
-                            ▼
-                  Load cached config from disk (DataStore)
-                            │
-                            ▼
-                  Expose StateFlow<FlagSet> to app
-                            │
-                            ▼
-                  Background fetch (/v1/flags) and persist
-                            │
-                            ▼
-                  Apply policy: "next session" vs "live update"
 
-   Caller code: flags.bool("feature_x") returns from in-memory snapshot
-```
+Startup never waits for the network: callers receive a last-known-good immutable snapshot, while a validated background fetch is activated live only when the flag's policy permits it.
 
 **Components:**
 - **`FlagsRepository`** — bootstraps, fetches, persists.
@@ -137,21 +135,20 @@ val retries = Flags.maxRetry()
 
 ### Layered diagram
 
+```mermaid
+flowchart LR
+    App["Application.onCreate"] --> Repo["FlagsRepository"]
+    Repo --> Disk["Snapshot store"]
+    Disk --> Flow["StateFlow of immutable FlagSet"]
+    Flow --> Features["Feature callers"]
+    Repo --> Refresh["Background refresher"]
+    Refresh --> API["Flags API"]
+    API --> Validate["Validator"]
+    Validate --> Disk
+    Validate -->|"live-safe atomic swap"| Flow
 ```
-   Application.onCreate
-        │
-        ▼
-   FlagsRepository.bootstrap()
-        ├─► load disk snapshot   (sync, fast)
-        ├─► expose StateFlow<FlagSet>
-        └─► launch backgroundRefresh()
-                  │
-                  ▼
-           /v1/flags POST → persist → maybe atomic swap
-                                        ▲
-                                        │
-                                policy: stable vs live
-```
+
+One repository owns persistence, refresh, validation, and publication, preventing features from fetching remote configuration or observing partially updated values independently.
 
 ### Key class signatures
 
@@ -339,18 +336,29 @@ Defaults are not "what we want" but "what's safest if the network/disk fails." D
 
 ### Fetch lifecycle
 
+```mermaid
+sequenceDiagram
+    participant App
+    participant Store as Snapshot store
+    participant Repo as Flags repository
+    participant API as Flags API
+
+    App->>Repo: bootstrap()
+    Repo->>Store: load last valid snapshot
+    Store-->>Repo: cached FlagSet
+    Repo-->>App: ready for synchronous evaluation
+    Repo->>API: fetch in background
+    API-->>Repo: candidate config
+    Repo->>Repo: validate and choose activation policy
+    Repo->>Store: persist atomically
+    alt live-safe
+        Repo-->>App: publish new FlagSet
+    else next-session
+        Repo-->>App: retain current snapshot
+    end
 ```
-App start
-  │
-  ├── Disk snapshot loaded sync (< 5ms) — ready
-  │
-  ├── Background fetch (< 1s typically)
-  │       │
-  │       └── On success: persist + (live: swap now / non-live: queue)
-  │
-  └── Foreground after background (> 4h):
-          └── If stale, re-fetch
-```
+
+The lifecycle separates availability from freshness: cached flags make startup deterministic, and remote data becomes active only after validation and an explicit live-versus-next-session decision.
 
 ### Failure modes
 
