@@ -50,23 +50,17 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    Client["Android client"] <-->|"cursor HTTPS"| API["BFF / Feed API"]
+    API --> Rank["Ranking service"]
+    API --> CDN["Media CDN"]
+    Hint["FCM / socket new-content hint"] -.-> Client
+    Client --> Room[("Room feed cache")]
+    Client --> Outbox["Engagement outbox"] --> API
 ```
-            ┌────────────────┐
-            │  Android Client│
-            │   (this talk)  │
-            └────────┬───────┘
-                     │ HTTPS + (optional) WSS for "new posts" hint
-                     ▼
-       ┌──────────────────────────┐
-       │       BFF / Feed API     │
-       │ (paginates, hydrates)    │
-       └──┬─────────┬────────┬────┘
-          │         │        │
-     ┌────▼───┐ ┌──▼───┐ ┌──▼───┐
-     │Ranking │ │ CDN  │ │ Push │
-     │  + ML  │ │media │ │ FCM  │
-     └────────┘ └──────┘ └──────┘
-```
+
+The paged API returns a ranked snapshot, media loads from the CDN, and realtime delivery only hints that fresher content exists; it does not mutate ordering behind the user's scroll position.
 
 **Server components (named, not designed):**
 - **Feed API (BFF)** — accepts `cursor`, returns hydrated posts ready for render.
@@ -132,13 +126,16 @@ GET /v1/feed?cursor=eyJvIjozMH0=&limit=15
 
 ### Layered diagram
 
+```mermaid
+flowchart LR
+    UI["Compose UI"] --> VM["FeedViewModel"] --> Repo["FeedRepository"]
+    Repo --> Pager --> Mediator["RemoteMediator"] --> API["Feed API"]
+    Mediator --> Room[("Room + page anchors")]
+    Room --> Pager --> VM
+    Repo --> Outbox["Engagement outbox"] --> Work["WorkManager"] --> API
 ```
-   Compose UI ──► FeedViewModel ──► FeedRepository
-                                       │
-                                       ├─► Pager(Paging 3) ─► RemoteMediator ─► /v1/feed
-                                       ├─► Room (cache, page anchors)
-                                       └─► EngagementOutbox ─► WorkManager
-```
+
+Paging reads through Room, while likes and other engagement events use a separate durable outbox so optimistic UI does not depend on immediate network success.
 
 ### Key class signatures
 

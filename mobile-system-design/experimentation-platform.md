@@ -50,30 +50,17 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    Request["Client requests assignment"] --> Bandit["Bandit service selects variant"]
+    Bandit --> Assignment["Variant + immutable assignmentId"]
+    Assignment --> Client["Client caches and exposes assignment"]
+    Client --> Reward["Attributed reward event"]
+    Reward --> Validate["Validate assignment, window, and metric"]
+    Validate --> Update["Update posterior"] --> Bandit
 ```
-   Client requests flags ──► /v1/flags
-                                  │
-                                  ▼
-                  Server: for experiment X, ask BanditService
-                                  │
-                                  ▼
-                  Bandit returns variant (probabilistic, per current posterior)
-                                  │
-                                  ▼
-                  /v1/flags response: variant + assignmentId
-                                  │
-                                  ▼
-   Client: variant cached + exposure logged
-                                  │
-                                  ▼
-   User performs reward action → /v1/experiments/reward
-                                  │
-                                  ▼
-                          BanditService updates posterior
-                                  │
-                                  ▼
-                  Next assignment for similar users adjusts
-```
+
+Every reward references the assignment that caused it; without that immutable join key, delayed or repeated outcomes corrupt the adaptive policy.
 
 **Components:**
 - **`BanditClient`** — talks to flag service + reward endpoint.
@@ -141,24 +128,16 @@ POST /v1/experiments/reward
 
 ### Layered diagram
 
+```mermaid
+flowchart LR
+    Flags["FlagSet + assignmentId"] --> API["Typed experiment API"]
+    API --> Tracker["AssignmentTracker"]
+    API --> Feature["Feature behavior"] --> Reward["recordReward"]
+    Tracker --> Reward
+    Reward --> Sink["Durable RewardSink"] --> Endpoint["Reward API"]
 ```
-   FlagSet has assignmentId per bandit experiment
-        │
-        ▼
-   Caller: Experiments.onboarding.variant
-        │
-        ▼
-   AssignmentTracker.record(experimentId, assignmentId, sessionId)
-        │
-        ▼
-   Caller (later): Experiments.onboarding.recordReward(type, value)
-        │
-        ▼
-   RewardSink.enqueue(reward)
-        │
-        ▼
-   Analytics path → POST /v1/experiments/reward
-```
+
+The client persists enough assignment context to attribute a later reward, while the durable sink prevents transient connectivity from silently biasing observed outcomes.
 
 ### Key class signatures
 

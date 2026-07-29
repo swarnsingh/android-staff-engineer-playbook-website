@@ -50,27 +50,20 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    Input["Search text changes"] --> Flow["Query Flow<br/>debounce + distinct + latest only"]
+    Flow --> Repo["TypeaheadRepository"]
+    Repo --> Remote["Remote suggestions"]
+    Repo --> Trie["Local prefix index"]
+    Repo --> Recents["Recent queries"]
+    Remote --> Rank["Merge + dedupe + rank"]
+    Trie --> Rank
+    Recents --> Rank
+    Rank --> UI["Suggestion UI"]
 ```
-   SearchBar.onTextChange  ──► TypeaheadViewModel
-                                      │
-                                      ▼
-                              Query text Flow
-                                      │
-                          debounce(120ms) + distinct
-                                      │
-                                      ▼
-                            TypeaheadRepository.suggest(q)
-                                      │
-                          ┌───────────┼────────────┐
-                          ▼           ▼            ▼
-                     Remote API   Local Trie   Recent Queries (Room)
-                                      │
-                                      ▼
-                              ranked + deduped list
-                                      │
-                                      ▼
-                                  UI render
-```
+
+Latest-query cancellation prevents stale responses from replacing newer text, while local and recent results keep latency low before remote ranking returns.
 
 **Components:**
 - **`TypeaheadRepository`** — orchestrates remote + local; ranks.
@@ -118,25 +111,20 @@ POST /v1/suggest/click
 
 ### Layered diagram
 
+```mermaid
+flowchart LR
+    UI["Compose SearchBar"] --> VM["TypeaheadViewModel"]
+    VM -->|"debounce + flatMapLatest"| Repo["TypeaheadRepository"]
+    Repo --> API["Suggest API"]
+    Repo --> Trie["LocalTrie"]
+    Repo --> Dao["RecentsDao"]
+    API --> State["Ranked StateFlow"]
+    Trie --> State
+    Dao --> State
+    State --> UI
 ```
-   Compose SearchBar
-        │
-        ▼
-   TypeaheadViewModel
-        │ debounce(120ms) + flatMapLatest
-        ▼
-   TypeaheadRepository
-        │
-        ├─► /v1/suggest
-        ├─► LocalTrie.prefixSearch
-        └─► RecentsDao
-        │
-        ▼
-   merged + ranked → StateFlow<List<Suggestion>>
-        │
-        ▼
-   LazyColumn renders rows
-```
+
+The ViewModel owns query timing and cancellation; the repository owns source fusion and ranking, keeping composables free of request and cache policy.
 
 ### Key class signatures
 

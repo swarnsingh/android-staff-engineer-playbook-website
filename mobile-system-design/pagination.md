@@ -49,23 +49,17 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    UI["Compose LazyColumn"] --> Items["LazyPagingItems"] --> Pager
+    Pager --> Source["Room PagingSource"]
+    Pager --> Mediator["RemoteMediator"]
+    Mediator --> API["Cursor-based API"]
+    Mediator -->|"transactional page + remote keys"| Room[(Room)]
+    Room --> Source
 ```
-       LazyColumn (Compose)
-              │
-              ▼
-       LazyPagingItems
-              │
-              ▼
-            Pager
-              │
-       ┌──────┴──────┐
-       ▼             ▼
-   PagingSource   RemoteMediator
-   (Room DAO)     (network ↔ Room)
-                       │
-                       ▼
-                  HTTP /v1/...?cursor=…
-```
+
+Room remains the UI source of truth: the mediator fetches and transactionally stores pages and remote keys, while invalidated database data drives rendering.
 
 **Components:**
 - **`Pager`** — config: page size, prefetch distance, max in-memory pages.
@@ -135,21 +129,17 @@ sealed class LoadState {
 
 ### Layered diagram
 
+```mermaid
+flowchart TD
+    UI["Compose UI<br/>items + LoadState"]
+    VM["ViewModel<br/>Flow&lt;PagingData&lt;T&gt;&gt;"]
+    Pager --> Mediator["RemoteMediator"] --> Network["Network API"]
+    Mediator --> Room[(Room)]
+    Room --> Source["PagingSource"] --> Pager
+    Pager --> VM --> UI
 ```
-   Compose UI
-       │ collectAsLazyPagingItems()
-       ▼
-   ViewModel.pager  (Flow<PagingData<T>>)
-       │
-       ▼
-   Pager → RemoteMediator (network + write to Room)
-       │
-       ▼
-   PagingSource (Room DAO)
-       │
-       ▼
-   Compose renders items + LoadState (loading/error)
-```
+
+Load state is part of the presentation contract, while page storage and remote-key updates share a transaction so retries cannot corrupt the pagination boundary.
 
 ---
 

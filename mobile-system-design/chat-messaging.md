@@ -54,28 +54,15 @@ Things I'd ask the interviewer before drawing anything:
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    Client["Android client"] <-->|"WSS realtime + HTTPS history"| Gateway["BFF / gateway"]
+    Gateway --> Chat["Chat service"] --> Store["Message store"]
+    Gateway --> Media["Media service / object storage"]
+    Chat --> Push["FCM fallback"] --> Client
 ```
-            ┌────────────────┐
-            │  Android Client│
-            │   (this talk)  │
-            └────────┬───────┘
-                     │ WSS / HTTPS
-                     ▼
-       ┌──────────────────────────┐
-       │       BFF / Gateway      │
-       │ (auth, rate-limit, fanout)│
-       └──┬──────────┬──────┬─────┘
-          │          │      │
-     ┌────▼───┐ ┌────▼───┐ ┌▼──────┐
-     │ Chat   │ │ Push    │ │ Media │
-     │Service │ │ (FCM)   │ │ (S3)  │
-     └────┬───┘ └─────────┘ └───────┘
-          │
-     ┌────▼──────┐
-     │ Message   │
-     │ Storage   │  ← black box for this round
-     └───────────┘
-```
+
+The socket carries active-session events, REST recovers history, and FCM wakes offline recipients; durable message identity remains in the chat service rather than any transport.
 
 **Server-side components (named for context, not designed in this round):**
 - **BFF / Gateway** — terminates WebSocket, authenticates JWT, routes to chat / media / push.
@@ -150,15 +137,17 @@ Things I'd ask the interviewer before drawing anything:
 
 ### Layered diagram
 
+```mermaid
+flowchart LR
+    UI["Compose UI"] --> VM["ChatViewModel"] --> Repo["ChatRepository"]
+    Repo --> Dao["ChatDao / Room"] --> VM
+    Repo --> Socket["ChatWebSocket"]
+    Repo --> Outbox["OutboxScheduler"] --> Work["WorkManager"]
+    Socket --> Dao
+    Work --> Dao
 ```
-       Compose UI ─────► ChatViewModel ─────► ChatRepository
-                            ▲                    │
-                            │                    ├─► ChatDao (Room, SSOT)
-                            │                    ├─► ChatWebSocket
-                            │                    └─► OutboxScheduler ─► WorkManager
-                            │
-                  collectAsStateWithLifecycle
-```
+
+Room is the single render source; both socket delivery and retry workers converge messages into the same database observed by the ViewModel.
 
 **Rule:** UI never talks to network directly. Room is the single source of truth — the socket and REST both write to Room, the UI only reads from Room via `Flow`.
 
@@ -221,25 +210,24 @@ Three tables total: `conversations`, `messages`, `outbox` (mirrors PENDING rows 
 
 ### Sequence
 
+```mermaid
+sequenceDiagram
+    participant UI
+    participant Repo as ChatRepository
+    participant DB as Room
+    participant Transport as Socket / retry worker
+    participant Server
+    UI->>Repo: send(text)
+    Repo->>DB: insert PENDING with clientId
+    DB-->>UI: render optimistic bubble
+    Repo->>Transport: send durable envelope
+    Transport->>Server: msg.send(clientId)
+    Server-->>Transport: ack(serverId, clientId)
+    Transport->>DB: mark SENT
+    DB-->>UI: render canonical status
 ```
-User taps Send
-  │
-  ▼
-ChatViewModel.onSend()
-  │
-  ▼
-ChatRepository.send()
-  │
-  ├─► Room INSERT (status=PENDING, clientId=UUID)
-  │       └─► Flow emits → UI shows the bubble instantly
-  │
-  ├─► If socket connected → ChatWebSocket.send(envelope)
-  │       └─► on msg.ack → Room UPDATE (serverId, status=SENT)
-  │
-  └─► If socket disconnected → enqueue OutboxFlushWorker (constraint: NETWORK_CONNECTED)
-          └─► worker re-sends via REST or reconnected socket
-                  └─► same clientId → server dedupes
-```
+
+The client-generated ID survives process death and retries, allowing the server to deduplicate while the UI immediately renders a durable pending message.
 
 ### Repository contract
 

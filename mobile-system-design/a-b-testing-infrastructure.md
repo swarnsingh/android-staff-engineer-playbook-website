@@ -50,29 +50,18 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    Client["Client requests flags"] --> Assign["Server assigns stable variant"]
+    Assign --> Snapshot["Flag response with experiment metadata"]
+    Snapshot --> Cache["Client caches immutable assignment"]
+    Cache --> Render["Feature renders assigned variant"]
+    Render --> Exposure["Log exposure once when actually viewed"]
+    Exposure --> Metrics["Join exposures with outcome metrics"]
+    Metrics --> Analysis["Experiment analysis"]
 ```
-   Client: Flags fetch  ──► /v1/flags
-                                │
-                                ▼
-                  Server: evaluate variant for each experiment
-                                │
-                                ▼
-                  /v1/flags response includes variant per experiment
-                                │
-                                ▼
-            Client: variant cached in FlagSet
-                                │
-                                ▼
-            Caller: Experiment.variant("ab_checkout_color")
-                                │
-                                ▼
-            ExposureSink.log(experiment, variant)  ← only once per session
-                                │
-                                ▼
-            Analytics events tagged with active experiments
 
-   Server consumer: exposure events + downstream metrics → analysis
-```
+Assignment, exposure, and outcome are distinct events: analysis is valid only when a stable assignment is joined to an exposure that actually occurred and a metric defined before the experiment.
 
 **Components:**
 - **`ExperimentRegistry`** — typed accessors per experiment.
@@ -138,24 +127,15 @@ GET /v1/flags?...
 
 ### Layered diagram
 
+```mermaid
+flowchart LR
+    Flags["FlagSet"] --> Registry["ExperimentRegistry"] --> Typed["Typed experiment API"]
+    Typed --> Feature["Feature renders variant"] --> Sink["Lazy ExposureSink"]
+    Sink --> Analytics["experiment_exposure event"]
+    Registry --> Tagger["MetricTagger"] --> Analytics
 ```
-   FlagSet (from flags lib)
-        │
-        ▼
-   ExperimentRegistry
-        │
-        ▼
-   Caller: Experiments.checkoutColor.variant
-        │
-        ▼
-   ExposureSink (lazy, once per (experiment, session))
-        │
-        ▼
-   Analytics emits experiment_exposure event
-        │
-        ▼
-   MetricTagger attaches active variants to every other event
-```
+
+The typed registry prevents raw-key drift, and lazy exposure logging avoids counting users who were assigned but never reached the experiment surface.
 
 ### Key class signatures
 

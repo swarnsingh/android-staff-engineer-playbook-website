@@ -50,26 +50,23 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    Events["Domain events"] --> Service["Notification service"]
+    Service --> Prefs["Preferences + consent"]
+    Service --> Templates["Localized templates"]
+    Service --> Cap["Frequency + quiet-hours policy"]
+    Prefs --> Route["Channel routing"]
+    Templates --> Route
+    Cap --> Route
+    Route --> FCM
+    Route --> APNs
+    Route --> Email
+    Route --> SMS
+    Route --> Inbox["Durable inbox"]
 ```
-      Domain events (Order, Chat, Account)
-                       │
-                       ▼
-               Notification Service
-                       │
-        ┌──────────────┼──────────────┐
-        ▼              ▼              ▼
-   Preferences    Template        Frequency
-     Service       Renderer         Capper
-                       │
-                       ▼
-                Channel Routers
-                       │
-        ┌──────┬───────┼───────┬──────┐
-        ▼      ▼       ▼       ▼      ▼
-       FCM   APNs    Email    SMS    Inbox
-                       │
-                 (client receives)
-```
+
+Routing is a policy decision over user preferences, locale, urgency, and frequency—not a direct mapping from every domain event to every channel.
 
 **Server components (named, not designed):**
 - **Notification Service** — receives triggers, orchestrates routing.
@@ -158,14 +155,15 @@ POST /v1/me/inbox/{id}/read
 
 ### Layered diagram
 
+```mermaid
+flowchart LR
+    Push["PushDispatcher"] --> Repo["InboxRepository"] --> Room[("Room inbox_items")]
+    Room --> UI["Compose inbox"]
+    UI -->|"mark read"| Repo --> API["Inbox API"]
+    API --> Repo
 ```
-   PushDispatcher ──► InboxRepository ──► Room (inbox_items)
-                            │
-                            ▼
-                    Compose Inbox screen
-                            │
-                    "Mark all read" → REST PATCH
-```
+
+The local inbox is renderable offline, while read state is reconciled through the repository instead of coupling the screen directly to push delivery or REST.
 
 ### Key class signatures (client)
 
@@ -213,29 +211,18 @@ Preferences sync uses the same outbox pattern as `offline-sync.md`. Inbox is a c
 
 ### Routing pipeline (server-side, conceptually)
 
+```mermaid
+flowchart TD
+    Trigger --> Dedupe{"New deduplication key?"}
+    Dedupe -->|"no"| Stop["Return prior outcome"]
+    Dedupe -->|"yes"| Context["Load preferences, locale, timezone"]
+    Context --> Allowed{"Channel enabled, under cap,<br/>and allowed by quiet-hours policy?"}
+    Allowed -->|"no"| Inbox["Persist durable inbox record"]
+    Allowed -->|"yes"| Render["Render localized template"] --> Route["Channel router"]
+    Route --> Inbox
 ```
-Trigger
-  │
-  ▼
-1. Dedupe by deduplicationKey (idempotency)
-  │
-  ▼
-2. Lookup user prefs + locale + timezone
-  │
-  ▼
-3. For each requested channel:
-     a. Channel enabled for category? (prefs)
-     b. Frequency cap not hit? (capper)
-     c. Quiet hours allow? (or category is "must-deliver")
-     d. Render template in user's locale
-     e. Hand to channel router
-  │
-  ▼
-4. Channel router (push: build FCM data payload)
-  │
-  ▼
-5. Persist in inbox (always, regardless of push success)
-```
+
+Idempotency and policy run before channel delivery, and inbox persistence does not depend on whether a transient push, email, or SMS attempt succeeds.
 
 ### Idempotency
 

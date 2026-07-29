@@ -50,24 +50,18 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    App["App caller"] --> Manager["DownloadManager API"]
+    Manager --> Queue["Durable Room queue"]
+    Queue --> Work["WorkManager DownloadWorker"]
+    Work --> Fetch["Bounded parallel range fetchers"]
+    Fetch --> Partial["Partial files + verified chunk ledger"]
+    Partial --> Assemble["Atomic assembly / rename"]
+    Assemble --> Final["Final file"]
 ```
-   App ──► DownloadManager (Kotlin API)
-                  │
-                  ▼
-            Download queue (Room)
-                  │
-                  ▼
-       DownloadWorker(s) (WorkManager)
-              │       │
-              ▼       ▼
-        ChunkFetcher(s) (HTTP Range, OkHttp)
-                  │
-                  ▼
-            partial files + ledger
-                  │
-                  ▼
-            final assembled file
-```
+
+Queue and chunk progress are durable, so process death resumes verified work instead of restarting blindly or exposing a partial file as complete.
 
 **Components:**
 - **`DownloadManager`** — public API; enqueue, observe, pause, cancel.
@@ -125,26 +119,20 @@ sealed class DownloadState {
 
 ### Layered diagram
 
+```mermaid
+flowchart LR
+    Caller --> Manager["DownloadManager"] --> Queue["Room queue"]
+    Queue --> Scheduler["WorkManager"] --> Worker["DownloadWorker"]
+    Worker --> C0["Chunk 0"]
+    Worker --> C1["Chunk 1"]
+    Worker --> C2["Chunk 2"]
+    C0 --> Assemble["Assembler"]
+    C1 --> Assemble
+    C2 --> Assemble
+    Assemble --> Final["Final file"]
 ```
-   Caller ──► DownloadManager ──► Room queue
-                                       │
-                                       ▼
-                               WorkManager schedules
-                                       │
-                                       ▼
-                              DownloadWorker (per download)
-                                       │
-                            ┌──────────┼──────────┐
-                            ▼          ▼          ▼
-                       Chunk 0     Chunk 1     Chunk 2
-                            └──── parallel ─────┘
-                                       │
-                                       ▼
-                                  Assembler
-                                       │
-                                       ▼
-                                  Final file
-```
+
+One worker owns download state while fetch concurrency remains bounded; assembly begins only after every required chunk passes validation.
 
 ---
 

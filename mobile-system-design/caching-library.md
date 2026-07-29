@@ -49,18 +49,17 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    API["Cache&lt;K, V&gt;"]
+    Memory["Memory cache<br/>LRU + maxSize"]
+    Disk["Disk cache<br/>byte budget + atomic writes"]
+    Index["Durable index<br/>key + expiry + size"]
+    API --> Memory
+    API --> Disk --> Index
 ```
-                   Cache<K, V>
-                       │
-              ┌────────┴────────┐
-              ▼                 ▼
-      MemoryCache (LRU)   DiskCache (bytes)
-           |                 |
-         maxSize           maxBytes
-           |                 |
-      LinkedHashMap     atomic write
-                        + index file
-```
+
+The public cache coordinates two independently bounded tiers: memory optimizes latency, while disk requires atomic data and index updates to remain recoverable.
 
 **Layers (named for context):**
 - **`Cache<K, V>`** — public API; orchestrates memory + disk; handles TTL.
@@ -120,20 +119,16 @@ val cache = CacheBuilder<String, User>()
 
 ### Layered diagram
 
+```mermaid
+flowchart TD
+    Get["get(key)"] --> Memory{"Memory hit?"}
+    Memory -->|"yes"| Return["Return value"]
+    Memory -->|"no"| Disk{"Disk hit and fresh?"}
+    Disk -->|"yes"| Hydrate["Decode + hydrate memory"] --> Return
+    Disk -->|"no"| Miss["Return miss"]
 ```
-              get(K)
-               │
-               ▼
-       MemoryCache.get(K)  ── hit ──► return
-               │
-               miss
-               ▼
-        DiskCache.get(K)   ── hit ──► hydrate Memory, return
-               │
-               miss
-               ▼
-              null
-```
+
+Reads move from the cheapest tier to the durable tier; a disk hit repopulates memory, while expiry is treated as a miss rather than returning silently stale data.
 
 ---
 
@@ -141,13 +136,17 @@ val cache = CacheBuilder<String, User>()
 
 Each entry is one file in the cache dir:
 
+```mermaid
+flowchart TD
+    Root["cacheDir/"]
+    Index["index.bin<br/>key → file, expiry, size"]
+    Entries["entries/"]
+    Files["opaque entry files<br/>content-addressed or UUID names"]
+    Root --> Index
+    Root --> Entries --> Files
 ```
-cacheDir/
-├── index.bin                     ← (key → file, expiresAt, sizeBytes)
-└── entries/
-    ├── 8f7a...uuid
-    └── ...
-```
+
+The index owns lookup and eviction metadata; opaque entry filenames avoid leaking raw keys and are committed atomically with their metadata.
 
 `index.bin` is rewritten atomically on flush. Entry files are written `.tmp` → `fsync` → `rename` for atomicity.
 
