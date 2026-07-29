@@ -6,7 +6,7 @@ Functional and non-functional requirements that shape this architecture.
 
 ## Architecture
 
-The high-level architecture. Diagram-first.
+The high-level architecture. Diagram-first. Show the system boundary and ownership, then state the takeaway in text. Validate platform-specific behavior against a primary source.
 
 ## Modules
 
@@ -14,7 +14,7 @@ The major modules and their responsibilities.
 
 ## Data Flow
 
-How data moves through the system end-to-end. Sequence diagrams preferred.
+How data moves through the system end-to-end. Mermaid sequence diagrams preferred. Keep retries, duplicate handling, offline behavior, and failure paths consistent with the prose.
 
 ## Offline Strategy
 

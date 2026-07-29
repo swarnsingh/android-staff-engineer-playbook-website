@@ -35,7 +35,7 @@ STALE_DAYS = 180
 THIN_FILE_ALLOWLIST: set[str] = set()
 
 # Top-level TOC/index files and templates are exempt from the word floor.
-EXEMPT_DIRS = {"templates"}
+EXEMPT_DIRS = {"assets", "templates"}
 
 TREE_INDEXES = {
     "android.md",

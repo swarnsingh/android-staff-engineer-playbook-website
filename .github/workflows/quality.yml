@@ -18,6 +18,11 @@ jobs:
           python-version: "3.12"
       - name: Run quality gates (links, anchors, guided indexes, content)
         run: python3 scripts/check_docs.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Render and validate repository visuals
+        run: python3 scripts/check_visuals.py --renderer "npx --yes @mermaid-js/mermaid-cli@11.16.0"
 
   check-external-links:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'

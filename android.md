@@ -23,6 +23,25 @@ Follow phases in order. Within each phase, read links top to bottom. Phases 1–
 
 Complete [Engineering Fundamentals](engineering-fundamentals.md) and these Kotlin phases first: language core, type system, [Coroutines](kotlin/coroutines-and-flow/coroutines.md), and [Flow Operators and Backpressure](kotlin/coroutines-and-flow/flow-operators-and-backpressure.md).
 
+```mermaid
+flowchart TD
+    PRE["Prerequisites<br/>Engineering fundamentals + Kotlin"]
+    P1["1. Lifecycle, state, architecture"]
+    P2["2. Data ownership and DI"]
+    P3["3. Compose runtime and UI"]
+    P4["4. Concurrency and background work"]
+    P5["5. Network, security, device APIs, media"]
+    P6["6. Testing strategy"]
+    P7["7. Performance and observability"]
+    P8["8. Build tooling and OS internals"]
+    P9["9. KMP specialization<br/>(optional)"]
+
+    PRE --> P1 --> P2 --> P3 --> P4 --> P5 --> P6 --> P7 --> P8
+    P8 -. "specialize after the Android core" .-> P9
+```
+
+The core path builds an Android feature from lifecycle and data ownership outward to UI, execution, integrations, verification, performance, and the platform underneath it. KMP is deliberately last because sharing code safely requires those boundaries first.
+
 ### Phase 1 — Lifecycle, state, and app architecture
 
 1. [Activity](android/architecture/activity.md)

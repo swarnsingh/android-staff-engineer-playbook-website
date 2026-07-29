@@ -19,6 +19,21 @@ Kotlin is the substrate of the Android tree. Deep knowledge of nullability, vari
 
 Prerequisite: [Engineering Fundamentals](engineering-fundamentals.md) through immutability, state machines, and backpressure. Follow phases in order and read each numbered list top to bottom.
 
+```mermaid
+flowchart TD
+    PRE["Prerequisite<br/>Engineering fundamentals"]
+    P1["1. Language core"]
+    P2["2. Type system and API design"]
+    P3["3. Compiler features"]
+    P4["4. Coroutines and Flow"]
+    P5["5. Runtime and JVM interop"]
+    P6["6. Current release delta<br/>(re-check regularly)"]
+
+    PRE --> P1 --> P2 --> P3 --> P4 --> P5 --> P6
+```
+
+The sequence first makes values and APIs safe, then explains compiler transformation, asynchronous execution, and runtime consequences. Release-specific material comes last so changing versions do not replace stable mental models.
+
 ### Phase 1 — Language core
 
 1. [Variables](kotlin/language-core/variables.md)

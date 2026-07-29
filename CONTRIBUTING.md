@@ -108,11 +108,28 @@ Same concept, multiple angles — link between them, never duplicate.
 - Section anchors use GitHub's auto-generated kebab-case slugs: `../patterns/retry.md#exponential-backoff`
 - Never use absolute URLs to point inside the repo
 
-### Diagrams
+### Diagrams, images, and attribution
 
-- Mermaid first, ASCII second
-- No PNG, screenshots, or external image hosts
-- Must render in GitHub
+Visuals must teach the same model as the surrounding text. If a diagram and the prose disagree, update them together in the same pull request; a visually attractive contradiction is still a documentation defect.
+
+Use this order of preference:
+
+1. **Mermaid** for flows, sequences, state machines, dependency graphs, timelines, and system boundaries. It is editable, diffable, and rendered by GitHub.
+2. **Local SVG** only when Mermaid cannot express the idea clearly. Keep text selectable where practical and preserve the editable source when the SVG was exported from another tool.
+3. **Local PNG, JPEG, or WebP** only when the appearance of a real tool or interface is itself part of the lesson, such as a Perfetto trace or Play Console control. Do not use raster images for architecture that can be expressed as Mermaid or SVG.
+4. **ASCII** only when fixed-width source layout is the subject. Migrate existing architecture ASCII to Mermaid when touching it.
+
+Additional requirements:
+
+- Never hotlink an image. Store reusable assets under `assets/<knowledge-tree>/` and reference them with a relative path.
+- Give every image meaningful alt text. Follow every Mermaid diagram with a short plain-language takeaway; GitHub rendering and assistive-technology support must not be the only way to learn the concept.
+- Do not rely on color alone. Labels, line styles, or shapes must carry the meaning in both light and dark themes.
+- Keep one diagram focused on one question. Split a diagram when labels become smaller than the surrounding prose or when unrelated flows cross.
+- Use current primary sources for technical behavior. A blog can improve presentation or provide an experience report, but it cannot override Android, Kotlin, AOSP, IETF, or library documentation.
+- Prefer an original diagram validated against primary sources. Copy or adapt an external visual only when the specific asset is licensed for reuse.
+- Record every local non-Mermaid asset in [`assets/ATTRIBUTION.md`](assets/ATTRIBUTION.md): local path, page where used, creator, source URL, license, changes, and retrieval date. Mark repository-authored assets as original. Page-level licenses do not automatically cover third-party media embedded on that page.
+- Put a `Source:` or `Validated against:` link next to a visual when its accuracy depends on versioned platform or API behavior. Track fast-moving claims through the existing Currency Watchlist rather than adding decorative verification dates everywhere.
+- Run `python3 scripts/check_visuals.py --renderer "npx --yes @mermaid-js/mermaid-cli@11.16.0"` before pushing a visual change.
 
 ### Probing questions and answer keys
 
@@ -170,7 +187,8 @@ Every PR runs `python3 scripts/check_docs.py` via GitHub Actions ([`.github/work
 3. **Unfinished content** — literal `*TODO: …*` or standalone `TBD` markers.
 4. **Near-empty files** — non-stub content files under 400 words (expand them, or allowlist in the script with a reason).
 5. **Learning-order integrity** — every knowledge-tree index has a guided sequence and every topic appears in its owning index.
-6. **External-link health** — a scheduled and manually runnable job checks cited web resources. Definitive 404/410 responses fail; access controls and transient network failures are reported without making ordinary pull requests flaky.
+6. **Visual integrity** — Mermaid blocks are rendered, local images must exist under `assets/`, alt text is required, hotlinks are rejected, and reused assets must appear in the attribution registry.
+7. **External-link health** — a scheduled and manually runnable job checks cited web resources. Definitive 404/410 responses fail; access controls and transient network failures are reported without making ordinary pull requests flaky.
 
 Run it locally before pushing. A green check is a merge precondition, not a suggestion.
 
