@@ -50,32 +50,18 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    Request["ImageRequest"] --> Memory{"Memory cache hit?"}
+    Memory -->|"yes"| Target["Render target"]
+    Memory -->|"no"| Disk{"Disk cache hit?"}
+    Disk -->|"yes"| Decode["Decode to requested size"]
+    Disk -->|"no"| Fetch["Fetch source"] --> Decode
+    Decode --> Transform["Transformation chain"]
+    Transform --> Store["Populate eligible cache tiers"] --> Target
 ```
-        load("https://...")  ──►  ImageRequest
-                                       │
-                                       ▼
-                              MemoryCache.get
-                                  ▲   │
-                              miss │   │ hit
-                                       ▼
-                              DiskCache.get
-                                  ▲   │
-                              miss │   │ hit ──► decode ──► render
-                                       ▼
-                                  Fetcher
-                                       │
-                                       ▼
-                                  Decoder
-                                       │
-                                       ▼
-                              Transformation chain
-                                       │
-                                       ▼
-                              memory + disk write
-                                       │
-                                       ▼
-                                   Target
-```
+
+The request key, requested size, and transformations determine cache identity; decoding is delayed until bytes are found or fetched and remains off the main thread.
 
 **Components (named):**
 - **`ImageLoader`** — root orchestrator, owns caches and dispatchers.
@@ -142,29 +128,32 @@ val loader = ImageLoader.Builder(context)
 
 ### Request pipeline (each request)
 
+```mermaid
+sequenceDiagram
+    participant Target
+    participant Loader
+    participant Memory
+    participant Disk
+    participant Network
+    Target->>Loader: execute request
+    Loader->>Memory: get(key)
+    alt memory hit
+        Memory-->>Target: drawable
+    else memory miss
+        Loader->>Disk: open snapshot
+        alt disk hit
+            Disk-->>Loader: encoded bytes
+        else disk miss
+            Loader->>Network: fetch source
+            Network-->>Loader: encoded bytes
+        end
+        Loader->>Loader: decode to size + transform
+        Loader->>Memory: store eligible result
+        Loader-->>Target: drawable
+    end
 ```
-Request
-  │
-  ├─► EventListener.onStart
-  │
-  ├─► MemoryCache.get(key)            (sync)
-  │      └─ hit → success
-  │
-  ├─► DiskCache.openSnapshot(key)     (off main)
-  │      └─ hit → decode → transform → write memory → success
-  │
-  ├─► Fetcher.fetch(uri)              (off main)
-  │      └─► Source / InputStream
-  │
-  ├─► Decoder.decode(source, size)    (off main)
-  │      └─► Bitmap (sampled to requested size)
-  │
-  ├─► Transformations.apply(bitmap)   (off main)
-  │
-  ├─► write memory + disk
-  │
-  └─► EventListener.onSuccess → Target.set(drawable)
-```
+
+Cancellation belongs to the request owner throughout the pipeline; a recycled target must not receive a result from an older request.
 
 ---
 

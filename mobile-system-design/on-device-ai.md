@@ -48,27 +48,21 @@ This is the deep-dive interviewers want. The honest answer is a routing decision
 
 ## 3. High-Level Architecture
 
+```mermaid
+flowchart TD
+    UI["Feature UI"] --> Router["InferenceRouter"]
+    Router --> Capability{"Model and device capability?"}
+    Router --> Policy{"Consent, data class, network, and cost policy?"}
+    Capability --> Choice["Per-request execution choice"]
+    Policy --> Choice
+    Choice -->|"eligible"| Local["On-device runtime<br/>platform model or LiteRT"]
+    Choice -->|"permitted"| Cloud["Authenticated cloud inference"]
+    Local --> Result["Validated result + telemetry"]
+    Cloud --> Result
+    Result --> UI
 ```
-┌────────────────────────────────────────────────────────┐
-│ Feature UI (Compose)                                   │
-└──────────────┬─────────────────────────────────────────┘
-               │
-┌──────────────▼─────────────────────────────────────────┐
-│ InferenceRouter                                        │
-│  - capability check (device, model downloaded?)        │
-│  - policy check (consent, data class, offline?)        │
-│  - picks backend per request                           │
-└───────┬──────────────────────┬─────────────────────────┘
-        │                      │
-┌───────▼────────┐    ┌────────▼────────────────────────┐
-│ On-device path │    │ Cloud path                      │
-│ ML Kit GenAI   │    │ Firebase AI Logic / own backend │
-│  → AICore      │    │  → Gemini API                   │
-│  → Gemini Nano │    │ (auth, quota, abuse controls)   │
-│ or LiteRT for  │    └─────────────────────────────────┘
-│ custom models  │
-└────────────────┘
-```
+
+Routing is a policy decision per request, not a permanent feature switch: capability, privacy, connectivity, model freshness, latency, and cost determine whether local or cloud execution is allowed.
 
 The **InferenceRouter** is the piece you own. It is a policy engine, not a convenience wrapper: it encodes which data classes may go to the cloud, which tasks the on-device model is trusted with, and what the fallback chain is when either path fails.
 

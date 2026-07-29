@@ -50,28 +50,16 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    Editor["Compose editor"] <--> Model["Local CRDT document model"]
+    Model <--> Queue["Durable operation queue"]
+    Queue <--> Socket["Document WebSocket"]
+    Socket <--> Relay["Collaboration relay / sequencer"]
+    Relay <--> Peers["Other clients"]
 ```
-        Mobile Client A
-   ┌──────────────────────────┐
-   │ Compose Editor           │
-   │   ▲                      │
-   │   │ render               │
-   │ DocumentModel (CRDT)     │
-   │   ▲                      │
-   │   │ apply local ops      │
-   │ OpQueue (Room outbox)    │
-   │   │                      │
-   │ DocSocket (WSS)          │
-   └──────────┬───────────────┘
-              │
-              ▼
-   ┌──────────────────────────┐
-   │  Collab Relay / Sequencer│  ← black box
-   └──────────┬───────────────┘
-              │
-              ▼
-        Other clients (B, C, ...)
-```
+
+Local operations update the CRDT before network acknowledgement and enter a durable queue; the relay distributes operations, while convergence comes from operation identity and merge rules rather than arrival order alone.
 
 **Components:**
 - **`DocumentModel`** — CRDT instance for this document.
@@ -138,14 +126,18 @@ Server replies with current state vector + initial CRDT snapshot if needed.
 
 ### Layered diagram
 
+```mermaid
+flowchart LR
+    UI["Compose editor"] --> VM["EditorViewModel"] --> Repo["DocumentRepository"]
+    Repo --> Model["CRDT model"] --> VM
+    Repo --> Queue["Room operation queue"]
+    Repo --> Socket["DocSocket"]
+    Repo --> Presence["Ephemeral presence tracker"]
+    Queue --> Socket
+    Socket --> Model
 ```
-   Compose Editor ──► EditorViewModel ──► DocumentRepository
-                                                │
-                                                ├─► DocumentModel (CRDT)
-                                                ├─► OpQueue (Room outbox)
-                                                ├─► DocSocket (WSS)
-                                                └─► PresenceTracker
-```
+
+Durable document operations and ephemeral presence have different reliability contracts, even though one repository coordinates both for the editor.
 
 ### Key class signatures
 

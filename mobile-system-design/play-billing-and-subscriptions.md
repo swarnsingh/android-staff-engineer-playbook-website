@@ -43,22 +43,17 @@ Installment plans (pay monthly for an annual commitment; Brazil/France/Italy/Spa
 
 ## 3. High-Level Architecture
 
+```mermaid
+flowchart TD
+    App["Android app"] <-->|"Billing flow + purchase result"| Play["Google Play Billing"]
+    App -->|"purchase token"| Backend["Entitlement service"]
+    Play -->|"real-time developer notification"| Backend
+    Backend -->|"verify purchase with Play API"| Play
+    Backend --> Store[("User entitlement store")]
+    Store -->|"canonical entitlement"| App
 ```
-┌─────────────┐   launchBillingFlow    ┌──────────────┐
-│ Android app │◄──────────────────────►│ Google Play  │
-│  (PBL 8/9)  │   Purchase result      │   Billing    │
-└──────┬──────┘                        └──────┬───────┘
-       │ purchaseToken                        │ RTDN (Pub/Sub)
-       ▼                                      ▼
-┌─────────────────────────────────────────────────────┐
-│ Your backend — Entitlement Service                  │
-│  1. verify: subscriptionsv2.get (subscriptions) or  │
-│     productsv2.getproductpurchasev2 (one-time)      │
-│  2. acknowledge / consume (≤3 days or auto-refund)  │
-│  3. upsert entitlement keyed by YOUR user id        │
-│  4. push entitlement to other devices               │
-└─────────────────────────────────────────────────────┘
-```
+
+The purchase token is evidence to verify, not an entitlement by itself; the backend verifies with Google Play, acknowledges or consumes when required, and owns access across devices.
 
 Note the split by product type: subscriptions verify via `purchases.subscriptionsv2.get` and acknowledge via the subscriptions endpoint, while **one-time products have their own path** — verify via `purchases.productsv2.getproductpurchasev2`, then `purchases.products.acknowledge` for non-consumables or `purchases.products.consume` for consumables (consume also acknowledges, and re-enables repurchase). Their RTDNs are separate types too (`ONE_TIME_PRODUCT_PURCHASED`, `ONE_TIME_PRODUCT_CANCELED`). Routing a one-time token through the subscriptions endpoint fails verification.
 
@@ -94,11 +89,20 @@ Tokens remain queryable until ~60 days after expiry; after that, reconciliation 
 
 The involuntary-churn path is where designs are judged, because it's where access and payment disagree:
 
+```mermaid
+stateDiagram-v2
+    [*] --> ACTIVE
+    ACTIVE --> IN_GRACE_PERIOD: renewal payment fails
+    IN_GRACE_PERIOD --> ACTIVE: recovered
+    IN_GRACE_PERIOD --> ON_HOLD: grace period ends
+    ON_HOLD --> ACTIVE: recovered
+    ON_HOLD --> CANCELED: unresolved
+    ACTIVE --> CANCELED: user cancels
+    CANCELED --> EXPIRED: entitlement period ends
+    EXPIRED --> [*]
 ```
-ACTIVE ──payment fails──► IN_GRACE_PERIOD ──unresolved──► ON_HOLD ──unresolved──► CANCELED ──► EXPIRED
-  ▲                          │ (access: KEEP)               │ (access: REVOKE)
-  └──────RECOVERED───────────┴──────────RECOVERED───────────┘
-```
+
+Access policy follows the verified subscription state: grace generally retains access, hold revokes it, and cancellation may retain access until the paid entitlement period expires.
 
 - **Grace period** (developer-configurable; even "0 days" keeps a minimum 1-day silent grace): user keeps full access, `expiryTime` keeps extending, Google dunning prompts the user to fix payment. Recovery here does *not* reset the billing date.
 - **Account hold** (up to ~60 days minus the grace length): **revoke access now**. The subscription stops appearing in `queryPurchasesAsync()` by default — a client that treats "not in the list" as "show the resubscribe paywall" gives on-hold users a confusing double-charge path; show a "fix your payment method" state instead, driven by server entitlement. Recovery from hold *does* reset the billing date.

@@ -52,30 +52,15 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    App["Android app + PSP SDK"] -->|"order + idempotency key"| API["Order / payment API"]
+    API --> PSP["Payment service provider"] --> Rails["Acquirer / scheme / bank"]
+    PSP -->|"signed webhook"| Webhook["Webhook receiver"] --> API
+    API -->|"canonical payment status"| App
 ```
-       ┌────────────────────┐
-       │  Android Client    │
-       │  + Stripe SDK      │
-       │   (this talk)      │
-       └─────────┬──────────┘
-                 │ HTTPS (no raw PAN)
-                 ▼
-   ┌──────────────────────────────┐
-   │      BFF / Order API         │
-   │ (creates PaymentIntent)      │
-   └──┬─────────────────────┬─────┘
-      │                     │
- ┌────▼────┐         ┌──────▼─────┐
- │   PSP   │         │  Webhook   │
- │ (Stripe)│◄────────┤  Receiver  │
- └─────────┘         └────────────┘
-      │
- ┌────▼────────┐
- │  Acquirers, │  ← black box
- │  schemes,   │
- │  banks      │
- └─────────────┘
-```
+
+The client never handles raw card data and never declares success from an SDK callback alone; the backend reconciles signed provider events into canonical order state.
 
 **Server-side (named, not designed):**
 - **BFF / Order API** — creates a `PaymentIntent` on the PSP, holds the secret, exposes a `clientSecret` to the app.
@@ -147,14 +132,17 @@ GET /v1/payments/intent/{intentId}
 
 ### Layered diagram
 
+```mermaid
+flowchart LR
+    UI["Compose checkout"] --> VM["CheckoutViewModel"] --> Repo["CheckoutRepository"]
+    Repo --> API["OrderApi + idempotency key"]
+    Repo --> PSP["PSP SDK gateway"]
+    Repo --> Bio["Biometric step-up"]
+    Repo --> Room[("Payment intent state log")]
+    API --> Room --> VM
 ```
-   Compose UI ──► CheckoutViewModel ──► CheckoutRepository
-                                            │
-                                            ├─► OrderApi (Retrofit, idempotency-key)
-                                            ├─► PspGateway (Stripe SDK)
-                                            ├─► BiometricPromptManager
-                                            └─► Room (intent state log)
-```
+
+The repository coordinates authentication, provider UI, backend intent creation, and durable status; the screen renders state rather than interpreting provider callbacks directly.
 
 ### Key class signatures
 
@@ -200,28 +188,25 @@ data class PaymentIntentEntity(
 
 ### Happy path
 
+```mermaid
+sequenceDiagram
+    participant User
+    participant App
+    participant API
+    participant PSP
+    User->>App: tap Pay
+    App->>App: required biometric step-up
+    App->>API: create intent(idempotency key)
+    API->>PSP: create payment intent
+    PSP-->>API: intent + client secret
+    API-->>App: intent
+    App->>PSP: confirm / complete required action
+    PSP-->>API: signed webhook
+    App->>API: fetch canonical status
+    API-->>App: succeeded / pending / failed
 ```
-User taps "Pay"
-  │
-  ▼
-Biometric prompt (if amount > threshold)
-  │ approved
-  ▼
-CheckoutVM.confirm()
-  │
-  ▼
-CheckoutRepo.createIntent(orderId, Idempotency-Key = orderId-v1)
-  │   ← server returns clientSecret + intentId
-  ▼
-Room INSERT (status=CREATED)
-  │
-  ▼
-PspGateway.confirm(clientSecret, paymentMethod)
-  │
-  ├─► returns Success → Room UPDATE (SUCCEEDED) → Receipt
-  ├─► returns NeedsAction → launch ChallengeActivity → resume on result
-  └─► throws Network → Room UPDATE (CONFIRMING) → trigger StatusPollWorker
-```
+
+Ambiguous network outcomes become a status-reconciliation problem, not a second charge attempt; the same idempotency key identifies every retry of one user intent.
 
 ### Idempotency in detail
 

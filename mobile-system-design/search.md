@@ -50,16 +50,17 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    UI["Search UI"] --> VM["SearchViewModel"] --> Repo["SearchRepository"]
+    Repo --> Pager
+    Pager --> Mediator["RemoteMediator"] --> API["Search API"] --> Service["Ranking and faceting service"]
+    Mediator --> Room[("Room result cache")]
+    Room --> Pager
+    Repo --> History["Recent and saved searches"]
 ```
-   SearchBar ──► SearchViewModel ──► SearchRepository
-                                          │
-                                          ├─► Pager (Paging 3)
-                                          │      └─► RemoteMediator → /v1/search
-                                          ├─► Room (recents, last results cache)
-                                          └─► HistoryRepository (saved searches)
 
-   Server: /v1/search → Search Service (ranking, faceting)  ← black box
-```
+The client owns query lifecycle, cached presentation, and pagination; ranking and facets remain a server contract rather than duplicated client logic.
 
 **Components:**
 - **`SearchRepository`** — query orchestration, result paging.
@@ -112,19 +113,17 @@ POST /v1/search/click
 
 ### Layered diagram
 
+```mermaid
+flowchart LR
+    UI["Compose UI"] --> VM["SearchViewModel"]
+    VM --> Query["Debounced query StateFlow"] --> Repo["SearchRepository"]
+    Repo --> Pager
+    Pager --> Source["Room PagingSource"]
+    Pager --> Mediator["RemoteMediator"]
+    Pager --> Results["PagingData Flow"] --> VM --> UI
 ```
-   Compose UI ──► SearchViewModel
-                       │
-                       ├─► query: StateFlow<Query>   (debounced)
-                       │
-                       └─► results: Flow<PagingData<Result>> = repo.search(query)
-                                                     │
-                                                     ▼
-                                                  Pager
-                                                     │
-                                                     ├─► PagingSource (Room cache)
-                                                     └─► RemoteMediator (network)
-```
+
+Each accepted query creates a new paging generation, so old requests and results cannot leak into the current search state.
 
 ### Key class signatures
 

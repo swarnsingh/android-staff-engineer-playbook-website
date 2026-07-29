@@ -51,29 +51,19 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart LR
+    subgraph Client[Android client]
+        Loader["Screen loader"] --> Cache["Validated payload cache"] --> Renderer["Native component registry / renderer"] --> Actions["Allowlisted action router"]
+    end
+    subgraph Backend[Backend]
+        Compose["Screen composition service"] --> Registry["Versioned schema registry"]
+        Data["Data + experimentation + personalization"] --> Compose
+    end
+    Loader <-->|"versioned HTTPS payload"| Compose
 ```
-   ┌────────────────────┐         ┌─────────────────────────┐
-   │   Android Client    │        │        Backend           │
-   │                     │        │                          │
-   │  ┌──────────────┐   │  HTTPS │  ┌───────────────────┐   │
-   │  │ Screen Loader │◄──┼────────┼─►│ Screen Composition │  │
-   │  └──────┬───────┘   │        │  │ Service (BFF)      │  │
-   │         ▼           │        │  └─────┬─────────────┘   │
-   │  ┌──────────────┐   │        │        │ assembles from  │
-   │  │ Payload Cache │   │        │  ┌─────▼─────────────┐  │
-   │  └──────┬───────┘   │        │  │ Component Registry │  │
-   │         ▼           │        │  │ (schema + versions)│  │
-   │  ┌──────────────┐   │        │  └─────┬─────────────┘  │
-   │  │ SDUI Renderer │   │        │        │                │
-   │  │ (registry of  │   │        │  ┌─────▼─────────────┐  │
-   │  │ native comps) │   │        │  │ Data services /    │  │
-   │  └──────┬───────┘   │        │  │ experimentation /   │  │
-   │         ▼           │        │  │ personalization     │  │
-   │  ┌──────────────┐   │        │  └───────────────────┘  │
-   │  │Action Router │   │        │                          │
-   │  └──────────────┘   │        └─────────────────────────┘
-   └────────────────────┘
-```
+
+The server composes only schemas and actions the installed client advertises; the client validates, renders native components, and safely falls back for unknown types rather than executing arbitrary server code.
 
 **Server-side (named, not designed):** a screen-composition BFF assembles sections from data services, filtered by the requesting app's **supported schema version and component set**; the component registry is the shared contract both sides build against. Airbnb's Ghost Platform does exactly this over a single shared GraphQL schema for web/iOS/Android.
 

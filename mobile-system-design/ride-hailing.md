@@ -50,24 +50,18 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    Rider["Rider app"] <-->|"HTTPS + trip updates"| API["BFF / Trip API"]
+    Driver["Driver app"] <-->|"HTTPS + WSS + location batches"| API
+    API --> Location["Location index"]
+    API --> Dispatch["Dispatch engine"]
+    API --> Push["FCM offers / recovery hints"]
+    Push --> Driver
+    Push --> Rider
 ```
-   ┌────────────┐         ┌────────────┐
-   │ Rider App  │         │ Driver App │
-   │ (this talk)│         │ (this talk)│
-   └─────┬──────┘         └─────┬──────┘
-         │ HTTPS / WSS          │ HTTPS / WSS + frequent POSTs
-         └──────────┬───────────┘
-                    ▼
-       ┌──────────────────────────┐
-       │     BFF / Trip API       │
-       │ (auth, rate limit, fan)  │
-       └──┬─────────┬───────┬─────┘
-          │         │       │
-    ┌─────▼──┐ ┌────▼───┐ ┌─▼─────┐
-    │Location│ │Dispatch│ │ Push  │
-    │ Index  │ │ Engine │ │ (FCM) │
-    └────────┘ └────────┘ └───────┘
-```
+
+The Trip API owns canonical state, the location index and dispatch engine support matching, and push only wakes clients that must recover the current trip version.
 
 **Server-side (named, not designed):**
 - **BFF / Trip API** — auth, trip CRUD, websocket fan-out.
@@ -145,15 +139,17 @@ POST /v1/driver/location          // batch, every 4s online
 
 ### Layered diagram
 
+```mermaid
+flowchart LR
+    UI["Compose UI"] --> VM["TripViewModel"] --> Repo["TripRepository"]
+    Repo --> Socket["TripSocket"]
+    Repo --> API["Idempotent TripApi"]
+    Repo --> Location["LocationSource"] --> Service["Driver foreground service"]
+    Repo --> Room[("Active trip + location buffer")]
+    Socket --> Room --> VM
 ```
-   Compose UI ──► TripViewModel ──► TripRepository
-                                       │
-                                       ├─► TripSocket (WebSocket, StateFlow<TripUpdate>)
-                                       ├─► TripApi (REST, idempotency)
-                                       ├─► LocationSource (FusedLocationProvider)
-                                       │      └─► LocationFgService (driver) / one-shot (rider)
-                                       └─► Room (active trip, location buffer)
-```
+
+All REST, socket, and location updates reconcile through a versioned active-trip record, preventing two transports from independently driving UI state.
 
 ### Key class signatures
 
@@ -269,23 +265,23 @@ class FusedLocationSource @Inject constructor(
 
 ### Trip state machine
 
+```mermaid
+stateDiagram-v2
+    [*] --> OFFERED
+    OFFERED --> ACCEPTED: driver accepts
+    ACCEPTED --> DRIVER_EN_ROUTE: driver departs
+    DRIVER_EN_ROUTE --> ARRIVED: pickup reached
+    ARRIVED --> IN_TRIP: rider boarded
+    IN_TRIP --> COMPLETED: drop-off reached
+    OFFERED --> CANCELLED
+    ACCEPTED --> CANCELLED
+    DRIVER_EN_ROUTE --> CANCELLED
+    ARRIVED --> CANCELLED
+    COMPLETED --> [*]
+    CANCELLED --> [*]
 ```
-OFFERED ──accept──► ACCEPTED ──driver depart──► DRIVER_EN_ROUTE
-                                                       │
-                                            driver arrives at pickup
-                                                       ▼
-                                                    ARRIVED
-                                                       │
-                                                rider boards / driver swipes
-                                                       ▼
-                                                   IN_TRIP
-                                                       │
-                                                dropoff reached
-                                                       ▼
-                                                  COMPLETED
-                                                       │
-                                            (CANCELLED can branch from any non-terminal state)
-```
+
+Only the server advances the canonical trip version; clients render legal transitions and recover with a snapshot when an event is missed or arrives out of order.
 
 The **server is authoritative**. Both apps receive `trip.update` over WebSocket; if local optimistic state diverges from `v` versioning, server wins.
 

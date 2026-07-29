@@ -50,29 +50,19 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    UI["Compose player UI"] --> Session["MediaSessionService"] --> Player["Media3 ExoPlayer"]
+    Player --> Manifest["Manifest API"]
+    Player --> CDN["Segment CDN"]
+    Player --> DRM["DRM licence service"]
+    Player --> ABR["Adaptive bitrate + track selection"]
+    Download["Media3 DownloadService"] --> Manifest
+    Download --> CDN
+    Download --> Offline["Protected offline media"]
 ```
-        Mobile Client (this talk)
-   ┌─────────────────────────────────┐
-   │ Compose UI                      │
-   │   ├─ VideoSurface (PlayerView)  │
-   │   ├─ Controls (play, scrub)     │
-   │   └─ Quality / captions menu    │
-   │                                  │
-   │ MediaSessionService             │
-   │   ├─ ExoPlayer (Media3)         │
-   │   ├─ ABR (auto bitrate)         │
-   │   └─ DRM session (Widevine)     │
-   │                                  │
-   │ DownloadService (Media3)        │
-   │   └─ DASH/HLS segment downloader│
-   └──────────────┬──────────────────┘
-                  │ HTTPS
-                  ▼
-   ┌─────────────────────────────────┐
-   │  CDN + Manifest API + Licence   │  ← black box
-   │     (Akamai/Fastly + DRM)       │
-   └─────────────────────────────────┘
-```
+
+The service owns playback beyond the screen lifecycle; manifests, segment delivery, DRM, and downloads remain distinct so buffering, entitlement, and offline failures can be diagnosed independently.
 
 **Components:**
 - **`ExoPlayer`** (Media3) — playback engine.
@@ -136,22 +126,17 @@ POST /v1/videos/{id}/license/offline
 
 ### Layered diagram
 
+```mermaid
+flowchart LR
+    Screen["PlayerScreen"] --> VM["PlayerViewModel"] --> Repo["VideoRepository"]
+    Repo --> API["Playback / licence API"]
+    Repo --> Downloads["DownloadRepository"] --> ServiceD["DownloadService"]
+    Repo --> Session["MediaSessionService"] --> Player["ExoPlayer"]
+    Player --> Tracks["ABR + DRM + track selection"]
+    Session --> VM
 ```
-   PlayerScreen ──► PlayerViewModel ──► VideoRepository
-                                              │
-                                              ├─► PlaybackApi (manifest, license)
-                                              └─► DownloadRepository (Room + Media3 DownloadService)
 
-   VideoRepository ──► binds ExoPlayer to MediaSession
-                                              │
-                                              ▼
-                                MediaSessionService (foreground)
-                                              │
-                                              ▼
-                                      ExoPlayer (Media3)
-                                              │
-                                ABR + DRM + Track selection
-```
+The screen issues intent and observes session state, while playback and downloads live in services whose lifetimes are not tied to a composable.
 
 ### Key class signatures
 

@@ -51,22 +51,17 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    Map["Map renderer + layers"]
+    Location["Fused location source"] --> Session["Navigation session"] --> Map
+    Session --> TTS["Turn instruction TTS"]
+    Session --> Routing["Directions / reroute API"]
+    Tiles["Tile API / offline regions"] --> Cache["Bounded tile cache"] --> Map
+    Search["Place search API"] --> Map
 ```
-        Mobile Client (this talk)
-   ┌──────────────────────────────────┐
-   │  MapView + render layers         │
-   │  LocationSource (Fused)          │
-   │  Offline tile cache              │
-   │  NavSession (turn-by-turn)       │
-   │  TTS engine                      │
-   └──────────────┬───────────────────┘
-                  │ HTTPS
-                  ▼
-   ┌──────────────────────────────────┐
-   │ BFF / Routing API (black box)    │
-   │  /tiles, /search, /directions    │
-   └──────────────────────────────────┘
-```
+
+Rendering, location sampling, routing, offline tiles, and spoken guidance have separate lifecycles; the navigation session coordinates them only while an active route needs them.
 
 **Components:**
 - **`MapView`** — SDK-provided; we control layers, markers, polylines.
@@ -133,18 +128,19 @@ GET /v1/tiles/download?bbox=...&zoomRange=10-17
 
 ### Layered diagram
 
+```mermaid
+flowchart LR
+    UI["MapScreen"] --> VM["MapViewModel"]
+    VM --> Location["LocationSource"]
+    VM --> Directions["DirectionsRepository"]
+    VM --> Offline["OfflineRegionsRepository"]
+    VM --> Session["NavSession"]
+    Session --> TTS["TtsEngine"]
+    Session --> Reroute["RerouteController"]
+    Session --> Service["Navigation foreground service"]
 ```
-   MapScreen (Compose) ──► MapViewModel
-                                 │
-                                 ├─► LocationSource (Fused stream)
-                                 ├─► DirectionsRepo (REST)
-                                 ├─► OfflineRegionsRepo (DAO + download manager)
-                                 └─► NavSession (state)
-                                          │
-                                          ├─► TtsEngine (announcer)
-                                          ├─► RerouteController
-                                          └─► ForegroundService (when actively navigating)
-```
+
+The foreground service exists only for user-visible active navigation; ordinary map browsing does not inherit its background location privileges.
 
 ### Key class signatures
 

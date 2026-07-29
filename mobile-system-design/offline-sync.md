@@ -50,25 +50,18 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    UI["Android UI"] --> Room[("Room source of truth")]
+    Room --> Outbox["Durable operation outbox"]
+    Outbox --> Sync["Sync engine"]
+    Sync <-->|"push operations / pull deltas"| API["Sync API"]
+    API --> Store["Versioned service store"]
+    API -. "conflicts + new change token" .-> Sync
+    Sync --> Room
 ```
-   ┌─────────────────────────────────┐
-   │  Android Client (this talk)     │
-   │  ┌──────┐  ┌───────┐  ┌───────┐ │
-   │  │ Room │  │Outbox │  │ Sync  │ │
-   │  └──────┘  └───────┘  └───────┘ │
-   └──────────────┬──────────────────┘
-                  │ HTTPS (deltas)
-                  ▼
-        ┌─────────────────────┐
-        │   Sync API (BFF)    │
-        │ /push, /pull        │
-        └──────────┬──────────┘
-                   │
-       ┌───────────▼────────────┐
-       │   Notes Service +      │
-       │   Versioned Store      │  ← black box
-       └────────────────────────┘
-```
+
+Local writes commit to Room and the outbox before network delivery; sync exchanges idempotent operations and deltas, then reconciles canonical state back into the UI source of truth.
 
 **Server-side (named, not designed):**
 - **Sync API (BFF)** — accepts a batch of client ops in `/push`; returns deltas since a change token in `/pull`.
@@ -177,16 +170,20 @@ If an outbox row is too old to upgrade safely, do not drop it silently. Mark it 
 
 ### Layered diagram
 
+```mermaid
+flowchart LR
+    UI["Compose UI"] --> VM["NoteViewModel"] --> Repo["NoteRepository"]
+    Repo --> NoteDao["NoteDao / Room"]
+    Repo --> Outbox["OutboxDao"]
+    Repo --> Engine["SyncEngine"]
+    Engine --> Push["PushWorker"]
+    Engine --> Pull["PullWorker"]
+    Push --> Outbox
+    Pull --> NoteDao
+    NoteDao --> VM
 ```
-   Compose UI ──► NoteViewModel ──► NoteRepository
-                                       │
-                                       ├─► NoteDao (Room, SSOT for UI)
-                                       ├─► OutboxDao (durable pending ops)
-                                       └─► SyncEngine
-                                            │
-                                            ├─► PushWorker (on dirty)
-                                            └─► PullWorker (periodic + on FCM hint)
-```
+
+The repository owns atomic local writes, while workers execute durable push and pull policy without becoming alternate sources of UI state.
 
 ### Key class signatures
 

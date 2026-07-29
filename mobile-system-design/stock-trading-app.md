@@ -52,28 +52,15 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    App["Android trading client"] <-->|"WSS quotes + HTTPS orders"| Gateway["BFF / gateway"]
+    Gateway --> Quotes["Quote stream"]
+    Gateway --> Orders["Order service"] --> Engine["Matching / execution venue"]
+    Orders --> Push["FCM status hint"] --> App
 ```
-           ┌────────────────┐
-           │  Android Client│
-           │   (this talk)  │
-           └────────┬───────┘
-                    │ WSS (quotes) + HTTPS (orders, history)
-                    ▼
-      ┌──────────────────────────┐
-      │       BFF / Gateway      │
-      │ (auth, rate-limit)       │
-      └──┬──────────┬──────┬─────┘
-         │          │      │
-    ┌────▼───┐ ┌────▼───┐ ┌▼────────┐
-    │ Quote  │ │ Order   │ │ Push    │
-    │ Stream │ │ Service │ │ (FCM)   │
-    └────────┘ └────┬────┘ └─────────┘
-                    │
-              ┌─────▼──────┐
-              │  Matching   │  ← black box
-              │   Engine    │
-              └─────────────┘
-```
+
+Quotes are time-sensitive presentation data, while orders are durable, idempotent commands whose canonical status comes from the order service—not the quote socket or push message.
 
 **Server components (named, not designed):**
 - **BFF / Gateway** — auth, rate-limit, fan-in.
@@ -153,14 +140,17 @@ Idempotency-Key: 8f7a-…-uuid
 
 ### Layered diagram
 
+```mermaid
+flowchart LR
+    UI["Compose UI"] --> VM["TradingViewModel"] --> Repo["TradingRepository"]
+    Repo --> Quotes["QuoteStream"] --> VM
+    Repo --> API["Idempotent OrderApi"]
+    Repo --> Room[("Orders + positions + watchlist")]
+    Repo --> Outbox["Order outbox"] --> Work["WorkManager"] --> API
+    API --> Room --> VM
 ```
-   Compose UI ──► TradingViewModel ──► TradingRepository
-                                          │
-                                          ├─► QuoteStream (WebSocket, StateFlow per symbol)
-                                          ├─► OrderApi (Retrofit, idempotency)
-                                          ├─► Room (positions, orders, watchlist)
-                                          └─► OrderOutbox ─► WorkManager
-```
+
+Ephemeral quotes and durable order state remain separate streams; Room preserves orders and positions through process death while quote freshness is displayed explicitly.
 
 ### Key class signatures
 
