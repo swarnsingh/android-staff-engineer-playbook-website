@@ -6,6 +6,16 @@
 
 ## Overview
 
+```mermaid
+flowchart LR
+    State["Current sealed state"] --> Reducer["Pure transition(state, event)"]
+    Event["Typed event"] --> Reducer --> Next["Next valid state"]
+    Next --> UI["UI rendering"]
+    Next --> Effects["Explicit effect commands"]
+```
+
+Legal transitions remain explicit: rendering depends on state, while effects are commands rather than hidden UI mutations.
+
 In traditional object-oriented programming, the State pattern is implemented by extracting state-specific behavior into separate classes that implement a common interface. The context object delegates execution to the current state object.
 
 In Android, UI logic is notoriously complex. A screen might be Loading, Empty, Populated, Error, or Refreshing. If you model this with multiple boolean flags (`isLoading`, `hasError`, `data != null`), you create a combinatorial explosion of potential states. The State pattern, powered by algebraic data types (sealed classes), collapses this complexity.

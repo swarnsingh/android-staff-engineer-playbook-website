@@ -230,6 +230,15 @@ Decision rules tuned to the org's risk profile. The thresholds (0.001, 0.005, 0.
 
 ## 5. Multi-Signal Release Gate
 
+```mermaid
+flowchart TD
+    Window["Minimum time + sample size"] --> Signals["Crash, ANR, startup, business, support signals"] --> Segment["Compare cohorts to baseline"] --> Decision{"Guardrail breached with confidence?"}
+    Decision -->|"no"| Promote["Hold or promote by policy"]
+    Decision -->|"yes"| Halt["Halt rollout"] --> Mitigate["Kill switch, hotfix, or server mitigation"]
+```
+
+A gate combines adequate exposure with segmented evidence; tiny samples create noise, while global averages can hide a severe cohort regression.
+
 A Staff-level gate never promotes on one metric alone. It asks: is the new version healthy, are the samples large enough, and is any important cohort burning?
 
 | Signal | Promote | Hold | Halt |

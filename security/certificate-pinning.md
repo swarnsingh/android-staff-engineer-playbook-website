@@ -145,6 +145,14 @@ class PinFailureInterceptor(private val analytics: AnalyticsClient) : Intercepto
 
 ## 5. Pin Rotation: The Two-Pin Rule
 
+```mermaid
+flowchart LR
+    V1["Release N<br/>old pin + backup new pin"] --> Rotate["Server certificate rotates"] --> Overlap["Both installed cohorts connect"] --> V2["Later release<br/>new pin + next backup"]
+    Failure["No overlapping backup"] --> Outage["Installed clients cannot recover remotely"]
+```
+
+Pin rotation must overlap across installed app cohorts; a missing backup pin can turn routine certificate rotation into a persistent outage.
+
 Certs expire. If your only pin is today's cert and ops rotates tomorrow, every install in the field breaks instantly — and they can't even download an update because the update-check endpoint also fails.
 
 **Always pin at least two:**

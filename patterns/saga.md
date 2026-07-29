@@ -16,6 +16,22 @@ A Saga solves this by breaking the transaction into a sequence of local transact
 
 ## 1. Orchestrated vs. Choreographed Sagas
 
+```mermaid
+sequenceDiagram
+    participant O as Orchestrator
+    participant Upload
+    participant Metadata
+    participant Publish
+    O->>Upload: store media
+    O->>Metadata: create metadata
+    O->>Publish: publish
+    Publish-->>O: failure
+    O->>Metadata: compensate
+    O->>Upload: compensate
+```
+
+A saga provides durable progress and explicit compensations, not distributed atomicity; every step defines retry and reversal semantics.
+
 There are two ways to organize a Saga:
 1. **Choreography:** Events are published, and services react independently. (e.g., The app fires a "Payment Successful" event, and the UI listens for it to update). This is messy on mobile.
 2. **Orchestration:** A central controller explicitly commands the steps. **This is the preferred pattern for Android.** The Android app acts as the Orchestrator for complex user flows.
