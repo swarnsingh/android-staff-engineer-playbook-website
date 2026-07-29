@@ -208,18 +208,16 @@ jobs:
 
 The Kotlin/Native compiler toolchain is stored in `~/.konan`. On a fresh macOS runner, the first build downloads:
 
-```text
-~/.konan/
- ├── dependencies/           (~2 GB)
- │    ├── apple-llvm-20210106/   (LLVM for iOS compilation)
- │    ├── libffi-3.4.4/
- │    └── target-sysroot-*/      (iOS SDK headers)
- │
- ├── kotlin-native-prebuilt-macos-aarch64-2.0.20/  (~500 MB)
- │    ├── bin/kotlinc-native
- │    └── lib/
- │
- └── cache/                  (incremental compilation cache)
+```mermaid
+flowchart TD
+    konan["~/.konan/"] --> deps["dependencies/ (~2 GB)"]
+    deps --> llvm["apple-llvm-20210106/<br/>LLVM for iOS compilation"]
+    deps --> ffi["libffi-3.4.4/"]
+    deps --> sysroot["target-sysroot-*/<br/>iOS SDK headers"]
+    konan --> compiler["kotlin-native-prebuilt-macos-aarch64-2.0.20/ (~500 MB)"]
+    compiler --> bin["bin/kotlinc-native"]
+    compiler --> lib["lib/"]
+    konan --> cache["cache/<br/>incremental compilation cache"]
 ```
 
 **Without caching:** First build downloads ~2.5 GB, taking 5-10 minutes just for setup.

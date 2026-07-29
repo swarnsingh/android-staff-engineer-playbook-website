@@ -32,26 +32,20 @@ The Staff-level rule: authentication proves account access; it does not prove de
 
 ## 2. OAuth 2.0 Authorization Code + PKCE (the Login)
 
-```
-Client                  AuthBrowser (Chrome Custom Tab)            IdP
-  │
-  │ generate verifier (random 64-char) + challenge=SHA256(verifier)
-  │
-  │ open URL: /authorize?response_type=code
-  │            &client_id=...
-  │            &redirect_uri=myapp://auth/callback
-  │            &code_challenge=...&code_challenge_method=S256
-  │            &state=...&scope=openid offline_access
-  │
-  │ ───────────────────────────────►  user signs in  ──────────────►
-  │                                                                  │
-  │ ◄───────── redirect ── myapp://auth/callback?code=xyz&state=...  │
-  │
-  │ POST /token { grant_type=authorization_code, code, code_verifier, client_id, redirect_uri }
-  │ ─────────────────────────────────────────────────────────────────►
-  │ ◄───── { access_token, refresh_token, id_token, expires_in } ────
-  │
-  │ persist to KeystoreTokenVault
+```mermaid
+sequenceDiagram
+    participant C as Mobile client
+    participant B as System auth browser
+    participant I as Identity provider
+    C->>C: Generate random verifier, S256 challenge, and state
+    C->>B: Open /authorize with client ID, redirect URI, challenge, state, and scopes
+    B->>I: User authenticates
+    I-->>B: Authorization response
+    B-->>C: Redirect with authorization code and state
+    C->>C: Validate returned state
+    C->>I: POST /token with code, verifier, client ID, and redirect URI
+    I-->>C: Access, refresh, and ID tokens plus expiry
+    C->>C: Persist tokens in KeystoreTokenVault
 ```
 
 ```kotlin

@@ -218,9 +218,15 @@ You bought a paid API. The vendor charges per call. The key is in your APK. A mo
 
 **Don't ship vendor secrets to the client.** Stand up a proxy in your backend:
 
-```
-Mobile  ──── Bearer (your auth) ────►  Your BFF  ──── Vendor API key ────►  Vendor
-        ◄──────── proxied response ─────────────────────────────────────
+```mermaid
+sequenceDiagram
+    participant M as Mobile app
+    participant B as Your BFF
+    participant V as Vendor API
+    M->>B: Request with your bearer token
+    B->>V: Server-side request with vendor API key
+    V-->>B: Vendor response
+    B-->>M: Proxied response
 ```
 
 The BFF:

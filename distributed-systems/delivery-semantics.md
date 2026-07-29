@@ -36,12 +36,11 @@ The arc: implicit and fragile → explicit but confusing ("exactly-once" marketi
 
 The message is sent once. If it's lost, no retry occurs. The consumer sees the message zero or one times.
 
-```text
-Producer ──── message ────▶ [network] ────▶ Consumer
-                              │
-                         (may be lost)
-                              │
-                    Consumer sees: 0 or 1 times
+```mermaid
+flowchart LR
+    producer["Producer"] -->|"send once"| network["Network"]
+    network -->|"message arrives"| consumer["Consumer<br/>observes zero or one delivery"]
+    network -.->|"message may be lost"| lost["No retry"]
 ```
 
 Implementation: send and forget. No acknowledgment, no retry.
@@ -53,15 +52,18 @@ Implementation: send and forget. No acknowledgment, no retry.
 
 The producer retries until it receives an acknowledgment. The consumer sees the message one or more times.
 
-```text
-Producer ──── message ────▶ [network] ────▶ Consumer
-    │                                          │
-    │◀──────── ack ◀───── [network] ◀──────────│
-    │            │
-    │       (ack may be lost)
-    │            │
-    └── retry ───┘
-                    Consumer sees: 1 or more times
+```mermaid
+sequenceDiagram
+    participant P as Producer
+    participant N as Network
+    participant C as Consumer
+    P->>N: Message
+    N->>C: Message
+    C-->>N: Acknowledgment
+    N--xP: Acknowledgment may be lost
+    P->>N: Retry after timeout
+    N->>C: Duplicate delivery
+    Note over C: Consumer observes one or more deliveries
 ```
 
 Implementation: send, wait for ack, retry on timeout. The consumer may process the same message multiple times because the ack was lost (the producer doesn't know the first attempt succeeded).
@@ -84,13 +86,16 @@ There is no third option without the consumer participating in deduplication.
 
 The practical solution: deliver at least once, and make the consumer idempotent. The consumer deduplicates, ensuring each *logical* message is processed exactly once even if it's *delivered* multiple times.
 
-```text
-Producer ──── message + key ────▶ Consumer
-    │                                │
-    │                         check dedup store
-    │                         ┌─ key seen? → return stored result
-    │                         └─ key new? → process, store result + key
-    │◀──────── ack ◀─────────────────│
+```mermaid
+flowchart LR
+    producer["Producer"] -->|"message + idempotency key"| consumer["Consumer"]
+    consumer --> check{"Key in deduplication store?"}
+    check -->|"Seen"| stored["Return stored result"]
+    check -->|"New"| process["Process operation"]
+    process --> persist["Atomically store key and result"]
+    stored --> ack["Acknowledge"]
+    persist --> ack
+    ack --> producer
 ```
 
 This is what Kafka EOS, Stripe's idempotency keys, and every reliable payment system actually implement. See [`idempotency.md`](idempotency.md) for the full treatment.
@@ -193,10 +198,11 @@ Kafka EOS combines three mechanisms:
 
 3. **Read-committed consumers.** Consumers configured with `isolation.level=read_committed` only see messages from committed transactions.
 
-```text
-Producer ──▶ Broker (dedup by producer_id + seq) ──▶ Consumer (read_committed)
-    │                     │
-    └── Transaction: write output + commit input offset ──┘
+```mermaid
+flowchart LR
+    producer["Idempotent producer"] -->|"producer ID + sequence"| broker["Kafka broker<br/>deduplicates writes"]
+    broker --> transaction["Transaction<br/>write output + commit input offset"]
+    transaction --> consumer["Consumer<br/>read_committed"]
 ```
 
 This is *not* exactly-once at the network layer. It's at-least-once delivery with server-side deduplication and transactional state management. But the *effect* is exactly-once processing — each input message produces exactly one output, even across failures and retries.

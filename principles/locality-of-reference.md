@@ -155,43 +155,26 @@ This is why Kotlin's `IntArray`, `LongArray`, `FloatArray`, etc. are not just "p
 
 ### Code organization: package-by-feature vs package-by-layer
 
-```text
-// Package by layer — files for one feature scattered
-com.example.app/
-├── ui/
-│   ├── LoginScreen.kt
-│   ├── CheckoutScreen.kt
-│   └── ProfileScreen.kt
-├── viewmodel/
-│   ├── LoginViewModel.kt
-│   ├── CheckoutViewModel.kt
-│   └── ProfileViewModel.kt
-├── repository/
-│   ├── LoginRepository.kt
-│   ├── CheckoutRepository.kt
-│   └── ProfileRepository.kt
-└── network/
-    ├── LoginApi.kt
-    ├── CheckoutApi.kt
-    └── ProfileApi.kt
+```mermaid
+flowchart TD
+    app["com.example.app/"] --> ui["ui/"]
+    ui --> screens["LoginScreen.kt<br/>CheckoutScreen.kt<br/>ProfileScreen.kt"]
+    app --> vm["viewmodel/"]
+    vm --> viewmodels["LoginViewModel.kt<br/>CheckoutViewModel.kt<br/>ProfileViewModel.kt"]
+    app --> repo["repository/"]
+    repo --> repositories["LoginRepository.kt<br/>CheckoutRepository.kt<br/>ProfileRepository.kt"]
+    app --> network["network/"]
+    network --> apis["LoginApi.kt<br/>CheckoutApi.kt<br/>ProfileApi.kt"]
 ```
 
 Working on Login? Jump between 4 folders.
 
-```text
-// Package by feature — everything for one feature lives together
-com.example.app/
-├── login/
-│   ├── LoginScreen.kt
-│   ├── LoginViewModel.kt
-│   ├── LoginRepository.kt
-│   └── LoginApi.kt
-├── checkout/
-│   ├── CheckoutScreen.kt
-│   ├── ...
-│   └── ...
-└── profile/
-    ├── ...
+```mermaid
+flowchart TD
+    app["com.example.app/"] --> login["login/"]
+    login --> loginFiles["LoginScreen.kt<br/>LoginViewModel.kt<br/>LoginRepository.kt<br/>LoginApi.kt"]
+    app --> checkout["checkout/<br/>checkout UI, state, data, and API"]
+    app --> profile["profile/<br/>profile UI, state, data, and API"]
 ```
 
 Working on Login? Stay in one folder.

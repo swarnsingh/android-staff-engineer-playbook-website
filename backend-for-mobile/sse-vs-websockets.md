@@ -211,13 +211,15 @@ This costs almost nothing in the background and gets sub-second latency in the f
 
 ## The Decision Tree
 
-```
-Do I need to push events to a backgrounded / killed app?
-├── Yes → FCM (no other option works reliably on Android)
-└── No → app is in foreground
-    ├── Need bidirectional with binary or sub-100ms latency? → WebSocket
-    ├── Server-to-client only, can do POST for upstream? → SSE
-    └── Updates every 30s+ are fine? → Polling with ETag
+```mermaid
+flowchart TD
+    background{"Must events reach a backgrounded or killed app?"}
+    background -->|"Yes"| fcm["FCM<br/>the reliable Android background path"]
+    background -->|"No; app is foregrounded"| bidi{"Need bidirectional binary traffic<br/>or sub-100 ms latency?"}
+    bidi -->|"Yes"| websocket["WebSocket"]
+    bidi -->|"No"| downstream{"Server-to-client only<br/>with POST available upstream?"}
+    downstream -->|"Yes"| sse["SSE"]
+    downstream -->|"No; 30s+ updates are acceptable"| polling["Polling with ETag"]
 ```
 
 Then pair them: FCM for wakeups + SSE/WebSocket for active sessions + polling for "barely real-time" status data. Layered.

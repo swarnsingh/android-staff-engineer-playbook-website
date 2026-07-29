@@ -54,10 +54,13 @@ A fifth policy — *fail fast / error* — is a variant of "drop new" where the 
 
 If backpressure isn't end-to-end, it's not backpressure. A bounded queue between stages 3 and 4 of a pipeline only delays the problem — stages 1, 2, and 3 will fill their own intermediate buffers until *those* policies kick in. Real backpressure propagates from the slowest consumer all the way to the original producer.
 
-```text
-Source ─bp─▶ Stage1 ─bp─▶ Stage2 ─bp─▶ Stage3 ─bp─▶ Sink
-                                                       ↑
-                                            (slow; everyone slows)
+```mermaid
+flowchart LR
+    source["Source"] --> stage1["Stage 1"] --> stage2["Stage 2"] --> stage3["Stage 3"] --> sink["Slow sink"]
+    sink -.->|"backpressure"| stage3
+    stage3 -.->|"backpressure"| stage2
+    stage2 -.->|"backpressure"| stage1
+    stage1 -.->|"backpressure"| source
 ```
 
 The *whole pipeline* slows down. The producer's rate is, transitively, set by the slowest consumer.
@@ -142,21 +145,18 @@ searchQueries()
 
 ### TCP window as canonical backpressure
 
-```text
-Sender                    Receiver
-  │                          │
-  │ ──── data ────▶          │ window=8000
-  │                          │
-  │ ◀──── ACK + window=4000  │  (buffer half full)
-  │                          │
-  │ ──── data ────▶          │
-  │                          │
-  │ ◀──── ACK + window=0     │  (buffer full; STOP)
-  │                          │
-  │ [waits]                  │
-  │                          │
-  │ ◀──── ACK + window=2000  │  (buffer drained; resume)
-  │                          │
+```mermaid
+sequenceDiagram
+    participant S as Sender
+    participant R as Receiver
+    Note right of R: Advertised window = 8000
+    S->>R: Data
+    R-->>S: ACK + window = 4000
+    S->>R: More data
+    R-->>S: ACK + window = 0
+    Note left of S: Stop and wait
+    R-->>S: ACK + window = 2000
+    Note left of S: Resume sending
 ```
 
 The receiver tells the sender how much it can take. The sender respects that limit. End-to-end backpressure built into the transport.

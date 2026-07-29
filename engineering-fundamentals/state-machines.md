@@ -107,12 +107,13 @@ The four ingredients map directly:
 
 The cleanest model treats `transition` as a *pure function*. The system around it observes state changes and fires effects:
 
-```text
-Event ────▶ transition() ────▶ NewState
-                                  │
-                                  ▼
-                            EffectRunner
-                       (log, network, timer)
+```mermaid
+flowchart LR
+    event["Event"] -->|"pure transition()"| state["New state"]
+    state --> runner["Effect runner"]
+    runner --> log["Log"]
+    runner --> network["Network call"]
+    runner --> timer["Timer"]
 ```
 
 This separation is what makes a state machine testable. You can verify the transition function with a table of `(state, event, expected)` tuples — no mocks, no timing, no network. Effects are tested separately.

@@ -166,11 +166,13 @@ See [`../patterns/retry.md`](../patterns/retry.md) for the full pattern.
 
 A circuit breaker fails fast when downstream is unhealthy, preventing cascading retries from making things worse.
 
-```text
-Closed ─── (failure rate > threshold) ─▶ Open
-                                          │
-                       (timeout)          │
-   ◀──── (probe succeeds) ─── HalfOpen ◀─┘
+```mermaid
+stateDiagram-v2
+    [*] --> Closed
+    Closed --> Open: failure rate exceeds threshold
+    Open --> HalfOpen: reset timeout expires
+    HalfOpen --> Closed: probe succeeds
+    HalfOpen --> Open: probe fails
 ```
 
 See [`../patterns/circuit-breaker.md`](../patterns/circuit-breaker.md).

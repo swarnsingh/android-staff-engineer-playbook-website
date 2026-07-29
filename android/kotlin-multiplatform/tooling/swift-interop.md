@@ -307,22 +307,19 @@ repository.search(query: "shoes", limit: 50)  // ✅ offset=0, includeInactive=f
 
 SKIE operates at the **Kotlin compiler backend** level:
 
-```text
-Kotlin Source
-    ↓
-[K2 Frontend (FIR)]
-    ↓
-[Kotlin/Native Backend]
-    ↓
-[SKIE Plugin intercepts here]
-    ├── Generates standard .h header (for compatibility)
-    └── ALSO generates .swift files:
-         ├── Sealed class → Swift enum wrapper
-         ├── StateFlow → AsyncSequence adapter
-         ├── suspend fun → proper async cancellation bridge
-         └── Default args → overloaded Swift functions
-    ↓
-[Final .xcframework contains both .h AND .swift]
+```mermaid
+flowchart TD
+    source["Kotlin source"] --> fir["K2 frontend (FIR)"]
+    fir --> native["Kotlin/Native backend"]
+    native --> skie["SKIE compiler plugin intercepts backend output"]
+    skie --> header["Standard .h header<br/>compatibility path"]
+    skie --> swift["Generated Swift adapters"]
+    swift --> sealed["sealed class to Swift enum wrapper"]
+    swift --> flow["StateFlow to AsyncSequence adapter"]
+    swift --> suspend["suspend function to cancellable async bridge"]
+    swift --> defaults["default arguments to Swift overloads"]
+    header --> framework["Final XCFramework<br/>header and compiled Swift adapters"]
+    swift --> framework
 ```
 
 The generated Swift files are compiled directly into the framework binary. The iOS engineer doesn't see them — they just see a clean, idiomatic Swift API.

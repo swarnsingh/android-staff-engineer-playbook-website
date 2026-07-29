@@ -21,28 +21,17 @@ When you write KMP code in `commonMain`, the compiler frontend validates it agai
 
 Understanding *why* KMP is different is a Staff-level interview topic:
 
-```text
-┌──────────────────────────────────────────────────────────────┐
-│ React Native                                                 │
-│ ┌──────────┐    JSON Bridge    ┌──────────────────┐          │
-│ │ JS Thread|  ───────────────  │ Native UI Thread │          │
-│ └──────────┘   (serialization  └──────────────────┘          │
-│                 overhead)                                    │
-├──────────────────────────────────────────────────────────────┤
-│ Flutter                                                      │
-│ ┌──────────┐    Dart VM       ┌──────────────────┐           │
-│ │ Dart Code│ ──────────────   │ Skia Canvas (own │           │
-│ └──────────┘   (GC pauses)    │ rendering, no    │           │
-│                               │ native UIKit)    │           |
-|                               └──────────────────┘           │
-├──────────────────────────────────────────────────────────────┤
-│ KMP                                                          │
-│ ┌──────────┐    Direct call   ┌──────────────────┐           │
-│ │ Kotlin   │ ──────────────   │ Native ARM64 code│           │
-│ │ Source   |   (compiled to   │ (same as Swift   │           │
-│ └──────────┘   machine code)  │ output)          │           |
-|                               └──────────────────┘           │
-└──────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph rn["React Native"]
+        js["JavaScript thread"] -->|"JSON bridge<br/>serialization overhead"| nativeUi["Native UI thread"]
+    end
+    subgraph flutter["Flutter"]
+        dart["Dart code"] -->|"Dart VM<br/>GC pauses"| skia["Skia canvas<br/>own rendering, not native UIKit"]
+    end
+    subgraph kmp["Kotlin Multiplatform"]
+        kotlin["Kotlin source"] -->|"compiled to machine code<br/>direct call"| arm["Native ARM64 code<br/>same kind of output as Swift"]
+    end
 ```
 
 **React Native** marshals data as JSON between a JavaScript thread and the native thread. Every function call crossing the bridge pays a serialization tax. This is why complex animations stutter.
@@ -249,38 +238,26 @@ A modern KMP project uses a hierarchy to share code between *similar* platforms 
 
 ### The Full Hierarchy
 
-```text
-shared/
- └── src/
-      ├── commonMain/             ← Pure Kotlin (zero platform APIs)
-      │    └── kotlin/
-      │         ├── domain/       ← Use cases, entities
-      │         ├── data/         ← Repository interfaces
-      │         └── presentation/ ← ViewModels (StateFlow)
-      │
-      ├── androidMain/            ← Full Android SDK access
-      │    └── kotlin/
-      │         └── Platform.android.kt
-      │
-      ├── appleMain/              ← Shared Apple code (Foundation, Darwin)
-      │    └── kotlin/
-      │         └── DateFormatter.apple.kt  ← NSDateFormatter
-      │
-      ├── iosMain/                ← UIKit-specific (inherits appleMain)
-      │    └── kotlin/
-      │         └── Platform.ios.kt
-      │
-      ├── macosMain/              ← AppKit-specific (inherits appleMain)
-      │    └── kotlin/
-      │         └── Platform.macos.kt
-      │
-      ├── jvmMain/                ← Server-side JVM (Spring, Ktor server)
-      │    └── kotlin/
-      │         └── Platform.jvm.kt
-      │
-      ├── commonTest/             ← Tests shared across all targets
-      ├── androidUnitTest/        ← Android-specific tests (Robolectric)
-      └── iosTest/                ← iOS simulator tests
+```mermaid
+flowchart TD
+    shared["shared/"] --> src["src/"]
+    src --> common["commonMain/<br/>pure Kotlin; no platform APIs"]
+    common --> domain["kotlin/domain/<br/>use cases and entities"]
+    common --> data["kotlin/data/<br/>repository interfaces"]
+    common --> presentation["kotlin/presentation/<br/>StateFlow ViewModels"]
+    src --> android["androidMain/<br/>full Android SDK access"]
+    android --> androidFile["kotlin/Platform.android.kt"]
+    src --> apple["appleMain/<br/>shared Foundation and Darwin code"]
+    apple --> appleFile["kotlin/DateFormatter.apple.kt<br/>NSDateFormatter"]
+    src --> ios["iosMain/<br/>UIKit-specific; inherits appleMain"]
+    ios --> iosFile["kotlin/Platform.ios.kt"]
+    src --> macos["macosMain/<br/>AppKit-specific; inherits appleMain"]
+    macos --> macosFile["kotlin/Platform.macos.kt"]
+    src --> jvm["jvmMain/<br/>server-side JVM"]
+    jvm --> jvmFile["kotlin/Platform.jvm.kt"]
+    src --> commonTest["commonTest/<br/>shared tests"]
+    src --> androidTest["androidUnitTest/<br/>Robolectric tests"]
+    src --> iosTest["iosTest/<br/>iOS simulator tests"]
 ```
 
 ### Why `appleMain` Exists

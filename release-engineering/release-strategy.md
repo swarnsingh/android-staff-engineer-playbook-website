@@ -6,19 +6,15 @@
 
 ## 1. The Release Train Model
 
-```
-main (always green; CI-gated)
-  │
-  ├──► Mon 09:00:  cut release/v2.0
-  │                  │
-  │                  ├─► Mon-Wed:  bake on internal + alpha
-  │                  ├─► Thu:      promote to beta
-  │                  └─► Mon next: production 1% rollout
-  │
-  ├──► Next Mon 09:00:  cut release/v2.1
-  │                  (same cadence)
-  │
-hotfix branches: cut from release/v2.X for emergencies only
+```mermaid
+flowchart LR
+    main["main<br/>always green and CI-gated"] --> cut20["Monday 09:00<br/>cut release/v2.0"]
+    cut20 --> bake20["Monday–Wednesday<br/>internal and alpha bake"]
+    bake20 --> beta20["Thursday<br/>promote to beta"]
+    beta20 --> prod20["Next Monday<br/>start 1% production rollout"]
+    main --> cut21["Next Monday 09:00<br/>cut release/v2.1"]
+    cut21 --> cadence["Repeat the same cadence"]
+    cut20 -.-> hotfix["Emergency only<br/>cut hotfix from release/v2.x"]
 ```
 
 The "train" leaves on a schedule. If your feature isn't on the train when it leaves, you wait for the next train. No "hold the release for my PR" drama.
@@ -109,22 +105,17 @@ Pin both in `build.gradle.kts`; compute deterministically. Commit count from `ma
 
 ## 3. Branching
 
-```
-main                       feature/*           release/v2.0          hotfix/v2.0.1
-  │                            │                    │                      │
-  ├── PR merges (squash) ──────┤                    │                      │
-  │                            │                    │                      │
-  ├── train cuts ──────────────┼───►                │                      │
-  │                                                 │                      │
-  ├── more PR merges ──────────────────             ├── cherry-picks only  │
-  │                                                 │                      │
-  │                                                 ├── if hotfix needed ─►├── hotfix PRs
-  │                                                 │                      │
-  │                                                 ├──◄── merge fixes back to release branch
-  │                                                 │
-  │                                                 └── tag v2.0.0
-  │                                                       │
-  │  ◄────────────── merge release back into main ────────┘
+```mermaid
+flowchart LR
+    feature["feature/*"] -->|"squash PR"| main["main"]
+    main -->|"train cut"| release["release/v2.0"]
+    main -->|"more feature PRs"| main
+    release -->|"cherry-picks only"| release
+    release -->|"if emergency fix is needed"| hotfix["hotfix/v2.0.1"]
+    hotfix -->|"hotfix PRs"| hotfix
+    hotfix -->|"merge fixes back"| release
+    release --> tag["tag v2.0.0"]
+    tag -->|"merge release back"| main
 ```
 
 Rules:
@@ -197,35 +188,17 @@ PRs touching the release pipeline require sign-off. Reduces "engineer pushes 'fi
 
 ## 6. Hotfix Flow
 
-```
-Sev-1 bug discovered in production v2.0.0
-    │
-    ▼
-Releng on-call cuts hotfix/v2.0.1 from release/v2.0
-    │
-    ▼
-Engineer cherry-picks fix from main (or writes new fix on hotfix branch)
-    │
-    ▼
-PR to hotfix branch — required: cherry-pick label, CODEOWNERS approval
-    │
-    ▼
-Hotfix branch CI: full unit + instrumented + perf gate
-    │
-    ▼
-Tag v2.0.1; release workflow triggers
-    │
-    ▼
-Production rollout at 10% (skip alpha/beta — hotfix urgency)
-    │
-    ▼
-Within 6h: 50% if crash-free regression resolved
-    │
-    ▼
-Within 24h: 100%
-    │
-    ▼
-Merge hotfix branch → release/v2.0 → main
+```mermaid
+flowchart TD
+    detect["SEV-1 discovered in production v2.0.0"] --> cut["Release on-call cuts hotfix/v2.0.1<br/>from release/v2.0"]
+    cut --> fix["Cherry-pick from main or write fix on hotfix branch"]
+    fix --> pr["PR to hotfix branch<br/>cherry-pick label and CODEOWNERS approval"]
+    pr --> ci["Full unit, instrumented, and performance gates"]
+    ci --> tag["Tag v2.0.1; release workflow starts"]
+    tag --> ten["Start production at 10%<br/>skip alpha and beta"]
+    ten --> fifty["Within 6 hours: 50% if regression is resolved"]
+    fifty --> full["Within 24 hours: 100%"]
+    full --> merge["Merge hotfix to release/v2.0, then main"]
 ```
 
 Hotfix releases skip alpha/beta because the bug is already in production. Faster rollout (10% → 50% → 100% within 24h) trades safety for speed.

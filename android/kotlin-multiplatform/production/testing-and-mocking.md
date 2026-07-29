@@ -409,23 +409,18 @@ This test runs on **both** Android (JVM) and iOS (Simulator) — verifying UI be
 
 ### What Happens Under the Hood
 
-```text
-./gradlew :shared:iosSimulatorArm64Test
-  │
-  ├── [1] Kotlin/Native compiler compiles commonTest + iosTest → ARM64 binary
-  │        Output: build/bin/iosSimulatorArm64/debugTest/test.kexe
-  │
-  ├── [2] Gradle invokes xcrun to boot the iOS Simulator
-  │        xcrun simctl boot "iPhone 15"
-  │
-  ├── [3] Gradle pushes the test binary to the simulator
-  │        xcrun simctl install booted test.kexe
-  │
-  ├── [4] Gradle runs the binary inside the simulator
-  │        xcrun simctl launch --console booted com.example.SharedTests
-  │
-  └── [5] Test results are parsed from stdout and written to
-           build/reports/tests/iosSimulatorArm64Test/
+```mermaid
+sequenceDiagram
+    participant G as Gradle
+    participant K as Kotlin/Native compiler
+    participant S as iOS Simulator via xcrun
+    G->>K: Compile commonTest + iosTest for iosSimulatorArm64
+    K-->>G: ARM64 test.kexe
+    G->>S: Boot the target simulator
+    G->>S: Install test.kexe
+    G->>S: Launch SharedTests with console output
+    S-->>G: Test stdout
+    G->>G: Write iosSimulatorArm64Test report
 ```
 
 **Requirement:** A macOS machine with Xcode and the iOS Simulator runtime installed. This cannot run on Linux or Windows CI runners.

@@ -78,18 +78,22 @@ Async doesn't make the food cook faster. It makes the phone line available for t
 
 ### Blocking I/O on a thread
 
-```text
-Thread ─── read() ─── (parked by kernel) ─── (data arrives) ─── continues
-            │
-            └── stack stays allocated, thread holds scheduler slot
+```mermaid
+flowchart LR
+    thread["Thread"] --> read["read()"]
+    read --> parked["Kernel parks thread<br/>stack remains allocated"]
+    parked --> data["Data arrives"]
+    data --> continues["Thread continues"]
 ```
 
 ### Non-blocking I/O with an event loop
 
-```text
-EventLoop ─── register(fd, callback) ─── poll() ──── data ready ─── invoke callback
-                                            │
-                                            └── handles 10,000 fds in one thread
+```mermaid
+flowchart LR
+    loop["Event loop"] --> register["register(fd, callback)"]
+    register --> poll["poll() many file descriptors<br/>on one thread"]
+    poll -->|"descriptor ready"| callback["Invoke callback"]
+    callback --> poll
 ```
 
 ### Suspending functions (Kotlin coroutines)

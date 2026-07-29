@@ -6,27 +6,11 @@
 
 ## 1. The Pipeline Shape
 
-```
-PR opened ───► PR Checks (< 15 min)
-                 ├─ Detekt + Android Lint
-                 ├─ Spotless / ktlint
-                 ├─ Unit tests (JVM)
-                 ├─ assembleDebug
-                 ├─ Instrumented tests on Firebase Test Lab (selected)
-                 └─ Secret scanning (gitleaks)
-
-main merge ───► Nightly (full)
-                 ├─ assembleRelease (debug-signed)
-                 ├─ Full instrumented suite on FTL
-                 ├─ Macrobenchmark startup gate
-                 └─ Firebase App Distribution → internal QA
-
-Tag pushed ───► Production release
-                 ├─ Pull signing secrets from Cloud KMS
-                 ├─ bundleRelease (signed AAB)
-                 ├─ Upload to Play Internal Track
-                 ├─ Upload mapping.txt to crash reporter
-                 └─ Auto-promote to Production after 24h soak (gated)
+```mermaid
+flowchart LR
+    pr["PR opened"] --> prChecks["PR checks under 15 minutes<br/>Detekt and Android Lint<br/>Spotless or ktlint<br/>JVM unit tests and assembleDebug<br/>selected Firebase Test Lab tests<br/>secret scanning"]
+    merge["Merge to main"] --> nightly["Nightly full pipeline<br/>debug-signed release build<br/>full Firebase Test Lab suite<br/>Macrobenchmark startup gate<br/>Firebase App Distribution to QA"]
+    tag["Release tag pushed"] --> production["Production pipeline<br/>retrieve signing material from KMS<br/>build signed AAB<br/>upload to Play internal track<br/>upload mapping.txt<br/>gated promotion after soak"]
 ```
 
 ---

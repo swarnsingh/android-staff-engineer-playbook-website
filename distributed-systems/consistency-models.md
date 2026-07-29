@@ -79,21 +79,13 @@ If no new writes occur, all replicas will *eventually* converge to the same valu
 
 ### Relationships between models
 
-```text
-Linearizability
-     │
-     ▼
-Sequential Consistency
-     │
-     ▼
-Causal Consistency
-     │
-     ├──▶ Read-your-writes
-     │
-     ├──▶ Monotonic Reads
-     │
-     ▼
-Eventual Consistency
+```mermaid
+flowchart TD
+    linear["Linearizability"] --> sequential["Sequential consistency"]
+    sequential --> causal["Causal consistency"]
+    causal --> eventual["Eventual consistency"]
+    causal --> ryw["Read-your-writes"]
+    causal --> monotonic["Monotonic reads"]
 ```
 
 Each model implies all models below it. Linearizability provides causal consistency, which provides read-your-writes, which provides eventual consistency. The converse is not true.

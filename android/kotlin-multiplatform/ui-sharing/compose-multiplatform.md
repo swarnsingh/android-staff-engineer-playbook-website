@@ -17,31 +17,15 @@
 
 ### The iOS Rendering Pipeline
 
-```text
-@Composable fun CheckoutScreen() { ... }
-         │
-         ▼
-[Compose Compiler Plugin]
-    Transforms @Composable functions into a Slot Table (node tree)
-         │
-         ▼
-[Compose Runtime]
-    Manages recomposition, side effects, state snapshots
-    (IDENTICAL to Android — same code runs on both platforms)
-         │
-         ▼
-[Compose UI (Layout + Drawing)]
-    Measures, places, and draws nodes
-         │
-         ▼
-[Skia Backend (iOS-specific)]
-    Translates Canvas draw commands to Skia C++ calls
-    Skia renders to a Metal texture
-         │
-         ▼
-[CAMetalLayer inside a UIViewController]
-    The Metal texture is displayed on screen
-    iOS sees a single opaque UIView — NOT individual UIKit elements
+```mermaid
+flowchart TD
+    source["@Composable CheckoutScreen"] --> compiler["Compose compiler plugin<br/>transforms composables into slot-table operations"]
+    compiler --> runtime["Compose runtime<br/>recomposition, effects, and snapshots<br/>same runtime model as Android"]
+    runtime --> ui["Compose UI<br/>measure, place, and draw nodes"]
+    ui --> skia["iOS Skia backend<br/>Canvas commands become Skia calls"]
+    skia --> metal["Metal texture"]
+    metal --> layer["CAMetalLayer inside a UIViewController"]
+    layer --> screen["Displayed as one opaque UIView<br/>not individual UIKit elements"]
 ```
 
 **Critical implication:** iOS VoiceOver, Dynamic Type, and system-wide text selection cannot "see inside" the Skia canvas. CMP must explicitly build accessibility bridges that translate Compose Semantics into a virtual UIKit accessibility tree.

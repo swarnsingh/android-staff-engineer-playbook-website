@@ -62,15 +62,15 @@ How they're built: a monthly coffee, an offer to help on something hard, public 
 
 Lara Hogan's tool: take 30 minutes to literally draw who you need influence with and where you stand today.
 
-```
-            [DIRECTOR]
-                │
-        ┌───────┼───────┐
-       EM       EM2      EM3
-       │        │         │
-       me      [TL2]     [TL3]
-       │
-    juniors
+```mermaid
+flowchart TD
+    director["Director"] --> em1["EM"]
+    director --> em2["EM 2"]
+    director --> em3["EM 3"]
+    em1 --> me["Me"]
+    em2 --> tl2["Tech Lead 2"]
+    em3 --> tl3["Tech Lead 3"]
+    me --> juniors["Junior engineers"]
 ```
 
 For each box, ask:

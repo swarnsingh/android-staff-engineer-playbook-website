@@ -325,7 +325,7 @@ The July 29, 2026 visual pass established a maintainable baseline:
 - 251 Mermaid diagrams render successfully through the pinned Mermaid CLI.
 - All 65 legacy ASCII blocks in `mobile-system-design/` were replaced with Mermaid architecture, sequence, pipeline, or state diagrams plus text takeaways.
 - High-value Android, Compose, performance, testing, Kotlin, KMP, build, security, release, and resilience topics received focused visual upgrades.
-- 44 older ASCII blocks remain in 31 files outside mobile system design. They are valid fixed-width content, but the visual checker prevents this count from increasing and contributors must migrate a block when touching it.
+- All older architecture ASCII outside mobile system design has now been migrated to Mermaid. The visual checker enforces a zero-diagram baseline while ignoring box-drawing characters that are part of executable source-code examples.
 - Local image assets require meaningful alt text, repository-local storage, explicit attribution, and verified reuse rights; no third-party image assets were needed for this pass.
 
 ---

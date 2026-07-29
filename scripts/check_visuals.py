@@ -31,7 +31,7 @@ MARKDOWN_IMAGE = re.compile(r"!\[([^\]]*)\]\(([^)\s]+)(?:\s+['\"][^'\"]*['\"])?\
 ALLOWED_ASSET_SUFFIXES = {".jpeg", ".jpg", ".png", ".svg", ".webp"}
 SKIPPED_DIRS = {".git", "node_modules"}
 BOX_DRAWING = re.compile(r"[┌┐└┘─│▼▲►◄]")
-ASCII_BLOCK_BASELINE = 44
+ASCII_BLOCK_BASELINE = 0
 
 
 def markdown_files() -> list[Path]:
@@ -98,13 +98,16 @@ def check_images(paths: list[Path]) -> list[str]:
 
 
 def count_legacy_ascii(paths: list[Path]) -> tuple[int, list[str]]:
-    """Count fenced box-drawing diagrams so migrations cannot regress."""
+    """Count prose ASCII visuals while ignoring box characters inside source code."""
     count = 0
     mobile_system_design = []
     for path in paths:
         text = path.read_text(encoding="utf-8")
-        for match in re.finditer(r"```[^\n]*\n(.*?)```", text, flags=re.DOTALL):
-            if BOX_DRAWING.search(match.group(1)):
+        for match in re.finditer(r"```([^\n]*)\n(.*?)```", text, flags=re.DOTALL):
+            info = match.group(1).strip().split(maxsplit=1)
+            language = info[0].lower() if info else ""
+            is_visual_fence = language in {"", "text", "plain", "ascii"}
+            if is_visual_fence and BOX_DRAWING.search(match.group(2)):
                 count += 1
                 if path.parts and path.parts[0] == "mobile-system-design":
                     mobile_system_design.append(str(path))

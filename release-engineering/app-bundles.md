@@ -41,16 +41,16 @@ android {
 
 The AAB is a ZIP-like format containing:
 
-```
-app-release.aab
-├── base/                   ← always installed
-│   ├── manifest/AndroidManifest.xml
-│   ├── dex/
-│   ├── res/
-│   ├── lib/{abi}/
-│   └── assets/
-├── dynamic-feature-foo/    ← dynamic feature module (optional)
-└── BundleConfig.pb         ← split configuration
+```mermaid
+flowchart TD
+    bundle["app-release.aab"] --> base["base/<br/>always installed"]
+    base --> manifest["manifest/AndroidManifest.xml"]
+    base --> dex["dex/"]
+    base --> resources["res/"]
+    base --> native["lib/{abi}/"]
+    base --> assets["assets/"]
+    bundle --> feature["dynamic-feature-foo/<br/>optional dynamic feature"]
+    bundle --> config["BundleConfig.pb<br/>split configuration"]
 ```
 
 ---

@@ -39,20 +39,13 @@ None of this exists in Kotlin/Native's LLVM pipeline. **Dagger is architecturall
 
 ### The Three-Layer Module Architecture
 
-```text
-┌────────────────────────────────────────────────────────┐
-│ Layer 3: Platform Modules (androidMain / iosMain)      │
-│ Provides: SqlDriver, HttpClientEngine, Context, etc.   │
-│ These modules are DIFFERENT on each platform.           │
-├────────────────────────────────────────────────────────┤
-│ Layer 2: Feature Modules (commonMain)                   │
-│ Provides: ViewModels, UseCases                          │
-│ Consumes: Repositories, APIs from Layer 1               │
-├────────────────────────────────────────────────────────┤
-│ Layer 1: Core Modules (commonMain)                      │
-│ Provides: HttpClient, Database, Repositories, APIs      │
-│ Consumes: SqlDriver, HttpClientEngine from Layer 3      │
-└────────────────────────────────────────────────────────┘
+```mermaid
+flowchart BT
+    platform["Layer 3: platform modules<br/>androidMain / iosMain<br/>platform-specific"]
+    core["Layer 1: core modules<br/>commonMain<br/>HttpClient, database, repositories, APIs"]
+    feature["Layer 2: feature modules<br/>commonMain<br/>ViewModels and use cases"]
+    platform -->|"SqlDriver, HttpClientEngine, Context"| core
+    core -->|"repositories and APIs"| feature
 ```
 
 ### Layer 1: Core Module (`commonMain`)

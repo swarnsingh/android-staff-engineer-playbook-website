@@ -21,14 +21,14 @@ These are packaged into an **Apple Framework** — a structured directory that X
 
 A single `.framework` contains a binary compiled for exactly **one** target architecture + platform combination:
 
-```text
-SharedCode.framework/              ← This is for iosArm64 ONLY
- ├── Headers/
- │    └── SharedCode.h             ← Objective-C header
- ├── Modules/
- │    └── module.modulemap         ← Swift module map
- ├── SharedCode                    ← ARM64 binary (static archive or dylib)
- └── Info.plist
+```mermaid
+flowchart TD
+    framework["SharedCode.framework/<br/>iosArm64 only"] --> headers["Headers/"]
+    headers --> header["SharedCode.h<br/>Objective-C header"]
+    framework --> modules["Modules/"]
+    modules --> map["module.modulemap<br/>Swift module map"]
+    framework --> binary["SharedCode<br/>ARM64 static archive or dynamic library"]
+    framework --> plist["Info.plist"]
 ```
 
 If you hand this framework to an iOS engineer and they try to run the app on the Simulator (which needs `iosSimulatorArm64`), it will crash immediately:
@@ -41,19 +41,19 @@ ld: building for 'iOS-simulator', but linking in object file built for 'iOS'
 
 An XCFramework is Apple's official multi-architecture wrapper. It bundles multiple `.framework` directories:
 
-```text
-SharedCode.xcframework/
- ├── Info.plist                                ← Describes all contained platforms
- ├── ios-arm64/                                ← Physical devices
- │    └── SharedCode.framework/
- │         ├── Headers/SharedCode.h
- │         └── SharedCode (ARM64 binary)
- ├── ios-arm64_x86_64-simulator/              ← Simulators (both architectures)
- │    └── SharedCode.framework/
- │         ├── Headers/SharedCode.h
- │         └── SharedCode (fat binary: ARM64 + x86_64)
- └── macos-arm64_x86_64/                      ← macOS (if targeting desktop)
-      └── SharedCode.framework/
+```mermaid
+flowchart TD
+    xc["SharedCode.xcframework/"] --> plist["Info.plist<br/>describes contained platforms"]
+    xc --> device["ios-arm64/<br/>physical devices"]
+    device --> deviceFramework["SharedCode.framework/"]
+    deviceFramework --> deviceHeader["Headers/SharedCode.h"]
+    deviceFramework --> deviceBinary["SharedCode<br/>ARM64 binary"]
+    xc --> simulator["ios-arm64_x86_64-simulator/<br/>simulators"]
+    simulator --> simulatorFramework["SharedCode.framework/"]
+    simulatorFramework --> simulatorHeader["Headers/SharedCode.h"]
+    simulatorFramework --> simulatorBinary["SharedCode<br/>ARM64 + x86_64 fat binary"]
+    xc --> macos["macos-arm64_x86_64/<br/>optional desktop target"]
+    macos --> macosFramework["SharedCode.framework/"]
 ```
 
 When Xcode builds the app, it reads the `Info.plist`, determines the active build destination (physical device vs simulator), and automatically selects the correct inner `.framework`.
@@ -114,14 +114,14 @@ end
 
 **The CocoaPods Build Flow:**
 
-```text
-iOS engineer runs: pod install
-  └── CocoaPods reads the .podspec
-       └── .podspec points to a Gradle build script
-            └── Xcode's "Build Phases" gains a Run Script phase
-                 └── Run Script executes: ./gradlew :shared:syncFramework
-                      └── Kotlin/Native compiles → produces .framework
-                           └── CocoaPods copies .framework into Pods/
+```mermaid
+flowchart TD
+    engineer["iOS engineer runs pod install"] --> podspec["CocoaPods reads the .podspec"]
+    podspec --> gradle["Podspec references a Gradle build script"]
+    gradle --> phase["Xcode Build Phases gains a Run Script phase"]
+    phase --> sync["Run ./gradlew :shared:syncFramework"]
+    sync --> compile["Kotlin/Native compiles the framework"]
+    compile --> pods["CocoaPods copies the framework into Pods/"]
 ```
 
 **Why CocoaPods is problematic:**

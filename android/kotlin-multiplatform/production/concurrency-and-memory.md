@@ -65,20 +65,18 @@ In October 2022, JetBrains shipped the **New Memory Model** as the default. The 
 
 The Kotlin/Native GC uses a **tracing garbage collector** with concurrent marking:
 
-```text
-Thread A                    Thread B                    GC Thread
-────────                    ────────                    ─────────
-val user = User()           
-user.name = "Alice"         
-                            val ref = user              
-                            ref.email = "bob@..."       
-                                                        [MARK PHASE]
-                                                        Walk all root references
-                                                        Mark user as reachable
-                                                        
-                                                        [SWEEP PHASE]
-                                                        Free unreachable objects
-                                                        (user is NOT freed — still reachable)
+```mermaid
+sequenceDiagram
+    participant A as Thread A
+    participant B as Thread B
+    participant GC as GC thread
+    A->>A: Create User and set name to Alice
+    A-->>B: Share reference to user
+    B->>B: Set email through its reference
+    GC->>GC: Mark phase: walk roots
+    GC->>GC: Mark user reachable
+    GC->>GC: Sweep unreachable objects
+    Note over A,GC: User remains allocated because it is reachable
 ```
 
 **Comparison with JVM collectors:** both Kotlin/Native and JVM collectors use safepoints and barriers as implementation tools. The current Kotlin/Native collector is non-generational concurrent mark-and-sweep; application threads can participate in marking and short stop-the-world phases still exist. Do not use "Native has barriers, JVM has safepoints" as the distinction.
@@ -109,25 +107,13 @@ Allocator selection such as mimalloc is a compiler option (`-Xallocator=mimalloc
 
 An iOS app running KMP has **two garbage collection systems running simultaneously**:
 
-```text
-┌────────────────────────────────────────────────────────┐
-│                    iOS App Process                     │
-│                                                        │
-│  ┌──────────────────────┐  ┌──────────────────────────┐│
-│  │   Swift / Obj-C      │  │    Kotlin/Native         ││
-│  │                      │  │                          ││
-│  │   ARC (Automatic     │  │    Tracing GC            ││
-│  │   Reference Counting │  │    (mark-and-sweep)      ││
-│  │                      │  │                          ││
-│  │  - Deterministic     │  │  - Non-deterministic     ││
-│  │  - Immediate dealloc │  │  - Batched collection    ││
-│  │  - No pauses         │  │  - Brief pauses (~1-5ms) ││
-│  │  - Circular refs LEAK│  │  - Circular refs handle  ││
-│  └──────────┬───────────┘  └────────────┬─────────────┘│
-│             │                           │              │
-│             └──────── BRIDGE ───────────┘              │
-│                 (This is where leaks happen)           │
-└────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph process["iOS app process"]
+        swift["Swift / Objective-C<br/>ARC<br/>deterministic, immediate deallocation<br/>cycles can leak"]
+        kotlin["Kotlin/Native<br/>tracing mark-and-sweep GC<br/>batched, non-deterministic collection<br/>cycles are collectable"]
+        swift <-->|"interop bridge<br/>cross-boundary references can leak"| kotlin
+    end
 ```
 
 ### Cross-Boundary Reference Leaks

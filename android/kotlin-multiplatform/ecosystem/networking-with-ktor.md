@@ -8,35 +8,15 @@
 
 Ktor Client is architecturally split into two independent halves:
 
-```text
-┌────────────────────────────────────────────────────────────┐
-│                    commonMain                               │
-│                                                             │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  ktor-client-core                                     │  │
-│  │  - HttpClient class                                   │  │
-│  │  - Request/Response pipeline                          │  │
-│  │  - Plugin system (interceptors)                       │  │
-│  │  - ContentNegotiation (JSON serialization)            │  │
-│  │  - Logging, Auth, DefaultRequest plugins              │  │
-│  │                                                       │  │
-│  │  This half does NOT know how to open a TCP socket.    │  │
-│  └────────────────────────┬─────────────────────────────┘  │
-│                           │ HttpClientEngine interface      │
-└───────────────────────────┼─────────────────────────────────┘
-                            │
-              ┌─────────────┴─────────────────┐
-              │                               │
-   ┌──────────▼────────────┐    ┌─────────────▼───────────┐
-   │ androidMain            │    │ iosMain                  │
-   │                        │    │                          │
-   │ ktor-client-okhttp     │    │ ktor-client-darwin       │
-   │ Uses OkHttp 4.x under  │    │ Uses NSURLSession under  │
-   │ the hood for HTTP.     │    │ the hood for HTTP.       │
-   │ Full OkHttp interceptor│    │ Full Apple ATS, proxy,   │
-   │ compatibility.         │    │ background download      │
-   │                        │    │ support.                 │
-   └────────────────────────┘    └─────────────────────────┘
+```mermaid
+flowchart TD
+    core["commonMain: ktor-client-core<br/>HttpClient and request/response pipeline<br/>plugins: serialization, logging, auth, defaults<br/>does not open a TCP socket"]
+    engine{"HttpClientEngine interface"}
+    android["androidMain: ktor-client-okhttp<br/>OkHttp networking and interceptor compatibility"]
+    ios["iosMain: ktor-client-darwin<br/>NSURLSession, ATS, proxy, and background-download support"]
+    core --> engine
+    engine --> android
+    engine --> ios
 ```
 
 ---

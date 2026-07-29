@@ -68,15 +68,18 @@ Glue work is invisible by definition. No one asks for it; no one assigns it; it 
 
 The shorthand: deep in one specialty, broad across many adjacent ones.
 
-```
-              breadth
-   ──────────────────────────────
-   API design   |   iOS   |   Backend   |   ML   |   Infra
-                       |
-                       |   ← depth (your specialty: Android UI internals)
-                       |
-                       |   Compose internals, ART rendering pipeline,
-                       |   GPU surface lifecycle, snapshot system
+```mermaid
+flowchart TB
+    subgraph breadth["Breadth across adjacent domains"]
+        direction LR
+        api["API design"]
+        ios["iOS"]
+        backend["Backend"]
+        ml["ML"]
+        infra["Infrastructure"]
+    end
+    backend -->|"Depth in one specialty"| android["Android UI internals"]
+    android --> internals["Compose internals<br/>ART rendering pipeline<br/>GPU surface lifecycle<br/>snapshot system"]
 ```
 
 **Depth.** Be the org's authority on at least one thing. Common Staff Mobile specializations: Compose/Jetpack internals, build systems, performance/perf-profiling, security, multi-module architecture, the Kotlin compiler, a key vendor SDK (Stripe, Firebase, ExoPlayer).

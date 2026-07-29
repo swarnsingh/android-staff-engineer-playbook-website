@@ -143,22 +143,16 @@ When auditing an on-call rotation, a Staff engineer focuses on the human cost:
 
 Mobile alerts have a different shape than server alerts because the mitigation toolbox is different. You can't restart a server; you can flip a flag, halt a rollout, or hotfix-and-wait.
 
-```
-Alert chain:
-  Vitals / Crashlytics / In-house telemetry
-        │
-        ▼
-  PagerDuty / OpsGenie (with runbook URL)
-        │
-        ▼
-  Releng on-call
-        │
-   ┌────┴────┬────────────┬─────────────────┐
-   ▼         ▼            ▼                 ▼
-  Halt    Kill switch    Rollback to       Hotfix +
-rollout    via flags      previous AAB      release
-                          (Play promo
-                           older version)
+```mermaid
+flowchart TD
+    vitals["Android vitals"] --> paging["PagerDuty / Opsgenie<br/>alert includes runbook URL"]
+    crashlytics["Crashlytics"] --> paging
+    telemetry["In-house telemetry"] --> paging
+    paging --> oncall["Release-engineering on-call"]
+    oncall --> halt["Halt staged rollout"]
+    oncall --> flag["Activate kill switch via flags"]
+    oncall --> rollback["Promote an older AAB where supported"]
+    oncall --> hotfix["Build and release a hotfix"]
 ```
 
 Concrete alert configs that matter:

@@ -6,21 +6,12 @@
 
 ## 1. The Stage Model
 
-```
-v2.0.0 submitted
-    │
-    ▼
-Internal Test Track (employees, 100%)
-    │ (24h soak; engineers can use the app like users)
-    ▼
-Closed Test Track (alpha, ~500 trusted users)
-    │ (3-7 days; rich crash/perf telemetry)
-    ▼
-Open Test Track (beta, opt-in users)
-    │ (7 days)
-    ▼
-Production: 1% → 5% → 10% → 25% → 50% → 100%
-    (24h between stages; auto-halt on regression)
+```mermaid
+flowchart TD
+    submit["Submit v2.0.0"] --> internal["Internal test track<br/>employees, 100%<br/>24-hour soak"]
+    internal --> closed["Closed test track<br/>about 500 trusted alpha users<br/>3–7 days"]
+    closed --> open["Open test track<br/>opt-in beta users<br/>7 days"]
+    open --> production["Production rollout<br/>1% → 5% → 10% → 25% → 50% → 100%<br/>24 hours between stages; auto-halt on regression"]
 ```
 
 A safer cadence costs a week of latency but turns a "30% crash rate disaster" into "we saw it at 1% and rolled back."

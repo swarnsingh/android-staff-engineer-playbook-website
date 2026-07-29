@@ -379,19 +379,17 @@ The validation logic is pulled into a `remember` block. The button itself has co
 
 A common mobile codebase pattern:
 
-```
-:app
-├── :feature:home
-├── :feature:checkout
-├── :feature:profile
-:core:
-├── :core:ui (design system)
-├── :core:network (Retrofit setup)
-├── :core:data (Room setup)
-├── :core:domain (shared business types)
-:shared:
-├── :shared:analytics
-├── :shared:logging
+```mermaid
+flowchart TD
+    app[":app"] --> home[":feature:home"]
+    app --> checkout[":feature:checkout"]
+    app --> profile[":feature:profile"]
+    core[":core"] --> ui[":core:ui<br/>design system"]
+    core --> network[":core:network<br/>Retrofit setup"]
+    core --> data[":core:data<br/>Room setup"]
+    core --> domain[":core:domain<br/>shared business types"]
+    shared[":shared"] --> analytics[":shared:analytics"]
+    shared --> logging[":shared:logging"]
 ```
 
 Depth: 3 levels (app → feature → core). Width: 7-12 modules. Build time scales well because feature modules build in parallel. The architecture is navigable; an engineer can predict where new code goes.

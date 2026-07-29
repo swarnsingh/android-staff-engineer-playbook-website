@@ -32,16 +32,16 @@ For internal SDKs consumed by separate apps: **publish AARs**. Consuming source 
 
 ### Inside an AAR
 
-```
-auth-sdk-1.4.0.aar
-├── AndroidManifest.xml         # merged into consumer's manifest
-├── classes.jar                 # your compiled JVM bytecode
-├── res/                        # Android resources
-├── assets/                     # raw assets
-├── libs/                       # transitive JARs (avoid; use POM)
-├── jni/                        # native libs per ABI
-├── proguard.txt                # consumer ProGuard / R8 rules
-└── R.txt                       # public resource symbols
+```mermaid
+flowchart TD
+    aar["auth-sdk-1.4.0.aar"] --> manifest["AndroidManifest.xml<br/>merged into consumer manifest"]
+    aar --> classes["classes.jar<br/>compiled JVM bytecode"]
+    aar --> resources["res/<br/>Android resources"]
+    aar --> assets["assets/<br/>raw assets"]
+    aar --> libs["libs/<br/>transitive JARs; prefer POM metadata"]
+    aar --> native["jni/<br/>native libraries per ABI"]
+    aar --> proguard["proguard.txt<br/>consumer R8 rules"]
+    aar --> symbols["R.txt<br/>public resource symbols"]
 ```
 
 `proguard.txt` is critical — covered below.

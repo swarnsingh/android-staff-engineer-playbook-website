@@ -63,14 +63,12 @@ Use this for:
 
 When you create a new app on Play Console, Play takes ownership of the signing key:
 
-```
-You:        Upload Key (you hold)
-              │ signs the AAB
-              ▼
-Play upload ──── Re-signs with ──── App Signing Key (Google holds in their KMS)
-                                          │
-                                          ▼
-                                    Device verifies update
+```mermaid
+flowchart LR
+    uploadKey["Upload key<br/>developer holds"] -->|"signs AAB"| play["Google Play upload"]
+    play -->|"verifies upload signature, then re-signs"| appKey["App signing key<br/>Google holds in KMS"]
+    appKey --> artifact["Device-specific APKs"]
+    artifact --> device["Device verifies update against app signing key"]
 ```
 
 Pros:

@@ -18,38 +18,18 @@ On-call is the system's pain feedback loop. Teams that build flaky software feel
 
 ## The Incident Lifecycle
 
-```
-1. Alert fires (PagerDuty)
-       │
-       ▼
-2. On-call ACKs within 15 min
-       │
-       ▼
-3. Triage: is this a real incident? severity?
-       │
-       ▼
-4. Open incident channel (#incident-NNN)
-       │
-       ▼
-5. Assign Incident Commander (IC) — for SEV-1/2
-       │
-       ▼
-6. MITIGATE (flip kill switch, halt rollout, revert deploy)
-       │
-       ▼
-7. Communicate: status updates every 15-30 min
-       │
-       ▼
-8. Verify mitigation worked (dashboards green)
-       │
-       ▼
-9. Close incident; start post-mortem clock (72h)
-       │
-       ▼
-10. Blameless post-mortem (COE / 5-Whys)
-       │
-       ▼
-11. Track action items to completion
+```mermaid
+flowchart TD
+    alert["1. Alert fires"] --> ack["2. On-call acknowledges within 15 minutes"]
+    ack --> triage["3. Validate incident and assign severity"]
+    triage --> channel["4. Open incident channel"]
+    channel --> ic["5. Assign Incident Commander for SEV-1/2"]
+    ic --> mitigate["6. Mitigate: kill switch, halt rollout, or revert"]
+    mitigate --> communicate["7. Publish status every 15–30 minutes"]
+    communicate --> verify["8. Verify dashboards recover"]
+    verify --> close["9. Close incident; start 72-hour postmortem clock"]
+    close --> review["10. Run blameless postmortem"]
+    review --> actions["11. Track action items to completion"]
 ```
 
 ---

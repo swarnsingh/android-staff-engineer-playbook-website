@@ -48,36 +48,19 @@ This Xcode build phase is notoriously fragile:
 
 Assets go into a unified `composeResources/` directory inside `commonMain`:
 
-```text
-shared/
- └── src/
-      └── commonMain/
-           └── composeResources/
-                ├── drawable/
-                │    ├── ic_logo.xml           ← Android Vector Drawable (works on iOS!)
-                │    ├── ic_arrow_back.xml
-                │    ├── background_gradient.xml
-                │    └── hero_banner.png        ← Raster images also work
-                │
-                ├── font/
-                │    ├── inter_regular.ttf
-                │    ├── inter_bold.ttf
-                │    └── inter_italic.ttf
-                │
-                ├── values/
-                │    └── strings.xml            ← Default (English)
-                │
-                ├── values-es/
-                │    └── strings.xml            ← Spanish
-                │
-                ├── values-fr/
-                │    └── strings.xml            ← French
-                │
-                ├── values-ja/
-                │    └── strings.xml            ← Japanese
-                │
-                └── values-ar/
-                     └── strings.xml            ← Arabic (RTL)
+```mermaid
+flowchart TD
+    shared["shared/"] --> src["src/commonMain/composeResources/"]
+    src --> drawable["drawable/"]
+    drawable --> vectors["ic_logo.xml<br/>ic_arrow_back.xml<br/>background_gradient.xml"]
+    drawable --> raster["hero_banner.png"]
+    src --> font["font/"]
+    font --> fonts["inter_regular.ttf<br/>inter_bold.ttf<br/>inter_italic.ttf"]
+    src --> default["values/strings.xml<br/>English default"]
+    src --> spanish["values-es/strings.xml<br/>Spanish"]
+    src --> french["values-fr/strings.xml<br/>French"]
+    src --> japanese["values-ja/strings.xml<br/>Japanese"]
+    src --> arabic["values-ar/strings.xml<br/>Arabic, RTL"]
 ```
 
 ### Strings XML Format
