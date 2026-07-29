@@ -50,20 +50,26 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart TD
+    Journey["User journey performance"]
+    Render["Rendering<br/>frame duration + jank"]
+    Memory["Memory<br/>heap + RSS + bounded caches"]
+    Battery["Battery<br/>background work + wakeups"]
+    Network["Network<br/>payload + latency + radio use"]
+    Evidence["Measure on representative device tiers"]
+
+    Journey --> Render
+    Journey --> Memory
+    Journey --> Battery
+    Journey --> Network
+    Render --> Evidence
+    Memory --> Evidence
+    Battery --> Evidence
+    Network --> Evidence
 ```
-            Performance Dimensions
-   ┌──────────────┬──────────────┬──────────────┬──────────────┐
-   │   Rendering  │    Memory    │   Battery    │   Network    │
-   │  (frame ms)  │ (heap + RSS) │ (mAh/hour)   │  (bytes/req) │
-   └──────────────┴──────────────┴──────────────┴──────────────┘
-            │                │                  │             │
-            ▼                ▼                  ▼             ▼
-       Compose +         Coil/Coil pool     ProcessLifecycle Coil-tier
-       LazyColumn        bitmap budget      socket policy    WS/FCM
-       JankStats         Room cache TTL     WorkManager      OkHttp
-       Macrobenchmark    Bitmap heap        Doze respect     cache
-                                                              Brotli
-```
+
+Performance is a coupled budget rather than a single startup or frame metric: an optimization is incomplete until its memory, battery, and network costs are measured on representative devices.
 
 **Telemetry sources:**
 - **Android Vitals** (Play Console) — Real-User-Monitoring; ANR, crash, jank, slow start.

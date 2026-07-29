@@ -49,24 +49,22 @@
 
 ## 3. The i18n Stack on Android
 
+```mermaid
+flowchart TD
+    Keys["Stable string IDs<br/>source locale resources"]
+    TMS["Translation workflow<br/>context + review + terminology"]
+    Locales["Qualified resources<br/>values-es, values-ar, values-fr, …"]
+    Build["Build and App Bundle<br/>locale resources packaged"]
+    Runtime["Android resource selection<br/>user locale + fallback"]
+    UI["Localized, RTL-aware UI"]
+
+    Keys --> TMS --> Locales --> Build --> Runtime --> UI
+    Keys --> Build
 ```
-String IDs (English source of truth)
-        │
-        ├── res/values/strings.xml         ← en (source)
-        ├── res/values-es/strings.xml      ← Spanish
-        ├── res/values-ar/strings.xml      ← Arabic (RTL)
-        ├── res/values-fr/strings.xml      ← French
-        └── ...
-        │
-        ▼
-Translation pipeline (Lokalise / Crowdin)
-        │
-        ▼
-Updated XML committed via PR
-        │
-        ▼
-App Bundle splits per locale → Play delivers correct set per device
-```
+
+Stable resource IDs connect product copy to the translation workflow; Android then selects the best packaged locale resources at runtime, while the UI remains responsible for flexible layout and RTL behavior.
+
+Validated against: [Localize your app](https://developer.android.com/guide/topics/resources/localization).
 
 ---
 

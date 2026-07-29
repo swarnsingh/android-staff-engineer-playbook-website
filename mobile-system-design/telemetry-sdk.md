@@ -51,21 +51,20 @@
 
 ## 3. High-Level Diagram (~10 min)
 
+```mermaid
+flowchart LR
+    Crash["JVM and native crash capture"] --> Buffer["Bounded event buffers"]
+    ANR["ANR detection"] --> Buffer
+    Frames["Frame timing"] --> Buffer
+    Network["Network spans"] --> Buffer
+    Startup["Startup tracing"] --> Buffer
+    Buffer --> Policy["Priority, consent, sampling, redaction"]
+    Policy --> Scheduler["FlushScheduler"]
+    Scheduler --> Worker["WorkManager FlushWorker"]
+    Worker --> API["Telemetry ingestion API"]
 ```
-   JVM Thread.UncaughtExceptionHandler  ─┐
-   Signal handler (sigsegv etc.)        ─┤
-   ANR watchdog                         ─┤
-   FrameMetrics listener                ─┼─► EventBuffer (split: critical vs sampled)
-   OkHttp EventListener                 ─┤                         │
-   Startup tracer                       ─┘                         ▼
-                                                            FlushScheduler
-                                                                    │
-                                                                    ▼
-                                                            FlushWorker (WorkManager)
-                                                                    │
-                                                                    ▼
-                                                            /v1/telemetry POST
-```
+
+Every signal enters through a bounded path and passes privacy and sampling policy before upload; critical crash evidence and high-volume performance samples must not compete under identical retention rules.
 
 **Components:**
 - **`CrashCapture`** — `Thread.setDefaultUncaughtExceptionHandler` + NDK.
@@ -140,28 +139,25 @@
 
 ### Layered diagram
 
+```mermaid
+flowchart TD
+    JVM["JVM uncaught exception"] --> CrashSink["CrashSink"]
+    Native["Native signal capture"] --> CrashSink
+    ANR["ANR detector"] --> CrashSink
+    Breadcrumb["Breadcrumb API"] --> Ring["Bounded in-memory ring"]
+    Ring -->|"snapshot on failure"| CrashSink
+    CrashSink --> Critical["Critical durable store"]
+
+    Frames["Frame metrics"] --> PerfSink["Sampled PerfSink"]
+    HTTP["HTTP event listener"] --> PerfSink
+    PerfSink --> Sampled["Sampled durable store"]
+
+    Critical --> Scheduler["FlushScheduler"]
+    Sampled --> Scheduler
+    Scheduler --> Worker["FlushWorker"] --> API["Telemetry API"]
 ```
-   ┌─ JVM uncaught ─┐
-   │                 │
-   │ Signal handler ─┤
-   │                 │
-   │ ANR watchdog   ─┼─► CrashSink ─► Room (sync write)
-   │                 │
-   │ App code .leaveBreadcrumb()
-   └─────────────────┘                       │
-                                              ▼
-                                       BreadcrumbBuffer (in-memory ring, 100)
-                                              │ snapshot on crash
-                                              ▼
-   FrameMetrics ──► PerfSink ──► Room (async, sampled)
-   OkHttp listener ──┘
-                                              │
-                                              ▼
-                                       FlushScheduler
-                                              │
-                                              ▼
-                                       FlushWorker → /v1/telemetry
-```
+
+Crash capture uses the shortest safe persistence path and snapshots bounded breadcrumbs, while performance and network data can tolerate asynchronous sampling before both streams share an upload scheduler.
 
 ### Key class signatures
 

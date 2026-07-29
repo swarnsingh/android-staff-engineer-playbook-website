@@ -50,21 +50,23 @@
 
 ## 3. The a11y Stack on Android
 
+```mermaid
+flowchart BT
+    Compose["Composable semantics<br/>role, state, action, description"]
+    View["View accessibility properties<br/>and delegate"]
+    Tree["Framework accessibility node tree"]
+    Service["Accessibility service<br/>TalkBack, Switch Access, others"]
+    User["User interaction and feedback"]
+
+    Compose --> Tree
+    View --> Tree
+    Tree --> Service --> User
+    User -. "focus and actions" .-> Service
 ```
-User
-  │
-  ▼
-Accessibility Service (TalkBack, Switch Access, etc.)
-  │
-  ▼
-AccessibilityNodeInfo tree (built by framework)
-  │
-  ▼
-View / Composable announces semantics
-  │
-  ├── Compose: Modifier.semantics { contentDescription, role, ... }
-  └── View: android:contentDescription, setAccessibilityDelegate
-```
+
+The service does not infer product meaning from pixels: Views and composables must expose accurate roles, state, descriptions, and actions through the framework semantics tree.
+
+Validated against: [Principles for improving app accessibility](https://developer.android.com/guide/topics/ui/accessibility/principles).
 
 ---
 
