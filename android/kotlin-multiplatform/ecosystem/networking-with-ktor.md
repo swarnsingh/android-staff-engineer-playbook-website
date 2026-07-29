@@ -1,6 +1,6 @@
 # Networking with Ktor in KMP
 
-> Retrofit + OkHttp is the default networking stack for every Android app. But Retrofit relies on Java dynamic proxies (`java.lang.reflect.Proxy`) and OkHttp relies on `java.net.Socket` — both are JVM-only APIs that cannot compile for iOS. Ktor Client is the canonical KMP replacement. A Staff engineer must understand Ktor's architecture (Core vs Engine separation), how to configure platform-specific engines (OkHttp on Android, Darwin/NSURLSession on iOS), and how to migrate complex Retrofit interceptor chains to Ktor's plugin system.
+> Retrofit + OkHttp remains a common Android stack, but it is not an iOS KMP client. Ktor Client is a common choice when one client contract must run across Android and Apple targets. A Staff engineer must understand Ktor's core/engine separation, choose engines against verified requirements, and migrate interceptor behavior deliberately into shared plugins or platform configuration.
 
 ---
 
@@ -19,13 +19,15 @@ flowchart TD
     engine --> ios
 ```
 
+The shared client owns policy and serialization; the injected engine owns target-specific transport behavior and makes the same client testable with `MockEngine`.
+
 ---
 
 ## 1. Setting Up the HttpClient
 
 ### The Shared Client Factory (Staff Pattern)
 
-Do not instantiate `HttpClient()` with the no-arg constructor in `commonMain`. This uses Ktor's service-loader mechanism to find an engine — which works but is opaque and untestable. Instead, accept the engine explicitly:
+Ktor can select an engine when the matching target dependency is present, but explicit engine injection makes platform selection and `MockEngine` tests visible at the composition root:
 
 ```kotlin
 // shared/src/commonMain/kotlin/com/example/network/HttpClientFactory.kt
@@ -174,9 +176,7 @@ fun createPlatformEngine(): DarwinClientEngine {
         }
         
         configureSession {
-            // Access raw NSURLSessionConfiguration
-            // This enables Apple's App Transport Security (ATS)
-            // and built-in HTTP/3 support
+            // Access raw NSURLSessionConfiguration for target-specific policy.
             setURLCache(
                 NSURLCache(
                     memoryCapacity = 10 * 1024 * 1024,   // 10MB memory cache
@@ -428,22 +428,20 @@ class ProductApiTest {
 
 ---
 
-## 5. Why the Darwin Engine Matters (Not Just "Use NSURLSession")
+## 5. Choosing the Apple Engine with Evidence
 
-The `Darwin` engine doesn't just wrap `NSURLSession` — it inherits all of Apple's networking optimizations for free:
+The Darwin engine delegates transport to `NSURLSession`; the OkHttp engine delegates to OkHttp on Android. That architectural fact does not prove that one app will use less energy or that every native transport feature is exposed through Ktor.
 
-| Feature | OkHttp (Android) | Darwin/NSURLSession (iOS) |
+| Concern | Android / OkHttp | Apple / Darwin |
 |---|---|---|
-| HTTP/2 | Supported | Supported |
-| HTTP/3 (QUIC) | Not supported (needs Cronet) | **Built-in since iOS 15** |
-| Background downloads | Not possible without `DownloadManager` | **Built-in `NSURLSessionDownloadTask`** |
-| App Transport Security | N/A | **Enforced by iOS** (blocks plain HTTP) |
-| Proxy configuration | Manual | **Automatic (uses system proxy)** |
-| DNS-over-HTTPS | Manual | **Built-in since iOS 14** |
-| Battery optimization | Manual (must schedule requests) | **iOS automatically batches requests during low-power mode** |
-| Certificate pinning | OkHttp `CertificatePinner` | `NSURLSessionDelegate` + `URLAuthenticationChallenge` |
+| Transport backend | OkHttp | `NSURLSession` |
+| Shared capabilities | Ktor plugins for auth, content negotiation, retries, logging, and validation | Same shared Ktor plugins |
+| Platform configuration | OkHttp builder, Android Network Security Configuration, and Android tooling | Darwin request/session configuration, ATS policy, and Apple tooling |
+| Protocols | Depends on engine version, server negotiation, and configuration | Depends on OS version, server negotiation, and session configuration |
+| Background work | Use Android's supported background-transfer/scheduling APIs for the requirement | Use Apple's supported background `URLSession` lifecycle when transfer must outlive the process; do not assume an ordinary client call does |
+| Performance and energy | Measure representative traffic with Android profiling tools | Measure representative traffic with Instruments, including constrained-network and Low Power Mode cases |
 
-**Staff Insight:** If you force the iOS app to use a custom TCP engine (e.g., via Ktor's CIO engine) instead of Darwin, you lose HTTP/3, background downloads, ATS enforcement, and battery optimizations. **Always use the Darwin engine on iOS.**
+Default to Darwin when the Apple client should follow `NSURLSession` behavior, but treat engine choice as a requirements decision. Verify timeouts, proxies, TLS challenges, streaming, cancellation, background execution, protocol negotiation, and observability on the exact Ktor and OS versions you ship.
 
 ---
 
@@ -451,13 +449,25 @@ The `Darwin` engine doesn't just wrap `NSURLSession` — it inherits all of Appl
 
 1.  **Engine Architecture:** Why does Ktor separate the `HttpClient` from the `HttpClientEngine`? What problem does this inversion solve for testing and for KMP?
 2.  **Interceptor Migration:** You have an OkHttp interceptor that adds `X-Request-ID: UUID` to every request, logs the request/response time, and retries on 503 with exponential backoff. Write the equivalent Ktor plugin configuration.
-3.  **Darwin Advantage:** Your iOS app makes 50 API calls per minute. The Android version uses OkHttp and the iOS version uses Darwin. Which version consumes less battery in Low Power Mode, and why?
+3.  **Engine Evidence:** Your iOS app makes 50 API calls per minute with Darwin while Android uses OkHttp. Can engine names alone tell you which app consumes less energy? What must you measure before making that claim?
 4.  **Error Handling:** In Retrofit, a 404 response returns a `Response<T>` object with `isSuccessful = false`. In Ktor, what happens by default when you set `expectSuccess = true`? What happens when you set it to `false`?
 5.  **MockEngine:** You write a test using `MockEngine` in `commonTest`. This test runs on JVM (fast). You then run `./gradlew iosSimulatorArm64Test`. Does the `MockEngine` test also run on iOS? What runtime differences might cause it to fail?
 
+## Answer Key
+
+1. **Engine architecture:** `HttpClient` and its plugins express portable request policy, serialization, validation, and API behavior; `HttpClientEngine` performs transport work for a supported target. The inversion lets common code use OkHttp on Android and Darwin on iOS without platform APIs leaking into it, while tests inject `MockEngine` and exercise the same client configuration without a network.
+2. **Interceptor migration:** Use `defaultRequest` or an `onRequest` hook in a custom client plugin to call an injected request-ID provider and append `X-Request-ID`. Record a monotonic start mark in request attributes and report elapsed time from an `onResponse` hook, with authorization headers sanitized. Install `HttpRequestRetry`, restrict `retryIf` to `503 Service Unavailable`, set a bounded retry count, and use `exponentialDelay()` (which includes jitter and can respect `Retry-After` in current Ktor). Retry only replayable/idempotent operations unless the API supplies an idempotency key; test the policy with `MockEngine`.
+3. **Engine evidence:** No. Darwin's use of `NSURLSession` and OkHttp's Android implementation describe the transport boundary, not the energy result of a workload. Measure the same request mix, payloads, connection reuse, radio conditions, retries, app lifecycle, and server behavior on representative devices. Use Android profiling tools and Apple Instruments, explicitly testing Low Power Mode and constrained networks; reduce unnecessary call frequency before attributing a difference to the engine.
+4. **Error handling:** With `expectSuccess = true`, Ktor throws `RedirectResponseException` for 3xx, `ClientRequestException` for 4xx, and `ServerResponseException` for 5xx before normal success handling. With it `false` (the default), status alone does not throw: the caller receives `HttpResponse` and must branch on `status`. Body decoding, I/O, and custom validators can still throw in either mode.
+5. **MockEngine:** The test belongs to `commonTest`, but it runs on iOS only when the iOS test compilation includes `ktor-client-mock` and the `iosSimulatorArm64Test` task actually selects that source set. `MockEngine` removes socket differences, not Kotlin/Native differences: unavailable main dispatchers, native-only initialization, file/locale assumptions, coroutine scheduling, and accidental JVM APIs can still fail. Keep engine-free policy in common code and run both fast host tests and target-native tests in CI.
+
 ## Further Reading
 
-- [`libraries-ecosystem.md`](libraries-ecosystem.md) — Why Retrofit can't be used in `commonMain` (the JVM dependency trap).
+- [Ktor client engines](https://ktor.io/docs/client-engines.html) — Current platform matrix, capabilities, configuration, and limitations.
+- [Ktor request retries](https://ktor.io/docs/client-request-retry.html) — Retry conditions, backoff, and request mutation.
+- [Ktor response validation](https://ktor.io/docs/client-response-validation.html) — `expectSuccess` defaults and status exceptions.
+- [Testing Ktor clients](https://ktor.io/docs/client-testing.html) — Injecting and configuring `MockEngine`.
+- [`libraries-ecosystem.md`](libraries-ecosystem.md) — How to verify published target variants and keep platform-only clients behind shared boundaries.
 - [`../../android/networking-and-security/ktor-vs-retrofit.md`](../../networking-and-security/ktor-vs-retrofit.md) — The detailed Android-focused decision file comparing Retrofit and Ktor.
 - [`dependency-injection.md`](dependency-injection.md) — How to inject the platform-specific `HttpClientEngine` via Koin.
 - [`build-system-and-source-sets.md`](../tooling/build-system-and-source-sets.md) — Where to put `ktor-client-okhttp` (androidMain) vs `ktor-client-darwin` (iosMain) dependencies.

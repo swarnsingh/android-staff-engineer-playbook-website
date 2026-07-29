@@ -1,252 +1,220 @@
-# KMP Libraries & The Ecosystem Shift
+# KMP Libraries & Ecosystem Evaluation
 
-> When transitioning to Kotlin Multiplatform, an Android engineer faces an immediate culture shock: every JVM library you've relied on for years — Retrofit, OkHttp, Room, Hilt, Moshi, Gson — cannot exist in `commonMain`. They depend on `java.io`, `java.net`, Java reflection, or Android SDK classes that Kotlin/Native's LLVM backend cannot compile. A Staff engineer must know the exact failure mode for every blocked library and the KMP-native replacement stack.
-
----
-
-## Overview
-
-The fundamental constraint of KMP `commonMain` is:
-
-> **If a library depends on any `java.*` or `android.*` class, it cannot be used in `commonMain`.**
-
-This includes libraries that are "100% Kotlin" but internally use JVM platform APIs. For example, OkHttp is written entirely in Kotlin, but its HTTP engine calls `java.net.Socket`, `java.io.InputStream`, and `javax.net.ssl.SSLSocketFactory` — all JVM-only.
+> A library's implementation language does not determine whether it belongs in `commonMain`; its published variants, API surface, transitive dependencies, and behavior on every required target do. The ecosystem changes quickly, so Staff engineers need a repeatable evaluation method rather than a permanent “Android library → KMP replacement” cheat sheet.
 
 ---
 
-## Why Each Major Android Library Fails
+## The Actual `commonMain` Constraint
 
-### Retrofit
-```text
-Failure reason: Retrofit uses Java dynamic proxies (java.lang.reflect.Proxy)
-to generate API interface implementations at runtime.
-Kotlin/Native has NO java.lang.reflect package.
+Code compiled from `commonMain` may use APIs available to every target compilation that includes that source set. For a dependency, Gradle must be able to select compatible published variants for those compilations.
+
+This is more precise than “a dependency containing any `java.*` call cannot be common.” A multiplatform library may legitimately use `java.*` in its JVM implementation and Foundation/POSIX APIs in Native implementations while publishing one common API. What cannot happen is compiling a JVM-only implementation or exposing a JVM-only type to a Native compilation.
+
+```mermaid
+flowchart TD
+    Common["commonMain API"] --> JVM["JVM/Android variant<br/>may use java.*"]
+    Common --> Apple["Apple variant<br/>may use Foundation/POSIX"]
+    Common --> Web["JS/Wasm variant<br/>may use web APIs"]
 ```
 
-### OkHttp
-```text
-Failure reason: OkHttp's transport layer uses java.net.Socket, java.io.OutputStream,
-and javax.net.ssl.SSLContext for TLS. These are JVM-specific I/O primitives.
-Kotlin/Native uses POSIX sockets via C-interop or NSURLSession on Apple platforms.
-```
+Evaluate the coordinates and metadata for the **exact version** under consideration. “Written in Kotlin,” “has a multiplatform Gradle plugin,” and “the repository contains Native tests” are not proof that the artifact your module uses publishes all required targets.
 
-### Room
-```text
-Failure reason: Room depends on android.database.sqlite.SQLiteOpenHelper,
-which is part of the Android framework (not available on iOS).
-Room also uses KSP/KAPT annotation processing to generate DAO implementations
-that extend Android-specific classes.
-```
+## Why Static Replacement Tables Age Badly
 
-### Hilt / Dagger
-```text
-Failure reason: Dagger generates Java source code via KAPT/KSP.
-The generated code uses javax.inject annotations and Java class references
-that have no equivalent in Kotlin/Native.
-Furthermore, Dagger's component graph is wired via JVM reflection at compile time.
-```
+Several statements that were once common migration advice are no longer generally true:
 
-### Moshi / Gson
-```text
-Failure reason: Both rely on java.lang.reflect for runtime JSON parsing.
-Moshi's codegen (KSP) generates JVM-specific adapter code.
-Gson uses java.lang.reflect.Field to read/write object fields.
-Kotlin/Native has no java.lang.reflect.
-```
+- Room supports KMP from 2.7.0, though some Android APIs are unavailable in common code.
+- DataStore supports KMP from 1.1.0; currently only Preferences DataStore is supported for KMP.
+- Coil 3 is multiplatform across Android, JVM, Apple, JS, and Wasm, while some decoder artifacts remain Android-only.
+- OkHttp's current project documentation still targets Android/JVM (and GraalVM), so the OkHttp client itself is not a portable iOS `commonMain` transport even though Okio and parts of its build are multiplatform.
+- A code-generated library is not automatically JVM-only. Room uses KSP for each configured KMP target; `kotlinx.serialization` uses a Kotlin compiler plugin across targets.
 
-### Timber
-```text
-Failure reason: Timber's Tree abstraction uses android.util.Log internally.
-android.util.Log is part of the Android framework SDK.
-```
+The right question is not “What is the canonical replacement?” It is:
 
----
+> Which library version supports our target matrix and product semantics, and what does it cost us to own?
 
-## The Canonical KMP Replacement Stack
+## Current Decision Map
 
-| Domain | Legacy Android (JVM) | KMP Replacement (`commonMain`) | Key Difference |
-|:---|:---|:---|:---|
-| **HTTP Client** | Retrofit + OkHttp | **Ktor Client** | Imperative DSL vs declarative annotations |
-| **JSON Serialization** | Moshi / Gson | **kotlinx-serialization** | Compiler plugin (no reflection) vs runtime reflection |
-| **Relational Database** | Room | **SQLDelight** | Write SQL → generate Kotlin vs Write Kotlin → generate SQL |
-| **Key-Value Store** | SharedPreferences / DataStore | **Multiplatform Settings** / **DataStore KMP** | `NSUserDefaults` on iOS vs custom file on iOS |
-| **Dependency Injection** | Dagger / Hilt | **Koin** / **kotlin-inject** | Runtime service locator vs compile-time codegen |
-| **Date/Time** | `java.time` / JodaTime | **kotlinx-datetime** | Wraps `java.time` on JVM, `NSDate` on iOS |
-| **Concurrency** | RxJava / Threads | **kotlinx-coroutines** | Already KMP-native since 1.6.0 |
-| **Logging** | Timber | **Kermit** (Touchlab) / **Napier** | `android.util.Log` on Android, `NSLog` on iOS |
-| **Image Loading** | Coil / Glide | **Coil 3** (KMP) / **Kamel** | Coil 3 has experimental KMP support |
-| **Cryptography** | `java.security` / Tink | **Diglol Crypto** / platform `expect/actual` | Wraps CommonCrypto on iOS |
-| **Paging** | Jetpack Paging 3 | **Cash App Multiplatform Paging** | Fork of Paging 3 with KMP targets |
-| **Testing** | JUnit / MockK | **kotlin-test** / **MocKMP** / **Mockative** | JUnit is JVM-only; kotlin-test is multiplatform |
+Examples below are starting points, not mandates. Verify current target support and limitations in each project's official documentation.
 
----
+| Capability | Common candidates | Boundary decision |
+|---|---|---|
+| HTTP | Ktor Client | Put protocol/retry/auth policy in common; choose target engines separately |
+| Serialization | `kotlinx.serialization` | Compiler-generated serializers; validate wire compatibility and format maturity |
+| SQLite | Room KMP, SQLDelight | Compare migration model, query generation, supported APIs, and existing team investment |
+| Preferences | DataStore KMP, Multiplatform Settings | Compare storage format, extension sharing, transaction semantics, and native interoperability |
+| Date/calendar/time zones | Kotlin `kotlin.time`, `kotlinx-datetime` | Use `kotlin.time` for instants/durations where sufficient; validate platform time-zone behavior |
+| Images in shared Compose UI | Coil 3 | Select a multiplatform network artifact/engine; some media decoders remain platform-specific |
+| Dependency injection | Manual composition, Koin, compile-time KMP tools | Choose based on Swift entry points, graph verification, startup, and debugging needs |
+| Logging/telemetry | Domain facade plus platform exporters | Avoid leaking vendor types; preserve privacy/redaction and platform lifecycle requirements |
 
-## Deep Dive: kotlinx-serialization vs Moshi
+An Android-only library can still be the correct `androidMain` implementation. KMP does not require every implementation dependency to become multiplatform.
 
-This is the most common migration a team faces. Let's compare them in depth.
+## Reflection, Code Generation, and Platform Support
 
-### Moshi (JVM-only)
+Avoid simplistic explanations such as “KSP means JVM-only” or “Dagger uses runtime reflection.” These are separate concerns:
+
+- Java annotation processors and generated Java source require a Java/JVM toolchain.
+- KSP can process Kotlin for multiple targets when both KSP and the processor support those targets and the build wires every target configuration.
+- A Kotlin compiler plugin can transform or generate target-independent Kotlin/IR behavior, but plugin compatibility must track Kotlin releases.
+- Runtime reflection may be absent or more limited on non-JVM targets, but reflection-free generated code can still depend on JVM-only runtime libraries.
+- `javax.inject` annotations themselves are not proof of runtime reflection; inspect generated/runtime code and published variants.
+
+Room KMP demonstrates why the full chain matters: Room runtime artifacts support KMP, its compiler must run through KSP for each target, DAO APIs have common restrictions, and SQLite must be configured for each platform.
+
+## Deep Dive: Reflection-Free Serialization
+
+`kotlinx.serialization` combines:
+
+1. A Kotlin compiler plugin that recognizes `@Serializable` declarations and generates serialization code.
+2. A common runtime API (`KSerializer`, descriptors, encoders, and decoders).
+3. Format libraries such as JSON, CBOR, and ProtoBuf with their own stability/behavior choices.
 
 ```kotlin
-// 1. Define a data class with Moshi annotations
-@JsonClass(generateAdapter = true)
-data class User(
-    @Json(name = "user_id") val id: String,
-    @Json(name = "full_name") val name: String,
-    val email: String,
-    val isActive: Boolean = true  // Default works
-)
-
-// 2. Create a Moshi instance
-val moshi = Moshi.Builder()
-    .add(KotlinJsonAdapterFactory())  // Uses reflection!
-    .build()
-
-// 3. Parse JSON
-val adapter = moshi.adapter(User::class.java)
-val user = adapter.fromJson(jsonString)
-```
-
-**How Moshi works:** KSP/KAPT generates a `UserJsonAdapter` class that knows how to read/write each field. The generated code uses `JsonReader` and `JsonWriter` which call `java.io.BufferedSource` under the hood. None of this compiles on Kotlin/Native.
-
-### kotlinx-serialization (KMP-native)
-
-```kotlin
-// 1. Define a data class with @Serializable
 @Serializable
 data class User(
     @SerialName("user_id") val id: String,
-    @SerialName("full_name") val name: String,
-    val email: String,
-    val isActive: Boolean = true  // Default works
+    val displayName: String,
+    val active: Boolean = true
 )
 
-// 2. Create a Json instance (no reflection!)
-val json = Json { 
+val json = Json {
     ignoreUnknownKeys = true
-    isLenient = true
-    encodeDefaults = false
-    prettyPrint = false
+    explicitNulls = false
 }
 
-// 3. Parse JSON — identical code on Android AND iOS
-val user: User = json.decodeFromString(jsonString)
-val jsonOutput: String = json.encodeToString(user)
+val user = json.decodeFromString<User>(payload)
+val encoded = json.encodeToString(user)
 ```
 
-**How kotlinx-serialization works:** The `@Serializable` annotation triggers a **Kotlin Compiler Plugin** (not KSP/KAPT). The plugin generates a `User.Companion.serializer()` function at compile time. This function uses the Kotlin compiler's knowledge of the class structure — no reflection needed. The generated code is pure Kotlin with zero JVM dependencies, so it compiles identically on JVM, Native, JS, and Wasm.
+The generated serializer exposes a `SerialDescriptor` for the schema and encode/decode logic that calls the runtime's encoder/decoder APIs. It does not discover fields through `java.lang.reflect` at runtime. The exact generated classes and backend IR are compiler implementation details; test wire behavior and compatibility rather than teaching an unstable IR shape.
 
-### Migration Complexity
+Migration review must cover more than annotation names:
 
-| Aspect | Moshi → kotlinx-serialization |
-|---|---|
-| Annotation rename | `@Json(name = "x")` → `@SerialName("x")` |
-| Adapter creation | Delete all `Moshi.Builder()` code |
-| Custom adapters | Rewrite as `KSerializer<T>` implementations |
-| Polymorphic JSON | `@JsonClass(generator = "sealed:type")` → `@Serializable` + `@SerialName` on sealed subclasses |
-| Retrofit integration | Replace `MoshiConverterFactory` with `KotlinxSerializationConverterFactory` |
-| Ktor integration | Ktor natively supports kotlinx-serialization — just install `ContentNegotiation` plugin |
+- Missing versus explicit `null` values.
+- Defaults and `encodeDefaults`.
+- Unknown keys and enum values.
+- Polymorphic discriminators and sealed hierarchies.
+- Numeric coercion/precision.
+- Custom serializers and error diagnostics.
+- Backward/forward compatibility using recorded payload fixtures.
 
----
+## Time APIs and the Time-Zone Trap
 
-## Evaluating Unknown KMP Libraries (Staff Heuristic)
+Do not assume `kotlinx-datetime` has “zero JVM impact” or that every Native target always bundles one fixed IANA database. Current implementations are platform-dependent. For example, the documented system-default lookup uses `java.time.ZoneId` on JVM, `NSTimeZone` on Darwin, operating-system files/APIs on Linux and Windows, browser facilities on JS/Wasm when available, and UTC for Wasm/WASI where the platform cannot supply a system zone.
 
-Before adding any new dependency to a KMP project, run it through this checklist:
+This affects semantics as well as size:
 
-### 1. Does it publish KMP targets?
-Check the library's Maven Central page. A KMP library publishes multiple artifacts:
-```
-com.example:my-lib-jvm:1.0.0        ← JVM artifact
-com.example:my-lib-iosarm64:1.0.0   ← iOS ARM64 artifact
-com.example:my-lib-iosx64:1.0.0     ← iOS x64 artifact
-com.example:my-lib:1.0.0            ← Gradle Metadata (the orchestrator)
-```
+- Time-zone database versions can differ by OS/device.
+- A zone identifier available on one platform may not behave identically on another old OS.
+- Browser/Wasm deployments may need an additional time-zone dependency or a product constraint.
+- `kotlin.time.Instant`/`Clock` now cover use cases that older guidance assigned entirely to `kotlinx-datetime`; calendar and time-zone operations remain a separate concern.
 
-If you only see `-jvm`, the library is JVM-only and cannot be used in `commonMain`.
+Measure the linked, stripped, architecture-thinned app artifact before and after a dependency change. An uncompressed KLIB or XCFramework directory does not represent App Store download size, and a guessed time-zone-database number is not evidence.
 
-### 2. How large is the iOS binary impact?
-Every KMP library adds to the `.xcframework` size. Libraries with deep generic hierarchies or extensive inline functions can cause LLVM to generate massive amounts of machine code.
+## A Staff-Level Dependency Evaluation
 
-**Measurement:**
-```bash
-# Before adding the library
-ls -lh build/bin/iosArm64/releaseFramework/SharedCode.framework/SharedCode
-# → 4.2 MB
+### 1. Freeze the Target Matrix
 
-# After adding the library
-ls -lh build/bin/iosArm64/releaseFramework/SharedCode.framework/SharedCode
-# → 5.8 MB  (1.6 MB increase — is this acceptable?)
-```
+List current and plausible near-term targets: Android, `iosArm64`, `iosSimulatorArm64`, desktop JVM, JS, `wasmJs`, `wasmWasi`, and any watch/TV targets. “Native” is not one target.
 
-### 3. Is it actively maintained for all targets?
-Some libraries publish KMP targets but only test on JVM. Check their CI configuration:
-- Does CI run `iosSimulatorArm64Test`?
-- Are there iOS-specific issues in the GitHub tracker?
-- When was the last release?
+### 2. Inspect Published Variants and Dependency Scope
 
-### 4. Does it use `expect/actual` or pure Kotlin?
-- **Pure Kotlin (e.g., kotlinx-serialization):** Identical behavior on all platforms.
-- **`expect/actual` wrapper (e.g., Multiplatform Settings):** Wraps `SharedPreferences` on Android and `NSUserDefaults` on iOS. Behavioral differences are possible (e.g., `NSUserDefaults` is backed by plist XML, SharedPreferences by XML, DataStore by protobuf).
+- Resolve the exact coordinate/version from `commonMain` in a small fixture.
+- Inspect Gradle module metadata and `dependencyInsight` for every target compilation.
+- Confirm intermediate source-set variants match your hierarchy.
+- Inspect transitive dependencies; one unsupported transitive artifact is enough to fail a target.
+- Place platform engines/drivers in their compatible target source sets.
 
-### 5. Does it block future Wasm support?
-If you plan to add a Kotlin/Wasm target (for Compose Web), check if the library publishes `wasmJs` artifacts. Adding a library that doesn't support Wasm to `commonMain` will block your entire Wasm migration later.
+### 3. Check Support Level, Not Just Artifact Presence
 
----
+Use the Kotlin/Native [target support tiers](https://kotlinlang.org/docs/native-target-support.html) and the library's own policy. Check whether the target is compiled, tested, released, and covered by maintainers—not merely present in a Gradle file.
 
-## The "androidMain Escape Hatch" Pattern
+### 4. Validate API and Behavior
 
-Sometimes you genuinely need a JVM library (like Firebase Crashlytics) alongside your KMP shared code. The pattern is:
+- Does the public API use common types or leak JVM/Android types?
+- Are cancellation, threading, file paths, locale/time-zone rules, and persistence guarantees equivalent enough?
+- Is the Swift/Objective-C export usable, or should the module hide the library behind a facade?
+- Can the library be faked without starting a platform runtime?
+
+### 5. Measure Operational Cost
+
+- Clean and incremental build time per target.
+- Native link time, memory, and cache behavior.
+- Final app size and startup, using release artifacts.
+- Crash symbolication and debugging quality.
+- Security advisories, release cadence, license, maintainers, and upgrade compatibility.
+
+### 6. Build an Exit Boundary
+
+Prefer domain-owned interfaces when a vendor may change or a capability differs materially by platform. Do not wrap stable value types reflexively, but do prevent transport, storage, analytics, and security SDKs from becoming domain vocabulary.
+
+## Platform Escape Hatches
 
 ```kotlin
-// commonMain — define the interface
+// commonMain
 interface CrashReporter {
-    fun recordException(throwable: Throwable)
-    fun setUserId(id: String)
-    fun log(message: String)
+    fun record(throwable: Throwable, attributes: Map<String, String> = emptyMap())
 }
 
-// androidMain — use Firebase Crashlytics (JVM library)
-class FirebaseCrashReporter : CrashReporter {
-    override fun recordException(throwable: Throwable) {
-        FirebaseCrashlytics.getInstance().recordException(throwable)
-    }
-    override fun setUserId(id: String) {
-        FirebaseCrashlytics.getInstance().setUserId(id)
-    }
-    override fun log(message: String) {
-        FirebaseCrashlytics.getInstance().log(message)
-    }
-}
-
-// iosMain — use Sentry (available via CocoaPods C-interop)
-class SentryCrashReporter : CrashReporter {
-    override fun recordException(throwable: Throwable) {
-        SentrySDK.captureException(throwable.asNSException())
-    }
-    override fun setUserId(id: String) {
-        SentrySDK.setUser(SentryUser().apply { this.userId = id })
-    }
-    override fun log(message: String) {
-        SentrySDK.addBreadcrumb(SentryBreadcrumb(level: .info, message: message))
+class CheckoutService(
+    private val crashReporter: CrashReporter
+) {
+    suspend fun checkout() {
+        try {
+            // Domain work
+        } catch (cancelled: CancellationException) {
+            throw cancelled // Cancellation is control flow, not an operational crash.
+        } catch (failure: Exception) {
+            crashReporter.record(failure)
+            throw failure
+        }
     }
 }
 ```
 
-Your `commonMain` business logic calls `crashReporter.recordException(e)` without knowing (or caring) whether the underlying implementation is Firebase or Sentry.
+Android can implement the interface with Crashlytics in `androidMain` or the Android app. iOS can implement it with a native SDK through an iOS adapter. The domain does not depend on either SDK's exception, breadcrumb, user, or lifecycle types. Construct the correct adapter in each app's composition root; `expect`/`actual` is optional, not required.
 
----
+## Future-Target Failure Modes
+
+When adding Wasm or another target, an unsupported `commonMain` dependency creates choices:
+
+1. Upgrade to a version that publishes and supports the target.
+2. Replace it with a library supporting the full matrix.
+3. Move its use behind a common interface and keep implementations in narrower source sets.
+4. Split the source-set hierarchy so only supporting targets share that implementation, while deliberately preserving/replacing the default hierarchy template.
+5. Implement the missing target adapter in-house or contribute upstream, accepting ownership cost.
+6. Defer/drop the target if the product value does not justify the dependency migration.
+
+Do not add a fake no-op merely to make compilation green when the capability is required for correctness or security. Model unsupported capability explicitly and test the product behavior.
 
 ## Probing Questions
 
-1.  **OkHttp Paradox:** OkHttp is written 100% in Kotlin. Why can't it be used in `commonMain`? What specific JVM packages does it import that don't exist in Kotlin/Native?
-2.  **Serialization Internals:** Explain how `kotlinx-serialization`'s compiler plugin approach avoids Java reflection. What does the generated `User.Companion.serializer()` function actually produce at the IR level?
-3.  **Binary Size:** You add `kotlinx-datetime` to `commonMain`. On JVM it wraps `java.time` (zero binary impact). On Kotlin/Native, it must ship its own IANA timezone database. How does this affect iOS binary size, and how can you mitigate it?
-4.  **Library Evaluation:** Your team wants to add `com.jakewharton.threetenabp:threetenabp:1.4.6` to `commonMain` for date handling. Walk through the evaluation heuristic. What do you discover, and what do you recommend instead?
-5.  **The Wasm Trap:** You've built a successful KMP app sharing logic between Android and iOS. Product now wants a web version using Kotlin/Wasm. One of your `commonMain` dependencies doesn't publish a `wasmJs` artifact. What are your options?
+1. **The “written in Kotlin” paradox:** OkHttp is implemented largely in Kotlin, yet its current documented runtime targets are Android/JVM rather than Kotlin/Native iOS. Why does implementation language not make its client artifact valid in `commonMain`, and where can it still belong in a KMP app?
+2. **Serialization internals:** How does `kotlinx.serialization` avoid Java reflection, what stable serializer contract is generated for `User`, and why is memorizing its exact backend IR the wrong review criterion?
+3. **Date/time evaluation:** A proposal claims `kotlinx-datetime` is free on JVM and always bundles a full IANA database on iOS. What is wrong with that claim, and how would you evaluate semantics and binary impact correctly?
+4. **Legacy Android dependency:** The team proposes `com.jakewharton.threetenabp:threetenabp` in `commonMain`. Walk through the target/metadata/API evaluation and recommend an architecture.
+5. **The Wasm expansion:** A proven Android/iOS shared module adds `wasmJs`, but one `commonMain` dependency publishes no compatible Wasm variant. What options do you evaluate, and when is a no-op implementation unacceptable?
+
+## Answer Key
+
+1. Kotlin source can call JVM APIs and be published only as JVM bytecode. Gradle decides portability from the selected artifact's variants/attributes and transitive graph, not the repository's language percentage. OkHttp can remain the Ktor engine or a direct client inside `androidMain`/an Android adapter. Shared HTTP policy should use a common client/API or a domain interface, with a different iOS implementation.
+2. The Kotlin serialization compiler plugin generates a `KSerializer<User>` path with a `SerialDescriptor` plus encode/decode logic that calls common `Encoder`/`Decoder` contracts. Runtime field discovery through `java.lang.reflect` is unnecessary, so compatible runtime/format variants work across JVM, Native, JS, and supported Wasm targets. Generated class names and IR lowering can change with compiler/plugin versions; verify descriptors, recorded wire fixtures, defaults/nulls, polymorphism, and backward/forward compatibility instead.
+3. Both halves are unsupported absolutes. The library has real code/dependency cost on every platform, while time-zone lookup and rules are platform-dependent: current documentation describes `java.time` on JVM, `NSTimeZone` on Darwin, OS facilities elsewhere, and special JS/Wasm behavior. Define required identifiers/DST behavior, test representative transitions on every target/oldest OS, inspect transitive dependencies, and compare linked/stripped/thinned release app artifacts—not raw KLIB/XCFramework directories.
+4. ThreeTenABP is an Android backport and publishes an Android/JVM-oriented API/artifact, so Native compilations cannot select it for `commonMain`. First determine whether modern `kotlin.time` covers instants/durations; use `kotlinx-datetime` for shared calendar/time-zone work when its semantics fit. If legacy Android code still requires ThreeTenABP, isolate it in `androidMain` behind a common domain clock/date interface and provide other target implementations. Do not expose its types in the shared API.
+5. Try a supported library upgrade, replacement, narrower interface plus platform implementations, or a custom source-set split that excludes Wasm from that implementation. Upstream/in-house a Wasm implementation only when the maintenance cost is justified; otherwise revisit the target or feature scope. A no-op is unacceptable when silently omitting persistence, authentication, cryptography, billing, telemetry required by policy, or any behavior whose absence corrupts correctness; expose an unsupported capability or fail safely instead.
 
 ## Further Reading
 
-- [`networking-with-ktor.md`](networking-with-ktor.md) — Deep dive into the Ktor Client (the Retrofit replacement).
-- [`persistence.md`](persistence.md) — Deep dive into SQLDelight (the Room replacement) and Multiplatform Settings.
-- [`dependency-injection.md`](dependency-injection.md) — Koin as the Hilt/Dagger replacement, with the "androidMain Escape Hatch" pattern.
-- [`build-system-and-source-sets.md`](../tooling/build-system-and-source-sets.md) — How Gradle resolves KMP library artifacts via `.module` metadata.
+- [`networking-with-ktor.md`](networking-with-ktor.md) — Shared HTTP policy and platform engines.
+- [`persistence.md`](persistence.md) — Room KMP, SQLDelight, DataStore, and settings tradeoffs.
+- [`dependency-injection.md`](dependency-injection.md) — Composition choices and Swift-facing entry points.
+- [`build-system-and-source-sets.md`](../tooling/build-system-and-source-sets.md) — Variant-aware dependency resolution and source-set placement.
+- [KMP dependencies](https://kotlinlang.org/docs/multiplatform/multiplatform-add-dependencies.html) — Official dependency placement and variant behavior.
+- [Kotlin/Native target support](https://kotlinlang.org/docs/native-target-support.html) — Target tiers and support guarantees.
+- [Kotlin serialization compiler plugin](https://kotlinlang.org/docs/compiler-plugins-overview.html) — Reflection-free generated serialization.
+- [Room for KMP](https://developer.android.com/kotlin/multiplatform/room) — Supported versions, KSP setup, and missing common APIs.
+- [DataStore for KMP](https://developer.android.com/kotlin/multiplatform/datastore) — Current KMP storage support and platform construction.
+- [Coil 3 multiplatform migration](https://coil-kt.github.io/coil/upgrading_to_coil3/) — Supported targets and platform-specific components.
+- [OkHttp project requirements](https://github.com/square/okhttp#requirements) — Current documented runtime targets.
+- [`kotlinx-datetime` system time-zone behavior](https://kotlinlang.org/api/kotlinx-datetime/kotlinx-datetime/kotlinx.datetime/-time-zone/-companion/current-system-default.html) — Platform-specific lookup semantics.

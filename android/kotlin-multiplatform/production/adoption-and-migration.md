@@ -1,12 +1,12 @@
 # KMP Adoption & Migration Strategy
 
-> Moving a large, production Android codebase to Kotlin Multiplatform is not a technical problem — it is an organizational, political, and strategic problem. A Staff engineer must know how to incrementally adopt KMP without halting feature delivery, how to sell the transition to skeptical iOS engineers and product managers, and how to measure whether KMP is actually delivering ROI.
+> Moving a large production codebase to Kotlin Multiplatform is both a technical migration and an organizational change. A Staff engineer must create reversible seams, preserve delivery, include Android and iOS owners in API decisions, and measure whether the chosen sharing boundary improves outcomes against the team's own baseline.
 
 ---
 
 ## Overview
 
-KMP adoption follows the **Strangler Fig** pattern — you gradually wrap existing native code with shared implementations, letting the shared module grow until the native implementations can be deleted. You never "rewrite" — you migrate function by function, module by module, with the old and new code coexisting throughout.
+KMP can follow the **Strangler Fig** pattern: introduce a shared implementation behind an existing boundary, move one independently testable slice at a time, and keep the production path reversible until the replacement meets its exit criteria. Some components may still require a planned rewrite; the important property is controlled coexistence and rollback, not pretending every migration is a file move.
 
 ---
 
@@ -14,45 +14,44 @@ KMP adoption follows the **Strangler Fig** pattern — you gradually wrap existi
 
 Before writing a single line of shared code, you must justify KMP to leadership. Not every project benefits from it.
 
-### KMP Is Wrong When:
+### Evidence That Should Stop or Delay Adoption
 
-| Scenario | Why KMP Fails | Better Alternative |
+| Signal | Why it matters | Response |
 |---|---|---|
-| App is 90% hardware interaction (AR, BLE, Camera) | Almost no shareable logic; 90% is platform API calls | Native-only development |
-| iOS team refuses to learn Kotlin | Political resistance → sabotage → project failure | Invest in relationship-building first |
-| No macOS CI infrastructure | Cannot compile iOS artifacts; manual builds are unsustainable | Set up macOS runners first |
-| App has <10% logic overlap between platforms | Sharing 10% of code doesn't justify the tooling overhead | Separate codebases |
-| Tight deadline (<3 months to ship) | KMP migration introduces risk during a deadline | Ship native, migrate after launch |
+| The valuable behavior is mostly platform hardware/UI code | The proposed shared boundary may add indirection without removing meaningful duplication | Keep that capability native; pilot a smaller pure-logic boundary if one exists |
+| iOS owners cannot review, debug, or release the shared artifact | A cross-platform dependency without cross-platform ownership is an operational risk | Fund training, API design, tooling, and ownership before production adoption |
+| No reproducible macOS CI or iOS artifact pipeline | Android-only CI cannot prove the Apple binary or integration | Establish the empty-framework pipeline and rollback path first |
+| The pilot has no measurable duplicated problem | Code-reuse percentage alone is not a business or reliability outcome | Define the defect, lead-time, consistency, or maintenance hypothesis before coding |
+| A fixed deadline leaves no rollback or validation window | Introducing a new toolchain and runtime boundary raises delivery risk | Ship through the proven path and schedule a bounded post-release pilot |
 
-### KMP Is Right When:
+### Evidence That Makes a Pilot Worthwhile
 
-| Scenario | Why KMP Excels | Concrete Benefit |
+| Scenario | Testable hypothesis | Pilot evidence |
 |---|---|---|
-| Heavy business logic (finance, e-commerce, health) | Complex validation rules, calculations, state machines must be identical on both platforms | Zero divergence bugs |
-| Networking + caching layer | Every API call, JSON parsing, and caching strategy is identical | Write once, test once |
-| Real-time sync (chat, collaboration) | WebSocket management, conflict resolution, retry logic is identical | Shared reliability |
-| Startup with small team (3-5 engineers) | Can't afford 2 separate codebases | 40-60% code reuse |
-| B2B / internal tooling | iOS design fidelity less critical | Compose Multiplatform viable |
+| Complex rules or state machines exist twice | One tested implementation may reduce same-domain divergence | Contract-test parity, production defects, and change lead time before/after |
+| Networking, caching, or sync policy is intentionally equivalent | A shared implementation may centralize retries, parsing, and conflict rules | Reliability, observability, offline behavior, and target performance on one vertical slice |
+| The team is capacity-constrained | Sharing selected high-change logic may reduce duplicate implementation work | End-to-end delivery time and ownership load, including build/tooling cost |
+| Shared UI is under consideration | Compose Multiplatform may fit selected screens without sacrificing required native behavior | Accessibility, design fidelity, startup/render performance, and iteration time on representative devices |
 
 ---
 
 ## 2. The Incremental Migration Path (Strangler Fig)
 
-### Phase 0: The Foundation (Week 1-2)
+### Phase 0: The Foundation
 
 Before touching any business logic, set up the infrastructure:
 
 ```text
-1. Create the `shared` Gradle module with KMP plugin
-2. Add iosArm64, iosSimulatorArm64, iosX64, and androidTarget
+1. Create the `shared` module with the Kotlin Multiplatform plugin and the current `com.android.kotlin.multiplatform.library` plugin; configure the Android target inside `kotlin { android { ... } }`
+2. Add `iosArm64` and `iosSimulatorArm64`; add `iosX64` only when Intel simulator support is an explicit requirement
 3. Set up CI with macOS runner (even if it only compiles an empty module)
-4. Choose distribution method (SPM for polyrepo, Direct Xcode for monorepo)
+4. Choose documented local integration (direct or CocoaPods) or remote XCFramework distribution (SwiftPM or CocoaPods) from repository ownership and release requirements
 5. Verify the iOS team can import the empty SharedCode framework in Xcode
 ```
 
 **Success criteria:** The iOS engineer types `import SharedCode` in Xcode and it compiles. The actual framework is empty — it has no useful code. But the pipeline works.
 
-### Phase 1: Data Models & Pure Utilities (Week 3-4)
+### Phase 1: Data Models & Pure Utilities
 
 Start with the absolute leaf nodes of the dependency graph — code with zero platform dependencies:
 
@@ -102,11 +101,11 @@ object Validators {
 4. In the Android app, change `import com.example.app.model.User` to `import com.example.shared.model.User`.
 5. The iOS team now gets these DTOs for free — no more manually maintaining Swift `Codable` structs.
 
-**Risk:** Near zero. These are pure data classes with no side effects.
+**Risk:** Usually low, but verify serialized field names/defaults, time and locale semantics, binary API exposure to Swift, and compatibility with stored/network payloads.
 
-### Phase 2: Networking / API Layer (Week 5-8)
+### Phase 2: Networking / API Layer
 
-This is the hardest migration phase because it requires replacing Retrofit with Ktor.
+This can be a high-risk phase when it replaces mature Retrofit/OkHttp behavior. Preserve exact URL, encoding, auth, retry, timeout, error, cancellation, and observability semantics through contract tests and staged rollout.
 
 **Before (Android-only Retrofit):**
 ```kotlin
@@ -162,9 +161,9 @@ class ProductApi(private val client: HttpClient) {
 | 6 | Delete the old Retrofit interface and its Hilt `@Provides` function | Low |
 | 7 | Update all callers (Repositories) to use the new Ktor-based API class | Medium |
 
-### Phase 3: Database / Persistence (Week 9-12)
+### Phase 3: Database / Persistence
 
-Replace Room with SQLDelight. This is a significant effort because Room uses annotations + DAO interfaces, while SQLDelight uses raw `.sq` SQL files.
+Choose the persistence migration rather than assuming a rewrite. Room now supports KMP, so an existing Room codebase can first test moving supported entities and asynchronous DAOs to common code. SQLDelight remains an alternative when a SQL-first source of truth and its driver model justify the larger rewrite. The example below illustrates the SQLDelight path, not a universal requirement.
 
 **Before (Room):**
 ```kotlin
@@ -216,57 +215,40 @@ val userFlow: Flow<UserEntity?> = database.userQueries
     .mapToOneOrNull(Dispatchers.IO)
 ```
 
-### Phase 4: Domain & ViewModels (Week 13-16)
+### Phase 4: Domain & ViewModels
 
-This is the crown jewel — the phase with the highest ROI. Move Use Cases and ViewModels into `commonMain`.
+Domain logic and ViewModels can be a high-value sharing boundary when both applications intentionally use the same state machine and business rules.
 
-**The ViewModel Lifecycle Problem:**
-On Android, ViewModels survive configuration changes because `androidx.lifecycle.ViewModel` is tied to the `ViewModelStore`. On iOS, there is no equivalent — SwiftUI views are value types that can be recreated at any time.
-
-**Solution:** Use a KMP ViewModel base class that manages its own `CoroutineScope`:
+AndroidX `ViewModel` supports KMP. Put the ViewModel and its business logic in `commonMain` and use the lifecycle-owned `viewModelScope`; do not create a second home-grown ViewModel abstraction just to target iOS:
 
 ```kotlin
-// shared/src/commonMain/kotlin/com/example/base/SharedViewModel.kt
+// shared/src/commonMain/kotlin/com/example/checkout/CheckoutViewModel.kt
 
-open class SharedViewModel {
-    // On Android, this scope is bound to the Android ViewModel's lifecycle
-    // On iOS, this scope must be cancelled manually when the View disappears
-    val viewModelScope: CoroutineScope = CoroutineScope(
-        SupervisorJob() + Dispatchers.Main.immediate
-    )
-    
-    open fun onCleared() {
-        viewModelScope.cancel()
+class CheckoutViewModel(
+    private val repository: CheckoutRepository
+) : ViewModel() {
+    fun submit() = viewModelScope.launch {
+        repository.submitOrder()
     }
 }
 ```
 
-On Android, you wrap this in an actual `androidx.lifecycle.ViewModel`:
-```kotlin
-// androidApp
-class AndroidCheckoutViewModel : ViewModel() {
-    val shared = CheckoutViewModel()  // The KMP ViewModel
-    
-    override fun onCleared() {
-        shared.onCleared()
-        super.onCleared()
-    }
-}
-```
+Android obtains this class from its normal `ViewModelStoreOwner`. SwiftUI has no built-in AndroidX store owner, so follow the official integration pattern: retain an `IosViewModelStoreOwner` as a `@StateObject`, resolve the shared ViewModel through it, and clear its `ViewModelStore` when that owner is deinitialized.
 
-On iOS, the SwiftUI view manages the lifecycle:
 ```swift
 struct CheckoutScreen: View {
-    let viewModel = CheckoutViewModel()
-    
+    @StateObject private var storeOwner = IosViewModelStoreOwner()
+
     var body: some View {
-        VStack { /* ... */ }
-        .onDisappear {
-            viewModel.onCleared()  // Cancel coroutines
-        }
+        let viewModel: CheckoutViewModel = storeOwner.viewModel(
+            factory: CheckoutViewModelKt.checkoutViewModelFactory
+        )
+        CheckoutContent(viewModel: viewModel)
     }
 }
 ```
+
+`onDisappear` is not a reliable ownership boundary: a SwiftUI screen can disappear temporarily and return. Scope the store owner to the navigation/screen lifetime that actually owns the ViewModel, then test deinitialization and cancellation.
 
 ---
 
@@ -274,67 +256,53 @@ struct CheckoutScreen: View {
 
 ### Quantitative Metrics
 
-| Metric | How to Measure | Healthy Target |
+| Metric | How to Measure | Decision use |
 |---|---|---|
-| **Code Reuse %** | `shared LOC / (shared + android + ios) LOC × 100` | 40-60% |
-| **Bug Parity** | # of "works on Android but not iOS" bugs per quarter | 0 (the point of sharing) |
-| **Feature Velocity** | Days from spec to both-platform ship | 30-50% faster than pre-KMP |
-| **CI Cost** | macOS runner spend per month | <$500/month for small team |
-| **iOS Build Time** | Time from CMD+R to running on simulator | <30s with SPM, <90s with Direct |
+| **Intended sharing coverage** | Shared production code and tests inside the boundaries selected in the ADR; do not count generated code | Detect whether high-value logic remains duplicated; no universal percentage is healthy |
+| **Cross-platform defects** | Same-domain divergence defects per release compared with the pre-KMP baseline | Confirm that sharing reduces inconsistency without hiding platform-specific defects |
+| **Feature lead time** | Median and p95 time from implementation start to both-platform release, before and after the pilot | Test the velocity hypothesis rather than promising a percentage |
+| **Delivery cost** | CI minutes/cost per merged change, queue time, cache hit rate, and failed-build causes | Expose macOS capacity and build-system regressions |
+| **Developer iteration** | Median and p95 clean/incremental Android builds and Xcode edit-build-run loops | Protect both teams' daily feedback loops |
 
 ### Qualitative Signals
 
-- **Healthy:** iOS team voluntarily starts adding `iosMain` code without being asked.
-- **Unhealthy:** iOS team writes duplicate Swift implementations instead of using the shared module.
-- **Critical:** iOS team forks the repo and removes the KMP dependency entirely.
+- **Healthy:** Android and iOS owners review shared APIs, can debug the framework, and choose shared or native implementations from explicit boundaries.
+- **Unhealthy:** teams repeatedly bypass the shared module because APIs, build latency, release ownership, or observability are poor.
+- **Critical:** production delivery depends on a shared component with no cross-platform owner, rollback path, or reproducible release process.
 
 ---
 
-## 4. Industry Case Studies (With Technical Detail)
+## 4. Using Case Studies Responsibly
 
-### Cash App (Block, Inc.)
-- **KMP since:** 2018 (one of the earliest production adopters).
-- **Sharing:** Business logic, networking, database (SQLDelight was created by Cash App for this purpose).
-- **Architecture:** Paradigm A (shared logic, native UI). Uses their own `Workflow` framework for state management.
-- **Team structure:** ~50 mobile engineers. Dedicated "Mobile Platform" team owns the shared modules.
-- **Key learning:** "Start with the database layer. If your offline sync logic isn't shared, nothing else matters."
+Vendor case studies are useful for discovering architectures and questions, not for importing another company's outcome as your forecast. For each candidate example, record:
 
-### Netflix
-- **KMP since:** 2020.
-- **Sharing:** Internal studio tools (Prodicle, production management apps). NOT the consumer Netflix app.
-- **Architecture:** Paradigm A for internal tools, evaluating Paradigm B (CMP) for admin dashboards.
-- **Key learning:** "KMP is perfect for internal tooling where iOS design fidelity is secondary to engineering velocity."
+- The product and feature scope that actually used KMP—not merely the company name.
+- Whether it shared logic, UI, or both; the target platforms; and the Kotlin/tooling versions at the time.
+- The source date and whether the claim comes from the implementing team, a vendor, or a consultant.
+- The measured baseline and outcome, including build/release costs and negative tradeoffs.
+- Which constraints transfer to your organization and which do not.
 
-### McDonald's
-- **KMP since:** 2022.
-- **Sharing:** Ordering flow, payment logic, loyalty programs — the revenue-critical paths.
-- **Architecture:** Paradigm A. Massive modular architecture with 20+ KMP modules.
-- **Key learning:** "The Strangler Fig pattern works. We migrated one feature at a time over 18 months. No big bang."
-
-### Touchlab
-- **Role:** Premier KMP consulting firm. Creators of SKIE, Kermit, KMMBridge.
-- **Clients:** McDonald's, Philips, BMW, and others.
-- **Key learning:** "The #1 failure mode is ignoring the iOS team. If they hate the API surface, the project dies."
+Use the official Kotlin Multiplatform case-study catalog as a starting index, then follow its primary implementation sources. Your pilot ADR should stand on your measurements even if no famous company made the same choice.
 
 ---
 
 ## 5. Organizational Buy-In Strategies
 
 ### Selling to the iOS Team
-1. **Don't force Compose Multiplatform first.** Let them keep writing SwiftUI. KMP's strength is *invisible* shared logic.
-2. **Use SKIE.** The API surface must feel like a first-class Swift library.
-3. **Use SPM distribution.** They should never install the JDK.
-4. **Invite them to code review shared code.** They must feel ownership.
+1. **Preserve the agreed UI boundary.** Keep SwiftUI where native UI is a requirement; evaluate shared UI separately.
+2. **Review the exported Swift API.** Use official interop/Swift export and add third-party tooling only when its benefits and lifecycle are validated.
+3. **Choose integration from topology.** Remote XCFramework distribution can hide Gradle/JDK from consumers; direct local integration deliberately makes Kotlin builds part of Xcode iteration.
+4. **Share ownership.** iOS engineers review common and `iosMain` code, release mechanics, observability, and rollback paths.
 
 ### Selling to Product Managers
-1. **Feature parity guarantee:** "We will never have a bug that works on Android but not iOS again."
-2. **Velocity improvement:** "New features ship to both platforms simultaneously."
-3. **Cost reduction:** "We need 30% fewer engineers to maintain the same feature set."
+1. **Parity hypothesis:** Measure whether sharing selected rules reduces same-domain divergence defects; it cannot eliminate platform-specific bugs.
+2. **Lead-time hypothesis:** Compare end-to-end both-platform delivery before and after the pilot, including review and release queues.
+3. **Capacity hypothesis:** Measure duplicated work avoided and new tooling/ownership cost; do not promise a staffing reduction.
 
 ### Selling to Engineering Leadership
-1. **Risk mitigation:** "If we ever need a web version (Wasm), the business logic is already portable."
-2. **Talent pool:** "We can hire Kotlin engineers who contribute to both platforms."
-3. **Technical debt reduction:** "We eliminate the 'two codebases diverged' problem permanently."
+1. **Portability option:** A well-bounded common module may lower the cost of an additional supported target, but every target still needs dependency, behavior, performance, and UI validation.
+2. **Ownership model:** Define how Kotlin and platform specialists jointly design, review, debug, and release shared code.
+3. **Debt trade:** Track duplicated-domain debt removed against new build, interop, dependency, and release-system debt introduced.
 
 ---
 
@@ -342,14 +310,27 @@ struct CheckoutScreen: View {
 
 1.  **Strangler Fig:** You have a monolithic Android app with 500 files. Explain the exact sequence of steps to migrate the `UserRepository` (which depends on Retrofit, Room, and SharedPreferences) to a KMP shared module without breaking any existing Android functionality during the migration.
 2.  **Organizational Resistance:** The iOS tech lead says "We already have a perfectly good Swift codebase. KMP will make our app worse." How do you respond? What concrete evidence do you present?
-3.  **ROI Measurement:** After 6 months of KMP migration, your code reuse is only 25% (below the 40% target). What are the most likely causes, and how do you course-correct?
-4.  **ViewModel Lifecycle:** On Android, `ViewModel.onCleared()` is called by the framework when the owning `Activity`/`Fragment` is permanently destroyed. On iOS, who calls `SharedViewModel.onCleared()`? What happens if they forget?
-5.  **Phase Ordering:** Why does the guide recommend migrating DTOs (Phase 1) before networking (Phase 2) before database (Phase 3)? What happens if you try to migrate the database first?
+3.  **ROI Measurement:** After 6 months, only 25% of production code is shared. Why is that number insufficient to judge the migration, what evidence do you inspect, and when do you expand, hold, or reverse the investment?
+4.  **ViewModel Lifecycle:** Android supplies a `ViewModelStoreOwner`. In SwiftUI, what object owns and clears the shared AndroidX ViewModels, and why is calling `onCleared()` from every `onDisappear` incorrect?
+5.  **Phase Ordering:** Why can DTOs → networking → persistence be a low-risk order, and when should dependency structure or an existing Room KMP investment lead you to migrate persistence first?
+
+## Answer Key
+
+1. **Strangler Fig:** First freeze the observable `UserRepository` contract with Android tests and telemetry. Create the KMP module and platform seams while the existing Retrofit, Room, and SharedPreferences implementation remains the production delegate. Move portable models and mapping code, then migrate one dependency behind its interface at a time: Ktor or a platform network adapter; Room KMP, SQLDelight, or a database adapter chosen from a migration spike; and a preferences/secure-storage contract with platform implementations where needed. Assemble the shared repository beside the old one, compare safe reads or contract-test both implementations, switch a small cohort with a kill switch, monitor correctness and performance, and retain a rollback path. Avoid unsynchronized dual writes. Delete the Android path only after the new implementation and its iOS consumer meet explicit exit criteria.
+2. **Organizational resistance:** Treat the objection as a design constraint, not a sales problem. Agree on the pain being tested, keep SwiftUI and native capabilities, and run a bounded pilot on a high-value but reversible slice. Present measured build/iteration time, Swift API ergonomics, crash and performance data, release/rollback mechanics, debugging workflow, ownership load, and change lead time against the native baseline. Give the iOS lead approval rights over exported APIs and pre-agree stop conditions; adoption is justified by pilot evidence, not company logos or promised reuse.
+3. **ROI measurement:** Twenty-five percent can be excellent if it contains duplicated pricing, sync, or validation logic, or wasteful if it contains low-value DTOs while delivery slows. Inspect which boundaries are shared, defects avoided, median/p95 lead time, build latency, CI cost, production reliability, duplicated work, and team sentiment against the pre-migration baseline. Expand only when the pilot improves the intended outcomes; hold and repair tooling/API ownership when value is plausible but friction dominates; reverse when repeated evidence misses the agreed thresholds and a native boundary is cheaper.
+4. **ViewModel lifecycle:** Retain an `IosViewModelStoreOwner` for the actual SwiftUI screen/navigation scope, commonly as a `@StateObject`; it owns the `ViewModelStore` and clears it when that owner is deinitialized. Clearing on every `onDisappear` is premature because disappearance can be temporary. Never ask Swift to call a protected lifecycle callback directly: make ownership explicit and verify that deinitialization cancels `viewModelScope`, otherwise work and references can outlive the screen.
+5. **Phase ordering:** Portable models are leaf dependencies, so moving them first creates shared types with little runtime risk; networking can then consume those types before persistence adds schemas, files, and migration compatibility. That is a heuristic, not a law. Migrate persistence first when offline/sync logic is the valuable seam, the dependency graph makes the database foundational, or existing Room code can move incrementally with Room KMP. In either order, use dependency analysis, production migration tests, reversible adapters, and one independently releasable slice at a time.
 
 ## Further Reading
 
+- [Add KMP to an existing Android project](https://developer.android.com/kotlin/multiplatform/migrate) — Current shared-module setup and prerequisites.
+- [Kotlin iOS integration methods](https://kotlinlang.org/docs/multiplatform/multiplatform-ios-integration-overview.html) — Local versus remote integration choices.
+- [Migrate an existing app to Room KMP](https://developer.android.com/codelabs/kmp-migrate-room) — An official incremental persistence path.
+- [AndroidX ViewModel for KMP](https://developer.android.com/kotlin/multiplatform/viewmodel) — Shared ViewModels and SwiftUI `ViewModelStoreOwner` lifecycle integration.
+- [Kotlin Multiplatform case studies](https://kotlinlang.org/lp/multiplatform/case-studies/) — Discovery index; validate transferable claims against each primary implementation source.
 - [`architecture-and-module-boundaries.md`](../foundations/architecture-and-module-boundaries.md) — The architectural end-state you are migrating towards.
 - [`ios-distribution.md`](../tooling/ios-distribution.md) — How to hide the build system from the iOS team via SPM.
 - [`swift-interop.md`](../tooling/swift-interop.md) — How SKIE makes the shared API pleasant for iOS engineers.
-- [`libraries-ecosystem.md`](../ecosystem/libraries-ecosystem.md) — The exact library swaps required during Phase 2 and Phase 3.
+- [`libraries-ecosystem.md`](../ecosystem/libraries-ecosystem.md) — The target-support and ownership checks used to choose libraries during each migration phase.
 - [`ci-cd-for-kmp.md`](ci-cd-for-kmp.md) — Setting up the macOS CI infrastructure (Phase 0).
