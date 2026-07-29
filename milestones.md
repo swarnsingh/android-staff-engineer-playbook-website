@@ -78,6 +78,8 @@ The fastest-moving files in the repo, per the [Staleness Strategy](CONTRIBUTING.
 | `android/media/media3-player-architecture.md` | Media3 version, Compose UI artifact split | developer.android.com/jetpack/androidx/releases/media3 | 2026-07-15 |
 | `android/compose/form-factors-matrix.md` | Wear/TV/Glance artifact versions and stability, car category rules | developer.android.com/jetpack/androidx/releases | 2026-07-15 |
 | `android/compose/stability.md` | Compose compiler behavior (Strong Skipping), collections-immutable version | developer.android.com + kotlinlang.org | 2026-07-15 |
+| `android/compose/compose-runtime.md` | Compose compiler plugin configuration and Strong Skipping default | developer.android.com/develop/ui/compose/performance/stability/strongskipping + kotlinlang.org/docs/compose-compiler-options.html | 2026-07-30 |
+| `android/compose/recomposition-and-state.md` | Strong Skipping default and unstable-parameter comparison behavior | developer.android.com/develop/ui/compose/performance/stability/strongskipping | 2026-07-30 |
 | `android/testing/testing-strategy.md` | GMD/ATD APIs, sharding property (experimental namespace) | developer.android.com/studio/test/gradle-managed-devices | 2026-07-15 |
 | `android/testing/ui-testing.md` | Compose Preview Screenshot Testing plugin status, version, and requirements | developer.android.com/studio/preview/compose-screenshot-testing | 2026-07-29 |
 | `kotlin/version-updates/` (all digests) | Release-delta claims by construction | kotlinlang.org release notes | 2026-07-15 |
