@@ -42,6 +42,17 @@ Encryption is not a substitute for minimization, token expiry, revocation, backu
 
 ## Direct Keystore Envelope
 
+```mermaid
+flowchart LR
+    Plain["Sensitive value in memory"] --> Cipher["Authenticated encryption<br/>fresh nonce / IV"]
+    Key["Non-exportable Android Keystore key"] --> Cipher
+    Cipher --> Envelope["Versioned envelope<br/>algorithm + IV + ciphertext + tag"] --> Private["App-private storage"]
+    Private --> Dec["Authenticated decrypt"]
+    Key --> Dec --> Plain
+```
+
+Keystore protects key material, not arbitrary data storage: ciphertext lives in private storage with versioned metadata for decryption, rotation, migration, or safe rejection.
+
 The platform primitive is a non-exportable key. The application stores the ciphertext and IV, not the key bytes.
 
 ```kotlin

@@ -93,6 +93,13 @@ A kill switch flip triggers an immediate UI update via the StateFlow; any compos
 
 ## 4. Propagation Latency
 
+```mermaid
+flowchart LR
+    Owner["Authorized incident owner"] --> Control["Audited control plane"] --> CDN["Config distribution"] --> Fetch["Client refresh / push hint"] --> Validate["Validate signed, versioned config"] --> Apply["Apply live-safe behavior"] --> Telemetry["Measure recovery"]
+```
+
+A kill switch is an operational system: authorization, audit, propagation, safe client semantics, and recovery telemetry determine whether it works during an incident.
+
 How fast does a kill switch travel?
 
 | Step | Typical latency |

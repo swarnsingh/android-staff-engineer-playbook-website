@@ -177,6 +177,17 @@ fun UserScreen(viewModel: UserViewModel) {
 
 ## 4. Cold vs. Hot Observables
 
+```mermaid
+flowchart TD
+    Cold["Cold Flow<br/>work starts per collector"] --> C1["Collector A execution"]
+    Cold --> C2["Collector B execution"]
+    Producer["Long-lived producer"] --> Hot["StateFlow / SharedFlow"]
+    Hot --> H1["Collector A shared stream"]
+    Hot --> H2["Collector B shared stream"]
+```
+
+Cold flows describe repeatable work, while hot flows represent shared state or events with an independent lifetime.
+
 A fundamental concept for Staff engineers:
 
 ### Cold Observers (Flow)

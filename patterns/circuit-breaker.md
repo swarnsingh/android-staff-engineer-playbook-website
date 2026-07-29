@@ -9,6 +9,17 @@
 A Circuit Breaker acts as a state machine that sits between your app (the client) and a remote resource (the API). It monitors the success/failure rate of the calls.
 
 ### The Three States
+
+```mermaid
+stateDiagram-v2
+    [*] --> Closed
+    Closed --> Open: failure threshold reached
+    Open --> HalfOpen: cool-down elapsed
+    HalfOpen --> Closed: probe succeeds
+    HalfOpen --> Open: probe fails
+```
+
+Closed permits calls, Open fails fast, and Half-Open admits bounded probes rather than releasing all queued traffic.
 1. **Closed (Normal):** The circuit is closed, allowing requests to flow freely to the API. If a request fails, a failure counter increments.
 2. **Open (Failing):** If the failure threshold is reached (e.g., 5 consecutive 503 errors), the circuit "trips" open. **All subsequent requests fail immediately with an exception, without ever hitting the network.** A timeout timer starts.
 3. **Half-Open (Testing):** After the timeout expires, the circuit allows a limited number of test requests through. If they succeed, the circuit resets to **Closed**. If they fail, it trips back to **Open** and the timer restarts.

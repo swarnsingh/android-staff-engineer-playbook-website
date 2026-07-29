@@ -44,6 +44,23 @@ Play Integrity gives a global "is this device + app legit" check per call. Key A
 
 ## 3. Play Integrity API
 
+```mermaid
+sequenceDiagram
+    participant App
+    participant Backend
+    participant Play as Play Integrity
+    App->>Backend: request protected action
+    Backend-->>App: one-time binding challenge
+    App->>Play: request integrity token
+    Play-->>App: signed token
+    App->>Backend: action + token
+    Backend->>Play: decode / verify
+    Backend->>Backend: check binding, freshness, replay, verdict, policy
+    Backend-->>App: allow, limit, challenge, or deny
+```
+
+The backend makes the decision: the app obtains a signed signal, but server verification must bind it to the action, reject replay, and combine verdicts with risk policy.
+
 ```kotlin
 // build.gradle.kts
 implementation("com.google.android.play:integrity:1.4.0")
