@@ -1,6 +1,6 @@
 # Kotlin Multiplatform: Overview & The K2 Compiler
 
-> Kotlin Multiplatform (KMP) lets you write business logic once in Kotlin and compile it to JVM bytecode for Android *and* LLVM native machine code for iOS — no virtual machine on iOS, no JavaScript bridge, no JSON-over-bridge marshalling. Understanding the compiler pipeline, the `expect`/`actual` contract mechanism, and the K2 revolution is the foundation of every other KMP topic.
+> Kotlin Multiplatform (KMP) lets a project share Kotlin code while compiling each target with its appropriate backend: JVM bytecode for Android, native binaries for iOS, and JavaScript or WebAssembly for web targets. Understanding compiler targets, source-set visibility, `expect`/`actual`, and K2 is the foundation of every other KMP topic.
 
 ---
 
@@ -11,40 +11,32 @@ Kotlin is not "an Android language." It is a **frontend language with pluggable 
 | Backend | Output | Runtime | Use Case |
 |---|---|---|---|
 | Kotlin/JVM | `.class` bytecode in `.jar` | JVM (Android ART, server JVMs) | Android apps, Spring servers |
-| Kotlin/Native | LLVM IR → native ARM64/x86 machine code | No VM — bare metal | iOS, macOS, Linux, Windows |
+| Kotlin/Native | LLVM-based native binary | Kotlin/Native runtime and garbage collector; no JVM | iOS, macOS, Linux, Windows |
 | Kotlin/JS | JavaScript source | Browser V8 / Node.js | Web frontends |
-| Kotlin/Wasm | WebAssembly binary | Browser Wasm runtime | Experimental web targets |
+| Kotlin/Wasm | WebAssembly binary | Browser or WASI runtime | Web and WASI targets; verify current target stability |
 
-When you write KMP code in `commonMain`, the compiler frontend validates it against the **Kotlin Standard Library common subset** — no `java.io.File`, no `android.content.Context`, no `platform.Foundation.NSURL`. Those exist only in platform-specific source sets.
+When you write KMP code in `commonMain`, the compiler validates it against common Kotlin APIs and the multiplatform dependencies declared for that source set — no `java.io.File`, `android.content.Context`, or `platform.Foundation.NSURL`. Those APIs belong in compatible platform-specific source sets.
 
-### KMP vs React Native vs Flutter — The Architectural Difference
+### KMP's Architectural Choice
 
-Understanding *why* KMP is different is a Staff-level interview topic:
+KMP is primarily a **code-sharing tool**, not a prescribed UI stack. A team can share domain/data code and keep Compose on Android plus SwiftUI on iOS, or also share UI with Compose Multiplatform.
 
 ```mermaid
 flowchart LR
-    subgraph rn["React Native"]
-        js["JavaScript thread"] -->|"JSON bridge<br/>serialization overhead"| nativeUi["Native UI thread"]
-    end
-    subgraph flutter["Flutter"]
-        dart["Dart code"] -->|"Dart VM<br/>GC pauses"| skia["Skia canvas<br/>own rendering, not native UIKit"]
-    end
-    subgraph kmp["Kotlin Multiplatform"]
-        kotlin["Kotlin source"] -->|"compiled to machine code<br/>direct call"| arm["Native ARM64 code<br/>same kind of output as Swift"]
-    end
+    common["commonMain<br/>shared Kotlin APIs and logic"] --> androidBackend["Kotlin/JVM backend"]
+    common --> nativeBackend["Kotlin/Native backend"]
+    androidBackend --> androidApp["Android app<br/>Compose or Views"]
+    nativeBackend --> framework["iOS framework or Swift-exported modules"]
+    framework --> iosApp["iOS app<br/>SwiftUI, UIKit, or shared Compose UI"]
 ```
 
-**React Native** marshals data as JSON between a JavaScript thread and the native thread. Every function call crossing the bridge pays a serialization tax. This is why complex animations stutter.
-
-**Flutter** compiles Dart to native code but draws *all* UI using its own Skia canvas — it does not use UIKit at all. The UI looks identical on both platforms but doesn't respect iOS-specific conventions (e.g., the back-swipe gesture).
-
-**KMP** compiles Kotlin to the *exact same ARM64 machine code* that Swift compiles to. There is no bridge, no serialization, no VM. The compiled Kotlin function executes at native speed, directly callable from Swift via an Objective-C header. The UI remains fully native (Jetpack Compose on Android, SwiftUI on iOS).
+For iOS, Kotlin/Native produces native code plus the Kotlin/Native runtime. Swift normally consumes that code through the default Objective-C export path; Kotlin 2.4 also offers an **Alpha** Swift export path. Calls do cross a language interoperability boundary, even though they do not require a JavaScript/JSON bridge. Treat generated Swift API shape, ownership, exceptions, and concurrency as architecture concerns rather than claiming interop is cost-free.
 
 ---
 
 ## The `expect` / `actual` Mechanism
 
-KMP's core language-level tool for platform abstraction is `expect`/`actual`. It is resolved entirely at **compile time** — the compiler replaces every `expect` declaration with the matching `actual` implementation for the current target, then continues compilation as if the `expect` never existed.
+KMP's core language-level tool for platform abstraction is `expect`/`actual`. During compilation, the compiler verifies that each target can find a matching `actual` declaration through its source-set hierarchy and links uses of the expected API to that target implementation.
 
 ### The Problem It Solves
 
@@ -115,16 +107,16 @@ actual fun currentTimeMillis(): Long =
 
 | Declaration | Example | Notes |
 |---|---|---|
-| `expect class` | `expect class Platform()` | Must match constructor signature exactly |
+| `expect class` | `expect class Platform()` | Must match the expected API; expected classes are Beta and warn unless `-Xexpect-actual-classes` is configured |
 | `expect fun` | `expect fun log(msg: String)` | Top-level function |
 | `expect val` / `var` | `expect val isDebug: Boolean` | Top-level property |
 | `expect object` | `expect object Analytics` | Singleton |
 | `expect annotation` | `expect annotation class Parcelize()` | Used for Android Parcelable |
-| `expect interface` | ❌ Not allowed | Use regular interfaces instead |
+| `expect interface` | `expect interface PlatformApi` | Valid, though a regular interface may be easier to fake and inject |
 
 ### When `expect`/`actual` Is Wrong
 
-`expect`/`actual` is a **compile-time** mechanism — every target *must* provide an `actual`, or the build fails. This is extremely rigid:
+`expect`/`actual` is a **compile-time** mechanism — every target must find a compatible `actual` declaration in its source-set hierarchy, or the build fails. That guarantee is useful, but a large platform surface can become expensive to evolve:
 
 ```kotlin
 // BAD: You just created a maintenance burden for every new target
@@ -134,20 +126,26 @@ expect class AnalyticsTracker()        // Same problem
 expect class CrashReporter()           // 50 expect classes = unmaintainable
 ```
 
-**Staff Rule:** Use `expect`/`actual` only for **thin, primitive wrappers** (UUID, time, logging). For everything else (networking, database, analytics), use **interfaces + Dependency Injection** (Koin). With DI, the platform-specific implementation is injected at runtime — you can add new targets or swap implementations without touching `commonMain` at all.
+Choose based on the contract, not a universal rule:
+
+- `expect`/`actual` fits declarations that are inherently platform-defined and for which every target must provide an implementation.
+- A regular interface fits behavior that needs multiple implementations, runtime selection, easy fakes, or constructor injection.
+- A multiplatform library is often better than maintaining either abstraction yourself.
+
+Dependency injection does not require Koin; manual composition roots and other KMP-capable DI tools are also valid.
 
 ```kotlin
-// GOOD: Interface in commonMain, implementations injected via Koin
+// Interface in commonMain, implementation supplied by each app's composition root
 interface DatabaseDriver {
     fun execute(sql: String)
 }
 
 // In androidMain: class AndroidDriver(context: Context) : DatabaseDriver { ... }
 // In iosMain:     class IOSDriver : DatabaseDriver { ... }
-// In Koin module: single<DatabaseDriver> { AndroidDriver(get()) }
+// At the Android composition root: DatabaseRepository(AndroidDriver(context))
 ```
 
-The difference matters in interviews:
+The semantic difference matters:
 - `expect`/`actual` = **compile-time polymorphism**, enforced by the compiler.
 - `interface` + DI = **runtime polymorphism**, enforced by the DI graph.
 
@@ -155,67 +153,22 @@ The difference matters in interviews:
 
 ## The K2 Compiler Revolution
 
-Kotlin Multiplatform existed since 2017 but was marked "Alpha" for six years. The technical reason: the K1 compiler's architecture was fundamentally hostile to multiplatform compilation. K2 (default since Kotlin 2.0, released May 2024) is a complete rewrite of the compiler frontend.
+K2 is a rewrite of the Kotlin compiler frontend and has been enabled by default since Kotlin 2.0. Its frontend uses a unified semantic representation (FIR) for analysis, call resolution, and type inference. That architecture improves consistency, IDE analysis, and compiler maintainability and can improve compilation performance.
 
-### The K1 Problem (Technical Detail)
+### K2's FIR Frontend
 
-K1 used a **multi-pass resolution** architecture. For every source set in the hierarchy (`commonMain` → `appleMain` → `iosArm64Main`), K1 would:
-
-1. Parse all files in the source set.
-2. Resolve all type references against the source set's dependencies.
-3. Check for `expect`/`actual` matching.
-4. Generate the IR (Intermediate Representation).
-
-For a project with `commonMain`, `androidMain`, `iosX64Main`, `iosArm64Main`, `iosSimulatorArm64Main`, and `appleMain`, K1 would run these passes **six times** — once for each leaf target. Many of these passes redundantly re-analyzed the exact same `commonMain` code.
-
-**Concrete Impact:** A mid-sized KMP project (~200 files in `commonMain`) took 45-90 seconds for a clean build on K1. Incremental builds after touching a single file in `commonMain` often took 15-20 seconds because K1 couldn't efficiently determine which targets were affected.
-
-### The K2 Solution: FIR (Frontend Intermediate Representation)
-
-K2 introduces a **unified resolution** architecture. The new pipeline:
+At a conceptual level, both generations have a frontend that analyzes source and a backend that emits target-specific output. K2 replaces K1's frontend data structures and analysis architecture with FIR:
 
 ```text
-K1 Pipeline (old):
-  Source → [Parse] → [Resolve per-target] × N targets → [IR] → [Backend]
-  
-K2 Pipeline (new):
-  Source → [Parse] → [FIR (unified resolve)] → [IR] → [Backend per-target]
+K1: source → K1 frontend analysis → Kotlin IR → target backend
+K2: source → FIR analysis → Kotlin IR → target backend
 ```
 
-The FIR phase resolves types and checks `expect`/`actual` contracts **once**, producing a single intermediate representation. Only the final backend code generation (JVM bytecode, LLVM IR) is duplicated per target.
-
-**K2 Improvements — Concrete Numbers:**
-
-| Metric | K1 | K2 | Improvement |
-|---|---|---|---|
-| Clean build (200-file KMP project) | ~60s | ~30s | **2x** |
-| Incremental build (1 file changed in commonMain) | ~18s | ~5s | **3.6x** |
-| IDE syntax highlighting lag | Frequent red squiggles | Rare | Qualitative |
-| Smart casts across `expect`/`actual` | Broken in complex cases | Works | Critical for sealed classes |
-
-### K2 and Smart Casts (The Subtle Win)
-
-K1 couldn't propagate smart casts across `expect`/`actual` boundaries. This caused real pain:
-
-```kotlin
-// commonMain
-expect sealed class NetworkResult
-expect class Success(data: String) : NetworkResult
-expect class Failure(error: Throwable) : NetworkResult
-
-fun handle(result: NetworkResult) {
-    when (result) {
-        is Success -> println(result.data)   // K1: ERROR — cannot smart-cast
-        is Failure -> println(result.error)  // K1: ERROR — cannot smart-cast
-    }
-}
-```
-
-K1 would fail because it couldn't prove exhaustiveness of a `when` block over an `expect sealed class` — it didn't know if the `actual` implementations on each platform might add extra subclasses. K2's unified FIR resolves this correctly.
+Do not translate that diagram into “`commonMain` is analyzed exactly once regardless of target.” Gradle still creates target compilations, source-set visibility differs by compilation, and each backend still has target work. Measure a real repository with Kotlin build reports rather than promising a universal speedup. During migration, review the [documented K2 behavior changes](https://kotlinlang.org/docs/k2-compiler-migration-guide.html), KSP/compiler-plugin compatibility, and newly surfaced diagnostics.
 
 ### K2 and Swift Export
 
-The K1 compiler could only generate Objective-C headers (`.h` files) for iOS consumption. Swift had to go through the Objective-C bridge, losing `sealed class` exhaustiveness, default arguments, coroutine cancellation, and more.
+Before Swift export, generated Apple frameworks exposed Kotlin to Swift indirectly through Objective-C headers. That mapping cannot express every Kotlin or Swift feature: for example, sealed hierarchies are not exhaustive Swift enums, Objective-C generics lose information, and suspending/Flow APIs need careful lifecycle integration.
 
 K2's architecture enables Kotlin's newer **Swift export** pipeline. In Kotlin 2.4, Swift export is Alpha. Instead of exposing Kotlin only through Objective-C headers, the compiler can generate Swift-facing modules with cleaner package/module structure and better Swift concurrency interop.
 
@@ -278,41 +231,49 @@ With `appleMain`, you write this `actual` once, and both `iosMain` and `macosMai
 
 ### Custom Intermediate Source Sets
 
-You can create arbitrary intermediate source sets for unusual sharing patterns:
+Prefer the [default hierarchy template](https://kotlinlang.org/docs/multiplatform/multiplatform-hierarchy.html), which creates sets such as `appleMain` when the declared targets need them. Create a custom intermediate set only when the template does not express the required target group. Explicit `dependsOn()` edges disable automatic application of the default template, so reapply it before adding custom edges:
 
 ```kotlin
 // build.gradle.kts
 kotlin {
+    jvm()
+    macosArm64()
+    iosArm64()
+    iosSimulatorArm64()
+
+    applyDefaultHierarchyTemplate()
+
     sourceSets {
-        // Create a custom intermediate source set for "non-JVM" targets
-        val nonJvmMain by creating {
-            dependsOn(commonMain)
+        // An uncommon group shared by JVM and macOS targets.
+        val jvmAndMacosMain by creating {
+            dependsOn(commonMain.get())
         }
-        iosMain { dependsOn(nonJvmMain) }
-        jsMain { dependsOn(nonJvmMain) }
-        // Now iosMain and jsMain share code that Android doesn't see
+        jvmMain.get().dependsOn(jvmAndMacosMain)
+        macosArm64Main.get().dependsOn(jvmAndMacosMain)
     }
 }
 ```
+
+A source set may use only APIs available to every target to which it compiles. If one target lacks an API, move that code to a narrower source set or define a platform abstraction.
 
 ---
 
 ## Common Pitfalls
 
 ### 1. The "It works on Android" Trap
-You write and test everything in Android Studio. It compiles, tests pass, ship it. Then the iOS build fails because you accidentally imported `java.net.URL` in a `commonMain` file. Android Studio's syntax highlighting does not always catch JVM-only imports in `commonMain` when the IDE is in "Android" mode.
+You run only Android tasks and assume that proves the shared module. A misplaced file, a custom hierarchy, or a target-specific dependency can leave code outside the iOS compilation; the failure then appears only when an Apple target is built.
 
-**Fix:** Always run `./gradlew :shared:iosSimulatorArm64Test` locally before pushing. Better yet, configure a pre-commit hook.
+**Fix:** Run the relevant Android and Apple compilation/tests in CI, including `:shared:iosSimulatorArm64Test` when that is the project's test task. Confirm questionable files in the Gradle source-set graph instead of relying on their apparent folder name.
 
-### 2. The `lateinit` Crash on Native
-Kotlin/Native handles `lateinit` differently than the JVM. On the JVM, accessing an uninitialized `lateinit var` throws `UninitializedPropertyAccessException`. On Kotlin/Native, the behavior is the same in modern versions, but older versions would segfault silently.
+### 2. Assuming Native Means “No Runtime”
+Kotlin/Native produces a native binary, but Kotlin code still relies on a runtime and garbage collector. Object lifetime, Swift/Objective-C interop, freezing advice from old Kotlin/Native material, and binary size therefore deserve explicit validation against the Kotlin version in use.
 
-**Fix:** Prefer `lazy` or nullable types with explicit null checks over `lateinit` in `commonMain`.
+**Fix:** Treat the current Kotlin/Native memory-management documentation and measurements from the app as the source of truth; do not infer Swift semantics merely because both toolchains emit native code.
 
-### 3. The Coroutine Dispatcher Mismatch
-`Dispatchers.IO` behaves differently across platforms. On JVM, it's a 64-thread elastic pool. On Kotlin/Native (pre-1.7.0), it didn't exist at all — `Dispatchers.Default` was used as a fallback.
+### 3. Assuming Every Coroutine API Has Identical Target Semantics
+A declaration being available in `commonMain` does not prove that its scheduling, parallelism, or integration with a platform event loop is identical on every target.
 
-**Fix:** Always use `kotlinx-coroutines` version 1.7.0+ in KMP projects, which provides `Dispatchers.IO` on all platforms.
+**Fix:** Pin a supported `kotlinx-coroutines` version, consult its API documentation for each target, inject dispatchers when scheduling policy matters, and test cancellation and thread-affinity at platform boundaries.
 
 ---
 
@@ -320,9 +281,17 @@ Kotlin/Native handles `lateinit` differently than the JVM. On the JVM, accessing
 
 1.  **Compiler Architecture:** Walk through what happens when you run `./gradlew :shared:linkReleaseFrameworkIosArm64`. What compiler phases execute, what intermediate representations are produced, and what is the final output artifact?
 2.  **`expect`/`actual` vs Interfaces:** You have a `CrashReporter` that sends crashes to Firebase on Android and Sentry on iOS. Should you use `expect class CrashReporter` or `interface CrashReporter` with DI? Justify your answer with concrete tradeoffs (compile-time safety, testability, adding a Wasm target later).
-3.  **K2 FIR Unification:** Explain why K1's per-target resolution caused quadratic build time growth as targets were added, and how K2's FIR reduces this to linear.
+3.  **K2 FIR:** What did K2 replace in the compiler frontend, which benefits does the Kotlin migration guide claim, and why should you still measure each target compilation instead of assuming `commonMain` is analyzed exactly once?
 4.  **Hierarchical Source Sets:** Your project supports iOS, macOS, and tvOS. You need to call `AVFoundation` APIs that exist on all three Apple platforms. Where do you put the code — in `iosMain`, `appleMain`, or a custom source set? What happens if `tvOS` doesn't support a specific `AVFoundation` API that the other two do?
-5.  **The "It works on Android" trap:** Your `commonMain` code uses `String.format("%.2f", price)`. This compiles and works on Android. What happens on iOS, and why?
+5.  **The "It works on Android" trap:** A formatting helper uses `String.format("%.2f", price)` and works in the Android app. Should it compile in a correctly configured `commonMain` source set? If the iOS build never saw it, what source-set or dependency mistake would you investigate?
+
+## Answer Key
+
+1. Gradle selects the `iosArm64` compilation and its dependency/source-set hierarchy. The K2 frontend parses and semantically analyzes the applicable Kotlin sources into FIR, Kotlin lowers the result to its backend IR, and Kotlin/Native uses LLVM-based tooling to produce and link a release framework for arm64. The final consumable artifact for that task is an Apple framework; packaging multiple architectures into an XCFramework is a separate task. Exact internal phases and task names vary by Kotlin Gradle plugin version, so inspect the build report rather than memorizing an implementation detail.
+2. Prefer a `CrashReporter` interface in `commonMain` with injected Firebase and Sentry adapters. It is easy to fake, permits multiple/no-op implementations, and adding Wasm does not create a mandatory `actual` declaration. `expect`/`actual` would add a useful compile-time guarantee that every target supplies one implementation, but it couples the declaration to the target hierarchy and is less flexible for tests or runtime selection. Neither choice mandates a DI framework.
+3. K2 replaced the K1 frontend with FIR, a unified semantic representation used for analysis, call resolution, and type inference. JetBrains documents more consistent analysis, easier compiler evolution, potential compile-time improvements, and better IDE behavior. That does not collapse a multiplatform Gradle build into one compilation: target compilations have different visible APIs and backends. Compare clean and incremental Kotlin build reports on the repository's actual target matrix.
+4. Start with the default hierarchy template's `appleMain` when the API is available to every Apple target in that source set. If the particular AVFoundation declaration is unavailable on tvOS, it cannot live in a set compiled for tvOS. Put it in a narrower existing set, define a custom set for only the supporting targets (while deliberately preserving/replacing the default hierarchy), or hide the difference behind an abstraction with a tvOS implementation.
+5. It should not compile in a correctly configured `commonMain`: `String.format` is a JVM `java.lang.String` API, not a common Kotlin API. If Android succeeds and iOS never reports the import, verify that the file is actually under `commonMain`, participates in the iOS compilation, and does not depend on a JVM-only source set or library. Use a multiplatform formatting API or inject platform formatting where locale behavior matters.
 
 ## Further Reading
 
@@ -331,3 +300,7 @@ Kotlin/Native handles `lateinit` differently than the JVM. On the JVM, accessing
 - [`ios-distribution.md`](../tooling/ios-distribution.md) — How the Kotlin/Native output (the `.xcframework`) is consumed by Xcode.
 - [`concurrency-and-memory.md`](../production/concurrency-and-memory.md) — How the JVM GC and the Kotlin/Native GC differ fundamentally.
 - [`swift-interop.md`](../tooling/swift-interop.md) — Objective-C bridge limitations and the Kotlin 2.4 Swift export path.
+- [K2 compiler migration guide](https://kotlinlang.org/docs/k2-compiler-migration-guide.html) — Official K2 architecture, compatibility, and behavior changes.
+- [`expect` and `actual` declarations](https://kotlinlang.org/docs/multiplatform/multiplatform-expect-actual.html) — Supported declaration kinds and matching rules.
+- [Hierarchical project structure](https://kotlinlang.org/docs/multiplatform/multiplatform-hierarchy.html) — Default hierarchy template and custom source-set guidance.
+- [Swift export](https://kotlinlang.org/docs/native-swift-export.html) — Current status, supported mappings, and limitations.

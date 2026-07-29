@@ -30,15 +30,15 @@ Logic-only sharing centralizes contracts and state transitions while each platfo
 
 | Layer | Shared? | Why |
 |---|---|---|
-| **Data Models / DTOs** | ✅ Always | `data class User(val id: String, val name: String)` — identical JSON parsing on both platforms |
-| **API Client (Ktor)** | ✅ Always | Network calls are pure I/O — no platform dependency |
+| **Data Models / DTOs** | ✅ Strong candidate | Share when both apps consume the same wire/domain contract; keep platform presentation models local |
+| **API Client (Ktor)** | ✅ Strong candidate | Share when transport, authentication, retries, and serialization policies should match |
 | **Database (SQLDelight)** | ✅ Usually | Schema + queries are SQL — platform provides the driver |
 | **Repository** | ✅ Usually | Orchestrates API + DB with caching logic |
-| **Domain / Use Cases** | ✅ Always | Pure business rules — zero platform dependency |
-| **ViewModels** | ⚠️ Sometimes | If shared, iOS consumes `StateFlow` via SKIE. If not shared, each platform writes its own ViewModel |
-| **Navigation** | ❌ Never | Android uses NavHost, iOS uses NavigationStack — fundamentally different paradigms |
-| **UI** | ❌ Never | Compose on Android, SwiftUI on iOS |
-| **Hardware (Camera, BLE, NFC)** | ❌ Never | CameraX vs AVCaptureSession — zero overlap |
+| **Domain / Use Cases** | ✅ Strong candidate | Pure cross-platform business rules usually provide the clearest return |
+| **ViewModels / state holders** | ⚠️ Context-dependent | AndroidX ViewModel supports KMP; iOS still needs explicit storage, lifecycle, and Flow interop |
+| **Navigation** | ⚠️ Usually platform-owned | Destinations/policy may be shared while platform stacks and presentation remain native |
+| **UI** | ⚠️ Product decision | Keep native UI in this paradigm; choose Compose Multiplatform deliberately if sharing UI |
+| **Hardware (Camera, BLE, NFC)** | ⚠️ Platform adapters | Share policy/state machines where useful; keep SDK calls and lifecycle integration platform-side |
 
 ### Concrete Example: A Checkout Feature (Paradigm A)
 
@@ -56,6 +56,13 @@ data class CartItem(
 
 // 2. The API — shared networking
 class CheckoutApi(private val client: HttpClient) {
+    suspend fun fetchPricing(productIds: List<String>): PricingResponse {
+        return client.post("api/v1/pricing") {
+            contentType(ContentType.Application.Json)
+            setBody(PricingRequest(productIds))
+        }.body()
+    }
+
     suspend fun submitOrder(items: List<CartItem>): OrderResult {
         return client.post("api/v1/orders") {
             contentType(ContentType.Application.Json)
@@ -83,12 +90,14 @@ class CheckoutRepository(
             totalCents = pricing.total
         )
     }
+
+    suspend fun validatePromo(code: String): PromoResult = api.validatePromo(code)
 }
 
 // 4. The ViewModel — shared state machine
 class CheckoutViewModel(
     private val repository: CheckoutRepository
-) {
+) : ViewModel() {
     private val _state = MutableStateFlow(CheckoutState())
     val state: StateFlow<CheckoutState> = _state.asStateFlow()
 
@@ -153,7 +162,7 @@ fun CheckoutScreen(viewModel: CheckoutViewModel = koinViewModel()) {
 }
 ```
 
-**iOS consumer (`iosApp` — SwiftUI, using SKIE):**
+**iOS consumer (`iosApp` — SwiftUI, using one possible Flow adapter):**
 
 ```swift
 struct CheckoutScreen: View {
@@ -178,21 +187,32 @@ struct CheckoutScreen: View {
     }
 }
 
-// SKIE makes this trivial — StateFlow becomes AsyncSequence
+// This example assumes SKIE is configured to expose StateFlow as AsyncSequence.
+// KMP-NativeCoroutines or a hand-written adapter are alternatives on the
+// default Objective-C export path; Kotlin Swift export is a separate Alpha path.
 @MainActor
 class CheckoutViewModelObserver: ObservableObject {
     let viewModel = ViewModelProviders.shared.getCheckoutViewModel()
     @Published var state = CheckoutState.companion.default
+    private var observationTask: Task<Void, Never>?
     
     init() {
-        Task {
-            for await newState in viewModel.state {
-                self.state = newState
+        let states = viewModel.state
+        observationTask = Task { [weak self] in
+            for await newState in states {
+                guard !Task.isCancelled else { return }
+                self?.state = newState
             }
         }
     }
+
+    deinit {
+        observationTask?.cancel()
+    }
 }
 ```
+
+Cancelling observation is only half of ownership. Production iOS code must also retain an AndroidX `ViewModelStoreOwner` for the intended navigation lifetime and clear its store when that owner is deinitialized; the official KMP ViewModel guide shows that bridge.
 
 ---
 
@@ -205,19 +225,19 @@ In this model, you share the entire UI using Compose Multiplatform (CMP). See [`
 | Factor | Paradigm A (Logic Only) | Paradigm B (Shared UI) |
 |---|---|---|
 | **iOS team expertise** | iOS team writes SwiftUI | iOS team willing to learn Compose |
-| **App type** | Consumer-facing (brand-critical) | Internal tools, B2B, dashboards |
-| **Platform fidelity** | Must feel 100% native iOS | 95% native feel is acceptable |
+| **App type** | Platform-specific experience is central | Consistent cross-platform product UI is valuable |
+| **Platform fidelity** | Native controls/behavior are a hard requirement | Team can validate shared rendering and interaction |
 | **Development velocity** | 2 UI codebases to maintain | 1 UI codebase |
-| **Binary size** | Shared framework ~2-5 MB | Shared framework ~10-15 MB (Skia included) |
-| **Accessibility** | Native UIKit VoiceOver | CMP accessibility bridge (improving) |
+| **Binary/performance budget** | Shared logic still has a cost to measure | Rendering/runtime cost must be measured on target devices |
+| **Accessibility** | Native framework behavior still needs testing | Shared UI semantics and platform integration need testing |
 
-> **Staff Recommendation:** For any app with >1M users on iOS, start with **Paradigm A**. The risk of iOS users detecting non-native scrolling physics or accessibility regressions is too high. For internal tooling, admin panels, and B2B apps, **Paradigm B** can cut development time by 40%.
+> **Staff recommendation:** Run a representative vertical slice before standardizing. Measure accessibility, startup/binary impact, scrolling/input behavior, platform integrations, testability, and the skills/ownership model. User count alone does not select an architecture, and no universal development-time percentage applies.
 
 ---
 
 ## The Boundary Pattern: Inversion of Control
 
-Regardless of paradigm, you will encounter features that require platform-specific APIs (GPS, camera, Bluetooth, biometrics). The boundary must use **Inversion of Control** — the shared code defines *what* it needs; the platform provides *how*.
+Regardless of paradigm, you will encounter features that require platform-specific APIs (GPS, camera, Bluetooth, biometrics). These boundaries usually benefit from **Inversion of Control** — shared code defines *what* it needs; the platform provides *how*.
 
 ### The Full Pattern (GPS Example)
 
@@ -228,10 +248,10 @@ Regardless of paradigm, you will encounter features that require platform-specif
 
 data class Coordinates(val latitude: Double, val longitude: Double)
 
-sealed interface LocationResult {
-    data class Success(val coordinates: Coordinates) : LocationResult
-    data class PermissionDenied(val isPermanent: Boolean) : LocationResult
-    data class Error(val message: String) : LocationResult
+sealed interface LocationOutcome {
+    data class Success(val coordinates: Coordinates) : LocationOutcome
+    data class PermissionDenied(val isPermanent: Boolean) : LocationOutcome
+    data class Error(val message: String) : LocationOutcome
 }
 
 /**
@@ -241,10 +261,10 @@ sealed interface LocationResult {
  */
 interface LocationService {
     /** One-shot location fetch. Suspends until location is available or error occurs. */
-    suspend fun getCurrentLocation(): LocationResult
+    suspend fun getCurrentLocation(): LocationOutcome
     
-    /** Continuous location tracking as a Flow. */
-    fun trackLocation(intervalMs: Long): Flow<LocationResult>
+    /** Continuous updates; each platform chooses an appropriate sampling policy. */
+    fun trackLocation(): Flow<LocationOutcome>
 }
 ```
 
@@ -256,7 +276,7 @@ interface LocationService {
 class WeatherViewModel(
     private val locationService: LocationService,
     private val weatherApi: WeatherApi
-) {
+) : ViewModel() {
     private val _state = MutableStateFlow(WeatherState())
     val state: StateFlow<WeatherState> = _state.asStateFlow()
 
@@ -265,14 +285,14 @@ class WeatherViewModel(
             _state.update { it.copy(isLoading = true) }
             
             when (val location = locationService.getCurrentLocation()) {
-                is LocationResult.Success -> {
+                is LocationOutcome.Success -> {
                     val weather = weatherApi.getWeather(
                         lat = location.coordinates.latitude,
                         lng = location.coordinates.longitude
                     )
                     _state.update { it.copy(isLoading = false, weather = weather) }
                 }
-                is LocationResult.PermissionDenied -> {
+                is LocationOutcome.PermissionDenied -> {
                     _state.update { it.copy(
                         isLoading = false,
                         error = if (location.isPermanent) 
@@ -281,7 +301,7 @@ class WeatherViewModel(
                             "Location permission required"
                     )}
                 }
-                is LocationResult.Error -> {
+                is LocationOutcome.Error -> {
                     _state.update { it.copy(isLoading = false, error = location.message) }
                 }
             }
@@ -302,7 +322,7 @@ class AndroidLocationService(
     private val fusedClient = LocationServices.getFusedLocationProviderClient(context)
 
     @SuppressLint("MissingPermission")
-    override suspend fun getCurrentLocation(): LocationResult {
+    override suspend fun getCurrentLocation(): LocationOutcome {
         return try {
             val location = fusedClient.getCurrentLocation(
                 Priority.PRIORITY_HIGH_ACCURACY,
@@ -310,25 +330,25 @@ class AndroidLocationService(
             ).await()
             
             if (location != null) {
-                LocationResult.Success(Coordinates(location.latitude, location.longitude))
+                LocationOutcome.Success(Coordinates(location.latitude, location.longitude))
             } else {
-                LocationResult.Error("Location unavailable")
+                LocationOutcome.Error("Location unavailable")
             }
         } catch (e: SecurityException) {
-            LocationResult.PermissionDenied(isPermanent = false)
+            LocationOutcome.PermissionDenied(isPermanent = false)
         }
     }
 
     @SuppressLint("MissingPermission")
-    override fun trackLocation(intervalMs: Long): Flow<LocationResult> = callbackFlow {
-        val request = LocationRequest.Builder(intervalMs)
+    override fun trackLocation(): Flow<LocationOutcome> = callbackFlow {
+        val request = LocationRequest.Builder(10_000L)
             .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
             .build()
             
         val callback = object : LocationCallback() {
-            override fun onLocationResult(result: LocationResult) {
+            override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
                 result.lastLocation?.let { loc ->
-                    trySend(LocationResult.Success(Coordinates(loc.latitude, loc.longitude)))
+                    trySend(LocationOutcome.Success(Coordinates(loc.latitude, loc.longitude)))
                 }
             }
         }
@@ -345,52 +365,56 @@ class AndroidLocationService(
 // shared/src/iosMain/kotlin/com/example/location/IOSLocationService.kt
 
 class IOSLocationService : LocationService {
-    
-    override suspend fun getCurrentLocation(): LocationResult = suspendCancellableCoroutine { cont ->
+    override suspend fun getCurrentLocation(): LocationOutcome = trackLocation().first()
+
+    override fun trackLocation(): Flow<LocationOutcome> = callbackFlow {
         val manager = CLLocationManager()
         val delegate = object : NSObject(), CLLocationManagerDelegateProtocol {
-            override fun locationManager(manager: CLLocationManager, didUpdateLocations: List<*>) {
-                val location = didUpdateLocations.lastOrNull() as? CLLocation
-                if (location != null && cont.isActive) {
-                    cont.resume(LocationResult.Success(
-                        Coordinates(location.coordinate.latitude, location.coordinate.longitude)
-                    ))
-                }
-                manager.stopUpdatingLocation()
+            override fun locationManager(
+                manager: CLLocationManager,
+                didUpdateLocations: List<*>
+            ) {
+                val location = didUpdateLocations.lastOrNull() as? CLLocation ?: return
+                trySend(LocationOutcome.Success(
+                    Coordinates(location.coordinate.latitude, location.coordinate.longitude)
+                ))
             }
-            
-            override fun locationManager(manager: CLLocationManager, didFailWithError: NSError) {
-                if (cont.isActive) {
-                    cont.resume(LocationResult.Error(didFailWithError.localizedDescription))
-                }
+
+            override fun locationManager(
+                manager: CLLocationManager,
+                didFailWithError: NSError
+            ) {
+                trySend(LocationOutcome.Error(didFailWithError.localizedDescription))
+            }
+
+            fun close() {
+                manager.stopUpdatingLocation()
+                manager.delegate = null
             }
         }
-        
+
         manager.delegate = delegate
         manager.requestWhenInUseAuthorization()
         manager.startUpdatingLocation()
-        
-        cont.invokeOnCancellation { manager.stopUpdatingLocation() }
-    }
 
-    override fun trackLocation(intervalMs: Long): Flow<LocationResult> = callbackFlow {
-        // CLLocationManager continuous tracking implementation
-        // Similar to above but doesn't stop after first result
-        awaitClose { /* cleanup */ }
-    }
+        // Capturing the delegate strongly here matters: CLLocationManager.delegate is weak.
+        awaitClose { delegate.close() }
+    }.flowOn(Dispatchers.Main)
 }
 ```
+
+The iOS collector retains its manager and delegate until `awaitClose`; cancellation from `first()` or the downstream collector stops updates. Production adapters must also map authorization changes (including permanently denied state) and document accuracy/power policy. The contract intentionally does not promise an exact update interval because Core Location and Android location providers have different scheduling guarantees.
 
 **Step 5: Wire via Koin DI**
 
 ```kotlin
 // shared/src/androidMain/kotlin/di/PlatformModule.kt
-actual fun platformModule() = module {
+fun androidPlatformModule() = module {
     single<LocationService> { AndroidLocationService(get()) }
 }
 
 // shared/src/iosMain/kotlin/di/PlatformModule.kt
-actual fun platformModule() = module {
+fun iosPlatformModule() = module {
     single<LocationService> { IOSLocationService() }
 }
 ```
@@ -399,7 +423,7 @@ actual fun platformModule() = module {
 
 ## Multi-Module KMP Project Structure
 
-A Staff-level KMP project does not use a single monolithic `shared` module. It mirrors the modularization strategies from pure Android projects.
+A growing KMP project can mirror modularization strategies from native apps, but module boundaries should follow ownership and change patterns. A small codebase may be healthier as one shared module until build measurements or dependency boundaries justify a split.
 
 ```mermaid
 flowchart TD
@@ -422,22 +446,22 @@ In a monolithic `shared` module, changing one file in `commonMain` triggers reco
 - `core-network`, `core-database`, `feature-checkout`, etc. are cached and skipped.
 - Gradle's parallel task execution can compile `feature-auth:compileKotlinIosArm64` and `feature-checkout:compileKotlinAndroid` simultaneously.
 
-**Concrete impact:** A 300-file monolithic `shared` module takes ~40s to incrementally build. The same code split into 8 modules takes ~12s because only the changed module is recompiled.
+The benefit is workload-dependent: every KMP module also adds configuration and target tasks. Establish a build-report baseline, split along stable API boundaries, and verify clean and incremental builds after the change. Do not assume more modules automatically make builds faster.
 
 ---
 
 ## Common Pitfalls
 
-### 1. The Android ViewModel Trap
-If you put your ViewModels in `commonMain`, you cannot extend `androidx.lifecycle.ViewModel`. You must either:
-- Write your own `CoroutineScope` lifecycle management (risky).
-- Use a KMP ViewModel library like **moko-mvvm** or **KMPViewModel** that wraps `CoroutineScope` on iOS and delegates to `androidx.lifecycle.ViewModel` on Android.
+### 1. Treating a Shared ViewModel as Self-Owning
+AndroidX Lifecycle ViewModel supports KMP in version 2.8.0 and later, so a `commonMain` class can extend `ViewModel` and use `viewModelScope`. The remaining problem is ownership: SwiftUI has no built-in AndroidX `ViewModelStoreOwner`.
+
+**Fix:** On Android, scope the ViewModel to the intended activity, navigation entry, or other owner. On iOS, retain a `ViewModelStoreOwner` from an appropriate SwiftUI owner and clear its store when that owner is deinitialized. Separately configure Flow observation on the default Objective-C export path. The [official KMP ViewModel guide](https://developer.android.com/kotlin/multiplatform/viewmodel) shows the current setup and limitations.
 
 ### 2. The "Share Everything" Fallacy
-Teams that try to share navigation, hardware APIs, or deep OS integrations in `commonMain` always regret it. The maintenance cost of `expect/actual` for complex platform APIs (like Bluetooth scanning) exceeds the cost of just writing it twice natively.
+Sharing navigation, hardware APIs, or deep OS integrations behind a lowest-common-denominator facade can cost more than native adapters. Share domain policy and deterministic state transitions when they are genuinely common; keep SDK calls, permissions, lifecycle, and platform UX at an explicit edge.
 
 ### 3. The iOS Engineer Alienation
-If you force iOS engineers to write their UI in Kotlin (Paradigm B) without their consent, they will leave the team. KMP adoption must be a collaborative decision.
+KMP adoption changes iOS API design, debugging, build tooling, and ownership even when UI stays native. Make the decision collaboratively, require iOS review of exported APIs, budget training and tooling work, and keep platform escape hatches rather than treating sharing percentage as the success metric.
 
 ---
 
@@ -449,6 +473,14 @@ If you force iOS engineers to write their UI in Kotlin (Paradigm B) without thei
 4.  **Module Boundaries:** In the multi-module structure above, `feature-auth` needs to call `core-network` and `core-database`. How do you prevent `feature-auth` from directly depending on `feature-checkout`? How does this mirror Android's `:feature:api` / `:feature:impl` pattern?
 5.  **ViewModel Lifecycle:** If a shared ViewModel launches a coroutine in `viewModelScope`, who cancels that scope when the iOS SwiftUI view disappears? How is this different from Android's `onCleared()`?
 
+## Answer Key
+
+1. Keep Google Maps/MapKit views, location-permission integration, and platform presentation in their apps. A Ktor WebSocket client, message DTOs, reconnection/backoff policy, repository, and driver-location state machine can live in `commonMain` if both platforms need identical behavior and the library supports every target. Expose platform-neutral location updates; keep app-background policy and rendering platform-side. Move the socket native only when a platform SDK, background contract, or independent ownership outweighs shared behavior.
+2. Paradigm B is a plausible starting hypothesis because forms and workflows can benefit from one UI implementation, but camera capture still needs a platform edge. Validate it with a vertical slice covering camera permissions, image handoff, accessibility, file upload, navigation, tests, binary/startup cost, and iOS team ownership. Choose A if native UX/integrations, separate release velocity, or Swift expertise dominate; choose B if consistent UI and one product team dominate and the measured quality is acceptable.
+3. A regular interface supports constructor injection, fakes, multiple implementations, and an unsupported/no-op capability without requiring language-level target declarations. Adding Wasm only requires an implementation if the composition root actually constructs this feature. An `expect class` instead forces every target compilation to provide a matching `actual`; that is useful when implementation on every target is a required invariant, not automatically wrong.
+4. Encode dependency direction in Gradle convention plugins and module dependencies: `feature-auth` depends only on stable `core-network`/`core-database` APIs, while no dependency on `feature-checkout` is declared. CI can enforce the graph. If features must collaborate, extract a small contract/event into a neutral API module and have the app composition root connect implementations, mirroring Android's API/implementation separation.
+5. Android automatically calls `clear()`/`onCleared()` when the owning `ViewModelStore` is cleared, which cancels `viewModelScope`. SwiftUI has no automatic AndroidX owner. The iOS integration must retain a `ViewModelStoreOwner` for the desired screen/flow lifetime and clear its store on teardown; it must also cancel any Swift Flow-observation task. A view's transient disappearance is not always deallocation, so choose the owner based on the intended navigation lifetime and test it.
+
 ## Further Reading
 
 - [`overview-and-k1-vs-k2.md`](overview-and-k1-vs-k2.md) — The compiler targets that make this architecture possible.
@@ -456,3 +488,6 @@ If you force iOS engineers to write their UI in Kotlin (Paradigm B) without thei
 - [`dependency-injection.md`](../ecosystem/dependency-injection.md) — How Koin wires the `LocationService` implementations across the boundary.
 - [`compose-multiplatform.md`](../ui-sharing/compose-multiplatform.md) — Deep dive into Paradigm B (Shared UI via CMP).
 - [`../architecture/modularization-strategies.md`](../../architecture/modularization-strategies.md) — The Android modularization principles that directly apply to KMP modules.
+- [Set up ViewModel for KMP](https://developer.android.com/kotlin/multiplatform/viewmodel) — AndroidX dependencies, SwiftUI ownership, and current limitations.
+- [Kotlin Multiplatform API guidelines](https://kotlinlang.org/docs/api-guidelines-build-for-multiplatform.html) — Official boundary and API design guidance.
+- [Swift export](https://kotlinlang.org/docs/native-swift-export.html) — Alpha Swift-native export mappings and concurrency support.
