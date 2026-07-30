@@ -674,6 +674,29 @@ For Compose, lambda identity affects recomposition skipping. Tools like the Comp
 9. What does the function type `String.(Int) -> Boolean` mean, and how does it differ from `(String, Int) -> Boolean`?
 10. You have `fun fetch(callback: (Result) -> Unit)`. Five years later you need to add progress reporting. How would you evolve the API without breaking existing callers?
 
+## Answer Key
+
+1. **Compile `fun greet(name: String) = "Hello, $name"` to bytecode. Which class is it in, and what's the signature?**
+   It is compiled into a final class named after the file with `Kt` appended (e.g., `FunctionsKt` if the file is `functions.kt`). The signature is `public static final String greet(@NotNull String name)`.
+2. **Why does `list.forEach { return }` exit the enclosing function instead of just the lambda? How would you exit only the lambda?**
+   Because `forEach` is an `inline` function, the lambda's body is pasted directly into the enclosing function. A bare `return` therefore acts as a non-local return, exiting the caller. To exit only the lambda (like a `continue` in a loop), use a labeled return: `return@forEach`.
+3. **What's the difference between `(Int) -> String` and `fun interface IntToString { fun convert(n: Int): String }`? When would you choose each?**
+   `(Int) -> String` is a structural function type that compiles to `Function1<Int, String>`. A `fun interface` defines a nominal, named SAM interface. You choose a function type for pure-Kotlin APIs to avoid boilerplate. You choose `fun interface` when you need Java interoperability (so Java callers can use a clean interface name) or when the parameter needs domain-specific naming semantics (like `Predicate` instead of `(T) -> Boolean`).
+4. **A lambda passed to a non-inline function captures a local `var i = 0`. What is `i` represented as inside the generated lambda class?**
+   It is represented as an instance of a `Ref` wrapper object (specifically `Ref.IntRef`). The lambda captures the reference to the wrapper, allowing it to mutate the `.element` field inside so changes are visible across closures.
+5. **Explain why `inline fun foo(noinline block: () -> Unit)` would be useful.**
+   It is useful when the enclosing function `foo` needs to be inlined (perhaps it has other parameters or uses reified types), but the `block` lambda cannot be inlined because it is stored in a field, passed to a background thread, or passed to a non-inline function. The `noinline` modifier prevents the compiler from copying the lambda's body, letting it survive as a `Function0` object.
+6. **You see `obj::method` in code. What's the runtime cost of that expression — is a new object allocated each time?**
+   Yes, a new object is allocated each time it evaluates, because the function reference must capture the specific `obj` instance to invoke the method on. (Unlike `Class::method` which compiles to a cached singleton).
+7. **What does `tailrec` require of the recursive call, and what happens if it can't be applied?**
+   `tailrec` requires the recursive call to be the absolute last operation performed in the function before returning. If there is any computation after the recursive call returns (like `n * factorial(n - 1)`), it cannot be applied. The compiler will issue a warning and fall back to standard, stack-consuming recursion.
+8. **In Compose, why does `Button(onClick = { viewModel.click() })` sometimes defeat recomposition skipping? How do you keep it stable?**
+   If `viewModel` is considered unstable (e.g., an interface or a class with mutable `var` properties), the lambda captures an unstable reference. Compose generates a new lambda instance on every recomposition because it cannot guarantee the captured state hasn't changed. You keep it stable by using method references `onClick = viewModel::click` (if the ViewModel is stable) or by passing only stable primitives or explicitly `@Stable` parameters to the composable.
+9. **What does the function type `String.(Int) -> Boolean` mean, and how does it differ from `(String, Int) -> Boolean`?**
+   `String.(Int) -> Boolean` is a lambda with a receiver. Inside the lambda, the `String` is available as `this`, and it takes an `Int` parameter. It differs from `(String, Int) -> Boolean` syntactically: you call it like an extension function `myString.lambda(myInt)`. At the bytecode level, they both compile to `Function2<String, Int, Boolean>`.
+10. **You have `fun fetch(callback: (Result) -> Unit)`. Five years later you need to add progress reporting. How would you evolve the API without breaking existing callers?**
+    You can introduce a functional interface `fun interface FetchCallback { fun onComplete(r: Result); fun onProgress(p: Int) {} }` but that breaks existing lambdas. The Kotlin-idiomatic way is to replace the single callback with a Suspend function returning a `Flow<FetchStatus>`, or add a second optional parameter `progressCallback: ((Int) -> Unit)? = null` with a default value.
+
 ---
 
 ## Further Reading

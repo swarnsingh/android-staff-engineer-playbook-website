@@ -482,6 +482,35 @@ When reviewing sealed-type usage, I look for:
 12. Multi-module: which module must the subclasses live in relative to the sealed parent? (Kotlin 1.5+, 1.7+)
 13. Compare `data object` vs `object` vs `data class()` for stateless sealed branches. Which do you pick and why?
 
+## Answer Key
+
+1. **Walk through three real-world signals that an `enum class` should be a `sealed interface`.**
+   1) The cases need to hold different types of data (e.g., a `Success` case holds a payload, while an `Error` case holds an exception). 2) The cases need different shapes or fields entirely. 3) You need multiple instances of the same case with different state (enums are singletons).
+2. **When does Kotlin enforce exhaustiveness on a `when` over a sealed type, and when doesn't it?**
+   Kotlin enforces exhaustiveness when the `when` block is used as an *expression* (its return value is assigned to a variable or returned). Before Kotlin 1.7, it did not enforce exhaustiveness when used as a *statement*, unless the `-Xenable-exhaustive-when-statements` compiler flag was enabled.
+3. **Why is `else ->` in a `when` over a sealed type considered an anti-pattern? Walk through what it costs.**
+   `else ->` bypasses the compiler's exhaustiveness check. If a new subclass is added to the sealed hierarchy later, the compiler will not flag the missing case in the `when` block. It will silently fall into the `else` branch, hiding potential bugs and making refactoring brittle.
+4. **Compare `sealed class` vs `sealed interface`. Why is `sealed interface` the modern preference?**
+   A `sealed class` can have constructors and hold shared state, but restricts subclasses to single inheritance. A `sealed interface` cannot hold state, but allows a single subclass to implement multiple sealed interfaces (multi-categorization) and doesn't consume the single class inheritance slot. It's the modern preference because most ADTs don't need shared state in the parent.
+5. **Your `data class HomeState(val isLoading: Boolean, val data: List<Item>?, val error: String?)` has 8 combinations but only 3 valid. Refactor it.**
+   `sealed interface HomeState { data object Loading : HomeState; data class Success(val data: List<Item>) : HomeState; data class Error(val message: String) : HomeState }`
+6. **You ship `sealed interface PaymentMethod` as a public SDK. Six months later, marketing demands you add `CryptoWallet`. What just broke?**
+   Every consumer of your SDK who wrote an exhaustive `when` block over `PaymentMethod` will suddenly face a compilation error upon upgrading to the new minor version, because their `when` is no longer exhaustive. This forces a breaking API change (major version bump).
+7. **Why does Gson struggle with sealed-class deserialization and how do you fix it (Moshi or kotlinx)?**
+   Gson relies heavily on reflection and lacks built-in support for polymorphic deserialization based on a discriminator field (e.g., `"type": "success"`). To fix it, use `kotlinx.serialization` with `@SerialName` and a configured `classDiscriminator`, or Moshi with a `PolymorphicJsonAdapterFactory`.
+8. **Walk through how `out T` (covariance) interacts with a generic `Resource<T>` to make `Resource<Nothing>` assignable everywhere.**
+   `Nothing` is a subtype of every type in Kotlin. By defining the sealed class as `Resource<out T>`, we declare that a `Resource` of a subtype can be assigned to a `Resource` of a supertype. Therefore, `Resource<Nothing>` is a subtype of `Resource<User>`, allowing singletons like `object Loading : Resource<Nothing>` to be assigned to any typed `Resource` variable.
+9. **Compare `kotlin.Result<T>` with a custom `sealed interface ApiResult<T>`. When do you reach for each?**
+   Reach for `kotlin.Result<T>` for generic operations where failure is simply represented by a `Throwable` and performance (via inline value classes) is critical. Reach for a custom `sealed interface ApiResult<T>` when you need structured, domain-specific error cases (e.g., `HttpError`, `NetworkError`) that force callers to handle distinct failure modes differently.
+10. **Type-state pattern: explain how phantom generic types + sealed states can make `Connection.send()` only compile when connected.**
+    By parameterizing the class (e.g., `class Connection<State>`), you can define methods as extensions or member functions bound to a specific state type: `fun Connection<Connected>.send()`. The `send` method physically won't exist on a variable typed as `Connection<Disconnected>`, making invalid state calls uncompilable.
+11. **You have `sealed interface Screen` for Compose navigation. What's the SDK / version concern when adding a new screen?**
+    If `Screen` is exposed to external modules or an SDK, adding a new screen breaks exhaustive `when` statements in the consuming code. If it's internal app code, it's safe and desirable to get those compile errors.
+12. **Multi-module: which module must the subclasses live in relative to the sealed parent? (Kotlin 1.5+, 1.7+)**
+    Subclasses of a sealed type must reside in the exact same module as the sealed parent (enforced since Kotlin 1.5), and in the exact same package (enforced since Kotlin 1.7).
+13. **Compare `data object` vs `object` vs `data class()` for stateless sealed branches. Which do you pick and why?**
+    You pick `data object`. `data class()` is wasteful because it allocates a new instance every time, even though there's no state to differ between instances. `object` is a singleton but lacks the clean, readable `toString()` implementation of a data class. `data object` (introduced in Kotlin 1.8) combines the singleton efficiency of `object` with the readable `toString()` of a data class.
+
 ---
 
 ## Further Reading

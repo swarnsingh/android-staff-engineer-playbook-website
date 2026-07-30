@@ -627,6 +627,29 @@ Inlined constants prevent typos in event names. Renaming them requires touching 
 9. Explain the backing property pattern and why teams use it for state holders.
 10. A `const val APP_VERSION = "1.0.0"` is referenced by 50 modules. You change it to `"1.0.1"`. Which modules need to be recompiled?
 
+## Answer Key
+
+1. **Why does `val list: MutableList<Int>; list.add(5)` compile, when `val` means read-only?**
+   `val` dictates that the *reference* cannot be reassigned (you cannot do `list = mutableListOf()`). It does not dictate that the *value* it points to is immutable. Since the reference points to a `MutableList`, its mutating methods (`add`) are perfectly valid to call.
+2. **What's the difference between `val timeoutMs: Long = 30_000` and `const val TIMEOUT_MS = 30_000L`? When does each matter?**
+   `val` generates a private field and a getter method, evaluated at runtime when the class/file initializes. `const val` evaluates at compile time, and the compiler literally copy/pastes the primitive value (`30000L`) into every call site. `const val` matters for annotations (which require compile-time constants) and zero-overhead config; `val` matters for values computed at runtime.
+3. **A `lateinit var name: String` is accessed before initialization. What exception is thrown? How do you check safely?**
+   An `UninitializedPropertyAccessException` is thrown. You check safely using the property reference: `if (::name.isInitialized) { ... }`.
+4. **Explain why `lateinit` cannot be used on `Int` or `Boolean`.**
+   `lateinit` works by internally setting the object reference to `null` and injecting a null-check before every read. Primitives like `Int` and `Boolean` cannot be `null` on the JVM (they default to 0 or false). Therefore, the compiler has no way to distinguish an "uninitialized" primitive from one legitimately set to 0. Use `Delegates.notNull()` instead.
+5. **A `by lazy` block makes a network call. Is the call deduplicated across threads with the default thread-safety mode? Why or why not?**
+   Yes, it is deduplicated. The default mode is `LazyThreadSafetyMode.SYNCHRONIZED`. It uses a lock so that if multiple threads access the property simultaneously, only the first thread executes the block, and the others block until the result is computed and cached.
+6. **You capture `var counter = 0` in a lambda. Decompile and explain what's in the lambda's generated class.**
+   The generated lambda class contains a final field of type `Ref.IntRef`. When the enclosing function runs, it creates an `IntRef` instance, stores `0` in its `.element` field, and passes the `IntRef` reference to the lambda's constructor. The lambda mutates `counter.element`, sharing state with the enclosing scope.
+7. **Why does `if (myVar != null) myVar.length` fail to smart-cast when `myVar` is a `var` property?**
+   Because `myVar` is a `var`, a concurrent thread could potentially reassign it to `null` between the `!= null` check and the subsequent `.length` access, causing an NPE. The compiler conservatively rejects the smart cast.
+8. **You have a circular initialization between two top-level `val`s. How does the JVM behave at class loading? How do you fix it?**
+   At class loading, the JVM executes the static `<clinit>` block top-to-bottom. If `A` tries to read `B` before `B` is initialized, it reads `B`'s default value (e.g., `null` or `0`), causing an unexpected `NullPointerException` or logical error during initialization. Fix it by changing one or both to `val A by lazy { ... }` so initialization is deferred until access.
+9. **Explain the backing property pattern and why teams use it for state holders.**
+   The backing property pattern pairs a `private val _state = MutableStateFlow(...)` with a `public val state: StateFlow = _state`. Teams use it to strictly enforce unidirectional data flow: the class itself can freely mutate the internal state, but external callers are forced to observe the read-only projection and use intent functions (e.g., `increment()`) to request changes.
+10. **A `const val APP_VERSION = "1.0.0"` is referenced by 50 modules. You change it to `"1.0.1"`. Which modules need to be recompiled?**
+    All 50 modules must be recompiled. Because it is a `const val`, the literal string `"1.0.0"` was inlined directly into the bytecode of the calling modules during their previous compilation. If they are not recompiled, they will continue to use the old value.
+
 ---
 
 ## Further Reading

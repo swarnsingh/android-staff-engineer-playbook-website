@@ -227,6 +227,29 @@ When reviewing code containing `inline`, a Staff engineer enforces strict bounda
 9.  If you decompile a Kotlin `inline` function invocation back into Java, what does the resulting code look like?
 10. Describe the difference between `crossinline` and `noinline`.
 
+## Answer Key
+
+1. **What is the primary memory/performance problem that the `inline` keyword solves on the JVM?**
+   It prevents the severe memory allocation overhead of Lambdas. Without it, passing a lambda to a function creates a new anonymous `Function` object on the heap per call. In hot loops, this causes massive Garbage Collection churn.
+2. **Explain the "Copy and Paste" mental model of how the `kotlinc` compiler implements `inline`.**
+   The compiler literally copies the bytecode body of the inline function, along with the body of the lambda passed to it, and pastes them directly into the caller's bytecode. This removes the function call jump and the object allocation entirely.
+3. **Why does the IDE generate a warning if you place `inline` on a function that does not accept a lambda as a parameter?**
+   The JVM's Just-In-Time (JIT) compiler is already highly optimized to inline small, standard functions at runtime. Doing it manually via Kotlin provides no lambda-allocation savings (since there are no lambdas) and just unnecessarily bloats the compile-time bytecode.
+4. **If you have an `inline` function that is 200 lines long and is called 50 times across your app, what is the architectural consequence?**
+   You will suffer massive bytecode bloat. Those 200 lines are copied 50 times, adding 10,000 lines of duplicated instructions to your Dex file, increasing APK size, and potentially degrading CPU instruction cache performance.
+5. **What is a "Non-Local Return," and why is it only possible inside an inlined lambda?**
+   A Non-Local Return allows a `return` keyword inside a lambda to exit the *outer* calling function, not just the lambda. It is only possible with `inline` because the lambda's code is pasted directly into the outer function's body, making the `return` statement natively part of the outer function.
+6. **Explain the purpose of the `crossinline` modifier. In what scenario are you forced to use it?**
+   `crossinline` is used when an inline function takes a lambda but passes that lambda to another context (like a background thread or a callback). You are forced to use it because the compiler cannot allow a Non-Local Return if the lambda executes asynchronously after the outer function has already returned.
+7. **Why are almost all higher-order functions in the Kotlin Standard Library (like `map`, `filter`, `let`) marked as `inline`?**
+   Because functional programming chains (`list.filter{}.map{}`) are heavily used. If they weren't `inline`, every operation would allocate intermediate Lambda objects, immediately crashing Android apps with Out-Of-Memory errors or extreme GC jank.
+8. **Why can't an `inline` function access a `private` variable belonging to the class it is declared inside?**
+   Because the `inline` function's body is physically copied into the *caller's* class. If it copied private variables, the caller's class would suddenly have illegal bytecode instructions attempting to access private fields of a different class, violating JVM visibility rules.
+9. **If you decompile a Kotlin `inline` function invocation back into Java, what does the resulting code look like?**
+   There is no function call to the inline function, and there is no instantiation of a `Function` interface. Instead, the raw logic from the inline function and the lambda are seamlessly woven directly into the local variables and instructions of the caller.
+10. **Describe the difference between `crossinline` and `noinline`.**
+    `crossinline` tells the compiler to *still inline* the lambda, but forbid Non-Local Returns because it executes in a different context. `noinline` tells the compiler to *not inline the lambda at all*, keeping it as an allocated `Function` object, usually because you need to store it in a variable or pass it to a non-inline function.
+
 ## Further Reading
 
 - [`reified-types.md`](reified-types.md) — The other major feature unlocked by `inline`.

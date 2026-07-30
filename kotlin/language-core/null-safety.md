@@ -458,6 +458,33 @@ When reviewing nullability, I look at:
 11. ViewBinding lifecycle: why do you set `_binding = null` in `onDestroyView`? What goes wrong if you don't?
 12. You have a `SharedFlow<Result<User>>`. Compare this against `StateFlow<User?>`. Which is right when?
 
+## Answer Key
+
+1. **What is a Kotlin "platform type" (`String!`)? When do you encounter it, and how do you defend against it?**
+   A platform type (`String!`) occurs when Kotlin calls Java code that lacks `@Nullable`/`@NonNull` annotations. The compiler suspends null-safety checks because it doesn't know if the value can be null. You defend against it by treating all unannotated Java returns as nullable (`T?`), adding annotations to the Java code if possible, or wrapping the Java API in a strict Kotlin anti-corruption layer.
+2. **Walk through what bytecode the compiler generates for a `fun greet(name: String)` function. What runtime check does it insert?**
+   The compiler generates a public static/instance method with a non-null signature. At the very beginning of the method body, it inserts a call to `Intrinsics.checkNotNullParameter(name, "name")`. If a Java caller bypasses the compiler and passes `null`, this intrinsic immediately throws an `IllegalArgumentException` at the boundary.
+3. **Why does smart cast fail on a `var` property? Show three ways to work around it.**
+   Smart cast fails on a `var` property because a concurrent thread could mutate the property to `null` between the `!= null` check and the actual usage. Workarounds: 1) Assign to a local `val` first (`val n = name; if (n != null) n.length`); 2) Use the safe call and let (`name?.let { it.length }`); 3) Change the property declaration from `var` to `val` if it's meant to be immutable.
+4. **`lateinit` vs `by lazy` vs `var x: String? = null` — when do you pick each?**
+   Pick `lateinit` for non-null `var` properties that must be initialized outside the constructor (e.g., DI via `@Inject`, Android `onCreate`). Pick `by lazy` for read-only `val` properties that are expensive to compute and should only be evaluated on their first access. Pick `var x: String? = null` when the absence of a value is a valid, ongoing state of the object.
+5. **You have a fragment that crashes intermittently with `NullPointerException` accessing `binding.tvName`. What's the most likely cause?**
+   The most likely cause is accessing the `binding` property after `onDestroyView` has been called (e.g., in a delayed coroutine or callback). The ViewBinding pattern sets `_binding = null` in `onDestroyView`, so the forced unwrap (`get() = _binding!!`) throws an NPE when accessed outside the view's active lifecycle.
+6. **Why is using `null` as a return value to indicate an error a code smell at a staff-engineer level? What's the alternative?**
+   `null` is ambiguous—it doesn't communicate *why* an operation failed (e.g., network timeout vs. unauthorized vs. local error), leading to lossy error handling. The alternative is to return a `sealed interface` representing explicit success/failure states, or `Result<T>` if the error is an opaque exception.
+7. **Walk through how Gson can produce a Kotlin object with a `null` value in a non-null `String` field. How do you prevent it?**
+   Gson deserializes objects using `Unsafe` allocation, bypassing the class constructor entirely, and then sets fields via reflection. Since the constructor never runs, Kotlin's non-null intrinsic checks are bypassed. If the JSON omits a field, the field remains uninitialized (`null`), violating the type system. Prevent this by using Moshi or `kotlinx.serialization`.
+8. **Give a legitimate use case for `!!`. Give an illegitimate one and the refactor.**
+   A legitimate use case is inside a Fragment's ViewBinding getter (`val binding get() = _binding!!`), where you strictly control the lifecycle and guarantee it's accessed only between `onCreateView` and `onDestroyView`. An illegitimate use is `intent.getStringExtra("id")!!`, which crashes if the extra is missing. Refactor it to `requireNotNull(intent.getStringExtra("id")) { "Activity requires 'id' extra" }`.
+9. **`requireNotNull` vs `checkNotNull` vs `!!` — when do you use each?**
+   Use `requireNotNull` when validating arguments or inputs crossing a public boundary (throws `IllegalArgumentException` with a custom message). Use `checkNotNull` when validating internal state or invariants that should never be null if the class is behaving correctly (throws `IllegalStateException`). Avoid `!!` unless you are doing something so localized (like ViewBinding) that a message isn't necessary.
+10. **A Java library returns `User getUser()` with no annotations. Walk through the wrapper pattern you'd build.**
+    You create a Kotlin anti-corruption layer: `class SafeUserRepo(private val javaRepo: JavaRepo) { fun getUser(): User? = javaRepo.getUser() }`. By explicitly marking the return as `User?`, you force all Kotlin consumers to perform null checks, neutralizing the danger of the platform type.
+11. **ViewBinding lifecycle: why do you set `_binding = null` in `onDestroyView`? What goes wrong if you don't?**
+    A Fragment instance can outlive its View hierarchy (e.g., when placed on the back stack). The `_binding` holds a strong reference to the entire View tree. If you don't set it to `null` in `onDestroyView`, the Fragment keeps the Views (and associated Bitmaps/Contexts) in memory, causing a massive memory leak until the Fragment itself is destroyed.
+12. **You have a `SharedFlow<Result<User>>`. Compare this against `StateFlow<User?>`. Which is right when?**
+    `SharedFlow<Result<User>>` models discrete events or commands (e.g., "A login attempt succeeded or failed") where multiple emissions are important and there isn't a single ongoing state. `StateFlow<User?>` models continuous state (e.g., "Who is currently logged in, or null if nobody is") where only the latest value matters and UI components need to react to changes in that state.
+
 ---
 
 ## Further Reading

@@ -551,6 +551,33 @@ When reviewing a PR with coroutines, I scan for these signatures:
 11. A coroutine's `finally` block tries to flush logs but the log write is a suspend call. The coroutine was cancelled. What happens, and how do you fix it?
 12. Why do `Dispatchers.IO` and `Dispatchers.Default` use different pool sizes? Show with a 10-IO + 10-CPU workload on a 4-core device.
 
+## Answer Key
+
+1. **Explain the difference between `Thread.sleep()` and `delay()`. What does each do to the underlying OS thread?**
+   `Thread.sleep()` is blocking; it halts the underlying OS thread completely, preventing it from doing any other work until the time elapses. `delay()` is suspending; it schedules a resumption in the future and immediately returns the OS thread to the pool so it can execute other coroutines.
+2. **Walk through the state-machine transformation the compiler applies to a `suspend` function.**
+   The compiler adds a hidden `Continuation` parameter. The function body is wrapped in a `switch` statement tracking states (labels). At a suspension point, local variables are saved to the continuation, the label is incremented, and the function returns. When the async work finishes, the function is called again with the continuation, jumping to the case label to resume execution.
+3. **Three concurrent `async` calls inside a `coroutineScope` — task A throws. What happens to B and C? How do you isolate them?**
+   Because `coroutineScope` uses standard `Job` semantics, task A's exception propagates to the parent scope, which immediately cancels the sibling tasks B and C. To isolate them, use a `supervisorScope` (or a `SupervisorJob`), which prevents a child's failure from cancelling its siblings.
+4. **Why is putting `withContext(Dispatchers.IO)` in a ViewModel an architectural smell?**
+   It leaks threading responsibilities into the ViewModel. Repositories and use cases should be "main-safe"—meaning they internally manage their own `withContext(Dispatchers.IO)` calls so that any caller (like the ViewModel) can safely invoke them from the Main thread without worrying about dispatcher switching.
+5. **What's the exact behavior difference between `viewModelScope` and `lifecycleScope`? When would you pick one over the other?**
+   `viewModelScope` is bound to the ViewModel's lifecycle and cancels when `onCleared()` is called. `lifecycleScope` is bound to an Activity/Fragment and cancels when it is destroyed. Pick `viewModelScope` for data operations that should survive configuration changes (rotation). Pick `lifecycleScope` for UI-specific operations (like animations) that must stop if the view dies.
+6. **You have a tight CPU loop that needs to be cancellable. Two correct ways to implement it?**
+   Because cancellation is cooperative, a pure CPU loop never checks the cancellation flag automatically. You must check it manually by inserting `ensureActive()` (which throws if cancelled) or `yield()` (which suspends briefly, checks cancellation, and yields the thread to others) inside the loop.
+7. **Why is a generic `catch (e: Exception)` inside a coroutine dangerous? Walk through the failure scenario.**
+   Coroutine cancellation works by throwing a `CancellationException`. If you generically catch `Exception` and swallow it, you intercept the cancellation signal. The coroutine will ignore the scope's request to stop and continue running as a zombie, potentially leaking memory or crashing when updating destroyed UI.
+8. **Explain what `repeatOnLifecycle(STARTED)` does that plain `lifecycleScope.launch { collect }` doesn't.**
+   `lifecycleScope.launch` continues collecting the flow even when the app goes to the background (until destroyed), wasting CPU and battery. `repeatOnLifecycle(STARTED)` automatically cancels the collection when the View drops below the STARTED state (e.g., goes to background) and completely restarts the collection when it returns.
+9. **Your test takes 30 seconds to run because of `delay(30_000)`. How do you make it run in milliseconds without changing production code?**
+   Use `runTest` from `kotlinx-coroutines-test` and ensure your production code has its dispatchers injected. Pass a `StandardTestDispatcher` in the test. The virtual clock will instantly advance time (`advanceTimeBy(30_000)`), making the test finish in milliseconds.
+10. **Walk through the difference between `Job` and `SupervisorJob` — concretely, with a code example where it matters.**
+    A standard `Job` propagates failures bidirectionally: a failed child cancels the parent, which cancels all other children. A `SupervisorJob` prevents upward propagation. Example: in `supervisorScope { launch { fail() }; launch { succeed() } }`, the second launch successfully completes even though the first crashed. In a `coroutineScope` (which uses `Job`), the second launch would be cancelled.
+11. **A coroutine's `finally` block tries to flush logs but the log write is a suspend call. The coroutine was cancelled. What happens, and how do you fix it?**
+    Because the coroutine is already in a cancelled state, any suspending call inside the `finally` block will immediately throw a `CancellationException` and fail to execute. You fix it by wrapping the suspending call in `withContext(NonCancellable) { ... }` which ignores the parent's cancellation state.
+12. **Why do `Dispatchers.IO` and `Dispatchers.Default` use different pool sizes? Show with a 10-IO + 10-CPU workload on a 4-core device.**
+    `Default` is CPU-bound, so its pool size equals the core count (4) to prevent context-switching overhead. `IO` threads spend most of their time blocked/waiting, so it allows up to 64 threads. If you run 10 IO calls on `Default`, they monopolize the 4 cores while waiting, blocking the 10 CPU tasks and taking ~1800ms. On `IO`, all 10 wait concurrently, leaving `Default` free for CPU work, taking ~800ms.
+
 ---
 
 ## Further Reading

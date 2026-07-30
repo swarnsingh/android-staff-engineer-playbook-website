@@ -474,6 +474,37 @@ When reviewing for memory:
 12. Bitmap with `Config.HARDWARE` — what changes in memory tracking, and what's the trade-off?
 13. You see the app use 600 MB RSS but only 80 MB Java heap. Where's the missing memory and how do you find it?
 
+## Answer Key
+
+1. **Walk through what happens at the JVM level when you write `val x: Int? = 5`. Where does `5` live?**
+   Because `x` is nullable (`Int?`), the primitive `5` must be boxed into a `java.lang.Integer` object. The reference `x` lives on the stack, while the `Integer` object containing `5` is allocated on the heap.
+2. **`List<Int>` of 100,000 items vs `IntArray` of 100,000 items — concretely, what's the memory footprint difference?**
+   `List<Int>` allocates 100,001 objects on the heap: one list object, plus 100,000 boxed `java.lang.Integer` objects. `IntArray` allocates exactly 1 object on the heap: a contiguous array of primitives. The `List<Int>` takes massively more memory and triggers much more GC pressure.
+3. **Explain the four reference strengths. Give one real Android use case for each (except phantom).**
+   - **Strong**: Default reference; prevents GC entirely (e.g., `val view = View()`).
+   - **Soft**: Kept alive until the system is under memory pressure; useful for large replaceable caches (though `LruCache` is preferred).
+   - **Weak**: Does not prevent GC; cleared immediately on the next pass. Useful for listeners or back-references (e.g., a bus holding observers).
+4. **A user reports the app "slowly gets sluggish over the day, then crashes." Walk through your first 30 minutes of investigation.**
+   This describes a classic memory leak leading to OOM. First, look at Crashlytics for `OutOfMemoryError` stack traces to confirm. Next, run a debug build with LeakCanary, navigate through the app's core screens repeatedly, and check the reports. If LeakCanary finds nothing, use the Android Studio Memory Profiler to take a heap dump after forcing GC, filter for app classes, and look for unexpectedly retained `Activity`, `Fragment`, or `Bitmap` instances.
+5. **LeakCanary points to MainActivity held by `ActivityThread.mActivities → ArrayMap → LocalActivityRecord`. How do you decide whether to fix it or mark as platform bug?**
+   LeakCanary traces the *shortest strong-reference path* to the GC root. If the *entire* chain is inside Android framework classes, you check `leakcanary-known-leaks` for OS-level bugs. Otherwise, find the first app-owned class in the chain (reading bottom-up) and fix that edge.
+6. **Why is `BitmapFactory.decodeResource(huge_image)` dangerous? What's the safer pattern?**
+   It decodes the full original resolution of the image into memory, easily consuming 30+ MB and causing an OOM. The safer pattern is using an image loading library (Coil/Glide) that automatically downsamples the image to the target View's exact pixel dimensions before decoding, or passing `inSampleSize` manually via `BitmapFactory.Options`.
+7. **Walk through a textbook double-checked locking singleton. Why does `@Volatile` matter?**
+   Double-checked locking checks for null, acquires a lock, checks for null again, and then instantiates. `@Volatile` ensures the newly created object's fields are fully initialized and flushed to main memory *before* the `INSTANCE` reference is made visible to other threads. Without it, instruction reordering could allow another thread to see a non-null `INSTANCE` pointing to an uninitialized object.
+8. **Singleton DI vs activity-scoped DI — why does scope matter for memory?**
+   A Singleton DI component lives for the lifetime of the application process. If it holds state or references (like an Activity or View), those objects will never be garbage collected, causing a massive memory leak. Activity-scoped DI components are destroyed when the Activity is destroyed, allowing the GC to reclaim everything tied to that screen.
+9. **`GlobalScope.launch` vs `viewModelScope.launch` — what's the memory difference?**
+   `GlobalScope.launch` creates a coroutine that runs until completion or process death. If it captures a reference to an Activity or View, it will leak them if the screen closes before the coroutine finishes. `viewModelScope.launch` is tied to the ViewModel's lifecycle; it automatically cancels running coroutines when the ViewModel is cleared, breaking the reference chain and preventing the leak.
+10. **A Fragment's `View` is destroyed in `onDestroyView` but the Fragment isn't. Why is `_binding = null` necessary?**
+    The Fragment instance outlives its View hierarchy (e.g., when placed on the back stack). If the Fragment retains a strong reference to the ViewBinding, the entire View tree (and any associated Bitmaps) cannot be garbage collected, causing a heavy memory leak until the Fragment itself is finally destroyed.
+11. **ART generational GC: explain "young generation" vs "old generation" and what it means for your code.**
+    ART divides the heap into generations because most objects die young. The "young generation" is collected frequently and quickly. Objects that survive multiple collections are promoted to the "old generation," which is collected rarely. For code, short-lived allocations are cheap, but holding onto objects long enough to promote them increases the eventual cost of the old-generation GC pauses.
+12. **Bitmap with `Config.HARDWARE` — what changes in memory tracking, and what's the trade-off?**
+    The bitmap is allocated directly in graphics memory (VRAM), bypassing the Java heap entirely. This saves Java heap space and reduces GC pressure. The trade-off is that you cannot read or modify the individual pixels (e.g., via `getPixels()`) from the CPU without copying it back to a software bitmap first.
+13. **You see the app use 600 MB RSS but only 80 MB Java heap. Where's the missing memory and how do you find it?**
+    The missing memory is in the Native Heap or Graphics memory (e.g., native C++ allocations, hardware bitmaps, large byte buffers). You must use the Native Memory Profiler in Android Studio or run `dumpsys meminfo <package_name>` to inspect native and graphics allocations.
+
 ---
 
 ## Further Reading

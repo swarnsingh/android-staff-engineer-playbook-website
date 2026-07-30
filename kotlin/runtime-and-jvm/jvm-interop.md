@@ -611,6 +611,29 @@ Lambda parameter (`((Result<Bitmap>) -> Unit)?`) compiles to a `Function1<Result
 9. Explain why `@Throws(IOException::class)` is necessary even though Kotlin doesn't have checked exceptions.
 10. You have a Kotlin library with `value class UserId(val raw: Long)`. A Java caller wants to pass a `UserId`. What does the Java signature actually accept, and what's the type-safety implication?
 
+## Answer Key
+
+1. **A Java method `String findUser(long id)` returns null. A Kotlin caller writes `val name: String = userDao.findUser(42)`. Walk through what happens and where the crash occurs.**
+   The Java return type lacks nullability annotations, so Kotlin types it as `String!` (a platform type). Because the Kotlin caller explicitly types `name: String` (non-null), the Kotlin compiler inserts an intrinsic null check (`Intrinsics.checkNotNullExpressionValue`) at the assignment boundary. When the Java method returns `null`, the check fails, throwing an exception immediately at the assignment line, preventing the null from propagating further into Kotlin.
+2. **Compile `object Logger { fun log(s: String) { ... } }` to bytecode. What's the Java call site to invoke `log`?**
+   `Logger.INSTANCE.log("...");`
+3. **What's the difference between `@JvmStatic` on a companion object method and `@JvmField` on a companion object property?**
+   `@JvmStatic` generates a real `static` method on the enclosing class that forwards to the companion object's method, leaving the companion object intact. `@JvmField` exposes the property directly as a `public static` field on the enclosing class, preventing the compiler from generating getter/setter methods.
+4. **A Kotlin function `fun connect(host: String, port: Int = 80)`. Show the JVM bytecode method signature with and without `@JvmOverloads`.**
+   Without `@JvmOverloads`, there is only `void connect(String host, int port)` plus a synthetic `$default` helper. With `@JvmOverloads`, the compiler also generates `void connect(String host)` which internally calls the full method using the default port.
+5. **Why does `internal fun foo()` show up in Java reflection if `internal` is supposed to be module-private?**
+   `internal` is enforced by the Kotlin compiler, not the JVM. The JVM has no concept of a "module," so Kotlin compiles `internal` methods as `public` (to allow access from other packages within the same module) but mangles their names (e.g., `foo$module_name`) to discourage accidental use. Reflection ignores compiler visibility rules and sees the raw `public` method.
+6. **Decompile a `data class User(val name: String, var age: Int)` and list every method the compiler generated.**
+   Getters for `name` and `age`, a setter for `age`, `component1()`, `component2()`, `copy()`, `toString()`, `hashCode()`, and `equals()`.
+7. **What does `@file:JvmName("Strings")` do, and why would you use it instead of just naming the file `Strings.kt`?**
+   It changes the name of the generated Java class containing the file's top-level functions from the default `FilenameKt` to `Strings`. You use it to provide a cleaner API for Java callers (e.g., `Strings.titleCase()` instead of `StringsKt.titleCase()`) without changing the actual Kotlin file name.
+8. **A Kotlin extension `fun String.titleCase()` lives in `StringExt.kt`. How does a Java caller invoke it?**
+   As a static method on the generated file class, passing the receiver as the first argument: `StringExtKt.titleCase(myString);`.
+9. **Explain why `@Throws(IOException::class)` is necessary even though Kotlin doesn't have checked exceptions.**
+   Because Kotlin treats all exceptions as unchecked, it doesn't add `throws IOException` to the JVM bytecode signature. Without it, the Java compiler refuses to let Java callers catch the checked exception (since the method signature doesn't declare it). `@Throws` restores the JVM signature so Java's static checks work.
+10. **You have a Kotlin library with `value class UserId(val raw: Long)`. A Java caller wants to pass a `UserId`. What does the Java signature actually accept, and what's the type-safety implication?**
+    The Java signature accepts the unboxed primitive type (`long`), but the method name is mangled by the Kotlin compiler to prevent accidental calls. If a Java caller bypasses this, they lose the strong typing of `UserId` and can accidentally pass any `long`, nullifying the value class's type safety.
+
 ---
 
 ## Further Reading

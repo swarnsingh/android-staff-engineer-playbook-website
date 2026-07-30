@@ -508,6 +508,33 @@ When reviewing generics, I look for:
 11. Hilt fails to inject `Repo<User>` because Dagger sees the raw type. How do you work around it?
 12. Compose generic `LazyList<T>` — what makes the inferred stability *correct* vs *wrong* for the parameter `T`?
 
+## Answer Key
+
+1. **Walk through what bytecode the JVM sees for `List<String>` vs `List<Int>`. Why are they identical, and what does the IDE actually check?**
+   The JVM sees both as the raw type `java.util.List` due to type erasure; the generic parameters are stripped at compilation. The IDE and compiler check the type safety at compile time using the generic metadata, ensuring you only add `String`s to the first and `Int`s to the second, and inserting implicit casts when retrieving items.
+2. **Why does `if (x is List<String>)` fail to compile? How do you check at runtime if `x` is a list of strings?**
+   It fails because the `<String>` type argument is erased at runtime, so the JVM cannot verify if the list contains strings. You can check `if (x is List<*>)` to verify it's a list, but you must manually iterate and check the type of its elements (`x.all { it is String }`) to verify its contents.
+3. **Write a `reified` extension that deserializes JSON to `T`. Why does it have to be `inline`?**
+   `inline fun <reified T> fromJson(json: String): T = gson.fromJson(json, T::class.java)`. It must be `inline` because the compiler needs to copy the function body to every call site. By doing so, it can replace `T::class.java` with the actual concrete type used at that specific call site, bypassing runtime type erasure.
+4. **Explain the `<T : Any>` constraint. When is `<T>` (no bound) wrong?**
+   `<T : Any>` sets the upper bound of `T` to the non-nullable `Any`, ensuring `T` can never be a nullable type. Without it, the default bound is `<T : Any?>`, which allows nulls. Using unbounded `<T>` is wrong when your generic class or function cannot safely handle null values or requires a non-null type for reflection.
+5. **You need `Class<T>` inside a non-inline generic class. What's the workaround?**
+   You must require the caller to pass the `Class<T>` explicitly as a constructor parameter, storing it as a field for runtime use.
+6. **Why is `MutableList<Dog>` not assignable to `MutableList<Animal>` even though `Dog : Animal`? How does `out` fix it for read-only cases?**
+   `MutableList` is invariant because allowing the assignment would let you write an `Animal` (like a `Cat`) into a list that is supposed to only hold `Dog`s, corrupting it. Using `out Animal` (covariance) makes the list read-only; since you can only extract `Animal`s and cannot insert anything, it's safe to assign `List<Dog>` to `List<out Animal>`.
+7. **The `@Suppress("UNCHECKED_CAST")` warning — when is it dangerous and when is it acceptable?**
+   It is dangerous when the cast might fail at runtime due to type erasure (e.g., casting a raw `List` to `List<User>`), leading to a `ClassCastException` later when reading an element. It is acceptable when you can logically prove the cast is safe (e.g., inside a `ViewModelProvider.Factory` where you checked the class type, or when using type tokens).
+8. **Explain `<T> where T : Comparable<T>, T : Iterable<T>`. What does each bound contribute?**
+   This `where` clause requires `T` to satisfy *both* bounds simultaneously. `T` must be comparable to itself (allowing sorting or comparisons) AND `T` must be iterable (allowing it to be looped over in a `for` loop).
+9. **Walk through how `object : TypeToken<List<User>>() {}` captures the generic at runtime when normal erasure would lose it.**
+   Creating an anonymous subclass of `TypeToken` causes the Java compiler to embed the specific generic superclass signature (`TypeToken<List<User>>`) into the compiled `.class` file's metadata. At runtime, the `TypeToken` base class uses reflection (`getClass().getGenericSuperclass()`) to read this preserved metadata, bypassing standard instance-level type erasure.
+10. **`inline fun <reified T> Context.start(...)` for starting an Activity — what does this gain over passing `T::class.java`?**
+    It dramatically cleans up the call site. Instead of writing `start(DetailActivity::class.java)`, the caller simply writes `start<DetailActivity>()`, which is more idiomatic and concise, especially in DSLs.
+11. **Hilt fails to inject `Repo<User>` because Dagger sees the raw type. How do you work around it?**
+    You can use `@Qualifier` annotations to differentiate the bindings, or wrap the generic type in a concrete non-generic class (e.g., `class UserRepo @Inject constructor(...) : Repo<User>`), which Dagger can easily identify and inject.
+12. **Compose generic `LazyList<T>` — what makes the inferred stability *correct* vs *wrong* for the parameter `T`?**
+    If `T` is an interface or from an external module, Compose compiler assumes it is Unstable, causing unnecessary recompositions. If you know `T` is actually immutable or stable, the inferred instability is "wrong" for performance. You fix it by annotating the generic class representing `T` with `@Immutable` / `@Stable`, or by wrapping it in a stable container.
+
 ---
 
 ## Further Reading

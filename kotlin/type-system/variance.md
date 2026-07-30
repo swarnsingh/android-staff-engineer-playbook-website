@@ -406,6 +406,35 @@ When reviewing variance choices, I look for:
 12. Can a subclass widen variance compared to its parent class? Tighten? Why?
 13. `LiveData<T>` is invariant; `Flow<out T>` is covariant. Why might that be, given they both deliver values to observers?
 
+## Answer Key
+
+1. **Explain why `Dog[]` is a `Animal[]` in Java but `Box<Dog>` is *not* a `Box<Animal>` in Kotlin by default. What problem does the latter prevent?**
+   Java arrays are covariant by default, allowing a `Dog[]` to be assigned to an `Animal[]`. This requires the JVM to perform a runtime check on every array write to prevent inserting a `Cat` into what is actually a `Dog[]`. Kotlin generics are invariant by default to ensure compile-time type safety; preventing `Box<Dog>` from being used as `Box<Animal>` prevents accidental insertion of incompatible types without needing runtime checks.
+2. **Walk through what `out T` allows and forbids in a class body. Same for `in T`.**
+   `out T` (covariance) allows `T` to be used in output positions (return types, read-only properties) and forbids `T` in input positions (function parameters, mutable property setters). `in T` (contravariance) allows `T` in input positions and forbids it in output positions.
+3. **Why is `List<out E>` valid but `MutableList<out E>` impossible?**
+   `List` in Kotlin is a read-only interface, meaning it only produces `E` (returns it from methods like `get`). Thus, `out E` is safe. `MutableList` has methods like `add(element: E)` which consume `E` in an input position. If it were `out E`, you could assign a `MutableList<Dog>` to a `MutableList<Animal>` and add a `Cat`, breaking type safety.
+4. **Real example: you have `class Saver<T> { fun save(item: T) }`. Should it be `Saver<in T>`, `Saver<out T>`, or neither? Why?**
+   It should be `Saver<in T>`. The class only consumes `T` (it appears in the input position of `save`). By making it contravariant, a `Saver<Animal>` can safely be used wherever a `Saver<Dog>` is required, increasing the reusability of generic savers.
+5. **Walk through how `Resource<Nothing>` becomes assignable to `Resource<User>` via `out T` + `Nothing` being the bottom type.**
+   `Nothing` is the bottom type in Kotlin, meaning it is a subtype of every other type (including `User`). Because `Resource` is covariant (`out T`), the subtype relationship of the generic parameters is preserved for the generic class. Since `Nothing` is a subtype of `User`, `Resource<Nothing>` is a subtype of `Resource<User>`, making it safely assignable.
+6. **The function type `(Animal) -> Int` — what variance does each parameter have, and why?**
+   The parameter type (`Animal`) is contravariant (`in P`), meaning a function that can accept any `Animal` can safely be used where a function expecting a `Dog` is required. The return type (`Int`) is covariant (`out R`), meaning a function that returns an `Int` can safely be used where a function returning a `Number` is expected.
+7. **Comparator: `Comparator<in T>`. Why is `Comparator<Animal>` a valid `Comparator<Dog>`?**
+   `Comparator` consumes elements to compare them. A `Comparator<Animal>` knows how to compare any two animals. Since a `Dog` is an `Animal`, the comparator inherently knows how to compare two dogs. Thus, `Comparator` is contravariant (`in T`).
+8. **When would you need use-site variance (`MutableList<out Number>`) instead of declaration-site?**
+   You need use-site variance when the generic class itself must be invariant (like `MutableList`, which both reads and writes), but in a specific function or context, you only intend to read from it. Use-site projection `out Number` safely restricts that specific reference to read-only operations.
+9. **Java sees Kotlin's `out T` as `? extends T`. Why might this annoy Java consumers of your Kotlin SDK, and how do you fix it?**
+   It annoys Java consumers because it introduces verbose wildcard signatures (e.g., `List<? extends Animal>`) in their code, making it harder to implement interfaces or pass exact types. You fix this by using the `@JvmSuppressWildcards` annotation on the Kotlin SDK surface.
+10. **`@UnsafeVariance` — what does it do, and why should app developers avoid it while stdlib authors use it?**
+    `@UnsafeVariance` tells the compiler to ignore variance conflict errors (e.g., using an `out T` type in an `in` position). Stdlib authors use it for safe, internal implementations (like `List.indexOf(element: E)` where no mutation occurs). App developers should avoid it because it disables compile-time safety; incorrect usage leads to runtime `ClassCastException`.
+11. **PECS mnemonic — give a concrete example of each rule using Android-relevant types.**
+    Producer Extends (`out`): `Flow<out User>` only emits (produces) users, so it's safe to treat it as `Flow<Any>`. Consumer Super (`in`): `Observer<in User>` only receives (consumes) users, so an `Observer<Any>` can safely observe a user stream.
+12. **Can a subclass widen variance compared to its parent class? Tighten? Why?**
+    A subclass cannot widen variance (e.g., change an invariant parameter to covariant) because it would violate the parent's contract. It can tighten or preserve it (e.g., an `out T` parameter remains `out T`).
+13. **`LiveData<T>` is invariant; `Flow<out T>` is covariant. Why might that be, given they both deliver values to observers?**
+    `LiveData` is invariant because it is deeply tied to `MutableLiveData`, which allows both reading (`value`) and writing (`setValue`). Making it covariant would break `MutableLiveData`. `Flow` is a purely read-only stream of emissions (production), so it is safely covariant.
+
 ---
 
 ## Further Reading

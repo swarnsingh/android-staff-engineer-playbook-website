@@ -442,6 +442,33 @@ When reviewing delegation usage, I look for:
 11. `var theme by Delegates.observable("light") { _, old, new -> ... }` — does the callback fire before or after the assignment? How do you reject a value instead?
 12. Why does `lateinit` not work with `Int`? What's the delegation-based alternative?
 
+## Answer Key
+
+1. **Walk through what the compiler generates for `val name: String by lazy { "Alice" }`. Where does the value live? When does the lambda run?**
+   The compiler generates a hidden backing field `private val name$delegate: Lazy<String> = lazy { "Alice" }`. The property `val name: String` has its getter overridden to call `name$delegate.getValue(this, ::name)`. The value lives inside the `Lazy` object instance. The lambda runs exactly once on the first time `name` is accessed.
+2. **What are the three `LazyThreadSafetyMode` options? When would you choose each one?**
+   1) `SYNCHRONIZED` (default): Uses a lock to ensure only one thread computes the value. Use when accessed across multiple threads. 2) `PUBLICATION`: Multiple threads can execute the lambda concurrently, but only the first returned value is kept and shared. Use when initialization is expensive but idempotent and lock contention is undesirable. 3) `NONE`: No synchronization. Use when guaranteed to be accessed from a single thread (like the Android Main thread) to avoid locking overhead.
+3. **You have a class implementing two interfaces via class delegation, and both interfaces have a method `fun ping()`. What does the compiler force you to do?**
+   The compiler forces you to explicitly override the `ping()` method to resolve the diamond ambiguity. You must decide which delegate's method to call (e.g., `a.ping()`, `b.ping()`, or both) because it refuses to guess which one should take precedence.
+4. **Why is `class Screen(var tracker: Analytics) : Analytics by tracker` a bug? Walk through the failure scenario.**
+   The compiler captures the reference to `tracker` at construction time and stores it in a hidden, immutable delegate field. If you later reassign `screen.tracker = NewAnalytics()`, the `tracker` property changes, but the hidden delegate field routing the interface methods does not. Calls to `Analytics` methods on `screen` will silently continue to route to the original `tracker` instance.
+5. **Custom delegate: implement `ReadWriteProperty<Any?, String>` for a SharedPreferences-backed string. What's the perf concern in production?**
+   The performance concern is that every time the property is read (e.g., `settings.theme`), it triggers a synchronous disk read (`prefs.getString(...)`). If accessed in a tight loop or a UI hot path (like `onDraw` or Compose recomposition), this will cause severe UI jank. I/O should not be hidden behind innocent-looking property getters.
+6. **Compare `by viewModels()` vs `by activityViewModels()` vs `by hiltNavGraphViewModels()`. When do you pick each?**
+   `by viewModels()` scopes the ViewModel to the current Fragment/Activity. `by activityViewModels()` scopes it to the host Activity, making it a shared singleton for all Fragments in that Activity (useful for communicating between Fragments). `by hiltNavGraphViewModels(id)` scopes it to a specific Navigation Graph, keeping the ViewModel alive as long as the graph is on the back stack (useful for multi-screen flows).
+7. **Why does `by lazy { 5 }` for a single `Int` field harm performance vs `val x = 5`?**
+   `by lazy { 5 }` allocates an extra `Lazy` wrapper object on the heap, requires a lambda allocation, and incurs synchronized locking overhead on the first read. `val x = 5` simply assigns a primitive integer. In hot paths, multiplying those wrapper allocations causes unnecessary GC pressure.
+8. **Why does the `by` keyword (class delegation) only work with interfaces, not abstract classes?**
+   Kotlin runs on the JVM, which enforces single class inheritance. If a class could delegate to an abstract class, it would effectively be a form of multiple inheritance of state/implementation, which the JVM bytecode doesn't support. Interfaces can be implemented multiply, so the compiler can easily generate forwarding methods for them.
+9. **In Compose, what's the difference between `var x by mutableStateOf(0)` inside vs outside a `remember { }` block?**
+   Without `remember`, the `mutableStateOf(0)` is re-executed on every recomposition, completely resetting the state back to `0` every time the Composable updates. When wrapped in `remember { }`, the state object is cached across recompositions, preserving the mutated value over time.
+10. **Walk through how `provideDelegate` differs from a normal delegate. When do you need it?**
+    A normal delegate provides its behavior when the property is read/written. `provideDelegate` is an operator called *exactly once* during the host object's instantiation, and it receives the `KProperty` metadata before returning the actual delegate. You need it when you want to perform one-time initialization logic, validation, or registration using the property's name.
+11. **`var theme by Delegates.observable("light") { _, old, new -> ... }` — does the callback fire before or after the assignment? How do you reject a value instead?**
+    The callback fires *after* the assignment is completed. To reject a value before it is assigned, you must use `Delegates.vetoable(...)`, which takes a callback returning a `Boolean`. If the callback returns `false`, the assignment is aborted and the old value is kept.
+12. **Why does `lateinit` not work with `Int`? What's the delegation-based alternative?**
+    `lateinit` is implemented on the JVM by leaving the object reference as `null` until initialized, and inserting null-checks before every access. Primitives like `Int` cannot be null on the JVM, so this mechanism fails. The alternative is property delegation: `var age: Int by Delegates.notNull()`.
+
 ---
 
 ## Further Reading

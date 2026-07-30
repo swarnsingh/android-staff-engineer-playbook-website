@@ -470,6 +470,33 @@ When reviewing a data class PR, I check for:
 11. Compare `data class` vs `value class` (inline class). When is each the right choice?
 12. A team's `data class HomeUiState` has 35 properties. What questions do you ask before they go further?
 
+## Answer Key
+
+1. **List the 5 methods the compiler generates for a `data class`. What does each enable?**
+   1) `equals(other)`: Enables structural (value) equality based on primary constructor properties. 2) `hashCode()`: Enables correct usage as keys in hash-based collections (`HashMap`, `HashSet`). 3) `toString()`: Enables readable string representations. 4) `copy(...)`: Enables creating a mutated clone while leaving the original immutable. 5) `componentN()`: Enables positional destructuring declarations (e.g., `val (id, name) = user`).
+2. **A `HashSet<User>` contains `User("1", "Alice")`. The application mutates `user.name = "Alex"`. Does `contains` still find it? Why or why not?**
+   It no longer finds it. Mutating the `name` property changes the object's `hashCode()`. The `HashSet` originally placed the object in a bucket based on the hash of "Alice". When `contains` is called, it searches the bucket for the hash of "Alex", which doesn't match, resulting in a false negative. This is why data classes should only use `val`.
+3. **Why does putting a `ByteArray` in a data class break structural equality?**
+   The generated `equals` method simply calls `.equals()` on every property. For arrays on the JVM, `.equals()` compares memory references, not contents. Thus, two `Payload` instances with identical `ByteArray` contents will have different references and evaluate to `false` when compared.
+4. **Walk through the silent bug when destructuring `data class LatLng(val lat: Double, val lng: Double)` as `val (lng, lat) = location`.**
+   Destructuring in Kotlin is positional, bound to `component1()` and `component2()`. The compiler assigns `lat` (component 1) to the first variable declared (named `lng`), and `lng` (component 2) to the second variable (named `lat`). Because both are `Double`, it compiles perfectly, but the values are silently swapped, causing logic errors.
+5. **What happens to Compose recomposition if your `UiState` data class contains a `List<Item>` and you don't annotate it `@Immutable`?**
+   Compose treats `List` as unstable (because `java.util.List` can be mutated). Because the data class contains an unstable field, Compose marks the entire data class as unstable. It will no longer trust value equality to skip recomposition, meaning every state emission will force a full, expensive recomposition of the UI tree, even if the data hasn't changed.
+6. **Why is using `var` inside a data class an architectural smell that breaks `HashMap`?**
+   `var` allows the properties that define the object's identity to change after instantiation. If the object is used as a key in a `HashMap` or element in a `HashSet`, mutating a `var` alters the `hashCode()`. The object becomes "lost" in the collection because its new hash maps to the wrong internal bucket. Data classes imply value semantics, and values should be immutable.
+7. **`data class Cart(val items: List<String>)` — calling `.copy()` produces an independent list, true or false? Walk through.**
+   False. `.copy()` performs a shallow copy. It creates a new `Cart` instance but simply passes the memory reference of the existing `items` list into the new constructor. Both the original and copied `Cart` point to the exact same list instance in memory.
+8. **Compare a `data class` Room entity with one written as a normal class. When does identity-equality matter more than value-equality?**
+   A normal class with a custom `equals` can define equality solely based on its primary key (e.g., `id`). A `data class` compares every field. If you fetch a user row, update their name, and compare it to the old row, a `data class` says they are different, while an identity-based class says they are the same entity. Identity-equality matters when tracking object persistence or updates; value-equality matters when rendering immutable snapshots (like `UiState`).
+9. **Your SDK publishes `data class Config(val timeout: Int)`. The next minor version adds `val retries: Int`. What breaks for Java consumers?**
+   Adding a new property to the primary constructor modifies the constructor signature. Java consumers using positional arguments (`new Config(5000)`) will experience a binary compatibility break (a `NoSuchMethodError`) because the single-argument constructor no longer exists. You must provide `@JvmOverloads` or a Builder pattern to preserve the old signature.
+10. **Why are data classes forbidden from being `open` or extending another class?**
+    Extending a data class breaks the symmetry and transitivity contracts of `equals()`. If `Sub(x=1, y=2)` extends `Base(x=1)`, comparing `Base(1) == Sub(1, 2)` would be true (Base only checks `x`), but `Sub(1, 2) == Base(1)` would be false (Sub expects `y` to exist). To prevent contract violations, Kotlin forbids inheritance for data classes.
+11. **Compare `data class` vs `value class` (inline class). When is each the right choice?**
+    `data class` is for grouping multiple properties together with generated equality and copying semantics. `value class` (inline class) is for wrapping a single primitive or type (e.g., `value class Password(val s: String)`) to provide type safety without the runtime overhead of allocating a wrapper object, as it is erased to the underlying type at compile time.
+12. **A team's `data class HomeUiState` has 35 properties. What questions do you ask before they go further?**
+    I ask: "How often is this state updated?", "Are we allocating a new 35-property object 60 times a second on scroll?", and "Can we logically group these properties into smaller composed sub-states?" Massive data classes cause excessive GC pressure on `copy()` and trigger wider-than-necessary Compose recompositions.
+
 ---
 
 ## Further Reading
