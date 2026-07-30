@@ -1,461 +1,466 @@
 # Swift Interop, SKIE, and Swift Export
 
-> The #1 reason iOS teams reject KMP is not the shared logic — it's the *API surface*. When a Kotlin `sealed class` becomes an un-exhaustive Objective-C class hierarchy, when a `StateFlow` becomes an opaque generic that SwiftUI can't observe, when default arguments vanish — the iOS engineer rightfully declares the API unusable. A Staff engineer must understand every translation failure in the Objective-C bridge and know how to fix each one, either with SKIE or architectural wrappers.
+An iOS team experiences a Kotlin Multiplatform module through its exported API, not through the elegance of its Kotlin implementation. A boundary that leaks awkward names, erased types, unmanaged collectors, or surprising error behavior can make otherwise useful shared code expensive to adopt.
+
+This chapter separates three paths that are easy to conflate:
+
+1. the established Kotlin/Native Objective-C export consumed from Swift;
+2. SKIE-generated Swift wrappers layered onto that export; and
+3. Kotlin 2.4 Swift export, which is a separate Alpha integration path.
+
+The right choice is a product and distribution decision. It is not simply “use the newest bridge.”
 
 ---
 
-## Overview
+## Start With the Export Path
 
-Kotlin/Native does not compile to Swift. It compiles to native machine code and exposes the public API surface via an **Objective-C header** (`.h`). Swift then imports this header through the standard Objective-C-to-Swift bridge that Apple provides.
+| Path | Appropriate when | Main constraint |
+|---|---|---|
+| Objective-C export | The module must use the established Apple framework and XCFramework toolchain, or needs the smallest dependency surface | Swift receives only what Objective-C can represent |
+| Objective-C export + explicit wrappers | The public API is small and the iOS team wants to own a stable, hand-designed Swift facade | Wrapper lifecycle and parity are application responsibilities |
+| Objective-C export + SKIE | A framework consumer needs typed Flow, cancellable suspend calls, exhaustive sealed handling, or selected Swift conveniences at scale | Compiler-plugin compatibility and generated API changes must be governed |
+| Swift export | The app uses direct Xcode integration and can evaluate an Alpha feature behind a controlled boundary | It is incomplete, can change, and does not yet fit every distribution model or type shape |
 
-This architecture means every Kotlin type must first be representable in Objective-C, and then Objective-C must be representable in Swift. Any Kotlin feature that has no Objective-C equivalent is **lost in translation**.
-
-```text
-Kotlin Source → Kotlin/Native Compiler → ARM64 machine code
-                                       → Objective-C header (.h)
-                                                ↓
-Swift sees the Objective-C header → Swift bridge → usable in SwiftUI
-```
+Do not choose per function. Pick an export strategy per shipped module, define its public-API rules, and compile a representative Swift consumer in CI.
 
 ---
 
-## The Translation Failures (Comprehensive)
+## The Established Objective-C Bridge
 
-### 1. Sealed Classes → No Exhaustive `switch`
+Kotlin/Native can compile a Kotlin module into an Apple framework. Its exported declarations are represented in an Objective-C header; Swift imports that API through Apple's Objective-C interoperability.
 
-**In Kotlin:**
+```mermaid
+flowchart LR
+    kotlin["Public Kotlin declarations"] --> native["Kotlin/Native compiler"]
+    native --> binary["Native framework binary"]
+    native --> header["Objective-C header"]
+    header --> importer["Swift Objective-C importer"]
+    importer --> swift["Swift call site"]
+    limits["Objective-C type and naming rules"] -. constrain .-> header
+```
+
+The takeaway: Swift cannot recover Kotlin semantics that were not representable in the intermediate Objective-C API. Inspecting only Kotlin source is therefore not enough; review the generated header and the Swift call site.
+
+### Common mappings and losses
+
+| Kotlin surface | Swift through Objective-C export | Design consequence |
+|---|---|---|
+| `class` | class | Keep exported inheritance deliberately small |
+| `interface` | protocol | Avoid leaking implementation-oriented protocols |
+| `enum class` | class-like API | Do not assume a native exhaustive Swift `switch` |
+| sealed hierarchy | related classes | Swift has no compiler-proven exhaustiveness |
+| `object` | class with `shared` instance | Document singleton ownership explicitly |
+| `suspend fun` | completion-handler API, with an experimental Swift `async` import | Test error and cancellation behavior at the boundary |
+| `@Throws fun` | Swift `throws` / Objective-C `NSError**` | Declare the expected exception contract |
+| default argument | required parameter | Add a deliberate overload or Swift facade when omission matters |
+| `List`, `Set`, `Map` | Apple collection equivalents | Conversion to Swift-native collections can copy data |
+| generic class | Objective-C lightweight generic where representable | Some nullability, variance, bounds, function, and interface generic information is lost |
+| inline/value class | not properly exposed as the Kotlin abstraction | Prefer a boundary DTO or primitive with semantic naming |
+
+“Generics are erased” is too broad. Objective-C lightweight generics preserve useful information for some generic classes, but Objective-C cannot express the full Kotlin or Swift type system. Treat nested generic graphs and generic interfaces as warning signs, then inspect the generated API instead of guessing.
+
+### Shape names intentionally
+
+Use the Kotlin interop annotations to control what becomes public:
+
 ```kotlin
-sealed class NetworkResult {
-    data class Success(val data: String) : NetworkResult()
-    data class Error(val code: Int, val message: String) : NetworkResult()
-    data object Loading : NetworkResult()
+@ObjCName(swiftName = "CheckoutService")
+class CheckoutApi {
+    fun quote(cartId: String): CheckoutQuote = TODO()
+
+    @ShouldRefineInSwift
+    fun rawQuotePayload(cartId: String): ByteArray = TODO()
 }
+
+@HiddenFromObjC
+fun internalRetryPolicy(): RetryPolicy = TODO()
 ```
 
-**What Objective-C generates:**
-```objc
-__attribute__((objc_subclassing_restricted))
-@interface SharedCodeNetworkResultSuccess : SharedCodeNetworkResult
-@property (readonly) NSString *data;
-@end
+- `@ObjCName` supplies a consumer-oriented exported name.
+- `@ShouldRefineInSwift` marks a declaration as a low-level entry point intended to sit behind a Swift wrapper.
+- `@HiddenFromObjC` removes a public Kotlin declaration from Objective-C export, and therefore from Swift through that bridge, while allowing it to remain public to other Kotlin modules.
+- `internal` is preferable when no other Kotlin module needs the declaration.
 
-__attribute__((objc_subclassing_restricted))
-@interface SharedCodeNetworkResultError : SharedCodeNetworkResult
-@property (readonly) int32_t code;
-@property (readonly) NSString *message;
-@end
+Export KDoc for behavior that a Swift caller must understand, but verify its generated Xcode presentation. Not every KDoc block tag is supported.
 
-// Loading is just a property on the companion object — not a real subclass
-```
+### Errors are part of the ABI
 
-**What Swift sees:**
-```swift
-func handle(result: NetworkResult) {
-    // NO exhaustive switch! Swift doesn't know this is sealed.
-    // Must use `if let` chains or add a `default:` case.
-    if let success = result as? NetworkResultSuccess {
-        print(success.data)
-    } else if let error = result as? NetworkResultError {
-        print(error.message)
-    } else {
-        // What is this? Loading? Something else?
-        // Swift has NO compiler guarantee that you've handled all cases.
-    }
-}
-```
+Kotlin exceptions are unchecked; Swift errors are checked. Under Objective-C export:
 
-**The real danger:** If a Kotlin engineer adds a new `data class Timeout : NetworkResult()`, the Swift code silently falls through to the `else` branch. No compiler warning. Silent bug in production.
+- a non-suspending function needs `@Throws` to become a Swift `throws` function;
+- an exception listed by `@Throws`, or its subclass, is converted to `NSError`;
+- an unexpected Kotlin exception crossing the boundary terminates the process;
+- a suspending export always has an error channel, but without `@Throws` only `CancellationException` is propagated as an error.
 
-### 2. `suspend fun` → Broken Cancellation
-
-**In Kotlin:**
 ```kotlin
-class UserRepository {
-    suspend fun fetchUser(id: String): User {
-        return httpClient.get("users/$id").body()
-    }
-}
+@Throws(CheckoutException::class)
+fun validate(order: Order): Receipt = validator.validate(order)
+
+@Throws(CheckoutException::class, CancellationException::class)
+suspend fun submit(order: Order): Receipt = repository.submit(order)
 ```
 
-**What Swift sees:**
-```swift
-// Swift correctly translates this to async/throws
-func fetchUser(id: String) async throws -> User
-```
+Do not expose a large implementation exception hierarchy. Translate internal failures into a small, documented boundary contract and test the exact Swift error cases.
 
-This looks perfect, but there's a critical bug: **cancellation doesn't propagate**.
+### Suspend is not automatically structured concurrency
+
+The Swift compiler can import the Objective-C completion-handler form of a Kotlin `suspend` function with `async` syntax. That syntax does not by itself connect Swift `Task` cancellation to the Kotlin coroutine `Job`.
 
 ```swift
-// Swift code
 let task = Task {
-    let user = try await repository.fetchUser(id: "123")
-    updateUI(user)
+    let receipt = try await checkout.submit(order: order)
+    await render(receipt)
 }
 
-// Later, user navigates away:
 task.cancel()
-
-// PROBLEM: The Swift Task is cancelled, but the Kotlin coroutine
-// inside fetchUser() continues running! The network request is
-// NOT cancelled. The response is fetched, deserialized, and then
-// discarded. Battery and bandwidth wasted.
 ```
 
-**Why:** Swift's `Task.cancel()` sets a cancellation flag on the Swift `Task`. But the Kotlin coroutine is managed by a separate `Job` hierarchy. The Objective-C bridge does not wire Swift's cancellation flag to Kotlin's `Job.cancel()`. They are two independent cancellation systems.
+With the plain Objective-C bridge, do not infer that `task.cancel()` cancels the in-flight Kotlin work. If cancellation matters, use an explicit cancellable API, a verified interop layer such as SKIE, or evaluate Swift export's structured-concurrency path. Test cancellation with an observable underlying operation rather than only checking `Task.isCancelled`.
 
-### 3. `StateFlow` → Opaque Generic (No SwiftUI Observation)
+### Flow needs a lifecycle owner
 
-**In Kotlin:**
+`Flow<T>` and `StateFlow<T>` are Kotlin interfaces; plain Objective-C export does not turn them into typed Swift `AsyncSequence` values. A manual facade should return an explicit cancellation handle and avoid making Swift know how Kotlin collection works:
+
 ```kotlin
-class CheckoutViewModel {
-    private val _state = MutableStateFlow(CheckoutState())
-    val state: StateFlow<CheckoutState> = _state.asStateFlow()
+class Observation internal constructor(
+    private val job: Job,
+) {
+    fun cancel() = job.cancel()
 }
-```
 
-**What Swift sees:**
-```swift
-// state is of type Kotlinx_coroutines_coreStateFlow
-// This is a generic Objective-C class. SwiftUI cannot observe it.
+class CheckoutPresenter(
+    private val scope: CoroutineScope,
+) {
+    private val state: StateFlow<CheckoutState> = TODO()
 
-// This DOES NOT WORK:
-struct CheckoutScreen: View {
-    @StateObject var viewModel = CheckoutViewModel()  // ❌ Not ObservableObject
-    
-    var body: some View {
-        Text(viewModel.state.value.totalPrice)  // ❌ value is untyped KotlinBase
+    fun observeState(onEach: (CheckoutState) -> Unit): Observation {
+        val job = scope.launch {
+            state.collect { onEach(it) }
+        }
+        return Observation(job)
     }
 }
 ```
-
-**The manual wrapper (without SKIE):**
-To make this work, the iOS engineer must write a bridging class for every single ViewModel:
 
 ```swift
 @MainActor
-class CheckoutViewModelWrapper: ObservableObject {
-    private let kotlinVM = CheckoutViewModel()
-    @Published var state = CheckoutState.companion.initial
-    private var job: Kotlinx_coroutines_coreJob? = nil
-    
-    init() {
-        // Manually subscribe to the StateFlow using Kotlin's collect
-        job = FlowUtilsKt.collect(kotlinVM.state) { [weak self] newState in
-            guard let self = self, let state = newState as? CheckoutState else { return }
-            DispatchQueue.main.async {
-                self.state = state
-            }
+final class CheckoutModel: ObservableObject {
+    @Published private(set) var state: CheckoutState
+    private var observation: Observation?
+
+    init(presenter: CheckoutPresenter, initial: CheckoutState) {
+        state = initial
+        observation = presenter.observeState { [weak self] next in
+            _ = Task { @MainActor in self?.state = next }
+            return KotlinUnit()
         }
     }
-    
+
     deinit {
-        job?.cancel(cause: nil)  // If you forget this → memory leak!
+        observation?.cancel()
     }
 }
 ```
 
-This is 25 lines of fragile boilerplate for **every single ViewModel**. In a large app with 30 ViewModels, this becomes 750 lines of pure bridge code. iOS engineers rightfully hate this.
-
-### 4. Default Arguments → Vanished
-
-**In Kotlin:**
-```kotlin
-fun search(
-    query: String,
-    limit: Int = 20,
-    offset: Int = 0,
-    includeInactive: Boolean = false
-)
-```
-
-**What Swift sees:**
-```swift
-// ALL parameters are required — no defaults!
-func search(query: String, limit: Int32, offset: Int32, includeInactive: Bool)
-
-// iOS engineer must write:
-repository.search(query: "shoes", limit: 20, offset: 0, includeInactive: false)
-// Instead of the ergonomic:
-repository.search(query: "shoes")  // ❌ ERROR: Missing arguments
-```
-
-### 5. Kotlin Generics → Type Erasure
-
-**In Kotlin:**
-```kotlin
-class DataResult<T>(val data: T, val metadata: Map<String, Any>)
-```
-
-**What Swift sees:**
-```swift
-// T is erased to Any (KotlinBase in Objective-C)
-class DataResult : KotlinBase {
-    var data: Any { get }  // Not T! Just Any.
-    // iOS engineer must cast: let user = result.data as! User
-}
-```
-
-### 6. Kotlin `object` → Singleton with `.shared`
-
-**In Kotlin:**
-```kotlin
-object Analytics {
-    fun track(event: String) { /* ... */ }
-}
-```
-
-**What Swift sees:**
-```swift
-// Access via .shared (Objective-C singleton pattern)
-Analytics.shared.track(event: "checkout_started")
-// NOT Analytics.track(event:) — the .shared is mandatory
-```
+This is a boundary pattern, not a universal drop-in implementation. The Kotlin owner must define scope lifetime, dispatcher behavior, backpressure, and terminal errors. The Swift owner must cancel the handle and avoid a retain cycle.
 
 ---
 
-## SKIE (Swift Kotlin Interface Enhancer)
+## SKIE on the Objective-C Export Path
 
-**SKIE** (by Touchlab) is a Kotlin compiler plugin that intercepts the framework generation process. Instead of only producing an Objective-C header, SKIE **also generates native Swift wrapper code** that fixes every translation failure above.
+SKIE is a Kotlin/Native compiler plugin from Touchlab. It generates and bundles Swift wrappers around the Objective-C API produced by Kotlin/Native; it does not replace the underlying framework distribution path.
 
-### Setup
+Apply it only to modules that create Apple frameworks, and select a version compatible with the project's Kotlin version:
 
 ```kotlin
-// shared/build.gradle.kts
 plugins {
-    id("co.touchlab.skie") version "0.9.0"
+    id("co.touchlab.skie") version "0.10.14"
 }
+```
 
-skie {
-    features {
-        // Enable all fixes
-        enableSwiftUIObservingPreview = true
+The version above matches the current official installation example. Do not copy it indefinitely: check the official installation, compatibility, migration, and changelog pages during each Kotlin upgrade.
+
+### What SKIE can improve
+
+- `Flow`, `StateFlow`, and `MutableStateFlow` become typed Swift `AsyncSequence` wrappers with two-way cancellation.
+- suspend functions receive native Swift async wrappers with two-way cancellation and no main-thread-only call restriction.
+- Kotlin sealed classes and interfaces receive generated Swift enum wrappers for exhaustive switching through `onEnum(of:)`.
+- Kotlin enums can be presented as Swift enums.
+- selected global functions, interface extensions, and overloads receive more idiomatic Swift entry points.
+- default-argument overloads can be generated when explicitly enabled.
+- project-authored Swift wrapper code can be bundled with the framework.
+
+Default-argument generation is disabled by default because combinations can create many generated functions. Enable it selectively for a small consumer-facing surface rather than for an entire dependency graph.
+
+### Typed Flow consumption
+
+Suppose the exported Kotlin facade exposes a public, read-only state stream:
+
+```kotlin
+class CheckoutStore {
+    private val mutableState = MutableStateFlow(CheckoutState.initial())
+    val state: StateFlow<CheckoutState> = mutableState.asStateFlow()
+}
+```
+
+SKIE lets the Swift adapter collect that property as a typed sequence:
+
+```swift
+@MainActor
+final class CheckoutModel: ObservableObject {
+    @Published private(set) var state: CheckoutState
+    private let store: CheckoutStore
+
+    init(store: CheckoutStore, initial: CheckoutState) {
+        self.store = store
+        self.state = initial
+    }
+
+    func activate() async {
+        for await next in store.state {
+            state = next
+        }
     }
 }
 ```
 
-### What SKIE Fixes (With Before/After Code)
-
-#### Fix 1: Exhaustive Sealed Classes
-
-SKIE generates a native Swift enum that mirrors the Kotlin sealed class:
-
 ```swift
-// WITH SKIE — Exhaustive switch!
-switch onEnum(of: result) {
-case .success(let success):
-    print(success.data)
-case .error(let error):
-    print(error.message)
-case .loading:
-    print("Loading...")
-}
-// If Kotlin adds a new subclass → Swift compiler error! ✅
-```
-
-#### Fix 2: Coroutine Cancellation Propagation
-
-SKIE bridges Swift `Task` cancellation to Kotlin `Job` cancellation:
-
-```swift
-// WITH SKIE
-let task = Task {
-    let user = try await repository.fetchUser(id: "123")
-    updateUI(user)
-}
-
-task.cancel()
-// ✅ The Kotlin coroutine's Job is ALSO cancelled.
-// ✅ The network request is aborted.
-// ✅ No wasted battery or bandwidth.
-```
-
-#### Fix 3: StateFlow → AsyncSequence
-
-SKIE converts `StateFlow` to Swift's native `AsyncSequence`, which SwiftUI can observe directly:
-
-```swift
-// WITH SKIE — No wrapper class needed!
 struct CheckoutScreen: View {
-    let viewModel = CheckoutViewModel()
-    @State private var state = CheckoutState.companion.initial
-    
+    @StateObject private var model: CheckoutModel
+
+    init(model: CheckoutModel) {
+        _model = StateObject(wrappedValue: model)
+    }
+
     var body: some View {
-        VStack {
-            Text(state.totalPrice.description)
-        }
-        .task {
-            // StateFlow is now an AsyncSequence!
-            for await newState in viewModel.state {
-                self.state = newState
-            }
-            // When the View disappears, .task cancels automatically,
-            // which cancels the Kotlin Job. Zero leaks.
-        }
+        CheckoutContent(state: model.state)
+            .task { await model.activate() }
     }
 }
 ```
 
-#### Fix 4: Default Arguments Restored
+SwiftUI cancels the task created by `.task` when its lifetime ends; SKIE bridges that cancellation to the Kotlin collection. The observable Swift model still owns presentation adaptation—the bridge does not make a Kotlin class conform to `ObservableObject` automatically.
+
+### Sealed hierarchy consumption
 
 ```swift
-// WITH SKIE
-repository.search(query: "shoes")  // ✅ limit=20, offset=0, includeInactive=false
-repository.search(query: "shoes", limit: 50)  // ✅ offset=0, includeInactive=false
+switch onEnum(of: paymentResult) {
+case .authorized(let value):
+    showReceipt(value.receipt)
+case .declined(let value):
+    showDecline(value.reason)
+case .pending:
+    showPending()
+}
 ```
 
-### SKIE Under the Hood
+Adding a new sealed subtype changes the generated wrapper and makes an exhaustive Swift switch fail to compile. This is useful only if the generated Swift client is compiled in the same change; otherwise the incompatibility is discovered too late.
 
-SKIE operates at the **Kotlin compiler backend** level:
+### Operational tradeoffs
 
-```mermaid
-flowchart TD
-    source["Kotlin source"] --> fir["K2 frontend (FIR)"]
-    fir --> native["Kotlin/Native backend"]
-    native --> skie["SKIE compiler plugin intercepts backend output"]
-    skie --> header["Standard .h header<br/>compatibility path"]
-    skie --> swift["Generated Swift adapters"]
-    swift --> sealed["sealed class to Swift enum wrapper"]
-    swift --> flow["StateFlow to AsyncSequence adapter"]
-    swift --> suspend["suspend function to cancellable async bridge"]
-    swift --> defaults["default arguments to Swift overloads"]
-    header --> framework["Final XCFramework<br/>header and compiled Swift adapters"]
-    swift --> framework
-```
+SKIE changes the generated Swift-facing API and participates in Kotlin compiler/framework generation. Govern it like build infrastructure:
 
-The generated Swift files are compiled directly into the framework binary. The iOS engineer doesn't see them — they just see a clean, idiomatic Swift API.
-
-### SKIE Performance Considerations
-
-SKIE adds to the framework compilation time:
-- **Small project (20 public Kotlin classes):** +2-3 seconds
-- **Large project (200+ public Kotlin classes):** +10-15 seconds
-- **Binary size impact:** +50-200 KB per sealed class wrapper
-
-For CI pipelines, this is negligible. For local development with Direct Xcode Integration, it's noticeable but acceptable.
+1. pin Kotlin, SKIE, Gradle, and Xcode versions;
+2. read SKIE's compatibility matrix and changelog before upgrades;
+3. migrate an existing framework using the documented migration guide;
+4. compile representative Swift consumers and archive the framework in CI;
+5. inspect known limitations, including custom cinterop types and lambda types nested in generic arguments;
+6. measure build time and artifact size in your project instead of publishing invented universal numbers.
 
 ---
 
 ## Swift Export in Kotlin 2.4
 
-Kotlin 2.4 promotes Swift export to **Alpha**. Instead of exposing Kotlin only through Objective-C headers, the compiler can generate Swift-facing modules so Swift code can call Kotlin APIs more idiomatically.
+Kotlin 2.4 promotes Swift export to **Alpha**. It exports Kotlin sources into Swift-facing modules with support for module names, packages, type aliases, improved primitive nullability, overloads, suspending functions, and `Flow` as `AsyncSequence`.
 
-This changes the recommendation. Swift export is no longer just future theory, and Flow interop is no longer only available through third-party adapters. However, Alpha still means incomplete behavior and possible breaking changes, so production teams need a deliberate migration plan.
+Alpha means the behavior is incomplete and breaking changes are expected. The current official setup supports projects using direct Xcode integration; do not present it as a drop-in replacement for every CocoaPods, Swift Package, framework, or XCFramework delivery pipeline.
 
-### Architecture Comparison
-
-```text
-Objective-C bridge:
-  Kotlin → Obj-C Header → Swift Bridge → Swift Code
-
-Swift export:
-  Kotlin → Swift Module (.swiftmodule) → Swift Code
-
-What's eliminated:
-  - Obj-C header generation
-  - Swift-to-Obj-C bridge overhead
-  - Many Objective-C bridge limitations around naming, nullability, async APIs, and Flow interop
-```
-
-### What Swift Export Enables
-
-| Feature | Objective-C bridge | Kotlin 2.4 Swift export |
-|---|---|---|
-| Module shape | One framework with Objective-C naming artifacts | Swift modules with module naming and package preservation options |
-| Nullability | Boxed primitives for nullable values | Better Swift nullability for primitives |
-| Overloads | Often awkward or renamed | Supported more directly |
-| `suspend fun` | Completion-handler style bridge | Swift `async` counterpart |
-| `Flow<T>` | Opaque without wrappers/adapters | Exported as Swift `AsyncSequence` via `asAsyncSequence()` |
-| Type aliases | Usually erased through bridge | Preserved in Swift |
-| Generic types | Often erased or awkward | Still limited; generic type parameters are generally type-erased to upper bounds |
-| Swift inheritance | Not a natural fit | Cross-language inheritance is still unsupported |
-
-### Flow Export to `AsyncSequence`
-
-Kotlin 2.4 can export public APIs that use `kotlinx.coroutines.flow.Flow` while preserving the element type.
+### Gradle and Xcode integration
 
 ```kotlin
-// Kotlin
-fun observeMessages(): Flow<Message> = repository.observeMessages()
-```
+kotlin {
+    iosArm64()
+    iosSimulatorArm64()
 
-```swift
-// Swift
-Task {
-    do {
-        for try await message in shared.observeMessages().asAsyncSequence() {
-            self.messages.append(message)
+    swiftExport {
+        moduleName = "Shared"
+        flattenPackage = "com.example.shared"
+
+        export(project(":checkout")) {
+            moduleName = "Checkout"
+            flattenPackage = "com.example.checkout"
         }
-    } catch is CancellationError {
-        // Normal task cancellation.
-    } catch {
-        // Surface as state or telemetry.
     }
 }
 ```
 
-Important operational details:
+For direct integration, the Xcode run-script phase uses the generated embed task:
 
-- Flow export is enabled by default for Swift export.
-- Swift sees the stream as `AsyncSequence`, which fits Swift structured concurrency.
-- By default, exported suspend functions and `asAsyncSequence()` run Kotlin code on `Dispatchers.Default`.
-- If Main confinement is required, switch dispatcher in Kotlin with `withContext(Dispatchers.Main)`.
-- Swift task cancellation must still cancel the collection; the interop layer does not make event delivery durable.
+```shell
+./gradlew :shared:embedSwiftExportForXcode
+```
 
-### Staff Recommendation
+The compiler produces the Swift modules and native artifacts required by that integration. Keep the experiment isolated enough that an Alpha DSL or mapping change does not churn the entire iOS application.
 
-Use a two-track strategy:
+### Current mapping strengths
 
-1. Keep SKIE or explicit wrappers for production modules where you already depend on stable generated Swift APIs.
-2. Evaluate Kotlin 2.4 Swift export in a sample or non-critical module, especially for shared Flow APIs and suspend functions.
-3. Design public KMP APIs as if Swift engineers are first-class consumers: stable names, simple DTOs, explicit errors, no leaked internal coroutine types.
-4. Do not expose important one-off UI events as `SharedFlow` just because Swift can now collect Flow. The StateFlow/SharedFlow delivery semantics are unchanged across the bridge.
+| Kotlin declaration | Swift export result |
+|---|---|
+| package | nested Swift enums, optionally flattened |
+| module | separately named Swift module |
+| `typealias` | Swift type alias |
+| overloaded function | directly callable overload |
+| `suspend fun` | Swift `async` counterpart |
+| `Flow<T>` | typed `AsyncSequence` via `asAsyncSequence()` |
+| nullable primitive | native Swift optional primitive mapping |
+| `enum class` | native Swift enum |
+| `object` | class with a static `shared` accessor |
+
+```kotlin
+fun observeMessages(): Flow<Message> = repository.observeMessages()
+```
+
+```swift
+Task {
+    do {
+        for try await message in observeMessages().asAsyncSequence() {
+            await model.append(message)
+        }
+    } catch is CancellationError {
+        // Expected when the owning task ends.
+    } catch {
+        await model.show(error)
+    }
+}
+```
+
+By default, exported suspend functions and `asAsyncSequence()` run Kotlin code in a coroutine context using `Dispatchers.Default`. If an operation requires another dispatcher, make that choice explicitly in Kotlin with `withContext` rather than relying on the Swift caller's actor.
+
+### Current limitations that affect architecture
+
+- Swift export supports only final classes that directly inherit from `Any`.
+- generic type parameters are generally erased to their upper bounds, and generic declarations remain limited;
+- cross-language inheritance is not supported in the Kotlin 2.4.0 stable release;
+- types inheriting from `List`, `Set`, or `Map` have export limitations;
+- IDE migration automation is not available;
+- the integration is currently limited to direct Xcode integration;
+- declarations requiring opt-in may require explicit module-level compiler opt-ins.
+
+Preview-release improvements are signals, not stable contracts. Re-check the stable Swift export documentation when a new Kotlin release lands instead of copying Early Access behavior into production guidance.
 
 ---
 
-## Common Pitfalls
+## Designing a Swift-First Boundary
 
-### 1. SKIE Version Conflicts
-SKIE must match your Kotlin version exactly. If you upgrade Kotlin from 2.0.10 to 2.0.20 without upgrading SKIE, the build will fail with cryptic compiler plugin errors. Always check the SKIE compatibility matrix before upgrading Kotlin.
+### Prefer a narrow facade
 
-### 2. The `@HiddenFromObjC` Escape Hatch
-If you have internal implementation details that shouldn't appear in the Objective-C header (and thus shouldn't be visible to Swift), annotate them:
+Do not export every public declaration in a shared implementation module. Create a final facade whose API is reviewed by both Kotlin and Swift owners; Kotlin classes are final unless declared `open`, which also fits Swift export's current class restriction:
 
 ```kotlin
-@HiddenFromObjC
-internal class InternalCache { /* ... */ }
+class CheckoutClient(
+    private val repository: CheckoutRepository,
+) {
+    suspend fun quote(cartId: String): CheckoutQuote =
+        repository.quote(cartId)
+
+    suspend fun submit(request: CheckoutRequest): CheckoutReceipt =
+        repository.submit(request)
+
+    fun observeStatus(orderId: String): Flow<CheckoutStatus> =
+        repository.observeStatus(orderId)
+}
 ```
 
-### 3. The `KotlinInt` vs Swift `Int` Trap
-Kotlin `Int` maps to Objective-C `int32_t`, which becomes Swift `Int32` — NOT Swift `Int` (which is `Int64` on 64-bit platforms). This causes subtle type mismatch errors in Swift:
+Keep DTOs immutable and shallow. Prefer stable identifiers, strings, numbers, byte arrays, small lists, and explicit boundary enums/results over nested maps, `Any`, platform types, implementation exceptions, mutable collections, or public coroutine scopes.
 
-```swift
-let count: Int = viewModel.itemCount  // ❌ ERROR: Cannot convert Int32 to Int
-let count: Int = Int(viewModel.itemCount)  // ✅ Must explicitly widen
-```
+### Decide ownership explicitly
 
-### 4. The `suspend` + `@Throws` Requirement
-If a `suspend fun` throws a checked exception in Kotlin, you must annotate it with `@Throws` for the error to be visible in Swift:
+For every async API, document:
 
-```kotlin
-@Throws(NetworkException::class, CancellationException::class)
-suspend fun fetchUser(id: String): User
-```
+- who starts and cancels the operation;
+- which Swift task, Kotlin scope, or application service owns it;
+- where callbacks or emissions execute;
+- whether values represent durable state or lossy events;
+- how terminal errors and cancellation differ;
+- what keeps the Kotlin and Swift objects alive.
 
-Without `@Throws`, Swift's `try` won't catch the exception — it will crash the app.
+For UI state, a Kotlin `StateFlow` can remain the state owner while a Swift `ObservableObject` adapts it for SwiftUI. The adapter is not wasted boilerplate when it also owns actor isolation, formatting, navigation, and lifecycle.
+
+### Treat generated APIs as artifacts
+
+A meaningful compatibility gate includes:
+
+1. a generated Objective-C header or Swift API snapshot for intentional review;
+2. a small Swift fixture that calls each public API shape;
+3. cancellation tests that observe the Kotlin operation stopping;
+4. error tests for declared and unexpected failures;
+5. collection-lifecycle tests that release the Swift owner;
+6. release archive and link tests on device and simulator architectures;
+7. artifact-size and clean/incremental build measurements from the real project.
+
+Source compatibility in Kotlin does not guarantee compatibility for generated Swift. Changing a default, name annotation, sealed subtype, generic bound, exported dependency, or bridge tool can change the consumer API.
+
+---
+
+## Failure Modes to Catch in Review
+
+### Assuming Swift syntax proves cancellation
+
+An `async` call imported from an Objective-C completion handler can look native while the Kotlin job continues after Swift task cancellation. Verify the chosen bridge's behavior.
+
+### Publishing undefined helper APIs
+
+Examples such as `FlowUtilsKt.collect(...)` are not provided automatically by Kotlin/Native. If the project owns a manual bridge, show and test its implementation and cancellation handle.
+
+### Treating `@Throws` as documentation only
+
+The annotation changes the exported error ABI. Missing expected exceptions can terminate the process; exporting a broad exception tree creates a fragile Swift contract.
+
+### Updating UI from an assumed thread
+
+A Swift actor and a Kotlin dispatcher are different scheduling concepts. Swift export uses `Dispatchers.Default` by default for exported suspend and Flow work; move UI mutation to `MainActor` and make Kotlin dispatcher switches explicit.
+
+### Enabling generated conveniences globally
+
+Default-argument combinations, wrappers for dependencies, and a broad public Kotlin surface increase generated API volume. Start with the facade and enable features selectively.
+
+### Claiming universal performance costs
+
+Class count alone cannot predict compilation time or binary size. Tool versions, exported dependencies, architectures, optimization mode, caching, and generated feature selection all matter. Benchmark clean build, incremental build, archive, link, launch, and artifact size for the actual module.
 
 ---
 
 ## Probing Questions
 
-1.  **Cancellation Mechanics:** Trace the exact execution path when a Swift `Task` is cancelled while a Kotlin `suspend fun` is in progress. Without SKIE, what happens to the Kotlin `Job`? With SKIE, what C-interop mechanism does SKIE use to bridge the two cancellation systems?
-2.  **Sealed Class Safety:** Your Kotlin `sealed class PaymentResult` has 3 subclasses. Without SKIE, the iOS team uses a `switch` with a `default:` case. A Kotlin engineer adds a 4th subclass. What happens on the iOS side? With SKIE, what happens?
-3.  **StateFlow Collection Lifecycle:** Using SKIE or Kotlin 2.4 Swift export's `AsyncSequence` bridge, explain exactly what happens to the Kotlin `StateFlow` collector when a SwiftUI `View` disappears. Who cancels the collector? What mechanism prevents a memory leak of the ViewModel?
-4.  **Type Mapping:** A Kotlin function returns `Map<String, List<Pair<Int, Boolean>>>`. What does the Objective-C header look like? What does Swift see? Why is this a sign of poor API design for the KMP boundary?
-5.  **Swift Export vs SKIE:** In Kotlin 2.4, which problems does Swift export solve directly, which limitations still remain, and where would you keep SKIE or explicit wrappers for production stability?
+1. **Export-path decision:** A shared SDK must ship as an XCFramework to three independent iOS apps. Why is Kotlin 2.4 Swift export not automatically the default, and what evidence would justify SKIE versus explicit Swift wrappers?
+2. **Cancellation:** A Swift `Task` awaiting a Kotlin suspend function is cancelled. Compare the plain Objective-C bridge, SKIE, and Swift export paths, and describe the test that proves the underlying Kotlin work stopped.
+3. **Flow lifecycle:** A SwiftUI screen collects `StateFlow`. Which objects own the task, collector, and UI state, and what must happen when the screen disappears?
+4. **Error contract:** What happens when an exported Kotlin function throws an expected exception, an undeclared exception, or `CancellationException`, and how should the boundary be designed?
+5. **Type shape:** Why is `Map<String, List<Pair<Int, Boolean>>>` a poor public KMP boundary even when some generic information survives Objective-C lightweight generics?
+6. **Compatibility:** A Kotlin engineer adds a sealed subtype and changes an `@ObjCName`. Which CI artifacts and consumers should fail before release?
 
-## Further Reading
+## Answer Key
 
-- [`ios-distribution.md`](ios-distribution.md) — How the SKIE-enhanced framework is packaged into an `.xcframework`.
-- [`concurrency-and-memory.md`](../production/concurrency-and-memory.md) — The K/Native memory model and how it interacts with Swift ARC during StateFlow collection.
-- [`overview-and-k1-vs-k2.md`](../foundations/overview-and-k1-vs-k2.md) — How K2's architecture enables Swift export.
-- [`architecture-and-module-boundaries.md`](../foundations/architecture-and-module-boundaries.md) — Designing the KMP API surface to be "Swift-friendly" from the start.
+1. Swift export is Alpha and currently limited to direct Xcode integration, so it does not replace an established multi-consumer XCFramework pipeline by default. Choose SKIE when its typed Flow, cancellation, sealed wrappers, or generated conveniences remove repeated boundary work and its compiler-plugin lifecycle is acceptable; choose explicit wrappers for a small, deliberately hand-owned facade. Prove the decision with a representative archive, Swift consumer, upgrade rehearsal, and measured build/artifact impact.
+2. Plain Objective-C async import does not itself wire Swift task cancellation to the Kotlin job. SKIE documents two-way cancellation; Swift export provides its native structured-concurrency path but remains Alpha. In every case, cancel a Swift task while Kotlin is blocked in an instrumented delay or request, then assert that the Kotlin job completes with cancellation and the underlying operation is aborted—not merely that the Swift task's flag changed.
+3. SwiftUI owns the `.task` lifetime, the bridge owns or starts the Kotlin collection job, a Swift observable model owns adapted UI state, and the Kotlin state holder owns the source `StateFlow`. When the view task ends, cancellation must reach the collector, captured references must be released, and no callback may mutate UI off `MainActor`. A manual bridge must cancel its explicit observation handle.
+4. With Objective-C export, declared `@Throws` exceptions become `NSError`/Swift errors; unexpected exceptions crossing the boundary terminate the process. A suspending export always has an error channel, but without `@Throws` only `CancellationException` is propagated. Translate internal failures into a small documented error model, list expected thrown types, keep cancellation distinct from business failure, and test the generated Swift behavior.
+5. The shape couples Swift to Kotlin `Pair`, nested collection conversion, integer-width mapping, boxing/nullability details, and difficult domain interpretation. It can also copy collections and lose type-system information the bridge cannot express. Replace it with a named immutable DTO such as `RuleResult(id, enabled)` inside a shallow collection.
+6. Review the generated Objective-C header or Swift API snapshot and compile a Swift fixture/app in the same change. The name change should break affected call sites; the sealed addition should break SKIE-backed exhaustive switches. ABI/API comparison, device/simulator archive-and-link tests, and consumer compilation prevent the change from reaching release as a silent integration surprise.
+
+---
+
+## Official Sources and Further Reading
+
+- [Kotlin interoperability with Swift/Objective-C](https://kotlinlang.org/docs/native-objc-interop.html)
+- [Kotlin Swift export setup, mappings, concurrency, and limitations](https://kotlinlang.org/docs/native-swift-export.html)
+- [Kotlin 2.4.0 release notes: Swift export Alpha](https://kotlinlang.org/docs/whatsnew24.html#swift-export-goes-alpha-with-improved-concurrency-support)
+- [Kotlin/Native integration with Swift/Objective-C ARC](https://kotlinlang.org/docs/native-arc-integration.html)
+- [SKIE overview and compatibility](https://skie.touchlab.co/intro)
+- [SKIE feature behavior](https://skie.touchlab.co/features/)
+- [SKIE installation](https://skie.touchlab.co/Installation)
+- [SKIE known issues and limitations](https://skie.touchlab.co/category/known-issues-and-limitations)
+- [`ios-distribution.md`](ios-distribution.md) — framework integration, packaging, and release verification.
+- [`../production/concurrency-and-memory.md`](../production/concurrency-and-memory.md) — Kotlin/Native scheduling, GC, ARC, and collection lifetime.
+- [`../shared-domain-boundaries.md`](../shared-domain-boundaries.md) — deciding what belongs in the shared public contract.
+- [`../foundations/architecture-and-module-boundaries.md`](../foundations/architecture-and-module-boundaries.md) — module ownership and the Swift-facing presentation boundary.
