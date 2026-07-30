@@ -483,6 +483,33 @@ A well-shaped `:app` is *small*: 5–15 Kotlin files, all about wiring.
 11. Variant-aware resolution: what's `matchingFallbacks` and when do you need it?
 12. Naming convention: `:core:designSystem` or `:core:design-system`? Justify.
 
+## Answer Key
+
+1. **Walk through the taxonomy: where does each module type fit?**
+   `:app` is the composition root. `:feature:*:impl` contains UI/ViewModels and depends on `:feature:*:api` and `:core:*`. `:feature:*:api` contains public interfaces and models. `:core:*` provides shared capabilities (network, design). `:data:*` implements repositories. `:test:fixtures` contains testing fakes.
+2. **Why must `:feature:cart:impl` depend on `:feature:profile:api`, not `:feature:profile:impl`?**
+   Depending on the `:impl` couples the cart feature to the internal implementation details of the profile feature, destroying encapsulation and causing an avalanche compilation where a change in profile UI forces a cart rebuild.
+3. **Build-time perf: `./gradlew :app:assembleDebug` takes 6 minutes. Walk through your audit.**
+   First, run with `--scan` to check cache hit rates and identify long-running tasks. Second, run `:app:projectDependencyGraph` to look for bottlenecks like a massive `:core:common` with hundreds of dependents. Third, ensure KSP is used instead of KAPT and configuration caching is enabled.
+4. **Dynamic Feature Modules — name three scenarios where they're a good fit and three where they're not.**
+   *Good fit:* Heavy assets (AR features), rarely used flows (customer support chat), region-specific features, or instant-apps. *Bad fit:* Core UI components, per-team ownership boundaries, or every screen just to reduce APK size unnecessarily.
+5. **Type-safe project accessors — what do they buy you?**
+   They replace brittle string-based project references (`project(":feature:cart")`) with IDE-aware, autocomplete-friendly Kotlin properties (`projects.feature.cart`), ensuring compile-time safety and easy refactoring when module paths change.
+6. **Hilt across modules: how do bindings from `:feature:cart:impl` reach the SingletonComponent?**
+   Hilt uses an annotation processor (or KSP) to aggregate all `@Module` classes on the compilation classpath. When `:app` compiles, Hilt scans all transitive dependencies, discovers the modules, and generates the merged Dagger graph at the root.
+7. **Test fixtures: why must they depend on `:api` only?**
+   If fixtures depend on `:impl`, any module consuming those test fixtures transitively inherits the `:impl` logic, defeating strict dependency boundaries and bloating the test compilation graph.
+8. **`:app` is doing 70k LOC of logic. What's wrong?**
+   The project has failed to modularize feature implementations. `:app` should be lightweight (5-15 files), containing only the Application class, dependency injection wiring, and root navigation graph.
+9. **A 200-module project has 4s configuration time. What patterns are likely slowing it?**
+   Eager task creation (`tasks.create` instead of `tasks.register`), heavy disk/network I/O in `build.gradle.kts`, or unused plugins being applied globally. Configuration caching might also be disabled.
+10. **New engineer adds `:feature:wishlist` with config different from other features. How do you prevent this?**
+    Enforce the use of a convention plugin (e.g., `id("yourorg.android.feature")`) that locks down the build configuration, and implement a module scaffolder tool (like a custom script or IDE template) so manual creation isn't required.
+11. **Variant-aware resolution: what's `matchingFallbacks` and when do you need it?**
+    When `:app` requests a specific build variant (e.g., `benchmark`) that a library module doesn't explicitly define, Gradle throws an error. `matchingFallbacks` tells Gradle which existing variant (e.g., `release`) to use as a fallback for those dependencies.
+12. **Naming convention: `:core:designSystem` or `:core:design-system`? Justify.**
+    `:core:design-system` (kebab-case) is the standard convention because Gradle creates directory paths based on the module name, and kebab-case is standard for file systems and URLs, avoiding camelCase path issues across different OS environments.
+
 ---
 
 ## Further Reading

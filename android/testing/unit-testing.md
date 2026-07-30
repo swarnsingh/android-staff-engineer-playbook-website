@@ -734,6 +734,33 @@ Split into multiple tests, each verifying one thing.
 
 ---
 
+## Answer Key
+
+1. **Test pyramid for Android — explain each level and the speed/realism tradeoff.**
+   Unit (JVM, fastest, mocked dependencies), Integration (Robolectric, medium speed/realism), UI/Journey (Real devices/Espresso, highest realism, slowest). The base is broad for speed, the tip is narrow for confidence.
+2. **`StandardTestDispatcher` vs `UnconfinedTestDispatcher` — when to use each?**
+   Use `StandardTestDispatcher` when verifying the exact timing and order of queued coroutines. Use `UnconfinedTestDispatcher` for most UI/ViewModel tests where you just want execution to happen eagerly to check the final state.
+3. **Walk through testing a coroutine that uses `delay(60_000)`. How do you make it run instantly?**
+   Use `runTest`, which provides virtual time. Inside the test, call `advanceTimeBy(60.seconds)` or `advanceUntilIdle()` to skip the delay instantly without actually waiting.
+4. **Mocks vs fakes — give a concrete example of each being the better choice.**
+   Mock when an interface has 20 methods but the test only cares about one (e.g., a massive API interface). Fake when the dependency is stateful and reused heavily (e.g., an in-memory `FakeUserRepository` backed by a `StateFlow`).
+5. **Why does `flow.collect { }` in a test hang? What's the Turbine alternative?**
+   `collect` suspends indefinitely waiting for a continuous flow to finish, hanging the test. Use Turbine's `flow.test { }` which runs in its own scope and provides `awaitItem()` and `cancelAndIgnoreRemainingEvents()`.
+6. **Inject `Dispatcher` into a class. Walk through how this makes the class testable.**
+   Instead of hardcoding `Dispatchers.IO` (which is slow or inaccessible in tests), pass a `CoroutineDispatcher` parameter. In production, inject `Dispatchers.IO`; in tests, pass `UnconfinedTestDispatcher` for instant, synchronous execution.
+7. **JUnit 5 `@TestFactory` — what problem does it solve?**
+   It allows generating dynamic tests at runtime without the clunky syntax of JUnit 4 `@Parameterized`. Useful for testing dozens of input/output data rows (like calculation pairs) cleanly.
+8. **Test a ViewModel that fires analytics on submit. What's mocked, what's faked?**
+   Fake the Repository (to provide predictable, stateful success/error states). Fake or Mock the Analytics tracker to easily verify that `track("submit")` was called exactly once after the operation.
+9. **A class has 80% line coverage. How do you decide if that's good or bad?**
+   Coverage is a floor, not a ceiling. 80% is good if the missing 20% is boilerplate or framework glue. It's bad if the missing 20% contains critical unhandled exception branches or complex business logic.
+10. **Property-based tests in Kotlin — when is the investment worth it?**
+    Worth it for pure functions, parsers, mathematical calculations, and complex reducers where testing every edge case manually is impossible. Not worth it for standard UI or network glue code.
+11. **`@BeforeEach` vs `@BeforeAll` — when does each apply?**
+    `@BeforeEach` runs before every single test method, ensuring clean, isolated state (most common). `@BeforeAll` runs once per class, useful for expensive, read-only setup (requires `Lifecycle.PER_CLASS`).
+12. **A new engineer mocks every dependency. What's the code-review pushback?**
+    Explain that over-mocking couples the tests to the implementation rather than the behavior. Ask them to replace stateful mocks with shared in-memory fakes to make tests resilient to refactors.
+
 ## Further Reading
 
 - [`ui-testing.md`](ui-testing.md) — Compose UI tests, Robolectric, Paparazzi.

@@ -186,6 +186,29 @@ When reviewing the Network layer, a Staff engineer focuses on resilience and glo
 9.  If you use the `@Streaming` annotation in Retrofit to download a 500MB video, what critical step must you take in your Repository to prevent exhausting the OkHttp Connection Pool?
 10. Describe how you could use an `OkHttp` Interceptor to implement a complete "Offline First" mock backend for your Android application.
 
+## Answer Key
+
+1. **What is the architectural distinction between `OkHttp` and `Retrofit`? Why did Square separate them?**
+   `OkHttp` is the low-level engine handling TCP sockets, HTTP multiplexing, and caching. `Retrofit` is a high-level API for declarative URL routing and serialization. They were separated to follow the single responsibility principle and allow each layer to be highly optimized and composable.
+2. **Explain the "Chain of Responsibility" pattern as it applies to `OkHttp` Interceptors.**
+   Each interceptor can inspect, modify, or rewrite a request before passing it to `chain.proceed()`, and then process the response when it returns. It delegates execution step-by-step to the network boundary and back.
+3. **What is the difference between an Application Interceptor and a Network Interceptor?**
+   Application Interceptors run first, intercepting the original call, ideal for auth headers and app-level logging. Network Interceptors run last, seeing exactly what is sent/received over the wire (including redirects and caching headers).
+4. **Why is Gson considered dangerous to use with Kotlin Data Classes, and what library should you use instead?**
+   Gson uses reflection and ignores Kotlin null-safety rules, potentially instantiating non-null fields as `null` if they are missing in JSON. Use Moshi or kotlinx.serialization instead.
+5. **If you write an Interceptor to log the JSON response body using `response.body()?.string()`, why will your application crash when Retrofit attempts to parse the object?**
+   `response.body()?.string()` consumes and closes the one-time-use byte stream. Retrofit will crash with an `IllegalStateException` when trying to read the already-closed stream.
+6. **Describe how you would implement a transparent OAuth Token Refresh mechanism without putting `try/catch` logic inside your ViewModels or Repositories.**
+   Use an OkHttp `Authenticator`. It intercepts a 401 response, synchronously requests a new token, and automatically retries the original request with the new token.
+7. **What is a Circular Dependency, and how does it commonly occur when setting up an `OkHttp` Authenticator with Dependency Injection (Hilt)?**
+   It occurs when the Authenticator needs Retrofit to fetch the token, Retrofit needs OkHttp, and OkHttp needs the Authenticator. Fix it by injecting a `Lazy<AuthApi>` or `Provider<AuthApi>` into the Authenticator.
+8. **Why is it unnecessary to wrap a Retrofit `suspend` function inside a `withContext(Dispatchers.IO)` block?**
+   Retrofit's Coroutine integration automatically offloads the network call to a background thread natively through OkHttp's asynchronous execution.
+9. **If you use the `@Streaming` annotation in Retrofit to download a 500MB video, what critical step must you take in your Repository to prevent exhausting the OkHttp Connection Pool?**
+   You must explicitly `close()` the ResponseBody in your repository to return the TCP connection to OkHttp's pool, or subsequent network calls will hang indefinitely.
+10. **Describe how you could use an `OkHttp` Interceptor to implement a complete "Offline First" mock backend for your Android application.**
+   Write a MockInterceptor that intercepts requests, checks the URL path or method, and returns a crafted `Response` containing hardcoded JSON using `ResponseBody.create()` without ever calling `chain.proceed()` to the real network.
+
 ## Further Reading
 
 - [`dependency-injection.md`](../data-and-di/dependency-injection.md) — How we provide singletons of Retrofit via Hilt.

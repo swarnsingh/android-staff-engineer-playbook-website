@@ -517,6 +517,33 @@ override fun onCreate(savedInstanceState: Bundle?) {
 
 ---
 
+## Answer Key
+
+1. **Walk through the cold-start pipeline. What runs on which thread? Where are your two biggest leverage points?**
+   Zygote fork → Class loading → `Application.onCreate` (UI Thread) → `Activity.onCreate` (UI Thread) → Inflate/setContent (UI Thread) → First Frame (UI/Render threads). The two biggest leverage points controlled by devs are `Application.onCreate` and `Activity.onCreate`.
+2. **Compare cold vs warm vs hot start. Give a code change that affects each.**
+   Cold: Process is dead (affect via `Application.onCreate`). Warm: Process alive, Activity dead (affect via `Activity.onCreate`). Hot: Activity in background (affect via `Activity.onResume`).
+3. **Audit `Application.onCreate` — what's the right way to measure each line's cost?**
+   Wrap each SDK initialization call in a timer block (`SystemClock.elapsedRealtime()`) and log the duration. Run it on a real physical device, not an emulator, during a true cold start.
+4. **App Startup library — what problem does it solve? Walk through wiring an initializer with dependencies.**
+   It prevents `Application.onCreate` from becoming a synchronous dumping ground. You define an `Initializer` class, declare its dependencies in `dependencies()`, and wire it in the Manifest via a single `ContentProvider`.
+5. **Baseline Profile — what does it do at install time, and how much does it save? How do you generate one?**
+   It provides AOT-compilation hints to ART, converting critical startup bytecode into machine code at install time, saving 20-40% of cold start time. Generate it by running a `Macrobenchmark` test with `BaselineProfileRule`.
+6. **Macrobenchmark `CompilationMode.Partial(BaselineProfileMode.Require)` — what does this measure?**
+   It forces the test to run using the compiled Baseline Profile, allowing you to accurately measure the performance gains of your AOT compilation compared to a baseline JIT launch.
+7. **`timeToInitialDisplayMs` (TTID) vs `timeToFullDisplayMs` (TTFD) — what's the difference, and how do you report TTFD?**
+   TTID is when the OS draws the very first frame (e.g., a loading spinner). TTFD is when meaningful content is fully rendered. You report TTFD by explicitly calling `reportFullyDrawn()` in your UI layer.
+8. **Splash Screen API — what does it actually solve for cold start?**
+   It doesn't speed up the actual CPU work, but it dramatically improves perceptual performance by showing a branded splash screen instead of a blank white window while the app completes its initial loading.
+9. **Cold start was 800ms; you added one analytics SDK and now it's 1100ms. Walk through finding the culprit.**
+   The new SDK was likely initialized synchronously on the main thread in `Application.onCreate`. The fix is to move it to a background thread, or orchestrate it via the App Startup library to run lazily.
+10. **Production P90 cold start is 2.1s but your local device measures 600ms. Why?**
+    Local testing is usually done on high-end flagship devices, while Production P90 includes users on budget devices with slow CPUs and highly constrained flash storage.
+11. **ART AOT / JIT / interpreter — what fires when?**
+    Interpreter translates bytecode instantly but slowly on first run. JIT compiles frequently used methods while running. AOT pre-compiles code to machine code at install time based on Baseline Profiles.
+12. **A junior wants to add `firebase.fetch_remote_config()` to `Application.onCreate`. Walk through your code-review pushback.**
+    This introduces a synchronous network/disk I/O block directly on the critical path before the first frame is drawn. I'd mandate deferring it to a background coroutine or fetching it lazily via App Startup.
+
 ## Further Reading
 
 - [`baseline-profiles.md`](baseline-profiles.md) — Baseline Profiles canonical.

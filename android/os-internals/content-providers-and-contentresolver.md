@@ -244,6 +244,25 @@ Use path permissions when different URI subtrees need different access:
 7. When is a custom provider justified?
 8. How can provider startup hurt cold-start performance?
 
+## Answer Key
+
+1. **What problem does `ContentResolver` solve?**
+   It acts as a single, centralized API for consuming data from multiple `ContentProvider`s, abstracting away the IPC and routing details required to query data across different app processes.
+2. **Why can a `ContentProvider` run before `Application.onCreate()`?**
+   The Android OS instantiates and initializes all manifest-declared content providers during process startup, ensuring they are ready to handle IPC requests before the main application code starts running.
+3. **Why is `FileProvider` safer than `file://`?**
+   `FileProvider` translates internal file paths into `content://` URIs, allowing apps to grant temporary, granular access to specific files without exposing the raw filesystem path or requiring broad storage permissions.
+4. **How do URI permission grants work?**
+   URI grants provide temporary read or write access (`FLAG_GRANT_READ_URI_PERMISSION`) to a specific `content://` URI, delegating access only for that resource and typically expiring when the recipient's task finishes.
+5. **What makes an exported provider dangerous?**
+   It acts as a public API accessible by any app on the device. Without strong permission checks and input validation, it can leak sensitive data or become vulnerable to SQL injection.
+6. **Why should provider queries avoid the main thread?**
+   Provider queries involve synchronous IPC (Binder calls) that may hit disk or block on another process, which can lead to UI jank or Application Not Responding (ANR) crashes.
+7. **When is a custom provider justified?**
+   A custom provider is justified only when you need to expose a stable, structured data API or share files securely with other applications or the Android OS, rather than for internal app persistence.
+8. **How can provider startup hurt cold-start performance?**
+   Because all manifest-declared providers are initialized before `Application.onCreate()`, heavyweight operations or complex dependency graphs in `ContentProvider.onCreate()` will block the main thread and delay app startup.
+
 ## Further Reading
 
 - [`intent-resolution-and-manifest.md`](intent-resolution-and-manifest.md)

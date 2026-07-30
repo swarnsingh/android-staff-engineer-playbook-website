@@ -161,6 +161,29 @@ The bug is assigned to the payments team in thirty seconds, with evidence. Canon
 9.  Android vitals is free and SDK-less. When does paying for a RUM vendor become justified, and what would make you reverse that decision?
 10. The CEO asks you to prove that migrating a screen from XML to Compose improved checkout speed. What exact metric do you query, and how do you isolate the migration's effect?
 
+## Answer Key
+
+1. **What is the fundamental difference between a crash-reporting tool and an APM/RUM tool, and why do you need both?**
+   Crash reporters only tell you when an app fatally dies. APM/RUM tools tell you when the app is surviving but suffering from slow APIs, dropped frames, or UI lag, giving visibility into actual user experience degradation.
+2. **Explain bytecode weaving and how it lets an APM observe network requests made by third-party SDKs you don't control.**
+   The APM's Gradle plugin modifies compiled `.class` files before they are converted to DEX, wrapping standard networking classes (like `HttpURLConnection`) with tracking hooks, automatically capturing telemetry from all code, including closed-source SDKs.
+3. **Why should APM bytecode weaving be disabled for local debug builds?**
+   Bytecode weaving significantly slows down compilation times. Developers iterating locally do not need production telemetry, so disabling it speeds up local builds and removes unnecessary APM overhead.
+4. **Describe how distributed tracing works across the mobile/backend boundary, and name the standard headers that make it vendor-interoperable.**
+   The mobile SDK injects standardized headers (like the W3C `traceparent` and `tracestate`) into outgoing HTTP requests. Backend services propagate these IDs, allowing the APM dashboard to stitch the entire client-to-database journey into a single queryable trace.
+5. **A dashboard shows a spike in network errors. Why must you separate `UnknownHostException` from HTTP 500 before paging the backend team?**
+   `UnknownHostException` is an environmental error (e.g., the user lost cell signal), while HTTP 500 is a backend server failure. Alerting on environmental noise causes false alarms and ruins trust in the telemetry.
+6. **Explain the privacy risk of an APM recording full request URLs, and where the redaction must happen.**
+   URLs often contain highly sensitive PII in query parameters (e.g., `?email=user@test.com`). To prevent GDPR violations, these parameters must be redacted locally on the device *before* the payload is transmitted to the third-party APM server.
+7. **What are custom attributes (breadcrumbs), and why are they critical for debugging complex user journeys?**
+   Breadcrumbs are contextual key-value pairs (e.g., `last_screen`, `ab_bucket`) attached to the session. They allow engineers to reconstruct the exact sequence of events and states that led to a crash or performance degradation.
+8. **How does alert fatigue destroy an APM integration's value, and how do you tune alerts to prevent it?**
+   If alerts fire continuously for expected noise (like out-of-memory errors on cheap devices), engineers will mute or ignore them. Alerts should be strictly tuned to trigger only on statistically significant deviations for healthy user segments.
+9. **Android vitals is free and SDK-less. When does paying for a RUM vendor become justified, and what would make you reverse that decision?**
+   A paid vendor is justified when you need deep, screen-level attribution, distributed tracing, and custom funnels. You would reverse the decision if the cost outweighs the value or if free first-party tooling evolves to cover those specific needs.
+10. **The CEO asks you to prove that migrating a screen from XML to Compose improved checkout speed. What exact metric do you query, and how do you isolate the migration's effect?**
+    You query custom interaction traces measuring the duration from "tap checkout" to "screen visually rendered", filtering the data by the specific A/B test bucket or app version to isolate the Compose implementation from the XML baseline.
+
 ## Further Reading
 
 - [`jank.md`](../performance/jank.md) — the dropped-frame metrics RUM SDKs monitor and upload.

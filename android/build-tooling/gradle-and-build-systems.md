@@ -186,6 +186,29 @@ When auditing a slow build system, a Staff engineer does not guess. They use dat
 9.  Why does a Staff Engineer consider the reliance on `./gradlew clean` to be a symptom of a corrupt build architecture rather than a standard development practice?
 10. Describe the purpose of the Gradle Daemon, why it keeps compilers "hot" in memory, and how it can negatively impact OS performance over a long workday.
 
+## Answer Key
+
+1. **What is a Directed Acyclic Graph (DAG), and how does Gradle use it to determine the order of task execution?**
+   A DAG is a mathematical graph of nodes (tasks) and directed edges (dependencies) with no cycles. Gradle constructs this graph during the Configuration phase to understand which tasks depend on the outputs of other tasks, ensuring they execute in the correct topological order (e.g., compile before package) and determining which independent branches can run in parallel.
+2. **Explain the fundamental difference between Gradle's "Configuration Phase" and "Execution Phase".**
+   The Configuration Phase evaluates all `build.gradle.kts` files to construct the task DAG, executing any top-level code in those scripts. The Execution Phase walks the constructed DAG and actually runs the actions (`doLast`, `doFirst`) of the tasks needed for the build.
+3. **Why is it an architectural disaster to execute network requests or heavy disk I/O directly inside a `build.gradle.kts` configuration block?**
+   Because the Configuration Phase runs every time Gradle is invoked—even for simple commands like `./gradlew tasks` or IDE syncs. Heavy I/O blocks the main build thread, drastically slowing down every interaction with the build system before any real compilation even starts.
+4. **Describe the exact difference between the `implementation` and `api` dependency configurations regarding module visibility and "Avalanche Compilation".**
+   `api` leaks the dependency to downstream consumers, meaning if the dependency changes, all downstream modules must be recompiled (Avalanche Compilation). `implementation` hides the dependency, strictly limiting the recompilation blast radius to only the module directly declaring it.
+5. **How does a Remote Build Cache prevent a developer's laptop from executing the `KotlinCompile` task if a coworker has already compiled the exact same code on another machine?**
+   Gradle hashes the exact inputs of the `KotlinCompile` task (source files, compiler version, classpath). It checks the Remote Build Cache server with this hash; if the server has the compiled outputs, Gradle downloads them instantly and marks the task as `UP-TO-DATE`, skipping local compilation.
+6. **Explain why breaking a monolithic Android application into 100 smaller modules drastically improves incremental compilation speeds.**
+   It splits a massive codebase into independent nodes in the DAG. When a single file changes, Gradle only recompiles that specific module and its direct dependents, pulling the rest instantly from the cache, while also allowing independent modules to compile in parallel across multiple CPU cores.
+7. **What is the `KAPT` (Kotlin Annotation Processing Tool) bottleneck, and how does migrating to `KSP` (Kotlin Symbol Processing) resolve it?**
+   KAPT works by generating Java stubs from Kotlin code so standard Java annotation processors can run, effectively parsing the code twice and slowing down builds. KSP resolves this by analyzing the Kotlin AST directly, avoiding stub generation and executing up to 2x faster.
+8. **If Gradle resolves a transitive dependency conflict by silently choosing the highest version number (e.g., v2.9 over v2.4), how can this lead to a `NoSuchMethodError` at runtime?**
+   If module A expects v2.4 and uses a specific method, but Gradle forces the app to use v2.9 which removed or altered that method (breaking API change), the compiler won't catch it for module A since it was compiled against v2.4. At runtime, the JVM will crash trying to invoke the missing method.
+9. **Why does a Staff Engineer consider the reliance on `./gradlew clean` to be a symptom of a corrupt build architecture rather than a standard development practice?**
+   Because Gradle's incremental build and caching are mathematically designed to be 100% reliable based on inputs/outputs. If `clean` is required to fix a build, it means a task is failing to declare its inputs/outputs correctly, polluting the cache. Fixing the broken task is the real solution.
+10. **Describe the purpose of the Gradle Daemon, why it keeps compilers "hot" in memory, and how it can negatively impact OS performance over a long workday.**
+    The Daemon is a long-lived background JVM process that keeps the build graph, task history, and JIT-optimized compilers (like Kotlin) hot in memory to avoid JVM startup overhead on every build. Over time, memory leaks in plugins or heavy allocations cause its heap to balloon, starving the OS and IDE of RAM and triggering system-wide swap thrashing.
+
 ## Further Reading
 
 - [`../os-internals/art-and-dalvik.md`](../os-internals/art-and-dalvik.md) — The runtime that ultimately executes the DEX output produced by the Android build pipeline.

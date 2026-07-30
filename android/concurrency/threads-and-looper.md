@@ -206,6 +206,29 @@ When reviewing raw threading code, a Staff engineer focuses on lifecycle and syn
 9.  What is the difference between `handlerThread.quit()` and `handlerThread.quitSafely()`?
 10. Describe the "Message Queue" architectural pattern and why it is vastly superior to creating a new OS thread for every individual asynchronous task.
 
+## Answer Key
+
+1. **What is the relationship between a `Looper`, a `MessageQueue`, and a `Handler`?**
+   A `MessageQueue` holds pending tasks. A `Looper` is an infinite loop that runs on a specific thread, pulling tasks from the queue to execute. A `Handler` is the API used by other threads to post tasks into that queue.
+2. **Explain why `Thread.sleep()` inside a Main Thread `Handler.post` block causes an Application Not Responding (ANR) error.**
+   The `Runnable` inside `post` executes on the Main Thread. `Thread.sleep()` physically halts that OS thread, preventing the `Looper` from processing subsequent UI events like touch inputs, triggering an ANR.
+3. **Why does the Android Main Thread not simply exit its `main()` function and die after the app finishes launching? What keeps it alive?**
+   It is trapped in the infinite `Looper.loop()` blocking call. It continuously waits for and processes messages (like UI clicks or intents) until the process is killed.
+4. **Describe the memory leak that occurs when posting a delayed `Runnable` using a `Handler` in an Activity without clearing it in `onDestroy()`.**
+   The delayed `Runnable` holds an implicit reference to the outer Activity. The `MessageQueue` holds the `Runnable` until the delay expires. Because the queue references the Runnable, the Garbage Collector cannot clean up the destroyed Activity.
+5. **What is a `HandlerThread`, and how does it differ from a standard Java `Thread`?**
+   It is a convenience class that extends `Thread` and automatically calls `Looper.prepare()` and `Looper.loop()`, meaning it immediately has a `MessageQueue` ready to accept tasks via a `Handler`.
+6. **Why is it mathematically impossible to modify an Android XML `View` from a background thread? What exception is thrown?**
+   The Android UI toolkit is not thread-safe and strictly verifies that the calling thread is the exact thread that instantiated the `ViewRootImpl`. If not, it throws `CalledFromWrongThreadException`.
+7. **If you have an intensive CPU task (parsing a 10MB JSON file), would you use a `HandlerThread` or a Thread Pool (`ExecutorService`)? Why?**
+   You would use a Thread Pool (`ExecutorService`) or `Dispatchers.Default`. A `HandlerThread` uses a single thread, so a heavy CPU task would block the queue and prevent any other posted messages from running until it finishes.
+8. **How does Kotlin's `Dispatchers.Main` actually integrate with Android's legacy `Looper` system under the hood?**
+   It simply wraps Android's `Handler(Looper.getMainLooper())`. When a coroutine needs to resume on the Main thread, it posts the Continuation's state machine as a `Runnable` into the Main `MessageQueue`.
+9. **What is the difference between `handlerThread.quit()` and `handlerThread.quitSafely()`?**
+   `quit()` terminates the `Looper` immediately, dropping any unprocessed messages. `quitSafely()` allows all currently pending messages in the queue to finish processing before terminating the thread.
+10. **Describe the "Message Queue" architectural pattern and why it is vastly superior to creating a new OS thread for every individual asynchronous task.**
+    Creating raw OS threads requires massive memory overhead (~1MB per stack) and kernel context switching. A Message Queue reuses a single living thread to process millions of lightweight task objects sequentially, saving immense resources.
+
 ## Further Reading
 
 - [`coroutines-under-the-hood.md`](../concurrency/coroutines-under-the-hood.md) — How modern Kotlin builds its state machines on top of these raw thread pools.

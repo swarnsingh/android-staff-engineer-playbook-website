@@ -181,6 +181,29 @@ Do not page every ANR threshold crossing. Page when the app is currently unusabl
 9.  If you decode a massive 4K JPEG image from the local disk inside a `viewModelScope.launch { }` block without changing the dispatcher, what happens to the Main Thread?
 10. Describe the business impact (Google Play Vitals) of having a high ANR rate, even if those ANRs occur silently in the background.
 
+## Answer Key
+
+1. **What is the fundamental difference in user experience and OS handling between a standard Crash (Exception) and an Application Not Responding (ANR) error?**
+   A crash instantly kills the app, allowing a quick restart. An ANR freezes the UI, making the app unresponsive until the OS forcefully intervenes with an angry dialog box, causing severe user frustration.
+2. **Explain the role of the Android OS `InputDispatcher` and the 5-second timer in triggering an ANR.**
+   The `InputDispatcher` routes touch events to the app's Main Thread. It starts a 5-second timer; if the Main Thread is blocked and cannot process the event before the timer expires, the OS triggers an ANR.
+3. **Why does `SharedPreferences.apply()`, which claims to be asynchronous, frequently cause ANRs during Activity lifecycle transitions?**
+   `apply()` schedules async disk writes, but during `onStop()`, the OS strictly waits for all pending writes to finish. If flash storage is slow, the Main Thread blocks, easily breaching the 5-second limit.
+4. **If an ANR trace shows the Main Thread in a `Blocked` state waiting on a lock, what are your next steps to debug the issue?**
+   Find the lock's memory address in the trace, identify which background thread currently holds it, and investigate why that background thread hasn't released the lock (e.g., deadlock or massive I/O).
+5. **How does Android's `StrictMode` API help teams prevent ANRs before they reach production?**
+   `StrictMode` monitors the Main Thread during development and will intentionally crash the app if a developer accidentally attempts to perform Disk or Network I/O, catching ANR-inducing code instantly.
+6. **Describe a scenario where a `BroadcastReceiver` running in an application with no visible UI can still trigger an ANR.**
+   If a background `BroadcastReceiver` takes longer than 10 seconds to execute its `onReceive()` method (which runs on the Main Thread), the OS will silently record a "Background ANR" and penalize the app.
+7. **Why is initializing complex Third-Party SDKs inside `Application.onCreate()` a massive risk for generating ANRs?**
+   `Application.onCreate()` runs synchronously on the Main Thread before any UI appears. Heavy third-party SDKs doing disk/network I/O here can easily freeze the app long enough to trigger an ANR.
+8. **Explain how a classic "Deadlock" between the Main Thread and an IO Thread will trigger an ANR.**
+   The Main Thread grabs Lock A and waits for Lock B. The IO Thread grabs Lock B and waits for Lock A. Both freeze permanently. Since the Main Thread is stuck, the 5-second timer expires, causing an ANR.
+9. **If you decode a massive 4K JPEG image from the local disk inside a `viewModelScope.launch { }` block without changing the dispatcher, what happens to the Main Thread?**
+   `viewModelScope` defaults to `Dispatchers.Main`. The disk read and image decoding will happen synchronously on the Main Thread, freezing the UI and almost certainly causing an ANR on slower devices.
+10. **Describe the business impact (Google Play Vitals) of having a high ANR rate, even if those ANRs occur silently in the background.**
+    Google Play Console monitors the overall ANR rate. If it crosses the "bad behavior" threshold (usually ~0.47%), the algorithm aggressively down-ranks the app in search results, devastating user acquisition and revenue.
+
 ## Further Reading
 
 - [`jank.md`](jank.md) — The precursor to an ANR. A blocked thread for 16ms causes Jank; blocked for 5000ms causes an ANR.

@@ -462,6 +462,33 @@ For Room: there's no automatic migrator from SharedPreferences. Read the prefs o
 11. You see crashes from `CorruptionException` on DataStore. Walk through likely causes and fixes.
 12. A team wants to store user analytics events locally before upload. Room or DataStore? Why?
 
+## Answer Key
+
+1. **Walk through what happens on disk when you call `store.updateData { it.toBuilder().setX(...).build() }`. Why is this the wrong tool for a 5 MB file?**
+   DataStore reads the entire file into memory, creates a new object with the mutation, writes the complete 5 MB object to a temporary file, and performs an atomic rename. This forces 5 MB of disk write for every tiny mutation, causing severe I/O overhead and battery drain.
+2. **A Room migration adds a column. Walk through writing it, testing it with `MigrationTestHelper`, and what goes wrong if you don't test.**
+   Write an `object : Migration(x, y)` executing `ALTER TABLE ADD COLUMN`. Test it by having `MigrationTestHelper` create the DB at version X, insert data, and then run `runMigrationsAndValidate` for version Y. Failing to test can lead to SQL syntax errors crashing the app on startup, permanently locking users out of their data.
+3. **Why is Proto DataStore preferred over Preferences DataStore at staff level?**
+   Proto DataStore enforces a strict, type-safe schema with explicit defaults and compile-time checks. Preferences DataStore is string-key based and untyped, risking `ClassCastException`s and typos exactly like `SharedPreferences`.
+4. **Compare partial updates: SQL `UPDATE … WHERE` vs DataStore `updateData`. Which is faster, and why?**
+   SQL `UPDATE` is drastically faster because SQLite performs a targeted index seek and modifies only the specific leaf nodes of the B-tree on disk. DataStore must rewrite the entire file transactionally.
+5. **An app encrypts its Room database with SQLCipher. The user reinstalls. The DB file persists in Auto Backup. What's the security implication?**
+   If the SQLCipher key was stored in the Android Keystore (which is wiped on uninstall), the restored DB file is permanently unreadable. If the key was derived from a user password, they can unlock it. If the key was hardcoded or backed up, the encryption is compromised.
+6. **Your DataStore has grown to 8 MB because someone added `repeated User users` to the proto. What's the migration story?**
+   Create a new Room database for the `User` list. In app initialization, read the 8 MB DataStore, insert all users into Room, then write a new Proto DataStore omitting the repeated field (having marked it `reserved`).
+7. **Walk through the Single Source of Truth pattern: how Room + Flow + a network call combine to make an offline-first feature.**
+   The UI exclusively observes a `Flow` emitted by a Room `@Query`. To refresh data, the repository makes a network call and saves the result to Room. The database mutation automatically triggers the `Flow` to emit the new data to the UI, guaranteeing the UI always reflects the local cache.
+8. **Why does Room emit a `Flow<List<T>>` automatically on table changes, and what's the rule for which tables a query "depends on"?**
+   Room registers an `InvalidationTracker` on the SQLite database. During compilation, Room analyzes the `SELECT` query to identify all referenced tables. If any of those specific tables are mutated, the tracker fires and re-evaluates the query for the Flow.
+9. **SharedPreferences calls block the main thread on first read. Why? Walk through the file I/O.**
+   When `getSharedPreferences()` is first called, the OS spawns a background thread to read and parse the entire XML file into a memory map. If you call `getBoolean()` before that finishes, the calling thread explicitly blocks (waits on a latch) until the file I/O completes.
+10. **Compare schema evolution: Room migrations vs Protobuf field number rules. Which is safer for SDK consumers?**
+    Protobuf is safer. It ignores unknown fields and gracefully handles missing ones via defaults using stable field numbers. Room requires explicit SQL migrations; if versions mismatch between what the SDK expects and what is on disk, Room throws an exception and fails to open.
+11. **You see crashes from `CorruptionException` on DataStore. Walk through likely causes and fixes.**
+    It usually happens when the device powers off or the process is brutally killed during a write. Fix it by configuring a `ReplaceFileCorruptionHandler` in the DataStore factory to provide a safe fallback default rather than crashing the app.
+12. **A team wants to store user analytics events locally before upload. Room or DataStore? Why?**
+    Room. Analytics are append-only lists that require querying for unsent events, batching, and deleting by ID after upload. DataStore rewriting the entire file on every event append would be catastrophic for performance.
+
 ---
 
 ## Further Reading

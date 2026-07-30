@@ -509,6 +509,33 @@ fun setup() {
 11. A circular dependency `UserRepo → AuthClient → UserRepo`. How do you fix it (two valid approaches)?
 12. Build times jumped 40% after migrating to Hilt. Walk through investigation.
 
+## Answer Key
+
+1. **Explain DI vs Service Locator. Why is constructor injection preferred?**
+   DI injects dependencies from the outside via constructors; Service Locator forces the class to actively request dependencies from a global registry. Constructor injection is preferred because it makes dependencies explicitly visible in the API, doesn't couple the class to a framework, and makes testing trivial by just passing fakes.
+2. **Walk through Hilt's scope hierarchy. Why does `@Singleton` matter vs `@ActivityRetainedScoped`?**
+   `@Singleton` lives for the entire app process, meaning state is shared globally and persists across all screens. `@ActivityRetainedScoped` lives only as long as an Activity logical session (surviving rotation) but is garbage collected when the user fully backs out of the screen, keeping memory lean and resetting state properly between distinct visits.
+3. **KAPT vs KSP — concrete build time difference. How do you migrate Hilt from KAPT to KSP?**
+   KSP is up to 2x faster because it analyzes Kotlin AST directly instead of generating intermediate Java stubs like KAPT does. To migrate, ensure Hilt is >= 2.48, remove `kotlin-kapt` plugin, add the KSP plugin, and replace `kapt(...)` dependencies in `build.gradle` with `ksp(...)`.
+4. **Your app needs runtime parameters in a ViewModel (a `productId` from a deeplink). How do you wire it with Hilt?**
+   Annotate the constructor with `@AssistedInject`, annotate the runtime parameter with `@Assisted`, define an `@AssistedFactory` interface inside the ViewModel, and construct it in Compose using `hiltViewModel(creationCallback = { factory -> factory.create(productId) })`.
+5. **Why is Koin's DSL form considered a Service Locator? How do Koin Annotations + compiler plugin change that?**
+   Koin's DSL resolves dependencies dynamically at runtime via `get()`, meaning a missing definition crashes the app at runtime, acting as a global locator. Koin Annotations + compiler plugin analyzes the graph at compile time, matching Hilt's safety by failing the build if a dependency is missing.
+6. **You're building a public SDK. Which DI approach do you ship, and why?**
+   Manual DI. You cannot force consumer apps to adopt a specific DI framework (Hilt/Koin), nor should you pollute their build graph or runtime with your internal framework choices. Manual DI is fully isolated and transparent.
+7. **A KMP project must share business logic between Android and iOS. Pick Hilt or Koin. Justify.**
+   Koin. Hilt relies entirely on the Android lifecycle, Android components (`Context`), and Java-specific annotations/Dagger. Koin is pure Kotlin and natively supports multiplatform resolution for both Android and iOS targets.
+8. **Hilt complains `[Dagger/MissingBinding]` for `Foo` requested from `Bar`. Walk through your debugging.**
+   Check if `Foo` has an `@Inject constructor`. If it's an interface or 3rd party class, check if a `@Provides` or `@Binds` exists. Finally, ensure the `@Module` containing the provision is annotated with `@InstallIn` matching a component that `Bar` has access to.
+9. **Two `OkHttpClient`s in your graph (authenticated vs unauthenticated). How do you wire both?**
+   Define a custom `@Qualifier` annotation for each (e.g., `@AuthClient` and `@PublicClient`). Annotate the respective `@Provides` methods with them, and use the exact same qualifier annotation on the constructor parameter where they are injected.
+10. **Compare the testing story: how do you swap a real `Api` for a `FakeApi` in Hilt vs Koin?**
+    In Hilt, create a new module with `@TestInstallIn(replaces = [ProdModule::class])` that provides the fake. In Koin, load a new module in the `@Before` setup using `loadKoinModules(module(override = true) { single<Api> { FakeApi() } })`.
+11. **A circular dependency `UserRepo → AuthClient → UserRepo`. How do you fix it (two valid approaches)?**
+    1. Architectural fix: Extract the shared logic into a 3rd class (e.g., `SessionStorage`) that both depend on. 2. Framework fix: Inject a `Provider<UserRepo>` (Hilt) or use `inject<UserRepo>()` lazily (Koin) so the dependency is only resolved when accessed, breaking the construction loop.
+12. **Build times jumped 40% after migrating to Hilt. Walk through investigation.**
+    Run `./gradlew assembleDebug --scan`. Check if KAPT is being used instead of KSP. Ensure configuration caching is not broken by dynamic logic in Gradle. Ensure Hilt modules are scoped narrowly, as massive `@Singleton` graphs increase processing time.
+
 ---
 
 ## Further Reading

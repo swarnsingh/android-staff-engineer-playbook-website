@@ -198,6 +198,29 @@ When reviewing synchronization code, a Staff engineer looks for performance bott
 9.  Why does iterating over a standard `ArrayList` from one thread while another thread adds an item cause a `ConcurrentModificationException`?
 10. Describe a scenario where you would use an `AtomicReference` instead of a `Mutex` to update an object safely.
 
+## Answer Key
+
+1. **What are the three fundamental guarantees required for thread safety? (Hint: Atomicity, Visibility, Ordering).**
+   Atomicity (operations complete entirely or not at all), Visibility (changes by one thread are seen instantly by others), and Ordering (instructions are not reordered in ways that break concurrency).
+2. **Explain why `count++` is not a thread-safe operation, even if `count` is marked with `@Volatile`.**
+   `count++` involves three separate operations: read, increment, write. `@Volatile` ensures visibility but not atomicity; two threads can read the same initial value and overwrite each other.
+3. **Describe the exact difference between a JVM `synchronized` block and a Kotlin `Mutex`. What happens to the underlying OS thread in both scenarios?**
+   `synchronized` physically halts the OS thread at the kernel level until the lock is released. `Mutex` suspends the coroutine, freeing the OS thread to do other work while the coroutine waits in a queue.
+4. **Why is it extremely dangerous to call a `suspend` function from inside a `synchronized` block?**
+   When the coroutine suspends, the OS thread is freed to run other tasks, but the physical `synchronized` monitor lock is still held, potentially freezing any other threads trying to enter the block.
+5. **What is a "Check-Then-Act" race condition, and how does the `Compare-And-Swap` (CAS) instruction solve it?**
+   It happens when you check a condition (e.g., `if (val == 5)`) and act on it (`set(6)`), but the value changes between the check and act. CAS solves this by doing both as a single, uninterrupted atomic CPU instruction.
+6. **Explain the concept of Single-Thread Confinement as an alternative to using `Mutex` locks.**
+   Instead of using locks for shared memory, you force all reads and writes to happen sequentially on a single dedicated thread (like a specific CoroutineDispatcher), removing the possibility of race conditions.
+7. **What does it mean that Kotlin's `Mutex` is not "Reentrant" by default, and how does this lead to deadlocks?**
+   A non-reentrant lock cannot be acquired twice by the same owner. If a coroutine holds a `Mutex` and calls a function that tries to acquire the exact same `Mutex`, it will suspend forever waiting for itself to release the lock.
+8. **If you have a critical section that is read continuously but only updated rarely, why might a standard `Mutex` be a massive performance bottleneck?**
+   A `Mutex` suspends or locks all readers, serializing them. For high-frequency reads, the overhead of locking is immense; a `ReentrantReadWriteLock` or `StateFlow` allows concurrent reads efficiently.
+9. **Why does iterating over a standard `ArrayList` from one thread while another thread adds an item cause a `ConcurrentModificationException`?**
+   Standard collections are fundamentally unsafe for concurrent mutation. The iterator detects structural modifications during traversal (via a `modCount` internal tracker) and throws an exception to fail fast.
+10. **Describe a scenario where you would use an `AtomicReference` instead of a `Mutex` to update an object safely.**
+    When you need to atomically swap a single immutable data class instance without the overhead of suspending or allocating Mutex state machine objects (e.g., atomically updating an immutable config state).
+
 ## Further Reading
 
 - [`coroutines-under-the-hood.md`](../concurrency/coroutines-under-the-hood.md) — How the Mutex utilizes the Continuation state machine to yield threads.

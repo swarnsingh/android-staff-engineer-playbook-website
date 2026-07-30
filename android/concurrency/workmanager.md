@@ -180,6 +180,29 @@ fun scheduleSync(context: Context) {
 9.  Explain the concept of Work Chaining. How do you pass output data from the first Worker into the second Worker?
 10. If an Android device enters "Doze Mode", what happens to all pending `WorkManager` jobs?
 
+## Answer Key
+
+1. **Explain the fundamental difference in use-case between a Coroutine launched in `viewModelScope` and a `CoroutineWorker` scheduled via `WorkManager`.**
+   `viewModelScope` is for immediate, non-persistent UI work that dies if the user swipes the app away. `CoroutineWorker` is for persistent, deferrable background work that must complete regardless of app process lifecycle.
+2. **How does `WorkManager` guarantee that a task will execute even if the device completely loses power and is rebooted?**
+   It immediately writes the task configuration to a persistent internal Room database. On reboot, it re-reads the database and re-schedules pending jobs with the OS `JobScheduler`.
+3. **What is `ExistingWorkPolicy`, and why is it critical when enqueuing work from a high-traffic area of your application (like `MainActivity.onCreate`)?**
+   It determines how to handle enqueuing a task with an ID that is already pending. It is critical to use `KEEP` or `REPLACE` to prevent spamming the database with thousands of duplicate tasks.
+4. **Describe the 10-minute execution limit of `WorkManager`. What architectural pattern should you use if you need to download a 5GB file?**
+   The OS restricts background execution to ~10 minutes to save battery. For a 5GB file, you should break it into smaller chunked tasks or use a Foreground Service to maintain unbounded execution.
+5. **What are "Expedited Jobs" in WorkManager, and what specific Android 12+ restriction were they introduced to bypass?**
+   They allow immediate, high-priority background execution. They were introduced to bypass Android 12's restriction that prevents apps running in the background from launching Foreground Services.
+6. **Explain how `WorkManager` handles the concept of "Constraints" and how this differs from manually checking the Wi-Fi state before launching a Coroutine.**
+   `WorkManager` passes the constraints (e.g., "Requires Unmetered Wi-Fi") to the OS, which wakes up the app *only* when met. A Coroutine manually checking state wastes battery waking the app and handling state changes itself.
+7. **If a `CoroutineWorker` returns `Result.retry()`, how does `WorkManager` decide when to execute the job again?**
+   It relies on the configured `BackoffPolicy` (usually `EXPONENTIAL`) and backoff delay. The OS will automatically reschedule the job further and further into the future to save battery.
+8. **Why must you disable the default `WorkManager` initializer in the `AndroidManifest.xml` when using Dependency Injection frameworks like Hilt?**
+   Because `WorkManager` will attempt to instantiate your `Worker` using reflection and a default empty constructor, failing to inject necessary dependencies and crashing immediately.
+9. **Explain the concept of Work Chaining. How do you pass output data from the first Worker into the second Worker?**
+   You can schedule tasks sequentially (e.g., A -> B). Worker A returns output via `Result.success(Data)`, which `WorkManager` stores and automatically passes into Worker B's `inputData`.
+10. **If an Android device enters "Doze Mode", what happens to all pending `WorkManager` jobs?**
+    The OS suspends their execution. They are batched and delayed until the device enters a "maintenance window" or the device is plugged in and screen turned on, respecting battery constraints.
+
 ## Further Reading
 
 - [`services.md`](services.md) — The legacy mechanism WorkManager replaces for 90% of tasks.

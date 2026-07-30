@@ -495,6 +495,33 @@ Workers run in a hidden internal component but pull `@Singleton` deps from the m
 11. `ViewModel` constructor takes an `@ActivityScoped` dep. Hilt rejects this at compile time — why?
 12. ContentProvider can't be `@AndroidEntryPoint`. How do you inject into it?
 
+## Answer Key
+
+1. **List all seven standard Hilt components in order from longest-lived to shortest-lived. What survives rotation, and what doesn't?**
+   SingletonComponent (App process, survives), ServiceComponent (Service, survives), ActivityRetainedComponent (Activity logical lifetime, survives rotation), ActivityComponent (Activity instance, destroyed on rotation), ViewModelComponent (ViewModel, survives rotation), FragmentComponent (Fragment instance, destroyed on rotation), ViewComponent (View instance, destroyed on rotation).
+2. **`@ActivityScoped` vs `@ActivityRetainedScoped` — give a concrete example where each is correct, and where mixing them is wrong.**
+   `@ActivityScoped` is for a view-bound helper like a `ToolbarController` that needs the current `Activity` context and must be recreated when the Activity rotates. `@ActivityRetainedScoped` is for UI state that shouldn't reset on rotation. Mixing them by putting the state in `@ActivityScoped` resets it on rotation; putting the `ToolbarController` in `@ActivityRetainedScoped` leaks the Activity forever.
+3. **Walk through what happens when you launch a Hilt app: which components get created, in what order, and when each is destroyed.**
+   `Application.onCreate()` creates `SingletonComponent` (destroyed on process death). `Activity.onCreate()` creates `ActivityRetainedComponent` (destroyed when activity finishes), which then builds `ActivityComponent` (destroyed on rotation/destroy). When the activity adds a fragment, `FragmentComponent` is created (destroyed with fragment).
+4. **A `@Module @InstallIn(SingletonComponent::class) provideX(@ActivityContext ctx)` — does this compile? Why or why not?**
+   It does not compile. `SingletonComponent` outlives any Activity and is created at app startup. It does not have access to an `@ActivityContext` binding, so Hilt fails the build with a missing binding error.
+5. **Why is `@HiltViewModel` scoped to `ActivityRetainedComponent` rather than `ActivityComponent`?**
+   ViewModels are designed by the Android framework to survive configuration changes (rotation). `ActivityComponent` is destroyed on rotation. Therefore, ViewModels must live in `ActivityRetainedComponent`, which maps to that exact rotation-surviving lifetime.
+6. **Walk through `EntryPointAccessors.fromApplication` — what's the underlying mechanism, and why is it preferred over reflective access?**
+   It casts the given `Context.applicationContext` to the generated `SingletonComponent` interface and returns the requested dependency. It's preferred because it relies on generated code interfaces rather than slow, brittle runtime reflection, ensuring compile-time safety and performance.
+7. **You have a `Session` object that should live from login to logout, regardless of which Activity is on screen. Design the Hilt component for it.**
+   Create a custom component using `@DefineComponent(parent = SingletonComponent::class)` with a custom `@Scope` (e.g., `@LoggedUserScoped`). Define a `Builder` for it. Manage its lifecycle in a `@Singleton` `SessionManager` that calls `build()` on login and nulls the component reference on logout.
+8. **Module installed in two components — when is this right, and when does it indicate a smell?**
+   It's right when providing an interface binding (like a `Navigator`) that requires the specific context of the calling component (e.g., `@InstallIn(ActivityComponent::class, FragmentComponent::class)`). It's a smell if used just to avoid picking the lowest common ancestor (like `SingletonComponent`), which needlessly duplicates bindings across the graph.
+9. **A `@Singleton`-scoped `Analytics` holds a reference to the current `MainActivity` for "convenience." Walk through what breaks.**
+   When `MainActivity` is destroyed (e.g., on rotation), the `Analytics` singleton still holds the reference. The garbage collector cannot clean up the destroyed `MainActivity` or its entire view hierarchy, causing a massive memory leak that persists until process death.
+10. **Compare Hilt's pre-generated component hierarchy to writing `@Subcomponent` in pure Dagger. What does Hilt give up to gain ergonomics?**
+    Hilt completely eliminates the boilerplate of wiring `@Subcomponent` interfaces and factories manually by pre-generating a rigid hierarchy tied to standard Android lifecycles. It gives up extreme flexibility—you cannot easily create deeply custom, dynamic subcomponent graphs (like complex dynamic feature module DI) without fighting the framework.
+11. **`ViewModel` constructor takes an `@ActivityScoped` dep. Hilt rejects this at compile time — why?**
+    A ViewModel outlives an `ActivityComponent` (it survives rotation). If it held an `@ActivityScoped` dependency, it would hold a reference to an object from a destroyed component, causing a leak. Hilt prevents this lifecycle mismatch at compile time.
+12. **ContentProvider can't be `@AndroidEntryPoint`. How do you inject into it?**
+    Create an interface annotated with `@EntryPoint` and `@InstallIn(SingletonComponent::class)` exposing the dependency. Inside the ContentProvider's `onCreate`, use `EntryPointAccessors.fromApplication(context, MyEntryPoint::class.java)` to manually extract the dependency.
+
 ---
 
 ## Further Reading

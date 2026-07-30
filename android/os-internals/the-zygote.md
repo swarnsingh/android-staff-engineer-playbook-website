@@ -142,6 +142,29 @@ When thinking about the Zygote, a Staff engineer focuses on the architectural im
 9.  If the Zygote guarantees near-instant process creation, what is the most common cause of a 3-5 second "Cold Start" delay when a user taps an app icon?
 10. Describe the sequence of events involving the `ActivityManagerService` when a user taps an icon on their home screen Launcher.
 
+## Answer Key
+
+1. **Explain the biological metaphor of the Zygote and how it perfectly describes Android's process creation model.**
+   Just as a biological zygote is the single master cell that divides to create all other cells in an organism, the Android Zygote is a master daemon process that clones itself to instantly spawn every single application process on the device.
+2. **What is the Linux `fork()` command, and why is it vastly faster than booting a process from scratch?**
+   `fork()` creates a new process by perfectly duplicating the parent's memory map instead of allocating new RAM, initializing the JVM, and loading framework classes from disk. This bypasses the heavy lifting of process initialization.
+3. **Describe the concept of Copy-On-Write (COW) memory and how it allows 20 running Android applications to share the exact same core framework classes in RAM without interfering with each other.**
+   When Zygote forks, the child process points to the Zygote's existing RAM. The OS only allocates new physical memory if the child attempts to modify (write to) that shared memory, allowing all apps to safely read the same framework classes without duplicating them.
+4. **Why does the Android OS maintain a separate `WebViewZygote` instead of rendering web pages directly in the main app process?**
+   To sandbox potentially malicious web code (like exploited JavaScript). By forking the renderer from an isolated `WebViewZygote`, a compromised renderer cannot access the main app's memory, tokens, or permissions.
+5. **If a user modifies a static variable inside a preloaded Android framework class, why doesn't that change instantly propagate to every other app on the phone?**
+   Because of Copy-On-Write. The moment App A attempts to modify the shared static variable, the kernel intercepts the write, creates a private copy of that memory page solely for App A, and leaves the original shared Zygote memory untouched.
+6. **What is the `preloaded-classes` list, and what is the architectural tradeoff Google faces when deciding how many classes to put on this list?**
+   It's a list of framework classes loaded into Zygote's RAM at boot. Preloading too many classes consumes permanent RAM and slows down device boot, but preloading too few classes forces apps to load them from disk, causing slow, janky app startups.
+7. **Explain how the existence of the Zygote makes "Task Killer" applications actively detrimental to Android battery life.**
+   Killing background apps clears them from RAM. When the user reopens them, Zygote has to fork them again, and the app must re-run its startup logic, burning significantly more CPU cycles and battery than simply resuming a paused process.
+8. **How did frameworks like Xposed exploit the Zygote architecture to alter the behavior of every application on a rooted device?**
+   By injecting custom code directly into the Zygote process during device boot. Because every app is a clone of Zygote, injecting hooks into the master process meant those hooks were instantly inherited by every app launched thereafter.
+9. **If the Zygote guarantees near-instant process creation, what is the most common cause of a 3-5 second "Cold Start" delay when a user taps an app icon?**
+   Application-level initialization. The delay is almost entirely caused by heavy work, synchronous disk/network I/O, or complex dependency injection graph construction happening synchronously inside the developer's `Application.onCreate()` or `MainActivity.onCreate()`.
+10. **Describe the sequence of events involving the `ActivityManagerService` when a user taps an icon on their home screen Launcher.**
+    The Launcher sends an Intent to the `ActivityManagerService` (AMS). AMS determines the target app is not running and sends a socket request to Zygote to fork a new process. Zygote forks, the new child process loads the app's APK, and then executes `ActivityThread.main()`.
+
 ## Further Reading
 
 - [`art-and-dalvik.md`](art-and-dalvik.md) — The runtime engine that the Zygote initializes and clones.

@@ -157,6 +157,29 @@ Run size checks on release-like, minified AABs. Debug APK size is noise.
 9.  If you enable `android.enableR8.fullMode=true`, what specific types of 3rd party libraries are most likely to crash on startup?
 10. Describe the business impact (User Acquisition Cost) of failing to implement R8 in a consumer-facing application.
 
+## Answer Key
+
+1. **What are the three distinct steps R8 performs to reduce the size of your Android application?**
+   Shrinking (Tree Shaking to remove unused code), Obfuscation (renaming surviving classes and methods to short, meaningless names), and Optimization (rewriting code for efficiency, like inlining methods).
+2. **Explain why a developer must use the `@Keep` annotation on Kotlin Data Classes that are parsed from JSON using libraries like Gson.**
+   Gson uses reflection at runtime to match JSON keys to class field names. If R8 obfuscates the class fields, Gson won't find the correct names and will fail. `@Keep` tells R8 not to obfuscate or shrink that class.
+3. **If an application crashes in production with a stack trace consisting of `a.b.c(Unknown Source)`, what critical file did the deployment team fail to upload to Crashlytics?**
+   They failed to upload the `mapping.txt` file, which maps the obfuscated R8 names back to the original Kotlin class and method names.
+4. **Describe how R8 "Shrinking" (Tree Shaking) differs from R8 "Optimization".**
+   Shrinking statically analyzes the execution path and deletes completely unused classes and methods. Optimization actively alters the surviving code (e.g., removing dead `if` branches, inlining functions) to make it execute faster.
+5. **What is the `shrinkResources` flag, and how can dynamically loading drawables by their String name cause it to break your app?**
+   `shrinkResources` removes unused XML and image files. If you load an image dynamically via reflection (`getIdentifier`), the shrinker doesn't see a hardcoded reference and assumes the image is unused, replacing it with a dummy 1x1 pixel.
+6. **Explain the architectural difference between shipping a legacy `.apk` and a modern Android App Bundle (`.aab`) to the Google Play Store.**
+   An `.apk` contains all resources for all possible devices. An `.aab` is a publishing format containing everything, allowing Google Play to dynamically generate a custom, stripped-down `.apk` containing only the specific densities and languages the downloading user needs.
+7. **Why is it extremely dangerous to rely solely on `Debug` builds when verifying the functionality of a new feature?**
+   Debug builds run with `minifyEnabled false`. Code that breaks under R8 (e.g., missing ProGuard rules for reflection) will work perfectly in Debug but crash instantly in a Release build.
+8. **How does replacing multiple `.png` files for different screen densities with a single XML `VectorDrawable` impact the final application size?**
+   It drastically reduces the APK size, as a `VectorDrawable` uses a tiny XML math-based representation instead of storing multiple large pixel grids (megabytes) for mdpi, hdpi, and xxhdpi screens.
+9. **If you enable `android.enableR8.fullMode=true`, what specific types of 3rd party libraries are most likely to crash on startup?**
+   Libraries that rely heavily on Reflection but fail to bundle their own `-consumer-proguard-rules.pro` file, as `fullMode` performs extremely aggressive inlining and class merging.
+10. **Describe the business impact (User Acquisition Cost) of failing to implement R8 in a consumer-facing application.**
+    Failing to use R8 causes a massive, bloated APK size. Increased download size directly correlates with significantly lower install conversion rates on cellular networks, costing the company thousands of dollars in wasted marketing/user-acquisition spend.
+
 ## Further Reading
 
 - [`jank.md`](jank.md) — How smaller, optimized code paths from R8 prevent UI stuttering.

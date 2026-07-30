@@ -181,6 +181,29 @@ When attacking an `OutOfMemoryError` spike in production, a Staff engineer focus
 9.  Describe the tool `LeakCanary`. How does it help teams prevent `OutOfMemoryError` crashes before releasing to production?
 10. If an app crashes with an `OutOfMemoryError`, but `LeakCanary` reports zero leaked Activities, what other common memory structure is likely responsible for the crash? (Hint: Think about images).
 
+## Answer Key
+
+1. **Explain the concept of "Reachability" and how it determines whether the Android Garbage Collector can destroy an object.**
+   An object is Reachable if there is a chain of references connecting it to a GC Root (like a running thread or a static variable). The GC is strictly forbidden from destroying reachable objects.
+2. **Why is an `Activity` the most dangerous object to leak in the Android ecosystem? What does it hold in memory?**
+   An Activity holds a reference to the Context, which holds the Window, which holds the entire View hierarchy, including massive, memory-heavy Bitmaps and resources. Leaking it instantly wastes a massive chunk of RAM.
+3. **Describe how an active, running background Thread acts as a GC Root and causes memory leaks.**
+   An active thread cannot be garbage collected. If the thread runs a task (like a lambda or Runnable) that holds an implicit reference to an Activity, the GC sees the Activity as reachable from the Thread, trapping it in memory.
+4. **If a Singleton class requires access to `SharedPreferences`, why is it a critical error to pass it an `Activity` context? What should you pass instead?**
+   A Singleton lives for the entire application lifecycle. If it holds an Activity context, that Activity can never be garbage collected. You should pass `context.applicationContext` instead.
+5. **Explain the architectural flaw of using a Kotlin `companion object` to hold a list of callback listeners registered by Fragments.**
+   A `companion object` acts as a static GC root. If Fragments add themselves to the list but fail to unregister in `onDestroyView`, the static list holds hard references to dead Fragments, leaking them permanently.
+6. **How does the `lifecycleScope` in Kotlin Coroutines natively solve the problem of leaking background tasks when an Activity is destroyed?**
+   `lifecycleScope` is automatically cancelled by the framework when the Activity is destroyed. This safely kills any running coroutines, cutting the reference rope and allowing the Activity to be garbage collected.
+7. **What is a `WeakReference`, and how does its behavior differ from a standard (Strong) reference during a Garbage Collection cycle?**
+   A standard reference prevents garbage collection. A `WeakReference` does not. If an object is only reachable via WeakReferences, the GC will aggressively destroy the object and clear the reference to reclaim RAM.
+8. **Why does an `inner class` in Kotlin pose a significantly higher risk of causing a memory leak than a standard nested class?**
+   An `inner class` inherently holds a hidden, implicit reference to its outer class instance. A standard nested class does not. Passing an `inner class` to a long-lived component will instantly leak the outer class.
+9. **Describe the tool `LeakCanary`. How does it help teams prevent `OutOfMemoryError` crashes before releasing to production?**
+   LeakCanary automatically watches for destroyed Activities and Fragments. If they persist in memory, it forces a heap dump, analyzes the Dominator Tree, and displays a notification with the exact reference chain causing the leak.
+10. **If an app crashes with an `OutOfMemoryError`, but `LeakCanary` reports zero leaked Activities, what other common memory structure is likely responsible for the crash? (Hint: Think about images).**
+    The app is likely loading massive Bitmaps (pixel grids) into memory without down-sampling them. Even if there is no "leak", a single 4000x4000 uncompressed image can instantly exhaust the strict heap budget.
+
 ## Further Reading
 
 - [`jank.md`](jank.md) — How Garbage Collection events (caused by bad memory management) pause the Main Thread and drop frames.

@@ -193,6 +193,25 @@ Staff rule: every critical flow should define what survives process death and ho
 7. What state belongs in `SavedStateHandle` vs Room?
 8. Why does Android keep cached processes at all?
 
+## Answer Key
+
+1. **How does Android start a new app process?**
+   The `ActivityManagerService` sends a request to the Zygote daemon to `fork()` itself. The new child process inherits preloaded framework classes, loads the app's APK, creates the Application class, and launches the initial component.
+2. **What makes a process foreground, visible, service, or cached?**
+   It depends on the active components. A resumed activity or foreground service makes it foreground. A paused but visible activity makes it visible. A started background service makes it a service process. A process with no active components becomes cached.
+3. **Why is `onDestroy()` not a persistence callback?**
+   Because the OS can (and frequently does) kill the Linux process directly when memory is low without executing any teardown lifecycle methods like `onDestroy()`.
+4. **What survives configuration change but not process death?**
+   In-memory state like ViewModels, Kotlin Coroutines, Singletons, and static variables survive configuration changes (like rotation) but are completely destroyed during process death.
+5. **Why is `viewModelScope.launch` insufficient for durable upload?**
+   Because `viewModelScope` is tied to the UI process in memory. If the OS kills the process in the background, the coroutine is silently destroyed, and the upload is lost. WorkManager must be used for durable work.
+6. **How would you test process-death restoration?**
+   Put the app in the background, use `adb shell am kill <package>` (or the "Terminate Application" button in Logcat), and bring the app back to the foreground from recents to ensure state is cleanly restored.
+7. **What state belongs in `SavedStateHandle` vs Room?**
+   Transient UI state (like scroll position, current tab, or unsubmitted text input) belongs in `SavedStateHandle`. Durable domain data (like downloaded messages, user profiles, or draft outboxes) belongs in Room or a database.
+8. **Why does Android keep cached processes at all?**
+   To optimize startup times. Keeping a cached process in memory allows the user to return to the app instantly without the OS needing to fork a new process and re-initialize the runtime and application code.
+
 ## Further Reading
 
 - [`the-zygote.md`](the-zygote.md)

@@ -748,6 +748,33 @@ Catches RTL bugs early. Most apps test LTR, dark mode, and one RTL locale per co
 
 ---
 
+## Answer Key
+
+1. **Compose UI test vs Paparazzi vs Robolectric — when each?**
+   Use Compose UI tests for interaction and behavior. Use Paparazzi for visual/pixel-perfect regression testing of components. Use Robolectric for running Compose or Views behavior tests fast on the JVM without an emulator.
+2. **Semantic queries vs `testTag` — when use each?**
+   Use semantic queries (`contentDescription`, text) for user-facing elements to mirror accessibility. Use `testTag` for internal scaffolding or elements that lack natural accessibility text.
+3. **Walk through structuring a Hilt + Compose UI test with `HiltAndroidRule`.**
+   Annotate with `@HiltAndroidTest`, add `HiltAndroidRule` (order 0), add `createAndroidComposeRule<HiltTestActivity>` (order 1), and call `hiltRule.inject()` in `@Before` before setting content.
+4. **Why are animation-related test failures the most common flakes? How do you fix them globally?**
+   Animations run asynchronously and take time, leading to tests advancing before the UI is settled. Fix globally by disabling animations in developer options on the emulator, in gradle test options, or by pausing the `composeRule.mainClock`.
+5. **`mergeDescendants` — what does it do? How does it interact with test queries?**
+   It merges the semantics of all child nodes into a single unit for accessibility and testing. A test querying a child node inside a merged block won't find it unless it sets `useUnmergedTree = true`.
+6. **Paparazzi vs Compose Screenshot Testing — what's the trade-off?**
+   Paparazzi is a mature, fast, third-party tool that uses Layoutlib. Compose Screenshot Testing is a newer, Google-official, IDE-integrated plugin but is slower and currently in alpha.
+7. **A new engineer writes a Compose UI test that fails on CI with 50% reliability. Walk through your debugging.**
+   Disable animations. Check for async work not tied to Compose's idling mechanism. Use `waitUntil` instead of `Thread.sleep`. Check if coroutines are running on an un-tracked scope requiring an `IdlingResource`.
+8. **Multi-theme / multi-locale snapshot testing — how to set up?**
+   Create multiple `Paparazzi` rule configurations or iterate over different `DeviceConfig` objects (altering locale/theme) in a single test, taking uniquely named snapshots for each variant.
+9. **Accessibility testing in Compose — what tools, what assertions?**
+   Use the `AccessibilityChecksRule` to run Google's Accessibility Test Framework checks on the whole screen. Manually, fetch a node's semantics to assert tap target size (>= 48dp) and `contentDescription` presence.
+10. **Why do you sometimes need `IdlingResource` even with `awaitIdle()`?**
+    `awaitIdle()` waits for Compose's internal state, recompositions, and coroutines on the main dispatcher. It doesn't know about background thread work, network requests, or custom coroutine scopes, requiring an `IdlingResource`.
+11. **A junior creates 200 testTags called "button1", "button2", etc. What's the code-review pushback?**
+    Push back because they are brittle, non-descriptive, and don't help accessibility. Require semantic testing where possible, or use descriptive tags representing the domain action (e.g., `submit_order_button`).
+12. **Component-level Paparazzi vs screen-level Compose UI tests — which catches what?**
+    Component-level Paparazzi catches visual regressions, color shifts, and padding errors. Screen-level Compose UI tests catch broken navigation, missing validation logic, and incorrect state flow on interactions.
+
 ## Further Reading
 
 - [`unit-testing.md`](unit-testing.md) — JVM-only tests.

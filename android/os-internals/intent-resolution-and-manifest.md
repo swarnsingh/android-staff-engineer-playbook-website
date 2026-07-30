@@ -249,6 +249,25 @@ contentResolver.openInputStream(uri).use { input ->
 7. Why should most pending intents be immutable?
 8. Why should navigation arguments pass IDs instead of full objects?
 
+## Answer Key
+
+1. **What is the difference between explicit and implicit intents?**
+   Explicit intents specify the exact component class to launch and are used for internal app navigation. Implicit intents specify an action and data, allowing the OS to find and launch any app that has declared an intent filter capable of handling that request.
+2. **How does Android match an implicit intent to an activity?**
+   The `PackageManagerService` compares the implicit intent's action, data (URI scheme, host, path, MIME type), and category against the intent filters declared in the manifests of all installed and visible apps.
+3. **Why does `CATEGORY_BROWSABLE` matter for web links?**
+   It signals to the OS that the activity is safe to be launched directly from a web browser. Without this category, links clicked inside a browser will not resolve to your app, even if the scheme and host match.
+4. **What does `android:exported` protect?**
+   It controls whether other applications can launch or bind to the component. If set to false, the component is strictly private and can only be accessed by the app itself or components with the same user ID.
+5. **Why are incoming intent extras a security boundary?**
+   Because implicit intents and exported components can be triggered by any app on the device. Malicious apps can spoof actions or send malformed/harmful data in the extras, so they must be validated like any untrusted IPC input.
+6. **What is package visibility filtering?**
+   It is a privacy feature introduced in Android 11 that prevents apps from querying the full list of installed applications. Apps must explicitly declare which other packages or intent signatures they need to interact with using the `<queries>` manifest tag.
+7. **Why should most pending intents be immutable?**
+   Immutable pending intents prevent the receiving application (which executes the intent on your behalf) from modifying the intent's action, data, or extras, preventing intent hijacking and unauthorized access.
+8. **Why should navigation arguments pass IDs instead of full objects?**
+   Intents use the Binder for IPC, which has a strict ~1MB transaction limit per process. Passing large objects (like Bitmaps or huge lists) via intent extras will cause a `TransactionTooLargeException` and crash the app.
+
 ## Further Reading
 
 - [`the-binder.md`](the-binder.md)

@@ -158,6 +158,29 @@ When reviewing code that crosses process boundaries, a Staff engineer focuses on
 9.  Explain the concept of "Binder Thread Pool Exhaustion" and how a poorly designed background service can freeze multiple client applications simultaneously.
 10. If the Android System Server process crashes and reboots while your app is running, what happens to the Binder `Proxy` objects your app is currently holding?
 
+## Answer Key
+
+1. **Explain why two distinct Android applications cannot simply share a Kotlin object reference in memory to communicate.**
+   Android apps run in isolated Linux processes. The OS enforces strict memory isolation for security and stability, meaning Process A physically cannot read or write to the RAM allocated to Process B.
+2. **What is the fundamental architectural difference between a Binder `Proxy` object and a Binder `Stub` object?**
+   The `Proxy` is a hollow shell in the client process that marshals method calls into data parcels. The `Stub` lives in the server process, unmarshals the parcel, and executes the actual implementation.
+3. **Why did Google engineer the Binder kernel driver to use a "Single-Copy" mechanism instead of standard Linux Sockets for Android IPC?**
+   Standard sockets require multiple memory copies (user space to kernel space, then kernel space to user space), which is too slow for 60fps UI rendering. Binder maps receiver memory directly into the kernel, requiring only one copy, vastly improving IPC performance.
+4. **If a developer attempts to pass a 3MB `Bitmap` image to a new Activity via `Intent.putExtra()`, explain the exact mechanical failure that crashes the app.**
+   The Intent is passed via Binder, which has a strict ~1MB shared memory buffer per process for all active transactions. The 3MB payload exceeds this limit, causing the kernel driver to reject it and throw a `TransactionTooLargeException`.
+5. **What is the primary advantage of annotating a Kotlin data class with `@Parcelize` instead of implementing `java.io.Serializable`?**
+   `Serializable` relies on slow, computationally expensive Java reflection at runtime. `@Parcelize` generates highly optimized, hardcoded byte-packing instructions at compile time, making IPC significantly faster and more battery-efficient.
+6. **Describe the severe architectural consequences of splitting an application into two processes (e.g., `:ui` and `:background`) regarding Dependency Injection singletons.**
+   The two processes have entirely isolated memory spaces. A Dagger/Hilt "Singleton" will be instantiated twice (once in each process), breaking shared state. Communication between the two halves requires complex AIDL/Binder IPC instead of direct method calls.
+7. **Why is a synchronous Binder call inherently dangerous, and how does it directly contribute to Application Not Responding (ANR) crashes?**
+   Synchronous Binder calls block the calling thread until the target process finishes its work and returns. If the target process is busy, deadlocked, or performing slow I/O, the calling app's Main Thread freezes, leading directly to an ANR.
+8. **In an AIDL file, what is the purpose of the `oneway` keyword, and how does it protect the Client process?**
+   It tells the Binder driver to deliver the parcel and return immediately without waiting for a response. This makes the IPC asynchronous, preventing the client's thread from blocking if the server process is busy.
+9. **Explain the concept of "Binder Thread Pool Exhaustion" and how a poorly designed background service can freeze multiple client applications simultaneously.**
+   Each process has a limited pool of threads (typically ~15) to handle incoming Binder requests. If a service performs long-blocking operations on these threads instead of offloading work, the pool fills up. Subsequent requests from any client app are blocked until a thread frees up.
+10. **If the Android System Server process crashes and reboots while your app is running, what happens to the Binder `Proxy` objects your app is currently holding?**
+    The connections are severed, and the proxies become "dead." Any attempt to call methods on them will throw a `DeadObjectException`. Apps must implement `IBinder.DeathRecipient` to detect this and gracefully reconnect.
+
 ## Further Reading
 
 - [`anrs.md`](../performance/anrs.md) — How synchronous Binder calls to busy system services block the Main Thread and cause ANRs.

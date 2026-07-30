@@ -176,6 +176,29 @@ Every top crash cluster should have an owner, a first-seen version, a last-seen 
 9.  How can you use Firebase Crashlytics in conjunction with the Google Play Store's "Staged Rollout" feature to protect your user base from a bad release?
 10. If the user's phone is completely out of physical storage space, what happens to the Crashlytics report when the app crashes?
 
+## Answer Key
+
+1. **Explain the exact mechanism (`Thread.setDefaultUncaughtExceptionHandler`) that Crashlytics uses to intercept an application crash before the Android OS terminates the process.**
+   It registers a global callback. When an unhandled exception occurs, the JVM invokes this handler as the absolute last step before process termination. Crashlytics saves the crash data locally, then calls the original default handler to let the OS actually kill the app.
+2. **Why does Crashlytics save the crash payload to the local disk instead of immediately uploading it to the network when the crash occurs?**
+   The network is unreliable and slow, and the process is being terminated by the OS within milliseconds. Writing to disk ensures the data is captured safely and can be uploaded in the background on the next app launch.
+3. **Describe the severe consequences of failing to upload the R8 `mapping.txt` file to the Firebase Console.**
+   The dashboard will show obfuscated stack traces (e.g., `a.b.c.d(Unknown Source)`), making it nearly impossible to identify which class or method caused the crash.
+4. **What is the difference between a Fatal crash and a Non-Fatal exception in the context of the Firebase dashboard?**
+   A Fatal crash is an unhandled exception that kills the app process. A Non-Fatal exception is one you caught using a try-catch block but manually logged to Crashlytics for monitoring purposes.
+5. **Why is it an architectural anti-pattern to log standard network timeout exceptions (`UnknownHostException`) as Non-Fatal errors in Crashlytics?**
+   It floods the dashboard with "crashes" caused by expected environmental issues (like bad reception), creating alert fatigue and burying real actionable application bugs.
+6. **Explain how a Staff Engineer utilizes "Breadcrumbs" and "Custom Keys" to debug a `NullPointerException` that only happens randomly.**
+   Breadcrumbs show the sequence of user actions leading up to the crash, and Custom Keys attach specific state (e.g., `user_tier=premium`). This context explains *why* the random state occurred, beyond just the stack trace.
+7. **How does catching a C++ (NDK) `SIGSEGV` crash differ fundamentally from catching a standard Java `RuntimeException`?**
+   Java crashes run the `UncaughtExceptionHandler` within the JVM. NDK crashes vaporize the JVM instantly, requiring low-level Linux signal handlers (`sigaction`) to intercept the kill signal and write a tombstone file.
+8. **Describe the difference between the "Crash-Free Sessions" metric and the "Crash-Free Users" metric. Why is the latter more important for judging platform health?**
+   Crash-Free Sessions drops rapidly if one user loops through crashes, causing panic. Crash-Free Users indicates the percentage of your unique user base affected, which is a truer measure of overall platform health.
+9. **How can you use Firebase Crashlytics in conjunction with the Google Play Store's "Staged Rollout" feature to protect your user base from a bad release?**
+   By releasing to 10% of users, you can monitor the Velocity Alerts in Crashlytics. If a new crash spikes in that cohort, you can halt the rollout, fix it, and protect the remaining 90%.
+10. **If the user's phone is completely out of physical storage space, what happens to the Crashlytics report when the app crashes?**
+    The `UncaughtExceptionHandler` will fail to write the payload to the SQLite database or file system, and the OS will terminate the process, meaning the crash report is lost forever.
+
 ## Further Reading
 
 - [`app-size-and-r8.md`](../performance/app-size-and-r8.md) — The compiler that necessitates the upload of the `mapping.txt` file for Crashlytics to function.

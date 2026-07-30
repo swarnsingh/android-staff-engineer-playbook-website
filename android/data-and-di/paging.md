@@ -212,6 +212,29 @@ When reviewing Paging architecture, a Staff engineer focuses on the physical bou
 9.  If the network fails while the user is scrolling down and requesting Page 4, how does `Paging 3` expose that specific error to the UI layer?
 10. Describe the architectural tradeoff between using a simple Network-backed `PagingSource` versus implementing a full `RemoteMediator` with a Room database.
 
+## Answer Key
+
+1. **What is the "Duplicate Request" problem in manual infinite scrolling, and how does the `Pager` naturally prevent it?**
+   Manual scrolling often triggers duplicate API calls when the user rapidly scrolls up and down near the list's bottom boundary before the first request finishes. `Pager` prevents this by inherently tracking the `LoadState` (Loading, NotLoading, Error) and ignoring duplicate load requests if a fetch for that direction is already actively in flight.
+2. **Explain the architectural role of the `RemoteMediator` when compared to the `PagingSource`.**
+   `PagingSource` directly fetches data (from network or DB) and hands it to the UI. `RemoteMediator` sits between the `Pager` and a local database, watching the `Pager`'s DB reads; when the DB runs out of data, the Mediator fetches from the network and saves it to the DB, never directly returning data to the UI.
+3. **Why is it mathematically impossible to extract a complete `List<T>` directly from a `PagingData<T>` object?**
+   Because `PagingData` is not a collection of items; it is a stream (a container for page events) representing asynchronous updates (inserts, drops, refreshes) over time. To get a complete list, you would have to resolve infinite future events into a single synchronous block, which contradicts its infinite, lazy-loading design.
+4. **Describe the catastrophic network and UX behavior that occurs if you forget to append `.cachedIn(viewModelScope)` to your Paging Flow.**
+   Without `.cachedIn`, every UI recomposition, rotation, or fragment recreation collects a brand new instance of the flow, completely resetting the pagination state to Page 1 and triggering redundant network requests, ruining the user's scroll position and wasting bandwidth.
+5. **If a user clicks a "Like" button on an item in a `Paging 3` list backed by Room, what is the exact flow of data required to update the heart icon on the screen?**
+   The UI sends an intent to the ViewModel. The ViewModel calls the Repository to execute an `UPDATE` statement in the Room DB for that item. Room's `InvalidationTracker` detects the table change and forces the Room-backed `PagingSource` to invalidate. The `Pager` automatically fetches the updated page from the DB and emits a new `PagingData` with the filled heart icon to the UI.
+6. **Why is Cursor-based pagination from a backend server preferred over Offset-based (Page 1, Page 2) pagination for highly dynamic social feeds?**
+   In offset pagination, if a new item is inserted at the top of the feed on the server while the user is scrolling, the offsets shift, causing the next page request to return a duplicate of an item the user already saw. Cursors (pointers to a specific item ID) ensure stable continuation regardless of insertions/deletions above the cursor.
+7. **In a `RemoteMediator`, why must the `clearAll()` and `insertAll()` operations for a `REFRESH` load type be wrapped inside a `db.withTransaction` block?**
+   If not wrapped, the DB temporarily contains zero items between the clear and insert commands. Room's tracker could invalidate the `PagingSource` exactly in that gap, causing the UI to briefly receive and render an empty list (a flicker) before the new data is inserted. `withTransaction` ensures atomicity.
+8. **How does the `prefetchDistance` configuration parameter improve the user's perception of speed when scrolling?**
+   It tells the `Pager` to eagerly trigger the next page load when the user is within `prefetchDistance` items from the bottom of the currently loaded list. This allows the network request to complete *before* the user actually reaches the end, making the scroll feel perfectly infinite and seamless.
+9. **If the network fails while the user is scrolling down and requesting Page 4, how does `Paging 3` expose that specific error to the UI layer?**
+   The `PagingSource` or `RemoteMediator` catches the exception and returns a `LoadResult.Error(e)`. The `Pager` updates the `CombinedLoadStates` object inside the flow, setting `append = LoadState.Error`. The UI observes this state (e.g., in Compose via `lazyPagingItems.loadState.append`) and renders a retry button at the bottom of the list.
+10. **Describe the architectural tradeoff between using a simple Network-backed `PagingSource` versus implementing a full `RemoteMediator` with a Room database.**
+    Network-backed `PagingSource` is vastly easier to implement (less boilerplate, no DB setup) but offers zero offline support, loses state on process death, and requires complex manual item mutation logic. `RemoteMediator` + Room requires significant upfront complexity and DB schema management, but provides perfect offline-first UX, robust item mutations, and process-death resilience.
+
 ## Further Reading
 
 - [`room.md`](room.md) — The database that powers the `RemoteMediator`.

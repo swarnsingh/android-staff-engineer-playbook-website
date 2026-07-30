@@ -655,6 +655,33 @@ Same `UserRepository` runs on iOS, Android, JVM, and JS. Retrofit can't do this.
 
 ---
 
+## Answer Key
+
+1. **Walk through what each layer does in `your code → Retrofit → OkHttp → socket`.**
+   Your code defines a declarative interface. Retrofit converts the call parameters into an OkHttp Request and delegates. OkHttp handles connection pooling, interceptors, and TCP/TLS via sockets, then returns the response which Retrofit deserializes.
+2. **Walk through the same for `your code → Ktor → engine → socket`.**
+   Your code calls the Ktor `HttpClient` imperatively. The client passes the request through its configured plugins (auth, logging), then hands it to a platform engine (like OkHttp on Android or Darwin on iOS) which manages the raw socket connections.
+3. **KMP — why can't Retrofit compile to iOS? What does Ktor do differently?**
+   Retrofit relies on JVM reflection and dynamic proxies which are incompatible with iOS (Kotlin/Native). Ktor uses platform-agnostic abstractions (`commonMain`) and delegates HTTP execution to actual platform-specific engines.
+4. **Compare OkHttp interceptor chain vs Ktor plugin model. Strengths of each?**
+   OkHttp interceptors are a straightforward chain of responsibility, well-tested and native to the engine. Ktor plugins provide a broader, richer DSL for configuring things like WebSockets, Retries, and Auth, working uniformly across multiple platforms.
+5. **You inherit a Retrofit codebase; the team wants KMP. Walk through your migration plan.**
+   Wrap the existing Retrofit interfaces with Ktor-backed implementations via adapters. Migrate endpoint by endpoint, injecting the new Ktor wrapper, until Retrofit can be safely removed.
+6. **Bearer token refresh on 401 — implement in both OkHttp `Authenticator` and Ktor `Auth.bearer.refreshTokens`. Compare.**
+   OkHttp uses `Authenticator` which triggers on a 401 and synchronously generates a new Request. Ktor's `Auth` plugin uses a DSL to define `loadTokens` and `refreshTokens`, which feels more declarative but can easily conflict if mixed with an underlying OkHttp Authenticator.
+7. **Ktor's binary size is ~700 KB larger than Retrofit. When does it matter and when not?**
+   It matters for highly size-constrained SDKs or Instant Apps. It rarely matters for standard consumer apps where modern devices and networks easily absorb a ~700 KB penalty.
+8. **Mock testing: `MockWebServer` vs Ktor's `MockEngine`. Pick each.**
+   Use `MockWebServer` for JVM-only integration tests that need real HTTP loopback. Use `MockEngine` for KMP tests since it mocks the engine directly in memory and compiles natively for all platforms.
+9. **WebSocket + SSE + HTTP in one app — which stack is cleaner and why?**
+   Ktor is significantly cleaner because it treats WebSocket, SSE, and HTTP as first-class citizens in a single unified suspendable client API, rather than dropping down to raw OkHttp callbacks.
+10. **Coroutine cancellation: prove a `viewModelScope.cancel()` actually cancels an in-flight HTTP request.**
+   When `viewModelScope` is cancelled, it propagates to the suspending Retrofit/Ktor function. Both clients hook into the coroutine's cancellation block and physically close the underlying socket/TCP connection immediately.
+11. **Both stacks have an `Auth` story. When does it accidentally retry the refresh endpoint itself? How to prevent?**
+   This happens if the token refresh request itself is routed through the same client/interceptor handling auth, causing an infinite 401 loop. Prevent it by using a separate un-intercepted client for the refresh call.
+12. **A team wants Ktor "to be modern." No KMP plans. Walk through your code-review pushback.**
+   Without KMP, migrating to Ktor adds binary size, learning curves, and rewrites functional Retrofit code for zero architectural benefit. A staff engineer blocks "modern for the sake of modern" changes if there is no concrete KMP roadmap.
+
 ## Further Reading
 
 - [`retrofit-and-okhttp.md`](retrofit-and-okhttp.md) — Retrofit + OkHttp deep dive.

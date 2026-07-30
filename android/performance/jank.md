@@ -188,6 +188,29 @@ CI macrobenchmarks catch deterministic regressions. Production telemetry catches
 9.  How does the `key` parameter in a Compose `LazyColumn` prevent unnecessary recompositions when items are added or removed?
 10. Describe the difference between the impact of a 200ms Main Thread blockage (Jank) versus a 5000ms Main Thread blockage (ANR).
 
+## Answer Key
+
+1. **What is the mathematical significance of the 16.6ms deadline in Android UI rendering?**
+   Android devices traditionally refresh at 60Hz. 1000 milliseconds / 60 frames = 16.6 milliseconds per frame. The OS must complete all Measure, Layout, and Draw calculations within this window, or it drops the frame.
+2. **Explain the concept of VSYNC and how it prevents "screen tearing" and regulates frame rendering.**
+   VSYNC (Vertical Synchronization) is a hardware signal sent periodically by the display. It tells the OS to swap the rendered buffer to the screen and triggers the start of the next 16.6ms frame calculation, ensuring UI updates stay perfectly in rhythm with the hardware.
+3. **In Jetpack Compose, what are the three distinct phases of rendering, and why is it important to know which phase you are triggering?**
+   Composition (what to show), Layout (where to put it), and Draw (how to render it). Knowing which phase you trigger allows you to skip expensive phases (like Composition) for frequent updates (like scrolling) by reading state in the Layout or Draw phase.
+4. **Why does reading a `ScrollState` value directly inside a `@Composable` function body cause severe Jank? How do you fix it?**
+   Reading it directly causes the entire Composable function to re-run (Recomposition) every time the scroll changes by 1 pixel. Fix it by deferring the read to the Layout phase by passing a lambda to a Modifier (e.g., `Modifier.offset { ... }`).
+5. **What does it mean for a Compose data class to be marked as "Unstable," and how does a standard Kotlin `List` trigger this?**
+   An Unstable class cannot be proven immutable by the Compose compiler. Because `List` is an interface, it could be a mutable `ArrayList` under the hood. Compose plays it safe and forces recomposition every time, causing Jank.
+6. **Explain "Garbage Collection Thrashing" and why instantiating objects inside an `onDraw` method guarantees dropped frames.**
+   Creating objects in a tight loop (like `onDraw` called 60 times a second) rapidly fills memory, forcing the Garbage Collector to constantly run. "Stop-the-world" GC pauses the Main Thread, blowing past the 16.6ms deadline.
+7. **What is "Overdraw," and how can you use Developer Options on your physical device to detect it?**
+   Overdraw happens when the GPU paints the same pixel multiple times per frame (e.g., stacked backgrounds). Enable "Debug GPU Overdraw" in Developer Options; areas painted dark red indicate heavy, wasteful rendering.
+8. **Why is it fundamentally incorrect to profile UI performance (Jank) using a "Debug" APK build?**
+   Debug builds disable R8 (ProGuard) optimizations, skip dead code stripping, and contain heavy internal validation checks (especially in Compose), causing artificial Jank that will not exist in production.
+9. **How does the `key` parameter in a Compose `LazyColumn` prevent unnecessary recompositions when items are added or removed?**
+   By default, Compose uses positional indexing. If an item is added at the top, every item shifts and recomposes. The `key` parameter provides a stable unique identity, allowing Compose to intelligently move items without recomposing them.
+10. **Describe the difference between the impact of a 200ms Main Thread blockage (Jank) versus a 5000ms Main Thread blockage (ANR).**
+    A 200ms blockage causes severe Jank (dropping roughly 12 frames), resulting in a visual stutter. A 5000ms blockage triggers an ANR (Application Not Responding), prompting the OS to freeze the app and show a force-close dialog.
+
 ## Further Reading
 
 - [`anrs.md`](anrs.md) — What happens when Jank gets so bad it triggers an OS-level crash.

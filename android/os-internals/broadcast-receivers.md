@@ -239,6 +239,25 @@ Do not build sync solely around connectivity broadcasts. Treat connectivity as a
 7. How should a boot receiver reschedule sync?
 8. What causes a background ANR from a receiver?
 
+## Answer Key
+
+1. **What is the difference between manifest-declared and context-registered receivers?**
+   Manifest-declared receivers are registered in the `AndroidManifest.xml` and can wake up your app process to handle events even if the app is not running. Context-registered receivers are registered at runtime using a `Context` and only receive events while the component that registered them is alive.
+2. **Why is `onReceive()` dangerous for disk or network work?**
+   `onReceive()` runs on the main thread by default and is subject to strict time limits. Performing long-running disk or network operations can block the main thread and lead to Application Not Responding (ANR) errors.
+3. **When would you use `goAsync()`?**
+   Use `goAsync()` for small, bounded asynchronous work to extend the receiver's lifetime briefly (e.g., lightweight database updates or metric logging). For longer or more complex operations, use WorkManager.
+4. **Why did Android restrict many implicit broadcasts?**
+   Implicit broadcasts wake up every app registered to receive them, causing a "thundering herd" effect that drains the device battery and degrades performance. Restricting them forces apps to use more battery-efficient mechanisms like JobScheduler or WorkManager.
+5. **How do you protect an exported receiver?**
+   Protect it by requiring specific permissions (like signature permissions), validating the action, data, and extras, and never trusting the incoming intent payload for destructive actions without independent verification.
+6. **Why are broadcasts hints rather than durable state?**
+   Broadcasts are transient events that might be missed, duplicated, or dropped. They should act as triggers to reconcile or fetch the actual state from a single source of truth (like a database or server).
+7. **How should a boot receiver reschedule sync?**
+   A boot receiver should immediately enqueue a work request via WorkManager or schedule a job using JobScheduler, rather than performing the heavy sync work itself within `onReceive()`.
+8. **What causes a background ANR from a receiver?**
+   A background ANR occurs when `onReceive()` takes too long (typically >10 seconds in the background) to execute, usually due to blocking I/O or heavy computation on the main thread without offloading or calling `goAsync()`.
+
 ## Further Reading
 
 - [`workmanager.md`](../concurrency/workmanager.md)

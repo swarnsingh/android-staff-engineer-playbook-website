@@ -212,6 +212,25 @@ The implementation handles permission, settings, accuracy, timeout, and fallback
 7. How should UI model permanently denied permission?
 8. Why should you check permission at point of use?
 
+## Answer Key
+
+1. **What is the difference between normal, dangerous, signature, and special permissions?**
+   Normal permissions are granted automatically at install. Dangerous permissions require explicit runtime user consent. Signature permissions are granted only to apps signed with the same certificate. Special permissions require the user to navigate to system settings to toggle access manually.
+2. **Why is a granted permission not always enough to perform an operation?**
+   Because Android uses AppOps as a secondary runtime gate. Even if a manifest permission is granted, AppOps might deny the operation due to device state, privacy toggles, background restrictions, or enterprise policies.
+3. **Why should permission requests be tied to user intent?**
+   Asking for permissions out of context (like on app startup) trains users to deny them out of suspicion. Tying requests to a specific user action (e.g., tapping a microphone icon) provides clear context and drastically improves grant rates.
+4. **How does approximate location change product design?**
+   It forces products to degrade gracefully. Apps must be designed to provide useful functionality (like city-level weather or nearby restaurants) without failing or blocking the user if they refuse to grant precise GPS coordinates.
+5. **When would you use a signature permission?**
+   When building a suite of applications (like a company's ecosystem of apps) or a secure SDK that needs to expose sensitive IPC APIs that should absolutely never be accessible to third-party or malicious apps on the device.
+6. **Why is broad storage access risky?**
+   It grants access to potentially sensitive user files, photos, and documents across the entire device, presenting a massive privacy risk and increasing the likelihood of App Store policy rejection. Scoped storage or FileProviders should be used instead.
+7. **How should UI model permanently denied permission?**
+   It should be modeled as an explicit state (e.g., `PermanentlyDenied`) that triggers UI to explain why the feature is disabled and provides a clear, deep-linked button to the OS App Settings screen so the user can manually re-enable it.
+8. **Why should you check permission at point of use?**
+   Users or the OS can revoke permissions at any time while the app is in the background. Caching a "granted" state during startup will lead to a SecurityException and a hard crash if the permission is subsequently revoked before the operation occurs.
+
 ## Further Reading
 
 - [`intent-resolution-and-manifest.md`](intent-resolution-and-manifest.md)

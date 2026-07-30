@@ -205,6 +205,29 @@ When reviewing Logging architecture, a Staff engineer focuses on Signal-to-Noise
 9.  Why would a large engineering team write a custom Lint rule that explicitly bans the usage of `android.util.Log` across the entire codebase?
 10. Describe the tradeoff between using a 3rd party dependency like Timber versus writing a native Kotlin `expect/actual` logging wrapper for a Kotlin Multiplatform project.
 
+## Answer Key
+
+1. **Explain why leaving `Log.d` calls with String interpolation inside a `RecyclerView.onBindViewHolder` severely degrades scrolling performance.**
+   String interpolation allocates new `StringBuilder` objects every frame, triggering Garbage Collection (GC) thrashing. Additionally, `Log.d` makes a blocking JNI call to the `logd` daemon, causing lock contention and dropping UI frames.
+2. **How does the Android `logd` daemon handle memory, and what happens to old logs when the buffer is filled?**
+   `logd` uses a fixed-size circular memory buffer. When the buffer is full, it automatically overwrites the oldest logs with new ones, meaning spammy logs can instantly erase critical system crash traces.
+3. **Describe the exact architectural pattern Timber uses (The `Tree` abstraction) to differentiate logging behavior between Debug and Release builds.**
+   Timber routes all log calls through abstract `Tree` implementations. You plant a `DebugTree` in debug builds (which writes to Logcat) and plant a custom `CrashReportingTree` in release builds (which forwards errors to Crashlytics and ignores debug noise).
+4. **How does Timber's `DebugTree` automatically determine the correct `TAG` (class name) without the developer explicitly providing it? Why is this trick slow?**
+   It creates a dummy `Throwable` and inspects the stack trace to find the calling class name. This is extremely slow because walking the execution stack trace is a computationally expensive JVM operation.
+5. **What is the purpose of the `proguard-rules.pro` `-assumenosideeffects` configuration regarding the `android.util.Log` class?**
+   It tells the R8 compiler that `Log` methods have no side effects, allowing R8 to aggressively strip and completely delete those method calls and their string arguments from the final production bytecode.
+6. **Explain the "String Interpolation Evaluation Leak" and why `Timber.d("Val: ${heavyMath()}")` might still cause a performance penalty in a Release build even if the log isn't printed.**
+   Even if R8 strips the `Log.d` call, the CPU may still execute `heavyMath()` because R8 cannot guarantee the function lacks side effects. The heavy calculation runs just to build a string that is immediately discarded.
+7. **Why is it a severe architectural and legal failure to log a user's plain-text email address using `Log.i()`?**
+   Because any app with the `READ_LOGS` permission (or anyone with a USB cable) can read Logcat. Logging plain-text PII exposes user data to malicious apps and represents a severe violation of privacy laws like GDPR.
+8. **How does a Staff Engineer use a custom `ReleaseTree` to enhance Firebase Crashlytics crash reports without polluting the public Android Logcat?**
+   By overriding the `log` method to filter out `VERBOSE` and `DEBUG` priorities, while routing `INFO` and `WARN` messages directly to `FirebaseCrashlytics.log()` to act as breadcrumbs, bypassing the public `logd` buffer entirely.
+9. **Why would a large engineering team write a custom Lint rule that explicitly bans the usage of `android.util.Log` across the entire codebase?**
+   To prevent developers from accidentally bypassing the `Timber` abstraction layer, guaranteeing that no rogue, un-stripped `Log.d` calls leak PII or degrade performance in production releases.
+10. **Describe the tradeoff between using a 3rd party dependency like Timber versus writing a native Kotlin `expect/actual` logging wrapper for a Kotlin Multiplatform project.**
+    Timber is the robust Android industry standard but relies on Java varargs and requires specific ProGuard rules, making it incompatible with pure KMP. A native `expect/actual` wrapper works across iOS and Android but requires you to write and maintain your own TAG generation and stack trace logic.
+
 ## Further Reading
 
 - [`crash-monitoring.md`](crash-monitoring.md) — How the `ReleaseTree` converts logs into Breadcrumbs for fatal exception context.

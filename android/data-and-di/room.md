@@ -232,6 +232,29 @@ When reviewing Room architecture, a Staff engineer focuses heavily on Migrations
 9.  Explain the purpose of the `@Transaction` annotation in Room. What data corruption scenario does it prevent?
 10. Describe the architectural tradeoff between using Room (a relational database) versus a NoSQL database like Realm for an Android application.
 
+## Answer Key
+
+1. **What is the architectural pattern of the "Single Source of Truth", and how does Room's `Flow` integration enable it?**
+   The pattern dictates that the UI only ever reads from one source (the database) and never directly from the network. Room enables this by allowing DAOs to return `Flow`s; when a background network sync updates the database, Room automatically emits the new data through the `Flow` to update the UI reactively.
+2. **Explain how Room achieves compile-time verification of your SQL statements.**
+   Room uses Kotlin Symbol Processing (KSP) during the build to scan `@Query` annotations. It spawns a temporary in-memory SQLite instance, runs your SQL strings against the generated schema, and fails the build if there are syntax errors, missing columns, or type mismatches between the SQL result and your Kotlin return type.
+3. **Why does Room throw a fatal exception if you attempt to call a standard (non-suspending) DAO method on the Main Thread?**
+   Room enforces strict Thread policy to prevent ANRs (Application Not Responding). Disk I/O is slow and blocking; running it on the Main Thread halts UI rendering. By crashing immediately, Room forces the developer to explicitly route database access to a background thread (e.g., via `suspend` and coroutines).
+4. **If you add a new column to an `@Entity`, what three steps must you take to prevent the app from crashing on users' phones?**
+   1. Increment the `version` number in the `@Database` annotation. 2. Write a `Migration` object detailing the SQL to `ALTER TABLE ADD COLUMN`. 3. Add that migration to the Room builder via `.addMigrations()`. (And crucially, test it).
+5. **What is the `InvalidationTracker`, and how does it power Room's reactive `Flow` streams?**
+   The `InvalidationTracker` maintains a mapping of Room queries to the specific SQLite tables they reference. It registers database triggers so that when an `INSERT`, `UPDATE`, or `DELETE` occurs on those tables, it notifies active observers (like `Flow`s) to re-run their `SELECT` queries and emit fresh data.
+6. **Describe the performance implications of fetching an entire `@Entity` object via a `Flow` when the UI only displays one specific column.**
+   If you select all columns (e.g., `SELECT *`), any update to *any* column in that table triggers the `InvalidationTracker`. This causes the query to re-run and the `Flow` to emit identically relevant UI data, triggering unnecessary recompositions and wasting CPU/battery. Always project only the needed columns.
+7. **What is a Multi-Map return type in Room, and how does it improve upon the older `@Relation` annotation system?**
+   A Multi-Map return type (e.g., `Map<User, List<Playlist>>`) allows developers to write a standard SQL `JOIN` query, and Room automatically groups the flat ResultSet into a Kotlin Map. It eliminates the boilerplate of `@Relation` data classes and solves the N+1 query performance problem inherent in the older system.
+8. **Why is it critical to commit Room's exported schema JSON files to your version control system (Git)?**
+   The JSON files serve as a historical snapshot of exactly what the database looked like at each version. Room's `MigrationTestHelper` requires these historical snapshots to validate that your SQL migration code correctly transforms the old schema into the new schema without data loss.
+9. **Explain the purpose of the `@Transaction` annotation in Room. What data corruption scenario does it prevent?**
+   `@Transaction` ensures that a method executing multiple database operations (e.g., inserting a user, then their preferences) acts atomically. If the second operation fails, the entire transaction rolls back, preventing the database from being left in an inconsistent, partially updated state.
+10. **Describe the architectural tradeoff between using Room (a relational database) versus a NoSQL database like Realm for an Android application.**
+    Room relies on SQLite, making it relational, rigid, and requiring explicit object-mapping, but it boasts massive community support, safety, and no native binary bloat. Realm (NoSQL) stores objects natively, making deep graph traversals incredibly fast with zero mapping overhead, but significantly increases APK size, has a steeper learning curve, and complicates schema migrations.
+
 ## Further Reading
 
 - [`flow.md`](../architecture/flow.md) — How the UI observes the database reactive streams.

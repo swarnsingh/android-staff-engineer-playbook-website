@@ -282,6 +282,29 @@ When reviewing data persistence, a Staff engineer focuses on access patterns:
 9.  Explain the concept of "Migration" in DataStore and how you can seamlessly transfer existing `SharedPreferences` data into a new DataStore file.
 10. Why does storing a massive list of 10,000 strings in `DataStore` cause significant memory and performance issues compared to storing them in `Room`?
 
+## Answer Key
+
+1. **What was the specific performance flaw in `SharedPreferences.apply()` that caused Application Not Responding (ANR) errors during Activity lifecycle transitions?**
+   `apply()` schedules an asynchronous disk write, but during lifecycle events like `onStop()`, the OS `ActivityThread` explicitly blocks the main thread to wait for all queued `apply()` operations to finish ensuring data persistence, which causes an ANR if I/O is slow.
+2. **Explain how `DataStore` utilizes Kotlin Coroutines to guarantee that disk I/O never blocks the calling thread.**
+   DataStore delegates all read and write operations to a background dispatcher (`Dispatchers.IO`). It exposes reads as cold asynchronous `Flow`s and writes as `suspend` functions, forcing the developer to handle them non-blockingly within Coroutine scopes.
+3. **What is the fundamental difference between Preferences DataStore and Proto DataStore regarding Type Safety?**
+   Preferences DataStore relies on dynamically typed keys where runtime `ClassCastException`s can occur if types mismatch. Proto DataStore uses Protobuf to enforce a predefined schema, generating strictly typed classes at compile time.
+4. **Why is it an architectural disaster to use `runBlocking` to read a value from `DataStore` on the Main Thread?**
+   `runBlocking` halts the calling thread until the enclosed suspend function completes. Calling it on the Main Thread for DataStore completely defeats the purpose of the library, forcing synchronous disk I/O on the UI thread and likely causing UI freezes or ANRs.
+5. **What exception will be thrown if you instantiate multiple `DataStore` objects that point to the exact same underlying file on disk?**
+   It will throw an `IllegalStateException` indicating that multiple DataStores are active for the same file, to prevent silent data corruption from concurrent, unsynchronized writes.
+6. **Describe a scenario where you would choose to use `Room` instead of `DataStore` to save application data.**
+   Any scenario involving large datasets, lists of items, relational mapping, or the need to query, filter, or partially update data (e.g., caching a feed of thousands of social media posts).
+7. **How does `DataStore` guarantee that multiple coroutines attempting to write data simultaneously do not corrupt the file? (Hint: Think about `edit()`).**
+   Under the hood, DataStore uses a Kotlin `Mutex`. When multiple coroutines call `edit()` concurrently, the mutex queues the updates sequentially, ensuring that each read-modify-write cycle is atomic.
+8. **When observing a `DataStore` flow in a Repository, why is it critical to include a `.catch { }` block? What specific `Exception` are you looking for?**
+   It is critical to catch `IOException`. This exception is thrown if the file is corrupted, unreadable, or not found on disk. Catching it allows you to gracefully emit an empty/default preference object instead of crashing the app.
+9. **Explain the concept of "Migration" in DataStore and how you can seamlessly transfer existing `SharedPreferences` data into a new DataStore file.**
+   DataStore accepts a `SharedPreferencesMigration` object during creation. On the first read, DataStore intercepts the call, copies the specified keys from the legacy XML file into the new DataStore file, saves it, deletes the old XML file, and proceeds, ensuring a safe, one-shot transition.
+10. **Why does storing a massive list of 10,000 strings in `DataStore` cause significant memory and performance issues compared to storing them in `Room`?**
+    DataStore must read the entire file into memory as a single object, and every modification requires serializing and writing the entire file back to disk. Room uses SQLite, allowing targeted, partial updates and reading only the necessary chunks without loading the whole dataset into memory.
+
 ## Further Reading
 
 - [`room.md`](room.md) — The tool for complex, relational data.

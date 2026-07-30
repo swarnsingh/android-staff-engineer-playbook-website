@@ -129,6 +129,21 @@ The last one matters most and is measured least: every incident review asks "whi
 5.  What's your device strategy — what runs on ATD emulators vs real devices, and what data decides the real-device matrix?
 6.  Line coverage is 85% and production bugs keep escaping. What do you measure instead, and how do you re-aim the suite?
 
+## Answer Key
+
+1. **Your PR gate is at 35 minutes and the org wants a new set of instrumented checks added. Walk through your decision framework.**
+   First, enforce the latency budget (e.g., 15 mins). Reject adding them to the PR gate. Propose pushing them down to JVM (Robolectric/Paparazzi) or moving them post-merge (nightly/main branch) to preserve developer velocity.
+2. **Design the flake-quarantine pipeline: detection signal, threshold, what changes for a quarantined test, and the exit paths.**
+   Signal: A test fails and then passes on a retry with no code change. Threshold: >0.5% failure rate in 7 days. Action: Automatically move test out of blocking gate, run it in a quarantine lane, and open a ticket. Exit: Fix within SLO (14 days) or delete it.
+3. **Why does blanket auto-retry corrode a test system even though it makes builds greener? When is retry defensible?**
+   It hides real race conditions, adds invisible latency, and removes the urgency to fix broken tests. Retry is only defensible for tests in the quarantine lane to gather data, never to mask a failure in the blocking merge lane.
+4. **Where do contract tests against the BFF sit in the pyramid, and what do they let you remove from the E2E tier?**
+   They sit between Unit and Integration on the JVM. By validating request/response shapes directly against the API schema, you can remove data-shape verification from the slow, flaky E2E journey tests.
+5. **What's your device strategy — what runs on ATD emulators vs real devices, and what data decides the real-device matrix?**
+   Use ATD emulators (via Gradle Managed Devices) for sharded, per-merge blocking checks. Use real devices for nightly/release checks. The real-device matrix is determined by the actual OEM/OS distribution of your production user base, not random selection.
+6. **Line coverage is 85% and production bugs keep escaping. What do you measure instead, and how do you re-aim the suite?**
+   Measure escaped defects (bugs with no failing test). Review incidents to ask "what tier should have caught this?" Re-aim the suite by investing in tests for critical business paths and flows, rather than chasing 100% line coverage on trivial code.
+
 ## Further Reading
 
 - [`unit-testing.md`](unit-testing.md) — the pyramid tiers, coroutine/Flow testing mechanics, contract-vs-mock detail.

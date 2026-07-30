@@ -419,6 +419,33 @@ Both scopes start and end at the same time (login/logout). This is the right sha
 11. Why is `Dispatchers.Main` the default for `viewModelScope` instead of `IO`?
 12. Compare `@ActivityScoped` + `lifecycleScope` vs `@ViewModelScoped` + `viewModelScope` for managing checkout flow state. Which to pick?
 
+## Answer Key
+
+1. **State the difference between a Hilt scope and a coroutine scope in one sentence each.**
+   A Hilt scope controls how many instances of an object exist and how long they are shared in memory, while a coroutine scope controls how long asynchronous background work runs and when it gets cancelled.
+2. **Why does `@Singleton class Engine` + `private val scope = CoroutineScope(...)` create a leak risk? Walk through the fix.**
+   Because the singleton lives forever, the custom coroutine scope is never cancelled, meaning any long-running or hanging coroutines launched in it will leak memory for the app's lifetime. Fix this by explicitly tracking the `Job` and exposing `start()` and `stop()` methods to manually cancel the work when it's no longer needed.
+3. **A `@ViewModelScoped FilterState` and `viewModelScope` — when do they line up, and is that coincidence or design?**
+   They perfectly line up because both are tied exactly to the ViewModel's lifecycle by design; `FilterState` is destroyed by Hilt when the ViewModel is cleared, and `viewModelScope` cancels all running coroutines at that exact same moment.
+4. **Walk through what happens to a `suspend` function call when its caller's coroutine scope is cancelled.**
+   When the caller's scope is cancelled, a `CancellationException` is thrown at the next suspension point inside the `suspend` function, immediately halting its execution and ensuring no further work or callbacks are processed.
+5. **`repeatOnLifecycle(STARTED)` vs plain `lifecycleScope.launch { collect }` — what specifically does the former save?**
+   `repeatOnLifecycle(STARTED)` actively cancels the flow collection when the UI goes into the background (e.g., `STOPPED`) and restarts it when visible, saving CPU, battery, and memory by not processing UI updates that the user cannot see.
+6. **Singleton-scoped repository calls `api.checkout()`. The user navigates away mid-call. Does the network request continue? Why?**
+   No, the network request does not continue (assuming it was launched via `viewModelScope`). Suspend functions run in the *caller's* scope, so when the ViewModel clears and cancels `viewModelScope`, the cancellation propagates down and aborts the API call.
+7. **A logged-in user session needs both shared state (DI) and background work (coroutine). Design the scope strategy.**
+   Create a custom Hilt component (`@DefineComponent`) tied to the login session for DI sharing, and instantiate a parallel `CoroutineScope(SupervisorJob() + Dispatchers.IO)` in the SessionManager. When the user logs out, null out the component and call `cancel()` on the coroutine scope simultaneously.
+8. **`GlobalScope.launch { … }` is always wrong. Walk through why, with a concrete failure scenario.**
+   It breaks structured concurrency because it has no lifecycle awareness. If you launch a network call in `GlobalScope` from a Fragment, and the user rotates the screen 10 times, you spawn 10 orphaned network calls that can't be cancelled and will crash when they try to update a destroyed View.
+9. **A `@Singleton` holds a `Context`. Walk through which context types are safe vs which leak.**
+   Injecting `@ApplicationContext` is perfectly safe because the application context lives as long as the Singleton (the process). Injecting `@ActivityContext` is a catastrophic leak because the Singleton holds a hard reference to a specific Activity instance that cannot be garbage collected after it is destroyed.
+10. **`viewModelScope` doesn't cancel on rotation — explain the lifecycle reasoning.**
+    The Android framework specifically retains ViewModels across configuration changes to prevent data loss and redundant network calls. Since the ViewModel is retained, its `viewModelScope` deliberately outlives the rotation to ensure ongoing async tasks (like loading a list) complete seamlessly.
+11. **Why is `Dispatchers.Main` the default for `viewModelScope` instead of `IO`?**
+    Because ViewModels primarily exist to push state updates directly to the UI thread. Defaulting to `Main` ensures UI updates happen safely without explicit context switching, while heavy work can easily be shifted to `IO` using `withContext(Dispatchers.IO)`.
+12. **Compare `@ActivityScoped` + `lifecycleScope` vs `@ViewModelScoped` + `viewModelScope` for managing checkout flow state. Which to pick?**
+    Pick `@ViewModelScoped` + `viewModelScope`. Checkout state must survive screen rotations to prevent the user from losing their cart; `@ActivityScoped` and `lifecycleScope` are destroyed and recreated on rotation, which would wipe the state and cancel ongoing checkout API calls.
+
 ---
 
 ## Further Reading

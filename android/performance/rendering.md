@@ -490,6 +490,33 @@ fun Underline(color: Color, modifier: Modifier = Modifier) {
 
 ---
 
+## Answer Key
+
+1. **Walk through the rendering pipeline for one frame. Which work is on the UI thread, which is on the RenderThread, which is on the GPU?**
+   The UI thread measures, lays out, and records draw commands into a display list. The RenderThread receives the display list and translates it into GPU commands via Skia. The GPU executes those commands to rasterize the frame.
+2. **What does `Choreographer` do? When does `doFrame` fire?**
+   `Choreographer` coordinates the timing of animations, input, and drawing. `doFrame` fires upon receiving the vsync signal from the display, kicking off the UI thread's work for the next frame.
+3. **Display list — what is it, and when is it cached vs re-recorded?**
+   A display list is a recorded sequence of drawing commands. It is cached and reused if the view or Composable hasn't changed. It is re-recorded when a view is invalidated or a Composable recomposes.
+4. **Compose vs View — for a typical screen, which is faster, and *why* (not just "Compose is faster")?**
+   Compose is typically faster because it generates a flatter hierarchy (avoiding deep nested measure passes), avoids heavy `LinearLayout` weight calculations, and intelligently skips layout/draw phases for unchanged sub-trees using stable parameter memoization.
+5. **`setHasFixedSize(true)` on RecyclerView — what does it skip and when is it safe to enable?**
+   It skips the entire RecyclerView measure pass when items are added or removed. It is safe to enable when changes to the list's contents do not alter the overall size of the RecyclerView itself.
+6. **`key = { it.id }` on `LazyColumn` — what specifically does it prevent?**
+   It prevents unnecessary recompositions and state loss when items shift positions. Without it, Compose binds based on position, meaning an insertion at the top causes every visible row below it to recompose.
+7. **Overdraw at 4x — what's the GPU cost, and how do you investigate?**
+   The GPU wastes time painting the same pixel 4 times, leading to dropped frames on complex screens. Investigate by enabling "Debug GPU Overdraw" in Developer Options and checking for red areas.
+8. **Bitmap full-screen ARGB_8888 = ~8 MB. How do you load it without blocking the UI thread?**
+   Use an image loading library like Coil or Glide, which decodes the bitmap on a background dispatcher (e.g., `Dispatchers.IO`) and downsamples it to the target view size before passing it to the UI thread.
+9. **`Modifier.drawWithCache` vs `Modifier.drawBehind` — when each? What does the former save?**
+   Use `drawBehind` for simple, stateless drawing. Use `drawWithCache` when your drawing requires allocations (like creating a `Path` or `Brush`). It saves memory by caching allocations across recompositions until the size changes.
+10. **Vsync timing: UI work took 20ms. What frame does the user see, and when?**
+    The UI missed the 16.6ms vsync deadline. The user will see the *previous* frame repeated (a stutter) at vsync N+1, and the delayed new frame will finally display at vsync N+2.
+11. **SurfaceFlinger — what work does it do, and how does it interact with your app's main RenderThread output?**
+    SurfaceFlinger is a system service that takes the finalized buffers from all visible windows (status bar, nav bar, your app) and composites them together into the final image sent to the display hardware.
+12. **Profile a janky list scroll with Perfetto. What's the first thing you look at?**
+    Look at the main thread timeline for `Choreographer#doFrame`. Identify if the `traversal` (measure/layout) or `draw` phase is blowing past the ~16ms boundary, indicating exactly which phase is causing the delay.
+
 ## Further Reading
 
 - [`jank.md`](jank.md) — jank diagnosis canonical.

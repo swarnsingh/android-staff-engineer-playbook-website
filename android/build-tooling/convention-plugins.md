@@ -677,6 +677,50 @@ class BuildCacheConventionPlugin : Plugin<Project> {
 11. How would you test that a convention plugin correctly configures `compileSdk = 34`?
 12. Pre-commit hooks installed via convention plugin — when's this useful, when's it overkill?
 
+## Answer Key
+
+1. **Why do convention plugins live in `build-logic/` instead of `buildSrc/`? What's the difference?**
+   `buildSrc` invalidates the build cache for the entire project whenever any code inside it changes, leading to massive recompilations. `build-logic/` is an included composite build, which behaves like an external dependency, caching much more effectively and preventing full-project cache misses.
+2. **Walk through what happens when Gradle sees `id("yourorg.android.feature")` in a module's `build.gradle.kts`.**
+   Gradle resolves the plugin ID to the `AndroidFeatureConventionPlugin` implementation class in the `build-logic` composite build. It then executes the plugin's `apply(target: Project)` function, which sequentially applies underlying plugins (like library, Hilt, Compose), configures their extensions with standard defaults (like SDK versions, compile options), and adds standard dependencies to the project block.
+3. **A feature module needs Android library + Hilt + Compose. Sketch the plugin composition.**
+   ```kotlin
+   class AndroidFeatureConventionPlugin : Plugin<Project> {
+       override fun apply(target: Project) = with(target) {
+           with(pluginManager) {
+               apply("yourorg.android.library")
+               apply("yourorg.android.hilt")
+               apply("yourorg.android.compose")
+           }
+       }
+   }
+   ```
+4. **How do convention plugins access `libs.versions.toml`?**
+   They access it by retrieving the `VersionCatalogsExtension` from the `Project` extensions, typically wrapped in a helper extension function like `project.extensions.getByType<VersionCatalogsExtension>().named("libs")`.
+5. **You want to enforce `explicitApi()` on certain library modules. How do you structure plugins for this?**
+   Create a dedicated `StrictLibraryConventionPlugin` that applies the base `yourorg.android.library` plugin and then configures the `KotlinProjectExtension` to enable `explicitApi()`. Opt-in modules apply this strict plugin instead of the base one.
+6. **A custom task in a convention plugin needs to run as part of `./gradlew :module:check`. How do you wire it?**
+   Register the custom task using `tasks.register("myTask") { ... }`, then find the existing `check` task and add a dependency to it: `tasks.named("check") { dependsOn("myTask") }`.
+7. **Compose Compiler metrics opt-in via environment variable — sketch the plugin code.**
+   ```kotlin
+   if (System.getenv("ENABLE_COMPOSE_METRICS") == "true") {
+       extensions.configure<ComposeCompilerGradlePluginExtension> {
+           metricsDestination.set(rootProject.layout.buildDirectory.dir("compose-metrics/${project.name}"))
+           reportsDestination.set(rootProject.layout.buildDirectory.dir("compose-metrics/${project.name}"))
+       }
+   }
+   ```
+8. **What's the trade-off between "one big convention plugin" and "many small composable plugins"?**
+   One big plugin forces all modules to inherit heavy configuration (e.g., Compose, Room, Hilt) even if they don't need it, slowing down the build and breaking boundaries. Small composable plugins allow granular opt-in, maintaining strict dependencies and faster builds, though they require maintaining a slightly larger plugin API surface.
+9. **Migrating from `buildSrc` to `build-logic` composite build — walk through the migration.**
+   Rename the `buildSrc` directory to `build-logic`. In `settings.gradle.kts` of the root project, add `pluginManagement { includeBuild("build-logic") }`. In `build-logic/settings.gradle.kts`, configure the repositories and version catalog. Update plugin IDs and verify that modules now resolve the plugins from the composite build.
+10. **A convention plugin works locally but fails on CI. Common causes?**
+   Common causes include environment variable differences (e.g., relying on local `ANDROID_HOME` or custom env vars not present in CI), file path issues (case sensitivity on Linux CI vs macOS locally), or ignoring the remote build cache configurations that are specifically applied in CI.
+11. **How would you test that a convention plugin correctly configures `compileSdk = 34`?**
+   Use `ProjectBuilder` in a unit test: create a mock project, apply the convention plugin, retrieve the `LibraryExtension`, and assert `assertEquals(34, extension.compileSdk)`.
+12. **Pre-commit hooks installed via convention plugin — when's this useful, when's it overkill?**
+   It's useful for enforcing baseline standards (like ktlint or detekt) implicitly without requiring new developers to manually run setup scripts. It's overkill if the repository already uses a robust tooling system (like Husky or custom Gradle init scripts) or if the hook logic is too slow and frustrates developers committing frequently.
+
 ---
 
 ## Further Reading

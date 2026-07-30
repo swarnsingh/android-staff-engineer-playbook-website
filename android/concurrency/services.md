@@ -195,6 +195,29 @@ When reviewing background execution logic, a Staff engineer focuses strictly on 
 9.  If an `Activity` binds to a `Service`, and then the user presses the Back button destroying the `Activity`, what happens to the `Service`?
 10. Describe a scenario where you would absolutely choose to build a raw Foreground Service instead of using `WorkManager`.
 
+## Answer Key
+
+1. **Why does putting heavy network logic directly inside a Service's `onStartCommand()` cause an Application Not Responding (ANR) crash?**
+   A Service runs on the Main UI Thread of its hosting process by default. Heavy synchronous I/O blocks the thread, preventing the UI from responding to input and causing an ANR.
+2. **Explain the concept of a "Foreground Service Type" introduced in Android 14. Why did Google implement this restriction?**
+   It requires declaring the specific hardware or use case (e.g., `location`, `camera`) the service uses. Google added it to prevent developers from abusing Foreground Services to keep apps alive without actually performing the stated user-facing task.
+3. **Describe the difference between a "Started" Service and a "Bound" Service in terms of lifecycle management.**
+   A "Started" service runs indefinitely until `stopSelf()` is called explicitly. A "Bound" service's lifecycle is tied to its clients; it is destroyed automatically when all clients unbind.
+4. **If your app is in the background and receives an FCM Push Notification, why will calling `startForegroundService()` cause a fatal crash on Android 12+?**
+   Android 12 banned starting Foreground Services while the app is in the background to prevent invisible battery drain and malicious background execution.
+5. **What is the architectural purpose of returning `START_STICKY` versus `START_NOT_STICKY` from `onStartCommand()`?**
+   `START_STICKY` tells the OS to restart the service automatically if it was killed for memory, but without redelivering the original intent. `START_NOT_STICKY` tells the OS not to restart it, which is safer if you can't guarantee a clean state restoration.
+6. **How does the Android OS distinguish between a Background Service it can kill immediately and a Foreground Service it should keep alive?**
+   A Foreground Service must call `startForeground()` and provide an ongoing, un-dismissible Notification that proves to the user the app is doing active work.
+7. **In modern Android development, what is the primary alternative to using a Service for deferrable, long-running tasks like database synchronization?**
+   `WorkManager` is the modern standard. It handles OS constraints, Doze mode, and process restarts automatically without risking illegal foreground service exceptions.
+8. **Explain the memory implications of defining a Service to run in an entirely separate process via the `android:process` manifest attribute.**
+   It creates an entirely new OS process with its own memory footprint and its own Main Thread. While it isolates crashes, the massive IPC overhead and duplicated memory make performance worse for most use cases.
+9. **If an `Activity` binds to a `Service`, and then the user presses the Back button destroying the `Activity`, what happens to the `Service`?**
+   If the Activity was the only bound client, the OS will automatically call `onUnbind()` and then `onDestroy()` on the Service, shutting it down.
+10. **Describe a scenario where you would absolutely choose to build a raw Foreground Service instead of using `WorkManager`.**
+    For continuous, strictly user-initiated tasks that cannot be deferred and require constant user visibility, such as a live music player, an active VoIP call, or a real-time GPS navigation tracker.
+
 ## Further Reading
 
 - [`workmanager.md`](workmanager.md) — The modern replacement for 90% of Service use cases.

@@ -141,6 +141,29 @@ When thinking about the Runtime, a Staff engineer focuses on how code translates
 9.  Describe the role of the `dex2oat` background daemon in the Android Operating System.
 10. How does shipping a manual `Baseline Profile` inside your APK interact with ART's `dex2oat` compiler?
 
+## Answer Key
+
+1. **Explain the fundamental difference between a Just-In-Time (JIT) compiler and an Ahead-Of-Time (AOT) compiler regarding CPU usage and app startup times.**
+   JIT compiles bytecode to machine code at runtime, leading to faster installation but slower startup times and higher runtime CPU usage. AOT compiles bytecode before execution, resulting in slower installation but instant startup and lower CPU usage during runtime.
+2. **Why did Google choose to build Dalvik as a Register-Based Virtual Machine instead of using a standard Stack-Based Java Virtual Machine?**
+   A register-based VM requires vastly fewer CPU instructions to execute operations, which heavily optimizes performance for mobile ARM processors and directly translates to massive battery savings.
+3. **Describe the "Profile-Guided Optimization" (PGO) pipeline in modern ART. How does the phone know which methods to AOT compile overnight?**
+   ART records frequently used methods during runtime (JIT) into a local profile. When the device is idle and charging, the `dex2oat` daemon reads this profile to AOT compile only the heavily utilized paths.
+4. **How do "Cloud Profiles" provided by Google Play solve the "Day 1" performance problem for new users downloading your application?**
+   Google Play aggregates profiles from millions of users and delivers them alongside the APK. The OS uses this Cloud Profile to AOT compile the critical path during installation, skipping the slow JIT phase on the first run.
+5. **What was the catastrophic flaw with Android 5.0's approach of AOT compiling 100% of an application's DEX bytecode upon installation?**
+   Compiling everything led to AOT thrashing, where installations took up to 10 minutes, consumed massive amounts of storage space, and caused device overheating, even though users only utilized a fraction of the app's features.
+6. **Explain how the shift from Dalvik to ART radically improved Garbage Collection performance and reduced UI Jank.**
+   Dalvik used a "Stop-The-World" GC that froze the entire app, dropping frames during heavy allocation. ART introduced concurrent GC with optimized read-barriers, cleaning memory on background threads and reducing pauses to single-digit milliseconds.
+7. **What is the 64k Method Limit, and why does the modern ART runtime handle Multidex significantly better than the legacy Dalvik runtime?**
+   Dalvik used a 16-bit integer for method references, limiting apps to 65,536 methods and struggling with multiple DEX files. ART natively flattens multiple DEX files into a single `.oat` file during compilation, handling Multidex seamlessly.
+8. **If an application relies heavily on throwing and catching Java Exceptions for standard logic flow, how might the ART runtime react in terms of performance optimization?**
+   Exceptions are computationally expensive as they require stack walking and de-optimization. Frequent exceptions degrade performance significantly, negating ART's optimizations.
+9. **Describe the role of the `dex2oat` background daemon in the Android Operating System.**
+   `dex2oat` wakes up during device idle maintenance (plugged in, screen off) to read runtime profiles and Ahead-Of-Time compile frequently used methods into optimized machine code (`.odex`).
+10. **How does shipping a manual `Baseline Profile` inside your APK interact with ART's `dex2oat` compiler?**
+    It provides `dex2oat` with an exact, developer-defined blueprint of critical startup paths, ensuring they are AOT compiled immediately upon installation without waiting for local JIT profiling or Cloud Profile aggregation.
+
 ## Further Reading
 
 - [`the-zygote.md`](the-zygote.md) — The master process that initializes ART and preloads classes to avoid booting the JVM from scratch for every app.

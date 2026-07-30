@@ -200,6 +200,25 @@ Native library size and ABI coverage should be part of release review.
 7. What is the difference between `PathClassLoader` and plugin-style DEX loading?
 8. Why should release candidates be tested as minified AAB/split artifacts?
 
+## Answer Key
+
+1. **What does PackageManager parse from the manifest at install time?**
+   It parses package identity, signing lineage, requested permissions, components (activities, services, receivers, providers), intent filters, exported flags, and supported features to register the app with the OS.
+2. **Why does signing identity matter for updates?**
+   The OS ensures an update comes from the same developer by verifying the signing key lineage. If it breaks, the update is rejected to prevent malicious apps from taking over an existing app's data and permissions.
+3. **What is the relationship between package, UID, and sandbox?**
+   Every installed package is assigned a unique Linux UID. The OS uses this UID to enforce kernel-level isolation, ensuring the app can only access its own memory, data directories, and granted permissions.
+4. **Why can a missing class crash only in release builds?**
+   Release builds often use R8/ProGuard for minification and shrinking. If a class is only accessed via reflection without proper keep rules, R8 will remove it, leading to a `ClassNotFoundException` at runtime.
+5. **How do dynamic feature modules change class/resource assumptions?**
+   Code and resources in dynamic feature modules are not guaranteed to be present at runtime until they are explicitly requested and installed, requiring developers to handle "module not installed" states and lazy class loading.
+6. **Why do modern PackageManager queries return less than "all installed apps"?**
+   To enhance privacy and security, Android restricts package visibility. Apps must declare specific `<queries>` in their manifest to see other apps, otherwise queries return empty results.
+7. **What is the difference between `PathClassLoader` and plugin-style DEX loading?**
+   `PathClassLoader` is the standard, OS-managed way to load classes from the base APK and installed splits. Plugin-style loading (e.g., using `DexClassLoader` on external paths) dynamically loads arbitrary code at runtime, which is complex, risky, and generally discouraged.
+8. **Why should release candidates be tested as minified AAB/split artifacts?**
+   Because debug builds hide minification, split constraints, and strict classloading behavior. Testing minified AABs ensures you catch R8 stripping errors, dynamic feature loading crashes, and ABI split issues before production.
+
 ## Further Reading
 
 - [`art-and-dalvik.md`](art-and-dalvik.md)

@@ -570,6 +570,29 @@ Treat Swift export as an interop surface, not as a semantic adapter that makes e
 9. When is a `Channel` more correct than a `SharedFlow`?
 10. What changes when a Flow is exported to Swift `AsyncSequence` in Kotlin 2.4, and what does not change?
 
+## Answer Key
+
+1. **What happens when `emit` is called on a default `MutableSharedFlow` with zero subscribers?**
+   By default, it has no replay and no buffer, so the `emit` returns immediately and the value is completely lost.
+2. **Why can `tryEmit` return true while no active collector receives the value?**
+   `tryEmit` returning true simply means the value was accepted by the Flow's configuration without suspending. If there are no subscribers and no buffer, it is "accepted" and instantly discarded.
+3. **Why is `MutableStateFlow.update { }` safer than assigning `_state.value = _state.value.copy(...)` under concurrency?**
+   `update { }` uses a CAS (Compare-And-Swap) loop to ensure the mutation is atomic. `_state.value = _state.value.copy()` is a read-modify-write race condition if multiple coroutines execute it simultaneously.
+4. **How does equality conflation interact with mutable lists inside data classes?**
+   `StateFlow` ignores emissions if `newValue == oldValue`. If you mutate the internal list and emit the exact same object reference, the equality check passes and collectors are not notified.
+5. **What is the difference between replay cache and extra buffer capacity?**
+   Replay cache stores past values to instantly deliver to *future* new subscribers. Extra buffer capacity stores values for *existing* active subscribers that are processing too slowly to keep up.
+6. **When would `resetReplayCache` be appropriate?**
+   It is appropriate when using a `SharedFlow` for sensitive or stale data that should not be replayed to new subscribers once the initial context has passed (e.g., clearing a cached user session upon logout).
+7. **How does `WhileSubscribed(5_000)` change behavior during rotation?**
+   It keeps the upstream cold flow active for 5 seconds after the last subscriber disappears. This prevents restarting the expensive upstream flow during the brief window when an Activity is destroyed and recreated.
+8. **Why is `replay = 1` dangerous for navigation events?**
+   A new subscriber (like the UI after rotation) will instantly receive the cached navigation event again, causing the app to erroneously execute the navigation a second time.
+9. **When is a `Channel` more correct than a `SharedFlow`?**
+   A `Channel` is a queue where each value is delivered to exactly one receiver (point-to-point). `SharedFlow` is a broadcast where every subscriber receives a copy of the value.
+10. **What changes when a Flow is exported to Swift `AsyncSequence` in Kotlin 2.4, and what does not change?**
+    It provides type-safe Swift collection via `AsyncSequence`, but the semantic contracts (replay, conflation, loss) remain identical, and the Swift side must still correctly manage cancellation lifecycle.
+
 ## Further Reading
 
 - [`../architecture/flow.md`](../architecture/flow.md) - Cold vs hot Flow foundations.

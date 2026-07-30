@@ -154,6 +154,21 @@ The pattern across all three: WebView flows fail at the *edges* (cookies, redire
 5.  A blank white view appears intermittently on low-end devices. Walk through the renderer-process explanation and the recovery path.
 6.  How would you structure a hybrid-surface rubric for a 40-team app, and how do you keep teams from routing around it?
 
+## Answer Key
+
+1. **Walk through the trust boundary of a WebView with a JavaScript bridge. What exactly can a malicious iframe do, and which API changes the answer?**
+   A malicious iframe can execute arbitrary JS that calls native methods exposed via the bridge, effectively wielding app-level permissions. Using `addJavascriptInterface()` exposes the bridge to all frames. Switching to `WebViewCompat.addWebMessageListener` restricts access to specific trusted origins.
+2. **Why must app-bundled content load through `WebViewAssetLoader` instead of `file://`, and what attack does that close?**
+   Loading via `file://` requires enabling legacy file access flags, which can be exploited by XSS to read arbitrary local files from the device. `WebViewAssetLoader` creates an HTTPS virtual domain, respecting standard Same-Origin policies while safely serving local files.
+3. **Design the WebView setup for a 3-DS payment challenge: instance strategy, cookie handling, redirect capture, and the settings you'd lint against.**
+   Use a dedicated WebView instance for the flow to isolate state. Explicitly configure `CookieManager` to accept third-party cookies for the PSP domain. Capture redirects carefully via `shouldOverrideUrlLoading` (ensuring `isForMainFrame`). Lint against `setWebContentsDebuggingEnabled` in release and `onReceivedSslError.proceed()`.
+4. **When do you choose Custom Tabs over WebView, and what do you lose in each direction?**
+   Choose Custom Tabs for OAuth or third-party web content to utilize the browser's cookies and password manager safely. You lose UI customizability and the ability to bridge JS to native. Choose WebView when deep native integration and customized UI are strictly required.
+5. **A blank white view appears intermittently on low-end devices. Walk through the renderer-process explanation and the recovery path.**
+   On low-memory devices, Android may kill the separate WebView renderer process to reclaim RAM, leaving the native WebView empty. Recover by overriding `onRenderProcessGone()`, returning `true` to keep the app alive, and rebuilding or reloading the WebView.
+6. **How would you structure a hybrid-surface rubric for a 40-team app, and how do you keep teams from routing around it?**
+   Define clear guidelines based on interaction depth, offline requirements, capability access, and iteration speed. Implement CI lint checks and centralize WebView creation in a single, well-reviewed factory class so teams physically cannot instantiate rogue WebViews.
+
 ## Further Reading
 
 - [WebView — native bridges risk](https://developer.android.com/privacy-and-security/risks/insecure-webview-native-bridges) — official guidance on `addJavascriptInterface` and message listeners.

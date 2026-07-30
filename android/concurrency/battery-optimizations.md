@@ -159,6 +159,29 @@ If you are building an Alarm Clock or a Calendar reminder app, you need an alarm
 9.  If your Foreground Service is running and the user leaves their phone unplugged and stationary on a desk overnight, what will happen to the Service's network access?
 10. Describe the architectural tradeoff between using standard FCM "Normal" priority versus "High" priority for a background data sync.
 
+## Answer Key
+
+1. **What is the core difference in scope between "Doze Mode" and "App Standby Buckets"?**
+   Doze Mode is a system-wide sleep state when the device is idle, unplugged, and stationary. App Standby Buckets restrict individual apps based on their usage frequency, even if the device is actively in use.
+2. **Explain what a "Maintenance Window" is and why it is critical for battery conservation.**
+   It's a brief period during Doze Mode where the OS wakes up to allow all deferred jobs, syncs, and alarms from all apps to run simultaneously in a batched manner, maximizing battery efficiency.
+3. **If your app is in the "Rare" App Standby Bucket, how does that affect the execution frequency of your `WorkManager` jobs?**
+   It places severe restrictions on the app, preventing background internet access and deferring `WorkManager` jobs for 24+ hours at a time.
+4. **Why did Google restrict the use of the `SCHEDULE_EXACT_ALARM` permission in Android 14?**
+   Developers abused it to bypass Doze Mode and run exact background work, draining battery. Now, Google Play restricts it to legitimate Alarm Clock and Calendar apps.
+5. **If you send a High-Priority FCM message to wake up a Dozing device, what specific action must your app take to prevent being penalized by the OS?**
+   The app must display a user-visible Notification within seconds. Failing to do so causes Google to silently de-prioritize future messages.
+6. **Explain the danger of a "Stuck Wakelock" and how it affects the user's device.**
+   A Stuck Wakelock forces the CPU to remain active indefinitely, rapidly draining the battery to 0% while the phone is idle, causing Google Play to penalize the app's store ranking.
+7. **Why is `WorkManager` the recommended solution for background work considering the existence of Doze Mode?**
+   `WorkManager` natively respects Doze Mode and App Standby, automatically pausing, queuing, and resuming jobs during Maintenance Windows without requiring you to write manual battery logic.
+8. **How can you test how your app behaves in Deep Doze mode using the ADB command line?**
+   By using `adb shell dumpsys deviceidle force-idle` to force the device into Deep Doze, or changing standby buckets with `adb shell am set-standby-bucket`.
+9. **If your Foreground Service is running and the user leaves their phone unplugged and stationary on a desk overnight, what will happen to the Service's network access?**
+   The device enters Deep Doze, and the OS will completely cut off the Foreground Service's network access until the next maintenance window, though the service process itself stays alive.
+10. **Describe the architectural tradeoff between using standard FCM "Normal" priority versus "High" priority for a background data sync.**
+    High Priority pierces Doze but burns quota and mandates a user notification. Normal Priority respects Doze Mode and is delayed to maintenance windows, which is appropriate for silent data syncs.
+
 ## Further Reading
 
 - [`workmanager.md`](workmanager.md) — The system designed to play nicely with Doze.

@@ -187,6 +187,29 @@ When reviewing DI architecture, a Staff engineer focuses on module boundaries an
 9.  Why does Hilt require you to annotate the `Application` class with `@HiltAndroidApp`? What is happening under the hood?
 10. Describe a scenario where Pure Dagger 2 would be a better architectural choice than Hilt.
 
+## Answer Key
+
+1. **What is the fundamental difference between a Dependency Injection framework like Hilt and a Service Locator pattern like Koin regarding compile-time safety?**
+   Hilt validates the entire dependency graph during compilation; if a dependency is missing or misconfigured, the build fails immediately. A Service Locator like pure Koin resolves dependencies at runtime, meaning a misconfiguration will compile perfectly but crash with an exception when the user navigates to the affected screen.
+2. **Explain the exact lifecycle difference between a dependency scoped with `@Singleton` versus one scoped with `@ViewModelScoped`.**
+   `@Singleton` objects are created once and live in memory until the OS kills the app process. `@ViewModelScoped` objects are created when a ViewModel is instantiated and are explicitly garbage collected when that specific ViewModel is cleared (when the user completely backs out of the screen).
+3. **Why is it a catastrophic memory leak to inject an `@ActivityContext` into a class annotated with `@Singleton`?**
+   Because the `@Singleton` class lives forever for the life of the app process, it will permanently hold a hard reference to the specific Activity instance it was injected with. That Activity (and its entire View hierarchy) can never be garbage collected, even after it is destroyed.
+4. **If you write a class `MyRepository @Inject constructor()`, do you need to write an `@Provides` method for it in a Hilt Module? Why or why not?**
+   No. The `@Inject constructor` annotation explicitly tells Hilt how to instantiate the class. `@Provides` methods in Modules are only necessary for classes where you don't own the constructor (like 3rd-party libraries such as `Retrofit`) or when returning a specific implementation for an interface.
+5. **What is the purpose of the `@Binds` annotation in a Hilt Module, and how does it relate to the Dependency Inversion Principle (SOLID)?**
+   `@Binds` tells Hilt which concrete implementation to provide when an interface is requested (e.g., binding `UserRepositoryImpl` to `UserRepository`). This enables Dependency Inversion because classes depend only on abstract interfaces rather than concrete implementations, allowing for easy substitution (e.g., mocks during testing).
+6. **Describe the memory profiling tradeoff of annotating every single class in your project with `@Singleton`. What should you do instead?**
+   Annotating everything `@Singleton` forces the app to keep every class in RAM indefinitely, leading to massive memory bloat and slower startup times. Instead, most classes should be unscoped (so they can be garbage collected when the referencing component dies) or scoped tightly to the ViewModel (`@ViewModelScoped`).
+7. **How does Hilt solve the massive boilerplate problem that existed in Pure Dagger 2? (Hint: Think about Component generation).**
+   In Pure Dagger 2, developers had to manually write interfaces for Components and Subcomponents, and manually wire them to the Android Lifecycle. Hilt pre-generates all standard Android components (`SingletonComponent`, `ActivityComponent`, etc.) and automatically handles the injection lifecycle via annotations like `@AndroidEntryPoint`.
+8. **If a ViewModel needs a runtime argument (like a `productId` from Navigation) in addition to its DI dependencies, how do you handle that in Hilt?**
+   You use Assisted Injection. You annotate the runtime parameter with `@Assisted`, annotate the constructor with `@AssistedInject`, and define an `@AssistedFactory` interface inside the ViewModel. You then use `hiltViewModel()` with a `creationCallback` in the UI to pass the runtime argument to the factory.
+9. **Why does Hilt require you to annotate the `Application` class with `@HiltAndroidApp`? What is happening under the hood?**
+   `@HiltAndroidApp` acts as the trigger for Hilt's annotation processor. Under the hood, it generates a base Application class that initializes the `SingletonComponent` (the root of the DI graph) at the very start of the app's lifecycle, which all other components attach to.
+10. **Describe a scenario where Pure Dagger 2 would be a better architectural choice than Hilt.**
+    Pure Dagger 2 is better for massive enterprise mono-repos (500+ modules) with extremely complex, custom scoping requirements, or projects utilizing heavy Dynamic Feature Modules where components need to be manually instantiated and attached to the graph long after the app has started.
+
 ## Further Reading
 
 - [`viewmodel.md`](../architecture/viewmodel.md) — The consumer of `@HiltViewModel`.

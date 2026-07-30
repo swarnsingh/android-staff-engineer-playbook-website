@@ -177,6 +177,29 @@ When reviewing GraphQL integrations, a Staff engineer focuses on Cache policies 
 9.  If you are using Apollo, do you still need to understand and configure `OkHttp`? Why or why not?
 10. Describe an architectural scenario where sticking to a legacy REST API via Retrofit would actually be superior to migrating to GraphQL.
 
+## Answer Key
+
+1. **Explain the "Over-fetching" and "Under-fetching" problems in REST, and exactly how GraphQL solves them.**
+   Over-fetching pulls excessive unused data; under-fetching requires multiple API calls to get nested data (N+1 problem). GraphQL solves this by allowing the client to define a single, precise query requesting exact fields across related entities in one payload.
+2. **How does Apollo Kotlin provide compile-time safety that Retrofit/Moshi cannot provide?**
+   Apollo validates the client's `.graphql` query against the backend `schema.graphqls` during the Gradle build, generating strongly-typed Kotlin classes. If a field changes on the server, the app fails to compile immediately.
+3. **Describe the "Normalized Cache" in Apollo. How does it enable reactive UI updates across different screens?**
+   It flattens nested JSON responses into individual entities mapped by their unique ID in SQLite. If a mutation updates an entity's field, the cache detects the change and automatically emits new data to all active queries (Flows) observing that ID, updating the UI reactively.
+4. **In GraphQL, why is relying on standard HTTP status codes (like 404 or 500) insufficient for error handling?**
+   GraphQL typically returns an HTTP 200 OK even if the query fails completely or partially. Errors are returned inside the JSON payload within an `errors` array, requiring explicit manual inspection of the response object.
+5. **If a GraphQL query returns an object that does not have an `id` field, how does the Apollo Normalized Cache handle it, and what problem does this create?**
+   Apollo treats it as a nested object tied to its parent instead of an independent entity. This breaks cache normalization; updating the child won't automatically update other screens observing it unless you define a custom `CacheKeyGenerator`.
+6. **Explain the difference between the `CacheFirst` and `CacheAndNetwork` fetch policies.**
+   `CacheFirst` reads from the cache and only hits the network if the data is missing. `CacheAndNetwork` reads and emits from the cache immediately for a fast UI, while concurrently hitting the network and emitting a second time when fresh data arrives.
+7. **Why is standard HTTP Caching (using Headers like `ETag` or `Cache-Control`) difficult to implement with GraphQL compared to REST?**
+   Standard HTTP caching relies on unique URLs and GET requests. GraphQL typically uses a single endpoint (`/graphql`) and sends queries inside POST request bodies, which are generally not cached by CDNs or standard HTTP mechanisms.
+8. **How does the Apollo Gradle plugin know how to generate the correct Kotlin Data Classes for your queries?**
+   The plugin reads your `schema.graphqls` file and the `.graphql` query files, parses the AST, resolves the requested fields against the schema types, and outputs strict Kotlin Data Classes matching the specific query shape.
+9. **If you are using Apollo, do you still need to understand and configure `OkHttp`? Why or why not?**
+   Yes. Apollo uses `OkHttp` as its underlying HTTP engine. You must configure OkHttp to handle connection timeouts, interceptors, authenticators, and TLS settings just as you would with Retrofit.
+10. **Describe an architectural scenario where sticking to a legacy REST API via Retrofit would actually be superior to migrating to GraphQL.**
+    A media-heavy app focused on massive file uploads (Multipart), where strict HTTP-level ETag caching on a CDN is essential, and the backend data models are already perfectly tailored to the UI without over-fetching.
+
 ## Further Reading
 
 - [`retrofit-and-okhttp.md`](retrofit-and-okhttp.md) — The REST alternative and the underlying engine (OkHttp).
