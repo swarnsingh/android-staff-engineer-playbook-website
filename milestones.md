@@ -92,6 +92,7 @@ The fastest-moving files in the repo, per the [Staleness Strategy](CONTRIBUTING.
 | `android/kotlin-multiplatform/tooling/swift-interop.md` | Objective-C export mappings, Swift export Alpha capabilities/limits, SKIE compatibility and generated features | kotlinlang.org/docs/native-objc-interop.html + native-swift-export.html + skie.touchlab.co | 2026-07-30 |
 | `android/kotlin-multiplatform/tooling/ios-distribution.md` | XCFramework tasks/slices, direct/CocoaPods/SwiftPM integration, binary checksums, exported dependency behavior | kotlinlang.org/docs/multiplatform/multiplatform-ios-integration-overview.html + multiplatform-build-native-binaries.html + multiplatform-spm-export.html | 2026-07-30 |
 | `android/kotlin-multiplatform/binary-compatibility-api-evolution.md` | Kotlin ABI-validation DSL/tasks, KLib guarantees, Swift export stability, version-overload and deprecation behavior | kotlinlang.org/docs/gradle-binary-compatibility-validation.html + api-guidelines-backward-compatibility.html + kotlin-evolution-principles.html | 2026-07-30 |
+| `android/kotlin-multiplatform/production/testing-and-mocking.md` | Kotlin/Android test source-set names, runner/task behavior, coroutine test API, Compose UI test API, mocking-library target support | kotlinlang.org/docs/multiplatform/multiplatform-run-tests.html + developer.android.com/kotlin/multiplatform/plugin + official library documentation linked in the topic | 2026-07-30 |
 | `android/testing/testing-strategy.md` | GMD/ATD APIs, sharding property (experimental namespace) | developer.android.com/studio/test/gradle-managed-devices | 2026-07-15 |
 | `android/testing/ui-testing.md` | Compose Preview Screenshot Testing plugin status, version, and requirements | developer.android.com/studio/preview/compose-screenshot-testing | 2026-07-29 |
 | `kotlin/version-updates/` (all digests) | Release-delta claims by construction | kotlinlang.org release notes | 2026-07-15 |
@@ -336,7 +337,7 @@ These are not active milestone blockers, but they are worth handling in a future
 
 The July 29, 2026 visual pass established a maintainable baseline:
 
-- 251 Mermaid diagrams render successfully through the pinned Mermaid CLI.
+- 299 Mermaid diagrams render successfully through the pinned Mermaid CLI.
 - All 65 legacy ASCII blocks in `mobile-system-design/` were replaced with Mermaid architecture, sequence, pipeline, or state diagrams plus text takeaways.
 - High-value Android, Compose, performance, testing, Kotlin, KMP, build, security, release, and resilience topics received focused visual upgrades.
 - All older architecture ASCII outside mobile system design has now been migrated to Mermaid. The visual checker enforces a zero-diagram baseline while ignoring box-drawing characters that are part of executable source-code examples.
