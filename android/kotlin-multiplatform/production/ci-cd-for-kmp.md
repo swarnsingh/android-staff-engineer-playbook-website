@@ -373,6 +373,14 @@ Without this, you'll see `OutOfMemoryError: Java heap space` during framework li
 3.  **Cache Invalidation:** You upgrade Kotlin from 2.0.10 to 2.0.20 in `libs.versions.toml`. The `.konan` cache key changes. On the next CI run, what downloads from the Kotlin servers, and how long does it take?
 4.  **SPM Checksum:** In the release workflow, `shasum -a 256` computes the SHA256 of the `.xcframework.zip`. If CI computes one checksum but the actual uploaded file has a different checksum (e.g., due to a network corruption during upload), what error does the iOS engineer see in Xcode?
 5.  **KMMBridge vs Manual:** What are the tradeoffs between using KMMBridge (a third-party Gradle plugin) versus writing your own CI release script? When would you choose manual over KMMBridge?
+## Answer Key
+
+1. Kotlin/Native for Apple targets depends on the Apple LLVM toolchain, `xcrun`, and proprietary macOS SDK headers (`target-sysroot`). Apple restricts these binaries and SDKs to run only on macOS environments (Darwin kernel), so the Linux compiler toolchain literally cannot cross-compile to Apple targets without those proprietary utilities and headers.
+2. To cap macOS runs safely below the 80% reduction threshold, implement **concurrency cancellation** and a **Merge Queue**. First, cancel superseded macOS CI runs when a developer pushes a new commit (`concurrency: cancel-in-progress: true`). Second, run only the cheap Linux JVM checks during the PR review phase. Once approved, the PR enters a merge queue where the expensive macOS test suite runs exactly once per batch before merging. This structurally bounds macOS executions (e.g. to just the final merged batches) regardless of commit frequency or path-filtering ratios.
+3. Because the CI workflow uses `restore-keys: konan-${{ runner.os }}-`, it does not start from a cold cache. It restores the existing `.konan` folder containing the previously downloaded LLVM toolchains and Apple SDK sysroots. The CI will *only* download the missing version-specific Kotlin compiler binary (e.g., `kotlin-native-prebuilt-macos-aarch64` for 2.0.20, ~500MB). This incremental download typically takes 1-2 minutes instead of a full 5-10 minute cold start.
+4. Xcode will refuse to resolve the package dependency and display a checksum mismatch error (e.g., "checksum of downloaded artifact does not match"). Swift Package Manager strictly verifies the SHA256 in `Package.swift` against the downloaded binary to prevent supply-chain tampering and corruption.
+5. KMMBridge abstracts away SPM packaging, GitHub Releases, zipping, and versioning inside a single Gradle plugin. The tradeoff is adding a third-party dependency (from Touchlab) that dictates the publishing flow and might lag behind major Kotlin tooling bumps. Manual scripting (bash/yaml) provides absolute control over the XCFramework ZIP structure, custom hosting (e.g., private Artifactory/S3), and internal versioning policies.
+
 
 ## Further Reading
 
