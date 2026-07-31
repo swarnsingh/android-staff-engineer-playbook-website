@@ -296,6 +296,27 @@ This repo follows the patterns above. See:
 
 ---
 
+## Answer Key
+
+1. **When would you write a 1-pager instead of a full RFC? When would the reverse be true?**
+   Write a 1-pager to secure high-level buy-in on direction before investing weeks of time into a full design. Write a full RFC when you need to align on cross-team architecture, APIs, or migration plans prior to building.
+2. **What makes an ADR's "Consequences" section different from an RFC's "Risks" section?**
+   An RFC's "Risks" anticipates future problems to mitigate them before execution, while an ADR's "Consequences" records the accepted trade-offs of a decision already made so future engineers understand what became harder or easier.
+3. **Why is the "Alternatives Considered" section often the most-skipped and most-load-bearing?**
+   It's skipped because authors are biased toward their proposed solution, but it is load-bearing because it stress-tests the design. Arguing against your own proposal proves to reviewers that you evaluated trade-offs thoroughly rather than picking the first idea.
+4. **How do you write the same proposal differently for the EM, the Product Manager, and the VP?**
+   For the EM, focus on architecture and technical details. For Product, focus on user impact and bug reduction. For the VP, translate it into high-level business value, engineering hours saved, and OKR alignment.
+5. **What's the failure mode of writing the RFC alone for 3 weeks before sharing?**
+   Reviewers feel no ownership over the design, treat it as a finished document dropped on them, and are likely to reject it on principle. "Designing in secret" misses the early feedback that aligns the team.
+6. **When is it correct to *not* write an RFC?**
+   When the work is a straightforward execution of an established pattern, localized to a single team, doesn't impact cross-functional architecture, and carries low blast radius.
+7. **How do you balance "write in the open" with "don't waste reviewers' time on half-formed thoughts"?**
+   Share the draft early with explicit tags for specific reviewers asking targeted questions (e.g., "@alice - does this idempotency key shape match?"), rather than asking everyone to review the whole unstructured document.
+8. **What's the smallest unit of telemetry data that makes an RFC's "why now" argument credible?**
+   A specific, quantitative metric showing current negative impact (e.g., "Crashlytics shows 4,200 ANRs/day affecting 0.3% of sessions"), proving it is an urgent problem rather than a theoretical refactor.
+
+---
+
 ## Further Reading
 
 - [Michael Nygard — Documenting Architecture Decisions](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions) — the canonical ADR template.

@@ -216,6 +216,25 @@ For local typeahead:
 7. How does a SQLite index change search complexity?
 8. Why is user-facing string sort different from protocol string sort?
 
+## Answer Key
+
+1. **Why is binary search O(log n)?**
+   Because it halves the search space at each step, requiring at most log₂(n) comparisons to find the target or determine it doesn't exist.
+2. **What invariant must hold before using binary search?**
+   The array must be strictly sorted according to the exact same comparator that the binary search algorithm uses.
+3. **Why do stable tie-breakers matter for pagination?**
+   Without them, items with equal scores can shift positions arbitrarily between requests, causing missing or duplicated items across page boundaries.
+4. **When would you prefer a linear scan over a hash map?**
+   For very small datasets (e.g., 5-20 items) where the constant-factor overhead of allocating, hashing, and traversing a map outweighs a simple O(n) array traversal.
+5. **What makes a comparator invalid?**
+   If it violates antisymmetry or transitivity, or if it fails to return 0 for items that should be treated as equal by the collection's deduplication logic.
+6. **Why should large sorts avoid the main thread?**
+   Sorting large datasets takes significant CPU time, which blocks the main thread, drops frames, and causes Application Not Responding (ANR) errors.
+7. **How does a SQLite index change search complexity?**
+   It converts an O(n) full table scan into an O(log n) tree search (typically a B-tree).
+8. **Why is user-facing string sort different from protocol string sort?**
+   User-facing strings must respect locale-specific language and collation rules, whereas protocol strings usually require deterministic ASCII or root-locale ordering.
+
 ## Further Reading
 
 - [`arrays-and-strings.md`](arrays-and-strings.md)

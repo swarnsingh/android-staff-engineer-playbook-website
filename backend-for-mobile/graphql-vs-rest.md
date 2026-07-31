@@ -460,6 +460,35 @@ Most apps end up with a hybrid: REST for static/large payloads (catalog, images)
 
 ---
 
+## Answer Key
+
+1. **Walk through the over-fetching problem with a concrete payload. Show how GraphQL collapses 4 KB to 200 bytes.**
+   A REST profile fetch might return 40 fields (address, marketing_opt_in) totaling 4KB, even if the UI only needs `displayName` and `avatarUrl`. A GraphQL query explicitly requests only those two fields, and the server returns exactly 200 bytes, avoiding massive string allocation and parsing.
+2. **Why does REST get HTTP caching "for free" while GraphQL doesn't? What's the consequence at 1M requests/day?**
+   REST relies on HTTP `GET` requests, which CDNs, proxies, and OkHttp natively cache via `Cache-Control` headers. GraphQL uses `POST`, which is not cached by default. At 1M requests/day, REST offloads traffic to the edge, while GraphQL forces all 1M requests to hit the origin server.
+3. **Explain persisted queries. What two problems do they solve?**
+   Persisted queries replace the full GraphQL query string with a pre-registered hash. They solve caching by allowing clients to send `GET` requests with the hash, and they solve security by preventing attackers from executing arbitrary or excessively deep queries.
+4. **Apollo normalized cache vs OkHttp HTTP cache — what's the conceptual difference?**
+   OkHttp caches raw network responses by URL (HTTP cache). Apollo's normalized cache breaks down the JSON response and stores individual objects by `__typename` + `id`, acting like a local database where updating a user's name automatically updates all screens showing that user.
+5. **Your API contract drifts between server and Android. Compare how OpenAPI + REST vs Apollo + GraphQL detect this.**
+   OpenAPI specs are often manually maintained, allowing silent drift between backend code and client expectations that manifest as runtime crashes. Apollo reads the live server schema via introspection and generates Kotlin types at compile time; if the server contract breaks, the Android build fails immediately.
+6. **Walk through optimistic updates in Apollo Kotlin. What happens on success vs failure?**
+   The client instantly writes the expected mutation result (e.g., `likeCount + 1`) to the local Apollo cache, triggering immediate UI recomposition. If the network request succeeds, the cache is confirmed; if it fails, Apollo automatically rolls back the cache and the UI reverts.
+7. **Real-time updates: GraphQL subscriptions vs REST + SSE. When pick each?**
+   Use GraphQL subscriptions if the app is already heavily invested in the Apollo ecosystem and requires bidirectional WebSocket management. Use REST + SSE if the app only needs simple, one-way real-time updates and wants to leverage standard HTTP infrastructure.
+8. **A team wants to switch from REST to GraphQL for "performance." Walk through the audit you'd run first.**
+   Audit if the app actually suffers from massive over-fetching or N+1 round trips. If they already use sparse fieldsets (`?fields=`) and a BFF, the performance delta is negligible. Migrating just for "vibes" introduces massive caching and security complexities.
+9. **Error handling: REST uses HTTP status codes; GraphQL returns 200 with `errors`. Why? What's the practical implication for the Android client?**
+   GraphQL returns 200 because a query can partially succeed (e.g., profile loads, but related posts fail). The client must manually check `response.hasErrors()` because a 200 OK does not guarantee business logic success, unlike REST where a 4xx/5xx explicitly flags failure.
+10. **Versioning: `/api/v2/users` vs schema deprecation. Compare the lifecycle costs of each.**
+    REST's `/v2` allows a clean break but forces coordinated API migrations. GraphQL's field deprecation allows continuous, additive evolution without breaking endpoints, but requires strict telemetry (persisted query tracking) to know when an old Android client finally stops requesting a deprecated field.
+11. **A new feature needs data from 5 microservices on one screen. REST + BFF or GraphQL? Justify.**
+    If the mobile team wants to orchestrate the exact payload shape and the backend exposes a unified Graph, use GraphQL. If the backend doesn't have GraphQL, or if the payload needs custom server-side error mapping/business logic specific to mobile, build a REST + BFF.
+12. **You're building an offline-first app with live UI updates. Walk through the Apollo + Flow + Compose pattern that delivers it.**
+    The ViewModel executes a GraphQL query and calls `.watch().toFlow()`. The Composable collects this StateFlow. Any local mutation or incoming subscription updates the Apollo normalized cache, which automatically triggers `.watch()` to emit a new state, recomposing the UI instantly.
+13. **Where does gRPC fit in this picture? Why isn't it usually picked for Android-to-backend calls?**
+    gRPC provides typed, binary RPCs over HTTP/2 via Protobuf. It is avoided for Android-to-backend because it lacks native browser/CDN caching, proxy debugging is extremely difficult (unreadable binary), and the tooling (protoc, OkHttp workarounds) is much heavier than REST or GraphQL.
+
 ## Further Reading
 
 - [`api-design-for-mobile.md`](api-design-for-mobile.md) — practical mobile-API design across both styles.

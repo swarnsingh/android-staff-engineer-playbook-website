@@ -286,6 +286,25 @@ If you need priority plus lookup/removal by ID, use a heap plus an index map or 
 7. When is a sorted list better than a heap?
 8. How do you handle cancellation when `PriorityQueue.remove(item)` is O(n)?
 
+## Answer Key
+
+1. **Why is heap peek O(1) but arbitrary search O(n)?**
+   A heap strictly maintains the minimum (or maximum) at the root, but the rest of the elements only guarantee parent-child relationships, not a total order, requiring a full scan for arbitrary elements.
+2. **How do you implement top K without sorting all N items?**
+   By maintaining a min-heap of size K. Iterate over the N items, pushing to the heap, and if the heap size exceeds K, pop the minimum element.
+3. **Why does Java `PriorityQueue` need a tiebreaker for deterministic behavior?**
+   Because it is not a stable structure; items with equal priorities can be ordered arbitrarily depending on their insertion history without an explicit tiebreaker.
+4. **How does Dijkstra use a priority queue?**
+   It uses a min-heap to efficiently and lazily fetch the next unvisited node with the shortest tentative distance from the start node.
+5. **What goes wrong if retry state is stored only in memory?**
+   If the application is killed by the OS or the device restarts, the in-memory heap is destroyed and all scheduled retries are permanently lost.
+6. **How would you prevent visible image loads from being blocked by prefetches?**
+   Use a priority queue (or prioritized thread pool) that strictly ranks visible UI image requests above background prefetches, while limiting overall concurrency.
+7. **When is a sorted list better than a heap?**
+   When you need fast in-order iteration, binary search capabilities, or rapid range queries, which a heap cannot provide.
+8. **How do you handle cancellation when `PriorityQueue.remove(item)` is O(n)?**
+   Use lazy deletion by marking the item as cancelled (e.g., with a boolean flag) and simply ignoring or discarding it when it naturally pops to the top of the heap.
+
 ## Further Reading
 
 - [`graphs.md`](graphs.md)

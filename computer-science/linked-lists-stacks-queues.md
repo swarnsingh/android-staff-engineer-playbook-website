@@ -263,6 +263,25 @@ Useful for streaming metrics, rolling maxima, and rate-window calculations.
 7. What data structure would you use for "last 100 logs"?
 8. Why does removing the first item from `ArrayList` cost O(n)?
 
+## Answer Key
+
+1. **Why is `ArrayDeque` usually better than `LinkedList` for a queue on Android?**
+   Because `ArrayDeque` is backed by a contiguous array resulting in excellent CPU cache locality, whereas `LinkedList` incurs heavy allocation overhead and cache misses from pointer chasing.
+2. **How does an LRU cache achieve O(1) lookup and O(1) eviction?**
+   By combining a hash map for O(1) key lookups and a doubly linked list for O(1) removals and recency updates.
+3. **When does a recursive traversal become a reliability risk?**
+   When processing deeply nested or adversarial inputs that can overflow the JVM call stack, causing a StackOverflowError.
+4. **Why is an in-memory upload queue insufficient for offline sync?**
+   In-memory queues do not survive process death, leading to permanent data loss if the app is killed before the sync completes.
+5. **What backpressure policy would you choose for analytics events?**
+   Apply a bounded queue size and define a drop policy (like dropping the oldest events) to prevent memory leaks and out-of-memory (OOM) errors on slow networks.
+6. **How is bottom-navigation state a multiple-stack problem?**
+   Each bottom navigation tab requires its own independent back stack, so the system must preserve and restore individual stacks rather than relying on one global stack.
+7. **What data structure would you use for "last 100 logs"?**
+   A ring buffer (or circular array), which natively enforces a fixed size and provides O(1) additions by wrapping around and overwriting the oldest entries.
+8. **Why does removing the first item from `ArrayList` cost O(n)?**
+   Because all `n - 1` subsequent elements must be shifted one index to the left to fill the vacated slot.
+
 ## Further Reading
 
 - [`arrays-and-strings.md`](arrays-and-strings.md)

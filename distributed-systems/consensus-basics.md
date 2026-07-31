@@ -420,6 +420,31 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 
 ---
 
+## Answer Key
+
+1. **Explain the FLP impossibility result in your own words. What does it mean for practical systems?**
+   FLP proved that in an asynchronous network where even one node can crash, no deterministic algorithm can guarantee that consensus will always terminate. For practical systems, it means we must trade guaranteed liveness for safety, relying on timeouts to make progress.
+2. **How does Raft prevent split brain? What role does the term number play?**
+   Raft prevents split brain by requiring a majority vote to elect a leader and by attaching a monotonically increasing term number to every epoch. A node rejects commands from a leader with an older term, ensuring only the current leader can commit.
+3. **A 5-node Raft cluster loses 2 nodes. Can it still serve writes? What about reads?**
+   Yes, a 5-node cluster can tolerate 2 failures and still form a majority quorum (3 nodes). It can serve both linearizable reads and writes as long as those 3 nodes are connected.
+4. **Compare 2PC and Raft. Why is 2PC not a true consensus protocol?**
+   2PC is a blocking coordination protocol: if the coordinator crashes mid-transaction, participants are stuck. Raft is a true consensus protocol because it is fault-tolerant and makes progress as long as a majority of nodes are alive.
+5. **Why do Raft election timeouts need to be randomized? What happens without randomization?**
+   Timeouts are randomized to prevent election livelock. Without randomization, multiple followers might time out simultaneously, split the vote repeatedly, and endlessly loop without ever electing a leader.
+6. **Explain the difference between "written to the leader" and "committed" in Raft. Why does this distinction matter?**
+   An entry is "written to the leader" when it hits the leader's local log. It is "committed" only after it is replicated to a majority of nodes. If the leader fails before commit, the entry is lost; clients must only consider data durable once committed.
+7. **A leader fails after committing entry X but before replicating it to all followers. Is X lost? Why or why not?**
+   No, X is not lost. Because it was committed, it must exist on a majority of nodes. The election restriction in Raft guarantees that the new leader will be chosen from that majority and will contain entry X.
+8. **When would you choose a 5-node cluster over a 3-node cluster? What's the trade-off?**
+   Choose 5 nodes to tolerate 2 failures, allowing for safe rolling upgrades while maintaining quorum even if one node crashes. The trade-off is higher write latency and increased operational overhead.
+9. **How does Multi-Raft solve the single-leader throughput bottleneck?**
+   By partitioning the dataset (e.g., by key ranges) and assigning a separate independent Raft group (with its own leader) to each partition, distributing the replication and leader load across the entire cluster.
+10. **Why is implementing consensus from scratch a bad idea? What are the alternatives?**
+    Consensus protocols are notoriously subtle and prone to edge-case bugs leading to data loss or split brain. Instead, use battle-tested implementations like etcd, ZooKeeper, or embedded libraries like Apache Ratis.
+
+---
+
 ## Further Reading
 
 In this repository:

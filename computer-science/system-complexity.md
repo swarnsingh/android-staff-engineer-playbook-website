@@ -532,6 +532,29 @@ Anti-pattern: 100 micro-modules with 15 levels of depth. Tools spend more time e
 
 ---
 
+## Answer Key
+
+1. **Walk through computing cyclomatic complexity by hand...**
+   Start with a base score of 1, and add 1 for every branching decision point (`if`, `for`, `while`, `&&`, `||`, `case`).
+2. **What's the difference between cyclomatic and cognitive complexity?**
+   Cyclomatic counts the mathematical number of execution paths, while cognitive complexity measures human readability by heavily penalizing nested loops, conditionals, and breaks in flow.
+3. **Define afferent and efferent coupling.**
+   Afferent coupling (Ca) is the number of external modules that depend *on* your module. Efferent coupling (Ce) is the number of modules your module depends *on*.
+4. **Why does Detekt have separate thresholds for `LongMethod` and `LongParameterList`?**
+   `LongMethod` prevents functions from having low cohesion (doing too much), while `LongParameterList` prevents high coupling (depending on too many external components).
+5. **Adam Tornhill's "complexity × churn = hotspot" formulation...**
+   High complexity only incurs a tax when the code is modified. High churn indicates frequent modification, so complex files with high churn are the highest-leverage targets for refactoring.
+6. **Walk through how Konsist or ArchUnit can enforce architectural rules.**
+   They parse the codebase's AST or bytecode and run tests against the dependency graph, failing the CI build if, for example, a domain class imports a UI class.
+7. **A `CheckoutViewModel` has cyclomatic complexity 67...**
+   You can extract data validation to a pure `Validator` class, delegate analytics to an `AnalyticsTracker`, and break large state machines into polymorphism or smaller cohesive functions.
+8. **A 200-module Android project has a 15-deep dependency graph...**
+   The deep graph prevents parallel compilation and balloons build times. The fix is to flatten the architecture into a wider, shallower graph using shared interfaces.
+9. **Why is cohesion harder to measure than coupling?**
+   Coupling is easily quantified by counting imports; cohesion is semantic and requires judging whether internal fields and methods logically belong together, which mechanical metrics like LCOM can misinterpret.
+10. **Your team adds a CI check that fails when cyclomatic complexity exceeds 15...**
+    Examine if the threshold is too strict for the specific domain, introduce baselines to grandfather legacy code, and educate the team on extracting cohesive sub-components instead of hacking the metric.
+
 ## Further Reading
 
 In this repository:

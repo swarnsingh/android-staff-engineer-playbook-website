@@ -362,6 +362,23 @@ Many enterprise backends (especially legacy ones) return `HTTP 200 OK` for every
 6.  **Capability Negotiation:** Why is `versionCode >= 412010` a weaker backend switch than `supportsFeedV2=true`? Give a hotfix or backport scenario where version-based switching fails.
 7.  **Old Client Contract Testing:** Design a CI test that proves a six-month-old Android client can still parse today's backend response.
 
+## Answer Key
+
+1. **Explain the specific mechanism by which FCM (Firebase Cloud Messaging) "wakes up" an Android device. Why is it vastly more battery-efficient than the app running an AlarmManager to ping the server every 15 minutes?**
+   FCM maintains a single, OS-level multiplexed TCP connection for all Google Play apps. When a message arrives, the OS wakes the specific app via an Intent. This avoids the app periodically waking the radio itself, which drains battery through repeated high-power state transitions.
+2. **You want to implement an automatic retry mechanism for 503 Server Unavailable errors with exponential backoff. Do you put this logic in the Retrofit interface, the Repository, or an OkHttp Interceptor? Why?**
+   Place it in an OkHttp Interceptor. This centralizes the logic for all network calls, keeping the Repository and Retrofit interfaces clean of infrastructure concerns and ensuring consistent backoff behavior globally.
+3. **Explain exactly how `Moshi` differs from `Gson` when encountering a null JSON value mapped to a non-null Kotlin property. How does Kotlinx Serialization handle this same scenario?**
+   Gson uses reflection and bypasses Kotlin's null safety, injecting Java `null` into non-null properties, causing delayed `NullPointerException`s. Moshi and Kotlinx Serialization enforce null safety at the parsing boundary and immediately fail with an exception.
+4. **If a screen needs User Profile, Latest Order, and Cart Count, how many HTTP requests does REST typically require vs GraphQL? What are the caching disadvantages of GraphQL on the mobile client side?**
+   REST typically requires 3 requests (unless using a BFF or sparse fieldsets), while GraphQL requires 1 request. GraphQL's main caching disadvantage is that it uses `POST` requests, which bypass traditional HTTP caches (CDNs, OkHttp cache) unless using persisted queries.
+5. **Walk through the architecture of a Force Upgrade system. How do you ensure the `/config` endpoint itself doesn't become a single point of failure that prevents the app from opening when the server is down?**
+   The app fetches a policy payload on startup. To prevent a single point of failure, the app must cache the last successful policy and gracefully degrade to a safe offline/minimal state if the endpoint is unreachable, rather than locking the user out.
+6. **Why is `versionCode >= 412010` a weaker backend switch than `supportsFeedV2=true`? Give a hotfix or backport scenario where version-based switching fails.**
+   Version codes are linear, but features can be backported to older branches or staggered via staged rollouts. Relying on `versionCode` breaks when a hotfix build lacks the feature but has a higher version code; `supportsFeedV2=true` explicitly checks for the capability.
+7. **Design a CI test that proves a six-month-old Android client can still parse today's backend response.**
+   Store an old version of the client's API models and parser logic in the codebase. Write a test that feeds the current backend's JSON payload into the legacy parser and asserts that it successfully deserializes without throwing unknown key or missing field exceptions.
+
 ## Further Reading
 
 - [`bff-pattern.md`](bff-pattern.md) — How to fix over-fetching by building a middleware API tailored for the Android app.

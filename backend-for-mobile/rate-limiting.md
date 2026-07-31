@@ -161,6 +161,19 @@ If you use `sample(5000L)` on a flow of critical analytics events (like "Purchas
 4.  **Batching:** You need to track user scroll positions in a massive list for analytics. Firing an API call per pixel is impossible. Using Kotlin Flows, write pseudo-code to batch these scroll events into arrays of 50 events, and emit the batch to the network layer.
 5.  **Offline Queues:** If the app receives a 429 with a Retry-After of 1 hour, what should the app do with critical background data (like WorkManager sync operations) during that hour? How do you instruct WorkManager to respect a dynamic 1-hour delay?
 
+## Answer Key
+
+1. **Token Bucket Algorithm: A common backend rate-limiting algorithm is the "Token Bucket". If the backend uses this, how does it differ from a fixed-window rate limit (e.g., 100 requests per minute), and how might the Android client experience bursts of traffic differently?**
+   A fixed-window resets strictly at the top of the minute, which can cause sudden spikes. A token bucket gradually refills tokens; it allows short, rapid bursts of traffic (up to the bucket's capacity) and then smoothly throttles subsequent requests until tokens replenish.
+2. **Concurrency: In the OkHttp Interceptor example above, `AtomicBoolean` and `AtomicLong` are used. If 5 coroutines make a request simultaneously and all 5 receive a 429 response at the exact same millisecond, what race conditions exist when setting the `limitEndTime`, and how does `AtomicLong` solve it?**
+   Without atomic operations, multiple threads reading/writing the lockout time simultaneously could override each other or incorrectly pass the pre-check. `AtomicLong` ensures thread-safe, atomic updates to the shared `limitEndTime` across all concurrent OkHttp threads.
+3. **Flow Operators: What is the mechanical difference between `debounce`, `sample`, and `throttleFirst` (often found in RxJava)? Which one is best for preventing double-clicks on a "Buy" button?**
+   `debounce` waits for silence before emitting; `sample` emits the most recent value at fixed intervals; `throttleFirst` emits immediately, then ignores subsequent events for a duration. `throttleFirst` (or a custom click-debouncer) is best for preventing double-clicks.
+4. **Batching: You need to track user scroll positions in a massive list for analytics. Firing an API call per pixel is impossible. Using Kotlin Flows, write pseudo-code to batch these scroll events into arrays of 50 events, and emit the batch to the network layer.**
+   Use the `chunked` or `buffer` operator (or custom logic). Pseudo-code: `scrollFlow.chunked(50).onEach { batch -> api.sendAnalytics(batch) }.launchIn(scope)`.
+5. **Offline Queues: If the app receives a 429 with a Retry-After of 1 hour, what should the app do with critical background data (like WorkManager sync operations) during that hour? How do you instruct WorkManager to respect a dynamic 1-hour delay?**
+   The app should queue the data locally in Room. For WorkManager, you update the WorkRequest by applying a `setInitialDelay(1, TimeUnit.HOURS)` or use exponential backoff policies, ensuring background syncs explicitly sleep until the `Retry-After` window expires.
+
 ## Further Reading
 
 - [`../patterns/circuit-breaker.md`](../patterns/circuit-breaker.md) — How rate limiting relates to full circuit tripping.

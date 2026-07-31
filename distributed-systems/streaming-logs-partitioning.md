@@ -181,6 +181,21 @@ The fix is contract-level, not code-level: the feed API response carries a **wat
 5.  What makes an event stream safe to replay against a client database — list the minimum contract fields and the client-side check for each.
 6.  Your analytics pipeline and your sync pipeline consume the same log but lag differently. What user-visible inconsistencies can this cause, and which ones matter?
 
+## Answer Key
+
+1. **Chat is partitioned by `threadId`. What ordering is guaranteed, what isn't, and what does the client have to reconstruct itself?**
+   Guaranteed: messages within the same thread are ordered correctly relative to each other. Not guaranteed: order of messages across different threads. The client must reconstruct a globally time-ordered inbox list from timestamps.
+2. **Why should a mobile sync API never expose raw partition offsets, and what breaks the day it does?**
+   Exposing offsets tightly couples the client to the backend's partition structure. The day the topic is re-partitioned, all persisted client offsets break simultaneously.
+3. **A feed item appears, disappears on refresh, and reappears later. Walk through the two-pipeline race that causes this and the contract field that fixes it.**
+   A fast push pipeline delivers the post optimistically, but a slower materialization pipeline hasn't caught up. A refresh queries the read model, which omits the post, so the client deletes it. Later, the read model catches up. Fix: The API must provide a "watermark" (materialized up to T) so the client retains optimistic posts newer than T.
+4. **Tombstone retention is 7 days and your users go offline for weeks. What does the sync protocol need, and what does the UX for it look like?**
+   The protocol needs a fallback full-resync mechanism or cursor reset path. The UX must handle the delay, likely showing a loading spinner, warning about data usage, and potentially gating the sync until Wi-Fi is available.
+5. **What makes an event stream safe to replay against a client database — list the minimum contract fields and the client-side check for each.**
+   Minimum fields: entity ID and entity version/timestamp. Client-side check: compare the incoming event's version to the local database version and apply it only if `incoming.version > current.version`.
+6. **Your analytics pipeline and your sync pipeline consume the same log but lag differently. What user-visible inconsistencies can this cause, and which ones matter?**
+   Push notifications (fast pipeline) might announce an event that the sync pipeline (slow pipeline) hasn't materialized yet. If a user taps the notification, the detail page might show a "not found" error or stale data.
+
 ## Further Reading
 
 - [`delivery-semantics.md`](delivery-semantics.md) - at-least-once and idempotent consumers.

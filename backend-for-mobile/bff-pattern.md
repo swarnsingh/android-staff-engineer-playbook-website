@@ -202,6 +202,19 @@ The BFF is an *orchestration* and *presentation* layer. It should not calculate 
 4.  **Server-Driven UI:** In an SDUI architecture, how do you handle local, instantaneous state changes? For example, the user types into a Search Bar. Does every keystroke go to the BFF to re-render the components, or do you mix local state with SDUI?
 5.  **Caching:** In a microservice architecture, caching happens at the database layer. In a BFF architecture, where should caching happen? Does the Android app cache the final BFF response, or does the BFF cache the individual microservice responses? What are the tradeoffs?
 
+## Answer Key
+
+1. **GraphQL vs BFF: GraphQL allows the client to define exactly the payload it wants, solving the over-fetching problem. In what scenarios is a dedicated Kotlin/Ktor BFF superior to exposing a single GraphQL endpoint to the mobile app?**
+   A BFF is superior when mobile apps require complex server-side orchestration, custom fallback logic on partial failures, or when incorporating Server-Driven UI (SDUI). It also limits client-side complexity compared to managing Apollo/GraphQL caching, especially if the mobile team owns the BFF code.
+2. **Partial Failure: The Android Home screen relies on a BFF that calls 5 microservices. Service #4 (Recommendations) goes down. Design the exact JSON response the BFF should return to the Android app, and explain how the Android `UiState` should model this partial failure.**
+   The JSON should return success for available data and omit or provide a fallback for recommendations: `{"profile": {...}, "inventory": [...], "recommendations": []}`. The `UiState` models this by displaying the loaded content and hiding the recommendation section (or showing a localized "retry" UI), rather than throwing a global error.
+3. **Ownership: According to Conway's Law, architectures reflect organizational structures. If the Backend team owns the BFF, what friction occurs during a mobile feature launch? How does having the Android team write the BFF in Kotlin change this dynamic?**
+   If Backend owns the BFF, mobile feature launches are blocked by backend release cycles, API reviews, and differing priorities. If Android owns the BFF (e.g., in Kotlin/Ktor), they can iterate on the API contract in tandem with the UI, removing the bottleneck.
+4. **Server-Driven UI: In an SDUI architecture, how do you handle local, instantaneous state changes? For example, the user types into a Search Bar. Does every keystroke go to the BFF to re-render the components, or do you mix local state with SDUI?**
+   SDUI dictates layout and initial state, but local instantaneous interactions (like typing, dragging, or local validation) must be handled by the client's local state management (e.g., Compose `MutableState`). The client only sends the final action (e.g., "Submit Search") back to the BFF.
+5. **Caching: In a microservice architecture, caching happens at the database layer. In a BFF architecture, where should caching happen? Does the Android app cache the final BFF response, or does the BFF cache the individual microservice responses? What are the tradeoffs?**
+   Caching should ideally happen at both layers depending on volatility. The BFF caches slow microservice responses (e.g., static inventory) via Redis to reduce backend load. The Android app caches the final BFF response (via HTTP headers) to enable offline launch and instant UI rendering.
+
 ## Further Reading
 
 - [`api-design-for-mobile.md`](api-design-for-mobile.md) — The physical mobile constraints that make BFFs necessary.

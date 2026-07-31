@@ -445,6 +445,31 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md).
 
 ---
 
+## Answer Key
+
+1. **Given two vector clocks [A:3, B:2, C:1] and [A:2, B:4, C:1], are these events concurrent? Explain your reasoning.**
+   Yes, they are concurrent. The first clock has a larger value for A (3 > 2), while the second has a larger value for B (4 > 2). Since neither dominates the other across all dimensions, neither happened before the other.
+2. **Why can't a Lamport timestamp detect concurrency? Give a concrete example.**
+   A Lamport timestamp only provides a single scalar value. If event X has timestamp 3 and event Y has timestamp 4, X could have causally preceded Y, or they could have occurred concurrently on different nodes. The single number destroys the causal history.
+3. **How does the Dynamo paper use vector clocks for conflict detection? What does it return to the client when there's a conflict?**
+   Dynamo attaches vector clocks to each version of a key. When it detects concurrent writes (neither clock dominates), it stores both versions as "siblings" and returns all siblings to the client, forcing the client application to resolve the conflict.
+4. **Vector clocks grow linearly with the number of nodes. At what scale does this become a problem, and what are the alternatives?**
+   It becomes a problem when there are thousands of nodes (or clients) writing to the same key, as the clock metadata outgrows the payload. Alternatives include dotted version vectors, pruning, or shifting to last-writer-wins if concurrency detection isn't strictly necessary.
+5. **Explain vector-clock pruning. What does it gain, and what does it lose?**
+   Pruning removes entries from the vector clock for nodes that haven't written recently to cap the size of the clock. It gains space efficiency but loses precise causal history, introducing the risk of false conflicts when a pruned node writes again.
+6. **How is Git's merge model conceptually similar to vector clocks?**
+   Git tracks the exact causal history of commits via a directed acyclic graph (DAG) of parent pointers. A merge conflict occurs when two branches diverge from a common ancestor—the exact structural equivalent of two vector clocks showing concurrent writes.
+7. **A mobile app syncs notes across 3 devices. Device A and C both edit the same note offline. Describe the conflict-detection process when they sync.**
+   When Device A and C sync with the server, the server compares their vector clocks. Since both incremented their own entries based on an older shared state, neither clock will dominate. The server detects the concurrency and flags a conflict for resolution.
+8. **Compare vector clocks with CRDTs as conflict-resolution strategies. When would you choose each?**
+   Vector clocks only *detect* conflicts, requiring custom application logic to merge them. CRDTs use specific mathematical rules to automatically *resolve* conflicts. Use CRDTs for easily mergeable data (e.g., counters, sets), and vector clocks when merges require complex business logic or user intervention.
+9. **What is a "sibling explosion" in Riak, and how do you prevent it?**
+   Sibling explosion occurs when many concurrent writes create a rapidly growing list of unresolved conflicting versions (siblings) for a single key. Prevent it by forcing clients to resolve siblings on read or using CRDTs that auto-merge.
+10. **Why should conflict resolution be an application concern rather than an infrastructure concern?**
+    Because the correct way to merge data is domain-specific. Merging a shopping cart (union of items) is entirely different from merging a bank balance (addition/subtraction) or a text document. Infrastructure lacks this context.
+
+---
+
 ## Further Reading
 
 In this repository:

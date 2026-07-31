@@ -445,6 +445,29 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md).
 9. Explain delta CRDTs. Why are they more efficient than state-based CRDTs for network sync?
 10. When would you choose a CRDT over a server-arbitrated conflict resolution strategy?
 
+## Answer Key
+
+1. **Explain the difference between a state-based CRDT and an operation-based CRDT. When would you choose each?**
+   State-based CRDTs exchange their full state and merge it; best for unreliable networks. Operation-based CRDTs broadcast only operations; they require a reliable, causally-ordered transport but use less bandwidth.
+2. **Why must a state-based CRDT's merge function be commutative, associative, and idempotent? What breaks if any property is violated?**
+   Commutativity (order doesn't matter), associativity (grouping doesn't matter), and idempotency (duplicates don't matter). If any are violated, different replicas merging in different orders or with duplicate messages will diverge.
+3. **Implement a G-Counter. Why can't a plain counter be a CRDT?**
+   A G-Counter is a map of node IDs to their local increment counts. A plain counter isn't a CRDT because concurrent increments (`+1` on two nodes starting at 0) would both set the value to 1, losing an increment when merged.
+4. **An OR-Set uses "add wins" semantics for concurrent add-and-remove. Why? What would happen with "remove wins"?**
+   "Add wins" ensures that if one node adds an item while another concurrently removes it, the item remains. If it were "remove wins", an item might instantly disappear immediately after a user adds it, creating poor UX.
+5. **How do you garbage-collect tombstones in a CRDT? Why is this hard?**
+   Garbage collection requires ensuring every replica has seen the tombstone before you can safely remove it. This is hard because it requires global coordination in a system designed to be coordination-free.
+6. **A PN-Counter shows a value of -2. Is this a bug? How would you prevent it from being user-visible?**
+   It's not a mathematical bug; the PN-Counter subtracts negative counts from positive counts, which can temporarily dip below zero if decrements sync before increments. Prevent it by bounding the value at read time (e.g., `max(0, val)`).
+7. **Compare CRDTs and vector clocks as approaches to handling concurrent writes. How do they complement each other?**
+   Vector clocks detect concurrent updates and identify conflicts for the application to resolve. CRDTs use internal mathematical properties to prevent conflicts entirely and merge automatically.
+8. **You're building an offline-first collaborative note-taking app. Which CRDTs would you use for the note content, the tag list, and the view count?**
+   Note content: text CRDT (like Automerge or Yjs). Tag list: OR-Set (to add/remove tags). View count: G-Counter or PN-Counter (if views can be removed).
+9. **Explain delta CRDTs. Why are they more efficient than state-based CRDTs for network sync?**
+   Delta CRDTs only send the state that has changed since the last sync (the delta) rather than the entire state structure, vastly reducing network payload sizes.
+10. **When would you choose a CRDT over a server-arbitrated conflict resolution strategy?**
+    When high availability, offline capability, and guaranteed convergence without manual conflict resolution are strictly required, such as in real-time collaborative editing or mobile offline-first sync.
+
 ---
 
 ## Further Reading

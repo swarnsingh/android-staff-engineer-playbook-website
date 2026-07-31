@@ -225,6 +225,29 @@ When auditing the network layer, a Staff engineer focuses on the physical transp
 9.  Why are gRPC and Protocol Buffers notoriously difficult to debug using standard proxy tools like Charles Proxy or Wireshark?
 10. If an Android application is suffering from massive Garbage Collection pauses during network requests, why might a Staff Engineer suggest migrating from JSON to Protobuf?
 
+## Answer Key
+
+1. **Explain the fundamental difference between TCP and UDP, and why Google abandoned TCP when inventing the QUIC (HTTP/3) protocol.**
+   TCP guarantees packet delivery and order by halting the connection if a packet is lost. UDP is fire-and-forget. Google abandoned TCP because its strict ordering causes Head-of-Line Blocking on mobile networks with high packet loss, inventing QUIC on top of UDP to maintain reliability without freezing unrelated streams.
+2. **What is "Multiplexing" in HTTP/2, and how does it specifically improve battery life and latency on a mobile device?**
+   Multiplexing allows sending multiple requests and responses simultaneously over a single TCP connection. This reduces latency by eliminating repeated TCP/TLS handshakes and saves battery by keeping the cellular radio active for a shorter, consolidated duration.
+3. **Describe "Head-of-Line Blocking." Why does HTTP/2 suffer from it, and how does HTTP/3 (QUIC) resolve it?**
+   Head-of-Line Blocking happens when a lost packet freezes the entire connection until it's retransmitted. HTTP/2 suffers because it multiplexes all traffic over one TCP connection. HTTP/3 resolves it by using UDP, ensuring a lost packet in one stream doesn't halt the others.
+4. **Why is it an architectural catastrophe to instantiate multiple `OkHttpClient` objects in an Android application?**
+   Each instance manages its own connection pool. Using multiple instances prevents connection reuse, forcing the app to perform expensive TCP/TLS handshakes for every request, negating HTTP/2 multiplexing and causing battery drain and latency.
+5. **Explain the concept of "Connection Migration" in HTTP/3. How does it allow an active download to survive when a user walks out of Wi-Fi range and switches to Cellular?**
+   In HTTP/3, connections are identified by a unique Connection ID rather than the physical IP address. When switching from Wi-Fi to Cellular (changing IPs), the client continues using the same Connection ID, allowing the server to seamlessly resume the download.
+6. **Why must an Android application always implement a fallback mechanism to TCP (HTTP/2) when attempting to use QUIC (HTTP/3) over UDP?**
+   Many corporate firewalls and emerging market ISPs block UDP traffic entirely to prevent DDoS attacks. Without a fast fallback to TCP-based HTTP/2, the QUIC requests will time out and the app will appear completely offline.
+7. **Describe the severe performance penalty of parsing large JSON payloads on a mobile device compared to parsing binary Protocol Buffers (gRPC).**
+   Parsing JSON requires reading characters and allocating thousands of intermediate objects (strings) in memory, which spikes CPU usage and triggers GC pauses. Protobuf is read as binary tags, eliminating string allocation and parsing overhead.
+8. **If an API uses 5 different subdomains (e.g., `a.api.com`, `b.api.com`), why does this completely defeat the purpose of HTTP/2 multiplexing?**
+   HTTP/2 multiplexing only works when requests share the same physical server connection (IP and certificate). Using different subdomains forces the client to open separate TCP/TLS connections for each domain, completely bypassing the single-connection benefit of HTTP/2.
+9. **Why are gRPC and Protocol Buffers notoriously difficult to debug using standard proxy tools like Charles Proxy or Wireshark?**
+   Protobufs serialize data into a dense binary format without human-readable keys or structure. Without the specific `.proto` schema file to decode the binary tags back into their corresponding field names, proxy tools just show unreadable gibberish.
+10. **If an Android application is suffering from massive Garbage Collection pauses during network requests, why might a Staff Engineer suggest migrating from JSON to Protobuf?**
+    Large JSON payloads force the app to allocate massive amounts of strings in the heap, causing memory pressure and frequent Garbage Collection pauses (jank). Protobuf avoids intermediate object allocation, heavily reducing memory churn and eliminating the GC pauses.
+
 ## Further Reading
 
 - [`jank.md`](../android/performance/jank.md) — How parsing massive JSON strings from HTTP/1.1 payloads triggers the GC and causes dropped frames.

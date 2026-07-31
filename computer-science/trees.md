@@ -574,6 +574,29 @@ A mobile app with a 100MB local SQLite database. Sync to server: compute Merkle 
 9. Why is recursive tree traversal vulnerable to stack overflow on real-world inputs, and how do you mitigate?
 10. Compare BFS and DFS for finding a file in a directory hierarchy. When is each appropriate?
 
+## Answer Key
+
+1. **Walk through what happens to an unbalanced BST when you insert 1, 2, 3, 4, 5 in order. Why is this catastrophic for lookup?**
+   Each inserted element is strictly greater than the previous, so it becomes the right child of the previous leaf. The tree degenerates into a linked list. Lookup degrades from O(log N) to O(N).
+2. **Why does Android's view rendering use depth-first traversal for measure/layout/draw rather than breadth-first?**
+   Measure and layout require parents to know the sizes of their children, and children to be constrained by their parents. DFS naturally completes a child subtree before resolving the parent, which fits hierarchical measurement and drawing order (Z-index).
+3. **Explain how a Merkle tree lets you verify a single leaf without downloading the entire data set.**
+   The root hash commits to the whole tree. To verify a leaf, you only need the hashes of its siblings along the path to the root (log N hashes). You hash them together and if the computed root matches the trusted root, the leaf is verified.
+4. **SQLite uses B-trees for indexes. Why are B-trees better than binary search trees for disk-based storage?**
+   B-trees have a high branching factor (many keys per node), meaning each node is the size of a disk block. They are much shallower than binary trees, minimizing the number of slow disk seeks required to traverse from root to leaf.
+5. **A trie with one million long words uses 200MB. What variants reduce the memory?**
+   Radix trees (Patricia tries) compress paths where nodes only have a single child into a single node with a string label. DAWGs (Directed Acyclic Word Graphs) compress duplicate suffixes as well.
+6. **Compose's "slot table" is described as a "flat representation of a tree." How does the recomposer use this representation to update only changed subtrees?**
+   The slot table uses groups with start and end indices to implicitly represent hierarchy. When state changes, Compose skips over groups that don't read that state by jumping their end index, bypassing entire subtrees surgically without recursive traversal.
+7. **Red-black trees are common in JDK collections. What invariants make them balanced, and why are rotations needed on insert?**
+   Invariants like "no two adjacent red nodes" and "every path has the same number of black nodes" constrain the maximum height to ~2*log N. Rotations (and recoloring) are needed to restore these invariants when an inserted node violates them.
+8. **A Cassandra cluster uses Merkle trees for anti-entropy. Walk through the operation: two replicas exchange roots, then walk the tree. What information is exchanged at each step?**
+   Replicas exchange root hashes. If they differ, they exchange children hashes. They recursively descend only into branches where hashes mismatch, narrowing down to the exact data ranges that differ without sending unchanged data over the network.
+9. **Why is recursive tree traversal vulnerable to stack overflow on real-world inputs, and how do you mitigate?**
+   Recursive traversal uses a JVM call stack frame for every level of depth. Deep trees (e.g. 10K+ nodes) exceed the stack limit. Mitigate by using iterative traversal with an explicit heap-allocated stack (e.g., `ArrayDeque`).
+10. **Compare BFS and DFS for finding a file in a directory hierarchy. When is each appropriate?**
+    BFS finds the file closest to the root (shallowest match first) but uses O(width) memory. DFS explores deep paths first and uses O(height) memory. Use BFS if the file is likely near the root, DFS to minimize memory or exhaustively search one directory before others.
+
 ---
 
 ## Further Reading

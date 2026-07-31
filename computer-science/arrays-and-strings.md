@@ -278,6 +278,25 @@ Use `Locale.ROOT` for protocol identifiers, cache keys, and case-insensitive int
 7. How would you process a 500MB file without a 500MB `ByteArray`?
 8. When is a simple O(n) scan better than a hash map?
 
+## Answer Key
+
+1. **Why is `ArrayList.removeAt(0)` O(n)?**
+   Because every subsequent element in the backing array must be shifted one position to the left to close the gap.
+2. **When would `IntArray` be materially better than `List<Int>`?**
+   When handling large volumes of numeric data, as `IntArray` stores raw primitives continuously, avoiding the memory overhead and pointer chasing of boxed `Integer` objects.
+3. **Why is string concatenation in a loop O(n^2)?**
+   Since strings are immutable, every concatenation allocates a brand new string and copies all characters from the previous strings into it.
+4. **What does `String.length` count on the JVM?**
+   It counts UTF-16 code units, not user-visible grapheme clusters (like emojis or complex language characters).
+5. **How does sliding window turn a nested-loop problem into O(n)?**
+   It maintains a contiguous range by advancing start and end pointers sequentially, ensuring each element is processed at most twice rather than re-scanning entire sub-ranges.
+6. **Why can mutating a list inside `UiState` break Compose updates?**
+   Compose relies on reference equality to detect changes. Mutating the same list instance means the reference doesn't change, causing Compose to skip recomposition.
+7. **How would you process a 500MB file without a 500MB `ByteArray`?**
+   By streaming the data using an `InputStream` and processing it in small chunks (e.g., using a fixed-size buffer) rather than loading it all into memory at once.
+8. **When is a simple O(n) scan better than a hash map?**
+   For very small datasets where the allocation, hashing, and memory overhead of a hash map takes longer than a quick contiguous array scan.
+
 ## Further Reading
 
 - [`../engineering-fundamentals/complexity-analysis.md`](../engineering-fundamentals/complexity-analysis.md)

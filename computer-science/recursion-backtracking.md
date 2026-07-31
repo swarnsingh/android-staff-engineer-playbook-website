@@ -277,6 +277,25 @@ fun hasCycle(graph: Map<String, List<String>>): Boolean {
 7. How do you detect cycles in DFS?
 8. What makes a pruning rule correct?
 
+## Answer Key
+
+1. **What are the three required parts of a recursive function?**
+   A base case to terminate, progress toward the base case in each step, and a way to combine subproblem results.
+2. **Why can recursive DFS crash on a valid but deep graph?**
+   The recursion depth is limited by the JVM call stack, which can overflow on deeply nested trees or malicious inputs.
+3. **What is the choose/explore/undo pattern?**
+   The core backtracking algorithm: make a local choice, recursively explore that choice, then undo the choice to try other possibilities.
+4. **Why is subset generation O(2^n)?**
+   Because for each of the `n` elements, there are exactly two independent choices: include the element or exclude it.
+5. **Why is permutation generation O(n!)?**
+   Because there are `n` choices for the first position, `n-1` choices for the second position, down to 1, which multiplies out to `n!`.
+6. **When does Kotlin optimize `tailrec`?**
+   When the recursive call is the absolute final operation in the function, allowing the compiler to rewrite it as an iterative loop.
+7. **How do you detect cycles in DFS?**
+   By maintaining a state map for nodes (e.g., Unvisited, Visiting, Done). If you encounter a node already marked as "Visiting", a cycle exists.
+8. **What makes a pruning rule correct?**
+   It must be mathematically or logically proven that the discarded branch cannot possibly yield a valid or more optimal solution.
+
 ## Further Reading
 
 - [`trees.md`](trees.md)

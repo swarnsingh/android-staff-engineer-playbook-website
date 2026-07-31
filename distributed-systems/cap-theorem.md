@@ -364,6 +364,29 @@ Canonical: [`../observability/slis.md`](../observability/slis.md), [`../observab
 9. DynamoDB supports both eventually consistent and strongly consistent reads. What are the trade-offs between them?
 10. When is CAP the wrong framework for analyzing a system's trade-offs? What framework would you use instead?
 
+## Answer Key
+
+1. **A network partition splits a three-node cluster into a group of 2 and a group of 1. A CP system and an AP system each handle this differently. Describe both behaviors.**
+   CP system: The minority node (group of 1) refuses reads/writes to preserve consistency, becoming unavailable. AP system: Both groups continue to serve reads and accept writes, risking stale data and requiring later conflict resolution.
+2. **Why are network partitions considered inevitable in distributed systems?**
+   Networks rely on physical infrastructure (cables, switches) and software routers that can fail, drop packets, or experience unbounded delays, making partitions a physical reality.
+3. **Cassandra uses last-writer-wins for conflict resolution during partition healing. What can go wrong?**
+   Wall-clock timestamps are unreliable due to clock skew. A write on a lagging node might be ignored in favor of an older write from a node with a faster clock, leading to silent data loss.
+4. **An e-commerce app stores product inventory counts. Should this be CP or AP? Justify your answer, including the failure mode you're accepting.**
+   AP. Losing a sale because the system was temporarily unreachable is usually worse than overselling by a few units and resolving it via backorder/refund later.
+5. **Explain quorum reads and writes (W + R > N). Why does this guarantee strong consistency? What extra step is required for true linearizability?**
+   Quorum operations ensure the read and write sets overlap, guaranteeing at least one node in the read quorum has the latest write. Linearizability requires read-repair during the read phase to update lagging nodes before responding.
+6. **Why is the "pick two" framing of CAP misleading?**
+   It implies partitions are an optional choice. In reality, network partitions happen inevitably; the choice is only between C and A *during* a partition.
+7. **A mobile app stores user preferences locally and syncs to a server. Where does this sit in the CAP model?**
+   AP. The local DB guarantees availability, but during a network partition (offline), it becomes inconsistent with the server until it can sync and resolve conflicts.
+8. **Google Spanner claims to be "effectively CA." How does it achieve this, and what assumption makes it possible?**
+   Spanner relies on TrueTime (atomic clocks/GPS) to bound clock uncertainty and uses highly reliable private networking. It prioritizes CP but achieves "effectively CA" by aggressively minimizing the probability of partitions.
+9. **DynamoDB supports both eventually consistent and strongly consistent reads. What are the trade-offs between them?**
+   Strongly consistent reads wait for quorum, increasing latency and reducing availability during partitions. Eventually consistent reads serve from any local replica, offering lower latency and higher availability but potentially returning stale data.
+10. **When is CAP the wrong framework for analyzing a system's trade-offs? What framework would you use instead?**
+    When evaluating latency vs. consistency during normal operation (when there is no partition). PACELC (Partition: A or C; Else: L or C) is a more complete framework.
+
 ---
 
 ## Further Reading

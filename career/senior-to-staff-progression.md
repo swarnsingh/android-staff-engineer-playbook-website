@@ -187,6 +187,27 @@ The deep-coding fraction *shrinks*, but its *leverage* multiplies. A Staff engin
 
 ---
 
+## Answer Key
+
+1. **Why is Senior → Staff a paradigm shift, not a linear progression?**
+   Senior engineers operate linearly by increasing their autonomy and technical depth within a defined scope (team/project). Staff is a paradigm shift because it moves from executing scoped work to defining organizational strategy, aligning multiple teams, and resolving ambiguous, cross-functional problems via leverage instead of direct output.
+2. **What three Senior behaviors do you have to *stop* doing to make room for Staff behaviors?**
+   You must stop closing the most JIRA tickets, being the hero during incidents instead of building systems to prevent them, and owning a single feature end-to-end instead of designing systems for others to do so.
+3. **Give a concrete example of glue work that wouldn't show up in `git log` but is unmistakably Staff-level.**
+   Noticing two adjacent teams building duplicate infrastructure, writing an RFC to unify their approaches, aligning their tech leads in meetings, and establishing a single shared library.
+4. **How do you know if you're operating as Staff before you have the title? What are the lagging signals?**
+   You know you are operating as Staff when other senior engineers consistently seek your counsel on their technical designs, and you are successfully leading cross-team initiatives. A lagging signal is when peers and management treat you as the default authority for architectural decisions.
+5. **What's the difference between "Senior on a team" and "Staff working with that team"?**
+   A Senior measures success by whether the team ships its OKRs. A Staff working with that team measures success by whether the team's architecture scales organizationally and integrates cleanly with the platform without causing systemic issues, regardless of team boundaries.
+6. **How do you balance staying hands-on with code while taking on more cross-team work?**
+   By deliberately shrinking coding time to 30-40% of your week and focusing strictly on high-leverage, complex, or unowned problems (like CI pipelines or core architecture), while delegating feature execution and spending the remaining time on prose, mentorship, and alignment.
+7. **What's the right horizon for an architectural decision? When is it too far out to be useful?**
+   The right horizon for an architectural decision is 1-3 years, accounting for projected organizational scale and platform needs. It becomes too far out to be useful when it attempts to solve problems beyond 3-5 years, where uncertainty makes the assumptions unreliable.
+8. **Why can't you be promoted to Staff just by being a really good Senior?**
+   Because promotions are based on demonstrating impact at the *next* level's rubric. A really good Senior proves they can execute well-defined tasks flawlessly, but Staff requires proven ability to navigate total ambiguity, create leverage, and expand scope across the organization.
+
+---
+
 ## Further Reading
 
 - [`scope-and-ambiguity.md`](scope-and-ambiguity.md) — the ambiguity dimension of the paradigm shift.

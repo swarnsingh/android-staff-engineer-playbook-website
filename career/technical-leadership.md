@@ -182,6 +182,27 @@ Sponsorship is where Staff engineers' influence becomes generational. The engine
 
 ---
 
+## Answer Key
+
+1. **What's the difference between Technical Leadership and Engineering Management?**
+   Technical Leadership focuses on the "what" and "how" of engineering (architecture, RFCs, technical strategy) powered by earned authority, whereas Engineering Management focuses on the "who" and "when" (hiring, performance, budgets) powered by organizational authority.
+2. **Why can't you be a Technical Leader on authority alone?**
+   Because a Tech Leader lacks HR authority (cannot fire/promote), their influence relies entirely on the respect and trust earned from peers by consistently demonstrating sound technical judgment and driving successful outcomes.
+3. **Give an example of "owning the unowned." What's the smallest version that still demonstrates leadership?**
+   Writing a missing runbook for on-call engineers. It requires no permission, solves an immediate pain point, scales knowledge, and demonstrates accountability for the team's operational health.
+4. **What's the difference between mentorship and sponsorship? Why is sponsorship harder?**
+   Mentorship is providing advice; sponsorship is using your own reputation capital to put someone else in a high-visibility opportunity (e.g., letting them present an RFC to leadership). Sponsorship is harder because if they fail, it reflects on your judgment.
+5. **How do you set engineering culture if you can't fire anyone?**
+   By establishing what the team tolerates through rigorous PR reviews, automating standards via CI (linting, code coverage), leading blameless post-mortems, and modeling the expected behaviors publicly.
+6. **Why is glue work undervalued? How do you make yours visible?**
+   Glue work is invisible by default because it falls between defined roles and doesn't produce code commits. You make it visible by documenting the work via RFCs or runbooks and translating its impact into business value (e.g., "saved 20 engineering hours per week").
+7. **What's the time horizon a Staff engineer should optimize for? How is it different from a Senior's?**
+   A Staff engineer optimizes for a multi-year horizon (1-3 years), anticipating how scaling and business growth will stress the architecture. A Senior optimizes for the current sprint or quarter (the immediate roadmap).
+8. **How do you stay hands-on with code while taking on more meetings, mentorship, and writing?**
+   By aggressively saying no to low-leverage meetings, delegating well-defined feature execution, and intentionally carving out 30-40% of your week for deep work on complex, high-impact foundational tasks.
+
+---
+
 ## Further Reading
 
 - [`scope-and-ambiguity.md`](scope-and-ambiguity.md) — what Staff scope feels like.

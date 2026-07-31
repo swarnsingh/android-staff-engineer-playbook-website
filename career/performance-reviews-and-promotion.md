@@ -232,6 +232,27 @@ A "no" with feedback you can act on is a *plan*, not a rejection. Most successfu
 
 ---
 
+## Answer Key
+
+1. **Why is the Senior-to-Staff jump harder than Mid-to-Senior?**
+   Because the rubric fundamentally changes. Mid-to-Senior is about increasing IC execution and autonomy, whereas Senior-to-Staff requires organizational reach, navigating total ambiguity, and scaling impact through others (a paradigm shift).
+2. **What's the difference between "I shipped Feature X" and "I drove an organizational improvement that incidentally produced Feature X"?**
+   The former is Senior execution (delivering a roadmap item). The latter is Staff leadership (building a reusable component, defining a new contract protocol, or automating a pipeline that not only delivered Feature X but allows all future features to ship faster).
+3. **How would you start a brag document if you're 18 months in and haven't kept one?**
+   Audit your past calendar, JIRA tickets, PRs, and Slack history. Reconstruct the major wins, tag them by level (Senior vs Staff-aspiring), and commit to dedicating 10 minutes every Friday to maintain it going forward.
+4. **Your EM is supportive but doesn't know how to find you Staff-shaped projects. How do you help?**
+   You initiate the project hunt. Audit the organization's pain points (e.g., slow CI, duplicate tech debt, missing cross-team APIs), propose 1-2 cross-team initiatives, and ask your EM to align on whether they fill your rubric gaps.
+5. **What's the failure mode of optimizing for the *promotion* instead of optimizing for *Staff-level impact*?**
+   You end up doing visible but shallow work ("visibility without impact"), hoarding credit, or neglecting glue work. Committees recognize title-chasing. Optimizing for genuine impact builds the durable business case the committee needs.
+6. **Why is peer/sponsor feedback in the packet important? What kinds of quotes carry weight?**
+   The committee needs to verify your cross-functional reach. Quotes from a diverse set of sponsors (peer EMs, PMs, Directors) that provide specific, verifiable evidence of your impact carry the most weight.
+7. **You're denied. What's the first conversation you have with your EM?**
+   Ask for the specific rubric gap identified by the committee (e.g., "insufficient cross-team evidence"), validate it, and immediately map out 1-2 projects for the next 6 months to address that exact gap.
+8. **When is the right time to leave for another company instead of waiting for the next cycle?**
+   Only if you are systematically blocked from Staff-level scope (e.g., zero cross-team opportunities, unsupportive leadership, or moving goalposts). Job-hopping merely for a title often resets your credibility to the new company's bar.
+
+---
+
 ## Further Reading
 
 - [`scope-and-ambiguity.md`](scope-and-ambiguity.md) — what Staff-shaped work looks like.

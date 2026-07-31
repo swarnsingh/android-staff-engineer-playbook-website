@@ -498,6 +498,29 @@ Each `@Composable` function corresponds to a node in a runtime tree (technically
 9. Why is adjacency-list representation usually better than adjacency-matrix for social graphs?
 10. Strongly connected components — what are they, and where would Tarjan's algorithm be useful in a modular Android codebase?
 
+## Answer Key
+
+1. **Walk through what happens when you accidentally make `:feature:checkout` depend on `:app` in Gradle. What's the exact error and why?**
+   `:app` already depends on `:feature:checkout`. Adding the reverse dependency creates a cycle. Gradle errors with "Circular dependency between the following tasks/projects" because topological sort cannot resolve an order to compile them.
+2. **Explain why Dagger requires the DI graph to be a DAG. What error does it produce for a cycle, and what's the workaround using `Lazy` or `Provider`?**
+   Dagger needs a sequence to instantiate objects. If A needs B and B needs A, neither can be created first. It throws a "[Dagger/DependencyCycle]" error. Workaround: Inject `Lazy<B>` or `Provider<B>` into A, deferring the resolution of B until after A is instantiated.
+3. **Why is BFS the right choice for finding the shortest unweighted path, while Dijkstra is for weighted? Walk through a counterexample where DFS would fail.**
+   BFS explores radially by hop count, guaranteeing the first time it hits the target is the shortest path (unweighted). Dijkstra sorts by cumulative edge weight. DFS might dive deep into a very long winding path and reach the target in 100 hops even if there was a 1-hop direct edge available.
+4. **A* uses a heuristic to guide search. Define "admissible" and "consistent" heuristics, and explain why violating either can produce wrong answers.**
+   Admissible: never overestimates the true cost to the goal. Consistent: estimated cost from node to goal is $\le$ cost to neighbor + estimated cost from neighbor to goal. If violated, A* might prematurely terminate with a suboptimal path because it wrongfully assumes other paths are worse.
+5. **A Gradle build with 200 modules takes 12 minutes. The DAG is wide but has one critical path of 8 sequentially-dependent modules. How do you reduce build time?**
+   The critical path dictates the minimum possible build time regardless of parallelism. You must break up the sequential chain by inverting dependencies (using interfaces), splitting modules, or using dependency injection to flatten the graph structure.
+6. **Explain how topological sort finds cycles. What does it produce when the input has a cycle?**
+   Topological sort iteratively removes nodes with an in-degree of 0. If a cycle exists, all nodes in the cycle have an in-degree $\ge$ 1, so the algorithm stops prematurely. It detects a cycle if the sorted output size is less than the total graph size.
+7. **Convert a recursive DFS implementation to iterative. Why is iterative typically safer for large graphs?**
+   Iterative uses a `Stack` or `ArrayDeque`. Push the start node, then in a `while` loop, pop a node, mark visited, and push its unvisited neighbors. It's safer because heap memory (used for objects) is vastly larger than the limited JVM call stack space used by recursion.
+8. **A map app needs to find the fastest route from A to B accounting for current traffic. Sketch the algorithm and what data structures it uses.**
+   It uses A* or Dijkstra's algorithm. Vertices are intersections, directed edges are road segments, and weights are live travel times (traffic). It uses an adjacency list and a min-priority queue (binary heap) to efficiently select the next cheapest path to explore.
+9. **Why is adjacency-list representation usually better than adjacency-matrix for social graphs?**
+   Social graphs are extremely sparse; most people know a tiny fraction of all users. An adjacency list uses $O(V + E)$ memory, whereas a matrix uses $O(V^2)$ which would require prohibitive amounts of memory for millions of users.
+10. **Strongly connected components — what are they, and where would Tarjan's algorithm be useful in a modular Android codebase?**
+    Strongly connected components are subgraphs where every node can reach every other node (meaning a cycle exists among them). Tarjan's algorithm can identify these structural cycles in code dependencies (e.g. classes referencing each other), helping break circular module dependencies.
+
 ---
 
 ## Further Reading

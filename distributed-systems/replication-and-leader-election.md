@@ -179,6 +179,23 @@ Ask backend teams:
 5.  The backend offers you a `commitToken` for read-your-writes. What client-side persistence obligations come with using it correctly?
 6.  During a leader failover, which client behaviors make the incident worse, and which make it invisible to users?
 
+## Answer Key
+
+1. **A user updates their profile and immediately sees the old value on the next screen. Walk through every layer (client cache, replica lag, CDN) that could cause this and how you'd distinguish them.**
+   It could be client cache (app fails to update local DB after write), CDN cache (returning stale edge data), or replica lag (reading from a follower that hasn't caught up). Distinguish by checking DB logs for lag, disabling CDN caching via headers, and verifying the local cache gets invalidated correctly upon a successful write.
+2. **Why does `N >= 2F + 1` prevent two leaders from both committing, and what property of majorities does the proof rest on?**
+   It prevents two leaders from committing because it ensures quorum intersection: any two majorities must overlap by at least one node. That overlapping node cannot vote for two conflicting leaders in the same epoch.
+3. **What is a fencing token, and where in a *mobile sync engine* would you apply the same idea?**
+   A fencing token is a monotonically increasing epoch number attached to writes to reject stale leader commands. In mobile sync, attach a generation number to a sync session to prevent an older, resurrected worker from overwriting the state of a newer worker.
+4. **Push notifications for new messages arrive before the message is visible via the fetch API. What replication design causes this, and what are three client strategies to handle it?**
+   This happens with async replication where the push system reads from the leader but the fetch API routes to a lagging replica. Strategies: read from the leader on push, pass the message payload directly in the push, or poll with a `commitToken` until the replica catches up.
+5. **The backend offers you a `commitToken` for read-your-writes. What client-side persistence obligations come with using it correctly?**
+   The client must persist the token securely across process death alongside the pending state it protects, rather than just in memory, otherwise restarting the app risks reading stale data.
+6. **During a leader failover, which client behaviors make the incident worse, and which make it invisible to users?**
+   Worse: aggressive, non-idempotent retries (retry storms) that overwhelm the new leader. Invisible: using idempotency keys, classifying 500s as retryable vs terminal, caching previously fetched data, and showing pending UI states until the failover completes.
+
+---
+
 ## Further Reading
 
 - [`consensus-basics.md`](consensus-basics.md) - consensus and leader election mechanics.

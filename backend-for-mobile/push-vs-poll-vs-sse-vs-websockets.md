@@ -135,6 +135,29 @@ When designing a real-time feature, a Staff engineer focuses on the State Machin
 9.  Explain the difference in network traversal (Firewalls, Proxies, Load Balancers) between SSE (which uses standard HTTP) and WebSockets (which require a protocol upgrade).
 10. If an application requires a persistent bidirectional connection, why might an engineering team choose gRPC Bidirectional Streaming over raw WebSockets?
 
+## Answer Key
+
+1. **Explain the architectural flaw of using "Short Polling" (e.g., an HTTP GET every 1 second) for a mobile chat application regarding both device battery and server load.**
+   Short polling forces the cellular radio to remain in a high-power active state indefinitely, draining the battery in hours. On the server side, it generates massive traffic, with 99% of requests wasting resources returning "No changes."
+2. **Describe the "Thundering Herd" problem in the context of WebSocket disconnections, and how implementing "Jitter" prevents it.**
+   The Thundering Herd occurs when a server restarts, dropping all clients, who then instantly reconnect simultaneously, crashing the server again. Jitter adds a random delay to the exponential backoff, spreading the reconnection attempts over time.
+3. **Why is Server-Sent Events (SSE) often a superior choice to WebSockets for a Live Sports Score application?**
+   Live scores are unidirectional (server-to-client). SSE uses standard HTTP, bypassing firewall and load balancer issues common with WebSockets, and natively supports automatic reconnection (`EventSource`).
+4. **What is the fundamental difference between an FCM "Notification" payload and an FCM "Data" payload regarding background execution on Android?**
+   A Notification payload is handled entirely by the OS to display a system notification, meaning app code doesn't run. A Data payload wakes the app's `FirebaseMessagingService` in the background, allowing custom code execution.
+5. **Explain why a Staff Engineer insists on closing active WebSockets when the Android `Activity` reaches the `onStop()` lifecycle state.**
+   Keeping a WebSocket alive in the background requires periodic pings, forcing the cellular radio to stay active and draining the battery. WebSockets should be closed in `onStop()` to allow the device to sleep.
+6. **How does the Android OS's "Doze Mode" and aggressive OEM battery optimizations (e.g., Xiaomi/Huawei) impact the reliability of FCM Push Notifications?**
+   Doze Mode and OEM skins aggressively restrict background execution and network access. They may throttle, delay, or completely drop FCM Push Notifications unless the user manually whitelists the app for background activity.
+7. **Describe the "Hybrid Approach" to real-time mobile data, combining REST, WebSockets, and FCM depending on the app's foreground/background state.**
+   Use WebSockets/SSE for instant updates when the app is in the foreground. Close the socket when backgrounded and rely on FCM Data Pushes for alerts. On foreground resume, use REST to sync any dropped events and re-establish the socket.
+8. **Why is it dangerous to rely entirely on FCM Push Notifications to keep a local SQLite database synchronized with the server? What must happen when the app is brought to the foreground?**
+   FCM is best-effort and can delay or drop messages (especially under OEM optimizations). To guarantee local data consistency, the app must perform a REST API sync to fetch missed state whenever it returns to the foreground.
+9. **Explain the difference in network traversal (Firewalls, Proxies, Load Balancers) between SSE (which uses standard HTTP) and WebSockets (which require a protocol upgrade).**
+   SSE uses standard HTTP `GET` requests, making it easily traverse CDNs, proxies, and firewalls. WebSockets require an HTTP `Upgrade` handshake, which can fail or drop connections if intermediate load balancers aren't explicitly configured to support them.
+10. **If an application requires a persistent bidirectional connection, why might an engineering team choose gRPC Bidirectional Streaming over raw WebSockets?**
+    gRPC Bidirectional Streaming provides strict schemas via Protocol Buffers, ensuring type safety and smaller payloads, whereas raw WebSockets send unstructured text/binary frames that are prone to parsing errors and lack contract enforcement.
+
 ## Further Reading
 
 - [`transport-protocols.md`](transport-protocols.md) — How HTTP/2 multiplexing impacts SSE and Polling.

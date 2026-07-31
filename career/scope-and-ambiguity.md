@@ -197,6 +197,27 @@ The CTO heard "Android is slow." The Staff response found "the contract step is 
 
 ---
 
+## Answer Key
+
+1. **Give an example of a prompt with total ambiguity. How would you spend the first two weeks?**
+   "The app feels slow." The first two weeks should be spent defining "done" with math (e.g., Target cold start < 1.5s) and diagnosing the root cause by pulling traces and analytics rather than blindly writing code.
+2. **Why is scope something you take, not something you ask for? How do you take it without overstepping?**
+   Scope is taken because management rarely assigns unstructured, cross-team problems. You take it without overstepping by diagnosing an unowned problem, quantifying its cost, proposing a fix via RFC, and earning buy-in incrementally through small wins.
+3. **What's the difference between visibility (talks, blog posts) and impact (measurable change)? When do they correlate?**
+   Impact fundamentally improves the product or engineering metrics (e.g., reducing OOMs by 20%), whereas visibility simply broadcasts your presence. They correlate when visibility is used as a vehicle to scale impact, such as using a blog post to drive org-wide adoption of a new pattern.
+4. **You're asked to review every PR for a feature team. What's the cost of saying yes? Of saying no?**
+   The cost of saying yes is dedicating all your bandwidth to micro-level execution, blocking your ability to drive systemic architectural work. The cost of saying no is potentially missing a bad design early on, which is why you must delegate via CI automation and selectively review only architectural boundaries.
+5. **How do you decide between fixing the top crash (high local impact) vs writing the RFC for the next architectural cycle (high systemic impact)?**
+   You prioritize based on business risk and leverage. If the crash is actively bleeding revenue or blocking users, it must be addressed first. Otherwise, the RFC provides higher long-term leverage by preventing entire classes of future issues.
+6. **Describe a time you redefined a problem so it became solvable. What did the prompt actually need?**
+   When told "iOS always launches features first," the prompt actually needed a faster cross-platform API contract phase, not faster Android execution. Redefining it to require upfront, joint API RFCs removed the blocker and solved the discrepancy.
+7. **How do you tell a Director "no" when they're pressuring you to commit?**
+   Use a contextual "no" paired with trade-offs. Example: "I can't take this on because I am fully committed to landing the modularization milestone by the end of Q3. If this new priority supersedes it, we will need to delay modularization to Q4."
+8. **What does it look like when a Staff engineer expands scope poorly? (Hint: drama, burnt-out reports, work nobody asked for, missed actual deliverables.)**
+   Poor scope expansion results in half-finished initiatives, over-architected systems disconnected from actual business needs, micromanaged engineers, and failure to deliver on the original core responsibilities.
+
+---
+
 ## Further Reading
 
 - [`writing-rfcs.md`](writing-rfcs.md) — the document that makes scope real.

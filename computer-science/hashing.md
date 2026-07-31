@@ -486,6 +486,29 @@ The `key` function tells Compose how to identify items across recompositions. In
 9. Consistent hashing minimizes data movement on cluster resize. Walk through what happens when you add a node, and why it's only ~1/N of keys that move.
 10. Compose's `key = { it.id }` parameter calls `equals()` and `hashCode()` on the result. What can go wrong if `it.id` is unstable across recompositions?
 
+## Answer Key
+
+1. **Why does Kotlin's `data class` auto-generate both `equals()` and `hashCode()`? What goes wrong if you generate only one?**
+   `hashCode()` must obey the contract that equal objects have equal hash codes. If you override `equals()` but not `hashCode()`, equal objects will likely have different hash codes and get lost in HashMaps (they'll be searched in the wrong bucket).
+2. **A `HashMap` shows 99% load factor and slow lookups. Walk through the resize process and what you'd do to prevent it next time.**
+   Resize creates a new array double the size, re-hashes every existing key, and assigns them to new buckets (O(N) cost). Prevent it by pre-sizing the map: `HashMap((expectedSize / 0.75).toInt())`.
+3. **Explain why SHA-256 is unsuitable for password storage despite being a strong cryptographic hash.**
+   SHA-256 is designed to be extremely fast (hundreds of MB/s). Attackers can use GPUs to brute-force billions of guesses per second. Password storage requires slow, adaptive hashes like Argon2id or bcrypt to make brute-forcing computationally infeasible.
+4. **A user reports that their A/B test bucket changes every time they reinstall the app. What's the most likely root cause and how do you fix it?**
+   The hashing input likely relies on a non-persistent installation ID (like a random UUID generated on first launch) instead of a stable user ID. Fix it by hashing a stable `userId` instead.
+5. **Why is `Math.abs(hashCode()) % buckets` subtly wrong? (Hint: `Integer.MIN_VALUE`.)**
+   `Math.abs(Integer.MIN_VALUE)` is `Integer.MIN_VALUE` (a negative number) because it overflows a 32-bit signed integer. Modulo on a negative number can yield a negative bucket index, throwing an `ArrayIndexOutOfBoundsException`.
+6. **Walk through the SHA-256 verification step Android performs when opening a verified App Link.**
+   Android fetches the `assetlinks.json` from the domain, which contains allowed SHA-256 fingerprints. It hashes the signing certificate of the installed app and verifies it matches one of the fingerprints in the JSON before auto-verifying the App Link.
+7. **Explain hash-flooding DoS attacks and how modern `HashMap` implementations mitigate them.**
+   Attackers craft thousands of inputs that intentionally collide to the same bucket in a hash map, degrading O(1) lookups to O(N) and causing a CPU-exhaustion DoS. Modern HashMaps mitigate this by converting buckets from linked lists to red-black trees when they grow too long.
+8. **A teammate proposes `sha256(secret + message)` for API authentication. What's wrong and what should they do instead?**
+   It is vulnerable to length-extension attacks. If the attacker knows the hash of `secret + message`, they can often compute the hash of `secret + message + their_own_extension` without knowing the secret. They should use HMAC-SHA-256 instead.
+9. **Consistent hashing minimizes data movement on cluster resize. Walk through what happens when you add a node, and why it's only ~1/N of keys that move.**
+   Keys are placed on a ring. A new node takes a position on the ring and takes over only the keys between its position and the preceding node. The rest of the ring is unaffected, so only the keys previously mapped to the immediately clockwise node are reassigned (~1/N keys).
+10. **Compose's `key = { it.id }` parameter calls `equals()` and `hashCode()` on the result. What can go wrong if `it.id` is unstable across recompositions?**
+    If `it.id` is unstable, Compose sees it as a completely new item and a deleted old item. It will lose all internal state (e.g., scroll position, text input, animations) associated with the item and unnecessarily re-render it from scratch.
+
 ---
 
 ## Further Reading

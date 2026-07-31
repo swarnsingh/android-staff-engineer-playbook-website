@@ -220,6 +220,25 @@ Some layout and line-breaking algorithms use DP to choose visually optimal break
 7. How is list diffing related to dynamic programming?
 8. When should you choose a greedy approximation over DP?
 
+## Answer Key
+
+1. **What are overlapping subproblems?**
+   When a recursive algorithm encounters and solves the exact same smaller problem instances multiple times.
+2. **What is optimal substructure?**
+   When the globally optimal solution to a problem can be constructed directly from the optimal solutions of its subproblems.
+3. **When would you choose memoization over tabulation?**
+   When the state space is sparse (not all states need to be computed) or when translating a recursive mathematical recurrence directly is easier.
+4. **Why can a 2D DP table be a mobile memory problem?**
+   Allocating an O(n*m) array for large inputs can consume hundreds of megabytes, leading to OutOfMemory (OOM) errors on constrained mobile devices.
+5. **Explain edit distance state `dp[i][j]`.**
+   It represents the minimum number of edit operations needed to transform the first `i` characters of one string into the first `j` characters of the other.
+6. **Why does 0/1 knapsack iterate capacity backward?**
+   To ensure each item is only used once; forward iteration would allow a newly updated state to be reused within the same item's loop.
+7. **How is list diffing related to dynamic programming?**
+   Algorithms like Myers' diff compute the shortest edit script (insertions/deletions) between two sequences, operating on the same principles as the longest common subsequence DP problem.
+8. **When should you choose a greedy approximation over DP?**
+   When the optimal DP solution is computationally or memory prohibitive given the input size, and a slightly suboptimal greedy result is acceptable for the product.
+
 ## Further Reading
 
 - [`recursion-backtracking.md`](recursion-backtracking.md)

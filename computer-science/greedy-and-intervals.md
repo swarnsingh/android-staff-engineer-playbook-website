@@ -230,6 +230,25 @@ If greedy is correct, it is usually preferred in production. If the local choice
 7. How would you merge buffered video ranges?
 8. How can timezone handling break interval logic?
 
+## Answer Key
+
+1. **Why are half-open intervals easier to reason about?**
+   They prevent adjacent intervals from artificially overlapping, the duration is simply calculated as `end - start`, and empty intervals are cleanly represented as `[x, x)`.
+2. **How do you test whether two intervals overlap?**
+   For two intervals `A` and `B`, they overlap if `A.start < B.end` and `B.start < A.end`.
+3. **Why does earliest-end greedy solve maximum non-overlapping intervals?**
+   Picking the interval that finishes earliest mathematically leaves the maximum amount of remaining time/space available for subsequent intervals.
+4. **How does line sweep compute maximum concurrency?**
+   By flattening intervals into discrete start (+1) and end (-1) events, sorting them chronologically, and keeping a running sum of active intervals as you iterate.
+5. **What tie-breaker is needed when one interval ends exactly when another starts?**
+   For half-open intervals, process end events (-1) before start events (+1) at the exact same timestamp to avoid momentarily double-counting concurrency.
+6. **When is greedy unsafe and DP required?**
+   When making a locally optimal choice locks you out of a globally optimal combination (e.g., in the knapsack problem, picking the best value-to-weight ratio first might leave unusable wasted space).
+7. **How would you merge buffered video ranges?**
+   Sort the ranges by their start times, then iterate through and merge the current range with the next if `current.end >= next.start`.
+8. **How can timezone handling break interval logic?**
+   Wall-clock time intervals can overlap or have gaps during Daylight Saving Time transitions; logic should always execute using absolute UTC instants.
+
 ## Further Reading
 
 - [`dynamic-programming.md`](dynamic-programming.md)

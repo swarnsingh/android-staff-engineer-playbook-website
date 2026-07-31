@@ -203,6 +203,21 @@ Use fake backend scripts that deliberately violate happy-path timing.
 5.  Product asks for "instant" UI on an irreversible action (sending money, deleting an account). What do you push back with, and what compromise designs exist?
 6.  Which consistency failures should page on-call, which should be dashboards, and what client telemetry distinguishes them?
 
+## Answer Key
+
+1. **For a feature you know well, name its consistency guarantee, the API fields that enable it, and the client code that enforces it. Which of the three is missing today?**
+   *(Example Response)* Feature: Profile Edit. Guarantee: Read-your-writes. API fields: `serverVersion`. Client code: Optimistic local update and version check on fetch. (Missing components depend on specific app implementations).
+2. **Why must the optimistic local write and its outbox entry commit in one transaction? Describe the failure mode of each ordering if they're split.**
+   If the optimistic write commits but the outbox entry fails, a "phantom edit" occurs (visible locally, never syncs). If the outbox entry commits but the optimistic write fails, a "ghost operation" occurs (syncs to server, never seen locally).
+3. **A monotonic-read version check uses `updatedAt` from device clocks. Construct the exact multi-device sequence that loses a user's newest edit.**
+   Device A (clock fast by 5 min) edits at 10:05. Device B (clock correct) edits at 10:02. Device B's edit is actually newer in real time, but Device A's timestamp is higher. When B syncs, its edit is discarded as "older" because 10:02 < 10:05.
+4. **The sync cursor expires while the outbox holds unsynced edits. Walk through the reset flow that preserves user work, step by step.**
+   1) Stop applying incoming deltas. 2) Preserve the local outbox of pending edits. 3) Fetch a full snapshot from the server. 4) Rebase/replay the pending outbox operations on top of the snapshot. 5) Mark any resulting conflicts explicitly.
+5. **Product asks for "instant" UI on an irreversible action (sending money, deleting an account). What do you push back with, and what compromise designs exist?**
+   Push back: irreversible actions require strong consistency; an optimistic UI risks confirming an action that later fails. Compromises: show a "Processing..." state, or a "Pending" receipt that clearly indicates the action is not yet finalized.
+6. **Which consistency failures should page on-call, which should be dashboards, and what client telemetry distinguishes them?**
+   Paging: widespread failures in strong consistency paths (e.g., duplicate payments, missing idempotency). Dashboards: eventual consistency lag, optimistic UI rollback rates. Telemetry: `optimistic_rollback_count`, `sync_conflict_rate`, `idempotency_replay_ratio`.
+
 ## Further Reading
 
 - [`consistency-models.md`](consistency-models.md) - formal consistency models.

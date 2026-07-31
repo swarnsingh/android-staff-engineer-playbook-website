@@ -433,6 +433,33 @@ These don't usually live in app code, but staff engineers must know them:
 
 ---
 
+## Answer Key
+
+1. **Compare the battery cost of polling every 30 s vs holding an open WebSocket. Why is polling sometimes cheaper than you'd guess?**
+   Polling every 30s allows the radio to drop to Idle between requests, whereas an open WebSocket with frequent pings keeps the radio in an Active or Low Power state indefinitely, draining the battery constantly. Polling is cheaper when intervals are long enough to allow sleep states.
+2. **Walk through what happens when an Android device enters Doze mode and your app has a WebSocket open.**
+   The OS restricts network access, causing the socket to silently fail or drop. The app should not immediately reconnect; instead, wait for `ACTION_DEVICE_IDLE_MODE_CHANGED` or rely on high-priority FCM to wake the app.
+3. **Why is SSE's `Last-Event-ID` header a killer feature compared to rolling your own resume protocol on WebSocket?**
+   It automatically handles resuming the event stream from the last seen ID after a disconnect, eliminating the need to design custom server-side message queues and replay token logic required by WebSockets.
+4. **Your app has Chat, Live Map, and Notifications — three persistent connections. Walk through how you'd refactor to one.**
+   Implement a `ConnectionManager` that establishes a single multiplexed WebSocket. The server sends frames with a type discriminator (e.g., `type: "chat"`), and the manager routes them to specific `Flow`s (Chat, Map, Notifications) for the UI to consume.
+5. **Reconnection with exponential backoff and jitter — walk through the math for 10,000 clients reconnecting after a 30 s outage.**
+   Clients calculate `delay = base * 2^attempt + jitter`. Instead of 10,000 clients hitting at 1s, they spread out between 1s and 1.5s, then 2s and 3s, absorbing the thundering herd and preventing server crash on restart.
+6. **Compare WebSocket vs SSE for: stock ticker, chat app, voice call, collaborative document editing. Pick each and justify.**
+   Stock ticker: SSE (one-way server-to-client). Chat app: WebSocket (bidirectional text). Voice call: WebSocket (bidirectional binary/low-latency). Collab editing: WebSocket (bidirectional low-latency state sync).
+7. **FCM as the backbone: walk through the "tickle then fetch" pattern and why it's superior to keeping a socket open in the background.**
+   FCM wakes the backgrounded app (tickle), prompting it to make a standard REST call (fetch) to get data. This costs near-zero battery compared to maintaining a persistent background socket, which keeps the cellular radio active.
+8. **Your WebSocket auth token expires every hour but sessions last days. Design the refresh protocol.**
+   Implement an in-stream refresh protocol where the server sends an `auth_refresh_required` event shortly before expiration. The client silently fetches a new JWT and sends an `auth` frame up the WebSocket to re-authenticate without dropping the connection.
+9. **Load balancer kills your socket every 60 s. How do you detect and prevent this?**
+   Detect it by observing silent connection drops or observing the `onClosing` callback around the 60s mark. Prevent it by configuring the OkHttp `pingInterval` to a value shorter than the load balancer's idle timeout (e.g., 45s).
+10. **SSE vs polling with ETag — when is each cheaper?**
+    SSE is cheaper for high-frequency, low-latency updates where the server pushes state changes. Polling with ETag is cheaper for low-urgency data that rarely changes, as the server returns 304 Not Modified, saving bandwidth and battery.
+11. **WebSocket connection multiplexer with sealed-class events — show the rough class design.**
+    Create a `ConnectionManager` that owns the `WebSocket` and exposes `Flow<ServerEvent>`. `ServerEvent` is a sealed class with subclasses like `ChatEvent`, `LocationEvent`, etc. The listener parses the JSON, determines the type, and emits the specific subclass to the shared flow.
+12. **A user's phone shows a chat notification but the app never opened that conversation in the foreground. How did the notification arrive? Walk through.**
+    The server sent an FCM data payload to the device. The OS woke the app's `FirebaseMessagingService` in the background, which processed the payload and built a local system notification without launching the UI.
+
 ## Further Reading
 
 - [`push-vs-poll-vs-sse-vs-websockets.md`](push-vs-poll-vs-sse-vs-websockets.md) — broader real-time comparison.

@@ -154,6 +154,29 @@ When reviewing data transport formats, a Staff engineer focuses on the bottlenec
 9.  If an application downloads a 50MB statistical dataset, why might a Staff Engineer choose FlatBuffers over Protobuf?
 10. Does compressing a JSON payload with GZIP reduce the memory footprint required to parse the JSON string on the Android device? Why or why not?
 
+## Answer Key
+
+1. **Explain the fundamental difference between how a CPU processes a JSON payload versus a Protocol Buffer (Protobuf) payload.**
+   A CPU parses JSON by reading strings character-by-character and dynamically allocating objects. Protobuf parsing involves reading binary tags and directly constructing types, avoiding expensive string parsing and drastically reducing CPU cycles.
+2. **Why is Java Reflection incredibly dangerous for battery life and performance when parsing massive JSON arrays in Android?**
+   Reflection inspects classes at runtime to dynamically discover fields, which is computationally expensive. Doing this repeatedly for massive JSON arrays blocks the CPU and generates excessive intermediate objects, draining battery and triggering UI jank.
+3. **Describe the concept of "Zero-Copy" parsing in FlatBuffers. How does it eliminate Garbage Collection (GC) thrashing?**
+   Zero-Copy means the binary payload is memory-mapped directly into RAM, and the app reads pointers without deserializing. This eliminates intermediate object creation entirely, preventing GC pauses and operating at 0ms parsing time.
+4. **If a backend developer renames a JSON key from `"user_id"` to `"userId"`, what happens to the Android app? How does Protobuf's integer tag system solve this?**
+   The Android app fails to parse the new key because it expects `"user_id"`. Protobuf solves this by binding fields to immutable integer tags (e.g., `1`), meaning the field name can change safely as long as the tag remains the same.
+5. **Why must an Android Engineer ensure that JSON deserialization (e.g., `Gson.fromJson()`) never executes on the Main (UI) Thread?**
+   JSON deserialization is a CPU-bound operation. Executing it on the Main Thread blocks UI rendering, causing dropped frames (jank) and potentially triggering an Application Not Responding (ANR) crash.
+6. **Explain the "Enum Evolution Crash" and how a Staff Engineer designs Kotlin Data Classes to safely ignore new Enum values sent by the backend.**
+   If the backend sends a new enum (e.g., `PENDING`), old apps crash during deserialization. Staff engineers solve this by adding an `@Json(name = "UNKNOWN")` fallback mechanism to gracefully handle unrecognized values.
+7. **How do Code-Generating JSON parsers (like `Moshi` Codegen or `kotlinx.serialization`) avoid the performance penalties of Reflection?**
+   They generate hardcoded parsing logic (like a large `switch` statement) at compile time via KSP. This allows the parser to directly map JSON keys to property assignments at runtime without using reflection.
+8. **Why is it an architectural requirement to configure R8 (ProGuard) rules to prevent obfuscation of Kotlin Data Transfer Objects (DTOs)?**
+   If R8 obfuscates a DTO property name (e.g., `userId` to `a`), the JSON parser will look for the `"a"` key in the network response and fail. `@Keep` annotations ensure DTO names match the network contract.
+9. **If an application downloads a 50MB statistical dataset, why might a Staff Engineer choose FlatBuffers over Protobuf?**
+   Even Protobuf requires allocating 50MB of objects in RAM, which can trigger massive GC pauses. FlatBuffers allows mapping the 50MB binary directly to disk/memory without allocating intermediate Kotlin objects, providing instant access.
+10. **Does compressing a JSON payload with GZIP reduce the memory footprint required to parse the JSON string on the Android device? Why or why not?**
+    No. GZIP reduces network bandwidth, but the Android OS must fully decompress the GZIP payload back into the massive 50MB JSON String in RAM before the parser can process it, maintaining the high memory footprint.
+
 ## Further Reading
 
 - [`transport-protocols.md`](transport-protocols.md) — How Protobufs are usually transmitted over gRPC and HTTP/2.

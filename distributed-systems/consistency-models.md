@@ -412,6 +412,31 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 
 ---
 
+## Answer Key
+
+1. **Define linearizability in your own words. How does it differ from sequential consistency?**
+   Linearizability requires that every operation appears to happen instantaneously at a specific moment in real-time, visible to all clients. Sequential consistency only requires that operations happen in *some* globally agreed-upon order that respects each client's program order, without being bound to real-time clock order.
+2. **A user updates their profile and refreshes the page. They see the old profile. What consistency model is in play, and how would you fix it?**
+   Eventual consistency is in play, resulting in a stale read. You would fix it by upgrading to read-your-writes consistency, typically via session affinity (routing the client to a replica that has caught up) or local caching.
+3. **Explain causal consistency using a concrete example (e.g., a social media post and its comments).**
+   If Alice posts a photo and Bob comments on it, causal consistency guarantees that any user who sees Bob's comment will also see Alice's photo. However, two independent comments from Carol and Dave on the same photo can appear in different orders for different users.
+4. **Why is "read-your-writes" a particularly important guarantee for user-facing applications?**
+   Because failing to provide it breaks the user's mental model of the system. Users understand that others might take a moment to see their updates, but if their own changes "disappear" upon refresh, they assume the app is broken or the save failed.
+5. **DynamoDB offers both eventually consistent and strongly consistent reads. When would you use each?**
+   Use strongly consistent (linearizable) reads for critical operational state where stale data is dangerous (e.g., financial balances, distributed locks). Use eventually consistent reads for read-heavy operations where slight staleness is fine and latency/availability is paramount (e.g., product catalogs, feeds).
+6. **A system uses quorum reads (R=2) and quorum writes (W=2) with N=3 replicas. Is this strictly linearizable? Why or why not?**
+   No, it is not strictly linearizable by itself because concurrent reads and writes can interleave, or a failed write could be partially visible, violating the single-instant appearance. Achieving strict linearizability with quorum requires additional protocols like read-repair during read operations (e.g., Paxos/Raft).
+7. **Two clients write different values to the same key concurrently in an eventually consistent system. What happens? Who "wins"?**
+   The system detects a conflict. Who "wins" depends on the conflict resolution strategy: last-writer-wins (LWW) relies on timestamps (discarding one), CRDTs auto-merge them, or the system stores both as siblings for the application to resolve later.
+8. **What is bounded staleness, and why is it a useful middle ground?**
+   Bounded staleness guarantees that a read will return data no older than a specific time threshold (e.g., "at most 5 seconds old"). It is useful because it provides predictable behavior for the application while maintaining much higher availability and lower latency than strict linearizability.
+9. **How does replication lag become a user-visible bug? Give a mobile-app example.**
+   Replication lag becomes a bug when the app reads from a replica that hasn't processed a recent write. For example, a user marks a push notification as "read" on their phone, but opening the app fetches from a lagging replica, showing the notification as unread.
+10. **Your team wants to use eventual consistency for a shopping cart. What failure modes should they prepare for?**
+    They must prepare for conflict resolution of concurrent updates (e.g., user adds items on their phone and laptop simultaneously). If they use last-writer-wins, items might silently disappear. They should use vector clocks with application-level merges or CRDTs (like a grow-only set) to prevent data loss.
+
+---
+
 ## Further Reading
 
 In this repository:

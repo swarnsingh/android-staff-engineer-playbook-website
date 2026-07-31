@@ -435,6 +435,29 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 9. How do delivery semantics interact with message ordering? Can at-least-once delivery reorder messages?
 10. Your team is building a notification system. Which delivery semantic do you choose, and why?
 
+## Answer Key
+
+1. **Explain why exactly-once delivery is impossible in the general case. Where does the impossibility come from?**
+   Impossibility stems from the "Two Generals' Problem": a sender cannot distinguish between a lost message and a lost acknowledgment over an unreliable network.
+2. **A producer sends a message and the ack is lost. What are the producer's options? What are the consequences of each?**
+   Retry (at-least-once, risks duplicate processing on the consumer) or Don't Retry (at-most-once, risks complete data loss).
+3. **How does Kafka achieve "exactly-once semantics"? Is it truly exactly-once at the network layer?**
+   Kafka EOS uses idempotent producers (producer ID + sequence number deduplication) and transactional writes on the broker. It is not exactly-once at the network layer; it is at-least-once delivery with server-side deduplication.
+4. **An Android app submits a payment, the process dies before the ack, and the app restarts. What must be true for the payment to be processed exactly once?**
+   The idempotency key must be generated and persisted locally *before* the first network request is attempted, so the retry uses the exact same key.
+5. **When is at-most-once delivery the right choice? Give two concrete examples.**
+   1) Telemetry/analytics (losing a single event out of millions is negligible). 2) Live video streaming frames (a late/retried frame is worse than a dropped frame).
+6. **What is a dead-letter queue, and why is it essential for at-least-once systems?**
+   A DLQ captures messages that fail repeatedly. Without it, an unprocessable message traps the consumer in an infinite retry loop, blocking the queue.
+7. **A consumer's dedup store has a 24-hour TTL. A retry arrives 25 hours later. What happens? How would you prevent this?**
+   The message is treated as a new request and processed again, resulting in duplication. Prevent this by setting the TTL significantly longer than any plausible maximum retry window.
+8. **Compare the cost of exactly-once at the transport layer (distributed 2PC) vs at-least-once + idempotent handlers. Why is the latter almost always preferred?**
+   2PC introduces high latency, poor scalability, and severe availability risks if coordinators fail. At-least-once + idempotency is cheaper, scales better, and remains highly available during partitions.
+9. **How do delivery semantics interact with message ordering? Can at-least-once delivery reorder messages?**
+   Retrying a failed message after subsequent messages succeed reorders the stream from the consumer's perspective. It breaks ordering unless sequence numbers or buffers are used.
+10. **Your team is building a notification system. Which delivery semantic do you choose, and why?**
+    At-least-once delivery with idempotent handlers. Push notifications are critical to deliver, but sending the same notification twice is poor UX. Device-side idempotency keys ensure reliability without duplicates.
+
 ---
 
 ## Further Reading

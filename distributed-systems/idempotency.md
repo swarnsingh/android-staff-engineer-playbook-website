@@ -340,6 +340,29 @@ Questions a Staff engineer should be able to answer cold:
 9. An idempotent API internally calls three other services. What property must those three services have for end-to-end safety on retries?
 10. The deduplication store and the primary database are separate physical stores. How do you maintain atomic capture?
 
+## Answer Key
+
+1. **What is the difference between idempotent-by-construction and idempotent-by-deduplication? Give an example of each.**
+   Idempotent-by-construction: the operation inherently produces the same result (e.g., `PUT /user` replacing a record entirely). Idempotent-by-deduplication: the operation has side effects (e.g., charging a card) and relies on a deduplication store to intercept retries.
+2. **Why is the atomic-capture requirement (side effect + deduplication-key write commit together) load-bearing? What breaks if it doesn't hold?**
+   If the side effect runs but the record isn't saved, a retry will duplicate the effect. If the record is saved but the side effect fails, a retry will return a success response without the effect ever occurring.
+3. **A client generates a fresh UUID for each retry attempt instead of reusing the same key. Why is this wrong, and what bug does it cause?**
+   The server sees the retry as a brand-new operation because the key is different. It will execute the side effect again, defeating the idempotency guarantee and causing duplicates (e.g., double charges).
+4. **How would you design the deduplication store's TTL for an API used by mobile clients that may be offline for days?**
+   The TTL must be longer than the maximum plausible offline duration for the client before a retry, which could be days (e.g., 7-14 days).
+5. **Two retries with the same idempotency key arrive at the server at the same millisecond. What should happen?**
+   The first to execute should lock the key or insert a "processing" record. The second should either wait for the first to finish and return the stored response, or return a `409 Conflict`.
+6. **Why is idempotency a prerequisite for state-machine-based recovery, rather than an orthogonal property?**
+   State machines rely on exactly-once progression. Because state changes often involve external systems over unreliable networks, the transitions must be idempotent so they can be safely retried until successful.
+7. **Explain the relationship between idempotency and "exactly-once delivery." Why do most systems use the former instead of pursuing the latter?**
+   "Exactly-once delivery" is generally impossible at the transport layer over unreliable networks. Systems achieve "effectively exactly-once" processing by combining at-least-once delivery with idempotent application handlers, which is much cheaper and more scalable.
+8. **When would you NOT want an operation to be idempotent? Give a concrete example.**
+   When the explicit intent is to record every single invocation, such as appending to an audit log, incrementing a page view counter, or recording a distinct telemetry event.
+9. **An idempotent API internally calls three other services. What property must those three services have for end-to-end safety on retries?**
+   All three downstream services must also be idempotent, and the original idempotency key (or derived deterministic keys) must be propagated down to them.
+10. **The deduplication store and the primary database are separate physical stores. How do you maintain atomic capture?**
+    By using a distributed transaction (2PC) or an outbox pattern. However, they are commonly physically the same store specifically so a local database transaction can atomically commit both.
+
 ---
 
 ## Further Reading
