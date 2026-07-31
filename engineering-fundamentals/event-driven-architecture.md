@@ -159,6 +159,29 @@ When reviewing an event-driven system, a Staff engineer asks:
 9.  Explain why tracing bugs in an Event-Driven system is generally more difficult than in a procedural, tightly-coupled system.
 10. Describe a scenario where using direct method calls (tight coupling) is actually superior to using an Event-Driven approach.
 
+## Answer Key
+
+1.  **Why has the Android community moved away from global Event Buses toward scoped `SharedFlow`?**
+    Global event buses lead to spaghetti code, are not type-safe, and make tracking execution flow nearly impossible. Scoped `SharedFlow` provides type safety, scoped lifecycles, and predictable domains.
+2.  **Explain the difference between a Command and an Event.**
+    A Command dictates *what to do* (`ShowSnackbar`), implying the sender expects a specific outcome. An Event describes a fact of *what happened* (`ItemDeleted`), leaving it to the subscriber to decide how to react.
+3.  **In Kotlin, what is the difference between `StateFlow` and `SharedFlow` when used in an Event-Driven Architecture?**
+    `StateFlow` represents state (always has a value, emits the latest to new subscribers, conflates updates). `SharedFlow` is for one-time events (no default value, configurable replay, doesn't conflate unless configured).
+4.  **How does UDF (Unidirectional Data Flow) utilize the principles of EDA?**
+    In UDF, the View emits user intent as events. The ViewModel subscribes to these events and reduces them into a new State, which the View observes. They never command each other directly.
+5.  **What is an "Event Storm," and how do you prevent it?**
+    An Event Storm is an infinite loop where Event A triggers B, which triggers C, which triggers A. Prevent it by ensuring events flow in a single direction (e.g., UDF) and avoiding reactive chains that update the same state cyclically.
+6.  **If a publisher emits an event, but the primary subscriber hasn't initialized yet, how do you ensure the event isn't lost?**
+    Configure the `SharedFlow` with a `replay` value greater than 0, or cache the event if it's a critical application startup event, ensuring the subscriber receives it upon initialization.
+7.  **Why should events be named in the past tense? (e.g., `PaymentProcessed` vs `ProcessPayment`).**
+    To reinforce the conceptual model that events represent immutable facts of the past. Present-tense verbs imply commands, which violate the decoupling principle of EDA.
+8.  **How do Android System Broadcasts demonstrate EDA?**
+    The OS broadcasts system changes (`ACTION_BATTERY_LOW`) without knowing which apps are listening. Apps register receivers independently to react, decoupling the system core from installed applications.
+9.  **Explain why tracing bugs in an Event-Driven system is generally more difficult than in a procedural, tightly-coupled system.**
+    Execution flow is implicit and decoupled. You cannot step through the code linearly. You must use search tools to find all subscribers of an event, which may run asynchronously or on different threads.
+10. **Describe a scenario where using direct method calls (tight coupling) is actually superior to using an Event-Driven approach.**
+    When implementing linear, sequential business logic where a strict return value is immediately required, such as calculating a hash or validating a form field. EDA here would add unnecessary indirection and complexity.
+
 ## Further Reading
 
 - [`../patterns/observer.md`](../patterns/observer.md) — The specific design pattern used to build EDA.

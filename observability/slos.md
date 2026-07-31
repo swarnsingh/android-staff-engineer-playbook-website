@@ -184,6 +184,29 @@ An SLO breach is not automatically a page. Route by user impact and available mi
 
 This policy prevents alert fatigue. Paging is reserved for cases where a human can reduce user harm right now.
 
+## Answer Key
+
+1. **Explain the relationship between an SLI, an SLO, and an SLA.**
+   An SLI is the measurement, the SLO is the internal target for that measurement, and the SLA is the external legal contract tied to financial penalties.
+2. **Why is setting an SLO of 100% considered a fundamental SRE anti-pattern?**
+   It is impossible to achieve due to unpredictable external factors (hardware, networks), and striving for it halts feature velocity by eliminating all tolerance for risk.
+3. **Describe the relationship between "Nines" of reliability and the engineering cost required to achieve them.**
+   The engineering cost increases exponentially with every additional "nine," requiring massive investments in redundancy and failovers.
+4. **Why is it physically impossible to guarantee "Five Nines" (99.999%) reliability for a mobile application?**
+   Mobile environments depend on operating systems and carrier networks that inherently provide far less than Five Nines of reliability.
+5. **What is a "Rolling Time Window" in the context of an SLO, and why is it necessary?**
+   It measures performance over a moving recent period (e.g., 30 days) to reflect current realities and allow past outages to eventually fall out of the budget.
+6. **If a Product Manager demands an SLO that is higher than the current performance of the app, what is the architectural implication for the next few sprints?**
+   Feature development must freeze to prioritize bug fixes and structural stability improvements until the new SLO baseline is met.
+7. **How does an explicitly defined SLO give engineers the "permission" to ship code faster?**
+   It establishes an error budget, creating psychological safety and mathematical proof that a small amount of failure from new releases is acceptable.
+8. **Describe a scenario where a Latency SLO is perfectly green, but thousands of users are completely unable to use the app. (Hint: Averages vs Percentiles).**
+   An SLO based on averages could look healthy if 95% of users are extremely fast, hiding the 5% of users (thousands) facing permanent timeouts.
+9. **Why should SLOs only be applied to Critical User Journeys (CUJs) rather than every single screen in the app?**
+   Tracking every feature creates alert fatigue and wastes SRE resources; CUJs focus on the core actions necessary for the business to survive.
+10. **If an internal engineering team consistently violates their SLO, but users aren't complaining and revenue is up, what does that tell you about the SLO?**
+    The SLO is overly aggressive or misaligned with actual user happiness, and the target should be relaxed to free up engineering resources.
+
 ## Further Reading
 
 - [`slis.md`](slis.md) — The metrics that the SLO is measuring.

@@ -178,6 +178,32 @@ When reviewing code, a Staff engineer hunts for hidden mutability:
 9.  If creating new objects causes Garbage Collection (GC) pauses, when might you intentionally choose to use a mutable object instead of an immutable one?
 10. Describe the impact of using `var` properties inside a Kotlin `data class`.
 
+## Answer Key
+
+1.  **Explain the difference between `val` and true object immutability in Kotlin.**
+    `val` means a read-only reference (you can't reassign the variable), while true object immutability means the object's internal state cannot be modified. A `val` pointing to a `MutableList` is not immutable.
+2.  **Why is immutability a strict requirement for Unidirectional Data Flow (UDF) architectures?**
+    UDF relies on state being a single source of truth that flows in one direction. If state is mutable, components can bypass the flow and modify it directly, leading to race conditions and breaking predictability.
+3.  **How does Jetpack Compose use immutability to determine if Recomposition is necessary?**
+    Compose relies on object equality (`==`). If an object is mutable and modified internally, its reference remains the same, so Compose won't detect the change. Immutability forces a new object creation (`copy`), triggering recomposition.
+4.  **What is a "Defensive Copy," and when should you use it?**
+    A defensive copy is creating a new instance (usually immutable) of a mutable object when exposing it across boundaries. Use it when returning internal mutable state (like a `MutableList`) to prevent external callers from modifying it.
+5.  **Why is it dangerous to use a mutable object as a key in a `HashMap`?**
+    The `HashMap` relies on the object's `hashCode()` to find its bucket. If a mutable key's state changes, its hash code changes, making it impossible to retrieve the value associated with it.
+6.  **If you have a 10,000-item list and you need to change one item, copying the whole list is expensive. How do persistent data structures (like those in Kotlinx.Collections.Immutable) solve this? (Hint: Structural Sharing).**
+    Persistent data structures use structural sharing (typically trees). When an item changes, a new root is created, but it reuses the unchanged branches of the old tree, resulting in efficient updates without full copies.
+7.  **Write a snippet of code demonstrating how a "read-only" Kotlin `List` can still be mutated via casting.**
+    ```kotlin
+    val list: List<String> = arrayListOf("A", "B")
+    (list as MutableList<String>).add("C")
+    ```
+8.  **How does immutability eliminate the need for `synchronized` blocks in multithreaded code?**
+    Since immutable objects cannot change state, multiple threads can safely read them concurrently. There are no writes after creation, hence no race conditions to synchronize against.
+9.  **If creating new objects causes Garbage Collection (GC) pauses, when might you intentionally choose to use a mutable object instead of an immutable one?**
+    In performance-critical, tight loops (e.g., rendering loops in games or heavy numerical computations) where the overhead of continuous object allocation and GC outweighs the benefits of immutability.
+10. **Describe the impact of using `var` properties inside a Kotlin `data class`.**
+    It breaks the safety of the `copy()` mechanism and makes the class mutable. Changing the `var` modifies the object in place, undermining value-based equality and hashing guarantees.
+
 ## Further Reading
 
 - [`state-machines.md`](state-machines.md) — Immutability makes state transitions safe.

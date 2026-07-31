@@ -230,6 +230,25 @@ You're the model. They're watching how you handle disagreement, how you write RF
 
 ---
 
+## Answer Key
+
+1. **Why is influence the dominant currency for a Staff engineer, more than authority?**
+   A Staff engineer doesn't have direct managerial authority. To drive cross-team initiatives, they must rely entirely on influence to persuade others to align and execute.
+2. **Give a concrete example of how you've earned influence in the past 6 months. How did you spend any of it?**
+   (Self-reflection) Example: Earning influence by volunteering to debug a critical issue for a peer team (deposit), and spending it later by asking their Tech Lead to adopt a new shared API schema (withdrawal).
+3. **Walk through the Influence Map exercise for your current team and adjacent teams. Where are the gaps?**
+   (Self-reflection) The exercise maps relationships with key peers and leaders to identify missing connections. Gaps usually exist with Staff engineers on sister platforms or Directors two levels up.
+4. **The iOS Staff disagrees with your RFC. You don't know each other well. How do you build the relationship to resolve it?**
+   Stop pushing the RFC directly. Schedule a 1:1 coffee to understand their context, find shared problems, and make small deposits before asking them to align on the broader technical decision.
+5. **Your VP doesn't see the urgency of a technical issue you care about. How do you change their mind?**
+   Translate the engineering problem into business outcomes. Explain the issue in terms of impacted metrics, lost revenue, or delayed product velocity, keeping the message crisp.
+6. **A peer asks you for a favor that costs you a day; you don't see immediate reciprocation. Do you do it?**
+   Yes, if you can afford the time. Doing favors builds relational capital (deposits) that you can withdraw from later when you need alignment on a cross-team initiative.
+7. **What's the failure mode of a Staff engineer who's all "deposits" and no "withdrawals" — never asks for anything?**
+   They become well-liked but ineffective. By never using their earned capital to push for architectural changes or prioritize technical debt, they fail to drive the org-wide impact expected of a Staff engineer.
+8. **How do you ask for something from a peer engineer when you have no existing relationship?**
+   Pre-draft the work and offer to do the heavy lifting. Provide a specific, low-friction request (e.g., reviewing a PR you wrote for their repo) rather than demanding they do the work.
+
 ## Further Reading
 
 - [`technical-mentorship.md`](technical-mentorship.md) — the sponsorship dimension.

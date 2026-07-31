@@ -237,6 +237,25 @@ Healthy on-call: 2-3 actionable pages per shift, each with a clear runbook.
 
 ---
 
+## Answer Key
+
+1. **What's the difference between Mitigation and Resolution? Why is the distinction critical?**
+   Mitigation stops the immediate user pain, while resolution fixes the underlying bug. It is critical because during an incident, the goal is purely to stop the bleeding fast; root cause analysis belongs in daylight hours.
+2. **What does an Incident Commander do — and crucially, what do they NOT do?**
+   The IC coordinates humans, assigns tasks, enforces communication discipline, and communicates status upwards. They crucially do NOT look at code, query logs, or try to fix the issue themselves.
+3. **Why are blameless post-mortems essential? What does a punitive post-mortem produce?**
+   Blameless post-mortems focus on fixing the system that allowed a human to make an error. Punitive post-mortems produce fear, causing engineers to hide incidents and obscure data.
+4. **How do you decide what's a SEV-1 vs SEV-2? Why is over-classifying as bad as under-classifying?**
+   It's based on predefined impact matrices. Over-classifying burns out the on-call team by waking them up for minor issues; under-classifying allows massive incidents to fester without a coordinated response.
+5. **Walk through the 5 Whys for a crash you'd actually expect in a banking app.**
+   1. Why crash? NullPointerException. 2. Why null? Backend returned missing field. 3. Why missing field? Legacy DB timeout. 4. Why did timeout cause a missing field? API didn't have a fallback state. 5. Why no fallback? No contract testing to enforce schemas.
+6. **The on-call rotation has 10 pages per week. What's your audit plan?**
+   Review all pages: delete or downgrade alerts that auto-resolve in under 5 minutes, enforce writing runbooks, fix muted alerts, and shift non-urgent alerts to business-hours-only.
+7. **The CEO joins the incident channel and starts asking technical questions. How do you handle it?**
+   As the IC, politely but firmly direct the CEO to the status updates thread. "We are mitigating a SEV-1. I will provide a high-level update every 15 minutes. Please hold questions so the team can focus."
+8. **A junior pushed a bad config and caused the incident. How do you write the post-mortem?**
+   Focus entirely on the system. Analyze why the CI/CD pipeline allowed an invalid config to be deployed without a staged rollout, generating action items to add automated guardrails.
+
 ## Further Reading
 
 - [`escalation-and-decision-making.md`](escalation-and-decision-making.md) — escalation in incident context.

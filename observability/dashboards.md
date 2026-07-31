@@ -147,6 +147,29 @@ Mobile-distinct dashboarding principles:
 5. **Day-of-week and time-of-day.** Mobile traffic is cyclical. A baseline that doesn't show 7d-over-7d comparison misleads.
 6. **Link to runbooks.** Every alert chart links to the runbook for "what to do at 3 AM when this fires."
 
+## Answer Key
+
+1. **Explain the principle of "Glanceability" and why it is critical for a dashboard used during a 3:00 AM outage.**
+   "Glanceability" means an engineer should understand system health within 5 seconds. During an outage, cognitive function is impaired, so the dashboard must instantly draw attention to anomalies.
+2. **Describe the "Top-Down Hierarchy" of a well-designed observability dashboard.**
+   The dashboard displays high-level user experience metrics (SLIs) at the top, and as you scroll down, it breaks down into specific feature areas and granular internal system causes.
+3. **What is the RED Method, and what are the three metrics it tracks for a given service?**
+   The RED Method tracks user experience for services via Rate (requests per second), Errors (number of failed requests), and Duration (how long requests take).
+4. **Why is a dedicated "Release Dashboard" (filtered by app version) particularly important for mobile applications compared to backend web applications?**
+   Mobile releases roll out slowly and multiple versions coexist. A version-filtered dashboard is essential to compare the health of a new release against a previous stable version to instantly spot regressions.
+5. **Explain the danger of "Dashboard Rot" and how "Dashboard as Code" (Infrastructure as Code) helps mitigate it.**
+   Dashboard Rot is the accumulation of outdated dashboards causing confusion during incidents. Dashboard as Code mitigates this by requiring peer review, version control, and clear ownership, making it easy to manage.
+6. **Why is an "Average Latency" graph considered an anti-pattern? What should you visualize instead?**
+   Averages hide the extremes; a system might seem fine while the slowest users suffer completely broken experiences. Visualize percentiles like P50, P90, and P99 to see the distribution spread.
+7. **How do deployment annotations (vertical lines indicating when code was shipped) aid in root-cause analysis?**
+   They provide immediate visual correlation between a sudden change in metrics (e.g., a crash spike) and a specific code deployment, instantly highlighting what changed.
+8. **What is the difference between the primary function of an Alert and the primary function of a Dashboard?**
+   An Alert notifies you that something is broken and wakes you up, whereas a Dashboard is used after the alert to investigate the blast radius, vector, and root cause.
+9. **Why should a Staff Engineer aggressively delete dashboards that haven't been viewed recently?**
+   To reduce cognitive overload and confusion during an incident, ensuring the official, accurate "Golden Dashboard" is easy to find when every second counts.
+10. **Describe the visual layout differences between a dashboard designed for an Executive (Product/Business) vs a dashboard designed for an On-Call Engineer.**
+    An Executive dashboard emphasizes top-level SLIs, conversion rates, and overall uptime. An On-Call Engineer dashboard goes deeper into granular, actionable metrics (U.S.E., R.E.D., traces) used for debugging.
+
 ## Further Reading
 
 - [`alerting.md`](alerting.md) — The system that drives humans to look at the dashboard.

@@ -194,6 +194,27 @@ This trades scheduling friction for cadence. The team gets used to the rhythm; R
 
 ---
 
+## Answer Key
+
+1. **Why is async review usually more valuable than the sync meeting?**
+   Async review allows reviewers time to think deeply and resolves the majority of straightforward issues (the 90%), reserving the expensive synchronous time for only the complex, unresolved 10%.
+2. **What's the right time-box for a design review? When would you go longer or shorter?**
+   Typically 45 minutes. You might go shorter (or entirely async) for small, localized features, and longer (60-90 minutes) for platform-level changes or massive cross-team architectural decisions.
+3. **As facilitator, how do you handle a reviewer who hasn't read the RFC?**
+   Cancel or postpone the meeting. A sync meeting relies on everyone being prepared to discuss the unresolved 10%, and unprepared reviewers will waste the group's time catching up.
+4. **The Approver can't attend the scheduled meeting. What do you do?**
+   Postpone the meeting. The main goal of the review is to reach a decision, which is impossible without the Approver present.
+5. **The author keeps defending instead of listening. How do you intervene without humiliating them?**
+   Re-route the conversation by summarizing the reviewer's concern neutrally and parking it as an open thread for async follow-up, shifting focus back to the agenda.
+6. **The meeting ends with no decision. What's the cost? How do you avoid it next time?**
+   The cost is an "ambiguous" state where the proposal stalls and another meeting is needed. Avoid it by ruthlessly time-boxing discussions, forcing a decision (even if it's "defer for 2 weeks"), and parking unresolved debates.
+7. **A senior reviewer vetoes the proposal but won't explain why. How do you handle it?**
+   Address it directly but constructively, asking them to explicitly state what conditions or changes would be required for them to approve.
+8. **Walk through what you'd do in the first 5 minutes of a design review you're facilitating.**
+   State the time available, summarize the open threads to be discussed, state the goal (e.g., reaching a decision), confirm the roles (Author, Approver, etc.), and dive immediately into the first open thread.
+
+---
+
 ## Further Reading
 
 - [`escalation-and-decision-making.md`](escalation-and-decision-making.md) — DACI roles in the review.

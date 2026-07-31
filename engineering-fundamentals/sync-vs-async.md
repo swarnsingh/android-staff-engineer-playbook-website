@@ -340,6 +340,29 @@ Canonical: [`../observability/tracing.md`](../observability/tracing.md), [`../ob
 9. Compare the memory footprint of 10,000 OS threads vs 10,000 coroutines under load.
 10. Where in your architecture should the sync/async boundary live — at the HTTP client, the repository, the ViewModel, or somewhere else? Justify.
 
+## Answer Key
+
+1.  **A coroutine running on the main dispatcher calls a blocking JDBC method. What happens, and why?**
+    The main thread becomes blocked waiting for the I/O operation. The UI freezes, and the OS will eventually show an Application Not Responding (ANR) dialog, because the blocking call doesn't suspend, it locks the thread.
+2.  **Why is `viewModelScope.launch { ... }` preferred over `GlobalScope.launch { ... }` in Android?**
+    `viewModelScope` uses structured concurrency tied to the ViewModel's lifecycle. When the ViewModel is cleared, ongoing coroutines are automatically canceled, preventing memory leaks and orphaned work. `GlobalScope` coroutines outlive the component.
+3.  **Two coroutines each `await` on the other's result. How do you detect this in production?**
+    This is an async deadlock. It can be detected using timeouts on all `await` calls, monitoring for coroutines that never complete, or observing metrics for tasks stuck in progress indefinitely.
+4.  **You have a CPU-bound algorithm that takes 800 ms to compute. Should it be a `suspend fun`? Why or why not?**
+    It shouldn't just be a `suspend fun` without a dispatcher change. Async is for waiting, not computing. It should run on a thread pool sized for CPU work (e.g., `Dispatchers.Default`) because it will occupy a thread for the full 800 ms.
+5.  **Explain how a `suspend fun` returns "twice" — once when it suspends, once when it resumes.**
+    When it hits a suspension point, it returns a special `COROUTINE_SUSPENDED` token to release the calling thread. Later, when the awaited result is ready, the continuation is invoked, effectively "resuming" and returning the final result.
+6.  **Under what conditions does async *not* improve throughput?**
+    When the workload is purely CPU-bound (no I/O or waiting). In this case, async just adds overhead (context switching and state machine allocation) without freeing up threads that could be doing other work.
+7.  **Why might `Dispatchers.IO` be exhausted in a system that has plenty of CPU and memory available?**
+    Because `Dispatchers.IO` has a finite thread limit (default 64 or core count). If too many coroutines execute blocking operations simultaneously, they consume all available IO threads, leading to thread pool starvation.
+8.  **A user navigates away from a screen mid-network-request. What is the idiomatic way to ensure the request is cancelled?**
+    Launch the network request within a structured scope tied to the screen's lifecycle, such as `viewModelScope` or `lifecycleScope`. The cancellation automatically propagates when the scope is destroyed.
+9.  **Compare the memory footprint of 10,000 OS threads vs 10,000 coroutines under load.**
+    10,000 OS threads will consume gigabytes of memory (typically 1-2 MB per thread stack). 10,000 coroutines only require a few megabytes for their state machines and continuation objects.
+10. **Where in your architecture should the sync/async boundary live — at the HTTP client, the repository, the ViewModel, or somewhere else? Justify.**
+    At the lowest boundary possible, such as the HTTP client or database driver. This ensures the entire application layer uses suspending functions, maximizing throughput and preventing accidental blocking at higher layers.
+
 ---
 
 ## Further Reading

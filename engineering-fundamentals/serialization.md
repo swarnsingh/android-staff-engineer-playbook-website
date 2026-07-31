@@ -157,6 +157,31 @@ When designing an API contract or data architecture, a Staff engineer asks:
 9.  What is FlatBuffers, and how does its "zero-copy" deserialization differ from standard Protobufs or JSON?
 10. Describe the impact of performing JSON deserialization on the Main Thread vs the IO Thread.
 
+## Answer Key
+
+1. **Why is Android's `Parcelable` significantly faster than Java's `Serializable`?**
+   `Serializable` relies on heavy Java reflection to inspect object graphs at runtime, whereas `Parcelable` requires explicit, compiled code to write/read specific fields directly to a memory buffer.
+2. **Explain the concept of Forward Compatibility in JSON parsing. How do you prevent an old app from crashing when a new field is added?**
+   Forward compatibility means an older client can handle newer data structures. You prevent crashes by configuring your JSON parser (e.g., Moshi) to explicitly ignore unknown keys rather than throwing an exception.
+3. **What are Protocol Buffers, and why do they generate significantly smaller network payloads than JSON?**
+   Protobuf is a binary serialization format. It is smaller because it omits text-based keys entirely, transmitting only the raw binary data alongside a numeric index defined by a shared `.proto` schema.
+4. **Why must you never pass a massive serialized object (like a Bitmap) between Activities via an Intent? What is the architectural solution?**
+   Intents pass through the OS Binder, which has a strict ~1MB limit per process; exceeding it causes a `TransactionTooLargeException` crash. The solution is to pass a lightweight ID and read the data from a shared cache or Repository.
+5. **What is the difference between Reflection-based serialization (e.g., standard Gson) and Code-Generation serialization (e.g., Kotlinx.serialization)?**
+   Reflection parses objects dynamically at runtime, which is CPU intensive. Code-generation creates static parsing code at compile time, resulting in much faster runtime performance at the cost of slightly longer build times.
+6. **If a JSON payload omits a field that is defined as non-nullable in your Kotlin `data class`, what happens during deserialization? How do you defend against this?**
+   Depending on the parser, it may crash immediately (Moshi) or silently leave a null in a non-nullable field via reflection/Unsafe (Gson), causing a delayed NullPointerException. Defend by defining optional fields with nullable types (`?`) or providing default values.
+7. **Explain the tradeoffs of caching raw serialized JSON strings vs caching parsed domain objects in a local database.**
+   Caching raw JSON avoids repeated serialization/deserialization CPU costs if you just need to return the exact response later, but it makes querying individual fields impossible. Caching domain objects in a structured DB (like Room) allows complex queries but requires more upfront processing.
+8. **How does a tool like Charles Proxy intercept and display HTTPS traffic, and why is this harder to do if you use Protocol Buffers instead of JSON?**
+   Charles acts as a Man-in-the-Middle by replacing SSL certificates. It's harder with Protobufs because the intercepted binary payload is unreadable without the specific `.proto` schema file to decode it.
+9. **What is FlatBuffers, and how does its "zero-copy" deserialization differ from standard Protobufs or JSON?**
+   FlatBuffers allows accessing serialized data directly from the byte buffer without parsing it into intermediate objects in memory, skipping the CPU and memory allocation costs entirely.
+10. **Describe the impact of performing JSON deserialization on the Main Thread vs the IO Thread.**
+    Deserializing a large payload on the Main Thread blocks the UI, causing frame drops (jank) or ANRs. Deserializing on the IO Thread frees the Main Thread to maintain 60fps animations while the data is processed.
+
+---
+
 ## Further Reading
 
 - [`../patterns/command.md`](../patterns/command.md) — Commands must be serializable to be queued for offline execution.

@@ -237,6 +237,25 @@ This is how engineering cultures of learning scale. Without it, mentorship stays
 
 ---
 
+## Answer Key
+
+1. **What's the difference between mentorship and sponsorship? Why does sponsorship compound more?**
+   Mentorship provides advice and perspective, whereas sponsorship provides specific opportunities by using the sponsor's capital to advocate. Sponsorship compounds more because it gives the sponsee visible reps that directly lead to career advancement.
+2. **How do you mentor someone without solving their problems for them?**
+   Ask diagnostic questions (e.g., "What have you tried?", "What do you think is the root cause?") to help them frame their thinking and guide their debugging process.
+3. **You have 4 hours a week for mentorship. How do you allocate them?**
+   Spend 1-2 hours on high-leverage 1:1 sponsorship for a couple of engineers, 1 hour on "Office Hours" for ad-hoc broad mentorship, and 1 hour on scaling knowledge via written artifacts or workshops.
+4. **Who in your current org would you sponsor? Have you?**
+   (Self-reflection) Look for engineers who do solid technical work but lack visibility, particularly those from underrepresented groups or those who are quiet, and actively recommend them for high-profile tasks.
+5. **A mentee shows up to the third 1:1 with no agenda again. How do you address it?**
+   Address it directly using the mentorship contract. Explain that your time is finite and their growth requires their ownership, gracefully ending or pausing the 1:1s until they are ready.
+6. **Why is "find your own way" sometimes lazy mentorship?**
+   While intended to build independence, it often provides zero framing or guidance, leaving the mentee completely stuck rather than teaching them the specific mental models they need.
+7. **How do you mentor someone more senior than you without it being awkward?**
+   Do it quietly and with humility. Focus on asking great questions, sharing domain-specific patterns where you have deep expertise, and acting as a peer with complementary skills.
+8. **What's the failure mode of a Staff engineer who refuses to mentor?**
+   They become a single point of failure and their impact is capped at their own individual output. The organization fails to grow its technical bench, and the Staff engineer eventually burns out.
+
 ## Further Reading
 
 - [`influence-without-authority.md`](influence-without-authority.md) — sponsorship as influence-spending.

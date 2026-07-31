@@ -223,6 +223,25 @@ Never: silent resistance, smug "I told you so" after the fact, recruiting allies
 
 ---
 
+## Answer Key
+
+1. **How do you decide whether a decision belongs to you, your peer, your EM, or your Director?**
+   Use a decision-routing framework based on blast radius: intra-module is the IC; cross-module is peer Tech Leads; cross-org or high-capacity goes up to EMs and Directors.
+2. **Give an example of a decision where escalating made things better. Where it made things worse.**
+   Better: Escalating a cross-team priority deadlock to a Director who unblocked it. Worse: Escalating a peer code-review dispute to an EM before trying to resolve it directly, burning peer trust.
+3. **What's the difference between disagreeing professionally and disagreeing destructively?**
+   Professional disagreement involves stating concerns, committing fully once a decision is made, and helping execute it. Destructive disagreement involves passive-aggressive resistance or undermining the decision.
+4. **How do you tell whether a decision is Type 1 (one-way door) or Type 2 (two-way door)?**
+   Type 1 decisions are virtually impossible to reverse without massive cost. Type 2 decisions are easily reversible. Match the process rigor to the type.
+5. **The team votes 4-2 against your proposal. You think they're wrong. What do you do?**
+   Use the "disagree and commit" principle. State your disagreement for the record, but then commit fully to the team's chosen path and write the code to make it successful.
+6. **Your EM is making a strategic call you think is wrong. Walk through how you'd handle it.**
+   Disagree privately in a 1:1 with clear data. If the EM proceeds anyway, commit publicly and professionally. Only escalate above the EM if it's a severe safety, ethical, or catastrophic strategic risk.
+7. **You've committed to a decision; new data suggests it was wrong. How do you re-open it without losing credibility?**
+   Bring the new data to the group transparently, referencing your previous commitment. State: "I committed to X, but we've observed new data. I propose we re-open this decision."
+8. **What's the failure mode of a Staff engineer who escalates too readily? Too rarely?**
+   Too readily: They lose peer trust and leadership ignores them (The Loud Escalator). Too rarely: Teams stay deadlocked, velocity drops, and systemic issues never get fixed (The Decision Avoider).
+
 ## Further Reading
 
 - [`influence-without-authority.md`](influence-without-authority.md) — the muscle that lets you decide without title power.

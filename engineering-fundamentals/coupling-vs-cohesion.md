@@ -162,6 +162,29 @@ When reviewing architecture, a Staff engineer asks:
 9.  Why might you intentionally choose to duplicate code across two feature modules rather than extract it into a shared core module?
 10. Describe the difference between "Compile-time Coupling" and "Runtime Coupling" (e.g., via intent extras or deep links).
 
+## Answer Key
+
+1.  **How does Dependency Injection (like Dagger/Hilt) directly impact the coupling of an Android application?**
+    It injects dependencies through interfaces rather than concrete implementations, preventing classes from being tied to the instantiation and specific types of their dependencies, thus achieving loose coupling.
+2.  **Explain the concept of "Shotgun Surgery" and how it relates to cohesion.**
+    Shotgun Surgery occurs when a single conceptual change requires edits across many different files. It indicates low cohesion because related logic is scattered rather than being grouped together.
+3.  **Give an example of a "Leaky Abstraction" in an Android networking layer that increases coupling.**
+    An interface returning a `RetrofitResponse` object or throwing an `HttpException`. Even though an interface is used, the caller is coupled to Retrofit-specific concepts.
+4.  **Why is "Package by Feature" considered more cohesive than "Package by Layer"?**
+    Package by Feature groups all related UI, domain, and data logic for a specific feature in one place, ensuring that files that change together live together (high cohesion). Package by Layer scatters a feature across multiple directories.
+5.  **How do Kotlin's internal visibility modifiers (`internal`) help enforce low coupling in a multi-module architecture?**
+    The `internal` keyword restricts visibility to the current module, preventing other modules from directly coupling to implementation details and forcing them to use public interfaces.
+6.  **If you have two microservices that communicate via a shared database, what kind of coupling is that, and why is it dangerous?**
+    This is called "database coupling" or "shared state coupling". It is dangerous because a schema change in one service will silently break the other, creating high implicit coupling.
+7.  **How does the Observer pattern (e.g., Kotlin Flow) reduce coupling between the UI and the data layer compared to using callbacks?**
+    The data layer simply emits a stream of state without knowing who is listening, rather than maintaining a reference to a specific callback interface. The UI layer independently subscribes to the stream.
+8.  **Can a class be highly cohesive but also highly coupled? Provide a theoretical example.**
+    Yes. A `BitcoinWallet` class might have perfectly focused logic (high cohesion) but depend directly on concrete classes for networking, databases, and cryptography rather than interfaces (high coupling).
+9.  **Why might you intentionally choose to duplicate code across two feature modules rather than extract it into a shared core module?**
+    To avoid coupling the modules to each other's lifecycles. A shared module means changing the code for one feature could inadvertently break the other. Duplication (violating DRY) can sometimes result in lower coupling.
+10. **Describe the difference between "Compile-time Coupling" and "Runtime Coupling" (e.g., via intent extras or deep links).**
+    Compile-time coupling involves hard references to classes and methods checked by the compiler. Runtime coupling involves string keys or implicit contracts (like Intent extras) where mismatches cause runtime crashes rather than compilation errors.
+
 ## Further Reading
 
 - [`../patterns/adapter.md`](../patterns/adapter.md) — The pattern used to decouple an application from third-party libraries.

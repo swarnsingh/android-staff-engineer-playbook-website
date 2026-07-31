@@ -181,6 +181,29 @@ Every SLI needs a named owner and a first mitigation. Otherwise it becomes a das
 
 The owner is accountable for the runbook and for deleting or retuning the SLI if it stops driving decisions. "Everyone watches this" usually means no one watches it.
 
+## Answer Key
+
+1. **What is the mathematical formula for a standard SLI?**
+   (Good Events / Total Valid Events) * 100.
+2. **Why is "CPU Usage" an invalid SLI for an Android application?**
+   It measures an internal system state rather than the actual user experience or user pain.
+3. **Explain the difference between a "System Error" and a "User Error" when calculating a Checkout Success SLI.**
+   A system error (e.g., crash, network failure) hurts the SLI, whereas a user error (e.g., invalid credit card) is an expected business outcome and should not be counted as a bad event.
+4. **Why must SLIs be measured from the mobile client rather than the backend server?**
+   Measuring at the client captures the total latency and complete end-to-end user experience, including network transit and on-device processing.
+5. **What is the danger of having too many SLIs (e.g., 50+) for a single mobile application?**
+   It creates noise, dilutes focus, and leads to alert fatigue, making it impossible to identify and prioritize critical user journeys.
+6. **How does the volatility of mobile networks make defining Latency SLIs uniquely difficult compared to backend development?**
+   Variable network conditions (e.g., 2G, tunnels) cause false positives, requiring complex filtering (like `WHERE network_type = WIFI`) to isolate app performance from environmental issues.
+7. **If you want an SLI for UI smoothness, how would you mathematically define a "Good Event" using Android's frame rendering metrics?**
+   A good event would be defined as a frame rendered within the target time (e.g., under 16ms) or a session with fewer than a specific number of dropped/janky frames per minute.
+8. **Why are Percentiles (P95, P99) superior to Averages (Mean) when defining Latency SLIs?**
+   Averages hide extreme outliers, whereas percentiles guarantee that a specific large majority of users (e.g., 95%) are experiencing acceptable performance.
+9. **Explain the relationship between raw Metrics (Counters, Histograms) and SLIs.**
+   Raw metrics provide the underlying data points that are filtered and aggregated to calculate the proportions used in SLIs.
+10. **Describe a scenario where backend SLIs are green (100% success), but mobile SLIs are red (0% success). What could cause this?**
+    The backend successfully processes the request and returns a 200 OK, but a malformed JSON payload crashes the mobile client during parsing.
+
 ## Further Reading
 
 - [`slos.md`](slos.md) — How to set targets for your SLIs.

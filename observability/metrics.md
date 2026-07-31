@@ -210,6 +210,29 @@ Mobile-distinctive metrics worth instrumenting from day one: cold-start TTID/TTF
 
 Push cadence: aggregate in-memory in the SDK; flush every 30-60 seconds OR on transition to background (`ProcessLifecycleOwner.onStop`). Never push per-event — battery + bandwidth catastrophe.
 
+## Answer Key
+
+1. **What is the fundamental difference between a Log and a Metric in terms of storage and query performance?**
+   Logs are heavy text records that are expensive to store and slow to query, while metrics are highly compressible numerical aggregations that are fast to query.
+2. **Explain the concept of "Cardinality" in metrics tagging. Why is adding a `user_id` tag to a metric dangerous?**
+   Cardinality is the number of unique combinations of tags; adding `user_id` creates an explosion of time-series, which will crash the database and skyrocket costs.
+3. **What is the difference between a Counter, a Gauge, and a Histogram? Give an Android example for each.**
+   A Counter strictly increases (e.g., `crash_count`), a Gauge goes up or down (e.g., `battery_level`), and a Histogram tracks distributions (e.g., `api_latency`).
+4. **Why is it mathematically incorrect to calculate an average (mean) when measuring network latency? What should you use instead?**
+   Averages mask extreme outliers and hide the pain of users experiencing severe timeouts; percentiles (like P95 or P99) should be used instead.
+5. **How do mobile constraints (battery, network connectivity) change how metrics are delivered to the server compared to backend systems?**
+   Mobile metrics cannot be scraped; they must be batched in memory and pushed over the network efficiently to minimize battery drain.
+6. **If you want to trigger a PagerDuty alert when the app crash rate spikes, why should you use a metric instead of querying crash logs?**
+   Evaluating numerical metrics is instantaneous and robust, whereas querying large volumes of text logs for alerts is slow, brittle, and expensive.
+7. **Explain the mantra: "Metrics tell you *that* you have a problem; Logs tell you *why* you have a problem."**
+   Metrics provide high-level, aggregate signals indicating system health, while logs provide the granular, step-by-step forensic evidence needed to debug the root cause.
+8. **How does Firebase Performance Monitoring automatically generate metrics without requiring explicit code instrumentation?**
+   It uses a Gradle plugin to inject bytecode that automatically intercepts OS-level events and OkHttp network calls to record durations.
+9. **Describe a scenario where a Gauge metric is more appropriate than a Counter metric.**
+   Tracking the size of an on-device SQLite database over time, as it can both increase when data is added and decrease when data is cleared.
+10. **If a metric tells you that P99 checkout latency has spiked to 15 seconds, but the logs show no errors, what is the next Observability tool you need to find the bottleneck? (Hint: Tracing).**
+    Distributed Tracing, which will provide a visual breakdown of exactly where the 15 seconds were spent across multiple systems or threads.
+
 ## Further Reading
 
 - [`structured-logging.md`](structured-logging.md) — Why you shouldn't use logs to count things.

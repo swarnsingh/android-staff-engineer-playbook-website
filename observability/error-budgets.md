@@ -177,6 +177,29 @@ Mobile-distinct:
 4. **Background work errors can be silent budget burns.** A failing WorkManager flush rarely surfaces to the user, but if it corrupts state, the next crash counts. Track WorkManager retry-exhaustion rates.
 5. **Wipe-and-reinstall users.** A user uninstalling because of crashes ≠ a user who stayed and complained. The latter shows in Vitals; the former shows in Play Console "uninstalls following crash" — also part of your budget.
 
+## Answer Key
+
+1. **What is the mathematical formula for calculating an Error Budget from an SLO?**
+   Error Budget = 100% - SLO target.
+2. **Explain the concept of an Error Budget as a "currency" that an engineering team should actively spend.**
+   An error budget is meant to be consumed by shipping new features, running experiments, or doing migrations. If you aren't spending it, you are moving too slowly and leaving value on the table.
+3. **Why is it an anti-pattern to consistently achieve a reliability score significantly higher than your SLO target?**
+   It implies the team is over-investing in stability (e.g., over-testing, delayed releases) at the expense of feature velocity, violating the business agreement that the agreed-upon SLO is "reliable enough".
+4. **What is the mandatory policy action that must occur when an Error Budget hits zero?**
+   A feature freeze must be enforced, shifting 100% of engineering effort to reliability and bug fixing until the budget is replenished.
+5. **Why does implementing Error Budgets require buy-in from Product Management and Executive leadership?**
+   Because enforcing a feature freeze when the budget is blown will inherently delay product launches. Without executive support, the budget will be overridden and rendered meaningless.
+6. **Explain the concept of "Burn Rate" and why it is a better metric for alerting than the absolute number of errors.**
+   Burn Rate measures how quickly the budget is being consumed relative to the time window. It predicts if you will exhaust the budget before the window ends, enabling actionable alerts rather than reactive ones.
+7. **How do the delayed rollout curves of Mobile App updates complicate Error Budget calculations compared to Backend web deployments?**
+   Mobile adoption happens slowly over days. A bug in a new release will cause an exponentially accelerating burn rate as more users download the app, making it difficult to predict true impact on day one.
+8. **Describe a scenario where a Staff Engineer intentionally uses a full Error Budget to execute a high-risk architectural refactor.**
+   If the budget is nearly full near the end of a window, a Staff Engineer might merge a massive, risky library replacement. The budget serves as a safety net in case it breaks.
+9. **Why is punishing an engineering team for blowing an Error Budget considered a toxic management practice?**
+   It turns error budgets into a human performance metric rather than a system risk tool, incentivizing engineers to hide errors, manipulate math, or avoid taking necessary risks.
+10. **If an Error Budget is completely depleted on Day 5 of a 30-day window, what must the engineering team do for the remaining 25 days?**
+    Stop shipping new features and dedicate all capacity to fixing bugs, writing tests, and paying down technical debt until the rolling window advances and replenishes the budget.
+
 ## Further Reading
 
 - [`slos.md`](slos.md) — The target that defines the size of the budget.

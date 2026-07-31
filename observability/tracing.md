@@ -241,6 +241,29 @@ The mobile-distinct concerns:
 4. **Cellular variance.** A 200 ms span on Wi-Fi is fine; on a 3G connection in a tunnel it's 8 seconds. Tag with `network_class` and slice dashboards accordingly.
 5. **JankStats integration.** `JankStats` reports per-frame durations; treat each janky frame as a synthetic span attached to the current screen for "where did the jank happen" forensics.
 
+## Answer Key
+
+1. **What is the difference between a Trace and a Span?**
+   A Trace represents the entire end-to-end journey of an operation, while a Span represents a single unit of work within that journey.
+2. **Why did single-threaded applications not require complex Tracing infrastructure?**
+   In single-threaded apps, execution was strictly sequential, meaning a standard call stack was sufficient to profile performance and locate bottlenecks.
+3. **Explain how Kotlin `CoroutineContext` solves the problem of Context Propagation across multiple threads.**
+   It allows you to inject tracing metadata (like a Trace ID) that automatically follows the coroutine as it suspends and resumes across different dispatchers.
+4. **If a Trace shows a 10-second gap between two Spans, what does that usually indicate about the system?**
+   It indicates uninstrumented work, such as thread contention, a hidden background process, or a blocking operation outside the monitored spans.
+5. **Why is "Sampling" a mandatory concept when implementing Tracing in a production mobile app?**
+   Tracing every request generates massive data volumes, which drains battery, uses excessive network bandwidth, and leads to astronomical backend ingestion costs.
+6. **How does an "Over-Instrumented" trace actually degrade the performance of the mobile app?**
+   Wrapping fast micro-operations (like basic math) in Spans introduces overhead that exceeds the cost of the operation itself, slowing down the app.
+7. **If a developer uses a third-party analytics SDK that relies on callbacks, how might that break the Trace?**
+   Callbacks executed on separate, untracked thread pools lose the coroutine context, dropping the Trace ID and breaking the parent-child span relationship.
+8. **How do Traces, Metrics, and Logs work together during a severe production incident? (Describe the workflow).**
+   Metrics trigger the alert (the 'that'), Traces isolate the latency or bottleneck to a specific span (the 'where'), and Logs provide the granular context (the 'why').
+9. **What is a "Waterfall" in the context of a Trace visualization, and how do you fix it in Kotlin?**
+   A waterfall shows sequential execution of independent operations; you fix it by launching concurrent tasks using `async { }` and `awaitAll()`.
+10. **Why is injecting the `Trace ID` into your Structured Logging payload (MDC) so critical for debugging?**
+    It creates a common key that allows you to seamlessly pivot from a slow Trace visualization directly to the exact logs generated during that specific request.
+
 ## Further Reading
 
 - [`distributed-tracing.md`](distributed-tracing.md) — How to pass the Trace ID from the mobile device to the backend server.

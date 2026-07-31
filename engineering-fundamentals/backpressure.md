@@ -363,6 +363,29 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 9. You're designing a telemetry SDK. What backpressure policy do you choose, and how do you avoid silently dropping events?
 10. The consumer is a UI render at 60 Hz; the producer is location updates at 200 Hz. Justify a backpressure choice.
 
+## Answer Key
+
+1.  **A `Channel(UNLIMITED)` in Kotlin. Why is this almost always wrong?**
+    It creates an unbounded queue. If a producer outpaces the consumer, the queue grows infinitely, eventually exhausting memory and causing an OutOfMemoryError (OOM).
+2.  **Compare `buffer(DROP_OLDEST)` and `conflate()` in Flow. When would you use each?**
+    `conflate()` drops intermediate values when the consumer is slow, ensuring only the latest value is processed (capacity 1). `buffer(DROP_OLDEST)` maintains a buffer of N items and drops the oldest when full. Use `conflate` for position data; use `buffer` when you need a window of recent history.
+3.  **End-to-end backpressure means what, specifically? Why does middle-of-pipeline backpressure fail?**
+    It means the backpressure signal propagates from the final sink all the way back to the initial source. Middle-of-pipeline backpressure only shifts the buffering problem upstream, eventually causing upstream buffers to overflow.
+4.  **The producer is a hardware sensor at 100 Hz; the consumer is a network upload at 10 Hz. Which policy do you choose, and why?**
+    "Drop new" or "conflate" (drop old). Suspending the sensor isn't possible or desirable. Conflation is usually best because the consumer uploads the freshest sensor reading rather than stale data.
+5.  **A team adds a bounded queue and the system OOMs anyway. What are the possible causes?**
+    The items inside the queue are massive in memory (capacity * item size > available RAM), or another part of the system (an upstream unbounded buffer) is leaking memory before the bounded queue is reached.
+6.  **How does TCP implement backpressure? How does HTTP/2 differ?**
+    TCP uses flow control via a sliding window where the receiver advertises how many bytes it can accept. HTTP/2 brings this to the application layer, allowing per-stream and per-connection flow control windows over a single TCP connection.
+7.  **A pipeline drops 30% of events under load. How would you know that's happening?**
+    By explicitly emitting metrics (counters) when the backpressure policy drops an event, and monitoring those drops as Service Level Indicators (SLIs).
+8.  **When does "buffer to disk" stop being a backpressure strategy and start being a deferred bug?**
+    When the producer consistently outpaces the consumer on average, not just in spikes. Disk buffering handles bursts, but sustained over-production will eventually fill the disk and crash.
+9.  **You're designing a telemetry SDK. What backpressure policy do you choose, and how do you avoid silently dropping events?**
+    Use a bounded queue with a "Drop New" or "Buffer to Disk" policy. To avoid silent drops, increment a local counter of dropped events and piggyback this metric on the next successful payload.
+10. **The consumer is a UI render at 60 Hz; the producer is location updates at 200 Hz. Justify a backpressure choice.**
+    "Conflate" (Drop old). The UI can only draw 60 frames per second. Processing every location update is wasted CPU, and drawing stale updates introduces lag. Conflation guarantees the next frame gets the freshest location.
+
 ---
 
 ## Further Reading

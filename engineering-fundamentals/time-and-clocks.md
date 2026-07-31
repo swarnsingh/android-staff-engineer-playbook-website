@@ -477,6 +477,31 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 
 ---
 
+## Answer Key
+
+1. **`System.currentTimeMillis()` returns 1000, you do work, it returns 999. Is this a bug? Why or why not?**
+   It is not a bug in the OS, it is expected behavior. Wall clocks can jump backward due to NTP step corrections. The bug is in using a wall clock to measure elapsed time.
+2. **You're measuring API call latency. Should you use `currentTimeMillis` or `nanoTime`? What goes wrong with the other choice?**
+   Use `nanoTime`. If you use `currentTimeMillis`, NTP corrections or daylight saving adjustments could cause the measured latency to be wildly inaccurate or even negative.
+3. **Two servers write to a shared database at T=100 and T=101 respectively. Can you guarantee which wrote first? Under what conditions?**
+   No, unless you know their clock skew is strictly less than 1ms (the gap between T=100 and T=101), which is practically impossible to guarantee without specialized hardware.
+4. **Explain the difference between `SystemClock.uptimeMillis()` and `SystemClock.elapsedRealtime()` on Android. When does the difference matter?**
+   `uptimeMillis()` pauses during deep sleep, while `elapsedRealtime()` continues ticking. This matters for timeouts or alarms; using `uptimeMillis()` for a timeout while the device sleeps will cause it to fire extremely late.
+5. **A TOTP code is valid for 30 seconds. A mobile device's clock is 45 seconds ahead of the server. What happens? What's the mitigation?**
+   The client will generate a code for the next time window, and the server will reject it. The mitigation is for the server to accept codes from adjacent windows (e.g., ±1 window).
+6. **Describe how a Lamport clock maintains causal ordering. Give an example where two events have the same Lamport timestamp.**
+   It increments on every local event and updates to `max(local, message_timestamp) + 1` on receive. Two completely independent events on different machines with no messages exchanged between them can naturally end up with the same Lamport timestamp.
+7. **Why do vector clocks grow linearly with the number of nodes? What's the practical limit?**
+   A vector clock must maintain a counter for every single node in the system to detect concurrency. The practical limit is usually a few dozen to a hundred nodes, beyond which the metadata payload becomes too large.
+8. **Google Spanner waits out a "commit-wait" interval. What does it wait for, and why is this necessary?**
+   It waits out the "uncertainty interval" returned by TrueTime (the maximum possible clock skew). This ensures the transaction's commit timestamp is strictly in the past for any subsequent transaction, guaranteeing global consistency.
+9. **Your cache TTL is implemented as `expiresAt = System.currentTimeMillis() + ttlMs`. What failure modes does this have?**
+   If the system wall clock jumps forward, the cache expires immediately. If it jumps backward, the cache serves stale data longer than intended.
+10. **CockroachDB quarantines nodes whose clocks drift too far. Why is this better than silently tolerating drift?**
+    Because it uses Hybrid Logical Clocks, extreme drift breaks its causal ordering guarantees. Quarantining treats the drifted clock as a faulty component, preserving the integrity of the overall system data.
+
+---
+
 ## Further Reading
 
 In this repository:

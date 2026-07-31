@@ -182,6 +182,29 @@ When reviewing queue-based architectures, a Staff engineer asks:
 9.  How would you design a SQLite-backed queue to efficiently allow batching of 50 items at a time?
 10. What is a Priority Queue, and when would you use it over a standard FIFO queue in an Android app?
 
+## Answer Key
+
+1.  **How does an Android `Handler` interact with the `MessageQueue`?**
+    A `Handler` enqueues messages or runnables into the thread's `MessageQueue`. The `Looper` continuously dequeues these items and dispatches them for execution on that thread.
+2.  **What is the difference between a `Queue` and a `Channel` in Kotlin?**
+    A standard `Queue` is typically blocking or non-suspending (like polling), whereas a `Channel` is designed for coroutines, offering suspending `send` and `receive` operations without blocking native threads.
+3.  **Explain the concept of a "Dead Letter Queue".**
+    A Dead Letter Queue (DLQ) is a secondary queue where messages are sent if they cannot be processed successfully after a certain number of retries (e.g., poison pills), preventing them from blocking the primary queue.
+4.  **Why is a disk-backed queue mandatory for an offline-first mobile architecture?**
+    In-memory queues are destroyed when the app is killed. Disk-backed queues persist tasks (like API requests) across process death, ensuring they execute eventually when connectivity is restored.
+5.  **If a queue has multiple consumers, what guarantees do you have about the execution order of the items?**
+    None. Even though items are dequeued in FIFO order, multiple consumers run concurrently. Consumer B might finish processing the second item before Consumer A finishes processing the first item.
+6.  **How does a Queue solve the problem of "Backpressure"?**
+    A bounded queue provides a buffer that absorbs temporary spikes in producer rate, preventing the fast producer from immediately overwhelming a slower consumer. Once the queue is full, backpressure policies (like dropping or suspending) manage the overflow.
+7.  **What happens in a Kotlin `Channel` if the Producer sends data but no Consumer is actively listening? (Discuss capacity and suspending).**
+    If the channel has capacity (buffered), items are stored until full. Once the buffer is full (or if unbuffered), the producer's `send` call will suspend until a consumer receives an item.
+8.  **Describe a scenario where `BufferOverflow.DROP_OLDEST` is the correct strategy for a full queue.**
+    When streaming live location updates or real-time sensor data, where only the most recent data is relevant, and processing stale data is useless or detrimental.
+9.  **How would you design a SQLite-backed queue to efficiently allow batching of 50 items at a time?**
+    The Consumer queries for the oldest 50 items (`LIMIT 50`). It processes them in a single batch (e.g., one API call). Upon success, it deletes all 50 items from the table in a single database transaction.
+10. **What is a Priority Queue, and when would you use it over a standard FIFO queue in an Android app?**
+    A Priority Queue orders elements based on priority rather than FIFO. Use it when some tasks are more critical than others, such as processing user-initiated actions before background sync tasks.
+
 ## Further Reading
 
 - [`backpressure.md`](backpressure.md) — What happens when the queue fills up.

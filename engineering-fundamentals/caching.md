@@ -354,6 +354,31 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md).
 
 ---
 
+## Answer Key
+
+1. **Define hit ratio and explain why a 30% hit ratio cache can be a net loss.**
+   Hit ratio is the percentage of requests served from the cache. At 30%, 70% of requests suffer the latency of checking the cache *and* fetching from the source, which can easily outweigh the time saved by the 30% that hit.
+2. **Explain cache stampede. What three techniques mitigate it?**
+   A stampede occurs when a hot key expires and many concurrent requests simultaneously miss and query the source, overwhelming it. Mitigations include per-key locking, stale-while-revalidate, and jittered (randomized) TTLs.
+3. **When would you choose LFU over LRU? Give a workload example.**
+   Choose LFU when there is a stable, small set of extremely hot items, and occasional scans of cold data would otherwise evict them under LRU (e.g., a static list of popular country codes).
+4. **Why is cache-aside the most common write pattern, and what is its most common bug?**
+   It's flexible and easy to bolt onto existing code (app writes to DB, then invalidates cache). The most common bug is a race condition where a concurrent read populates the cache with stale data *after* the source write but *before* the invalidation.
+5. **You add a 5-minute TTL to a cache. What kinds of data are inappropriate for this policy?**
+   Data where staleness has severe consequences, such as financial balances, security authorization tokens, or critical feature flags that must revoke access instantly.
+6. **A cache key omits the user ID. What goes wrong?**
+   Cache poisoning/cross-talk. User A fetches their private data, it gets cached under a generic key, and User B receives User A's data on the next request.
+7. **A team adds Redis as "just a cache." How do you tell whether it has silently become a primary store?**
+   Turn it off. If the system goes down entirely instead of just becoming slower (falling back to the database), Redis is a primary store.
+8. **Compare write-through and write-behind. When would you choose each?**
+   Write-through updates the cache and source synchronously (always consistent, slower writes). Write-behind updates the cache and flushes to the source asynchronously (faster writes, risk of data loss). Use write-behind for high-throughput, loss-tolerant metrics; use write-through for standard critical data.
+9. **The cache's memory budget is fixed. Hit ratio is 60%. What questions do you ask to decide whether to raise the budget?**
+   Ask: Is the working set significantly larger than the cache size? Will doubling the memory actually increase the hit ratio substantially, or is the other 40% purely novel/long-tail data that won't benefit from more space?
+10. **Negative caching: when is it useful, and when is it a foot-gun?**
+    It's useful to prevent repeated expensive lookups for missing data (e.g., 404s). It's a foot-gun if a transient source failure is cached, causing the system to persistently return "not found" even after the source recovers.
+
+---
+
 ## Further Reading
 
 In this repository:

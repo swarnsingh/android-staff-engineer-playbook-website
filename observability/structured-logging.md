@@ -210,6 +210,29 @@ Three mobile-distinct considerations:
 2. **Bounded payload size.** FCM has a 4 KB ceiling; Crashlytics custom keys cap individual values at 1 KB. Truncate long fields explicitly rather than relying on the SDK to do it silently.
 3. **Locale/timezone matter.** Use `Instant` for absolute time; never `LocalDateTime` from `Date()` (which is in device-local TZ). All server-correlated timestamps are UTC milliseconds since epoch.
 
+## Answer Key
+
+1. **Why is extracting variables from text logs using Regular Expressions considered a fragile practice in SRE?**
+   Regex relies on exact string formats. If a developer changes a typo or wording in the log message, the regex silently breaks, dropping data and breaking dashboards.
+2. **Explain the concept of Mapped Diagnostic Context (MDC) or Global Context Injection. How does it improve debugging?**
+   MDC is a thread-local map of key-value pairs (like `user_id`) that automatically attaches to every log emitted. It improves debugging by ensuring every log has complete context without developers manually adding it each time.
+3. **Write a simple JSON payload demonstrating a well-structured log vs a poorly structured log with dynamic keys.**
+   Well-structured: `{"event": "error", "user_id": "123", "reason": "timeout"}`. Poorly structured: `{"error_user_123": "timeout"}` (which explodes database cardinality).
+4. **If Team A logs `latencyMs` and Team B logs `latency_ms`, how does this impact the SRE team's ability to create dashboards?**
+   It fragments the data, making it impossible to query and aggregate metrics globally across teams, requiring a strict Data Dictionary to resolve.
+5. **Why is it important to strictly enforce data types (e.g., String vs Int) for JSON values in structured logging?**
+   Backend databases like Elasticsearch expect consistent types per key. If types clash (e.g., logging an Int instead of a String), the database rejects and drops the logs.
+6. **How do you balance the need for machine-readable JSON in production with the need for human-readable text during local Android Studio debugging?**
+   Use a logging facade (like Timber) that formats logs as human-readable strings locally (DebugTree) while transmitting the pure JSON object remotely in production (CrashlyticsTree).
+7. **What is the difference between an Analytics Event (e.g., Mixpanel) and a Structured Log (e.g., Datadog)?**
+   Analytics track business/product events and are constrained by volume quotas, while structured logs track technical state changes and errors in high volume for engineering observability.
+8. **Describe a scenario where a "Stringified JSON Trap" prevents an engineer from writing a critical alert.**
+   If a JSON object is converted into a string value (`"details": "{\"code\": 500}"`), the backend cannot index the nested fields, making it impossible to trigger an alert when `code == 500`.
+9. **Why does structured logging push the responsibility of data formatting from the backend (Logstash) to the client (Mobile App)?**
+   Because the client inherently knows the exact structure and types of the data, formatting it at the source eliminates the need for slow, brittle, and error-prone regex parsing on the backend.
+10. **If an app crashes, how does having the `app_version` and `os_version` explicitly structured as keys in the JSON help triage the issue faster than if they were embedded in a text sentence?**
+    It allows instant, database-level filtering and grouping, enabling engineers to immediately isolate the blast radius rather than reading thousands of log lines.
+
 ## Further Reading
 
 - [`logging.md`](logging.md) — The foundation upon which structured logging is built.

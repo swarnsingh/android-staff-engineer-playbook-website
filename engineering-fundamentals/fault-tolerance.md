@@ -407,6 +407,31 @@ See [`../observability/slis.md`](../observability/slis.md), [`../observability/s
 
 ---
 
+## Answer Key
+
+1. **Define fault, failure, and outage. Why does the distinction matter operationally?**
+   A fault is a component defect (e.g., lost packet); a failure is when the defect causes an incorrect result; an outage is when the failure impacts the user. Fault tolerance is the practice of breaking this chain so faults don't become outages.
+2. **Two database replicas in the same datacenter. What independence assumptions does this protect against? What does it not?**
+   It protects against single-machine hardware failure (bad disk, dead CPU). It does not protect against correlated failures like rack power loss, network switches going down, or a datacenter fire.
+3. **Explain why retries without idempotency can amplify a partial outage into a total one.**
+   If a non-idempotent operation (like a payment) is retried because the response timed out (even though the server processed it), it causes duplicate data. Additionally, hammering a struggling server with blind retries causes a retry storm, saturating resources completely.
+4. **Compare synchronous vs asynchronous replication. What does each give up?**
+   Synchronous gives up latency (waits for all acks) to guarantee durability. Asynchronous gives up strong durability (writes can be lost if the primary dies before replicating) to achieve lower latency.
+5. **A team adds three layers of fallback to a critical path. The system feels more reliable. What new failure modes have they created?**
+   They have created complex, rarely tested fallback paths that can serve stale data, hide underlying deterioration, or trigger unexpected cascading failures when a fallback dependency is overwhelmed.
+6. **The system "automatically fails over" but a human engineer is required to handle the post-failover repair. What's the user-visible RTO?**
+   The user-visible Recovery Time Objective (downtime) is near zero if the failover is truly automatic. The human intervention is just background cleanup, not part of the RTO.
+7. **Multi-region active-active sounds reliable. What are the three hardest problems it creates?**
+   Data consistency (handling replication lag and conflicts), request routing (ensuring users hit the right region), and massive operational complexity.
+8. **How do you know your fault tolerance works? Stress-test it once a year? Once a quarter? Continuously?**
+   Continuously, ideally through automated Chaos Engineering (e.g., Chaos Monkey) running in production, to ensure drift hasn't invalidated your fault-tolerance assumptions.
+9. **The cache failed; the system "gracefully fell back" to the database; the database also failed. Where did the system's resilience model break down?**
+   The system lacked bulkheads or load shedding. The database was likely undersized to handle the full un-cached load, meaning the "fallback" was effectively a denial-of-service attack on the primary store.
+10. **An SLO of 99.95% allows ~21 minutes of outage per month. How do you spend an error budget intentionally?**
+    By deploying risky new features, running chaos engineering experiments in production, or performing disruptive infrastructure upgrades while the budget allows.
+
+---
+
 ## Further Reading
 
 In this repository:

@@ -174,6 +174,29 @@ Three mobile-specific rules:
 
 Mobile logs are a forensic trail attached to a crash, not a stream you watch. Engineer for the autopsy, not the live feed.
 
+## Answer Key
+
+1. **Why is it an anti-pattern to use `android.util.Log` directly in an Android codebase?**
+   It heavily couples the codebase to the Android SDK and makes it nearly impossible to globally reroute, filter, or mock log statements (e.g., to a remote sink).
+2. **Explain the difference between `WARN` and `ERROR` log levels. Give a concrete Android example for each.**
+   WARN means something unexpected happened but the app recovered (e.g., cache miss fallback), while ERROR means a failure impacted the user (e.g., payment failure).
+3. **How does a Facade pattern (like Timber) make a codebase more resilient to third-party SDK changes?**
+   It allows you to change the underlying logging implementation (e.g., switching from Crashlytics to Datadog) in one central place without rewriting thousands of log statements.
+4. **What is PII, and what mechanisms can an Android team put in place to ensure it never gets sent to a remote logging server?**
+   Personally Identifiable Information; teams can use automated `PiiRedactor` wrappers in their Timber trees and enforce strict `toString()` masking on data models.
+5. **Why is it dangerous to put a network call inside a `Timber.d()` block? (e.g., `Timber.d("Response: ${api.fetchData()}")`).**
+   Because the string interpolation (and thus the network call) is evaluated unconditionally before being passed to Timber, executing the call even if debug logs are disabled.
+6. **How do logs complement Crash Reports when investigating a production bug?**
+   A crash report provides the stack trace (where it died), while logs provide the breadcrumbs and state changes leading up to it (why it died).
+7. **If you need to log the time it takes for an API to respond, is raw text logging the best tool? (Hint: See `metrics.md`).**
+   No, raw text logging is expensive to parse; numerical metrics (histograms) are designed for tracking durations and aggregations efficiently.
+8. **Explain the performance impact of logging inside a hot loop (like a View's `onDraw` method).**
+   It causes massive string allocations and I/O operations per frame, triggering garbage collection and resulting in severe UI jank.
+9. **How can you configure ProGuard/R8 to automatically strip `Log.d` statements from a production release build?**
+   By wrapping log statements in `if (BuildConfig.DEBUG)` checks, allowing R8's dead code elimination to completely remove the block.
+10. **Describe a scenario where an over-zealous logging strategy could actually cause an app to crash with an `OutOfMemoryError` or `IOException`.**
+    Logging massive payloads (like raw bitmap data or 10MB JSON responses) can exhaust heap memory, or fill up local disk space leading to I/O failures.
+
 ## Further Reading
 
 - [`structured-logging.md`](structured-logging.md) — The evolution of raw text logs into queryable JSON.

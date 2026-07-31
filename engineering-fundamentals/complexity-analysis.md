@@ -144,6 +144,31 @@ When reviewing code, a Staff engineer focuses on the hidden multipliers:
 9.  Explain the concept of "Amortized Time Complexity" using the resizing of an `ArrayList` as an example.
 10. Can an algorithm have a great theoretical Big-O but terrible real-world performance on a mobile CPU? Provide an example.
 
+## Answer Key
+
+1. **Explain why appending to a `StringBuilder` in a loop is $O(N)$, but appending to a standard `String` is $O(N^2)$.**
+   `StringBuilder` modifies an underlying character array directly ($O(1)$ per append), whereas `String` is immutable, meaning every append creates a new copy of the entire string up to that point ($O(K)$ per iteration), leading to an $O(N^2)$ total runtime.
+2. **What is the time complexity of searching for an item in a `HashSet`? What happens in the worst-case scenario (hash collision)?**
+   Average time complexity is $O(1)$. In the worst-case scenario with extreme hash collisions, elements are stored in a linked list or tree within the same bucket, degrading performance to $O(N)$ or $O(\log N)$.
+3. **Why is `DiffUtil` calculated on a background thread if its complexity is heavily optimized?**
+   Even with its optimized $O(N + D^2)$ time complexity, executing it on large lists can still take tens of milliseconds, easily exceeding the strict 16ms frame budget and causing UI jank if run on the main thread.
+4. **Describe the N+1 query problem in the context of Room/SQLite and how to resolve it.**
+   It occurs when you execute one query to fetch $N$ items, and then loop through them to execute another query for each item ($N$ extra queries). Resolve it by using a `JOIN` or an `IN` clause to fetch all necessary data in a single $O(1)$ query.
+5. **If you have an algorithm that is $O(N \log N)$ but uses $O(N)$ auxiliary space, and another that is $O(N^2)$ but uses $O(1)$ space, how do you choose which to use on a mobile device?**
+   Consider the bounds of $N$. If $N$ is small, the $O(N^2)$ / $O(1)$ space algorithm might be faster and avoids GC pauses. If $N$ is large, the $O(N \log N)$ algorithm is necessary to prevent freezing, but you must ensure the $O(N)$ memory allocation won't cause an OutOfMemoryError.
+6. **How does the underlying data structure of Kotlin's `List` (e.g., `ArrayList` vs `LinkedList`) affect the time complexity of `get(index)` and `add(0, item)`?**
+   For `ArrayList`, `get` is $O(1)$ but `add(0)` is $O(N)$ because elements must be shifted. For `LinkedList`, `get` is $O(N)$ (requires traversal) but `add(0)` is $O(1)$ (just updating a pointer).
+7. **What is the time complexity of `SharedPreferences.apply()` vs `SharedPreferences.commit()`?**
+   Both perform disk I/O. `apply()` does it asynchronously in the background (returning instantly, appearing $O(1)$ to the calling thread), while `commit()` does it synchronously, blocking the thread until disk I/O completes ($O(1)$ disk operation but with massive constant-time overhead).
+8. **Why is it dangerous to perform an $O(N)$ operation inside `onDraw()` of a custom View?**
+   `onDraw()` is called very frequently (up to 60 or 120 times per second). An $O(N)$ operation here can easily blow past the 16ms frame budget, causing severe frame drops.
+9. **Explain the concept of "Amortized Time Complexity" using the resizing of an `ArrayList` as an example.**
+   Adding an element to an `ArrayList` is usually $O(1)$. When it hits capacity, it must copy all elements to a new array ($O(N)$). However, because it doubles in size, this expensive operation happens rarely, so the *average* cost per addition over time remains $O(1)$.
+10. **Can an algorithm have a great theoretical Big-O but terrible real-world performance on a mobile CPU? Provide an example.**
+    Yes, if it has a massive constant factor or terrible cache locality. For example, traversing a linked list ($O(N)$) can be significantly slower than traversing a contiguous array ($O(N)$) because jumping around the heap ruins CPU cache lines.
+
+---
+
 ## Further Reading
 
 - [`performance.md`](../mobile-system-design/performance.md) — How complexity translates to frame drops.

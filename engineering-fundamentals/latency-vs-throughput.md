@@ -337,6 +337,31 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md), [`../ob
 
 ---
 
+## Answer Key
+
+1. **Define p99 latency in your own words. Why does it matter more than the mean?**
+   p99 is the time within which 99% of requests complete (1% are slower). It matters more than the mean because in high-traffic or fan-out systems, the long tail (p99) dictates the experience for a massive number of users, whereas the mean hides extreme outliers.
+2. **A system handles 1,000 requests per second with p50 = 50 ms. What's the average concurrency? (Apply Little's Law.)**
+   Using $L = \lambda \times W$, $1000 \text{ req/s} \times 0.05 \text{ seconds} = 50$ concurrent operations.
+3. **Throughput drops as load increases past some point. Why?**
+   The system reaches saturation, leading to extreme resource contention (CPU context switching, lock contention, GC thrashing), which degrades both latency and the rate of completed operations.
+4. **A request that fans out to 5 services, each with p99 = 100 ms. Estimate the request's overall p99. Why is your estimate higher than 100 ms?**
+   It will be higher because the parent request is gated by the *slowest* of the 5 calls. If each independently has a 1% chance of being slow, the chance that *at least one* is slow is much higher (~4.9%), meaning the overall p99 will be substantially worse than 100 ms.
+5. **You have 100 ms latency budget for a screen. Network round-trip is 40 ms, deserialization is 8 ms, render is 12 ms. Where should you invest optimization effort?**
+   Investigate the remaining 40 ms of unaccounted time first (queue wait, server processing, etc.). If you must pick from the listed ones, optimize the network (40ms), as it's the dominant component.
+6. **Why does retrying every failed request risk amplifying a partial outage?**
+   It effectively multiplies the load (throughput) on an already struggling system, turning a bottleneck into total saturation (a retry storm).
+7. **Compare and contrast: optimizing for a video-streaming service vs optimizing for a high-frequency trading system. What are the relevant metrics in each?**
+   Video streaming optimizes for high sustained throughput (gigabits/sec) and acceptable initial start latency. Trading optimizes for microsecond-level latency per operation, while throughput is secondary.
+8. **A team adds caching and sees mean latency drop. What might *not* have improved? Why?**
+   Tail latency (p99) might not have improved, because the 1% of cache misses still suffer the full downstream latency plus the new overhead of the cache lookup.
+9. **Define a sensible timeout for an operation with p50 = 100 ms, p99 = 500 ms, p99.9 = 2 seconds. Justify.**
+   Around 600-700 ms. Setting it above p99 protects 99% of valid requests, but setting it as high as p99.9 (2s) risks tying up client resources for too long on pathological outliers.
+10. **How would you detect "coordinated omission" in a benchmark? Why does it matter?**
+    Use a tool that measures full end-to-end time based on a fixed schedule (e.g., wrk2). It matters because coordinated omission hides real-world queueing delays by pausing the load generator when the system stalls, painting a falsely optimistic picture of latency.
+
+---
+
 ## Further Reading
 
 In this repository:

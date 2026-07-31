@@ -203,6 +203,29 @@ Mobile-distinct:
 4. **Don't alert on cold-start regressions like crashes.** Slow start is "hold," not "page." Page only on user-perceived outage.
 5. **Auto-resolve.** When the rollout halts and the next refresh shows healthy, auto-resolve the alert. Don't make on-call hunt for the silence button.
 
+## Answer Key
+
+1. **Explain the concept of "Alert Fatigue" and how it endangers the reliability of a software system.**
+   It occurs when engineers receive too many noisy, unactionable alerts, causing them to ignore all alerts, including critical ones during real outages.
+2. **What is the difference between "Cause-Based" alerting and "Symptom-Based" alerting? Give an Android example of each.**
+   Cause-based alerts on internal state (e.g., CPU > 90%), while symptom-based alerts on user pain (e.g., checkout success drops below 95%).
+3. **Why is setting a static percentage threshold (e.g., "Alert if error rate > 5%") often inferior to "Burn Rate" alerting?**
+   Static thresholds trigger false positives on small sample sizes (e.g., during off-hours), whereas Burn Rate looks at the speed of consuming the error budget over time.
+4. **Describe the purpose of an Alert Runbook. What are the key components it must contain?**
+   A runbook provides immediate, actionable steps to mitigate an issue; it should contain the description, impact, relevant dashboards, immediate mitigation actions, and escalation steps.
+5. **Why should automated alerts never be routed to an email inbox?**
+   Emails are asynchronous, often ignored or filtered, and fail to immediately grab an on-call engineer's attention like PagerDuty or Slack.
+6. **Explain the concept of an "Escalation Policy" in a tool like PagerDuty.**
+   It automatically routes an unacknowledged alert to the next engineer or manager in the chain if the primary on-call doesn't respond within a set timeframe.
+7. **How does the slow rollout and update cycle of Mobile applications complicate the resolution and silencing of production alerts?**
+   Because a bug remains on user devices until they download a hotfix, an alert will fire for days unless you build custom silencing or kill-switch mechanisms.
+8. **Why is it crucial to distinguish between an alert that requires a Slack message vs an alert that requires a 3:00 AM phone call? What criteria do you use to decide?**
+   It prevents burnout; only issues directly impacting critical user journeys or significant revenue (e.g., 1000x burn rate) warrant waking an engineer up.
+9. **If an alert fires, wakes an engineer up, and resolves itself 2 minutes later, what architectural changes should you make to the alert definition?**
+   Widen the evaluation window to require the failure to sustain for a longer period (e.g., 5 minutes) to filter out transient network blips.
+10. **If an engineer is paged at 2:00 AM because a feature is crashing, what is usually their primary goal: fixing the code bug, or mitigating the user impact (e.g., via Remote Config)?**
+    The primary goal is immediate mitigation (e.g., halting rollout, flipping a kill switch), leaving the root-cause code fix for normal business hours.
+
 ## Further Reading
 
 - [`error-budgets.md`](error-budgets.md) — The math that determines when an alert should fire (Burn Rates).

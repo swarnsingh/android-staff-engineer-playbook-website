@@ -319,6 +319,29 @@ Questions a Staff engineer should be able to answer cold about state machines:
 9. Show me three real systems in this repo (or in your work) whose behavior is best modeled as a state machine and explain why.
 10. When is a state machine the *wrong* abstraction? Give a concrete example.
 
+## Answer Key
+
+1.  **Given a flag-soup snippet (three booleans + a string), reverse-engineer the implicit state machine and identify which combinations are valid.**
+    Identify the actual mutually exclusive modes (e.g., `Loading`, `Success`, `Error`). Map the valid boolean combinations to these explicit states. All other combinations represent invalid, unrepresentable states.
+2.  **When should you choose a hierarchical state machine over a flat one? Give a concrete example.**
+    When you have states that share identical transitions. For example, a `Playing` video state and a `Paused` video state might both transition to an `Unauthenticated` state on a `Logout` event. Grouping them under an `Authenticated` parent state avoids duplicating the transition.
+3.  **Why is `transition(state, event) → state` typically a pure function, and what would you have to change if it weren't?**
+    A pure function is predictable, easy to test, and enables replayability. If it weren't pure, it would perform side effects (like network calls) directly, making testing difficult and risking duplicate side effects during state recovery.
+4.  **How do you migrate a persisted state machine when you add a new state? Remove one? Rename one?**
+    Treat it like a database migration. Persisted states must include a version tag. When loading an old version, write explicit migration logic to map removed/renamed states to their new logical equivalents before resuming the machine.
+5.  **What is the difference between a Mealy and a Moore machine, and when does it matter in practice?**
+    In a Mealy machine, outputs depend on both state and the event (the transition). In a Moore machine, outputs depend only on the current state (entering the state). Moore is easier to reason about, while Mealy can be more expressive.
+6.  **How do parallel regions compose? What new failure mode do they introduce that a flat machine doesn't have?**
+    They compose orthogonally, where the total state is the product of all regions. They introduce the risk of conflicting side effects or implicit dependencies between regions that aren't structurally represented.
+7.  **A file-upload pipeline persists state on every transition. What property must the side effects have for this to be safe?**
+    Side effects must be idempotent. If the process crashes after a transition but before the effect completes, recovery will re-run the effect. Idempotency ensures this duplicate execution is safe.
+8.  **If your `Retrying` state has a 30-second backoff and the process dies after 5 seconds, what's the correct behavior on restart?**
+    The persisted state should store the `next_retry_at` timestamp. On restart, the system calculates the remaining time (25 seconds) and resumes the timer, rather than starting a fresh 30-second wait or firing immediately.
+9.  **Show me three real systems in this repo (or in your work) whose behavior is best modeled as a state machine and explain why.**
+    (e.g., Video Player, Payment Checkout, Offline Sync Engine). They are best modeled as state machines because they have distinct modes, explicit valid transitions, and complex side effects dependent on mode changes.
+10. **When is a state machine the *wrong* abstraction? Give a concrete example.**
+    For pure data transformations or stateless functions. Mapping a JSON response to a domain model, or performing math calculations, has no "modes" and doesn't benefit from state machine constraints.
+
 ---
 
 ## Further Reading
