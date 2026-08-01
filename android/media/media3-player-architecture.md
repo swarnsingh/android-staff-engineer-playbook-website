@@ -24,6 +24,7 @@ The `MediaSession` layer is what makes your player a citizen of the OS rather th
 - `MediaSessionService` hosts playback beyond your UI's lifecycle (background audio, the media notification).
 - `MediaLibraryService` additionally serves a browsable content tree — this is the same surface Android Auto and Wear controllers browse.
 - `MediaController` / `MediaBrowser` connect UI processes (or other apps, or the system) to the session.
+- **Audio Focus:** Delegate focus management to Media3 with `player.setAudioAttributes(attributes, true)`. The player then ducks or pauses when another app takes focus and may resume after a transient focus loss; it does not automatically resume after permanent focus loss.
 
 The architectural rule: **the session owns the player; UIs own controllers.** Activities connect and disconnect; playback continuity lives in the service. Most "playback stops when I rotate / background the app" bugs are ownership bugs, not player bugs.
 

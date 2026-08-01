@@ -40,6 +40,7 @@ For MediaStore writes, use collection metadata and pending-publication behavior 
 - Large media is decoded at full resolution and causes an OOM.
 - A broad storage permission is requested for a one-item chooser, increasing privacy and review risk.
 - An exported provider or overly broad path configuration exposes unrelated private files.
+- **Scoped Storage consent:** Do not resolve a `content://` URI to a raw file path; access it through `ContentResolver`. Modifying media owned by another app requires an explicit user-consent flow: on Android 10, retry after handling `RecoverableSecurityException`; on Android 11 and later, launch the `PendingIntent` returned by `MediaStore.createWriteRequest()` (which can cover multiple items).
 
 ## Probing Questions
 

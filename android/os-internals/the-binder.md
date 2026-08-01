@@ -138,7 +138,7 @@ When reviewing code that crosses process boundaries, a Staff engineer focuses on
 
 1.  **Intent Size Auditing:** I actively search the codebase for `intent.putExtra(KEY, object)`. If `object` is anything more complex than a basic String or Int, I flag it. Developers frequently attach massive `ArrayList<Data>` to intents for convenience, unaware that every byte competes for the same shared per-process Binder buffer.
 2.  **`oneway` AIDL Calls:** If we are forced to build an AIDL interface, and the Client does not need a return value (e.g., `fun reportAnalyticsEvent()`), I mandate the use of the `oneway` keyword in the AIDL file. This tells the Binder driver to fire the Parcel into the kernel and return instantly. While this prevents the caller thread from blocking, it does *not* completely eliminate ANR risk—async Binder queues can still back up, and server-side Binder thread pools can be exhausted if flooded.
-3.  **Process Death Resiliency:** Because the Binder manages the connections between processes, if the System Server crashes (a "soft reboot" of the phone), all `Proxy` objects in your app become dead ("Binder Died"). I ensure our critical services implement `IBinder.DeathRecipient` to gracefully reconnect when the OS recovers.
+3.  **Process Death Resiliency:** Because the Binder manages the connections between processes, if the System Server crashes (a "soft reboot" of the phone), all `Proxy` objects in your app become dead ("Binder Died"). I ensure our critical services implement `IBinder.DeathRecipient` (e.g., `binder.linkToDeath({ /* reconnect logic */ }, 0)`) to gracefully reconnect when the OS recovers.
 
 ## Common Misconceptions
 

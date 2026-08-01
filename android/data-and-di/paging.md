@@ -190,7 +190,7 @@ class UserRemoteMediator(
 
 When reviewing Paging architecture, a Staff engineer focuses on the physical boundaries and data mutation:
 
-1.  **The Source of Truth:** I actively reject PRs where a developer tries to use `PagingSource` directly against a Network API if the app requires offline support. For anything other than a simple search screen, we must use the DB as the single source of truth via `RemoteMediator`.
+1.  **The Source of Truth:** I actively reject PRs where a developer tries to use `PagingSource` directly against a Network API if the app requires offline support. For anything other than a simple search screen, we must use the DB as the single source of truth via `RemoteMediator`, which synchronizes network pagination with the local cache seamlessly.
 2.  **Item Mutations:** A common pain point is "Liking" a post in a paginated feed. Junior developers will try to hack the `PagingData` flow to mutate the UI state. I enforce that the UI only ever sends an Intent (`likePost(id)`). The ViewModel updates the Database. The Database pushes the new state through the Pager. Unidirectional Data Flow must be preserved.
 3.  **Keys vs Offsets:** Does the API use Page Numbers (1, 2, 3), Offsets (0, 20, 40), or Cursors (`next_token=abc`)? The `PagingSource` must handle the Key Type (`Key` in `<Key, Value>`) correctly. Cursor-based pagination is vastly superior to offset-based pagination to prevent duplicated items if items are added to the top of the feed on the server.
 

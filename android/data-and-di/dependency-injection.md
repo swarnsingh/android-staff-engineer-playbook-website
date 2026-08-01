@@ -160,6 +160,9 @@ class MainActivity : AppCompatActivity() {
 - **The Interface Binding Error:**
   If you have an `interface Analytics` and a class `FirebaseAnalytics : Analytics`, Hilt doesn't magically know that `Analytics` should map to `FirebaseAnalytics`.
   *(Fix: You must use `@Binds` in a Module to explicitly tell Hilt which implementation to use for the interface).*
+- **Eager Initialization Bottlenecks:**
+  Injecting heavy dependencies directly into the `Application` or a startup Activity blocks the main thread.
+  *(Fix: Use `dagger.Lazy<T>` or `javax.inject.Provider<T>` to defer initialization until the object is actually accessed. `Lazy<T>` computes once and caches, while `Provider<T>` returns a new instance per call if unscoped).*
 
 ## Staff Engineer Thinking
 
@@ -168,6 +171,7 @@ When reviewing DI architecture, a Staff engineer focuses on module boundaries an
 1.  **DIP (Dependency Inversion Principle):** I check if ViewModels are injecting concrete Repositories (`UserRepositoryImpl`) or Interfaces (`UserRepository`). A true Staff-level architecture injects interfaces. The Hilt Module binds the concrete implementation to the interface. This allows us to instantly swap to a `MockUserRepository` for UI testing without touching the ViewModel code.
 2.  **Assisted Injection:** Sometimes you need a ViewModel to take a dependency from the DI graph (like `Api`), but also a runtime parameter (like a `userId` passed from the previous screen). I ensure the team understands how to use `@AssistedInject` and `@AssistedFactory` rather than passing the `userId` via a generic `init(id: String)` method later.
 3.  **Module Organization:** I enforce that Modules are organized by feature or layer, not by type. I reject massive `AppModule.kt` files that contain 50 `@Provides` functions for databases, networking, and analytics all mixed together.
+4.  **Optional Dependencies (`@BindsOptionalOf`):** For modular apps where a feature might exist in some build variants but not others, I use `@BindsOptionalOf`. This injects an `Optional<Service>`, gracefully handling the missing dependency without breaking the graph or requiring stub modules.
 
 ## Common Misconceptions
 

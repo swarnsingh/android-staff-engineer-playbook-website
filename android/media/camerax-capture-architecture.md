@@ -6,6 +6,8 @@ CameraX is the default starting point for most new Android camera features. It s
 
 ## Use-Case Model
 
+When CameraX lacks a specific advanced setting, you can use `Camera2Interop` to inject Camera2 `CaptureRequest` parameters directly into a CameraX use case without fully dropping down to the raw Camera2 API.
+
 - `Preview` produces frames for a `PreviewView` or another surface.
 - `ImageCapture` optimizes still capture and returns an in-memory image or writes an output target.
 - `ImageAnalysis` delivers frames to application code for ML, scanning, or measurement.
