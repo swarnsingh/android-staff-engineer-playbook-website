@@ -98,7 +98,7 @@ Firebase Cloud Messaging (FCM) allows two payload types:
 - **The WebSocket Reconnection Storm (Thundering Herd):**
   You have 500,000 users connected via WebSockets. Your Load Balancer crashes and reboots. All 500,000 WebSockets drop instantly.
   The Android clients detect the drop and immediately try to reconnect. 500,000 TCP handshakes hit your Load Balancer at the exact same millisecond, instantly crashing it again.
-  *(Fix: Mobile clients must implement "Jitter" — a randomized delay — in their reconnection logic. Client A waits 1 second, Client B waits 4 seconds).*
+  *(Fix: Mobile clients must implement "Jitter" — a randomized delay — in their reconnection logic. Client A waits 1 second, Client B waits 4 seconds. This **WebSocket reconnect storm (jittered backoff)** mitigation is mandatory to prevent self-inflicted DDoS attacks during failovers).*
 - **Assuming Push Notifications are Guaranteed:**
   Chinese OEMs (Xiaomi, Huawei, Oppo) ruthlessly modify the Android OS to save battery. They will completely kill your app, and they will ignore FCM Push Notifications unless the user manually whitelists your app in the device settings.
   *(Fix: You cannot rely on Push Notifications as a 100% reliable data transport. When the user opens the app, you MUST perform a REST API sync to fetch any messages that the OS dropped).*

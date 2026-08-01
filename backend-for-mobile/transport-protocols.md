@@ -59,6 +59,8 @@ Under TCP (HTTP/1.1 and HTTP/2), a connection is mathematically defined by the I
 
 HTTP/3 uses UDP. It identifies the connection using a unique **Connection ID** embedded in the packet, *not* the IP address. When your phone switches to 5G, it keeps sending UDP packets with the same ID. The server receives them and seamlessly continues the download. The user never notices a drop.
 
+Network transitions can also change the path's Maximum Transmission Unit (MTU). Both TCP and QUIC implementations may use Path MTU Discovery, but probing behavior and black-hole recovery depend on the implementation and path. HTTP/3 connection migration therefore avoids tying a connection to one IP address; it does not by itself guarantee uninterrupted delivery across every carrier or MTU change. Downloads still need resumable transfers, timeouts, and retry handling.
+
 ### 3. gRPC and Protocol Buffers (Protobuf)
 
 JSON is terribly inefficient. To send the number `12345`, JSON requires 5 bytes of ASCII text (`'1' '2' '3' '4' '5'`). 

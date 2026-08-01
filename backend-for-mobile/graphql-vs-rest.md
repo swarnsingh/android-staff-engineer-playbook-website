@@ -146,6 +146,7 @@ Two benefits beyond caching:
 
 - **CDN-cacheable.** It's now a `GET` with a unique URL.
 - **Security.** Clients can't construct arbitrary queries; the surface is fixed. Critical at scale — without this, attackers can write deeply nested queries that overwhelm your servers.
+- **GraphQL persisted queries:** By storing the actual query strings on the server and referencing them strictly by their hashes from the client, the payload sizes are drastically minimized over the wire, optimizing bandwidth for mobile environments.
 
 Apollo Kotlin supports this via build-time code generation.
 

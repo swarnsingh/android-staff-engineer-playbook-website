@@ -410,7 +410,9 @@ Canonical: [`../observability/metrics.md`](../observability/metrics.md).
 
 **Size the vector clock to the writer set, not the node set.** A common optimization: the vector clock tracks *writers to this key*, not *all nodes in the cluster*. This keeps clocks small for keys with few writers, even in large clusters. Dotted version vectors formalize this.
 
-**Consider alternatives at scale.** For systems with hundreds or thousands of nodes, full vector clocks are impractical. Alternatives: Hybrid Logical Clocks (if causal ordering suffices without conflict detection), CRDTs (if the data structure can auto-merge), or server-arbitrated conflict resolution (if a single arbiter is acceptable).
+**Consider alternatives at scale.** For systems with hundreds or thousands of nodes, full vector clocks are impractical. Alternatives: Hybrid Logical Clocks (when compact ordering suffices without explicit conflict detection), CRDTs (if the data structure can auto-merge), or server-arbitrated conflict resolution (if a single arbiter is acceptable).
+
+**Hybrid Logical Clocks (HLCs)** combine physical wall-clock time with logical counters and provide timestamps that remain close to physical time without vector-clock growth. They preserve the implication that a causally preceding event has a lower timestamp, but timestamps alone cannot tell whether two events are causally related or concurrent. Do not substitute HLCs for vector clocks where concurrency detection is load-bearing.
 
 **Treat sibling resolution as a required feature, not a nice-to-have.** If your system returns siblings to the client, the client *must* resolve them. "We'll handle conflicts later" means "we'll ship data loss now."
 

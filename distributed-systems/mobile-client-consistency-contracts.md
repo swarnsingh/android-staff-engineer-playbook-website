@@ -152,6 +152,8 @@ Client behavior:
 - Rebase or replay pending operations.
 - Mark conflicts explicitly.
 
+**Thundering Herd Offline Reconciliations:** When a large number of clients reconnect simultaneously after an outage or a major offline event, their mass delta syncs can overwhelm the backend database. Mitigate this by introducing jittered backoff on the client side before initiating the sync, and having the backend aggressively rate-limit or queue offline reconciliations to smooth out the load.
+
 The ordering is deliberate: **preserve the outbox before touching the snapshot.** The single worst implementation of cursor reset is "wipe local and re-download" — it silently destroys every unsynced user edit. A reset path that loses pending work converts a backend retention decision into user data loss.
 
 ## Production Example

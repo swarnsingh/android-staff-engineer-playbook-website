@@ -318,6 +318,8 @@ class CartRepository(
 
 The key mobile benefit: **no conflict resolution code**. The merge is mechanical and guaranteed correct. The app works offline, syncs when possible, and never loses data or shows conflicts to the user.
 
+However, consider the **CRDT UX implications**: deterministic resolution does not always mean *intuitive* resolution from the user's perspective. For instance, concurrent edits to a text string might interleave characters unexpectedly, or an "add-wins" set might resurrect a deleted item. The UI must carefully present these merged states (e.g., via visual hints or undo stacks) so users understand what happened.
+
 For collaborative features (shared notes, real-time co-editing), libraries like Automerge or Yjs can be used through their JavaScript bindings in a WebView or through native ports.
 
 ---

@@ -151,6 +151,7 @@ When a web app updates its API, the frontend is deployed simultaneously. When a 
 1. **URI Versioning:** `api.example.com/v1/users` -> `api.example.com/v2/users`. Safest for major breaking changes.
 2. **Header Versioning:** `Accept: application/vnd.example.v2+json`. Cleaner URLs, but harder to cache via CDNs.
 3. **GraphQL:** No versions. Add new fields, never delete old fields. Deprecate fields in the schema so new client builds get warnings.
+4. **API Versioning Strategies (Mobile Context):** Mobile APIs demand additive evolution. Unlike web deployments where the frontend changes instantly, mobile users might linger on old versions for years. Forced upgrades should be an absolute last resort, so versioning strategies must gracefully tolerate outdated payload shapes.
 
 ### The startup handshake
 
