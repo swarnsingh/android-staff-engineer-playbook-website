@@ -184,9 +184,9 @@ Encourage juniors to write up their learnings as blog posts. Review their drafts
 
 ---
 
-## Mentoring Up
+## Mentoring Up (Reverse Mentoring)
 
-You can mentor people more senior than you, too. A Staff engineer can mentor an EM on technical understanding; a junior Staff can mentor a senior Staff on a specific specialty.
+You can mentor people more senior than you, too. A Staff engineer can mentor an EM on technical understanding; a junior Staff can mentor a senior Staff on a specific specialty. This is often called *reverse mentoring*, where junior engineers share emerging tools (like new Compose patterns or AI tooling) with senior leadership, keeping the entire org's skill set sharp.
 
 The motion is the same: ask better questions, share patterns, occasionally suggest. The difference is *humility* — you're not the more-senior person; you're peers with complementary skills.
 

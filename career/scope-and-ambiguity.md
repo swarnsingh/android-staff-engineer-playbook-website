@@ -180,6 +180,7 @@ The CTO heard "Android is slow." The Staff response found "the contract step is 
 - **Confusing visibility with impact.** Speaking at conferences is visibility. Reducing crash rate by 1pp for 100M users is impact. The first sometimes follows the second; the second never follows the first.
 - **Refusing to scope down.** "If I can't fix the *whole* problem, I won't start." The bigger the problem, the more important it is to find the smallest deliverable wedge.
 - **Ambiguity as an excuse for inaction.** Total ambiguity isn't a license to wait for clarification; it's the *job*. Define your own brief.
+- **Ambiguity burnout.** Constantly living in unstructured problem spaces without resolving them into executable work will burn you out. You manage ambiguity burnout by rigorously defining the "done" state, creating intermediate milestones, and handing well-defined work over to execution teams before moving to the next ambiguous problem.
 - **Not-my-job mentality.** If iOS is crashing because backend deployed a bad API and Android works fine, a Staff engineer still joins the incident — the company loses money either way. The Staff job's boundary is *the product's success*, not the platform's.
 
 ---

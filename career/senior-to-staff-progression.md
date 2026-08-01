@@ -150,7 +150,7 @@ This is the entire game. Promotions are *trailing indicators*: you must operate 
 - **Avoiding politics.** Staff requires navigating org boundaries, conflicting priorities, and stakeholder management. Refusing to engage in "politics" means refusing to be Staff.
 - **Optimizing for the title.** Some people just want the rung. The committee can smell it. Optimize for the impact; the title follows.
 - **Job-hopping for a title bump.** Often resets you to the new company's bar. The promotion you earn locally is more durable than the title you negotiate elsewhere.
-- **Refusing glue work.** "That's not engineering." It is — it's the most leveraged engineering you can do. Engineers who refuse glue work cap out at Senior.
+- **Refusing glue work.** "That's not engineering." It is — it's the most leveraged engineering you can do. Glue work is the vital but often invisible labor that keeps teams moving—such as unblocking communication between silos, establishing shared standards, improving onboarding, and aligning disparate teams on a single architecture. Engineers who refuse glue work cap out at Senior.
 
 ---
 

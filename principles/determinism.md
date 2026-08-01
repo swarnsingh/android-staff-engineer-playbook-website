@@ -144,6 +144,7 @@ When reviewing code or investigating flaky tests, a Staff engineer hunts for non
 1.  **Where does Time come from?** I ban direct calls to `System.currentTimeMillis()` or `LocalDate.now()` in business logic. They must be hidden behind an injectable `Clock` interface.
 2.  **Are we relying on sorting?** If an API returns a list of items, and we just take `list[0]`, is the API guaranteed to sort them? If not, `list[0]` is non-deterministic. The client must sort the list explicitly before grabbing the first item.
 3.  **Is the UI state reproducible?** If a user reports a crash, and they provide the exact JSON payload from the API that caused it, can I inject that JSON into my emulator and reproduce the exact crash? If the UI relies on complex hidden variables, I cannot.
+4.  **Can property-based testing increase confidence?** For deterministic logic, a Staff engineer might use property-based testing (for example, `jqwik` or Kotest) to define invariants and generate many inputs that search for counterexamples. This samples the generator's input distribution and exercises more combinations than a few hand-written examples; it does not prove the invariant for every input, so generator quality, shrinking, and targeted edge-case tests still matter.
 
 ## Common Misconceptions
 

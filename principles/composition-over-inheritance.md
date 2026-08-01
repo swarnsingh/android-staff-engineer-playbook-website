@@ -126,7 +126,7 @@ fun IconTextButton(onClick: () -> Unit) {
     }
 }
 ```
-You build complex UIs entirely by composing small, independent functions together, bypassing inheritance completely.
+You build complex UIs entirely by composing small, independent functions together, bypassing inheritance completely. Modifiers are the purest expression of this principle: instead of subclassing `View` to create a `ClickablePaddedText` that inherits click and padding behavior, you start with a base `Text` and compose behaviors onto it via modifiers (`Modifier.clickable {}.padding(16.dp)`).
 
 ## Tradeoffs
 

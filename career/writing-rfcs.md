@@ -266,6 +266,7 @@ If the live meeting becomes a place to re-raise resolved comments, the meeting i
 - **Single-solution RFC.** No alternatives section, or one with cartoonish alternatives ("we could write our own from scratch"). Reviewers assume you haven't thought hard enough.
 - **Hand-wavy success metrics.** "This will improve performance." How much? Measured how? Compared to what?
 - **The "after lunch" rollout plan.** "We'll just flip the flag" — no dual-write, no staged rollout, no rollback. Tells reviewers you don't know how production works.
+- **Ignoring non-technical stakeholders.** Writing purely for engineers while ignoring product or business stakeholders. You align non-technical stakeholders by mapping your technical decisions directly to business outcomes (e.g., faster time-to-market, lower server costs) and including an "Executive Summary" that skips the code.
 - **Implementation buried in narrative.** Reviewers should be able to find the Compose code snippet, the API contract, the SQL migration without reading prose.
 - **Justifying with "this is industry standard."** Industry standards are starting points, not finishing arguments. Why is the standard right for *us*?
 - **No clock.** "Decision needed by" is left blank; the doc lingers for 6 weeks; the moment passes.

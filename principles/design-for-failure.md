@@ -125,6 +125,7 @@ When reviewing a new feature, a Staff engineer's first instinct is to ask: "How 
 1.  **What if the network drops halfway through?** If this is a multi-step purchase flow, do we charge them twice? (If yes, we need Idempotency). Do we leave them in a state where they paid but didn't get the item? (If yes, we need a Saga).
 2.  **What if the OS kills us?** If the user backgrounds the app to check a text message, and the OS kills our process to reclaim memory, what happens when they come back? Is the `ViewModel` state saved in `SavedStateHandle`?
 3.  **What is the fallback?** Every single remote API call must have a defined fallback behavior. Is it a cached value? An empty list? An error banner? A full-screen error state? It cannot be "do nothing."
+4.  **How do we build evidence that this fails safely? (Chaos Engineering)** A Staff engineer doesn't just assume the retry logic works; they introduce fault injection in testing or staging—simulating dropped packets, 500 errors, or high latency—to verify that the app degrades gracefully rather than crashing.
 
 ## Common Misconceptions
 
