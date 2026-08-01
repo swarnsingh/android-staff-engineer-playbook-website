@@ -337,7 +337,7 @@ Kotlin tests stop before some of the most important consumer contracts:
 - framework linkage and minimum deployment target;
 - package installation and resource loading.
 
-Build a small Swift/XCTest fixture against the produced XCFramework or package. Test the API as an iOS team receives it, not only as Kotlin declares it.
+Build a small Swift/XCTest fixture against the produced XCFramework or package. Test the API as an iOS team receives it, not only as Kotlin declares it. This Swift XCTest consumption proves that your KMP Monorepo or Polyrepo distribution (e.g. SPM binary target) is structurally sound, linking correctly, and exposing the intended surface area to native developers.
 
 Likewise, published JVM libraries should compile a Java/Kotlin consumer fixture, and JavaScript libraries should test their exported JS surface when it is part of the compatibility promise.
 

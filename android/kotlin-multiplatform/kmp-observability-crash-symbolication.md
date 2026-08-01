@@ -55,6 +55,7 @@ To debug this effectively, inject and pass stable **Correlation IDs**.
 -   **Client Request ID:** Generated at the UI/ViewModel layer before invoking the shared use case.
 -   **W3C Trace Context / B3 Headers:** Ensure Ktor passes standard distributed tracing headers (e.g., `traceparent`) to the backend.
 -   **Sync/Job ID:** For offline-first sync loops, generate an ID when the loop wakes up and attach it to all logs emitted during that pass.
+-   **Breadcrumb Tracking:** Funnel user interactions and lifecycle events from both iOS and Android into a shared KMP logger, then use platform adapters to route a bounded, redacted subset into the breadcrumb API of each crash SDK (for example, Crashlytics or Sentry). A shared log sink alone does not attach events to a crash report; the explicit adapters create the interwoven timeline of native UI events and shared business-logic state changes.
 
 When an error occurs, log the `Client Request ID` alongside the exception. If a backend request fails, the backend's `Trace ID` must be returned to the client and included in the telemetry event.
 

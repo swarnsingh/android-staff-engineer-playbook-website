@@ -420,6 +420,8 @@ The annotation changes the exported error ABI. Missing expected exceptions can t
 
 A Swift actor and a Kotlin dispatcher are different scheduling concepts. Swift export uses `Dispatchers.Default` by default for exported suspend and Flow work; move UI mutation to `MainActor` and make Kotlin dispatcher switches explicit.
 
+**StateFlow rendering edge cases:** `StateFlow` is equality-conflated: a slow collector skips intermediate updates and receives the latest distinct value, rather than draining an unbounded queue. Expensive rendering of frequent distinct states can still cause frame drops. Keep Swift UI mutation isolated to `MainActor`; when product semantics permit dropping intermediate states, derive or sample a smaller UI-facing state upstream and verify the behavior with a slow-consumer test. Do not add a generic throttle that can hide meaningful state transitions, and do not assume a Kotlin dispatcher by itself provides Swift actor isolation.
+
 ### Enabling generated conveniences globally
 
 Default-argument combinations, wrappers for dependencies, and a broad public Kotlin surface increase generated API volume. Start with the facade and enable features selectively.

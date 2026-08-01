@@ -118,6 +118,8 @@ The first decision is local versus remote integration:
 - **Local integration** makes the Kotlin build part of app development. It favors fast source iteration and one coordinated repository/team.
 - **Remote integration** publishes a versioned binary. It favors independent repositories, multiple consumers, release isolation, and consumers that should not run Gradle.
 
+**Economic trade-offs:** Local source integration avoids binary-publishing latency and supports direct Kotlin debugging, but iOS developers participate in the Gradle/JDK build. A coordinated editable checkout exposes source changes immediately; a pinned submodule, checkout, or composite build still has source-revision adoption lag when consumers update the pin. Remote binary integration shields consumers from the Kotlin toolchain and improves release isolation, but adds binary-publishing infrastructure, artifact latency, and explicit artifact-version adoption. These costs follow the integration and dependency-update modes, not repository topology: a monorepo can consume a published XCFramework, and a polyrepo can still integrate Kotlin sources directly.
+
 | Factor | Direct Xcode integration | CocoaPods integration | Remote SwiftPM binary |
 |---|---|---|---|
 | Typical ownership | Coordinated monorepo | App or KMP code already depends on Pods | Independent or multiple iOS consumers |

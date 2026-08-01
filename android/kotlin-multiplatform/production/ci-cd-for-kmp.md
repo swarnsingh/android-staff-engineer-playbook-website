@@ -264,6 +264,12 @@ kotlin.native.cacheKind.iosSimulatorArm64=static
 
 The `cacheKind=static` setting tells Kotlin/Native to cache compiled static libraries. On incremental builds, only changed source sets are recompiled.
 
+### Remote caching versus Remote Build Execution (RBE)
+
+Develocity provides a **remote build cache**: a Gradle/KMP build can reuse a cacheable task's output when identical inputs have already produced an available entry. It does not move a cache miss or a Kotlin/Native compiler process from Gradle onto a remote macOS worker.
+
+True **Remote Build Execution** requires a build system and execution service that model work as hermetic, remotely executable actions, distribute the required Kotlin/Native toolchain, and provide compatible macOS workers for Apple targets. Bazel can supply that model when the repository has suitable KMP/Kotlin rules and a macOS-capable remote-execution backend, but enabling Bazel or Develocity beside an existing Gradle build is not sufficient. Treat RBE as a separate build-system investment and benchmark it against a well-tuned remote cache before adopting it.
+
 ---
 
 ## 5. KMMBridge (Automating the Entire Pipeline)
