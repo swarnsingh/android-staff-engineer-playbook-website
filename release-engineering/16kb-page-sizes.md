@@ -40,7 +40,7 @@ Toolchain versions that make this automatic:
 | NDK ≤ r27 | manual | Add both `-Wl,-z,max-page-size=16384` and `-Wl,-z,common-page-size=16384` to linker flags |
 | AGP ≤ 8.5 | escape hatch | `jniLibs.useLegacyPackaging = true` (compressed libs; bigger installed size — a last resort) |
 
-Prebuilt third-party `.so` files ignore your toolchain: they were linked wherever the vendor built them. Those you can only *detect* and demand updates for.
+Prebuilt third-party `.so` files ignore your toolchain: they were linked wherever the vendor built them. Those you can only *detect* and demand updates for. Managing these 16KB `.so` migrations is often the longest pole in the tent: platform engineers must audit all transitives and replace or escalate non-compliant vendor prebuilts. The November 1, 2025 API 35 enforcement deadline has passed, so 16KB alignment is an active Play submission requirement rather than future migration work.
 
 ## 4. Runtime assumptions (the subtle class)
 

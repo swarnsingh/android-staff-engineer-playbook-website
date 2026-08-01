@@ -215,6 +215,8 @@ No version literals in `build.gradle.kts`. One source of truth.
 
 ## 4. Remote Build Cache (Gradle Enterprise / Develocity)
 
+Develocity's remote build cache lets developers and CI reuse outputs for cacheable tasks when the task inputs match an available, non-evicted cache entry. Cache misses and non-cacheable tasks still execute, so measure hit rate and transfer cost on the real build; any clean-build improvement is workload-specific rather than an automatic 45-minute-to-3-minute transformation.
+
 ```kotlin
 // settings.gradle.kts
 plugins {

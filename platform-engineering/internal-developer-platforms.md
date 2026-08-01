@@ -194,6 +194,10 @@ If you don't measure DevEx, you can't improve it and you can't defend headcount.
 
 Publish the dashboard. Make it un-fakeable. Tie it to the platform team's OKRs.
 
+### DORA Metrics for Mobile
+
+Beyond local metrics, track DORA metrics tailored for mobile delivery performance: **Deployment Frequency** (how often a release becomes available to users on the production track), **Lead Time for Changes** (commit to production availability), **Mean Time to Recovery** (time from a user-impacting failure until the affected population is healthy again after a completed rollback or hotfix), and **Change Failure Rate** (percentage of production deployments that degrade service and require remediation, including a feature-flag disablement, configuration change, roll-forward, hotfix, or rollback). Define whether a staged release counts at rollout start or completion and apply that rule consistently. Track time-to-halt a rollout separately as a mitigation-speed signal; halting exposure does not recover users who already received the bad release. Track store-review latency separately so platform teams can distinguish internal delivery time from marketplace delay. These provide a macro-level view of platform health.
+
 ### What "P90 build time" means at scale
 
 If the P90 local incremental build is 90 seconds, every engineer loses ~30 minutes/day to waiting. At 100 engineers, that's 50 hours/day, ~10,000 hours/year, ~$3M/year at fully-loaded cost. Cutting it to 30 seconds returns $2M/year. That's how you defend two platform headcount.

@@ -10,6 +10,8 @@ TLS authenticates a server by checking the certificate chain against the OS root
 
 Pinning collapses the trust set from "any CA Android trusts" to "the specific certificate(s) we provisioned." Even with a perfectly forged cert, the connection fails.
 
+To complement pinning, monitor **Certificate Transparency (CT) logs** for unexpected certificates submitted for your domains. Public-trust policies widely require CT logging for certificates accepted by major browsers, but CT is submission-based: an unlogged certificate is invisible to the monitor, so coverage is not exhaustive. Treat an alert about an unexpected logged certificate as an early investigation signal, not a guarantee that every rogue issuance will be detected.
+
 ---
 
 ## 2. What Exactly You Pin

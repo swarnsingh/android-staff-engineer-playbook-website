@@ -76,8 +76,9 @@ Before any string is sent to the Crashlytics SDK, it must pass through a Regex S
 *Problem:* You integrate a "free" analytics SDK. Even if you don't explicitly send it PII, the SDK silently reads the device's MAC address, Android ID, and installed apps list, and uploads it to their servers.
 *Solution:* **Zero Trust SDK Integration**.
 1. Never integrate an SDK without a legal review of its data collection policies.
-2. Use Network Security Configuration to strictly monitor what domains the app is talking to during staging.
-3. On modern Android (10+), MAC addresses and IMEI are heavily restricted, but you must ensure your app does not request `READ_PHONE_STATE` unless absolutely necessary, as it grants SDKs the power to harvest hardware identifiers.
+2. For Android, evaluate dependencies in the **Google Play SDK Index** and review each vendor's Data safety guidance, observed network behavior, permissions, and release history. Apple's Privacy Manifests apply only to Apple-platform distributions. Vendor declarations are evidence, not a transfer of responsibility: the app publisher still owns GDPR, Play Data safety, legal-review, and technical-validation obligations.
+3. Use Network Security Configuration to strictly monitor what domains the app is talking to during staging.
+4. On modern Android (10+), MAC addresses and IMEI are heavily restricted, but you must ensure your app does not request `READ_PHONE_STATE` unless absolutely necessary, as it grants SDKs the power to harvest hardware identifiers.
 
 ## 5. Staff Engineer Thinking: Security as a Platform
 
