@@ -177,6 +177,10 @@ val hash = sha256("hello".toByteArray())
 
 On Android, this is hardware-accelerated on devices with crypto extensions (most ARMv8+ devices since 2014).
 
+### Locality-Sensitive Hashing (LSH)
+
+Unlike traditional hashes that aim to avoid collisions (the avalanche effect), LSH intentionally maximizes collisions for similar items. It is used to quickly identify near-duplicate documents or perform nearest-neighbor searches in high-dimensional spaces (e.g., image similarity, recommendation engines) without an expensive $O(N)$ similarity scan.
+
 ### Open addressing vs separate chaining in hash tables
 
 When two keys hash to the same slot in a hash table, you need a strategy:

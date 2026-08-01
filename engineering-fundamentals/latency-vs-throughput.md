@@ -247,6 +247,8 @@ See [`../android/performance/jank.md`](../android/performance/jank.md), [`../mob
 
 **Death spirals.** Slow requests hold resources, which slows the next request, which holds resources, etc. A small latency uptick can cascade into total saturation. Mitigation: circuit breakers ([`../patterns/circuit-breaker.md`](../patterns/circuit-breaker.md)), bulkheads, timeouts.
 
+**Head-of-Line Blocking.** A single slow operation at the front of a queue stalls everything behind it. In HTTP/2 over TCP, a lost packet stalls all multiplexed streams. QUIC avoids this cross-stream transport blocking by ordering data independently within each stream. It still has both connection-level and per-stream flow-control limits, while loss detection and recovery operate over connection packet-number spaces.
+
 ---
 
 ## Performance Considerations

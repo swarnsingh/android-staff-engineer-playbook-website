@@ -54,8 +54,12 @@ val set = setOf(1, 2, 3, 4, 5)
 val containsThreeFast = set.contains(3) 
 
 // This looks like O(N), but it creates intermediate lists!
-// Space complexity explodes.
+// Space complexity scales with the number of chained operations.
 val result = list.filter { it > 2 }.map { it * 2 }.sorted() 
+
+// asSequence() fuses filter and map lazily, avoiding their eager lists.
+// sorted() must still buffer O(N) elements, and toList() stores O(N) output.
+val lazyResult = list.asSequence().filter { it > 2 }.map { it * 2 }.sorted().toList()
 ```
 
 ## Architecture

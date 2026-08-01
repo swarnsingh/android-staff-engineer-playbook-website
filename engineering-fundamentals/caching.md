@@ -221,6 +221,7 @@ For data, Room serves the same role — local SQLite-backed cache fronting the n
 Other Android-specific caches:
 - **HTTP cache.** OkHttp's `Cache` integrates with HTTP cache headers — respects `Cache-Control`, `ETag`, `Last-Modified`.
 - **View binding cache.** Compose's snapshot system caches composable state across recompositions.
+- **StateFlow as L1 Cache.** In modern Android architectures, a repository's `StateFlow` acts as an in-memory L1 cache, holding the latest data to immediately emit to collectors while async network or database fetches occur in the background.
 - **R8/ProGuard build cache.** Compiled mappings cached between builds.
 
 ---
@@ -274,6 +275,7 @@ Other Android-specific caches:
 ## Performance Considerations
 
 - **CPU:** Cache lookups are cheap (in-memory hash). Cache *misses* incur the full source cost plus the cache lookup overhead. A consistently-missing cache is a slowdown.
+- **False sharing.** When independent variables reside in the same CPU cache line, a write by one core invalidates the entire line for other cores, causing severe performance degradation for adjacent but logically unrelated variables.
 - **Memory:** A cache occupies the size of its contents plus per-entry metadata (often 30-50% overhead in the JVM).
 - **GC pressure (JVM).** Large heap-based caches can extend GC pauses. Off-heap caches (Caffeine's options, Chronicle Map) avoid this at the cost of serialization.
 - **Network (distributed caches).** Each cache lookup is a network round-trip. Local in-process caches are 100× faster; use them for the hottest data.

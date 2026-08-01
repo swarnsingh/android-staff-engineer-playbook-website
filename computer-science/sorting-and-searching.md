@@ -29,7 +29,7 @@ At Staff level, the question is rarely "can you implement quicksort." It is "whi
 | Counting sort | O(n + k) | O(n + k) | Yes | When values are small bounded ints |
 | Radix sort | O(d * (n + k)) | O(d * (n + k)) | Yes | Fixed-width integers/strings |
 
-Kotlin/JVM usually delegates object sorting to JDK sorting implementations. The details vary by platform/version, so rely on the contract, not an implementation rumor. If stability matters, test it or use APIs that guarantee it for your target.
+Kotlin's object-sorting APIs guarantee **stable ordering**: elements that compare as equal preserve their relative order. The underlying algorithm is an implementation detail that can vary by platform and runtime version, so rely on the stability contract rather than assuming TimSort or its performance on partially sorted data.
 
 ---
 
