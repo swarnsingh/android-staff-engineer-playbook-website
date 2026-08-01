@@ -15,13 +15,14 @@
 - **Picture-in-picture** when user backgrounds.
 - **Background audio** when user locks screen.
 - **Cast** to TV / Chromecast.
+- **Cross-device handoff** to seamlessly resume playback across mobile, web, and TV using synced playback state.
 
 ### Non-Functional Requirements
 - **Time-to-first-frame** (TTFF) < 1.5s on a good network.
 - **No buffer underruns** under network variance (ABR).
 - **Battery** — efficient codec selection.
 - **Cellular-aware** — default to lower bitrate; warn before HD on cellular.
-- **DRM** — Widevine for protected content.
+- **DRM** — Widevine L1 keeps protected playback in a hardware-backed trusted path; L3 is a software-only, reduced-security fallback and does not provide a TEE guarantee.
 
 ### Out of Scope
 - Encoding / packaging pipeline (server)
@@ -107,6 +108,50 @@ POST /v1/videos/{id}/license/offline
 { "offlineLicenseKey": "...bytes-base64..." }
 ```
 
+### Cross-device playback progress
+
+```http
+GET /v1/me/videos/{id}/progress
+200 OK
+ETag: "17"
+
+{ "positionMs": 83421, "playbackSessionId": "playback-session-123", "sequence": 41, "eventType": "PAUSE", "version": 17, "updatedAt": "2026-08-01T14:00:00Z" }
+
+# First write after GET returned 404 Not Found
+PUT /v1/me/videos/{id}/progress
+If-None-Match: *
+Idempotency-Key: playback-session-123:1
+
+{ "positionMs": 12000, "playbackSessionId": "playback-session-123", "sequence": 1, "eventType": "PERIODIC" }
+201 Created
+ETag: "1"
+
+{ "positionMs": 12000, "playbackSessionId": "playback-session-123", "sequence": 1, "eventType": "PERIODIC", "version": 1, "updatedAt": "2026-08-01T13:55:00Z" }
+
+# Subsequent write after reading ETag "17"
+PUT /v1/me/videos/{id}/progress
+If-Match: "17"
+Idempotency-Key: playback-session-123:42
+
+{ "positionMs": 98210, "playbackSessionId": "playback-session-123", "sequence": 42, "eventType": "PERIODIC" }
+200 OK
+ETag: "18"
+
+{ "positionMs": 98210, "playbackSessionId": "playback-session-123", "sequence": 42, "eventType": "PERIODIC", "version": 18, "updatedAt": "2026-08-01T14:00:15Z" }
+```
+
+`eventType` is one of `PERIODIC`, `PAUSE`, `REWIND`, or `COMPLETE`, so the server can distinguish an intentional lower position and terminal completion from stale ordinary progress. `playbackSessionId` is a globally unique random ID and wire-level `sequence` increases monotonically within it; the server records the last accepted session sequence and treats an equal or lower same-session sequence as already superseded. The idempotency store is scoped by authenticated profile as well as `Idempotency-Key`.
+
+`GET` returns `404 Not Found` when no progress representation exists. The first writer uses `If-None-Match: *`; it receives `201 Created` and the first ETag, while a concurrent writer that lost the create race receives `412 Precondition Failed` and must fetch before reconciling. Subsequent writers use the quoted ETag in `If-Match`.
+
+Each client reads progress before playback and records it every 15–30 seconds and on pause, background, Cast handoff, and completion. Before attempting the network call, `PlaybackProgressRepository` transactionally upserts the latest position and its nullable last-seen server ETag in Room and appends a durable outbox item. Both rows carry the stable, opaque `profileId` from the authenticated session; progress is keyed by `(profileId, videoId)`, and an outbox operation is never reassigned to whichever account happens to be active later. In addition to the per-session `sessionSequence` sent as wire-level `sequence`, the repository atomically allocates a monotonically increasing `timelineSequence` across every local session for that profile/video. This preserves the causal order when session A ends and session B starts while both are offline. A `null` base ETag means conditional creation with `If-None-Match: *`; it is never replaced with a synthetic version such as zero. Treat ETags as opaque strings even when examples happen to contain digits. A unique, connectivity-constrained WorkManager job per profile flushes that profile's outbox after reconnect, so progress from downloaded/offline playback is not lost. Ordinary periodic updates may coalesce only within one session and retain the newest `timelineSequence`; session boundaries, completion, and explicit rewind events remain ordered.
+
+The worker receives `profileId` as immutable input, selects only rows owned by that profile, and asks the token provider for credentials explicitly bound to that profile before every `/v1/me` request. The network layer refuses to attach a token owned by a different profile, so an account-switch race cannot borrow the next user's credentials. On sign-out or account switch, `SignOutOrchestrator` also cancels that profile's unique work before changing credentials. Cancellation is lifecycle hygiene rather than the security boundary. Product policy may then purge its progress/outbox rows immediately or retain them encrypted for the same profile to resume after re-authentication, but another profile can neither query nor flush them; account deletion always purges them.
+
+The server assigns `updatedAt`, advances `version`, and returns an opaque quoted ETag. The worker serializes writes for a `(profileId, videoId)` and processes all sessions in ascending `timelineSequence`. After every accepted `201`/`200`, it transactionally stores the returned ETag plus the acknowledged session/timeline markers, deletes the acknowledged item, and rebases every remaining item with a greater `timelineSequence` for that profile/video onto the new ETag before sending the next item—even when the next item belongs to a later local session. While newer items remain, the local `PlaybackProgressEntity` keeps the highest-timeline optimistic projection rather than being overwritten by an older acknowledgement; once the queue is empty, it stores the accepted server representation and becomes `SYNCED`. This ensures an ordered `COMPLETE`, `REWIND`, or later offline session is not left on the stale pre-offline validator.
+
+A stale precondition gets `412 Precondition Failed`, after which the worker fetches the latest representation and ETag rather than blindly overwriting it. The representation's `(playbackSessionId, sequence)` is first matched against a queued local event or the persisted last-acknowledged marker. If it identifies a known local causal predecessor, the worker transactionally removes all rows through that event's `timelineSequence`, rebases every known-later row—including later sessions—onto the fetched ETag, and retries in timeline order. Only server state that cannot be placed in this local causal chain is genuinely concurrent: that moves the queue to `NEEDS_RECONCILIATION` and surfaces a resume choice instead of guessing from skewed device clocks. The worker deletes an outbox item only after acceptance, recognition that its causal position was already superseded, or an explicit user reconciliation; it uses bounded retries if the ETag changes again and never lets an old near-end update resurrect a completed video.
+
 ---
 
 ## 5. Mobile App Architecture
@@ -122,6 +167,7 @@ POST /v1/videos/{id}/license/offline
 :core:database         ← downloads metadata
 :core:media            ← Media3 wrapper
 :data:videos
+:data:playback-progress ← cross-device progress read/write + conflict handling
 ```
 
 ### Layered diagram
@@ -132,6 +178,7 @@ flowchart LR
     Repo --> API["Playback / licence API"]
     Repo --> Downloads["DownloadRepository"] --> ServiceD["DownloadService"]
     Repo --> Session["MediaSessionService"] --> Player["ExoPlayer"]
+    Session --> Progress["PlaybackProgressRepository"] --> ProgressAPI["Progress API"]
     Player --> Tracks["ABR + DRM + track selection"]
     Session --> VM
 ```
@@ -168,9 +215,47 @@ data class DownloadEntity(
     val state: DownloadState,       // QUEUED, DOWNLOADING, COMPLETED, FAILED, EXPIRED
     val downloadedAt: Long?, val licenseExpiresAt: Long?
 )
+
+@Entity(
+    tableName = "playback_progress",
+    primaryKeys = ["profileId", "videoId"],
+)
+data class PlaybackProgressEntity(
+    val profileId: String,
+    val videoId: String,
+    val positionMs: Long,
+    val baseServerEtag: String?,    // null until conditional creation succeeds
+    val playbackSessionId: String,
+    val lastEventType: ProgressEventType,
+    val localSessionSequence: Long,
+    val localTimelineSequence: Long,
+    val lastAckedPlaybackSessionId: String?,
+    val lastAckedSessionSequence: Long?,
+    val lastAckedTimelineSequence: Long?,
+    val syncState: SyncState,       // PENDING, SYNCED, NEEDS_RECONCILIATION
+)
+
+@Entity(
+    tableName = "playback_progress_outbox",
+    indices = [
+        Index(value = ["profileId", "videoId", "playbackSessionId", "sessionSequence"], unique = true),
+        Index(value = ["profileId", "videoId", "timelineSequence"], unique = true),
+    ],
+)
+data class PlaybackProgressOutboxEntity(
+    @PrimaryKey val operationId: String,
+    val profileId: String,
+    val videoId: String,
+    val playbackSessionId: String,
+    val sessionSequence: Long,      // serialized as wire-level sequence
+    val timelineSequence: Long,     // local causal order across sessions
+    val positionMs: Long,
+    val eventType: ProgressEventType, // PERIODIC, PAUSE, REWIND, COMPLETE
+    val baseServerEtag: String?,    // null selects If-None-Match: *
+)
 ```
 
-Actual video bytes are managed by Media3's `DownloadIndex` + a `Cache` on disk — not directly in Room. Room only tracks metadata for UI.
+Actual video bytes are managed by Media3's `DownloadIndex` + a `Cache` on disk — not directly in Room. Room tracks download metadata plus durable playback progress/outbox state used for reconnect synchronization.
 
 ---
 

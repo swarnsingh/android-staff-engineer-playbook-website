@@ -241,6 +241,7 @@ The honest framing: SDUI moves iteration speed from "release-bound" to "deploy-b
 
 - "How would you A/B test two screen compositions?" → the composition service consumes the experimentation platform ([`experimentation-platform.md`](experimentation-platform.md)); bucket in the segment key so caches don't cross-contaminate.
 - "How do forms work — isn't input state behavior?" → input components own local state natively; submission is a `mutate` action with a typed payload; validation rules ship as data (regex/required/ranges), complex validation stays server-side.
+- "How do you handle SDUI state management for interactive components?" → Components maintain ephemeral state (like text input or toggle state) locally via standard ViewModels, which is aggregated and dispatched as a unified payload upon a designated submit action, keeping the server stateless during interaction.
 - "Could this drive the whole app?" → chrome (tabs, auth, settings) stays native; SDUI earns its keep on high-iteration surfaces (home, search results, checkout upsells) — Airbnb reports most-used surfaces on it, but they built authoring, preview, and observability tooling to match.
 
 ## 11. Out of Scope (defended earlier, restated)

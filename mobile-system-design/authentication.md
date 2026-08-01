@@ -10,7 +10,7 @@
 > **Candidate:** "The interesting mobile decisions are: Authorization Code + PKCE (not implicit), secure token storage, silent refresh under bad networks, and re-auth without bouncing the user. I'll deep-dive the token lifecycle."
 
 ### Functional Requirements
-- **Sign in** with email/password, social (Google, Apple), or magic link.
+- **Sign in through the browser-hosted IdP** with email/password, social (Google, Apple), magic link, or **Passkeys (WebAuthn/FIDO2)** for phishing-resistant passwordless auth.
 - **Persistent session** across app restarts.
 - **Silent refresh** of access tokens before expiry.
 - **Sign out** that revokes tokens server-side.
@@ -18,7 +18,7 @@
 
 ### Non-Functional Requirements
 - **Persisted tokens follow the storage threat model** (direct Keystore-backed envelope when encryption at rest is required; legacy wrappers have a migration plan).
-- **No password through the app** (use OAuth + browser tab for federated; capture only on first-party login).
+- **No password through the app** (all interactive methods, including first-party email, stay in the browser-hosted IdP).
 - **Resilient to clock skew** (refresh treats `exp` as advisory; server is the truth).
 - **Sign-out within seconds**, even offline (clear local).
 - **No PII in logs**.
@@ -28,6 +28,7 @@
 - Password reset UX (handled by OAuth `/forgot` redirect)
 - Multi-factor enrollment flow (handled by IdP)
 - Identity provider design (we treat Auth0/Cognito/Keycloak as a black box)
+- Native Credential Manager passkey integration and app-owned WebAuthn relying-party endpoints
 - Enterprise SSO (SAML) — out of mobile scope
 
 ---
@@ -37,7 +38,7 @@
 | Question | Why it matters |
 |---|---|
 | IdP (Auth0, Cognito, custom)? | OIDC discovery URL, scopes, refresh token rotation policy |
-| First-party login or only federated? | Whether app captures password directly |
+| First-party email or only federated? | Which methods the browser-hosted IdP must offer |
 | Tokens (JWT or opaque)? | Local introspection vs. always-server |
 | Access token lifetime? | Silent-refresh cadence |
 | Refresh token rotation (one-time)? | Race conditions on concurrent refresh |
@@ -70,6 +71,8 @@ flowchart TD
 
 The browser owns interactive authentication, PKCE binds the returned code to the initiating app instance, and the resource API trusts only a validated access token—not the fact that the client displayed a login screen.
 
+Passkeys stay inside this browser-hosted IdP boundary. The IdP sends the WebAuthn challenge, the browser invokes the platform passkey provider, and the IdP verifies the signed assertion, RP ID, origin, and replay controls before continuing the OAuth flow. The Android app never handles WebAuthn challenge/assertion JSON; after successful passkey authentication it receives the same authorization-code redirect as every other IdP method. A native Credential Manager flow would require app-owned challenge and assertion endpoints plus relying-party verification and is a separate design.
+
 **Components on device:**
 - **`AuthBrowserClient`** — Chrome Custom Tabs for the IdP redirect.
 - **`TokenVault`** — encrypted at rest (Keystore-wrapped).
@@ -89,7 +92,7 @@ The browser owns interactive authentication, PKCE binds the returned code to the
      /authorize?response_type=code&client_id=…&redirect_uri=…
                 &code_challenge=…&code_challenge_method=S256
                 &scope=openid+profile+offline_access&state=…
-3. User authenticates in browser; IdP redirects to:
+3. User authenticates in browser (including any IdP-owned passkey ceremony); IdP redirects to:
      myapp://auth/callback?code=…&state=…
 4. App exchanges code for tokens:
      POST /token { grant_type=authorization_code, code, code_verifier, client_id, redirect_uri }

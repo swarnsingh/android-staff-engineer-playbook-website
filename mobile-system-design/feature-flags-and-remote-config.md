@@ -390,7 +390,7 @@ The lifecycle separates availability from freshness: cached flags make startup d
 |---|---|
 | **REST GET** | Pick — cacheable, simple |
 | WebSocket subscription | Real-time but heavy | Use only for kill switches |
-| FCM hint to re-fetch | Pick — instant updates without polling |
+| FCM hint to re-fetch | Pick — sends a best-effort silent tickle to re-fetch without constant polling; because Doze, OEM restrictions, and missed messages can delay or drop it, reconcile on foreground and with periodic work for correctness |
 
 ### Variant assignment
 

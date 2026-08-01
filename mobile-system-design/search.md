@@ -164,6 +164,8 @@ data class CachedResult(
 
 > **Probing Q:** "Why cache results?" For the "user types a query, taps a result, comes back" flow. Re-running the search wastes a network call; if the cache is < 5 min old we render it immediately.
 
+> **Probing Q:** "What about full offline search?" For true offline search, index a local catalog with SQLite full-text search. Use **FTS4** with the platform-backed Room 2 stack for broad Android compatibility, or **FTS5** only when the app uses Room 3 with `BundledSQLiteDriver`, which supplies an FTS5-enabled SQLite build. Both use virtual tables optimized for fast local text matching without a network request.
+
 ---
 
 ## 7. Deep Dive: Query → Results Lifecycle (~15 min)

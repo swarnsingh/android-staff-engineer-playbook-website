@@ -180,10 +180,10 @@ The trade-off is intentional and stated in regulatory filings. Compare with [`of
 
 ## Security
 
-- **Threat model:** rooted device with malware that has Accessibility Services granted (Overlay/UI manipulation attacks). The mobile client cannot defeat root alone, but it can detect it and refuse sensitive operations.
+- **Threat model:** rooted device with malware that has Accessibility Services granted (overlay/UI manipulation attacks). The mobile client cannot establish a trustworthy verdict inside a compromised process; it can collect signals, but the backend must enforce the sensitive-operation policy.
 - **Accessibility-overlay defense.** Before showing a transfer confirmation, query `AccessibilityManager` for active services. If any non-system service is enabled and the user has not whitelisted it, block with an explanatory dialog.
 - **Code obfuscation.** R8 with `isMinifyEnabled = true` is mandatory. Many banks layer commercial obfuscators (DexGuard, Promon Shield) for string encryption, control-flow flattening, and integrity checks.
-- **Anti-tamper at runtime.** Check signing certificate at startup; refuse to launch if the certificate doesn't match the expected SHA-256 (defeats casual repackaging).
+- **Anti-tamper at runtime.** A startup signing-certificate check and local root heuristics raise the cost of casual repackaging, but an attacker controlling the process can bypass them. For sensitive operations, the backend issues a one-time nonce, verifies the Play Integrity token and freshness server-side, applies a risk policy, and rejects the operation when the verdict is unacceptable; the app only handles that server rejection and must not treat a client-side verdict as authoritative.
 - **No clipboard for PINs.** Disable copy/paste on PIN entry fields. Clear the clipboard if the app detects a card number was placed by the user.
 - **WebView hardening.** Embedded onboarding WebViews disable JavaScript file access, content access, and universal access from file URLs. Verify TLS independently inside the WebView client.
 - **Backup exclusion.** `allowBackup="false"` or explicit `<exclude>` rules for the token vault and any keys. A user's Google Drive backup should not carry tokens to a fresh device.
