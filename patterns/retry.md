@@ -160,6 +160,19 @@ A Retry pattern *adds* load to a struggling server. A Circuit Breaker *removes* 
 4.  **Jitter Algorithms:** Describe the difference between "Full Jitter" and "Equal Jitter". Which one provides a better distribution of load for a recovering backend system?
 5.  **Coroutines:** Instead of OkHttp interceptors, you can implement retries at the Kotlin Flow layer using the `retryWhen { cause, attempt -> }` operator. What are the architectural tradeoffs of retrying in the Domain layer (Flow) versus the Data layer (OkHttp)?
 
+## Answer Key
+
+1. **WorkManager Constraints: If a WorkManager task returns `Result.retry()`, but you also specified `Constraints.setRequiredNetworkType(NetworkType.CONNECTED)`, what happens if the device is offline when the exponential backoff timer hits?**
+   WorkManager will wait. The backoff timer determines the *earliest* time the work can run. If constraints are not met at that time, execution is delayed until the device regains connectivity.
+2. **OkHttp Internals: What happens if the `RequestBody` is a one-shot stream? How does OkHttp know if the body can be consumed twice?**
+   OkHttp checks `RequestBody.isOneShot()`. If it returns `true` (e.g., a streaming request), OkHttp will not retry the request automatically because the stream cannot be rewound. Attempting to manually consume a one-shot stream twice in an interceptor will throw an exception.
+3. **GraphQL Retries: How do you implement a generic Retry Interceptor for a GraphQL client?**
+   Since GraphQL returns HTTP 200, an OkHttp interceptor is ineffective because it only sees the HTTP status. You must implement the retry logic at the GraphQL client layer (e.g., Apollo's retry interceptors) where the JSON payload can be inspected for network or server errors.
+4. **Jitter Algorithms: Describe the difference between "Full Jitter" and "Equal Jitter".**
+   Full Jitter picks a random value between 0 and the current backoff maximum (`random(0, backoff)`). Equal Jitter uses half the backoff plus a random value between 0 and half the backoff (`backoff/2 + random(0, backoff/2)`). Equal Jitter prevents very short retries, ensuring a more stable, wider distribution of load.
+5. **Coroutines: What are the architectural tradeoffs of retrying in the Domain layer (Flow) versus the Data layer (OkHttp)?**
+   Retrying in the Data layer (OkHttp) is centralized, transparent to the UI, and great for standard network blips. Retrying in the Domain layer (Flow) allows for business-logic-aware retries (e.g., prompting the user, refreshing tokens, or falling back to a cache), but scatters retry logic across multiple Use Cases.
+
 ## Further Reading
 
 - [`circuit-breaker.md`](circuit-breaker.md) — The protective layer that must accompany any aggressive retry strategy.

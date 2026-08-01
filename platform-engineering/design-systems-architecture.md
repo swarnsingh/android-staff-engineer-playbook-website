@@ -426,6 +426,25 @@ Publish adoption like any platform metric. If only half the org uses the design 
 
 ---
 
+## Answer Key
+
+1. **Why three tiers (primitive → semantic → component) instead of two?**
+   Three tiers allow designers to tweak a specific component (e.g., `buttonPrimaryBg`) without affecting the global semantic meaning of the color (e.g., `colorPrimary`). This isolation prevents accidental regressions across the entire app.
+2. **Why `staticCompositionLocalOf` rather than `compositionLocalOf` for tokens?**
+   `staticCompositionLocalOf` assumes the provided value changes rarely (like a theme swap). When it does change, the entire sub-tree recomposes. Since token values aren't animated or changed frequently, this avoids the overhead of tracking individual token reads, improving performance.
+3. **Walk through how you'd implement dark mode such that no `if (isDarkTheme)` appears in feature code.**
+   Define a semantic color token contract (e.g., `CompanyColors`). Create two instances: `LightColors` and `DarkColors`. At the root `CompanyTheme` composable, evaluate `isSystemInDarkTheme()` and provide the corresponding instance via `LocalCompanyColors provides colors`. Feature code only references `CompanyTheme.colors.surface`.
+4. **A feature team needs a new button variant the DS doesn't have. Walk through the decision tree.**
+   First, can it be built using the existing slot API? If yes, build it in feature code. If no, is it a one-off or a reusable pattern? If one-off, they build a custom component locally. If reusable, they propose it in the Design Systems Sync, and if approved, they PR the change into the DS.
+5. **How do you prevent the design system from becoming the dumping ground for every team's bespoke component?**
+   Implement strict governance: require PR reviews from DS maintainers and design leads. Reject components that lack reusability across multiple features. Force teams to use composition (slot APIs) rather than adding highly specific configuration flags.
+6. **A rebrand drops on Q3. Walk through the engineering rollout plan.**
+   Update the primitive and semantic tokens in the `Tokens.kt` file (ideally via an automated Figma sync). Run snapshot tests to review visual diffs across all components. Release the DS as a new minor version, and have feature teams adopt the new version.
+7. **The Figma source of truth and the Kotlin generated code drift. How do you detect and fix it?**
+   Run a CI job that pulls the latest tokens from the Figma API and compares them to the repository's tokens. If there's a diff, auto-generate a PR and require review to reconcile the drift, ensuring the code always matches design.
+8. **Multi-brand: when does a token belong at the brand layer vs the global layer?**
+   Brand layer tokens handle visual identity (colors, typography, specific border radii). Global layer tokens are structural and brand-agnostic (accessibility tap targets, fundamental spacing steps, structural layout rules).
+
 ## Further Reading
 
 - [`build-graph-scaling.md`](build-graph-scaling.md) — keeping `:core:design-system` from becoming a build bottleneck.

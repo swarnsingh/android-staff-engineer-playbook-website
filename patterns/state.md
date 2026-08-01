@@ -216,6 +216,14 @@ Creating states for every single UI widget (`ButtonEnabledState`, `TextColorStat
 4.  **Handling Partial Failures:** You have a screen that shows a list of users and a user's profile image. The user list loads successfully, but the profile image API call fails. Design the sealed class hierarchy to represent this "Partial Success" state without losing the user list data.
 5.  **Side Effects:** In a strict State Machine (like the classic pattern or Redux/MVI), where do Side Effects (like saving to a database or firing analytics) happen? Do they happen inside the State transition, before it, or after it?
 
+## Answer Key
+
+1. **Compose Recomposition:** Compose uses structural equality (`==`) to check if state changed. If you emit a functionally identical object, it skips recomposition.
+2. **MVI vs MVVM:** MVI solves race conditions of observing multiple LiveDatas where one updates before the other (e.g. data loaded but isLoading still true for a frame). MVI provides a single atomic update.
+3. **Sealed Interfaces vs Classes:** Sealed interfaces are used when state doesn't need to hold state/constructor parameters in the base class, or if an object needs to implement multiple sealed states. Exhaustive `when` blocks work identically for both.
+4. **Handling Partial Failures:** `data class Content(val users: List<User>, val profileImageError: Boolean = false) : UiState` allows showing the list while indicating the image failed, preventing the entire screen from dropping into an Error state.
+5. **Side Effects:** Side effects happen *outside* the pure state reducer (usually before generating an action or as a reaction to a specific effect stream). Reducers must remain pure functions to guarantee testability and predictable transitions.
+
 ## Further Reading
 
 - [`../android/architecture/state-management.md`](../android/architecture/state-management.md) — Deep dive into Compose state, `remember`, and ViewModel state hoisting.

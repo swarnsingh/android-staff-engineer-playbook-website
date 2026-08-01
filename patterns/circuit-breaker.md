@@ -219,6 +219,14 @@ In the Half-Open state, if you allow exactly 1 request through to test the serve
 4.  **Backend vs Frontend Breakers:** Your API Gateway has an Envoy circuit breaker configured to reject requests if the internal database is down. Why do you still need an OkHttp circuit breaker on the Android client?
 5.  **Offline First:** How does the Circuit Breaker pattern synergize with the Repository Pattern and a local Room database to create an "Offline-First" application architecture?
 
+## Answer Key
+
+1. **Concurrency:** `compareAndSet` prevents state machine corruption because it's an atomic operation. It ensures that only one thread can successfully transition the state from OPEN to HALF_OPEN (1 to 2) and subsequently perform the test request.
+2. **Jitter:** If millions of apps transition to CLOSED at the same time, the backend gets hit by a thundering herd (retry storm). Jitter adds a random delay to the `resetTimeoutMillis` for each client so they attempt the test request at distributed times rather than all at once.
+3. **HTTP Status Codes:** 400 and 401 are client errors (bad request, unauthorized), not server availability issues. Tripping the circuit breaker on these would block valid requests permanently when the server is actually healthy.
+4. **Backend vs Frontend Breakers:** If the API Gateway itself goes down, the backend breaker is useless. The mobile client is the only line of defense to prevent battery drain and cellular network saturation on the device itself.
+5. **Offline First:** The Circuit Breaker catches the exception and the Repository uses this to emit the cached Room database data instead. It allows the app to seamlessly transition to an offline state.
+
 ## Further Reading
 
 - [`retry.md`](retry.md) — How to combine Circuit Breakers with Exponential Backoff Retry policies.

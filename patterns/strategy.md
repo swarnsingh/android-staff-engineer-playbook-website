@@ -233,6 +233,19 @@ When reviewing PRs with Strategies, a Staff engineer focuses on the boundary:
 9.  What is the performance cost of using Strategy via interfaces in Kotlin, and how can `inline` functions mitigate it in functional strategies?
 10. If an algorithm variation only requires changing a single primitive value (like a timeout duration), is the Strategy pattern appropriate?
 
+## Answer Key
+
+1. **Refactoring a when statement:** Define a Strategy interface with an `execute()` method. Create 10 concrete classes implementing it. Inject a Map of these strategies into the Context, and use the condition key to retrieve and execute the correct strategy.
+2. **Functional Strategy:** When the strategy is a single, stateless operation (like a pure math calculation or sorting algorithm), a higher-order function avoids the boilerplate of interfaces and classes.
+3. **Open/Closed Principle:** You can add new algorithms (strategies) by creating new classes without modifying the existing Context class, meaning the Context is open for extension but closed for modification.
+4. **Structural Similarity vs Semantic Difference:** Both use a Context delegating to an Interface. However, Strategies are injected and set by the *client* (external), while States transition themselves internally based on logic (internal).
+5. **Context Interaction:** The Strategy should define a callback interface or require the Context to pass the specific necessary data into the Strategy's method, rather than passing the entire Context object to avoid circular dependencies.
+6. **Managing Dependencies:** Use a Dependency Injection framework (like Dagger/Hilt) or Factory. The concrete strategies request their dependencies in their constructors, and the Context is provided the fully constructed strategies.
+7. **Composable Strategies:** Yes. E.g., multiple filtering strategies can be composed into a `CompositeFilterStrategy` that iterates through all injected strategies and applies them sequentially.
+8. **RecyclerView.LayoutManager:** It defines the layout algorithm for the RecyclerView. The RecyclerView (Context) doesn't know if it's a list or grid, it just delegates measuring and positioning to the LayoutManager (Strategy).
+9. **Performance Cost:** Interfaces cause virtual method dispatch and object allocation overhead. Functional strategies using `inline` functions remove this overhead by inlining the function body at the call site.
+10. **Primitive Value Strategy:** No. If only data changes, parameterize the value in the constructor instead of creating a whole Strategy pattern structure.
+
 ## Further Reading
 
 - [`factory.md`](factory.md) — Factories are typically responsible for instantiating and injecting the correct Strategy.

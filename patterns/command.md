@@ -232,6 +232,14 @@ If a `SubmitCommentCommand` updates the network, and then the Command itself upd
 4.  **Undo/Redo State:** In a complex app like a photo editor, storing a new `Command` object for every single pixel change will exhaust device memory. How do you combine the Command pattern with the Memento pattern to manage memory in a deep undo stack?
 5.  **Optimistic UI:** When you use an Offline Action Queue, you update the UI immediately (Optimistic Update). If the `Command` permanently fails (e.g., HTTP 403 Forbidden), how does the Command notify the UI to roll back the optimistic state?
 
+## Answer Key
+
+1. **WorkManager Internals:** The maximum size is 10KB (defined by `Data.MAX_DATA_BYTES`). If exceeded, WorkManager throws an `IllegalStateException`.
+2. **Idempotency:** The backend must recognize duplicate commands via a unique idempotency key (like a UUID sent in the command) and return the cached success response rather than processing the action twice.
+3. **Command Chaining:** Worker B and Worker C are marked as FAILED and do not run. WorkManager stops the chain on the first failure.
+4. **Undo/Redo State:** The Command should only store the delta (the specific pixels changed) or a reference to a snapshot, rather than full copies of the image, minimizing memory overhead.
+5. **Optimistic UI:** The Command issues a rollback action to the local ActionQueue or database, which removes the optimistic state, triggering a Flow emission that updates the UI to its previous state.
+
 ## Further Reading
 
 - [`../android/concurrency/workmanager.md`](../android/concurrency/workmanager.md) — Deep dive into Android's persistent Command Bus.

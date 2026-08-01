@@ -187,6 +187,14 @@ A developer needs to fetch a user's avatar. They inject `UserApi` directly into 
 4.  **Data Deletion:** The user logs out. You need to clear the in-memory caches of 15 different Repositories. How do you architect this without hardcoding `repo.clearCache()` 15 times in your `LogoutUseCase`?
 5.  **Multiplatform:** You are moving your Repository to a Kotlin Multiplatform `commonMain` module. Your Android app uses Room, and your iOS app uses CoreData. What interface pattern is required in the shared code to allow platform-specific databases to act as the Single Source of Truth?
 
+## Answer Key
+
+1. **Concurrency:** Use a Coroutine `Mutex` to lock the cache check and network call, or use a `Deferred` in the memory cache so the second caller awaits the first caller's network request instead of starting a new one.
+2. **Flow Consolidation:** NetworkBoundResource exposes loading/error states in the same stream. Returning a Result from refresh while observing Room separates the UI state (Room) from the action result (the refresh call). The separate approach is often better for Compose because the UI state flow remains purely data-driven.
+3. **Pagination:** RemoteMediator orchestrates fetching from the API and inserting into Room, but the PagingData stream strictly observes the Room database as the SSOT.
+4. **Data Deletion:** Have repositories observe an application-wide `AuthState` flow, or use a dependency injection framework to scope the repositories to a UserComponent that is destroyed on logout.
+5. **Multiplatform:** A shared interface (e.g., `interface AppDatabase`) or using a multiplatform library like SQLDelight that provides a common SQL interface while compiling down to Room/SQLite on Android and CoreData/SQLite on iOS.
+
 ## Further Reading
 
 - [`../reference-architectures/offline-first-app.md`](../reference-architectures/offline-first-app.md) — How the entire app architecture orbits around the SSOT Repository.

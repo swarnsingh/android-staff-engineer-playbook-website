@@ -97,6 +97,21 @@ The Staff-level fix wasn't cleverer code — it was redrawing ownership: `PriceF
 5.  What symptoms in a git log (not the code itself) tell you a file violates SRP?
 6.  Where is the line between SRP and micro-fragmentation, and which heuristic do you use to stop splitting?
 
+## Answer Key
+
+1. **"One reason to change" — a reason for *whom*? Walk through how you'd identify the stakeholders of a class you're reviewing.**
+   A reason for a specific stakeholder. Identify stakeholders by asking who would request changes to the behavior: the product manager (business logic), the designer (UI), or the backend team (network schema).
+2. **A teammate defends a 2,500-line ViewModel as "cohesive — it's all checkout logic." How do you evaluate whether that's true?**
+   Check the git history and change requests. If the ViewModel is modified by different teams for UI tweaks, payment retry logic, and analytics tracking, it lacks cohesion by stakeholder and violates SRP despite being conceptually about "checkout."
+3. **When is duplicating a data class the *right* call, and what future change makes the duplication pay for itself?**
+   Duplicating network DTOs into UI models is correct. It pays off when the backend schema changes or the UI needs new formatting fields; you can modify one layer without breaking the other, isolating the stakeholders.
+4. **How does SRP at the Gradle-module level affect build times, code ownership, and API review?**
+   Splitting modules by stakeholder (e.g., `ui`, `data`, `domain`) improves build parallelism (fewer rebuilds), enforces strict ownership (teams own specific modules), and uses compiler boundaries to prevent tight coupling across layers.
+5. **What symptoms in a git log (not the code itself) tell you a file violates SRP?**
+   A file violating SRP will show frequent commits from different teams, high churn rates, merge conflicts, and commit messages spanning multiple unrelated domains (e.g., "Fix UI padding and update network timeout").
+6. **Where is the line between SRP and micro-fragmentation, and which heuristic do you use to stop splitting?**
+   The line is drawn at stakeholder boundaries. Stop splitting when the code serves only one stakeholder and changes together. Splitting a single cohesive behavior into multiple files reduces readability without improving maintainability.
+
 ## Further Reading
 
 - [`coupling-vs-cohesion.md`](../engineering-fundamentals/coupling-vs-cohesion.md) — the mechanics underneath this principle.

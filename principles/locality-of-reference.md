@@ -511,6 +511,29 @@ Querying user names doesn't pull avatar bytes through the SQLite page cache. Com
 
 ---
 
+## Answer Key
+
+1. **Explain why summing an `IntArray` is often 10x faster than summing a `List<Int>` of the same size on Android.**
+   `IntArray` stores primitive ints contiguously in memory, allowing the CPU cache to fetch multiple values per read. `List<Int>` is an array of references to boxed `Integer` objects scattered across the heap, causing cache misses and pointer-chasing overhead on every iteration.
+2. **What's the difference between temporal and spatial locality? Give a code example of each.**
+   Temporal locality means accessing the same item again soon (e.g., a loop counter). Spatial locality means accessing nearby items soon (e.g., iterating sequentially through an array).
+3. **Why does `data class Pixel(val r: Int, val g: Int, val b: Int)` in an `Array<Pixel>` have worse cache behavior than three `IntArray` columns?**
+   `Array<Pixel>` scatters `Pixel` objects in the heap and includes object header overhead, requiring pointer chasing. Three `IntArray`s (SoA) lay out the R, G, and B components contiguously, maximizing cache line utilization during sequential processing.
+4. **A Compose `var state by remember { mutableStateOf(0) }` lives at the top of an app. The state changes on every keystroke from a deeply-nested TextField. What happens, and how do you fix it?**
+   Every keystroke triggers recomposition of the entire app hierarchy starting from the top. To fix it, hoist the state down to the closest common ancestor of its readers, or keep it inside the `TextField` composable if it's purely local UI state.
+5. **What's the rationale for package-by-feature over package-by-layer in a large Android codebase?**
+   Package-by-feature co-locates related UI, data, and domain logic, reducing cognitive overhead (jumping between folders) and aligning the module structure with how business requirements actually change, unlike package-by-layer which scatters feature logic.
+6. **When does the Common Closure Principle conflict with the Single Responsibility Principle? How do you decide?**
+   The Common Closure Principle groups things that change together, while the Single Responsibility Principle separates things that change for different reasons. You balance them by grouping code by business stakeholder (feature), but separating distinct technical concerns within that boundary.
+7. **Your `:core:` module has 18 sub-packages and depends on three feature modules. What's wrong, and how do you untangle it?**
+   A `:core:` module depending on features is a circular dependency violation, and 18 sub-packages indicates a "god module" lacking cohesion. It should be split into smaller, focused modules (e.g., `:core:network`, `:core:design`) based on distinct technical axes to prevent widespread rebuilds.
+8. **SQLite/Room stores rows on 4KB pages. How does row width affect query locality? Why might splitting a table into "hot fields" and "cold blob" tables help?**
+   Queries scan 4KB pages. If a large blob is in the same table, fewer rows fit on a page, causing frequent cache misses and slow scans. Splitting the blob into a separate table allows the hot fields to fit densely on fewer pages for faster querying.
+9. **A Gradle build with 100 small modules is slower than the same code in 10 large modules. What's the failure mode, and where's the sweet spot?**
+   The failure mode is Gradle configuration overhead, which grows with module count and can dominate build times. The sweet spot balances build caching/parallelism benefits against configuration cost, typically avoiding micro-modules that contain only a few classes.
+10. **You profile an Android app and see L1 cache misses dominating CPU time in a render loop. What questions do you ask about data layout?**
+    Is the data laid out contiguously? Are we iterating over an array of object references instead of primitives? Can we switch from an Array of Structs (AoS) to a Struct of Arrays (SoA) for this hot loop?
+
 ## Further Reading
 
 In this repository:

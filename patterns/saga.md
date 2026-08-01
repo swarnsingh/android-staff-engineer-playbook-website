@@ -150,6 +150,14 @@ Users expect a checkout flow to be synchronous (blocking the screen with a spinn
 4.  **Idempotency:** Why is it absolutely critical that the API endpoints used in a Compensating Action (e.g., `POST /api/refund`) are idempotent? What happens if the network drops during the refund response?
 5.  **BFF Synergy:** How does the Backend-for-Mobile (BFF) pattern completely eliminate the need for Saga Orchestration on the Android client?
 
+## Answer Key
+
+1. **Choreography vs Orchestration:** Choreography on mobile creates implicit dependencies that are hard to debug and visualize. If the app is killed, choreographing events via EventBus is lost, whereas WorkManager orchestration persists the DAG.
+2. **ACID Properties:** Isolation is sacrificed. Compensating actions simulate Atomicity by rolling back, but intermediate states are visible to other transactions (hence lack of isolation).
+3. **WorkManager Cancellation:** WorkManager does NOT automatically execute compensating actions on cancellation. You must intercept the cancellation (or observe it) and manually enqueue the compensating WorkRequests for the completed steps.
+4. **Idempotency:** If the network drops during the refund response, WorkManager will retry the refund. The backend must be idempotent so it doesn't refund the user twice for the same transaction.
+5. **BFF Synergy:** The BFF acts as the orchestrator. The mobile client sends a single "StartCheckout" request to the BFF, and the BFF reliably executes the Saga across microservices without relying on the phone's flaky network.
+
 ## Further Reading
 
 - [`command.md`](command.md) — The foundation of WorkManager; a Saga is just a chained sequence of Commands.

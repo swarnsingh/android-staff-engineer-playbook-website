@@ -137,6 +137,29 @@ When reviewing PRs or planning the roadmap, a Staff engineer asks:
 9.  Explain the psychological phenomenon where developers are afraid to delete code they didn't write. How do you fix that culture?
 10. If management pushes back against spending a 2-week sprint "just deleting old code" without shipping new features, how do you justify the ROI of the cleanup?
 
+## Answer Key
+
+1. **Why is "commented-out" code considered a major anti-pattern in modern software development?**
+   It clutters the codebase, confuses developers about its relevance, and provides no value since version control systems like Git already maintain a complete history of all changes.
+2. **Explain the relationship between Feature Flags (Remote Config) and Dead Code. How do you manage the lifecycle of a flag?**
+   Feature flags create multiple execution paths; once a flag is fully rolled out, the fallback path becomes dead code. The lifecycle must be managed by enforcing strict cleanup policies (e.g., Jira tickets) to remove the flag and legacy paths shortly after a 100% rollout.
+3. **How does the principle of "Prefer Deletion" impact Android APK size and user acquisition?**
+   Deleting unused code and third-party dependencies reduces the APK size, which is critical for user acquisition in emerging markets where users have limited bandwidth or device storage.
+4. **Describe a scenario where deleting a feature is a better business decision than fixing its bugs.**
+   When telemetry shows a feature has near-zero usage but costs significant engineering effort to maintain or update for new OS versions, the ROI of deleting it far outweighs the cost of fixing it.
+5. **Why is a comprehensive automated testing suite a prerequisite for aggressive code deletion?**
+   A robust test suite gives engineers confidence that deleting code won't accidentally break obscure, interconnected parts of the application, mitigating the fear of regressions.
+6. **If you find a 1,000-line class named `StringUtils` that is only used in one place, what is the Staff-level approach to handling it?**
+   Delete the class, extract only the specific utility function being used, and move it to a localized file where it's needed.
+7. **What is YAGNI, and how does it prevent the accumulation of dead code?**
+   YAGNI ("You Aren't Gonna Need It") is the principle of not adding functionality until it is absolutely necessary. It prevents developers from hoarding speculative code that bloats the project.
+8. **How does removing unused third-party dependencies improve the security posture of an Android application?**
+   It reduces the attack surface area. Vulnerabilities in unmaintained or compromised third-party libraries cannot be exploited if the library is not included in the app.
+9. **Explain the psychological phenomenon where developers are afraid to delete code they didn't write. How do you fix that culture?**
+   Developers fear causing regressions in systems they don't fully understand. This is fixed by building a safety net (comprehensive testing) and actively celebrating PRs with negative lines of code.
+10. **If management pushes back against spending a 2-week sprint "just deleting old code" without shipping new features, how do you justify the ROI of the cleanup?**
+    The ROI is justified by measuring and explaining the reduction in developer friction: faster build times, quicker PR reviews, smaller APK sizes, and reduced future maintenance costs, all of which accelerate subsequent feature development.
+
 ## Further Reading
 
 - [`simplicity.md`](simplicity.md) — Deletion is the ultimate mechanism for achieving simplicity.

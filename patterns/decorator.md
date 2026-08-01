@@ -316,6 +316,19 @@ The Decorator pattern requires implementing the entire interface. If your `UserR
 4.  **Testing Strategy:** You have a `ProductRepository` wrapped by a `CacheDecorator` and a `MetricsDecorator`. How do you structure your unit tests? Do you test the fully composed object, or test each decorator in isolation using mocks for the wrapped interface?
 5.  **Performance:** Every layer of decoration adds a method call to the stack frame. In a hot loop (like a RecyclerView binding or Compose recomposition), at what point does this overhead become measurable? How can Kotlin inline functions mitigate this?
 
+## Answer Key
+
+1. **OkHttp Internals:**
+   Application Interceptors wrap the entire request before anything happens (great for app-level logic like Auth). Network Interceptors wrap the request right before it goes over the wire, after OkHttp adds its own headers, and are triggered on every redirect/retry (great for network profiling).
+2. **Compose Modifiers:**
+   The runtime wraps the node from the outside in. The outermost 10dp padding is applied, then the clickable area is established (meaning the outer padding is NOT clickable), then the inner 10dp padding is applied (meaning the clickable area includes this inner padding), and finally the core content is drawn.
+3. **Kotlin Delegation:**
+   The Kotlin compiler generates forwarding methods for every method in the interface, delegating them to the provided instance. A limitation is that if the base class calls one of its own methods internally, it won't invoke your overridden version in the decorator because the base class doesn't know about the wrapper.
+4. **Testing Strategy:**
+   You should test each decorator in isolation. Mock the wrapped `ProductRepository` interface to assert the decorator's specific behavior (e.g., that it caches or logs correctly) without running the core logic or other decorators.
+5. **Performance:**
+   Overhead becomes measurable in deep UI hierarchies or very tight loops. Kotlin's `inline` functions mitigate this by eliminating the function call overhead and lambda allocations entirely, pasting the decorator's logic directly into the call site at compile time.
+
 ## Further Reading
 
 - [`../backend-for-mobile/api-design-for-mobile.md`](../backend-for-mobile/api-design-for-mobile.md) — How OkHttp interceptors mutate the API payload before it hits Retrofit.

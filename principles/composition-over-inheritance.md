@@ -171,6 +171,29 @@ When reviewing code, a Staff engineer heavily scrutinizes the `open` keyword:
 9.  Why does deep class inheritance make unit testing incredibly difficult?
 10. Describe the impact on Android APK size and method count when choosing Composition over a massive `BaseActivity` hierarchy.
 
+## Answer Key
+
+1. **What is the "Fragile Base Class" problem, and how does Composition solve it?**
+   It occurs when a change to a base class unintentionally breaks its subclasses due to tight coupling. Composition solves this by allowing objects to assemble distinct, independent components rather than inheriting behavior, isolating changes.
+2. **Why does Kotlin make classes `final` by default, whereas Java makes them `open` by default?**
+   Kotlin enforces "design and document for inheritance or else prohibit it." Making classes `final` by default prevents accidental and dangerous inheritance hierarchies, encouraging composition instead.
+3. **Explain how Jetpack Compose utilizes Composition over Inheritance compared to the traditional Android XML View system.**
+   Instead of inheriting from `View` or `Button` to create custom behaviors, Compose uses independent `@Composable` functions that call other functions (e.g., putting a `Text` inside a `Row`), building UI by assembling pieces.
+4. **If you need to share a generic "Error Handling" algorithm across 10 ViewModels, how do you do it without creating a `BaseViewModel`?**
+   Create a standalone `ErrorHandler` class and inject it into the ViewModels using dependency injection, allowing them to delegate error handling without being tightly bound to a base class.
+5. **What is the difference between Subtyping (Interfaces) and Implementation Inheritance (Classes)?**
+   Subtyping (Interfaces) defines a contract for behavior without enforcing how it is implemented, ensuring loose coupling. Implementation Inheritance shares both state and logic, creating tight coupling to the parent class.
+6. **How does Kotlin's `by` keyword (Interface Delegation) make the Composition pattern easier to implement?**
+   It automatically generates the boilerplate code required to forward interface method calls to an injected delegate object, making composition as concise to write as inheritance.
+7. **Give an example of a situation where Class Inheritance is actually the *correct* architectural choice.**
+   When you have a strict, true taxonomic "is-a" relationship where all subclasses share identical core logic and polymorphism is required, such as a fundamental UI framework widget where behavior must be strictly constrained.
+8. **How does the "Composition Over Inheritance" principle relate to the Single Responsibility Principle (SOLID)?**
+   Composition forces you to break large base classes into smaller, focused components (e.g., a logger, a network client), which naturally aligns with giving each class a single responsibility.
+9. **Why does deep class inheritance make unit testing incredibly difficult?**
+   Because testing a subclass implicitly requires testing and mocking all the hidden state and logic of every parent class in its hierarchy, which is often impossible or extremely brittle.
+10. **Describe the impact on Android APK size and method count when choosing Composition over a massive `BaseActivity` hierarchy.**
+    Composition avoids the bloat of "God Classes" and dead code inherited by subclasses that don't need it, ultimately keeping the method count lower and reducing APK size.
+
 ## Further Reading
 
 - [`simplicity.md`](simplicity.md) — Composition creates many simple classes; Inheritance creates a few infinitely complex ones.

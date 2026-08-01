@@ -475,6 +475,29 @@ Default-argument parameters can be added without breaking existing callers. Comp
 
 ---
 
+## Answer Key
+
+1. **Distinguish a one-way decision from a two-way decision with three examples from a typical Android codebase.**
+   One-way (hard to reverse): Defining a public API contract, selecting a core database schema (e.g., Room), and adopting a deeply integrated vendor SDK. Two-way (easy to reverse): Choosing an internal architecture pattern for a single screen, naming variables, and setting default timeout values.
+2. **A team is choosing between Stripe and Braintree for a new app. What questions about reversibility should drive the choice?**
+   How hard would it be to swap providers later? Can we hide the provider behind a simple internal interface? What is the contractual lock-in and how much does their SDK bleed into our domain logic?
+3. **Explain why introducing a `PaymentGateway` interface on day one might be worse than introducing it when the second gateway arrives.**
+   Premature abstraction often guesses wrong about what the shared interface needs to be. It adds unnecessary complexity (YAGNI) until a second implementation actually proves the need and shape of the abstraction.
+4. **A feature flag has been in production for 14 months. Both paths are still in the code. What's the cost of leaving it, and how do you decide when to remove it?**
+   The cost includes cognitive overload, increased testing surface area, and maintaining dead code. It should be removed immediately once the feature is fully rolled out and stabilized, using tech debt tracking with strict deadlines.
+5. **Why are nullable fields and default-argument parameters reversibility tools?**
+   They allow you to add new parameters or fields without breaking existing callers or older clients, making API evolution an additive, two-way door.
+6. **A schema migration drops a column. Walk through how you'd convert this to a reversible two-phase change.**
+   Phase 1: Mark the column as deprecated, stop writing to it, and deploy. Phase 2: After sufficient soak time to ensure no clients or processes still rely on it, execute the migration to actually drop the column.
+7. **What's the operational cost of a 100-flag system at a mid-sized mobile org? How do you keep it manageable?**
+   The cost is combinatorial testing explosions, degraded app startup time, and massive code complexity. Manage it by treating flags as temporary infrastructure, enforcing expiration dates, and tracking them in sprints.
+8. **Why is "make everything configurable" usually the wrong response to a feature being "too rigid"?**
+   It creates an untestable, hyper-complex system where no one understands the combinatorial states. Instead, configure only what is proven to need changing and rely on sensible defaults.
+9. **A risky redesign is being shipped behind a flag. Define three rollout milestones and three abort triggers.**
+   Milestones: 1% internal/beta rollout, 10% canary rollout, 100% full rollout. Abort triggers: A spike in crash rates, a significant drop in primary conversion metrics, or increased latency beyond a defined threshold.
+10. **The Stripe SDK has a new "great" feature that's tightly coupled to their APIs. The product team wants to use it. What's the conversation about reversibility?**
+    Discuss the cost of vendor lock-in. Ask if the business value of the feature justifies the one-way door of coupling the codebase deeply to Stripe's proprietary API, and explore if it can be abstracted or isolated.
+
 ## Further Reading
 
 In this repository:

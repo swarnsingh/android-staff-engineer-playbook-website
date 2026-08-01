@@ -217,6 +217,19 @@ When a Builder has 50 methods, it often means the resulting object violates the 
 4.  **DslMarker:** You are writing an HTML DSL (`html { body { div { } } }`). Without `@DslMarker`, a developer can legally call a `body { }` block inside a `div { }` block. How does the `@DslMarker` annotation prevent this at compile time?
 5.  **Data Classes:** The `copy()` method of a Kotlin data class is often used as a lightweight builder. What is a "shallow copy" vs a "deep copy", and which one does the generated `copy()` method perform? What risk does this pose if your data class contains a `MutableList`?
 
+## Answer Key
+
+1. **Immutability: Why does Retrofit use reflection/proxies instead of exposing a Builder to the developer?**
+   Retrofit uses dynamic proxies to construct HTTP requests declaratively via interfaces, abstracting away the boilerplate of manually building OkHttp `Request` objects. This allows developers to define the API contract cleanly, while Retrofit handles the repetitive translation internally.
+2. **Kotlin Features: How does the Kotlin compiler handle named arguments and default parameters at the JVM bytecode level?**
+   It generates a synthetic constructor with a bitmask parameter. The bitmask tracks which arguments were provided. Inside the constructor, it uses the bitmask to inject default values for missing arguments before calling the actual constructor, avoiding telescoping constructors.
+3. **DSL Mechanics: Explain the concept of a "Lambda with Receiver" (`T.() -> Unit`).**
+   A lambda with receiver injects an instance of type `T` into the lambda scope as `this`. It allows you to call methods and access properties of `T` directly without prefixing them, making the code read like a domain-specific configuration block.
+4. **DslMarker: How does the `@DslMarker` annotation prevent scope pollution at compile time?**
+   When multiple nested receivers share the same `@DslMarker` annotation, the Kotlin compiler restricts implicit `this` resolution to the nearest receiver. Attempting to call an outer receiver's method from inside an inner receiver without explicit qualification results in a compile-time error.
+5. **Data Classes: What is a "shallow copy" vs a "deep copy", and which one does the generated `copy()` method perform?**
+   A shallow copy duplicates the object's references, while a deep copy duplicates the references and the objects they point to. Kotlin's `copy()` performs a shallow copy. If a data class contains a `MutableList`, both the original and copied object will point to the same list, risking unintended mutations.
+
 ## Further Reading
 
 - [`../android/compose/compose-runtime.md`](../android/compose/compose-runtime.md) — How Jetpack Compose uses DSLs to build the UI Slot Table.

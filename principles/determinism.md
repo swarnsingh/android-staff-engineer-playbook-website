@@ -163,6 +163,29 @@ When reviewing code or investigating flaky tests, a Staff engineer hunts for non
 9.  Explain the concept of "Memoization" and how it relies on determinism.
 10. Give an example of how Global State (Singletons) introduces non-determinism into a test suite.
 
+## Answer Key
+
+1. **What is a "Pure Function", and why is it desirable in software architecture?**
+   A pure function always produces the same output for the same input and has no side effects. It is highly desirable because it is completely predictable, easily testable, and thread-safe.
+2. **How does a hidden dependency on `System.currentTimeMillis()` destroy the testability of a function? How do you fix it?**
+   It makes the function's output depend on the exact moment it runs, causing tests to pass or fail randomly based on time. Fix it by injecting a `Clock` interface so you can provide a mocked, frozen time during tests.
+3. **Explain why Race Conditions are considered non-deterministic.**
+   Because the outcome depends entirely on the unpredictable scheduling of threads by the operating system. If Thread A and Thread B access shared state simultaneously, the final result will be randomly different across executions.
+4. **Why does Jetpack Compose require `@Composable` functions to be deterministic (idempotent and side-effect free)?**
+   Compose can recompose the UI repeatedly and in any order. If a function isn't deterministic, it will cause unpredictable UI glitches, flickering, or unintended state mutations every time recomposition happens.
+5. **What is a "Flaky Test", and what are the most common causes of them in Android?**
+   A flaky test randomly passes or fails without code changes. In Android, they are usually caused by timing/threading issues, reliance on real network calls, or hidden shared state that isn't cleared between test runs.
+6. **How does passing a Random Number Generator as an argument to a function (Dependency Injection) make the function more deterministic?**
+   It removes the hidden state. By injecting the generator, you can pass a seeded, predictable random generator in your unit tests, ensuring the "random" output is always identical and verifiable during the test.
+7. **Why is relying on the iteration order of a standard `HashMap` dangerous?**
+   A standard `HashMap` does not guarantee any specific iteration order, and it can change unexpectedly. Relying on it introduces non-determinism; use `LinkedHashMap` or sort the keys if order matters.
+8. **If an API response can fail due to a network timeout, how do you architect the system so the core business logic remains deterministic?**
+   Isolate the network call at the boundary of the system and map it to a deterministic result type (e.g., `Result.Success` or `Result.Failure`). The core logic then deterministically processes that result type without knowing about the network.
+9. **Explain the concept of "Memoization" and how it relies on determinism.**
+   Memoization is an optimization technique where you cache the result of an expensive function call based on its inputs. It only works if the function is deterministic (pure) because the output must be guaranteed to remain identical for those inputs.
+10. **Give an example of how Global State (Singletons) introduces non-determinism into a test suite.**
+    If Test A modifies a `UserManager.currentUser` singleton and forgets to reset it, Test B (which expects no user to be logged in) will randomly fail depending on whether Test A ran before it.
+
 ## Further Reading
 
 - [`immutability.md`](../engineering-fundamentals/immutability.md) — Immutability removes shared mutable state, one of the primary causes of non-determinism.

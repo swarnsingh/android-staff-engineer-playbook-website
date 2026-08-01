@@ -188,6 +188,19 @@ Writing a custom `RecyclerView.Adapter` and calling `notifyDataSetChanged()` whe
 4.  **Memory Leaks:** If you pass an `Activity` reference into a `RecyclerView.Adapter` to handle click events, you risk a memory leak if the Adapter outlives the Activity. How do you safely route click events from an Adapter back to the UI controller without leaking context?
 5.  **Multiplatform:** You are building a Kotlin Multiplatform app. You have a `commonMain` interface `PlatformLogger`. You write an `IosLoggerAdapter` and an `AndroidLoggerAdapter`. Where and how are these adapters injected into the shared code graph?
 
+## Answer Key
+
+1. **DiffUtil Mechanics:**
+   `areItemsTheSame` checks identity (e.g., comparing unique IDs) to track if an item moved or was added/removed. `areContentsTheSame` checks equality (e.g., comparing data fields) to determine if an existing item needs a visual update. If implemented incorrectly, the RecyclerView may redraw items unnecessarily or fail to show updated data.
+2. **Compose Under the Hood:**
+   `AndroidView` manages the View lifecycle by attaching it to a `View` host under the hood when the composable enters the composition, updating it during recomposition via the `update` block, and detaching/destroying it when it leaves the composition.
+3. **Ports & Adapters (Hexagonal):**
+   A Driving adapter (e.g., UI) initiates interaction and calls *into* the core domain. A Driven adapter (e.g., database) implements an interface defined by the domain and is called *by* the core domain to perform side effects.
+4. **Memory Leaks:**
+   You should pass a simple lambda (e.g., `(User) -> Unit`) into the Adapter instead of an Activity reference. The Activity implements the lambda and handles the click, keeping the UI logic decoupled from the Adapter.
+5. **Multiplatform:**
+   Adapters are instantiated in the platform-specific modules (e.g., `iosMain`, `androidMain`) and injected into the `commonMain` code via dependency injection or the `expect`/`actual` mechanism to fulfill the shared interface.
+
 ## Further Reading
 
 - [`../android/architecture/modularization-strategies.md`](../android/architecture/modularization-strategies.md) — How architectural adapters enable swapping modules.

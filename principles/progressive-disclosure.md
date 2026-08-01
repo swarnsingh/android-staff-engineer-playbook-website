@@ -639,6 +639,29 @@ A team can start with simple entities and grow into FTS and migrations without r
 
 ---
 
+## Answer Key
+
+1. **Take the OkHttp API and describe its disclosure layers. Where does a beginner enter, and where does a power user reach?**
+   A beginner enters with `OkHttpClient()` and a simple `Request`. A power user reaches into `OkHttpClient.Builder()` to add custom interceptors, connection pools, custom socket factories, and cache controls.
+2. **Compose has a `Modifier` chain instead of expanding `Text`'s parameter list. Why is this progressive disclosure rather than just compositional design?**
+   It's progressive disclosure because the core function signature (`Text()`) remains simple. Advanced styling and behavior are progressively layered via chained modifier methods without cluttering the primary component API.
+3. **A function has 18 parameters, all defaulted. Is this good progressive disclosure or a hidden code smell? What questions would you ask?**
+   It's a hidden code smell, often termed "false simplicity." Ask: Do these defaults hide complex or dangerous behavior? Is the function doing too many unrelated things? Can these options be grouped into a configuration block or builder?
+4. **You're designing a new logging library. Write the simple invocation, the slightly-customized invocation, and the deeply-customized invocation. Are they additive?**
+   Simple: `log("message")`. Slightly customized: `log("message", level = ERROR)`. Deeply customized: `log { message = "msg"; level = ERROR; tags = listOf("db"); formatter = JsonFormatter() }`. Yes, they are additive.
+5. **Stripe's API exposes hundreds of optional parameters per endpoint. How do they keep the simple cases simple?**
+   They provide a base method with a few required parameters for the most common use case. Advanced configuration is exposed via optional named arguments or configuration objects that users only explore when specific needs arise.
+6. **A library has a default that's wrong for 60% of users. What's the cost of changing the default?**
+   The cost is breaking backward compatibility. Users who implicitly relied on the old default behavior will experience unexpected failures or changes in their app when the library is updated.
+7. **Why is "false simplicity" (simple API hiding complex behavior) often worse than honest complexity?**
+   False simplicity hides complex, surprising side effects (like silent retries) behind a simple API. It's worse than honest complexity because users cannot predict the behavior, leading to hard-to-debug issues in production.
+8. **Kotlin DSLs compose nicely for configuration; when do they become a discoverability problem?**
+   They become a problem when they are deeply nested, making it hard to track context, or when they pollute the autocomplete namespace, making discoverability of the actual options difficult without reading external documentation.
+9. **Your library exposes 20 public types. Most users only need 3. How do you signal the disclosure layers?**
+   Use explicit namespaces (e.g., `client.advanced`), group related advanced options in specific builder blocks, and default internal types to `internal` visibility, promoting them to `public` only when explicitly required by power users.
+10. **Progressive disclosure assumes the simple-case user can grow into the advanced user. What pattern makes this growth path smooth?**
+    The pattern is symmetry between layers. Advanced options should be additive extensions of the simple API (e.g., via a builder or DSL block) so users don't have to discard their existing code or learn a completely new paradigm to add a single customization.
+
 ## Further Reading
 
 In this repository:

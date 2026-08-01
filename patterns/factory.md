@@ -167,6 +167,19 @@ If you call `ConfigManager.create()` on the Main Thread, the app crashes with an
 4.  **Testing:** You have a class that needs to create 10 `NetworkRequest` objects in a `while` loop based on user input. Should you inject the 10 objects (DI), or inject a `NetworkRequestFactory`? How does this choice impact your ability to write unit tests for the loop?
 5.  **Companion Objects:** Kotlin does not have `static` methods. Instead, we use `companion object { fun create(): MyClass }`. Is a companion object a Simple Factory? What are the memory and inheritance tradeoffs of using `companion object` compared to a dedicated `MyClassFactory` interface?
 
+## Answer Key
+
+1. **DI vs Factory:**
+   Dagger/Hilt handles compile-time dependencies. A custom Factory is required when object instantiation depends on runtime arguments (like navigation IDs or user input) that DI frameworks cannot know about during compilation.
+2. **FragmentFactory:**
+   `FragmentFactory` hooks into the FragmentManager's instantiation process. Instead of reflection on a no-arg constructor, it calls `instantiate(classLoader, className)`, allowing you to provide a custom factory that passes constructor arguments (like Repositories) into your Fragments.
+3. **AssistedInject Internals:**
+   The generated Factory class receives the compile-time dependencies in its constructor via standard injection. Its `create()` method takes the runtime arguments (the `@Assisted` parameters) and combines both to instantiate the target ViewModel.
+4. **Testing:**
+   You should inject a `NetworkRequestFactory`. If you inject 10 objects directly, the loop is hard-coded to a limit. Injecting a Factory allows the loop to instantiate an arbitrary number of requests dynamically, and during testing, you can mock the Factory to return mock requests.
+5. **Companion Objects:**
+   A `companion object` can function as a Simple Factory. However, unlike a dedicated Factory interface, it cannot be easily mocked or substituted via polymorphism for testing, and it couples the instantiation logic directly to the class definition.
+
 ## Further Reading
 
 - [`../android/data-and-di/dependency-injection.md`](../android/data-and-di/dependency-injection.md) — How DI frameworks act as the ultimate application-wide factory.

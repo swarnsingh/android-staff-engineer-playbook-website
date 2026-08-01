@@ -257,6 +257,14 @@ viewModel.locationUpdates.collect { location ->
 4.  **SharedFlow Configuration:** You create a `MutableSharedFlow<Event>(replay = 1, extraBufferCapacity = 10, onBufferOverflow = BufferOverflow.DROP_OLDEST)`. Explain exactly what happens to a new observer that subscribes to this flow 5 seconds after 20 events were emitted.
 5.  **Multiplatform Context:** You are moving an Android ViewModel to KMP's `commonMain`. The iOS team wants to observe your `StateFlow` from Swift. What bridging library or pattern (e.g., SKIE) is required to translate Kotlin's `suspend` collection into something Swift's Combine or AsyncSequence can understand?
 
+## Answer Key
+
+1. **StateFlow vs LiveData:** `StateFlow` enforces an initial value because state must always exist. This forces developers to explicitly define the initial UI state (like `Loading`), removing nullability and race conditions on startup.
+2. **Backpressure:** `Flow` handles backpressure natively via coroutine suspension. If the collector is slow, the emitter suspends until the collector is ready, preventing OutOfMemory errors.
+3. **Lifecycle Semantics:** `launchWhenStarted` simply suspends the coroutine but keeps it alive in memory. `repeatOnLifecycle` completely cancels the coroutine and restarts it from scratch, freeing resources when the UI is hidden.
+4. **SharedFlow Configuration:** The new observer receives only the very last event (because `replay = 1`), and ignores the previous 19. If the buffer was full, the oldest events were already dropped.
+5. **Multiplatform Context:** You use libraries like SKIE or KMP-NativeCoroutines, which automatically generate Swift wrappers to convert Kotlin `StateFlow` and `SharedFlow` into Swift's `ObservableObject` or `AsyncSequence`.
+
 ## Further Reading
 
 - [`../android/architecture/state-management.md`](../android/architecture/state-management.md) — Deep dive into modeling UI state with Sealed Classes and StateFlow.

@@ -144,6 +144,29 @@ When reviewing a new feature, a Staff engineer's first instinct is to ask: "How 
 9.  Describe a scenario where a silent failure (swallowing an exception without logging it) would be disastrous for the engineering team.
 10. If an API call fails, what are three different fallback UI strategies you could employ?
 
+## Answer Key
+
+1. **What is "Graceful Degradation"? Provide an example from a popular app you use.**
+   It is the ability of a system to continue operating, albeit with reduced functionality, when a component fails. For example, Netflix showing a cached list of downloaded shows when the device loses network connectivity.
+2. **Why is the "Happy Path" considered dangerous in mobile engineering?**
+   Because mobile environments are inherently unstable (network drops, OS background kills). Designing only for the happy path guarantees crashes and data corruption when inevitable failures occur.
+3. **Explain how the Offline-First architecture is fundamentally an exercise in Designing for Failure.**
+   It assumes the network is always down. By reading from a local database and queuing network writes in the background, it ensures the app never fails or blocks the user due to connectivity issues.
+4. **What is a "Retry Storm" (Thundering Herd), and how do you prevent it?**
+   A retry storm happens when a server comes back online and millions of clients simultaneously retry failed requests, crashing the server again. It is prevented by using Exponential Backoff with Jitter (randomized delays).
+5. **Why is catching generic `Exception`s (`catch (e: Exception)`) considered bad practice when designing for failure?**
+   It masks critical, unrecoverable programmer errors (like `NullPointerException` or `OutOfMemoryError`) that should crash the app during testing, preventing them from being discovered and fixed.
+6. **How do Android libraries like `WorkManager` embody the "Design for Failure" philosophy?**
+   They inherently expect tasks to fail due to device conditions (doze mode, network loss) and automatically handle retries, constraints, and persistence without requiring manual developer intervention.
+7. **If you are building a banking app, what are the tradeoffs between showing stale cached data vs showing a "Network Error" screen?**
+   Stale data provides a better UX but is highly dangerous if a user thinks their balance is higher than it is. A network error screen degrades UX but strictly protects the user from financial mistakes.
+8. **How does the principle of "Blast Radius Containment" apply to modularizing an Android application?**
+   By isolating features into separate modules with strict boundaries, a crash or unhandled exception in one module (like a side-feature) is less likely to corrupt state or crash the core functionality of the app.
+9. **Describe a scenario where a silent failure (swallowing an exception without logging it) would be disastrous for the engineering team.**
+   If a checkout API call fails silently and the app shows no error, users can't buy items, and the engineering team sees zero crash reports, leaving them completely unaware of massive revenue loss.
+10. **If an API call fails, what are three different fallback UI strategies you could employ?**
+    1) Show a full-screen error with a retry button. 2) Show a non-blocking Snackbar/Toast while continuing to display cached data. 3) Degrade the specific UI component (e.g., an empty state for a widget) while the rest of the screen functions normally.
+
 ## Further Reading
 
 - [`circuit-breaker.md`](../patterns/circuit-breaker.md) and [`retry.md`](../patterns/retry.md) — The mechanical implementations of this philosophy.

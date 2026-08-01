@@ -426,6 +426,25 @@ Two questions the Platform lead now answers in seconds:
 
 ---
 
+## Answer Key
+
+1. **Walk through a complete `libs.versions.toml` upgrade from Kotlin 1.9.10 to 1.9.22. What can go wrong?**
+   Updating the version string in `libs.versions.toml` is easy, but it changes the compiler for all modules. Things that can go wrong: KSP/KAPT compatibility breakage, Compose Compiler version mismatch, transitive dependency conflicts, and subtle bytecode changes that invalidate caches.
+2. **Why date-version a BOM (`2024.06`) instead of SemVer-version it?**
+   A BOM represents a snapshot of compatible library versions at a point in time across many different artifacts. Since the underlying artifacts evolve independently, SemVer is misleading. Date versioning sets a clear expectation of cadence and age.
+3. **The `binary-compatibility-validator` fails CI for a PR. Walk through how you'd evaluate whether to bump MAJOR.**
+   Review the `.api` diff. If the change removes, renames, or modifies the signature of a `public` or `protected` member in a way that breaks existing consumers at compile or runtime, it requires a MAJOR bump. If it was accidental, revert the change.
+4. **A feature team forces a higher OkHttp version "for a security fix." How do you assess and respond?**
+   Audit the change: verify the security advisory, check for API breakages in the new version, and test the app. If valid, update the catalog version centrally so all modules benefit, and remove the feature team's `force()` to maintain a single source of truth.
+5. **Compose 1.5 → 1.6 breaks a consumer's snapshot tests. How do you decide what to do?**
+   Determine if the breakage is a genuine UI regression or just rendering engine tweaks (e.g., anti-aliasing changes). If it's expected rendering changes, coordinate a one-time mass update of golden images. If it's a regression, file a bug and block the upgrade.
+6. **SNAPSHOT vs release conventions — why are they enforced?**
+   Releases are immutable and guarantee reproducible builds. SNAPSHOTs are mutable, causing non-deterministic builds where CI might pass today and fail tomorrow without code changes. Enforcing release-only in production prevents shipping unstable artifacts.
+7. **A widely-used API needs to change. Walk through a 6-month deprecation plan.**
+   Month 1: Introduce the new API, mark the old one with `@Deprecated(level = WARNING)` providing a `ReplaceWith` snippet. Month 3: Elevate to `@Deprecated(level = ERROR)` to break builds and force migration. Month 6: Remove the old API completely and bump the MAJOR version.
+8. **Renovate opens 30 PRs/week. How do you keep up without spending all of Monday merging?**
+   Configure Renovate to auto-merge `PATCH` updates if CI passes. Group related updates (e.g., all AndroidX libraries) into single PRs. Require manual review only for `MINOR` and `MAJOR` updates.
+
 ## Further Reading
 
 - [`build-graph-scaling.md`](build-graph-scaling.md) — `libs.versions.toml` is the foundation.

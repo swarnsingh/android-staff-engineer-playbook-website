@@ -172,6 +172,36 @@ When reviewing PRs, a Staff engineer hunts for paradoxes:
 9.  Explain why a function signature like `fun calculate(data: Data): Int` is fundamentally safer than `fun calculate(data: Data, validateFirst: Boolean): Int`.
 10. Describe a scenario where enforcing strict typing (impossible states) makes parsing JSON payloads more difficult. How do you resolve this tension?
 
+## Answer Key
+
+1. **Explain the concept of "Primitive Obsession" and how Kotlin's `value classes` solve it.**
+   Primitive obsession is using basic types (like `String`) to represent complex domain concepts (like an `Email`). Value classes wrap the primitive in a strong type at compile-time, ensuring type safety without runtime memory overhead.
+2. **How does replacing multiple boolean flags with a `sealed interface` prevent invalid UI states?**
+   Multiple booleans (e.g., `isLoading`, `isError`) allow paradoxical states (both true simultaneously). A `sealed interface` forces the state to be exactly one exclusive variant, making paradoxical combinations structurally impossible.
+3. **Why is it better to validate data at the edge of the system (e.g., the network layer) rather than deep inside the business logic?**
+   Validating at the edge ("Parse, don't validate") guarantees that the core business logic only ever operates on structurally safe, strictly typed objects, eliminating the need for scattered, repetitive error-checking deep in the app.
+4. **If a backend API returns an object where `user_id` and `guest_id` can both be null, but one of them *must* be present, how do you model this defensively in Kotlin?**
+   Use a sealed class to represent the parsed domain model: `sealed class Identity { data class User(val id: String): Identity(); data class Guest(val id: String): Identity() }`. Parse the backend response into this strict type immediately.
+5. **What is the architectural difference between a compile-time error and a runtime error?**
+   A compile-time error is caught instantly by the IDE before the app runs, preventing bad code from shipping. A runtime error happens on a user's device, requiring crash reporting and potentially causing user churn.
+6. **How does Kotlin's null-safety (`?`) embody the "Make Invalid States Impossible" philosophy?**
+   It forces developers to explicitly handle the absence of a value. The compiler makes it physically impossible to invoke methods on a potentially null reference without checking it, preventing `NullPointerExceptions`.
+7. **Write a snippet of code demonstrating a constructor that prevents the creation of an invalid state (e.g., an `Email` class).**
+   ```kotlin
+   @JvmInline
+   value class Email private constructor(val value: String) {
+       companion object {
+           fun create(value: String): Email? = if (value.contains("@")) Email(value) else null
+       }
+   }
+   ```
+8. **Why might using a generic `Pair<Int, String>` be considered an anti-pattern compared to creating a specific `data class`?**
+   A `Pair` lacks semantic meaning. `Pair(200, "Success")` doesn't explain what the values represent, whereas `data class HttpResponse(val code: Int, val message: String)` perfectly documents the domain model.
+9. **Explain why a function signature like `fun calculate(data: Data): Int` is fundamentally safer than `fun calculate(data: Data, validateFirst: Boolean): Int`.**
+   The first signature implies `Data` is already valid by definition of its type. The second introduces a branching state where the function might operate on invalid data if `validateFirst` is false, increasing complexity and risk.
+10. **Describe a scenario where enforcing strict typing (impossible states) makes parsing JSON payloads more difficult. How do you resolve this tension?**
+    When a generic JSON API returns a flat object with many nullable fields representing different states. Resolve this by keeping a flexible DTO class for parsing the JSON, then immediately mapping it to a strict domain model using a factory function.
+
 ## Further Reading
 
 - [`../patterns/state.md`](../patterns/state.md) — The mechanical implementation of this principle for UI architectures.

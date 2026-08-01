@@ -363,6 +363,25 @@ The Director funds the team. You report on the dashboard quarterly. Repeat.
 
 ---
 
+## Answer Key
+
+1. **Why does "platform as a product" framing matter? What changes if you adopt it?**
+   It shifts the dynamic from enforcing compliance to earning adoption. You start writing release notes, measuring NPS, prioritizing UX/DevEx, and deprecating gracefully. It ensures the platform solves real problems rather than theoretical ones.
+2. **Walk through what's on the paved road today in your org. What's on the dirt road? Why?**
+   (Self-reflective) The paved road has standard tools (Compose, Hilt, Room) that receive free CI integration, telemetry, and upgrades. The dirt road has niche tools (RxJava, custom DI) that teams maintain themselves. The split exists to standardize 90% of development while allowing flexibility for the 10% that requires it.
+3. **Your CLI has 30% adoption after 3 months. How do you diagnose why?**
+   Gather feedback via surveys or Slack. Look at telemetry to see where the drop-off occurs. Common causes: poor onboarding docs, failure to run on certain OS setups (like Windows), or the CLI is perceived as slower or more confusing than manual processes.
+4. **A feature team wants to use Ktor instead of Retrofit. Walk through your decision process.**
+   Ask for an RFC detailing the motivation, costs, and integration requirements. Evaluate if Ktor solves a problem Retrofit cannot. Determine if the platform team has the bandwidth to support Ktor (security patches, interceptors). If yes, add it; if no, they can use it on the dirt road at their own risk.
+5. **The build cache hit rate fell from 90% to 60% in one week. What's your first hour of investigation?**
+   Open Develocity/build scans and compare a recent cache miss against a hit. Identify which tasks are missing the cache (often compilation or code generation). Check for recent plugin upgrades, non-deterministic inputs (like timestamps or absolute paths), or environment changes in CI.
+6. **How do you defend a platform headcount request to a skeptical VP?**
+   Translate engineering time saved into dollar amounts. E.g., "Cutting build times by 2 minutes saves 50 engineers 20 minutes a day. That's $X per year in recovered productivity, which pays for 2 platform engineers while improving release velocity."
+7. **What's the difference between an ivory-tower platform team and a well-functioning one?**
+   An ivory-tower team builds perfect abstractions nobody asked for and never ships product code. A well-functioning team embeds with feature teams, measures adoption, unblocks pain points, and builds tooling that actively makes feature development faster and safer.
+8. **A feature team's flaky tests are blocking every other team's merges. What do you do?**
+   Quarantine the tests immediately so the main branch stays unblocked. File a ticket assigned to the owning team with a strict SLA (e.g., 2 weeks). If not fixed by the deadline, delete the tests.
+
 ## Further Reading
 
 - [`build-graph-scaling.md`](build-graph-scaling.md) — the build is the platform's most-used surface.

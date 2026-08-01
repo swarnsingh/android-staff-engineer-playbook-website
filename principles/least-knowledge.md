@@ -471,6 +471,29 @@ Each parameter is the *only* thing the ViewModel knows about. Mocking is trivial
 
 ---
 
+## Answer Key
+
+1. **A test setup writes `sut.repository.database.connection.execute("SELECT ...")`. Why is this a Demeter violation, and what changes when the internal SQLite is swapped for Room?**
+   It violates Demeter because the test reaches deeply into the repository's internal dependencies. If SQLite is swapped for Room, the entire internal chain changes, breaking the test even if the repository's public behavior remains correct.
+2. **Explain the difference between "value chaining" and "behavior chaining" and why only the latter is problematic.**
+   Value chaining accesses stable properties of immutable data objects (e.g., `date.year`), which rarely change structurally. Behavior chaining calls methods on dynamic collaborators (e.g., `service.repo.get()`), creating fragile coupling to implementations that evolve frequently.
+3. **Why does `customer.charge(amount)` typically follow Demeter better than `customer.paymentMethod.charge(amount)`?**
+   `customer.charge(amount)` tells the customer what to do, hiding the implementation details of how the payment is processed. Reaching in to access `paymentMethod` couples the caller to the specific structure and collaborators of `Customer`.
+4. **Service Locator is sometimes called "Constructor Injection in disguise." What's the actual difference, and why does the disguise version usually violate Demeter?**
+   Constructor injection passes exactly the specific dependencies a class needs. Service Locator passes a massive container object (e.g., `AppContainer`), forcing the class to navigate the container to find its dependencies, violating Demeter by coupling the class to the container's structure.
+5. **In Jetpack Compose, when does state hoisting violate the Law of Demeter? Give a concrete example.**
+   It violates Demeter when state is hoisted too high, forcing an ancestor component to know about the intricate state details of a distant descendant. For example, a `MainScreen` holding detailed form validation state for a nested `CheckoutForm` component.
+6. **Why do strict Demeter advocates dislike `data class` patterns where the class is just exposed fields? When is that critique valid, when is it overblown?**
+   They dislike it because exposing all fields breaks encapsulation and encourages callers to act on the data rather than delegating behavior to the class. This critique is valid for core domain entities, but overblown for simple Data Transfer Objects (DTOs) designed solely to transport data.
+7. **You're refactoring a chain `order.customer.address.country.shippingRate`. List three different refactoring strategies and what each implies for the design.**
+   1) Add `order.shippingRate()` (Order mediates entirely). 2) Expose `order.customer` but add `customer.shippingRate()` (Customer mediates its address). 3) Pass a `ShippingCalculator` service into the method and let it compute the rate independently, removing the chain entirely.
+8. **How does the DDD concept of an aggregate root enforce Demeter at an architectural level?**
+   The aggregate root serves as the only entry point to a cluster of related objects. External callers are forbidden from reaching into the internal entities, forcing all interactions and state changes to be mediated strictly by the root's methods.
+9. **A test for `OrderService` mocks `OrderRepository`, which is then asked for its database, which is then asked for its driver. What's wrong with this mock setup?**
+   The test is mocking the internal implementation details (database and driver) of the `OrderRepository`. It should only mock the immediate collaborator (`OrderRepository`) and specify what its public methods return, ignoring its internals.
+10. **A code review proposes adding `getCustomerName()`, `getCustomerEmail()`, `getCustomerPhone()`, `getCustomerAddress()` to `Order` to avoid `order.customer.x` chains. When is this good, and when is it wrapper-explosion?**
+    It is wrapper-explosion because `Customer` is likely a stable value object or data structure in this context. Adding dozens of thin wrapper methods obscures the `Order` class's real domain behavior; it's better to expose `val customer: Customer` directly.
+
 ## Further Reading
 
 In this repository:

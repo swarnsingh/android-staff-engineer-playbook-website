@@ -145,6 +145,29 @@ When reviewing code, a Staff engineer's primary job is to act as a shield agains
 9.  Explain the difference between Essential Complexity (the problem itself is hard) and Accidental Complexity (the code makes it hard).
 10. How does writing unit tests force you to write simpler code?
 
+## Answer Key
+
+1. **Explain the concept of YAGNI ("You Aren't Gonna Need It") and give a practical Android example.**
+   YAGNI means not building features for hypothetical futures. Example: Hardcoding a single API base URL instead of building a complex dynamic environment switcher if the app currently only ever hits one production endpoint.
+2. **Why is "clever" code considered harmful in a team environment?**
+   "Clever" code (like chained functional one-liners) optimizes for the author's typing speed but maximizes cognitive load for the rest of the team, leading to slower reviews, harder onboarding, and an increased risk of bugs during maintenance.
+3. **Provide an example of a situation where duplicating code is architecturally superior to creating a shared abstraction.**
+   Duplicating a 3-line `try/catch` block for network requests in two ViewModels is superior to creating a complex `BaseNetworkViewModel` with generics that rigidly couples all ViewModels to a single inheritance hierarchy.
+4. **How does the principle of Simplicity relate to the speed at which a team can ship new features?**
+   Simple code enables faster shipping because it's easier to read, modify, and test. Complex code slows development down with merge conflicts, subtle regressions, and steep learning curves for new team members.
+5. **What is "Premature Optimization," and why does it usually violate the principle of Simplicity?**
+   Premature optimization is optimizing code for performance before it's a proven bottleneck (e.g., writing custom bitwise sorting instead of `List.sorted()`). It violates simplicity by introducing massive accidental complexity for negligible or theoretical gains.
+6. **How do you balance the need for a robust architecture (like Clean Architecture) with the need to keep the codebase simple?**
+   Apply robust architectures proportionally to the app's scale. Start simple, and introduce layers only when the pain of missing them (e.g., tight coupling causing testability issues) outweighs the overhead of adding them.
+7. **If a developer uses a complex Regular Expression to parse a simple string, how would you coach them in a code review?**
+   In review, I would suggest replacing the complex Regex with simple `String.split()` or `contains()` methods, explaining that while Regex is powerful, it acts as a "black box" that is difficult for other developers to read and debug.
+8. **Why is deleting unused code (even if it "might be useful later") a critical practice for maintaining simplicity?**
+   Unused code still carries a maintenance cost: it must be compiled, indexed by the IDE, refactored when APIs change, and reasoned about by developers who stumble across it. Deleting it eliminates this cognitive and technical overhead.
+9. **Explain the difference between Essential Complexity (the problem itself is hard) and Accidental Complexity (the code makes it hard).**
+   Essential complexity is inherent to the problem (e.g., syncing offline data with conflict resolution). Accidental complexity is introduced by the developer's solution (e.g., using five layers of RxJava to handle a simple REST call).
+10. **How does writing unit tests force you to write simpler code?**
+    Writing unit tests forces you to decouple components, inject dependencies, and break down massive functions. If code is hard to test, it's usually because it's too complex and doing too many things.
+
 ## Further Reading
 
 - [`prefer-deletion.md`](prefer-deletion.md) — The most direct way to achieve simplicity.

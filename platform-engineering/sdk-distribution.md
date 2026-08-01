@@ -522,6 +522,25 @@ Crash these thresholds and consumers will resist adoption. Use R8 effectively, a
 
 ---
 
+## Answer Key
+
+1. **Walk through every step from a `git push` of a tag to the consumer app pulling in the new AAR. Where can it go wrong?**
+   CI triggers on the tag, runs tests and ABI checks (can fail here), builds the AAR, and publishes to Artifactory (can fail on auth/network). The consumer updates their build script and syncs Gradle. If the consumer's repository setup is missing the Artifactory URL or credentials, the resolution fails.
+2. **Your SDK works in debug, crashes with `NoSuchMethodException` only in release builds. Walk through the first 30 minutes of investigation.**
+   This is an R8 shrinking/obfuscation issue. Pull the consumer's `mapping.txt` and `missing_rules.txt`. Check if reflection is used (e.g., for JSON parsing) on the class throwing the error. Add appropriate `-keep` rules to the SDK's `consumer-rules.pro` and verify via a local release build of the sample app.
+3. **Why is `consumer-rules.pro` shipped inside the AAR instead of letting the consumer manage R8 rules?**
+   It abstracts the internal implementation details from the consumer. Forcing consumers to write rules for your SDK's internal libraries (like Moshi or Coroutines) causes integration friction and guarantees production crashes when you change internal dependencies.
+4. **When does `api(dep)` make sense vs `implementation(dep)`? Give an example of each.**
+   Use `api` if the dependency's types are part of your public API (e.g., returning a `Moshi.JsonAdapter` requires `api("moshi")`). Use `implementation` for internal workings that the consumer shouldn't access directly (e.g., using `implementation("okhttp")` for your network calls).
+5. **A consumer team complains the SDK adds 3 MB to their APK. Walk through your audit.**
+   Build the AAR and run the Android Studio APK Analyzer. Check the `classes.jar` for fat dependencies (like Guava), inspect `res/` and `assets/` for uncompressed images or large files. Replace heavy libraries with lighter alternatives and ensure you aren't bundling transitive dependencies directly into the AAR.
+6. **Walk through your deprecation plan for removing a widely-used public method.**
+   In version N, mark the method `@Deprecated` with a `ReplaceWith` hint, pointing to the new method. In version N+1, elevate the deprecation level to `ERROR`. In version N+2 (a major version bump), remove the method entirely and document the change in the migration guide.
+7. **Your SDK depends on OkHttp 4.12; the consumer app uses OkHttp 4.9. What happens? How would you protect against the worst case?**
+   Gradle resolves the conflict by picking the highest version (4.12). If this breaks the consumer, they might `force` 4.9, which could break your SDK. To protect against this, write integration tests against older versions, or if strictly necessary, shade (relocate) OkHttp using the Shadow plugin.
+8. **Why is shipping a sample app non-negotiable for an SDK team?**
+   It serves as executable documentation, proves that integration works via the published Maven coordinates, and acts as the primary testbed for R8 rules and consumer-facing API ergonomics. Without it, you are testing in a vacuum.
+
 ## Further Reading
 
 - [`library-versioning.md`](library-versioning.md) — SemVer + BOM + deprecation policy.
