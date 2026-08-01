@@ -142,7 +142,8 @@ val user: User = gson.fromJson(json) // T is inferred from the return type!
 
 **Disadvantages**
 - **Inline Bloat:** Because it *must* be an `inline` function, you suffer all the tradeoffs of inlining. If your reified function is 50 lines long and called 100 times, you just added 5,000 lines of bytecode to your APK.
-- **No Java Calls:** If your Android project is a mix of Java and Kotlin, Java cannot use your beautiful reified extension functions. They are invisible to Java.
+- **No Java Calls:** If your Android project is a mix of Java and Kotlin, Java cannot use your beautiful reified extension functions. Because Java has no concept of Kotlin's inline expansion, these functions are completely invisible and uncallable from Java.
+- **Construction Limits:** While `reified` lets you access `T::class.java`, you still cannot create a new instance with `T()` because no constructor contract is encoded in the type parameter. Accept a factory when construction is part of the API; if reflection is genuinely required, select a known constructor explicitly (for example, `getDeclaredConstructor().newInstance()`).
 
 ## Failure Modes
 

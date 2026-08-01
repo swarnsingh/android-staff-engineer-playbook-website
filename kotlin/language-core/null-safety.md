@@ -255,7 +255,9 @@ class LegacyApiWrapper(private val legacy: LegacyApi) {
 
 **3. Treat all platform types as nullable** unless documented otherwise. Defensive `?.` and `?:` are cheap.
 
-**4. JSpecify / JetBrains annotations** — for libraries that ship `package-info.java` with `@NullMarked`, Kotlin gets accurate nullability for free.
+**4. JSpecify / JetBrains annotations** — for libraries that ship `package-info.java` with `@NullMarked` (like JSpecify's `@NullMarked`), Kotlin gets accurate nullability interop across module boundaries for free.
+
+**5. Kotlin Contracts** — when you write custom validation (like `fun isOk(x: String?): Boolean`), you can use `contract { returns(true) implies (x != null) }` to teach the compiler's smart cast system that the value is non-null after the check.
 
 ---
 

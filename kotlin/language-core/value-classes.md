@@ -23,7 +23,7 @@ The compiler inlines the underlying value where it can, so `fun load(id: UserId)
 | Runtime allocation | Usually none (see boxing) | None | Always an object |
 | Use case | Domain primitives, units, handles | Shortening ugly generic signatures | Multi-field aggregates |
 
-A type alias is documentation only — it provides zero type safety, and using it for domain identifiers gives a false sense of it. And the moment you need **two** fields, a value class is off the table: the single-property-in-primary-constructor rule is enforced by the compiler. `Money(amount, currency)` is a data class, full stop — the multi-field version remains blocked on JVM-level value-type support (Project Valhalla) and hasn't shipped as of Kotlin 2.x.
+A type alias is documentation only — it provides zero type safety, and using it for domain identifiers gives a false sense of it. And the moment you need **two** fields, a value class is off the table: the single-property-in-primary-constructor rule is enforced by the compiler. `Money(amount, currency)` is a data class, full stop; as of Kotlin 2.x, Kotlin value classes still require exactly one underlying property.
 
 ## 2. Boxing: the Rule That Decides Whether You Got the Performance
 

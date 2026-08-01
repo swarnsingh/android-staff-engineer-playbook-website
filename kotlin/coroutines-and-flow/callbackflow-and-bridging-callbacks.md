@@ -176,6 +176,8 @@ fun mergedUpdates(): Flow<Update> = channelFlow {
 
 Do not use `channelFlow` only because it feels advanced. It introduces concurrency; use it when you need concurrency.
 
+Additionally, contrast `callbackFlow` with `produce`. While `callbackFlow` creates a cold `Flow` for adapting external callbacks, `produce` starts a producer coroutine eagerly and exposes a hot `ReceiveChannel`. Delivery still obeys channel capacity: the default rendezvous channel suspends `send` until a receiver is ready, while buffered capacities allow only the configured amount of producer lead.
+
 ## Error and Completion Semantics
 
 External APIs often have explicit completion or failure callbacks. Materialize them correctly.

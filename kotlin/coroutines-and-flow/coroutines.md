@@ -214,6 +214,7 @@ A context is a set of typed elements. The interesting ones:
 - **`CoroutineDispatcher`** — picks the thread pool.
 - **`CoroutineName`** — name for logs/debugger.
 - **`CoroutineExceptionHandler`** — last-resort uncaught exception sink.
+- **`ThreadLocal.asContextElement()`** — captures a chosen `ThreadLocal` value and restores it when the coroutine resumes on another thread, which is useful for MDC logging or tracing. It does not track later mutations to the `ThreadLocal`; use an explicit context value or a purpose-built propagation mechanism when updates must flow through the coroutine.
 
 Override per launch:
 

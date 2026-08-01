@@ -222,7 +222,9 @@ Use `take(n)` for finite assertions. A hot flow may never complete.
 
 ### Hot flows
 
-Use Turbine or explicit collection in `backgroundScope`.
+Use Turbine or explicit collection in `backgroundScope`. 
+
+The Turbine library (`app.cash.turbine:turbine`) is the industry standard for testing Flow streams. It provides a clean, suspending `test` API that internally manages a test collector and cancellation.
 
 ```kotlin
 @Test

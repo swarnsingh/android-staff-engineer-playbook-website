@@ -117,7 +117,7 @@ public interface List<out E> : Collection<E> {
 
 You can pass a `List<Dog>` to a function expecting `List<Animal>` — completely safe. You cannot do this with `MutableList`.
 
-`@UnsafeVariance` lets `indexOf(element: E)` use `E` in input position even though `List` is `out`. It's safe here because `indexOf` doesn't store the element, only reads existing items to compare. App-level code should avoid `@UnsafeVariance` — it's a stdlib escape hatch.
+`@UnsafeVariance` lets `indexOf(element: E)` use `E` in input position even though `List` is `out`. It's safe here because `indexOf` doesn't store the element, only reads existing items to compare. The `@UnsafeVariance` annotation acts as an escape hatch, telling the compiler "I have manually verified this variance violation is safe." App-level code should avoid `@UnsafeVariance` — it's a stdlib escape hatch.
 
 ---
 
@@ -222,7 +222,7 @@ This is exactly Java's `? extends Animal` (`out`) and `? super Animal` (`in`).
 | When to use | When the class naturally is a producer/consumer | When the class is invariant but you can be more specific locally |
 | Kotlin uses | Kotlin's primary mechanism (preferred) | Java compatibility / one-off projections |
 
-Kotlin prefers declaration-site. Java only has use-site (`? extends T`, `? super T`). When Kotlin code goes through to Java, variance becomes use-site wildcards.
+Declaration-site variance is cleaner because the contract is enforced everywhere the type is used, placing the burden on the class author. Use-site variance is required when you don't control the class or it must be invariant (like `MutableList`), placing the burden on the API consumer. Kotlin prefers declaration-site. Java only has use-site (`? extends T`, `? super T`). When Kotlin code goes through to Java, variance becomes use-site wildcards.
 
 ---
 

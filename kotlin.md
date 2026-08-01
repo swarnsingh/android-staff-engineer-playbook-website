@@ -58,8 +58,9 @@ The sequence first makes values and APIs safe, then explains compiler transforma
 
 1. [Inline Functions](kotlin/compiler-features/inline-functions.md)
 2. [Reified Types](kotlin/compiler-features/reified-types.md)
+3. [Context Parameters](kotlin/version-updates/kotlin-2-4-update.md#context-parameters-are-stable) — modeling named contextual dependencies. Context receivers were withdrawn and should not be used for new code.
 
-**Checkpoint:** explain what is copied at a call site, which allocations may disappear, and why reified access requires inlining.
+**Checkpoint:** explain what is copied at a call site, which allocations may disappear, why reified access requires inlining, and how named context parameters model multiple required capabilities.
 
 ### Phase 4 — Coroutines and Flow
 

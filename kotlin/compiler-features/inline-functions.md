@@ -177,7 +177,8 @@ public inline fun <T, R> Iterable<T>.map(transform: (T) -> R): List<R> {
 **Disadvantages**
 - **Bytecode Bloat:** If you `inline` a massive, 500-line function, and you call it in 100 places, the compiler copies those 500 lines 100 times. Your APK size will explode, and the Android ART compiler will choke. 
 - **No Encapsulation:** Inline functions cannot access `private` members of the class they are defined in, because their code will be executed in a completely different class (the caller's class).
-- **Stack Traces:** When an exception is thrown inside an inlined lambda, the stack trace can be confusing because the function call that *looks* like it should be on the stack doesn't actually exist at runtime.
+- **Stack Traces:** When an exception is thrown inside an inlined lambda, the stack trace can be confusing because the function call that *looks* like it should be on the stack doesn't actually exist at runtime. Instead, the stack trace will point directly to the caller's line of code.
+- **Inline Properties:** You can also apply `inline` to custom property getters (`inline val foo: String get() = ...`). Kotlin call sites that can inline the accessor avoid that call, but a public accessor is still emitted for JVM ABI, Java callers, reflection, and callable references.
 
 ## Failure Modes
 

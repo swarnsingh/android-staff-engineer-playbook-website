@@ -113,7 +113,7 @@ Multiple constraints, all must hold.
 | Bound | Use case |
 |---|---|
 | `T : Any` | Exclude null; required for type-token reflection |
-| `T : Comparable<T>` | Sortable items |
+| `T : Comparable<T>` | Sortable items using an F-bound. This expresses a self-referential comparison contract, but does not guarantee the exact runtime self type because `Comparable` is contravariant and implementations may be inherited. |
 | `T : Number` | Numeric collections |
 | `T : Parcelable` | Items that survive process death |
 | `VH : RecyclerView.ViewHolder` | RecyclerView adapters |
@@ -165,14 +165,14 @@ inline fun <reified T> classOf(): Class<T> =    // ✅ reified
 When you don't know or don't care what `T` is at runtime:
 
 ```kotlin
-fun describe(list: List<*>) {
+fun describe(list: MutableList<*>) {
     println("size=${list.size}")
     val first = list.firstOrNull()    // type is Any?
     // can read as Any?, cannot safely write
 }
 ```
 
-`List<*>` is like `List<out Any?>` for reads, `List<in Nothing>` for writes — i.e., read-as-`Any?`, can't write at all.
+`MutableList<*>` is like `MutableList<out Any?>` for reads, `MutableList<in Nothing>` for element writes — i.e., read as `Any?`, but no element value, including `null`, can be supplied to `add` or `set`. Element-free mutations such as `clear()` and `removeAt()` remain callable. This is fundamentally different from `MutableList<Any?>`, which explicitly allows writing any nullable value. Kotlin's read-only `List` interface exposes no mutating operations regardless of its type argument.
 
 ---
 

@@ -128,7 +128,7 @@ public final java.lang.String greeting();
 
 Two observations:
 1. `val name` becomes a **field** (`getfield`) **plus** a getter method. Accessing `user.name` from Kotlin calls `getName()`, not the field directly.
-2. String templates compile to `StringBuilder` chains. `"Hi $name"` is not a runtime template — it's three `StringBuilder` calls at compile time.
+2. In this compiler/target configuration, the string template lowers to a `StringBuilder` chain. Other Kotlin/JVM target and compiler configurations can emit `invokedynamic` string concatenation instead, so inspect the bytecode produced by the build you are tuning rather than assuming one universal lowering.
 
 ### Null safety
 
@@ -293,7 +293,7 @@ com.example.User -> a.b.d:
     java.lang.String name -> a
 ```
 
-Crash reports show `a.b.c.a(...)`. Upload `mapping.txt` to Crashlytics/Sentry and the symbolicator reverses it.
+Crash reports show `a.b.c.a(...)`. Upload `mapping.txt` to Crashlytics/Sentry and the symbolicator reverses it. Note that R8 mapping complexities arise when inlining and coroutine state machines are involved; a single frame in the mapped trace might represent multiple logical source frames, requiring careful symbolication to reconstruct the true execution path.
 
 ---
 

@@ -217,6 +217,8 @@ class CartActor(
 
 This is appropriate when serialized mutation is the central requirement. It is overkill for ordinary ViewModel state where `MutableStateFlow.update { }` is simpler and more transparent.
 
+For fine-grained concurrency control without actors, compare `Mutex` vs `Semaphore`. `Mutex` provides mutually exclusive access to shared state (like a lock), while `Semaphore` limits concurrency to a specific number of permits. Use them for simple critical sections, but prefer actors or channels for complex state coordination.
+
 ## `select`
 
 `select` waits for whichever suspending operation becomes available first. It is useful when a coroutine must react to multiple channels, timeouts, or deferred results.

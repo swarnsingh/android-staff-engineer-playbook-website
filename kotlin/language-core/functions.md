@@ -305,7 +305,7 @@ Compiles to:
 public static Object fetchUser(long id, Continuation<? super User> $cont)
 ```
 
-A `suspend` function is a normal function whose last parameter is a `Continuation` — Kotlin's mechanism for storing where the function should resume after suspension. Function types for suspending lambdas are `suspend (T) -> R`, which compile to `Function2<T, Continuation<R>, Object>` (arity bumped by 1 for the continuation). See [`coroutines.md`](../coroutines-and-flow/coroutines.md) for the full state machine model.
+A `suspend` function is a normal function whose last parameter is a `Continuation` — Kotlin's mechanism for storing where the function should resume after suspension. Under the hood, the compiler transforms the body into a state machine and spills only local values whose lifetimes cross a suspension point into continuation fields; locals that are dead before suspension can remain ordinary JVM locals. Function types for suspending lambdas are `suspend (T) -> R`, which compile to `Function2<T, Continuation<R>, Object>` (arity bumped by 1 for the continuation). See [`coroutines.md`](../coroutines-and-flow/coroutines.md) for the full state machine model.
 
 ---
 

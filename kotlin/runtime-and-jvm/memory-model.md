@@ -65,6 +65,10 @@ val d: IntArray = intArrayOf(1, 2, 3)   // raw int[] — single heap allocation
 
 For perf-critical code, prefer `IntArray` / `LongArray` / `FloatArray` over `List<Int>` / `List<Long>` / `List<Float>`. The difference is huge: a `List<Int>` of 100k items is **100k+1** heap objects; an `IntArray` of 100k items is **1** heap object holding contiguous ints.
 
+### Coroutines and the Heap
+
+While coroutines are "lightweight threads," they are not entirely free. A suspending invocation generally uses one compiler-generated `Continuation` state-machine frame; its suspension points become labels in that frame rather than allocating a new continuation at every point. Individual suspending operations and captured values can still allocate, so allocation-sensitive code should be measured instead of estimating cost from the number of suspension points.
+
 ### Escape analysis
 
 Optimizing compilers can sometimes eliminate an allocation entirely — if the compiler proves the object never escapes the method, it can replace the object with its fields and never touch the heap:
@@ -366,7 +370,7 @@ class Manager private constructor() {
 }
 ```
 
-`@Volatile` is non-negotiable. Without it, one thread can see `INSTANCE != null` but the object's fields not yet initialized (instruction reordering). Welcome to two days of "impossible" bugs.
+`@Volatile` is non-negotiable. Without it, one thread can see `INSTANCE != null` but the object's fields not yet initialized (instruction reordering). Welcome to two days of "impossible" bugs. On the JVM, a write to the volatile field *happens-before* a subsequent read of that field, providing the visibility and ordering needed for safe publication.
 
 In Kotlin, prefer `lazy(LazyThreadSafetyMode.SYNCHRONIZED)` over hand-rolled double-checked locking — same semantics, less ceremony.
 

@@ -345,6 +345,20 @@ fun <T : Comparable<T>> List<T>.median(): T? = sorted().getOrNull(size / 2)
 
 Generics work normally inside extensions. You can constrain the type parameter (`T : Comparable<T>` requires natural ordering). This is how stdlib's `List<T>.maxOrNull()`, `Iterable<T>.filter`, and friends work.
 
+### Context parameters
+
+The experimental context-receiver proposal allowed multiple implicit receivers, but it was withdrawn. Kotlin's replacement is **named context parameters**: implicit parameters that are referenced by name and do not add another `this` value or receiver scope.
+
+```kotlin
+context(logger: Logger, transaction: Transaction)
+fun persist(order: Order) {
+    logger.info("persisting ${order.id}")
+    transaction.save(order)
+}
+```
+
+This keeps required capabilities in the function signature without threading them through every call explicitly. Because the dependencies are supplied implicitly, use the feature for constrained contextual concerns and avoid turning it into invisible service-locator-style dependency injection. See the [Kotlin 2.4 update](../version-updates/kotlin-2-4-update.md#context-parameters-are-stable) for the current language model.
+
 ### Reified generic extensions (inline only)
 
 ```kotlin

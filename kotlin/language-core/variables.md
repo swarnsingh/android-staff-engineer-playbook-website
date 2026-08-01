@@ -588,7 +588,7 @@ Inlined constants prevent typos in event names. Renaming them requires touching 
 
 **Treat `const val` as part of the public ABI.** Renaming, changing values, or removing them is a binary-incompatible change. Keep them stable; never use them for runtime configuration.
 
-**Watch for `var` in shared state.** A `var` property accessible from multiple coroutines is a race condition waiting to happen. Use `MutableStateFlow`, `AtomicReference`, or a coroutine-bounded actor instead.
+**Watch for `var` in shared state.** A `var` property accessible from multiple coroutines is a race condition waiting to happen. Use `MutableStateFlow`, `AtomicReference`, or `atomicfu` (for low-level, lock-free concurrent variable updates without boxing overhead), or a coroutine-bounded actor instead.
 
 **Prefer constructor-injected `val` over `lateinit var`.** Constructor injection makes dependencies visible at construction time; `lateinit` defers and obscures them.
 

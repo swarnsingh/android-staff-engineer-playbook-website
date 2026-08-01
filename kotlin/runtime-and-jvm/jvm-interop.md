@@ -89,6 +89,10 @@ Five annotations cover 95% of interop tuning:
 
 Each is a *boundary* tool. They affect Java visibility, never Kotlin.
 
+### `jvmDefault` is a compiler and ABI setting
+
+Gradle's `kotlin.compilerOptions.jvmDefault` setting selects how Kotlin interface implementations are emitted as Java default methods. It changes Kotlin/JVM ABI and compatibility behavior, not merely Java visibility, so treat a mode change as a published-library compatibility decision. Do not use the deprecated `@JvmDefault`; choose the current compiler mode for the project's Kotlin version, and use compatibility annotations only when an existing Java/Kotlin ABI requires them.
+
 ### 4. `internal` is a Kotlin concept, not a JVM one
 
 The JVM has four visibilities: `public`, `protected`, `private`, package-private (default). It has no concept of "module."
@@ -248,6 +252,8 @@ class Config {
 Now Java sees `Config.load()` and `Config.MAX_SIZE` — clean, idiomatic Java.
 
 ### How properties become getters and setters
+
+Kotlin properties expose accessor methods to Java. A private backing field is generated only when the property needs storage—for example, an initialized property or an accessor that uses `field`. Computed, abstract/interface, and delegated properties can use different bytecode shapes, so verify the generated API when the distinction matters.
 
 ```kotlin
 class User {

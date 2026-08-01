@@ -264,6 +264,8 @@ Expose metrics that answer ownership and cost questions:
 
 Do not log every emission of high-volume flows in production. Prefer counters, histograms, and sampled diagnostics.
 
+When emitting structured logs, use `MDCContext` (from `kotlinx-coroutines-slf4j`) to restore a captured Mapped Diagnostic Context (MDC) across suspension points. Populate request and user fields before capturing the context. Later `MDC.put` mutations are not tracked automatically and can be lost after suspension, so explicitly capture a new `MDCContext` after updates when those fields must propagate.
+
 ## Testing for Debuggability
 
 Tests should prove cancellation and ownership, not only happy-path values.

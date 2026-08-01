@@ -77,6 +77,10 @@ val suggestions = searchQuery
 
 This is correct for typeahead where old queries are obsolete. It is wrong for payments, uploads, writes, or analytics where previous work must finish.
 
+### `transformLatest`
+
+`transformLatest` provides advanced, suspending latest-value transformations. It behaves like `mapLatest` by cancelling previous transformations when a new value arrives, but allows emitting multiple values (or zero values) like `transform`.
+
 ## Error Operators
 
 ### `catch`
