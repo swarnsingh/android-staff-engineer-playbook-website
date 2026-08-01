@@ -240,6 +240,8 @@ Add accessibility checks for:
 - Large text screenshots.
 - TalkBack manual scripts for critical flows.
 
+For Compose semantics, enable checks with `composeTestRule.enableAccessibilityChecks()` and invoke them at a stable UI state with `composeTestRule.onRoot().tryPerformAccessibilityChecks()` on supported Android API levels. Espresso's `AccessibilityChecks.enable()` inspects View hierarchies, so reserve it for View-based or Compose/View interoperability tests rather than treating it as Compose coverage.
+
 Automated checks catch classes of bugs. They do not replace using the app with assistive technologies.
 
 ## Production Failure Modes

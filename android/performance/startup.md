@@ -78,6 +78,27 @@ class MyApp : Application() {
 }
 ```
 
+### StrictMode for Startup
+
+Install the debug-only thread policy in `Application.attachBaseContext()`, before Android creates manifest-declared `ContentProvider`s (including AndroidX Startup's provider):
+
+```kotlin
+override fun attachBaseContext(base: Context) {
+    super.attachBaseContext(base)
+    if (BuildConfig.DEBUG) {
+        StrictMode.setThreadPolicy(
+            StrictMode.ThreadPolicy.Builder()
+                .detectDiskReads()
+                .detectDiskWrites()
+                .penaltyLog()
+                .build()
+        )
+    }
+}
+```
+
+Installing the policy in `Application.onCreate()` is too late to observe provider initialization. The earlier hook catches hidden main-thread I/O such as `SharedPreferences` or database reads across that startup phase as well as application initialization.
+
 Run this on a real device (not emulator), kill the app, relaunch. The longest line is the first thing to fix.
 
 ### Three classes of work in `onCreate`

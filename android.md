@@ -111,9 +111,11 @@ The core path builds an Android feature from lifecycle and data ownership outwar
 4. [NetworkCallback, Metered Networks, VPNs & Captive Portals](android/networking-and-security/networkcallback-metered-vpn-captive-portal.md)
 5. [Security & Keystore](android/networking-and-security/security-and-keystore.md) — platform application; canonical guidance lives in [Security](security.md).
 6. [Device Connectivity & Location](android/networking-and-security/device-connectivity-and-location.md)
-7. [WebView & Hybrid Architecture](android/networking-and-security/webview-and-hybrid.md)
-8. [Media3 & ExoPlayer](android/media/media3-player-architecture.md)
-9. [CameraX Capture Architecture](android/media/camerax-capture-architecture.md)
+7. [Credential Manager](security/auth-on-mobile.md) — unified authentication API for passkeys, federated sign-in, and passwords; it supersedes legacy sign-in APIs such as Smart Lock for Passwords and One Tap, not the general Autofill framework.
+8. [Health Connect](android/data-and-di/health-connect.md) — permissioned on-device health and fitness data exchange.
+9. [WebView & Hybrid Architecture](android/networking-and-security/webview-and-hybrid.md)
+10. [Media3 & ExoPlayer](android/media/media3-player-architecture.md)
+11. [CameraX Capture Architecture](android/media/camerax-capture-architecture.md)
 
 **Checkpoint:** design degraded-network, permission-denial, background, privacy, and device-compatibility behavior for a platform integration.
 

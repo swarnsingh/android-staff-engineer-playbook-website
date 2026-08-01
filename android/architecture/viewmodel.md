@@ -60,6 +60,10 @@ When the Activity is *actually* finishing (e.g., the user presses the Back butto
 
 The store iterates through all its ViewModels and calls their `onCleared()` method. This is where the ViewModel cancels its `viewModelScope` coroutines to stop background work.
 
+### CreationExtras
+
+**CreationExtras** is typed key-value input passed to `ViewModelProvider.Factory.create(modelClass, extras)`; it is not a factory or dependency injector by itself. Built-in keys expose owners and the `Application`, and `createSavedStateHandle()` derives a `SavedStateHandle` from the supplied owners and default arguments. Custom dependencies still need a factory or `viewModelFactory { initializer { ... } }` that reads custom extras keys and constructs the ViewModel.
+
 ## Architecture
 
 ```mermaid

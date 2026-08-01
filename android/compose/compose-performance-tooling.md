@@ -38,6 +38,8 @@ If a team debates Compose performance from debug builds, stop the debate and bui
 
 ## Compose Compiler Reports
 
+**Compose Compiler Metrics (`reportsDestination`)**: Enable this compiler flag to generate detailed CSV and text reports describing the stability and skippability of your composable functions, helping you track down the root cause of unnecessary recompositions.
+
 Compiler reports help answer:
 
 - Which composables are skippable?

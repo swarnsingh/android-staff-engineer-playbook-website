@@ -30,6 +30,10 @@ Baseline Profiles eliminate this JIT overhead entirely.
 3.  **The Profile:** A list of critical classes and methods (e.g., `Lcom/example/MainActivity;->onCreate()V`).
 4.  **Cloud Profiles:** Google Play aggregates the profiles of your actual users. However, this takes weeks of real-world usage to kick in. Baseline Profiles are shipped *with* the APK, guaranteeing performance on Day 1.
 
+### Startup Profiles vs Baseline Profiles
+
+While **Baseline Profiles** tell Android which hot code to Ahead-Of-Time (AOT) compile, **Startup Profiles** guide R8/D8 in arranging startup-related classes within the app's DEX files. Profile-guided layout keeps frequently loaded startup code close together and can influence multidex partitioning, reducing page faults and disk I/O without guaranteeing that every startup class is placed in the primary `classes.dex`.
+
 ## Mental Model
 
 Think of your app's codebase as a **Massive IKEA Furniture Manual (written in Swedish)**.

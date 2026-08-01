@@ -25,6 +25,10 @@ Today, the modern `androidx.fragment` library has solved almost all of these iss
 2.  **The FragmentManager:** Fragments are never instantiated and attached directly by you. You ask the `FragmentManager` to do it via a `FragmentTransaction`.
 3.  **State Survival:** The default restoration path needs a public no-argument constructor because `FragmentManager` recreates the Fragment. Constructor injection requires a configured `FragmentFactory`; runtime inputs still belong in arguments or typed navigation routes.
 
+### FragmentContainerView
+
+When defining an XML layout to host Fragments, always use `<androidx.fragment.app.FragmentContainerView>` instead of `<FrameLayout>` or the obsolete `<fragment>` tag. It correctly handles Fragment z-ordering during transitions, fixes animation bugs, and properly dispatches window insets to the hosted Fragments.
+
 ## Mental Model
 
 Think of the `FragmentManager` as a strict **Stage Director**, and the Fragments as **Actors**.
