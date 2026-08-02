@@ -1,13 +1,13 @@
 # Rate Limiting
 
-> Rate Limiting restricts the number of operations that can be performed in a given timeframe. While backends enforce rate limits to protect databases from DDoS attacks, a Staff engineer builds **Client-Side Rate Limiting** to protect the user's battery, data plan, and UI experience. Whether it's debouncing a fast-typing user in a search bar, or gracefully handling an `HTTP 429 Too Many Requests` response from a struggling backend, client-side rate limiting is a mandatory defensive mechanism on mobile.
+> Rate limiting restricts operations over an interval. Backends enforce quotas and overload policy; mobile clients may also shape requests to protect product correctness, energy, data use, and UX. Search debouncing, duplicate-submit protection, and handling `HTTP 429 Too Many Requests` are distinct mechanisms whose scope depends on the operation and server contract.
 
 ---
 
 ## Overview
 
 There are two sides to Rate Limiting in a mobile architecture:
-1. **Server-Side Enforcement:** The backend returns an `HTTP 429` error, often with a `Retry-After` header. The Android client must parse this and halt requests.
+1. **Server-Side Enforcement:** A backend can return `429`, optionally with `Retry-After`. The client applies the hint to the correct rate-limit bucket and retries only under its safety, deadline, and attempt policy.
 2. **Client-Side Throttling (Debounce/Throttle):** The Android app intentionally delays or drops user input to prevent generating excessive network requests in the first place.
 
 ---
@@ -36,7 +36,7 @@ val searchResults = _searchQuery
     }
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 ```
-**Staff Insight:** `flatMapLatest` is a form of concurrency rate-limiting. It ensures that only one network request is being processed at a time for this specific flow, instantly cancelling any inflight request if the user types again.
+**Staff Insight:** `flatMapLatest` cancels collection of the previous inner flow when a new query arrives. It can reduce obsolete work when the networking layer cooperates with cancellation, but it is not a server rate-limit guarantee and brief overlap may occur while cancellation propagates.
 
 ### Throttle (Sample)
 If you are tracking a user's location via GPS, you might receive updates every 10 milliseconds. You only want to send an update to the server once every 5 seconds. `sample` (throttling) emits the latest value at fixed intervals, regardless of silence.
@@ -53,43 +53,108 @@ val locationUpdates = gpsTracker.locationFlow
 
 ## 2. Handling Server-Side Rate Limits (HTTP 429)
 
-If the Android app spams the server (or if the server lowers its global rate limits during a traffic spike), the server will return an `HTTP 429 Too Many Requests`.
+When a client exceeds a server's applicable request policy, the server may return `HTTP 429 Too Many Requests`; other overload, quota, or gateway policies can surface different responses.
 
-Well-designed APIs include a `Retry-After` header indicating how many seconds the client must wait before trying again.
+An API may include `Retry-After` as either delay-seconds or an HTTP-date. Preserve the server's embargo for the affected bucket. If that time exceeds the client's automatic-retry budget, surface or abandon the retry instead of shortening the embargo.
 
 ### The OkHttp Interceptor Solution
 
-You must build a global OkHttp Interceptor to handle this gracefully, rather than relying on every ViewModel to parse 429 errors manually.
+Centralize `429` handling at the appropriate client, host, or API scope rather than making every ViewModel parse it independently. The retry policy still needs request safety, deadlines, cancellation, and domain-specific rate-limit boundaries.
 
 ```kotlin
-class RateLimitInterceptor : Interceptor {
-    
-    // Thread-safe flag to block all outgoing requests globally
-    private val isRateLimited = AtomicBoolean(false)
-    private var limitEndTime = AtomicLong(0)
+fun interface HttpDateParser {
+    // Production implementations accept IMF-fixdate plus the obsolete RFC 850
+    // and asctime forms that HTTP recipients are required to recognize.
+    fun parseEpochMillis(value: String): Long?
+}
 
-    override fun intercept(chain: Interceptor.Chain): Response {
-        // 1. Pre-check: Are we currently locked out?
-        if (isRateLimited.get() && System.currentTimeMillis() < limitEndTime.get()) {
-            throw IOException("Client-side rate limit enforced. Try again later.")
-        } else {
-            isRateLimited.set(false) // Lockout expired
+class RateLimitException(
+    val bucket: String,
+    val retryAtElapsedRealtimeMillis: Long,
+) : IOException("Rate-limited bucket: $bucket")
+
+class RateLimitInterceptor(
+    private val httpDateParser: HttpDateParser,
+) : Interceptor {
+    // This example scopes a bucket by origin. If the API publishes a finer
+    // route, user, resource, or quota-bucket key, use that identity instead.
+    private val limitEndByOrigin = ConcurrentHashMap<String, AtomicLong>()
+
+    private fun delayMillis(value: String?, nowEpochMillis: Long): Long {
+        val rawValue = value?.trim()
+        val delayDigits = rawValue?.takeIf { candidate ->
+            candidate.isNotEmpty() && candidate.all { it in '0'..'9' }
+        }
+        if (delayDigits != null) {
+            val normalizedDigits = delayDigits.trimStart('0').ifEmpty { "0" }
+            // A syntactically valid value beyond Long range represents a wait
+            // longer than this process can schedule, so preserve the embargo
+            // by saturating instead of using the invalid-header fallback.
+            val delaySeconds = normalizedDigits.toLongOrNull() ?: Long.MAX_VALUE
+            if (delaySeconds == 0L) return 0L
+            return if (delaySeconds > Long.MAX_VALUE / 1_000L) {
+                Long.MAX_VALUE
+            } else {
+                delaySeconds * 1_000L
+            }
         }
 
+        val httpDateMillis = rawValue?.let(httpDateParser::parseEpochMillis)
+        return if (httpDateMillis != null) {
+            if (httpDateMillis <= nowEpochMillis) 0L
+            else httpDateMillis - nowEpochMillis
+        } else {
+            60_000L // Local first-delay policy for an absent/invalid header.
+        }
+    }
+
+    private fun addDelay(baseMillis: Long, delayMillis: Long): Long {
+        return if (delayMillis > Long.MAX_VALUE - baseMillis) {
+            Long.MAX_VALUE
+        } else {
+            baseMillis + delayMillis
+        }
+    }
+
+    private fun preserveLongestDeadline(origin: String, incoming: Long): Long {
+        // putIfAbsent and compareAndSet work on older Android API levels; this
+        // avoids relying on API-24 ConcurrentMap/AtomicLong convenience methods.
+        val candidate = AtomicLong(0L)
+        val deadline = limitEndByOrigin.putIfAbsent(origin, candidate) ?: candidate
+
+        while (true) {
+            val current = deadline.get()
+            if (current >= incoming) return current
+            if (deadline.compareAndSet(current, incoming)) return incoming
+        }
+    }
+
+    override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
+        val origin = request.url.run { "$scheme://$host:$port" }
+        val nowMillis = android.os.SystemClock.elapsedRealtime()
+        val currentDeadline = limitEndByOrigin[origin]?.get() ?: 0L
+
+        // 1. Pre-check only the bucket associated with this request.
+        if (nowMillis < currentDeadline) {
+            throw RateLimitException(origin, currentDeadline)
+        }
+
         val response = chain.proceed(request)
 
         // 2. Post-check: Did the server tell us to back off?
         if (response.code == 429) {
-            val retryAfterSeconds = response.header("Retry-After")?.toLongOrNull() ?: 60L // Default 1 min
-            
-            // Lock the client
-            limitEndTime.set(System.currentTimeMillis() + (retryAfterSeconds * 1000))
-            isRateLimited.set(true)
-            
+            val nowEpochMillis = System.currentTimeMillis()
+            val nowElapsedMillis = android.os.SystemClock.elapsedRealtime()
+            val deadlineMillis = addDelay(
+                nowElapsedMillis,
+                delayMillis(response.header("Retry-After"), nowEpochMillis),
+            )
+            // Concurrent responses must not shorten an existing longer delay.
+            val appliedDeadline = preserveLongestDeadline(origin, deadlineMillis)
             // Close the response body to prevent leaks before throwing
             response.close()
-            throw RateLimitException("Server returned 429. Locked for $retryAfterSeconds seconds.")
+            throw RateLimitException(origin, appliedDeadline)
         }
 
         return response
@@ -98,15 +163,15 @@ class RateLimitInterceptor : Interceptor {
 ```
 
 ### UX Fallback
-When this interceptor throws a `RateLimitException`, the Retrofit call in your Repository fails. Your ViewModel must catch this specific exception and display a clear UI message: *"Our servers are currently overwhelmed. Please wait 1 minute."* (And optionally disable the submit button until the timer expires).
+Map `RateLimitException` separately from generic connectivity failures so a generic retry interceptor does not immediately replay it. Use its monotonic deadline only for in-process comparisons and derive the remaining duration for UI. Disable controls whose requests map to the affected bucket; this origin-scoped sample may cover several actions, so use a finer server-published bucket identity when action-level isolation is required. If timing should not be exposed, use a nonnumeric “Try again later” message.
 
 ---
 
 ## 3. UI Rate Limiting (Disabling Interactions)
 
-Beyond network flows, rate limiting must be applied to UI interactions. A frustrated user might tap the "Submit Payment" button 15 times in 2 seconds.
+Some UI operations need duplicate-submission protection. A payment action, for example, may receive several taps before its visible state updates.
 
-While `debounce` works on streams, UI components should be explicitly disabled during critical operations.
+For a non-idempotent or mutually exclusive operation, transition state atomically and disable or otherwise guard the relevant control while the operation is active. Repeatable actions may use a different interaction policy.
 
 ```kotlin
 @Composable
@@ -136,27 +201,28 @@ fun CheckoutButton(
 | Failure Mode | Cause | Prevention / Solution |
 |---|---|---|
 | **Global 429 Lockout** | Using a single global interceptor to block *all* network traffic when an image CDN returns a 429, preventing the user from using the core API. | Implement domain-specific rate limits. Keep a map of `[Domain -> LockoutTime]` in the interceptor, so hitting a limit on `images.example.com` doesn't block `api.example.com`. |
-| **Missing `Retry-After`** | The backend returns a 429 but doesn't include the header. The app assumes it can retry immediately, creating an infinite loop of 429s. | The client must enforce a default, aggressive exponential backoff (e.g., 60 seconds) if the server omits the header. |
+| **Missing or invalid `Retry-After`** | The client immediately repeats an otherwise eligible request. | This interceptor records a bounded first bucket embargo. A separate retry scheduler owns attempt count and capped exponential backoff with jitter for later replay-safe attempts; it still enforces deadlines and cancellation. |
 | **Double Clicks bypassing UI** | A button is disabled during `Loading`, but the ViewModel takes 50ms to transition from `Idle` to `Loading`. The user clicks twice in 20ms. | Use a fast-path local boolean flag or a click-debouncer at the View layer (e.g., a custom `Modifier.debouncedClick` in Compose) to ignore clicks within 300ms of each other. |
 
 ---
 
 ## 5. Common Pitfalls
 
-### Pitfall 1: Retrying a 429 Automatically
-If you combine an OkHttp Retry Interceptor with a Rate Limit interceptor, the Retry Interceptor might see the 429 and immediately retry the request 3 times. This will instantly get your app permanently banned by the backend's WAF (Web Application Firewall) or Cloudflare layer.
-*Fix:* **Never automatically retry a 429.** A 429 means "stop talking to me." The request should fail, propagate to the UI, and the user must manually initiate the action later.
+### Pitfall 1: Retrying a 429 Immediately
+A generic retry interceptor can turn one `429 Too Many Requests` into several immediate requests, worsening overload and extending a server-side lockout.
+
+*Fix:* Treat `429` as a retryable response only under an explicit policy. Honor `Retry-After` when present; otherwise let a retry scheduler apply capped exponential backoff with jitter across later attempts. Retry only when the operation is safe to repeat, the request deadline and attempt budget allow it, and cancellation has not occurred. Queue durable background work locally and reschedule it; foreground UI may expose a retry action rather than blocking the thread. RFC 6585 permits a `429` response to include `Retry-After`; it does not require either unconditional automatic retry or manual-only retry.
 
 ### Pitfall 2: Silent Dropping via `sample`
-If you use `sample(5000L)` on a flow of critical analytics events (like "Purchase Completed"), and three events fire in 5 seconds, `sample` will drop the first two completely. They are lost forever.
-*Fix:* Do not rate-limit critical data via dropping. Use a `buffer` or `batch` operator to collect all events over 5 seconds, and send them in a single array payload to the server.
+If `sample(5000L)` is the only consumer of three critical events emitted inside one window, intermediate values are not forwarded by that sampled flow. Without a separate durable event store or delivery path, those events are lost to this analytics pipeline.
+*Fix:* Do not rate-limit critical data by dropping. Persist events first, then use an explicit size/time-window accumulator (or a verified batching operator) that emits `List<Event>` and flushes remainders. `buffer()` can decouple producer and consumer but does not itself create batches.
 
 ---
 
 ## Probing Questions
 
 1.  **Token Bucket Algorithm:** A common backend rate-limiting algorithm is the "Token Bucket". If the backend uses this, how does it differ from a fixed-window rate limit (e.g., 100 requests per minute), and how might the Android client experience bursts of traffic differently?
-2.  **Concurrency:** In the OkHttp Interceptor example above, `AtomicBoolean` and `AtomicLong` are used. If 5 coroutines make a request simultaneously and all 5 receive a 429 response at the exact same millisecond, what race conditions exist when setting the `limitEndTime`, and how does `AtomicLong` solve it?
+2.  **Concurrency:** If concurrent `429` responses for one bucket contain different deadlines, why is an atomic `set()` insufficient, and how does atomic max/CAS prevent a shorter response from reducing the active delay?
 3.  **Flow Operators:** What is the mechanical difference between `debounce`, `sample`, and `throttleFirst` (often found in RxJava)? Which one is best for preventing double-clicks on a "Buy" button?
 4.  **Batching:** You need to track user scroll positions in a massive list for analytics. Firing an API call per pixel is impossible. Using Kotlin Flows, write pseudo-code to batch these scroll events into arrays of 50 events, and emit the batch to the network layer.
 5.  **Offline Queues:** If the app receives a 429 with a Retry-After of 1 hour, what should the app do with critical background data (like WorkManager sync operations) during that hour? How do you instruct WorkManager to respect a dynamic 1-hour delay?
@@ -165,18 +231,20 @@ If you use `sample(5000L)` on a flow of critical analytics events (like "Purchas
 
 1. **Token Bucket Algorithm: A common backend rate-limiting algorithm is the "Token Bucket". If the backend uses this, how does it differ from a fixed-window rate limit (e.g., 100 requests per minute), and how might the Android client experience bursts of traffic differently?**
    A fixed-window resets strictly at the top of the minute, which can cause sudden spikes. A token bucket gradually refills tokens; it allows short, rapid bursts of traffic (up to the bucket's capacity) and then smoothly throttles subsequent requests until tokens replenish.
-2. **Concurrency: In the OkHttp Interceptor example above, `AtomicBoolean` and `AtomicLong` are used. If 5 coroutines make a request simultaneously and all 5 receive a 429 response at the exact same millisecond, what race conditions exist when setting the `limitEndTime`, and how does `AtomicLong` solve it?**
-   Without atomic operations, multiple threads reading/writing the lockout time simultaneously could override each other or incorrectly pass the pre-check. `AtomicLong` ensures thread-safe, atomic updates to the shared `limitEndTime` across all concurrent OkHttp threads.
+2. **If concurrent `429` responses for one bucket contain different deadlines, why is an atomic `set()` insufficient, and how does atomic max/CAS prevent a shorter response from reducing the active delay?**
+   Separate atomic writes are not torn, but last-writer-wins can replace a longer deadline with a shorter one. An `accumulateAndGet(maxOf)` or compare-and-set loop preserves the maximum deadline atomically for that bucket; deriving limited state from that one value avoids a separate flag/time race.
 3. **Flow Operators: What is the mechanical difference between `debounce`, `sample`, and `throttleFirst` (often found in RxJava)? Which one is best for preventing double-clicks on a "Buy" button?**
    `debounce` waits for silence before emitting; `sample` emits the most recent value at fixed intervals; `throttleFirst` emits immediately, then ignores subsequent events for a duration. `throttleFirst` (or a custom click-debouncer) is best for preventing double-clicks.
 4. **Batching: You need to track user scroll positions in a massive list for analytics. Firing an API call per pixel is impossible. Using Kotlin Flows, write pseudo-code to batch these scroll events into arrays of 50 events, and emit the batch to the network layer.**
-   Use the `chunked` or `buffer` operator (or custom logic). Pseudo-code: `scrollFlow.chunked(50).onEach { batch -> api.sendAnalytics(batch) }.launchIn(scope)`.
+   Use a verified batching operator or an explicit accumulator that emits at 50 items, flushes a partial batch on its time/lifecycle boundary, and persists data that must survive process death. Pseudo-code: `scrollFlow.batch(size = 50, maxWait = 5.seconds).onEach { batch -> outbox.enqueue(batch) }.launchIn(scope)`. `buffer()` may provide backpressure capacity around this pipeline but does not form arrays.
 5. **Offline Queues: If the app receives a 429 with a Retry-After of 1 hour, what should the app do with critical background data (like WorkManager sync operations) during that hour? How do you instruct WorkManager to respect a dynamic 1-hour delay?**
-   The app should queue the data locally in Room. For WorkManager, you update the WorkRequest by applying a `setInitialDelay(1, TimeUnit.HOURS)` or use exponential backoff policies, ensuring background syncs explicitly sleep until the `Retry-After` window expires.
+   Persist the payload, bucket, attempt state, and a durable epoch deadline or original server retry metadata—not the in-process `elapsedRealtime()` absolute value, which resets on reboot. On restore, derive a nonnegative delay from the durable value (with a conservative policy if wall-clock trust matters), build and enqueue/replace a unique `OneTimeWorkRequest` with `setInitialDelay`, and return promptly rather than sleeping inside a worker. Use `Result.retry()` only when its configured backoff matches the server/client policy.
 
 ## Further Reading
 
 - [`../patterns/circuit-breaker.md`](../patterns/circuit-breaker.md) — How rate limiting relates to full circuit tripping.
-- [`../patterns/retry.md`](../patterns/retry.md) — Why 429 errors must be explicitly excluded from retry logic.
+- [`../patterns/retry.md`](../patterns/retry.md) — How bounded retry, idempotency, deadlines, backoff, and jitter interact.
+- [RFC 6585 §4: 429 Too Many Requests](https://www.rfc-editor.org/rfc/rfc6585.html#section-4) — The status code and optional `Retry-After` guidance.
+- [RFC 9110 §10.2.3: Retry-After](https://www.rfc-editor.org/rfc/rfc9110.html#section-10.2.3) — Header semantics.
 - [`../android/architecture/flow.md`](../android/architecture/flow.md) — Deep dive into the Coroutine Flow operators (`debounce`, `sample`, `flatMapLatest`).
 - [`api-design-for-mobile.md`](api-design-for-mobile.md) — Designing APIs to accept batched payloads to avoid rate limits entirely.

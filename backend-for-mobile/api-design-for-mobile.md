@@ -1,6 +1,6 @@
 # API Design for Mobile
 
-> A mobile phone is not a server in a data center. It operates on battery power, communicates over unreliable cellular networks with high latency, and runs app versions that may be three years old. A Staff engineer knows that an API designed for a web browser will destroy a mobile app's performance. Designing APIs for mobile requires minimizing request counts (radio wakeups), aggressively compressing payloads, and building defensive parsing strategies to handle unexpected schema changes from the backend.
+> A mobile phone operates on battery power, traverses variable Wi-Fi and cellular paths, and may run an older app version. Mobile API design therefore considers round trips, payload size, caching, compression, parsing cost, compatibility, and failure recovery against measured product requirements.
 
 ---
 
@@ -8,26 +8,21 @@
 
 When backend engineers design APIs, they typically optimize for RESTful purity, microservice boundaries, and database normalization. When mobile engineers consume APIs, they optimize for **user experience**. 
 
-If a screen requires data from the `Users` microservice, the `Inventory` microservice, and the `Pricing` microservice, a web browser can make three parallel requests quickly over a fast Wi-Fi connection. A mobile app doing this on a 3G cell tower will experience compounding latency, battery drain, and UI stutter.
+If a screen requires data from the `Users`, `Inventory`, and `Pricing` services, parallel requests may still pay separate scheduling, headers, server work, and failure handling. The impact depends on protocol reuse, request dependencies, payloads, network, and rendering architecture; measure it before introducing aggregation.
 
 ---
 
 ## 1. The Physical Constraints of Mobile
 
 ### The Cellular Radio State Machine
-Mobile devices use Radio Resource Control (RRC) to manage the cellular modem. To save battery, the modem sleeps. 
-When an app makes an HTTP request:
-1. The modem wakes up (takes ~1-2 seconds, consuming high power).
-2. The request is sent and received (high power).
-3. The modem stays in a "tail state" for 5-15 seconds expecting more data (medium power).
-4. The modem goes back to sleep (low power).
+Cellular networks use Radio Resource Control (RRC) states, and data activity can affect radio energy. Promotion time, connected-state behavior, discontinuous reception, and idle timers vary by radio technology, carrier, modem, signal, device, and concurrent traffic; a fixed wake/tail timeline is not a portable application guarantee.
 
-**The Anti-Pattern:** Polling an API every 10 seconds. The modem never leaves the high/medium power state. The battery will drain in hours.
-**The Solution:** Batch requests, use Push Notifications (FCM) to wake the app, or use Server-Sent Events (SSE) / WebSockets for continuous streams.
+**The anti-pattern:** Polling at a fixed high frequency regardless of lifecycle or change rate can add radio and server work.
+**Possible responses:** Batch compatible work, use cache validators and adaptive cadence, use FCM as a best-effort invalidation hint, or maintain SSE/WebSocket streams while the product lifecycle justifies them. Measure each option; persistent streams also have heartbeat and infrastructure costs.
 
 ### Bandwidth and Latency
-- **Latency is compounding.** If you make sequential requests (Auth -> Get User -> Get Permissions), a 200ms ping means the user waits 600ms just for network transit.
-- **Payload size matters.** A 5MB JSON payload (over-fetching) on a slow connection will cause OkHttp `SocketTimeoutException`s.
+- **Dependent latency accumulates.** Sequential requests cannot overlap their dependencies; actual elapsed time includes connection reuse, protocol, server processing, and transfer—not simply ping multiplied by request count.
+- **Payload size matters.** A large response can increase transfer, parsing, memory, and deadline pressure, but size alone does not determine whether OkHttp raises a timeout.
 
 ---
 
@@ -45,7 +40,7 @@ interface SocialApi {
     suspend fun getUserProfile(@Path("id") userId: String): User
 }
 ```
-To render a feed of 20 posts with author avatars, the Android app must make **21 HTTP requests** (1 for the feed, 20 for the users). This will destroy the user experience on cellular networks.
+With only these endpoints and no batching, embedding, or cache hits, rendering 20 posts with distinct uncached authors requires up to **21 application requests**. The experience depends on concurrency, connection reuse, cache state, payloads, and network; the contract nevertheless creates avoidable fan-out.
 
 ### Over-Fetching
 The backend tries to solve the above by sending everything.
@@ -55,11 +50,11 @@ interface SocialApi {
     suspend fun getFeed(): List<PostWithEverything>
 }
 ```
-Now the Android app downloads 3MB of JSON for a screen that only displays 140 characters of text and a tiny avatar. The JSON parsing alone (using Moshi or Gson) will block the background thread and trigger a GC pause, causing UI jank.
+If this endpoint returns substantially more data than the screen uses, transfer, parsing, and allocation costs grow. Parsing on a background dispatcher does not directly block the main thread, but CPU contention, publication work, allocation pressure, or main-thread transformation can still affect frames; profile the actual response.
 
 ### The Mobile Solution: Payload Shaping
-Mobile APIs should return exactly what the screen needs, nothing more. This is achieved via:
-1. **GraphQL:** The Android app defines the exact schema it wants via Apollo Kotlin.
+Mobile APIs should provide a bounded shape that supports the screen without unnecessary fan-out or payload. Common approaches include:
+1. **GraphQL:** The Android app selects fields for an operation through a client such as Apollo Kotlin; pagination, server fields, errors, and resolver behavior still affect the result.
 2. **Backend-For-Mobile (BFF):** A middleware server aggregates the microservices and returns a custom JSON object tailored for the specific Android screen. (See `bff-pattern.md`).
 
 ### Staff Decision: REST, BFF, GraphQL, or Hybrid
@@ -87,21 +82,21 @@ Backend teams deploy continuously. Mobile apps are shipped as static binaries (A
 
 ### 1. Ignore Unknown Keys
 If the backend adds a new `"badge_tier"` field to the JSON, older versions of the app must not crash.
-- **Retrofit/Moshi:** Fails by default on unknown keys if using certain adapters. Must be explicitly configured to ignore them.
-- **Kotlinx Serialization:** Fails by default! You must set `ignoreUnknownKeys = true`.
+- **Moshi:** Generated and reflective adapters ignore unknown object properties by default unless a stricter custom policy or adapter changes that behavior.
+- **Kotlinx Serialization JSON:** The default `Json` configuration rejects unknown keys; set `ignoreUnknownKeys = true` globally or use the supported per-class mechanism when forward-compatible additive fields are expected.
 
 ```kotlin
 val json = Json { ignoreUnknownKeys = true }
 ```
 
 ### 2. Enum Fallbacks
-If the backend adds a new enum value (e.g., `Status.ARCHIVED`), older apps that only know `ACTIVE` and `INACTIVE` will crash during deserialization.
+If the backend adds a new enum value (for example, `Status.ARCHIVED`), an older client's behavior depends on its serializer and fallback policy: decoding may fail, return an unknown representation, or invoke a configured fallback.
 ```kotlin
 // Defensive Kotlin definition
 enum class Status {
     ACTIVE,
     INACTIVE,
-    UNKNOWN; // Always include a fallback!
+    UNKNOWN; // Use a fallback when the wire contract is expected to evolve additively.
 }
 ```
 
@@ -150,8 +145,8 @@ When a web app updates its API, the frontend is deployed simultaneously. When a 
 ### Strategies
 1. **URI Versioning:** `api.example.com/v1/users` -> `api.example.com/v2/users`. Safest for major breaking changes.
 2. **Header Versioning:** `Accept: application/vnd.example.v2+json`. Cleaner URLs, but harder to cache via CDNs.
-3. **GraphQL:** No versions. Add new fields, never delete old fields. Deprecate fields in the schema so new client builds get warnings.
-4. **API Versioning Strategies (Mobile Context):** Mobile APIs demand additive evolution. Unlike web deployments where the frontend changes instantly, mobile users might linger on old versions for years. Forced upgrades should be an absolute last resort, so versioning strategies must gracefully tolerate outdated payload shapes.
+3. **GraphQL:** Prefer additive evolution and deprecate fields before removal, but do not claim that GraphQL is “unversioned” or that fields can never be deleted. Define supported client cohorts, observe persisted-query and field usage, preserve semantics during the compatibility window, and remove a field only after the published support policy says no supported client depends on it. Even additive changes require validation because clients may make unsafe assumptions.
+4. **API Versioning Strategies (Mobile Context):** Within the supported-client compatibility window, prefer additive evolution. Breaking changes or removals require a new negotiated contract or completion of the published deprecation/support policy; a forced upgrade is a risk decision, not a substitute for contract governance.
 
 ### The startup handshake
 
@@ -329,7 +324,7 @@ Negative capability tests are the antidote to "it works on the latest app."
 | **JSON Parse Crash** | Backend added a new field, or changed an `Int` to a `String`, or sent a new Enum value. | Strict defensive parsing (ignore unknown keys, fallback enums). Write integration tests using real backend payload samples. |
 | **Silent Token Expiration** | API returns 401, but the app doesn't handle it globally, resulting in empty screens. | Use an OkHttp `Authenticator` or `Interceptor` to automatically refresh tokens or trigger a logout event globally. |
 | **Cellular Timeout** | Retrofit's default timeout (10s) is too short for large payloads on 3G, or too long for interactive searches. | Configure custom timeouts per endpoint (using OkHttp interceptors with custom headers) or tune the global OkHttp timeouts. |
-| **Battery Drain** | Frequent polling of an endpoint for status updates. | Replace with Server-Sent Events (SSE), WebSockets, or FCM push notifications that wake the app only when state changes. |
+| **Battery Drain** | Frequent polling of an endpoint for status updates. | Evaluate an appropriately scoped stream or best-effort FCM invalidation hint, then reconcile durable server state. Background delivery and socket lifetime remain policy- and lifecycle-dependent. |
 | **Old-client breakage** | Backend removed or changed a field still used by an old app. | Keep additive wire changes, run old-client contract tests, gate new shapes behind capabilities. |
 | **Handshake outage lockout** | App treats missing policy as `FORCE_UPGRADE`. | Cache last policy; first launch defaults to minimal safe mode; never fail closed unless security requires it. |
 | **Feature flag mismatch** | Server enables a feature for clients that do not support its response shape. | Flag rollout must include app version, capability, schema version, API level, and backend cohort gates. |
@@ -339,12 +334,12 @@ Negative capability tests are the antidote to "it works on the latest app."
 ## 6. Common Pitfalls
 
 ### Pitfall 1: Trusting the Backend's Nullability
-Backend sends: `{"name": null}`. Your Kotlin data class says: `val name: String`. Retrofit uses Gson, which uses reflection to bypass Kotlin's null safety, injecting a Java `null` into your non-null Kotlin `String`. Your app crashes later with a `NullPointerException`.
-*Fix:* Use `Moshi` or `Kotlinx Serialization`. They enforce Kotlin's null safety at the boundary and will fail the parsing immediately, allowing you to catch the exception and show an error state, rather than crashing the app randomly later.
+Backend sends: `{"name": null}` while the Kotlin model declares `val name: String`. Some reflection-based Gson mappings can construct an object containing a Java `null`, deferring failure until later use; exact behavior depends on adapters and configuration.
+*Fix:* Use a Kotlin-aware generated or reflection adapter with explicit nullability behavior, such as properly configured Moshi or Kotlinx Serialization, and test malformed or legacy payloads. Catch decoding failures at the repository boundary and map them to an observable error state.
 
 ### Pitfall 2: Treating HTTP 200 as "Success"
 Many enterprise backends (especially legacy ones) return `HTTP 200 OK` for everything, with the error embedded in the JSON: `{"status": "error", "code": 500}`.
-*Fix:* If you can't fix the backend, write a custom OkHttp `Interceptor` that intercepts the response, parses the status field, and rewrites the HTTP code to 500 before Retrofit sees it. This keeps your Repository layer clean.
+*Fix:* Correct the server contract when possible. Otherwise preserve the HTTP status and parse the legacy envelope in a converter or repository mapper into a typed `BusinessError`. Synthesizing a transport `5xx` can trigger incorrect retry/monitoring behavior, and an interceptor that consumes the one-shot body must rebuild it safely.
 
 ### Pitfall 3: Using app version as the only API switch
 `versionCode` is useful for support policy, but it is a weak behavior signal. Hotfixes, staged rollouts, regional builds, white-label apps, and backports break the assumption that "version X always has feature Y."
@@ -355,24 +350,24 @@ Many enterprise backends (especially legacy ones) return `HTTP 200 OK` for every
 
 ## Probing Questions
 
-1.  **Radio Wakeup:** Explain the specific mechanism by which FCM (Firebase Cloud Messaging) "wakes up" an Android device. Why is it vastly more battery-efficient than the app running an AlarmManager to ping the server every 15 minutes?
-2.  **OkHttp Interceptors:** You want to implement an automatic retry mechanism for 503 Server Unavailable errors with exponential backoff. Do you put this logic in the Retrofit interface, the Repository, or an OkHttp Interceptor? Why?
+1.  **Push vs polling:** Why can an OS/Play-services-managed FCM channel avoid periodic app polling, and which delivery/background limits prevent treating a push as a guaranteed app wake-up?
+2.  **Retry ownership:** Which transient-failure classification belongs in shared HTTP infrastructure, and when must retry remain in a repository/outbox workflow?
 3.  **Null Safety Boundary:** Explain exactly how `Moshi` differs from `Gson` when encountering a null JSON value mapped to a non-null Kotlin property. How does Kotlinx Serialization handle this same scenario?
-4.  **GraphQL vs REST:** If a screen needs User Profile, Latest Order, and Cart Count, how many HTTP requests does REST typically require vs GraphQL? What are the caching disadvantages of GraphQL on the mobile client side?
+4.  **GraphQL vs REST:** How can REST+BFF and GraphQL each minimize request count for a screen, and what HTTP/application-cache tradeoffs remain?
 5.  **Force Upgrade:** Walk through the architecture of a Force Upgrade system. How do you ensure the `/config` endpoint itself doesn't become a single point of failure that prevents the app from opening when the server is down?
 6.  **Capability Negotiation:** Why is `versionCode >= 412010` a weaker backend switch than `supportsFeedV2=true`? Give a hotfix or backport scenario where version-based switching fails.
 7.  **Old Client Contract Testing:** Design a CI test that proves a six-month-old Android client can still parse today's backend response.
 
 ## Answer Key
 
-1. **Explain the specific mechanism by which FCM (Firebase Cloud Messaging) "wakes up" an Android device. Why is it vastly more battery-efficient than the app running an AlarmManager to ping the server every 15 minutes?**
-   FCM maintains a single, OS-level multiplexed TCP connection for all Google Play apps. When a message arrives, the OS wakes the specific app via an Intent. This avoids the app periodically waking the radio itself, which drains battery through repeated high-power state transitions.
-2. **You want to implement an automatic retry mechanism for 503 Server Unavailable errors with exponential backoff. Do you put this logic in the Retrofit interface, the Repository, or an OkHttp Interceptor? Why?**
-   Place it in an OkHttp Interceptor. This centralizes the logic for all network calls, keeping the Repository and Retrofit interfaces clean of infrastructure concerns and ensuring consistent backoff behavior globally.
+1. **Why can an OS/Play-services-managed FCM channel avoid periodic app polling, and which delivery/background limits prevent treating a push as a guaranteed app wake-up?**
+   Shared platform messaging infrastructure can receive a server hint without each app scheduling its own polling wakeups. Data-message delivery remains best-effort and depends on priority, Doze, app state, device policy, and possible deprioritization; use it to trigger bounded work and reconciliation, not as durable state. On Android 13+, `POST_NOTIFICATIONS` separately governs display of non-exempt notifications, not whether a data message can reach `FirebaseMessagingService`.
+2. **Which transient-failure classification belongs in shared HTTP infrastructure, and when must retry remain in a repository/outbox workflow?**
+   Shared infrastructure can classify transport/server hints and apply a common bounded policy, but it may retry only replay-safe/idempotent operations with explicit attempt, deadline, cancellation, and jitter rules. Domain commands, durable writes, or non-replayable bodies need repository/outbox ownership and idempotency semantics.
 3. **Explain exactly how `Moshi` differs from `Gson` when encountering a null JSON value mapped to a non-null Kotlin property. How does Kotlinx Serialization handle this same scenario?**
-   Gson uses reflection and bypasses Kotlin's null safety, injecting Java `null` into non-null properties, causing delayed `NullPointerException`s. Moshi and Kotlinx Serialization enforce null safety at the parsing boundary and immediately fail with an exception.
-4. **If a screen needs User Profile, Latest Order, and Cart Count, how many HTTP requests does REST typically require vs GraphQL? What are the caching disadvantages of GraphQL on the mobile client side?**
-   REST typically requires 3 requests (unless using a BFF or sparse fieldsets), while GraphQL requires 1 request. GraphQL's main caching disadvantage is that it uses `POST` requests, which bypass traditional HTTP caches (CDNs, OkHttp cache) unless using persisted queries.
+   Some reflection-based Gson mappings can construct an object containing Java `null` and defer failure until use; adapters can change that behavior. Properly configured Moshi Kotlin adapters and Kotlinx Serialization normally reject an explicit `null` for a required non-null property at decoding, subject to custom adapters/serializers and declared defaults. Test the chosen configuration at the repository boundary.
+4. **How can REST+BFF and GraphQL each minimize request count for a screen, and what HTTP/application-cache tradeoffs remain?**
+   Either style can serve the screen in one or several requests depending on endpoint shape, batching, cache state, and query splitting. REST/BFF responses often map naturally to URL/HTTP caches; GraphQL commonly uses normalized application caching, while GET queries or persisted/APQ hashes can also participate in HTTP/CDN caching.
 5. **Walk through the architecture of a Force Upgrade system. How do you ensure the `/config` endpoint itself doesn't become a single point of failure that prevents the app from opening when the server is down?**
    The app fetches a policy payload on startup. To prevent a single point of failure, the app must cache the last successful policy and gracefully degrade to a safe offline/minimal state if the endpoint is unreachable, rather than locking the user out.
 6. **Why is `versionCode >= 412010` a weaker backend switch than `supportsFeedV2=true`? Give a hotfix or backport scenario where version-based switching fails.**
@@ -387,3 +382,5 @@ Many enterprise backends (especially legacy ones) return `HTTP 200 OK` for every
 - [`../mobile-system-design/versioning-and-backward-compatibility.md`](../mobile-system-design/versioning-and-backward-compatibility.md) — Full mobile version lifecycle: deprecation, schema migration, and force-update policy.
 - [`../android/networking-and-security/retrofit-and-okhttp.md`](../android/networking-and-security/retrofit-and-okhttp.md) — Deep dive into configuring OkHttp for mobile constraints.
 - [`../android/networking-and-security/ktor-vs-retrofit.md`](../android/networking-and-security/ktor-vs-retrofit.md) — Modern networking alternatives for Kotlin Multiplatform.
+- [GraphQL specification: Field deprecation](https://spec.graphql.org/October2021/#sec-Field-Deprecation) — Schema deprecation semantics.
+- [GraphQL specification: Validation](https://spec.graphql.org/October2021/#sec-Validation) — Executable-document validation against a schema.

@@ -2,7 +2,7 @@
 
 ## Overview
 
-In the Android ecosystem, networking is completely dominated by two libraries from Square: `OkHttp` and `Retrofit`. 
+`OkHttp` and `Retrofit`, both from Square, are established choices in Android networking.
 
 While Junior developers use these libraries to simply fetch JSON from a server, a Staff Engineer understands the deep architectural split between the two. `OkHttp` is the low-level HTTP client (handling sockets, connection pooling, and caching), while `Retrofit` is the high-level declarative wrapper (handling URL routing, serialization, and coroutine integration).
 
@@ -12,15 +12,15 @@ Understanding how to manipulate the `OkHttp` interceptor chain is critical for b
 
 Mobile networks are hostile. Users walk onto elevators, drive through tunnels, and connect to captive Wi-Fi portals (like Starbucks) that intercept HTTPS traffic.
 
-If your networking layer simply calls `api.getData()` and crashes when it fails, the UX is terrible. A Staff-level architecture uses `OkHttp` interceptors to automatically retry failed requests, attach Bearer tokens, transparently refresh expired tokens via an `Authenticator`, and cache responses so the app loads instantly even in Airplane mode.
+If a networking layer treats every failure as a crash, the experience is brittle. Centralize shared HTTP concerns such as authentication and cache policy, but retry only transient failures under a bounded policy when the operation and body are safe to replay. Honor cancellation, deadlines, backoff, and server hints; offline behavior depends on deliberately cached or persisted data.
 
 ## Historical Context
 
-Before `OkHttp`, developers used `HttpURLConnection` (built into Java) or the Apache HTTP Client. These were famously terrible. `HttpURLConnection` had a bug on Android 2.2 where calling `close()` on a readable input stream poisoned the connection pool, forcing developers to write OS-version-specific hacks.
+Before OkHttp became common, Android applications often used `HttpURLConnection` or Apache HTTP Client and had to account for platform-version behavior and lower-level HTTP details. Historical Android releases included connection-reuse defects that libraries and applications worked around.
 
 Square built `OkHttp` to bypass these OS bugs by bundling a complete, heavily-tested HTTP client directly into the app APK. 
 
-Later, Square built `Retrofit` on top of `OkHttp`. Before Retrofit, developers had to manually parse JSON strings and manually build URL strings with `?query=` parameters, which was incredibly brittle and led to constant `NullPointerExceptions` and Malformed URL errors.
+Square later built Retrofit as a declarative API layer over OkHttp. Compared with hand-built URLs and ad hoc parsing, generated request mappings and converter boundaries can reduce construction and decoding mistakes, though contracts still require tests and error handling.
 
 ## First Principles
 
@@ -78,7 +78,7 @@ graph TD
     
     subgraph "OkHttp Interceptor Chain"
         Req --> AppInt[Application Interceptor: Logging/Auth]
-        AppInt --> Cache[Cache Interceptor: Checks local DB]
+        AppInt --> Cache[HTTP Cache: Disk entries and validators]
         Cache --> NetInt[Network Interceptor: GZIP/Stetho]
     end
     
@@ -95,25 +95,42 @@ graph TD
 
 A classic Junior mistake is handling Token Refresh inside the ViewModel or Repository using `try/catch(401)`. 
 
-A Staff Engineer implements this inside `OkHttp` using an `Authenticator`. This handles the refresh entirely transparently. The Repository doesn't even know it happened.
+For challenge-based token renewal, an OkHttp `Authenticator` can centralize one bounded refresh and follow-up attempt. The repository still receives failure when refresh is unavailable, rejected, cancelled, or exceeds its deadline.
 
 ```kotlin
 class TokenAuthenticator(
     private val tokenStorage: TokenStorage,
-    private val authApi: Provider<AuthApi> // Lazy provider to prevent circular DI loops
+    // Built on a dedicated client with no TokenAuthenticator, so refresh 401s
+    // cannot recursively invoke this authenticator.
+    private val refreshApi: AuthApi,
 ) : Authenticator {
 
     override fun authenticate(route: Route?, response: Response): Request? {
-        // 1. If the failed request already tried to use a new token, give up to prevent infinite loops.
-        if (response.request.header("Authorization") != null && response.code == 401 && response.priorResponse != null) {
-            return null // Returns null to signal failure
+        // Count authentication challenges, not redirects in the prior chain.
+        val challengeCount = generateSequence(response) { it.priorResponse }
+            .count { it.code == 401 }
+        if (challengeCount >= 2) {
+            return null
         }
 
-        // 2. Synchronously refresh the token. 
-        // OkHttp calls this on a background thread automatically.
-        // We use a synchronized block in case 5 concurrent API calls all hit 401 at the same time.
+        val failedAuthorization = response.request.header("Authorization")
+
+        // 2. authenticate() runs synchronously on this call's execution thread.
+        // Serialize refresh and re-read storage so queued 401s reuse the token
+        // produced by the first refresh instead of refreshing again.
         synchronized(this) {
-            val newToken = authApi.get().refreshTokenSynchronously()
+            val currentToken = tokenStorage.getToken()
+            val currentAuthorization = currentToken?.let { "Bearer $it" }
+            if (currentAuthorization != null && currentAuthorization != failedAuthorization) {
+                return response.request.newBuilder()
+                    .header("Authorization", currentAuthorization)
+                    .build()
+            }
+
+            // The dedicated refresh API returns null for an unsuccessful or
+            // unauthenticated refresh; bound its call timeout separately.
+            val newToken = refreshApi.refreshTokenSynchronouslyOrNull()
+                ?: return null
             tokenStorage.saveToken(newToken)
             
             // 3. Retry the failed request with the new token
@@ -124,9 +141,13 @@ class TokenAuthenticator(
     }
 }
 
-// In your Hilt DI Module:
-val okHttpClient = OkHttpClient.Builder()
-    .authenticator(TokenAuthenticator(storage, apiProvider))
+// In DI, the refreshApi uses a client without this authenticator.
+val refreshClient = baseClient.newBuilder()
+    .authenticator(Authenticator.NONE)
+    .build()
+val refreshApi = buildRefreshApi(refreshClient)
+val okHttpClient = baseClient.newBuilder()
+    .authenticator(TokenAuthenticator(storage, refreshApi))
     .build()
 ```
 
@@ -137,19 +158,19 @@ val okHttpClient = OkHttpClient.Builder()
 Choosing the `Converter` for Retrofit is a critical architectural decision.
 
 - **Gson:** The legacy Google library. 
-    - *Cons:* Uses heavy Reflection. Horribly breaks Kotlin null-safety. If the JSON is missing a field, Gson will instantiate your Data Class with `null` values even if your Kotlin property is declared as `val name: String` (non-null). Do not use in modern apps.
+    - *Tradeoffs:* Reflection-based mappings can bypass Kotlin constructor/nullability expectations unless suitable adapters and tests are used. Existing Gson systems may remain viable, but new Kotlin models should make null, default, and unknown-value behavior explicit.
 - **Moshi:** Built by Square (the creators of Retrofit).
-    - *Pros:* Fully respects Kotlin nullability. Extremely fast. Supports codegen (no reflection). 
-    - *Cons:* The standard choice for the last 5 years, but increasingly being replaced by Kotlinx.
+    - *Pros:* Kotlin-aware adapters and code generation can enforce declared constructor/nullability behavior without reflection for generated models.
+    - *Tradeoffs:* Adapter setup, defaults, qualifiers, and performance depend on configuration and schema.
 - **Kotlinx Serialization:** The official JetBrains library.
-    - *Pros:* Natively integrated into the Kotlin compiler. Supports KMP (Kotlin Multiplatform). Extremely fast. 
-    - *Cons:* Slightly stricter parsing rules out-of-the-box (e.g., throws exceptions on unknown JSON keys unless explicitly configured).
+    - *Pros:* Compiler-plugin-generated serializers and Kotlin Multiplatform support.
+    - *Tradeoffs:* Its JSON configuration rejects unknown keys by default, and annotation/configuration choices become part of the wire contract. Benchmark representative models rather than assuming a universal speed ranking.
 
 ## Failure Modes
 
 - **The DI Circular Dependency Loop:**
   If your `TokenAuthenticator` injects your `Retrofit` instance (to make the refresh call), and your `Retrofit` instance injects your `OkHttpClient` (which requires the `TokenAuthenticator`), you have a circular dependency loop. Dagger/Hilt will refuse to compile.
-  *(Fix: Inject a `Lazy<AuthApi>` or `Provider<AuthApi>` into the Authenticator so the dependency is deferred until runtime).*
+  *(Fix: Build the refresh API on a dedicated bounded client with no token authenticator, then inject that API into the authenticated client. `Lazy`/`Provider` can defer a construction cycle but does not prevent runtime authenticator recursion if both APIs share the same authenticated client.)*
 - **Reading the Interceptor Body Twice:**
   ```kotlin
   val bodyString = response.body?.string() // 1. Read the stream
@@ -157,20 +178,20 @@ Choosing the `Converter` for Retrofit is a critical architectural decision.
   return response // 2. Pass to Retrofit
   ```
   *(Fix: In OkHttp, the response body is a one-time-use byte stream. If you call `.string()`, the stream is consumed and closed. When Retrofit tries to read it to parse the JSON, it crashes with `IllegalStateException: closed`. You must `peek()` the body or clone the buffer for logging).*
-- **Connection Pool Exhaustion:**
-  If you download a massive file (`@Streaming`) but forget to explicitly close the `ResponseBody` in your Repository, the TCP connection is never returned to the `OkHttp` connection pool. After ~5 leaked calls, the pool is exhausted and all future network requests will hang indefinitely.
+- **Leaking response-body resources:**
+  If you download a large file (`@Streaming`) but fail to close its `ResponseBody`, the response does not promptly release its stream/socket resources. That may prevent connection reuse or consume HTTP/2 stream capacity until cleanup occurs. Repeated leaks increase connection churn and may eventually hit file-descriptor, dispatcher, peer, or network limits. The default connection-pool setting of five refers to **idle** connections, not a five-request maximum, so there is no universal “five leaks and every request hangs” threshold.
 
 ## Staff Engineer Thinking
 
 When reviewing the Network layer, a Staff engineer focuses on resilience and global configurations:
 
-1.  **Timeouts:** I verify that `connectTimeout`, `readTimeout`, and `writeTimeout` are explicitly configured on the `OkHttpClient`. The defaults (10 seconds) are often too short for rural users on 3G, but too long for snappy UI feedback.
-2.  **Mocking via Interceptors:** For UI testing or early feature development before the Backend is ready, I encourage teams to write a `MockInterceptor` that intercepts specific URLs and returns hardcoded JSON strings. This is vastly superior to mocking the Retrofit Interface with Mockito, because the Interceptor actually validates that your URL paths and HTTP verbs are correct.
+1.  **Timeouts:** Review connect, read, write, and whole-call deadlines against the operation and supported network cohorts. Defaults and appropriate values vary by OkHttp version, request type, UX, and backend budget; verify behavior with fault tests.
+2.  **Mocking via interceptors:** An interceptor-backed fake can exercise URL paths, verbs, converters, and response handling. Interface fakes are faster and more focused for domain tests; choose the boundary that matches the behavior under test.
 3.  **Global Error Handling:** ViewModels should not be writing `if (e is UnknownHostException)` to detect offline states. I prefer an Interceptor that catches raw socket exceptions and throws a custom `NoInternetException`, which is then globally mapped into a User-Facing Error State by the BaseViewModel or Repository.
 
 ## Common Misconceptions
 
-- **"Retrofit executes network calls on the background thread automatically."** Retrofit 2.6+ inherently supports Kotlin Coroutines. If you define a method as `suspend fun getUser()`, Retrofit will shift the execution to a background thread natively. However, if you return a raw `Call<User>`, it is entirely synchronous and will crash the app if you call `.execute()` on the Main Thread.
+- **"A raw Retrofit `Call<T>` is entirely synchronous."** A raw call supports asynchronous `enqueue()` and blocking `execute()`. The blocking form must not run on the main thread; a Retrofit `suspend` service method uses OkHttp's asynchronous execution path.
 - **"I need to add `Dispatchers.IO` when calling Retrofit suspend functions."** False. Retrofit's Coroutine CallAdapter internally routes the HTTP request to OkHttp's asynchronous dispatcher. Wrapping a Retrofit `suspend` function in `withContext(Dispatchers.IO)` is redundant and adds unnecessary context-switching overhead.
 
 ## Probing Questions
@@ -183,7 +204,7 @@ When reviewing the Network layer, a Staff engineer focuses on resilience and glo
 6.  Describe how you would implement a transparent OAuth Token Refresh mechanism without putting `try/catch` logic inside your ViewModels or Repositories.
 7.  What is a Circular Dependency, and how does it commonly occur when setting up an `OkHttp` Authenticator with Dependency Injection (Hilt)?
 8.  Why is it unnecessary to wrap a Retrofit `suspend` function inside a `withContext(Dispatchers.IO)` block?
-9.  If you use the `@Streaming` annotation in Retrofit to download a 500MB video, what critical step must you take in your Repository to prevent exhausting the OkHttp Connection Pool?
+9.  If you use `@Streaming` to download a large response, what ownership step prevents socket, file-descriptor, and response-body resource leaks?
 10. Describe how you could use an `OkHttp` Interceptor to implement a complete "Offline First" mock backend for your Android application.
 
 ## Answer Key
@@ -199,13 +220,13 @@ When reviewing the Network layer, a Staff engineer focuses on resilience and glo
 5. **If you write an Interceptor to log the JSON response body using `response.body()?.string()`, why will your application crash when Retrofit attempts to parse the object?**
    `response.body()?.string()` consumes and closes the one-time-use byte stream. Retrofit will crash with an `IllegalStateException` when trying to read the already-closed stream.
 6. **Describe how you would implement a transparent OAuth Token Refresh mechanism without putting `try/catch` logic inside your ViewModels or Repositories.**
-   Use an OkHttp `Authenticator`. It intercepts a 401 response, synchronously requests a new token, and automatically retries the original request with the new token.
+   Use an OkHttp `Authenticator`, which runs synchronously on the call's execution thread after an authentication challenge. Coalesce refreshes: inside a bounded single-flight/mutex, re-read storage and reuse a credential changed since the failed request; only the first caller refreshes. Return a follow-up request with the new credential, cap follow-ups, and return `null` when recovery is unsafe or fails.
 7. **What is a Circular Dependency, and how does it commonly occur when setting up an `OkHttp` Authenticator with Dependency Injection (Hilt)?**
-   It occurs when the Authenticator needs Retrofit to fetch the token, Retrofit needs OkHttp, and OkHttp needs the Authenticator. Fix it by injecting a `Lazy<AuthApi>` or `Provider<AuthApi>` into the Authenticator.
+   It occurs when the authenticator needs a Retrofit refresh API, that Retrofit needs the authenticated OkHttp client, and the client needs the authenticator. Build the refresh API on a separate bounded client without this authenticator. `Lazy`/`Provider` can defer construction but does not prevent runtime recursion when refresh uses the same authenticated client.
 8. **Why is it unnecessary to wrap a Retrofit `suspend` function inside a `withContext(Dispatchers.IO)` block?**
    Retrofit's Coroutine integration automatically offloads the network call to a background thread natively through OkHttp's asynchronous execution.
-9. **If you use the `@Streaming` annotation in Retrofit to download a 500MB video, what critical step must you take in your Repository to prevent exhausting the OkHttp Connection Pool?**
-   You must explicitly `close()` the ResponseBody in your repository to return the TCP connection to OkHttp's pool, or subsequent network calls will hang indefinitely.
+9. **If you use `@Streaming` to download a large response, what ownership step prevents socket, file-descriptor, and response-body resource leaks?**
+   Close the `ResponseBody`, preferably with `use { ... }`. OkHttp may reuse the connection when the protocol and body state permit; otherwise closing promptly releases or discards the underlying resources. There is no fixed five-leak pool-capacity threshold.
 10. **Describe how you could use an `OkHttp` Interceptor to implement a complete "Offline First" mock backend for your Android application.**
    Write a MockInterceptor that intercepts requests, checks the URL path or method, and returns a crafted `Response` containing hardcoded JSON using `ResponseBody.create()` without ever calling `chain.proceed()` to the real network.
 
@@ -214,3 +235,5 @@ When reviewing the Network layer, a Staff engineer focuses on resilience and glo
 - [`dependency-injection.md`](../data-and-di/dependency-injection.md) — How we provide singletons of Retrofit via Hilt.
 - [`coroutines-under-the-hood.md`](../concurrency/coroutines-under-the-hood.md) — How Retrofit automatically bridges `Call<T>` into Coroutine State Machines.
 - [OkHttp Interceptor API](https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Interceptor.kt)
+- [OkHttp `ResponseBody`](https://square.github.io/okhttp/5.x/okhttp/okhttp3/-response-body/index.html) — Closing response bodies and resource ownership.
+- [OkHttp `ConnectionPool`](https://square.github.io/okhttp/5.x/okhttp/okhttp3/-connection-pool/index.html) — Idle-connection configuration.

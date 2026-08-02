@@ -10,50 +10,50 @@ A Staff Engineer understands that Android's runtime evolution is the story of a 
 
 ## Why It Matters
 
-If you write a deeply nested `for` loop in Python, it runs slowly because Python is an interpreted language. If you write that same loop in C++, it runs instantly because C++ is compiled directly to Machine Code.
+A deeply nested loop may execute differently in an interpreter, JIT-compiled runtime, or ahead-of-time compiled binary. Language implementation, optimization, algorithm, workload, and hardware all matter; “interpreted is slow” and “compiled is instant” are not useful performance guarantees.
 
 Android sits in the middle. Your Kotlin code is compiled into `.dex` (Dalvik Executable) bytecode. But *when* and *how* does that bytecode become Machine Code? 
-- If the translation happens while the user is staring at the screen, your app stutters ([Jank](../performance/jank.md)).
-- If the translation happens when the app is installed, the install takes 5 minutes, and the app takes up 3x the storage space.
+- Runtime interpretation or JIT work can contribute to [jank](../performance/jank.md) when it lands on a critical path, but the user-visible result depends on the workload and device.
+- If more translation happens during installation, installation and compiled-code storage increase; the magnitude depends on the app, device, OS release, and compilation filter.
 - If you don't understand how the runtime balances this, your attempts to optimize your app's performance will be based on fundamentally incorrect assumptions.
 
 ## Historical Context
 
-- **Pre-Android (Sun JVM):** Standard Java compiles to `.class` files and runs on a Stack-Based Virtual Machine. Google rejected this because stack-based VMs require too much RAM, which the original 192MB Android G1 phone did not have. They also wanted to avoid Oracle/Sun licensing lawsuits.
-- **Android 1.0 (Dalvik):** Dan Bornstein created Dalvik. It was a **Register-Based Virtual Machine**. It consumed vastly less RAM. It took `.class` files and squashed them into highly compressed `.dex` files. Early Dalvik was interpreter-first: every run paid the cost of reading DEX bytecode and executing it through the VM. Android 2.2 added a trace-based **JIT (Just-In-Time)** compiler for hot paths, improving speed but still spending CPU and battery while the app was running.
-- **Android 5.0 (ART - Ahead of Time):** Google ripped out Dalvik and replaced it with ART (Android Runtime). ART introduced **AOT (Ahead-Of-Time)** compilation. When you downloaded an app from the Play Store, the OS spent 5 minutes translating the *entire* DEX file into raw Machine Code (`.oat` / `.odex`). App startup was instant. Battery life soared. But app installations took forever.
-- **Android 7.0+ (ART - Profile-Guided Optimization):** Google realized AOT compiling the entire app was wasteful (users only use 20% of an app's features). They introduced a hybrid system: JIT + AOT + Profiles. 
+- **Early Android constraints:** Java source commonly compiled to JVM `.class` files, while Android introduced DEX bytecode and Dalvik for its process, memory, packaging, and mobile-runtime goals. Register-versus-stack encoding is one design dimension; it is not enough by itself to explain total RAM use or legal history.
+- **Android 1.0 (Dalvik):** Dalvik used register-oriented DEX bytecode designed for early mobile process, memory, storage, and packaging constraints. Actual memory and artifact-size differences depend on the application and packaging. Early Dalvik was interpreter-first; Android 2.2 added a trace-based **JIT (Just-In-Time)** compiler for selected hot paths, trading runtime compilation work for potential execution gains.
+- **Android 5.0 (ART and install-time AOT):** ART replaced Dalvik as the runtime and relied substantially on ahead-of-time compilation during installation. That reduced runtime compilation work but increased installation time and compiled-code storage. The compiler filter, app, device, and release determine how much code is compiled; startup is not literally instant and no universal battery or duration multiplier follows from the runtime change.
+- **Android 7.0+ (ART - Profile-Guided Optimization):** Android moved to a hybrid of interpretation, JIT, AOT, and profiles so compilation effort could focus on code observed as important instead of relying as heavily on broad install-time compilation.
 
 ## First Principles
 
 1.  **DEX (Dalvik Executable):** The highly optimized bytecode format specific to Android. The `d8` / `R8` compiler turns your Kotlin into DEX.
-2.  **JIT (Just-In-Time):** Translating bytecode into Machine Code *while the app is running*. Slows down the app in real-time, but requires zero installation time.
-3.  **AOT (Ahead-Of-Time):** Translating bytecode into Machine Code *before the app runs*. Makes the app run blazingly fast, but requires time and CPU power upfront (during installation or while charging).
-4.  **Profile (`.prof`):** A binary file the OS maintains that tracks exactly which methods you use most frequently. (Note: Baseline Profile source files you write are text, but the compiled runtime profile is binary).
+2.  **JIT (Just-In-Time):** Translating selected bytecode while the app runs, shifting some compilation CPU into runtime without defining total installation cost.
+3.  **AOT (Ahead-Of-Time):** Translating selected bytecode before execution, shifting compilation work earlier and consuming compiled-code storage without guaranteeing a fixed runtime result.
+4.  **Profile (`.prof`):** Runtime profiles contain selected hot methods and classes observed under ART's profiling policy; they are not a complete execution history. Developer-authored Baseline Profile rules are human-readable before build tooling packages them into runtime-consumable profile assets.
 
 ## Mental Model
 
 Think of your app's DEX code as a **French Novel**. The CPU only speaks **English**.
 - **Dalvik (Interpreter-first):** Every time the user opens the book, a translator stands next to them, translating each French sentence into English out loud (Interpreter). Later versions added a notepad to remember frequent translations (JIT). Reading is slow and exhausting for the translator (Battery).
-- **ART v1 (Pure AOT):** When you buy the book, you must wait in the bookstore for 2 hours while the translator writes a complete English copy. Once done, you can read the English book instantly forever.
-- **Modern ART (PGO):** When you buy the book, you take the French version home. You start reading (JIT translation). The translator notices you really like reading Chapter 3. When you go to sleep (plug the phone in), the translator stays up and writes an English copy of *only* Chapter 3 (AOT based on Profile). The next day, Chapter 3 is instant.
+- **Early ART (heavier install-time AOT):** Before handing over the book, the translator prepares a substantial English edition selected by the current compilation filter. That can reduce translation while reading, but adds variable delivery time and storage rather than guaranteeing a complete copy or instant reading.
+- **Modern ART (PGO):** You take the French version home and begin with interpretation/JIT translation. Profiles identify useful chapters, which can later receive AOT translations. Those chapters need less runtime compilation on later reads, while uncompiled code still uses the rest of ART's execution modes.
 
 ## Internal Mechanics
 
 ### The Modern ART Pipeline (Android 7.0+)
 
-1. **Install:** You download an APK. The OS extracts the `.dex` file. No compilation happens. Installation is instant.
-2. **First Run (JIT):** You open the app. ART's Just-In-Time compiler translates the DEX bytecode to Machine Code as you use it. The app is slightly slow.
-3. **Profiling:** As you use the app, ART watches. It records every method you call into a JIT Profile (`/data/misc/profiles/cur/0/com.example.app/primary.prof`).
-4. **Idle Maintenance (AOT):** You plug your phone in at night. The screen turns off. The battery is 100%. The `dex2oat` background daemon wakes up. It reads the Profile. It takes the frequently used methods and Ahead-Of-Time compiles them into an `.odex` (Optimized DEX) file.
-5. **Second Run:** You open the app the next day. ART sees the `.odex` file and loads the raw Machine Code directly into RAM. The app runs blazingly fast.
+1. **Install:** The OS installs the APK's DEX code and may perform compilation work according to the Android release, installer, and active compiler filter; install cost is not universally zero.
+2. **First Run (interpretation/JIT):** ART executes available compiled code and interprets or JIT-compiles other methods as they become important.
+3. **Profiling:** Runtime profiles record selected hot methods and classes rather than every method called.
+4. **Background optimization (AOT):** When device and scheduler conditions permit, ART uses profiles and compiler filters to optimize selected code ahead of later runs.
+5. **Later runs:** Previously compiled paths can avoid some interpretation/JIT work, while startup still includes process, I/O, framework, and application costs.
 
 ### Cloud Profiles
 
 Google realized that waiting for *your* phone to generate a profile took too long. 
-When millions of users use your app, Google Play aggregates their profiles into a "Cloud Profile." Now, when a new user downloads your app, Google Play sends the `.apk` *and* the Cloud Profile. The phone AOT compiles the critical path *during installation*, completely skipping the slow JIT phase on Day 1.
+For eligible Play-distributed apps, Google Play can aggregate representative profiles and deliver a Cloud Profile to new installs. ART can use it to optimize important paths earlier, reducing—not universally eliminating—first-run interpretation and JIT work.
 
-*(Staff Note: We can manually inject a [Baseline Profile](../performance/baseline-profiles.md) directly into the APK to bypass Cloud Profile aggregation delays entirely).*
+*(Staff Note: A developer-supplied [Baseline Profile](../performance/baseline-profiles.md) gives ART useful rules before Cloud Profile aggregation, subject to delivery and compilation conditions.)*
 
 ## Architecture
 
@@ -63,20 +63,19 @@ graph TD
         Kotlin[Kotlin Code] -->|R8 Compiler| DEX[.dex Bytecode]
     end
     
-    subgraph "Android Device (Day 1)"
-        DEX -->|User Opens App| JIT[JIT Compiler]
-        JIT -->|Translates on the fly| CPU[ARM CPU]
-        JIT -->|Records usage| Prof[Local Profile]
+    subgraph "Android Device (Execution)"
+        DEX -->|Available compiled code, interpretation, or JIT| CPU[ARM CPU]
+        CPU -->|Selected hot methods/classes| Prof[Runtime Profile]
     end
     
-    subgraph "Android Device (Night Time)"
-        DEX -.->|dex2oat daemon| AOT[AOT Compiler]
+    subgraph "Optimization When Eligible"
+        DEX -.->|Platform invokes dex2oat| AOT[ART AOT Compiler]
         Prof -.-> AOT
-        AOT -.->|Writes Machine Code| ODEX[.odex File]
+        AOT -.->|Produces compiled artifacts| ODEX[Compiled Code]
     end
     
-    subgraph "Android Device (Day 2)"
-        ODEX -->|Bypasses JIT| CPU
+    subgraph "Later Execution"
+        ODEX -->|Compiled paths reduce runtime compilation| CPU
     end
 ```
 
@@ -86,11 +85,11 @@ graph TD
 
 Memory management is handled by the Runtime. The evolution of Garbage Collection (GC) from Dalvik to ART is staggering.
 
-In **Dalvik**, Garbage Collection was "Stop-The-World". When the heap filled up, Dalvik would literally freeze your entire application's execution (including the Main Thread). It would pause the app, walk the entire memory tree to find dead objects, delete them, and then unfreeze the app. If you allocated a lot of objects during an animation, the app would drop massive amounts of frames while Dalvik froze the world to clean up the mess.
+Legacy Dalvik collectors included stop-the-world work that could pause application threads and contribute to missed frames under allocation pressure. Behavior varied across Android releases and collector implementations.
 
-In **ART**, Garbage Collection is largely **Concurrent**. ART uses a highly optimized read-barrier mechanism. It cleans up memory on a background thread *while your app continues to execute on the Main thread*. Stop-The-World pauses in ART are measured in single-digit milliseconds or less. 
+ART introduced increasingly concurrent collectors and other runtime improvements that generally reduce pause work. Stop-the-world phases still exist, and pause duration depends on collector, heap, allocation rate, Android release, device, and workload; use runtime traces instead of a universal millisecond ceiling.
 
-*(Staff Note: Even with Concurrent GC, massive memory churn will still cause CPU contention and battery drain. Never instantiate objects inside an `onDraw` loop).*
+*(Staff Note: Even with concurrent GC, sustained allocation churn can add CPU, memory, and energy pressure. Avoid per-frame allocation in measured rendering hot paths such as `onDraw`; confirm the effect with allocation and frame traces.)*
 
 ## Tradeoffs
 
@@ -100,72 +99,74 @@ Why did Android use a Register-based VM (Dalvik/ART) instead of a Stack-based VM
 
 - **Stack-Based (Standard JVM):**
     - *Pros:* The bytecode is extremely compact. The compiler is simple to write.
-    - *Cons:* It requires many more CPU instructions to execute. To add two numbers, a stack VM must execute 4 instructions: `PUSH A`, `PUSH B`, `ADD`, `POP C`.
+    - *Cons:* Some operations require more VM bytecode instructions because operands move through an operand stack.
 - **Register-Based (Dalvik/ART):**
-    - *Pros:* Executes vastly fewer instructions. The same addition requires 1 instruction: `ADD C, A, B`. Because mobile CPUs are heavily optimized for registers, this translates directly to massive battery savings.
-    - *Cons:* The compiled `.dex` files are technically larger than standard `.class` files, requiring Google to implement deep string-pooling and deduplication tricks inside the DEX format to save disk space.
+    - *Pros:* Some operations can be encoded with fewer VM instructions by naming virtual registers directly, trading instruction density and implementation complexity. End-to-end CPU and energy effects still require measurement.
+    - *Cons:* Register-oriented instructions can be wider, while DEX cross-class pooling, archive compression, and the input class set also change total size. Compare final artifacts rather than assuming DEX or class/JAR output is universally smaller.
 
 ## Failure Modes
 
 - **The Verification Error (`VerifyError`):**
-  When ART loads a DEX file, it runs a strict "Verifier" to ensure the bytecode isn't malicious and won't illegally access memory. If you use a bytecode-manipulation library (like some advanced mocking frameworks) that generates mathematically invalid DEX, your app will crash instantly on startup with a `VerifyError`.
-  *(Fix: Ensure your R8/ProGuard configuration is correct, and avoid aggressively hacking bytecode at runtime).*
-- **AOT Thrashing (Pre-Android 7):**
-  On Android 5 and 6, the OS AOT compiled *everything*. If you had a 150MB APK, `dex2oat` would lock up the phone for 10 minutes during installation, causing the device to overheat. This is the exact failure mode that forced Google to invent Profile-Guided Optimization.
-- **De-optimization:**
-  Exceptions are computationally expensive. Generating stack traces requires walking the call stack and resolving symbol information, severely degrading performance when used for standard control flow. Exceptions should only be used for truly exceptional states.
+  ART verifies DEX bytecode before executing it. Invalid generated or transformed bytecode can raise `VerifyError` when the affected class is verified or loaded; whether that terminates the process depends on where and how the error is handled.
+  *(Fix: Validate bytecode-transforming tools and shrinker configuration against the affected build and Android versions.)*
+- **Install-time AOT pressure (Pre-Android 7):**
+  Android 5 and 6 relied more heavily on install-time AOT. Depending on the compiler filter, app, device, and OS build, `dex2oat` could add substantial installation CPU, latency, and compiled-code storage. Do not turn a measured incident into a universal “compile everything” rule or fixed APK-size/duration claim; this tradeoff was one motivation for later hybrid profile-guided compilation.
+- **Exception-heavy control flow:**
+  Throwing an exception and constructing its stack trace can cost more than an ordinary branch, with cost depending on runtime, stack depth, and whether a trace is filled. Avoid exception-driven logic in measured hot paths; do not infer whole-app performance from an isolated throw.
 
 ## Staff Engineer Thinking
 
 When thinking about the Runtime, a Staff engineer focuses on how code translates to bare-metal execution.
 
-1.  **DEX Method Limits (64k Limit):** The original Dalvik format used a 16-bit integer to reference methods, meaning an app could only have 65,536 methods. If you hit 65,537, the build failed. We had to enable `Multidex`, which split the app into multiple `.dex` files. Dalvik struggled immensely with Multidex, causing massive startup crashes. ART handles Multidex natively and effortlessly by flattening multiple DEX files into a single `.oat` file during compilation.
-2.  **`dex2oat` Monitoring:** If I see a spike in "App Not Responding" (ANR) reports immediately after an app update, I know that `dex2oat` is likely thrashing in the background, starving the CPU while it AOT compiles the new update. I mandate the inclusion of [Baseline Profiles](../performance/baseline-profiles.md) in the APK to give `dex2oat` an exact blueprint, stopping it from blindly compiling the entire app.
-3.  **String Pooling:** I write code knowing that DEX files pool strings. If you have the string `"Authorization"` in 500 different Kotlin files, it only appears *once* in the compiled DEX file. However, if you dynamically generate strings `("Auth_" + index)`, they cannot be pooled at compile time and will explode your heap memory at runtime.
+1.  **DEX reference limits and Multidex:** Individual DEX reference tables have 16-bit limits, so large apps may need multiple DEX files. Older Dalvik releases required application-level multidex support and had additional loading costs. ART supports multidex directly, but DEX layout, verification, loading, and compiled-artifact state can still affect startup; ART does not promise one flattened `.oat` file.
+2.  **Compilation monitoring:** If ANRs or resource contention rise after an update, ART compilation is one hypothesis to verify with system traces and device evidence—not a conclusion from timing alone. [Baseline Profiles](../performance/baseline-profiles.md) can identify important paths for earlier optimization, but compiler filters and device state still determine the work performed.
+3.  **String constants:** A DEX file uses a string table, so repeated constants within that DEX can share an entry; multidex packaging and runtime objects still matter. Dynamically constructed strings allocate according to execution and lifetime, so inspect allocation profiles before optimizing them.
 
 ## Common Misconceptions
 
-- **"ART converts Java to C++."** No. ART compiles DEX bytecode into raw ARM Machine Code. C++ is a high-level human-readable language. ART writes binary 1s and 0s directly for the CPU.
-- **"JIT is always slower than AOT."** Historically yes, but modern JIT compilers are incredibly advanced. Because JIT compiles code *while it is running*, it has access to live runtime data (e.g., it knows exactly which branch of an `if` statement is taken 99% of the time). JIT can actually perform dynamic optimizations that static AOT compilers cannot. This is why Android uses a hybrid of both.
+- **"ART converts Java to C++."** No. Android build tools produce DEX bytecode, and ART may interpret or compile selected DEX methods to target machine code according to runtime policy. C++ is not an intermediate language in that pipeline.
+- **"JIT is always slower than AOT."** Neither strategy wins universally. JIT can use observed runtime behavior to select and optimize hot code, while AOT can move selected compilation work out of the interactive path. Android combines interpretation, JIT, profiles, and AOT according to OS policy and device state.
 
 ## Probing Questions
 
 1.  Explain the fundamental difference between a Just-In-Time (JIT) compiler and an Ahead-Of-Time (AOT) compiler regarding CPU usage and app startup times.
 2.  Why did Google choose to build Dalvik as a Register-Based Virtual Machine instead of using a standard Stack-Based Java Virtual Machine?
-3.  Describe the "Profile-Guided Optimization" (PGO) pipeline in modern ART. How does the phone know which methods to AOT compile overnight?
-4.  How do "Cloud Profiles" provided by Google Play solve the "Day 1" performance problem for new users downloading your application?
-5.  What was the catastrophic flaw with Android 5.0's approach of AOT compiling 100% of an application's DEX bytecode upon installation?
-6.  Explain how the shift from Dalvik to ART radically improved Garbage Collection performance and reduced UI Jank.
-7.  What is the 64k Method Limit, and why does the modern ART runtime handle Multidex significantly better than the legacy Dalvik runtime?
+3.  Describe the profile-guided optimization pipeline in modern ART. How can runtime profiles influence later compilation?
+4.  When can Cloud Profiles provided by Google Play reduce first-run compilation work for new installs, and what limits apply?
+5.  What tradeoff did early ART's heavier install-time AOT strategy create, and how did profile-guided compilation change it?
+6.  How did garbage collection evolve from Dalvik to ART, and why can collection still contribute to UI jank?
+7.  What is the 64k reference-index limit, and how does modern ART multidex support differ from legacy Dalvik loading?
 8.  If an application relies heavily on throwing and catching Java Exceptions for standard logic flow, how might the ART runtime react in terms of performance optimization?
-9.  Describe the role of the `dex2oat` background daemon in the Android Operating System.
-10. How does shipping a manual `Baseline Profile` inside your APK interact with ART's `dex2oat` compiler?
+9.  Describe the role of the `dex2oat` ART compiler during installation and background optimization.
+10. How does packaging a Baseline Profile with an app release interact with ART compilation?
 
 ## Answer Key
 
 1. **Explain the fundamental difference between a Just-In-Time (JIT) compiler and an Ahead-Of-Time (AOT) compiler regarding CPU usage and app startup times.**
-   JIT compiles bytecode to machine code at runtime, leading to faster installation but slower startup times and higher runtime CPU usage. AOT compiles bytecode before execution, resulting in slower installation but instant startup and lower CPU usage during runtime.
+   JIT compiles selected bytecode while the app runs, shifting some compilation CPU into runtime. AOT compiles selected bytecode before execution, shifting that work earlier and increasing compiled-code storage. Startup and CPU outcomes depend on which code is compiled and on the workload; neither mode guarantees a fixed result.
 2. **Why did Google choose to build Dalvik as a Register-Based Virtual Machine instead of using a standard Stack-Based Java Virtual Machine?**
-   A register-based VM requires vastly fewer CPU instructions to execute operations, which heavily optimizes performance for mobile ARM processors and directly translates to massive battery savings.
-3. **Describe the "Profile-Guided Optimization" (PGO) pipeline in modern ART. How does the phone know which methods to AOT compile overnight?**
-   ART records frequently used methods during runtime (JIT) into a local profile. When the device is idle and charging, the `dex2oat` daemon reads this profile to AOT compile only the heavily utilized paths.
-4. **How do "Cloud Profiles" provided by Google Play solve the "Day 1" performance problem for new users downloading your application?**
-   Google Play aggregates profiles from millions of users and delivers them alongside the APK. The OS uses this Cloud Profile to AOT compile the critical path during installation, skipping the slow JIT phase on the first run.
-5. **What was the catastrophic flaw with Android 5.0's approach of AOT compiling 100% of an application's DEX bytecode upon installation?**
-   Compiling everything led to AOT thrashing, where installations took up to 10 minutes, consumed massive amounts of storage space, and caused device overheating, even though users only utilized a fraction of the app's features.
-6. **Explain how the shift from Dalvik to ART radically improved Garbage Collection performance and reduced UI Jank.**
-   Dalvik used a "Stop-The-World" GC that froze the entire app, dropping frames during heavy allocation. ART introduced concurrent GC with optimized read-barriers, cleaning memory on background threads and reducing pauses to single-digit milliseconds.
-7. **What is the 64k Method Limit, and why does the modern ART runtime handle Multidex significantly better than the legacy Dalvik runtime?**
-   Dalvik used a 16-bit integer for method references, limiting apps to 65,536 methods and struggling with multiple DEX files. ART natively flattens multiple DEX files into a single `.oat` file during compilation, handling Multidex seamlessly.
+   Register bytecode can encode some operations with fewer VM instructions by naming virtual registers, while stack bytecode can be denser and simpler. The tradeoff affects interpreter/compiler design and code representation; end-to-end CPU, memory, and energy outcomes depend on the implementation and workload.
+3. **Describe the profile-guided optimization pipeline in modern ART. How can runtime profiles influence later compilation?**
+   ART records selected hot methods and classes in runtime profiles. Subject to Android version, compiler filter, scheduler, and device conditions, later optimization can use matching rules to compile important paths; it is not fixed to an “overnight” event or a universal set of methods.
+4. **When can Cloud Profiles provided by Google Play reduce first-run compilation work for new installs, and what limits apply?**
+   For eligible apps, Google Play aggregates representative usage profiles and can deliver a Cloud Profile to new installs. ART may use it to optimize important paths earlier, reducing first-run interpretation/JIT work without guaranteeing that all needed code is already compiled.
+5. **What tradeoff did early ART's heavier install-time AOT strategy create, and how did profile-guided compilation change it?**
+   Doing more compilation at install time can improve runtime execution but increases install latency and compiled-code storage, including for cold code. Later ART releases combine interpretation, JIT, runtime profiles, and selective AOT so hot paths receive optimization while avoiding a universal compile-everything cost. Results remain workload- and device-dependent.
+6. **How did garbage collection evolve from Dalvik to ART, and why can collection still contribute to UI jank?**
+   ART evolved collectors, allocation handling, and concurrent work to reduce many pause times compared with older Dalvik behavior. Collection still includes pause phases and can cause jank under allocation pressure; duration depends on Android release, collector, heap, device, and workload rather than a universal single-digit-millisecond bound.
+7. **What is the 64k reference-index limit, and how does modern ART multidex support differ from legacy Dalvik loading?**
+   The limit applies to 16-bit reference indexes within an individual DEX file, so large applications split references across multiple DEX files. Older Dalvik versions required application-level multidex loading; ART supports multiple DEX files directly, though layout, loading, verification, and compilation can still affect performance.
 8. **If an application relies heavily on throwing and catching Java Exceptions for standard logic flow, how might the ART runtime react in terms of performance optimization?**
-   Exceptions are computationally expensive as they require stack walking and de-optimization. Frequent exceptions degrade performance significantly, negating ART's optimizations.
-9. **Describe the role of the `dex2oat` background daemon in the Android Operating System.**
-   `dex2oat` wakes up during device idle maintenance (plugged in, screen off) to read runtime profiles and Ahead-Of-Time compile frequently used methods into optimized machine code (`.odex`).
-10. **How does shipping a manual `Baseline Profile` inside your APK interact with ART's `dex2oat` compiler?**
-    It provides `dex2oat` with an exact, developer-defined blueprint of critical startup paths, ensuring they are AOT compiled immediately upon installation without waiting for local JIT profiling or Cloud Profile aggregation.
+   Frequent exception creation and throwing on a measured hot path can add stack-capture and control-flow cost. The effect depends on runtime, trace construction, frequency, and placement; profile before attributing a regression, and use ordinary branches for expected high-frequency outcomes.
+9. **Describe the role of the `dex2oat` ART compiler during installation and background optimization.**
+   `dex2oat` is an ART compiler used to produce compiled artifacts under platform-selected compiler filters. Installation, background optimization, runtime profiles, scheduler policy, and device state can all influence when it runs and which matching code it compiles.
+10. **How does packaging a Baseline Profile with an app release interact with ART compilation?**
+    It supplies developer-defined rules for important startup and interaction paths before local or Cloud Profiles accumulate. When the profile is delivered, installed, and accepted, `dex2oat` may use matching rules during installation or later optimization; Android version, installer, compiler filter, device state, and rule matching determine when and how much code is compiled.
 
 ## Further Reading
 
 - [`the-zygote.md`](the-zygote.md) — The master process that initializes ART and preloads classes to avoid booting the JVM from scratch for every app.
-- [`baseline-profiles.md`](../performance/baseline-profiles.md) — How developers manually generate the Profile text file to guarantee Day-1 AOT compilation.
+- [`baseline-profiles.md`](../performance/baseline-profiles.md) — How developer-supplied profile rules can enable earlier ART optimization when delivery and compilation conditions permit.
 - [Android Open Source Project: Android Runtime (ART) and Dalvik](https://source.android.com/docs/core/runtime)
+- [AOSP: ART JIT compiler](https://source.android.com/docs/core/runtime/jit-compiler) — Hybrid JIT/AOT and profile-guided compilation.
+- [AOSP: Configure ART](https://source.android.com/docs/core/runtime/configure) — Compiler filters and runtime configuration.

@@ -6,9 +6,9 @@ Logging is the fundamental heartbeat of debugging. It is the act of printing tex
 
 The starting point for most of us is `System.out.println("Here")` or `Log.d("TAG", "Value: " + value)`.
 
-A Staff Engineer understands that `Log.d` is a dangerous, blocking system call that crosses the JNI boundary into C++ and writes to a circular memory buffer managed by the Linux kernel. If you leave `Log.d` calls in your production release build, you are actively degrading the user's battery life, slowing down the Main Thread, and potentially leaking highly sensitive Personal Identifiable Information (PII) to malicious third-party apps reading the system log.
+A Staff Engineer treats logging cost and exposure as contextual. Argument construction and active output can add overhead on hot paths, while retained unsanitized messages can disclose sensitive data through device logs or telemetry sinks. Priority alone does not decide whether a call is retained, emitted, or safe; release behavior depends on source sets, the selected facade, runtime policy, and verified shrinker configuration.
 
-To manage this, Android engineers rely on wrapper libraries like **Timber** to route, format, and mathematically strip logging calls based on the build variant.
+Teams often enforce a common logging boundary to route, structure, redact, sample, or suppress messages. **Timber** is one Android facade; a project-owned wrapper or multiplatform library may be a better fit. No facade mathematically guarantees stripping—inspect the release artifact and test runtime behavior.
 
 ## Why It Matters
 
@@ -17,14 +17,13 @@ Imagine you write this in a `RecyclerView` adapter that binds 60 times a second:
 Log.d("UserAdapter", "Binding user: ${user.firstName} ${user.lastName}")
 ```
 
-In Kotlin, String interpolation (`"..."`) compiles down to a `StringBuilder`.
-Every frame, you allocate a new `StringBuilder`, append three strings, convert it to a String, pass it to the Android OS, which crosses into C++, acquires a mutex lock on the `logd` daemon, writes the bytes to a ring buffer, and releases the lock.
+Eager interpolation may allocate or perform other argument work before the logging facade decides whether to emit. Enabled output adds sink/daemon work. On a measured hot path, the combination can contribute to frame pressure; compiler lowering, loggability, sink behavior, and cost vary by build and device.
 
-If you ship this to production, the app will drop frames due to Garbage Collection thrashing (from the StringBuilders) and lock contention (from `logd`). You must have an architecture that entirely removes these calls from the Release APK.
+If a hot path ships with expensive log argument construction and active output, it can add allocation and logging overhead. Define release behavior explicitly: remove or suppress noisy calls where appropriate, lazily evaluate expensive arguments, sanitize retained telemetry, and verify the resulting artifact.
 
 ## Historical Context
 
-- **Java `System.out.println`:** Standard Java logging writes to `stdout`. On Android, this is redirected to `/dev/null` (it disappears) or poorly routed to Logcat without a proper tag or priority level.
+- **Java `System.out.println`:** Android commonly routes Java `System.out` through Logcat with generic attribution such as the `System.out` tag and `INFO` priority, making it less structured and controllable than an explicit logging API.
 - **`android.util.Log`:** The official Android logging class. It writes to the `logd` daemon. However, it requires you to manually provide a `TAG` for every single call (`Log.d(TAG, "msg")`), which led to developers copy/pasting the wrong TAGs across files.
 - **Timber (2013):** Created by Jake Wharton at Square. Timber is a tiny, extensible logging tree. It automatically figures out the `TAG` based on the calling class name, and more importantly, it allows you to dynamically "plant" different logging behaviors depending on whether the app is running in Debug or Release mode.
 
@@ -33,8 +32,8 @@ If you ship this to production, the app will drop frames due to Garbage Collecti
 1.  **Logcat:** The command-line tool (`adb logcat`) used to read the continuous stream of system messages.
 2.  **`logd` Daemon:** The background Linux process running on the Android device that manages the circular memory buffers where logs are stored.
 3.  **Priority Levels:**
-    - `Verbose (V)`: Extreme detail, never compiled into production.
-    - `Debug (D)`: Helpful debug info, stripped in production.
+    - `Verbose (V)`: Extremely detailed diagnostics. Log priority does not determine whether a call is compiled into a production artifact; build configuration and code shrinking may remove or retain it.
+    - `Debug (D)`: Helpful diagnostic information. It is retained unless the build, source-set, logging facade, or shrinker configuration deliberately removes or suppresses it.
     - `Info (I)`: Expected system events.
     - `Warn (W)`: Potential issues that aren't fatal.
     - `Error (E)`: Fatal exceptions or broken invariants.
@@ -50,8 +49,8 @@ Think of standard Android Logging (`Log.d`) as a **Public Megaphone**.
 
 Think of Timber as a **Smart Dispatcher**.
 - You hand a written note to the Dispatcher.
-- The Dispatcher looks at the calendar. If it is a "Debug" day, the Dispatcher reads it into the Public Megaphone.
-- If it is a "Release" day, the Dispatcher throws the note in the shredder instantly, saving energy and maintaining privacy.
+- The configured Debug tree can send the note to Logcat.
+- A Release tree can suppress it, redact it, or route selected messages to a telemetry sink. The dispatcher policy does not prove that argument construction was removed from the binary or that retained data is safe.
 
 ## Internal Mechanics
 
@@ -59,7 +58,7 @@ Think of Timber as a **Smart Dispatcher**.
 
 When you call `Timber.d("Hello")`, how does it know the TAG is `MainActivity`?
 
-Timber uses a brilliant (but computationally heavy) trick. It creates a dummy `Throwable` object and inspects the stack trace.
+Timber's `DebugTree` derives tags from call-site information. The exact stack-inspection implementation and cost are library-version details, so treat automatic attribution as debug-oriented and verify current source before depending on the mechanism.
 
 ```java
 // Simplified Timber internal logic
@@ -69,16 +68,16 @@ StackTraceElement[] elements = t.getStackTrace();
 String className = elements[1].getClassName(); 
 ```
 
-Because walking the stack trace is incredibly slow, Timber *caches* the TAG locally, and you only plant the `DebugTree` (which does this trick) in `Debug` builds.
+The simplified sketch illustrates why call-site attribution can cost more than an explicit tag; it is not a stable guarantee that a particular Timber version caches tags or that every project plants the tree only in Debug builds.
 
 ### ProGuard / R8 Stripping
 
-The most powerful feature of `android.util.Log` and `Timber` is their interaction with R8 (the code shrinker).
+R8 can remove selected logging calls when optimization is enabled and the configured assumptions match the called methods.
 
-If you configure your `proguard-rules.pro` file correctly, R8 will literally delete the logging calls from your bytecode.
+For example, `-assumenosideeffects` permits R8 to treat the listed methods as side-effect free when their results are unused:
 
 ```proguard
-# Tell R8 to delete any method call to android.util.Log
+# Permit R8 to remove unused calls to these android.util.Log methods.
 -assumenosideeffects class android.util.Log {
     public static boolean isLoggable(java.lang.String, int);
     public static int v(...);
@@ -88,7 +87,7 @@ If you configure your `proguard-rules.pro` file correctly, R8 will literally del
 }
 ```
 
-If R8 deletes the method call, the Kotlin compiler also deletes the `StringBuilder` string interpolation that was passed as an argument. The performance penalty is reduced to absolute zero in production.
+This rule is an optimizer assertion, not a platform guarantee or a Timber rule. R8 may remove the call and pure argument construction, but it must retain argument evaluation with observable side effects. Keep the rule aligned with the invoked API, use source-set/runtime suppression or lazy logging where appropriate, and inspect the optimized release artifact.
 
 ## Architecture
 
@@ -105,7 +104,7 @@ graph TD
     
     subgraph "OS Boundaries"
         DTree -->|Log.d| Logd[(logd daemon ring buffer)]
-        RTree -->|Firebase.log| Firebase[(Crashlytics Breadcrumbs)]
+        RTree -->|Policy-approved release events| Firebase[(Crashlytics Telemetry)]
     end
 ```
 
@@ -113,7 +112,7 @@ graph TD
 
 **Planting the Trees**
 
-A Staff Engineer isolates logging behavior entirely within the `Application.onCreate` method based on the `BuildConfig.DEBUG` flag.
+In this example, application startup plants variant-specific trees. Other applications may configure routing through dependency injection, generated initialization, or platform-specific adapters.
 
 ```kotlin
 class MyApplication : Application() {
@@ -124,112 +123,120 @@ class MyApplication : Application() {
             // In Debug mode, print everything to the Android Logcat
             Timber.plant(Timber.DebugTree())
         } else {
-            // In Release mode, send Errors and Warnings to Crashlytics as breadcrumbs.
-            // Ignore Debug and Verbose entirely.
-            Timber.plant(CrashReportingTree())
+            Timber.plant(CrashReportingTree(breadcrumbPolicy, nonFatalPolicy))
         }
     }
 }
 
 // Custom Tree for Production
-class CrashReportingTree : Timber.Tree() {
+fun interface BreadcrumbPolicy {
+    // Return a redacted breadcrumb, or null when schema/sampling policy rejects it.
+    fun approvedValue(priority: Int, tag: String?, message: String): String?
+}
+
+fun interface NonFatalPolicy {
+    fun shouldRecord(priority: Int, throwable: Throwable): Boolean
+}
+
+class CrashReportingTree(
+    private val breadcrumbPolicy: BreadcrumbPolicy,
+    private val nonFatalPolicy: NonFatalPolicy,
+) : Timber.Tree() {
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
-        if (priority == Log.VERBOSE || priority == Log.DEBUG) {
-            return // Throw away useless noise
+        breadcrumbPolicy.approvedValue(priority, tag, message)?.let { breadcrumb ->
+            FirebaseCrashlytics.getInstance().log(breadcrumb)
         }
 
-        // Send to Firebase Crashlytics as a breadcrumb
-        FirebaseCrashlytics.getInstance().log("$tag: $message")
-
-        if (t != null && priority == Log.ERROR) {
-            // Send caught exceptions as Non-Fatal reports
+        if (t != null && nonFatalPolicy.shouldRecord(priority, t)) {
             FirebaseCrashlytics.getInstance().recordException(t)
         }
     }
 }
 ```
 
-Now, the entire engineering team just types `Timber.d("Loaded")` anywhere in the app. They don't have to think about `if (DEBUG)`. The architecture handles the routing automatically.
+In this example, callers use the chosen facade and the planted tree handles routing. Callers still own data classification and expensive argument evaluation; a facade does not make arbitrary messages safe or free.
 
 ## Tradeoffs
 
 **Timber vs Native Kotlin `expect/actual` or Custom Wrappers**
 
 - **Timber:**
-    - *Pros:* The absolute industry standard. Every Android developer knows how to use it. Extremely reliable.
-    - *Cons:* It is a 3rd party dependency. Getting R8 to strip it perfectly requires specific ProGuard configurations because Timber uses varargs. It is not currently compatible with Kotlin Multiplatform (KMP) out of the box (though forks like `Kermit` exist).
+    - *Pros:* Established Android library with a small API and pluggable trees.
+    - *Cons:* Third-party dependency with Android-oriented APIs. Suppression or removal still requires an explicit tree/source-set/shrinker policy; KMP projects need a multiplatform facade or adapter.
 - **Custom Wrapper (`AppLog.d`):**
     - *Pros:* Zero dependencies. Easily mocked in Unit Tests. Easy to implement KMP `expect/actual` patterns.
     - *Cons:* You have to write and maintain the `StackTrace` walking logic yourself if you want automatic TAG generation.
 
-*Staff Decision:* For pure Android apps, Timber is still the correct choice. For Kotlin Multiplatform apps, the industry is shifting towards libraries like `Kermit` or building custom lightweight wrappers to handle the iOS `os_log` vs Android `Logcat` routing.
+*Staff Decision:* Choose a logging facade from the product's platform, privacy, structured-data, performance, and maintenance requirements. Timber is one established Android option; KMP projects may prefer a multiplatform library or an `expect`/`actual` wrapper for Android Logcat and Apple unified logging.
 
 ## Failure Modes
 
 - **String Interpolation Evaluation Leak:**
   ```kotlin
-  // BAD: Even if Timber.d is ignored in Release, 'calculateMassiveData()' is STILL EXECUTED!
+  // Risk: a Release tree may ignore the message after this argument is evaluated.
   Timber.d("Result: ${calculateMassiveData()}") 
   ```
-  While R8 can strip the `Log.d` call, it is very difficult for R8 to prove that `calculateMassiveData()` has no side effects. Therefore, the CPU still executes the heavy math function in production just to create a String that is immediately thrown away.
+  A runtime tree receives its arguments after Kotlin evaluates them. A shrinker can remove pure construction only when it proves that doing so preserves behavior; a call with possible side effects may remain even when the logging method is removed.
   *(Fix: If the calculation is heavy, wrap the log in an explicit `if (BuildConfig.DEBUG)` check, or use a lazily evaluated lambda logging wrapper).*
 - **PII Leakage in Production Logs:**
-  If you log `Timber.i("User logged in with email: ${user.email}")`, and your Release Tree pushes `INFO` logs to Crashlytics or Logcat, you have just uploaded Plain Text PII to a 3rd party server and exposed it to the local device. This is a severe GDPR violation and a fireable offense.
-  *(Fix: Enforce strict PR review guidelines: Never log Usernames, Emails, Passwords, or Auth Tokens. Log user IDs or hashed equivalents).*
+  If a Release tree forwards an email, token, username, or stable identifier to Logcat or remote telemetry, it creates confidentiality and regulatory risk whose severity depends on purpose, access, consent, retention, and jurisdiction. Hashed or stable IDs can still be personal data.
+  *(Fix: Apply an approved data-classification/minimization policy, redact secrets and direct identifiers, restrict access and retention, and review whether any stable pseudonymous identifier is necessary.)*
 - **The Logcat Buffer Overflow:**
-  The Android OS limits the `logd` ring buffer (usually to 256KB or 1MB). If you write a `while(true) { Log.d(...) }` loop, you will instantly flush out all the logs from the rest of the system, including critical OS-level crash traces, making debugging impossible.
+  Logcat buffers are bounded circular buffers whose configured sizes vary by device/build. Sustained high-volume logging can evict older diagnostic records quickly and obscure the evidence needed for debugging.
 
 ## Staff Engineer Thinking
 
 When reviewing Logging architecture, a Staff engineer focuses on Signal-to-Noise Ratio and CI/CD enforcement.
 
-1.  **Custom Lint Rules:** I write a custom Android Lint rule that physically fails the CI build if a developer types `android.util.Log`. The entire codebase must go through the `Timber` abstraction layer to guarantee release-stripping.
-2.  **Breadcrumb Tracing:** As discussed in [Crash Monitoring](crash-monitoring.md), logs in production are only useful if they provide context to a crash. I ensure the `ReleaseTree` translates `INFO` and `WARN` logs into Crashlytics Breadcrumbs, so when a `NullPointerException` occurs, we see the last 10 things the user did leading up to it.
+1.  **Enforced logging boundary:** When the product benefits from a common facade, I use Android Lint to prevent direct `android.util.Log` calls outside approved adapters. The facade might be Timber or a project-owned abstraction; lint enforces routing, while release stripping or suppression still depends on source sets, runtime policy, and verified shrinker configuration.
+2.  **Breadcrumb tracing:** As discussed in [Crash Monitoring](crash-monitoring.md), forward only schema-approved, redacted, sampled breadcrumbs whose diagnostic value justifies Crashlytics quota, retention, and privacy cost. Priority alone does not decide whether an `INFO` or `WARN` event belongs there.
 3.  **Strict Mode Exceptions:** I ensure that Android `StrictMode` violations (e.g., Disk I/O on the Main Thread) are heavily logged as `ERROR` during Debug builds, so they immediately appear red in the Logcat and catch the developer's attention before the PR is even opened.
 
 ## Common Misconceptions
 
-- **"Nobody can read my logs unless they have the source code."** Dangerously false. Any user can plug their phone into a computer and run `adb logcat`. Any app that is granted the `READ_LOGS` permission via ADB or root can read every single log your app outputs. Production logs must be entirely stripped or completely sanitized.
-- **"Log.d is free."** False. It involves cross-language JNI calls, mutex locks, and object allocation. It is highly expensive in hot loops (like RecyclerView binding or Compose Recomposition).
+- **"Nobody can read my logs unless they have the source code."** False. Log access depends on Android version, build type, device state, privileges, and tooling, while remote telemetry has its own access path. Treat retained production messages as potentially exposed: minimize and sanitize them, apply access/retention controls, and suppress messages that have no production purpose.
+- **"Log.d is free."** False. Eager arguments may allocate, and enabled output adds logging work. Cost varies by message, loggability, sink, device, and workload; measure frame-sensitive paths in a release-equivalent build.
 
 ## Probing Questions
 
-1.  Explain why leaving `Log.d` calls with String interpolation inside a `RecyclerView.onBindViewHolder` severely degrades scrolling performance.
+1.  How can eager log arguments and active output contribute to jank in `RecyclerView.onBindViewHolder`, and what determines whether the effect is measurable?
 2.  How does the Android `logd` daemon handle memory, and what happens to old logs when the buffer is filled?
 3.  Describe the exact architectural pattern Timber uses (The `Tree` abstraction) to differentiate logging behavior between Debug and Release builds.
-4.  How does Timber's `DebugTree` automatically determine the correct `TAG` (class name) without the developer explicitly providing it? Why is this trick slow?
+4.  How can Timber's `DebugTree` derive call-site attribution, and why can stack inspection cost more than an explicit tag?
 5.  What is the purpose of the `proguard-rules.pro` `-assumenosideeffects` configuration regarding the `android.util.Log` class?
 6.  Explain the "String Interpolation Evaluation Leak" and why `Timber.d("Val: ${heavyMath()}")` might still cause a performance penalty in a Release build even if the log isn't printed.
-7.  Why is it a severe architectural and legal failure to log a user's plain-text email address using `Log.i()`?
+7.  Why is logging a user's plain-text email address through a production sink a security and governance risk?
 8.  How does a Staff Engineer use a custom `ReleaseTree` to enhance Firebase Crashlytics crash reports without polluting the public Android Logcat?
 9.  Why would a large engineering team write a custom Lint rule that explicitly bans the usage of `android.util.Log` across the entire codebase?
 10. Describe the tradeoff between using a 3rd party dependency like Timber versus writing a native Kotlin `expect/actual` logging wrapper for a Kotlin Multiplatform project.
 
 ## Answer Key
 
-1. **Explain why leaving `Log.d` calls with String interpolation inside a `RecyclerView.onBindViewHolder` severely degrades scrolling performance.**
-   String interpolation allocates new `StringBuilder` objects every frame, triggering Garbage Collection (GC) thrashing. Additionally, `Log.d` makes a blocking JNI call to the `logd` daemon, causing lock contention and dropping UI frames.
+1. **How can eager log arguments and active output contribute to jank in `RecyclerView.onBindViewHolder`, and what determines whether the effect is measurable?**
+   Repeated string construction and active logging add allocation and system-call/daemon work to a frame-sensitive path. Whether that produces measurable jank depends on call frequency, payload, runtime policy, device, and whether the release artifact removes or suppresses the work; verify it with profiling.
 2. **How does the Android `logd` daemon handle memory, and what happens to old logs when the buffer is filled?**
-   `logd` uses a fixed-size circular memory buffer. When the buffer is full, it automatically overwrites the oldest logs with new ones, meaning spammy logs can instantly erase critical system crash traces.
+   `logd` uses bounded circular buffers whose configured sizes can vary. As a buffer fills, newer records evict older ones, so sustained noise can quickly remove useful diagnostic history.
 3. **Describe the exact architectural pattern Timber uses (The `Tree` abstraction) to differentiate logging behavior between Debug and Release builds.**
-   Timber routes all log calls through abstract `Tree` implementations. You plant a `DebugTree` in debug builds (which writes to Logcat) and plant a custom `CrashReportingTree` in release builds (which forwards errors to Crashlytics and ignores debug noise).
-4. **How does Timber's `DebugTree` automatically determine the correct `TAG` (class name) without the developer explicitly providing it? Why is this trick slow?**
-   It creates a dummy `Throwable` and inspects the stack trace to find the calling class name. This is extremely slow because walking the execution stack trace is a computationally expensive JVM operation.
+   Timber routes calls through `Tree` implementations selected by application configuration. A debug build may plant `DebugTree`; a release tree can apply explicit breadcrumb and non-fatal policies that redact, sample, forward, or reject events rather than deriving behavior from priority alone.
+4. **How can Timber's `DebugTree` derive call-site attribution, and why can stack inspection cost more than an explicit tag?**
+   `DebugTree` derives attribution from call-site/stack information rather than a caller-supplied tag. Stack inspection can be more expensive than an explicit tag, but the exact implementation and caching behavior are version-specific.
 5. **What is the purpose of the `proguard-rules.pro` `-assumenosideeffects` configuration regarding the `android.util.Log` class?**
-   It tells the R8 compiler that `Log` methods have no side effects, allowing R8 to aggressively strip and completely delete those method calls and their string arguments from the final production bytecode.
+   It asserts that the listed methods have no observable side effects, permitting R8 to remove an unused call when optimization proves the transformation safe. It does not automatically cover a facade such as Timber or guarantee removal of argument expressions with side effects, so teams must inspect and test the optimized artifact.
 6. **Explain the "String Interpolation Evaluation Leak" and why `Timber.d("Val: ${heavyMath()}")` might still cause a performance penalty in a Release build even if the log isn't printed.**
-   Even if R8 strips the `Log.d` call, the CPU may still execute `heavyMath()` because R8 cannot guarantee the function lacks side effects. The heavy calculation runs just to build a string that is immediately discarded.
-7. **Why is it a severe architectural and legal failure to log a user's plain-text email address using `Log.i()`?**
-   Because any app with the `READ_LOGS` permission (or anyone with a USB cable) can read Logcat. Logging plain-text PII exposes user data to malicious apps and represents a severe violation of privacy laws like GDPR.
+   Kotlin evaluates the interpolation before a runtime tree decides whether to print it. A shrinker may also retain `heavyMath()` when removing it could change observable behavior. Use lazy arguments, an explicit guard, or a source-set abstraction when the calculation is material.
+7. **Why is logging a user's plain-text email address through a production sink a security and governance risk?**
+   Device-log access varies by Android version, privileges, build, ADB/root state, and telemetry destination, but a retained email creates unnecessary exposure. Treat raw, hashed, and stable identifiers as potentially personal data and apply approved purpose, minimization, access, retention, and consent controls.
 8. **How does a Staff Engineer use a custom `ReleaseTree` to enhance Firebase Crashlytics crash reports without polluting the public Android Logcat?**
-   By overriding the `log` method to filter out `VERBOSE` and `DEBUG` priorities, while routing `INFO` and `WARN` messages directly to `FirebaseCrashlytics.log()` to act as breadcrumbs, bypassing the public `logd` buffer entirely.
+   Define a Release tree that suppresses device output where appropriate and forwards only schema-approved, redacted, sampled breadcrumbs to Crashlytics. Selection should follow diagnostic value, privacy, retention, and quota policy rather than forwarding every `INFO`/`WARN` message.
 9. **Why would a large engineering team write a custom Lint rule that explicitly bans the usage of `android.util.Log` across the entire codebase?**
-   To prevent developers from accidentally bypassing the `Timber` abstraction layer, guaranteeing that no rogue, un-stripped `Log.d` calls leak PII or degrade performance in production releases.
+   To enforce a chosen logging boundary so privacy filtering, structured fields, sampling, and release behavior are reviewed consistently. The rule reduces bypasses but cannot guarantee that no sensitive data or expensive argument evaluation remains; tests, code review, shrinker inspection, and runtime controls are still required.
 10. **Describe the tradeoff between using a 3rd party dependency like Timber versus writing a native Kotlin `expect/actual` logging wrapper for a Kotlin Multiplatform project.**
-    Timber is the robust Android industry standard but relies on Java varargs and requires specific ProGuard rules, making it incompatible with pure KMP. A native `expect/actual` wrapper works across iOS and Android but requires you to write and maintain your own TAG generation and stack trace logic.
+    Timber provides an established Android facade and tree model but does not itself define an iOS implementation or guarantee release stripping. A multiplatform library or `expect`/`actual` wrapper can present one API across Android and Apple platforms, at the cost of owning routing, metadata, privacy policy, and maintenance.
 
 ## Further Reading
 
-- [`crash-monitoring.md`](crash-monitoring.md) — How the `ReleaseTree` converts logs into Breadcrumbs for fatal exception context.
-- [`jank.md`](../performance/jank.md) — The dropped frames caused by allocating `StringBuilder` objects for logs inside tight rendering loops.
+- [`crash-monitoring.md`](crash-monitoring.md) — How selected, approved release logs can become crash breadcrumbs.
+- [`jank.md`](../performance/jank.md) — How allocation and logging work can contribute to frame pressure on measured hot paths.
 - [Timber GitHub Repository](https://github.com/JakeWharton/timber)
+- [Android `Log` reference](https://developer.android.com/reference/android/util/Log) — Platform priorities and behavior.
+- [Android app optimization with R8](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization) — Build-time shrinking and optimization.
