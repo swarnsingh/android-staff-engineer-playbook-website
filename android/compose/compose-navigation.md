@@ -1,6 +1,6 @@
 # Compose Navigation — Nav 2 and Nav 3
 
-> Compose Navigation has two supported paradigms. **Navigation Compose 2.x** remains mature and widely deployed: declarative graph, `NavController`, `NavHost`. **Navigation 3** reached stable 1.0 in November 2025 and uses an app-owned back stack rendered by `NavDisplay`. Staff-level mastery is choosing based on architecture and migration cost, not on an obsolete stability label.
+> Compose Navigation has two supported paradigms. **Navigation Compose 2.x** remains mature and widely deployed: declarative graph, `NavController`, `NavHost`. **Navigation 3** reached stable status in November 2025 and uses an app-owned back stack rendered by `NavDisplay`. Staff-level mastery is choosing based on architecture and migration cost, not on an obsolete stability label.
 
 ---
 
@@ -11,7 +11,7 @@
 | Existing production app working well on Nav 2 | **Stay on Nav 2.x**; migrate only for a concrete benefit |
 | Greenfield Compose or KMP project | **Nav 3 stable** |
 | Need precise control over back stack (multi-pane, custom scenes) | **Nav 3** |
-| Team unfamiliar with Compose's runtime | **Nav 2.8+** (more guard rails) |
+| Team unfamiliar with Compose's runtime | Evaluate the mature **Nav 2** line first |
 | Want least migration churn | Keep the navigation generation already in production |
 | Building a fresh Compose app | **Nav 3 stable** unless a required integration is Nav 2-only |
 
@@ -24,12 +24,12 @@ Nav 2 remains supported and common in existing apps. Nav 3 is production-ready, 
 - **Pre-2018:** Manual `FragmentTransaction` / `Intent` chaos. No central back-stack model.
 - **Navigation Component (XML era):** Jetpack visual graph editor + SafeArgs generation. Stable.
 - **Compose Navigation 1.x (string routes):** Pure-Kotlin DSL, but `navigate("details/${id}")` was brittle string-parsing.
-- **Navigation Compose 2.8+ (typed routes):** `kotlinx.serialization`-based type-safe routes. The current stable.
-- **Navigation 3 1.0 (stable since November 2025):** Compose-first rewrite. `NavController` is replaced by an app-owned back stack rendered by `NavDisplay`; adaptive scenes and KMP runtime support are first-class concerns.
+- **Navigation Compose 2.x (typed routes available):** `kotlinx.serialization`-based type-safe routes on the mature Navigation line, which is maintained separately from Navigation 3.
+- **Navigation 3 (stable line):** Compose-first navigation with an app-owned back stack rendered by `NavDisplay`; adaptive scenes and the multiplatform runtime have their own capability boundaries.
 
 ---
 
-# Part 1 — Navigation Compose 2.x (Current Stable)
+# Part 1 — Navigation Compose 2.x (Mature Line)
 
 ## First Principles
 
@@ -157,10 +157,10 @@ graph TD
 
 | Approach | Pros | Cons |
 |---|---|---|
-| Single-Activity (Compose) | Fast navigation; shared UI (e.g., mini-player); easy state sharing | Whole-app OOM kills everything; some deep links need extra plumbing |
-| Multi-Activity (Legacy) | Activity boundary = memory boundary; OS can kill non-active Activities | Slow transitions; `TransactionTooLargeException` risk with Intent extras |
+| Single-Activity (Compose) | Shared UI (e.g., mini-player), transitions, and state ownership can stay within one navigation host | The root graph and external entry points need deliberate deep-link and task handling |
+| Multiple app Activities | Can model genuinely independent tasks, entry points, or legacy/system-integration boundaries | Cross-Activity navigation and state ownership are more complex; large Intent extras can trigger `TransactionTooLargeException` |
 
-Compose strongly encourages Single-Activity. Spawn a second Activity only for cross-app integration (camera, share sheets, OS auth flows).
+Activities in the same application normally run in the same process, so an Activity boundary is not an OOM or crash-isolation boundary. A single Activity is a common Compose default; add another app Activity when task, entry-point, windowing, or integration requirements justify it. Camera, share-sheet, and OS authentication flows are often launched as external Activities rather than implemented as extra Activities in your app.
 
 ---
 
@@ -176,18 +176,18 @@ Compose strongly encourages Single-Activity. Spawn a second Activity only for cr
 | Bottom-nav tab reopens fresh on every click | `restoreState`/`saveState` not configured | Use `popUpTo(graph.findStartDestination().id) { saveState = true }` + `restoreState = true` |
 | Crash: "Multiple destinations match deep link" | Two routes match same URI pattern | Make URIs distinct or order them by specificity |
 | `NavController` passed deep into screens | Tight coupling | Hoist; pass event callbacks instead |
-| ViewModel survives across app cold-start (Process Death) | Forgot `SavedStateHandle` for arg restoration | Use `SavedStateHandle.toRoute<Profile>()` in ViewModel |
-| `start{ }` lambda errors out: "destination not found" | Used Nav 2.7 syntax with Nav 2.8 type-safety | Update KSP plugin + ensure all destinations are `@Serializable` |
+| Destination state is missing after process recreation | Relied on a `ViewModel`, which survives configuration changes but not process death | Restore minimal route/UI state through `SavedStateHandle`, such as `SavedStateHandle.toRoute<Profile>()`, and reload durable data |
+| Typed-route construction errors with "destination not found" | Mixed string-route and typed-route syntax | Use one route model consistently and ensure typed destinations are `@Serializable` |
 
 ---
 
-# Part 2 — Navigation 3 (The Rewrite)
+# Part 2 — Navigation 3 (Compose-First Line)
 
 ## The Paradigm Shift
 
 Nav 2 hides the back stack inside `NavController`. You navigate; the framework tracks state.
 
-**Nav 3 inverts this.** The back stack is a `mutableStateListOf<NavKey>()` that **you own**. The framework provides a renderer; you provide the source of truth.
+**Nav 3 inverts this.** The back stack is application-owned state, typically the `NavBackStack<NavKey>` returned by `rememberNavBackStack`. The framework provides a renderer; you provide the source of truth.
 
 ```kotlin
 // Nav 2 mental model
@@ -207,7 +207,7 @@ The TV analogy gets inverted. **You don't have a remote anymore — you have dir
 
 Google's stated motivations for Nav 3 (rough public summary):
 
-1. **KMP friendliness.** `NavController` was Android-coupled. A `mutableStateListOf<NavKey>()` is pure Compose runtime — works on iOS, Desktop, Web.
+1. **KMP friendliness.** `NavController` is Android-specific. The Navigation 3 runtime and its Compose-state-backed `NavBackStack` support Android, iOS, JVM desktop, JavaScript, and WasmJS; some platform integrations and serialization setup remain platform-specific.
 2. **Multi-pane / adaptive layouts.** Nav 2 assumed single-pane phone flows. Tablets, foldables, and Wear OS need shapes (one detail pane next to a list pane) that Nav 2 awkwardly forced.
 3. **Custom transitions / shared elements.** Nav 2's `enterTransition`/`exitTransition` lambdas were limited.
 4. **State control.** Nav 2 hid back-stack mutation; some flows (e.g., "swipe to dismiss" with reorder) needed lower-level access.
@@ -276,7 +276,7 @@ sealed interface AppKey : NavKey
 @Serializable data object Settings : AppKey
 ```
 
-`NavKey` is a marker. `@Serializable` + `mutableStateListOf` means the back stack survives process death automatically via `rememberSaveable` machinery.
+`NavKey` is a marker. Serialization alone does not make an arbitrary `mutableStateListOf` persistent. `rememberNavBackStack(Home)` creates a saveable `NavBackStack`; each key must implement `NavKey` and be `@Serializable` for that helper to restore the stack across configuration changes and process death. Multiplatform or open-polymorphic key hierarchies may also need the overload with an explicit `SavedStateConfiguration` and registered serializers. A custom state holder must implement its own serialization and restoration policy.
 
 You can keep it sealed (`sealed interface AppKey : NavKey`) for exhaustive `when` over the current entry — a powerful pattern for tracking analytics or applying global styling per screen.
 
@@ -286,16 +286,15 @@ You can keep it sealed (`sealed interface AppKey : NavKey`) for exhaustive `when
 
 Nav 3 gives you explicit control over `LifecycleOwner`, `ViewModelStoreOwner`, and `SavedStateRegistryOwner` per entry.
 
-The library ships `rememberSavedStateNavEntryDecorator` and `rememberViewModelStoreNavEntryDecorator` to wire these up for typical use cases:
+Navigation 3 supplies `rememberSaveableStateHolderNavEntryDecorator` for saveable entry content. The `androidx.lifecycle:lifecycle-viewmodel-navigation3` add-on supplies `rememberViewModelStoreNavEntryDecorator` for an entry-scoped `ViewModelStore`:
 
 ```kotlin
 NavDisplay(
     backStack = backStack,
     onBack = { backStack.removeLastOrNull() },
     entryDecorators = listOf(
-        rememberSavedStateNavEntryDecorator(),
+        rememberSaveableStateHolderNavEntryDecorator(),
         rememberViewModelStoreNavEntryDecorator(),
-        rememberSceneSetupNavEntryDecorator(),
     ),
     entryProvider = entryProvider {
         entry<Profile> { profile ->
@@ -306,13 +305,13 @@ NavDisplay(
 )
 ```
 
-Each Nav 3 entry has its own scoped ViewModel store — equivalent to Nav 2's `NavBackStackEntry` behavior, but you can opt out, replace, or extend.
+With the ViewModel-store decorator installed, each entry receives a store keyed to that entry and the store is cleared when the entry is removed. Without it, `viewModel()` resolves against the nearest available `ViewModelStoreOwner`; entry scoping is not automatic.
 
 ---
 
 ## Scenes — Adaptive Layouts in Nav 3
 
-Nav 3's killer feature for tablets and foldables:
+Scenes let a renderer map multiple back-stack entries into one adaptive layout for tablets and foldables:
 
 ```kotlin
 NavDisplay(
@@ -332,9 +331,9 @@ NavDisplay(
 On phones, the framework shows list, then detail on tap.
 On tablets / foldables, it shows list + detail side-by-side.
 
-The same back stack drives both. You don't write two layouts; the scene strategy adapts.
+The same back stack drives both presentations. The scene strategy owns the list-detail arrangement, while the entry content still needs responsive UI where its own layout changes.
 
-Nav 2 had `androidx.navigation:navigation-compose-adaptive` but it was awkward to compose with custom UI. Nav 3 builds it into the runtime.
+Navigation Compose 2 can be combined with Material adaptive layouts, but the application coordinates navigation destinations and pane state. Navigation 3 scenes make the mapping from back-stack entries to a single- or multi-pane presentation part of the navigation model.
 
 ---
 
@@ -389,7 +388,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun handleDeepLink(uri: Uri?, backStack: SnapshotStateList<NavKey>) {
+    private fun handleDeepLink(uri: Uri?, backStack: NavBackStack<NavKey>) {
         val data = uri ?: return
         when {
             data.pathSegments.firstOrNull() == "profile" -> {
@@ -412,15 +411,15 @@ More code than Nav 2's `deepLinks = listOf(...)`, but you control:
 
 ## Nav 2 vs Nav 3 — Side by Side
 
-| Concern | Nav 2.8+ | Nav 3 |
+| Concern | Navigation Compose 2.x | Navigation 3 |
 |---|---|---|
-| Maturity | Stable and mature | Stable since 1.0.0 (November 2025) |
+| Maturity | Stable, mature, and maintained | Stable and maintained separately |
 | Back-stack ownership | Framework | App |
-| Source of truth | `NavController` (opaque) | `SnapshotStateList<NavKey>` (transparent) |
+| Source of truth | `NavController` (framework-owned) | `NavBackStack<NavKey>` (app-owned and observable) |
 | Type safety | `@Serializable` routes | `@Serializable` + `NavKey` marker |
 | Multi-pane | Add-on library, awkward | First-class via Scene strategies |
 | Custom transitions | Per-call lambda | Per-entry metadata |
-| KMP support | Android-only (depends on AndroidX libs) | KMP-friendly (`SnapshotStateList` is `kotlin.runtime`) |
+| KMP support | Android-only | Navigation 3 runtime supports Android, iOS, JVM desktop, JavaScript, and WasmJS targets; platform integrations still vary |
 | Deep links | Declarative `deepLinks = [...]` | Imperative parse + back-stack mutation |
 | ViewModel scoping | Automatic via NavBackStackEntry | Explicit via decorators |
 | Boilerplate | Lower | Higher |
@@ -443,13 +442,13 @@ Nav 2 → Nav 3 isn't a quick rename. The mental model changes. Plan a phased ap
 
 **Phase 5 — Remove Nav 2 deps.** When the last `composable<X>` is gone.
 
-Realistic timeline: a small app (10 screens) in 1 week; a 50-screen app in 1–2 months. The risk is non-zero; don't migrate without a clear reason (KMP, multi-pane, control needs).
+Estimate from the actual graph: count destinations, nested scopes, deep links, custom transitions, saved-state behavior, tests, and integrations, then migrate a representative flow before forecasting the remainder. Screen count alone does not determine the schedule. Do not migrate without a concrete reason such as multiplatform sharing, adaptive scenes, or a need for app-owned navigation state.
 
 ---
 
 ## When To Pick Each
 
-### Stay on Nav 2.8+ if
+### Stay on Navigation Compose 2.x if
 
 - Single-platform Android app.
 - Phone-only target (no tablet/foldable adaptive layouts needed).
@@ -562,13 +561,13 @@ fun logout(navController: NavController) {
 ### Pattern 4 — Logout in Nav 3
 
 ```kotlin
-fun logout(backStack: SnapshotStateList<NavKey>) {
+fun logout(backStack: NavBackStack<NavKey>) {
     backStack.clear()
     backStack.add(LoginRoute)
 }
 ```
 
-Notice the difference: Nav 3 is so direct it barely needs an explanation. Nav 2's `popUpTo(0) { inclusive = true }` is a workaround for the framework hiding the list.
+Nav 3 exposes the mutation directly. In either generation, define and test the signed-out root explicitly so authenticated destinations cannot remain reachable from the system Back action, deep links, or restored state.
 
 ### Pattern 5 — Shared ViewModel across a nested graph (Nav 2)
 
@@ -599,23 +598,23 @@ In Nav 3, sharing across screens is more natural — pass the ViewModel down via
 
 When reviewing Compose Navigation code:
 
-1. **`NavController` in deep UI?** Reject. Hoist to top-level; pass event callbacks (`onNavigateTo(...)`). Otherwise screens can't be previewed or tested independently.
-2. **Argument size?** Reject anything > 1 KB serialized. Pass IDs; refetch from repository.
-3. **Deep link without analytics?** Each major deep link should fire an analytics event. Add to the navigation observer.
-4. **Logout missing `popUpTo(0)`?** Reject. Back-button bypass is a security bug.
-5. **`saveState = true` missing for bottom nav?** Reject. Tab switching loses state otherwise.
-6. **Choosing Nav 3 for a non-KMP, phone-only app?** Do not reject it on maturity grounds: 1.0 is stable. Ask whether app-owned state, migration cost, team familiarity, and integration support justify the choice.
-7. **`@Serializable` route classes scattered across modules?** Centralize in a `:feature:X:api` module so navigation is type-safe across module boundaries.
-8. **`backStack.removeLast()` (Nav 3) without null check?** Reject. Use `removeLastOrNull()`; back from root must be a no-op or a deliberate exit.
+1. **Navigation mechanics in reusable UI?** Ask whether the component needs a controller or only a semantic callback such as `onProfileSelected(id)`. Hoisting graph mechanics usually improves previews and tests, but navigation-owned shells may reasonably use the controller.
+2. **Large or mutable route arguments?** Prefer stable identifiers and reload durable data. Measure serialized state, exercise process recreation, and account for the Binder transaction's shared payload rather than enforcing an invented per-argument threshold.
+3. **Deep-link telemetry?** Instrument only when a defined product, security, or operational decision needs it. Apply consent, privacy, sampling, and cardinality policy; navigation correctness must not depend on analytics delivery.
+4. **Logout/back-stack handling?** Verify that the authenticated graph is removed and cannot be restored or reached with Back. Target a known route or graph where possible instead of treating one `popUpTo` spelling as universal.
+5. **Bottom-navigation state policy?** Decide whether each tab restores prior state or intentionally resets. When restoration is required in Nav 2, use the matching `saveState`/`restoreState` pattern and test duplicate-root behavior.
+6. **Choosing Nav 3 for a non-KMP, phone-only app?** Do not reject it on maturity grounds: Navigation 3 has a stable line. Ask whether app-owned state, migration cost, team familiarity, and integration support justify the choice.
+7. **Routes crossing module boundaries?** Put the route contract in a dependency visible to both producer and consumer without exposing implementation-only types. A dedicated `:api` module is one option, not a requirement for every graph.
+8. **Back at the root?** Define the intended behavior. Use `removeLastOrNull()` or guard the root explicitly so an empty-stack mutation is not accidental.
 
 ---
 
 ## Common Misconceptions
 
 - **"Nav 3 deprecates Nav 2."** No. Nav 3 is stable, but Nav 2 remains supported; stable availability is not a forced migration.
-- **"Compose Navigation is slower than Fragments."** False. Nav 2 swaps a state flag and recomposes; Fragments invoke reflection-heavy `FragmentManager` transactions on Main.
-- **"`if/else` is good enough for simple apps."** No. You lose: Android back button integration, deep-link support, ViewModel scoping, process death restoration, analytics integration.
-- **"I can pass any `@Serializable` as a route argument."** Theoretically yes, practically no. Serialized arguments hit the OS Bundle limit; pass IDs.
+- **"Compose Navigation is always faster than Fragments" (or the reverse).** Neither is a platform guarantee. Measure representative transitions and frame timing; composition cost, destination work, animations, and lifecycle behavior usually matter more than the navigation API label.
+- **"A simple `if/else` cannot support navigation semantics."** App-owned state can implement Back, deep links, scoping, and restoration, but the application then owns those semantics and their tests. Use a navigation library when its lifecycle, saved-state, and integration behavior is valuable.
+- **"Any `@Serializable` object is a good route argument."** Serialization makes a value encodable, not appropriate for saved navigation state. Prefer compact, stable identifiers; large values consume the same saved-state/Binder budget as other state and can become stale.
 - **"Nav 3 means I have to rewrite my app."** No — Nav 2 still works. Migrate when there's a reason (KMP, multi-pane, custom back stack).
 - **"Nav 3 being stable means it has every Nav 2 integration."** No. Stability protects the 1.x API contract; teams must still inventory feature and ecosystem differences before migrating.
 
@@ -623,7 +622,7 @@ When reviewing Compose Navigation code:
 
 ## Probing Questions
 
-1. Walk through the type-safety mechanism in Nav 2.8+. Why is `kotlinx.serialization` involved?
+1. Walk through the type-safety mechanism in Navigation Compose 2.x. Why is `kotlinx.serialization` involved?
 2. Compare Nav 2's `NavController.navigate(Profile("u1"))` with Nav 3's `backStack.add(Profile("u1"))`. What's the architectural difference?
 3. In Nav 3, who owns the back stack? Why is this important for KMP?
 4. A user logs out. Walk through the exact navigation code in both Nav 2 and Nav 3 to prevent back-button bypass.
@@ -632,7 +631,7 @@ When reviewing Compose Navigation code:
 7. What's Nav 3's "Scene strategy" and what problem does it solve that Nav 2 didn't address well?
 8. A team is considering Nav 3 for a phone-only Android app. Walk through your pushback (or not).
 9. ViewModel scoping in Nav 3 — how is it different from Nav 2's automatic `NavBackStackEntry` behavior?
-10. Migration path Nav 2 → Nav 3 — propose a phased rollout for a 50-screen app.
+10. Migration path Nav 2 → Nav 3 — propose a phased rollout for a large app with nested graphs and deep links.
 11. Deep links in Nav 2 vs Nav 3 — explain the philosophical difference (declarative vs imperative).
 12. Custom transitions in Nav 3 — how do you add a shared-element animation between list and detail?
 13. Why is `NavController` an architectural smell when passed deep into a Composable?
@@ -644,13 +643,13 @@ When reviewing Compose Navigation code:
 
 1. A serializable route type supplies the route schema; Navigation encodes and decodes its fields instead of relying on hand-built strings.
 2. Nav 2 asks a controller to mutate framework-owned state; Nav 3 mutates application-owned back-stack state that the UI renders.
-3. The application owns a `SnapshotStateList` or equivalent state holder. That makes navigation state portable, testable, and easier to share across KMP boundaries.
+3. The application owns the back stack. `rememberNavBackStack` returns a saveable, observable `NavBackStack`; a custom holder can use another representation if it supplies equivalent mutation, serialization, and restoration behavior. This ownership makes the state easier to test and share across supported multiplatform targets.
 4. Nav 2 navigates to the signed-out graph while popping the authenticated graph inclusively; Nav 3 clears the authenticated entries and inserts the signed-out root.
-5. Large or mutable objects exceed argument limits, serialize poorly, and become stale. Pass a stable identifier and load the current object from the source of truth.
+5. Large or mutable objects consume saved-state/Binder budget, may serialize poorly, and can become stale. Pass a stable identifier and load the current object from the source of truth.
 6. `saveState` preserves popped destination state and `restoreState` reattaches it when reselecting a tab, while `launchSingleTop` avoids duplicate tab roots.
 7. A scene strategy maps one or more entries to an adaptive scene, enabling layouts such as list-detail without pretending every entry is a separate full-screen destination.
 8. Nav 3 is stable, so alpha status is no longer a reason to reject it. Decide on migration cost, ecosystem integration, deep links, ViewModel ownership, adaptive needs, and team readiness.
-9. Nav 2 supplies `NavBackStackEntry`-scoped stores automatically. Nav 3 requires the chosen entry decorator or explicit owner strategy, making lifetime policy visible.
+9. Nav 2 supplies `NavBackStackEntry`-scoped stores automatically. Nav 3 uses `rememberViewModelStoreNavEntryDecorator()` from the lifecycle add-on, or another explicit owner strategy, making lifetime policy visible. Pair it with `rememberSaveableStateHolderNavEntryDecorator()` when entry content uses saveable state.
 10. Type routes first, isolate navigation behind callbacks, migrate a bounded graph, add parity tests and telemetry, then expand graph by graph with a rollback path.
 11. Nav 2 declares deep links on destinations and lets the controller reconstruct a route. Nav 3 code parses an external intent into the application-owned entry list.
 12. Install the appropriate scene/transition support, attach shared-element keys to corresponding content, and define the scene transition rather than smuggling animation state through routes.
@@ -665,12 +664,12 @@ When reviewing Compose Navigation code:
 |---|---|---|
 | `IllegalStateException` removing from empty back stack | `removeLast()` not `removeLastOrNull()` | Always use null-safe variant; handle "back at root" |
 | Deep link doesn't synthesize back stack | Forgot to `.add(Home)` before `.add(Profile)` | Explicitly construct the back stack you want |
-| ViewModel recreated on every recomposition | Missing `rememberViewModelStoreNavEntryDecorator` | Add the decorator to `NavDisplay` |
-| State lost on rotation | Forgot `rememberNavBackStack` (used plain `mutableStateListOf`) | Use the library helper |
+| ViewModel uses the Activity store instead of an entry store | Missing `rememberViewModelStoreNavEntryDecorator` | Add the lifecycle add-on and decorator to `NavDisplay` |
+| Back stack is lost on rotation or process recreation | Used a plain `mutableStateListOf` without a saver | Use `rememberNavBackStack` with serializable `NavKey` entries, or implement explicit saving |
 | Multi-pane shows wrong content | Mistakes in scene strategy metadata | Verify each entry has correct `listPane()` / `detailPane()` |
 | Tablet shows phone-style single pane | Wrong scene strategy (or default) | Use `rememberListDetailSceneStrategy()` |
-| Compose recomposes the whole `NavDisplay` on entry add | Whole `backStack` passed unstably | The library's `SnapshotStateList` is observable per-change; verify with metrics |
-| Type-safety lost across modules | `NavKey`-implementing class in `:impl` module | Move to `:api` module so consumers can construct routes |
+| Unexpected recomposition after a stack mutation | Observers read broader navigation state than needed, or destination work is expensive | `NavBackStack` participates in Compose snapshot state; inspect state reads and verify the actual cost with tracing or benchmarks |
+| A caller cannot construct a cross-module route | Route type is hidden in an implementation-only dependency | Expose the contract through a shared dependency; a dedicated `:api` module is one option |
 | Animations don't fire | Missing `transitionSpec` metadata | Add per-entry |
 
 ---
@@ -678,7 +677,7 @@ When reviewing Compose Navigation code:
 ## Further Reading
 
 - [`compose-runtime.md`](compose-runtime.md) — `NavDisplay` uses the same recomposition engine.
-- [`stability.md`](stability.md) — `SnapshotStateList` stability rules.
+- [`stability.md`](stability.md) — stability rules for Compose state read by navigation UI.
 - [`snapshot-system.md`](snapshot-system.md) — what powers Nav 3's back-stack observability.
 - [`recomposition-and-state.md`](recomposition-and-state.md) — how `NavHost` and `NavDisplay` re-render.
 - [`../architecture/navigation.md`](../architecture/navigation.md) — broader Android navigation patterns (non-Compose-specific).
@@ -687,8 +686,11 @@ When reviewing Compose Navigation code:
 - [`../data-and-di/components.md`](../data-and-di/components.md) — Hilt component lifecycle interacts with navigation.
 - [`../data-and-di/scopes.md`](../data-and-di/scopes.md) — coroutine scopes per `NavBackStackEntry`.
 - [`../../kotlin/language-core/sealed-classes.md`](../../kotlin/language-core/sealed-classes.md) — `sealed interface AppKey : NavKey`.
-- [Navigation Compose 2.8+ (Type Safety)](https://developer.android.com/guide/navigation/design/type-safety) — official Nav 2 docs.
-- [Navigation 3 stable announcement](https://developer.android.com/blog/posts/jetpack-navigation-3-is-stable) — 1.0 production-readiness announcement.
+- [Navigation Compose type safety](https://developer.android.com/guide/navigation/design/type-safety) — official Navigation Compose docs.
+- [Navigation 3 stable announcement](https://developer.android.com/blog/posts/jetpack-navigation-3-is-stable) — production-readiness announcement.
 - [Navigation 3 docs](https://developer.android.com/guide/navigation/navigation-3) — official guide.
+- [Navigation 3 saved state](https://developer.android.com/guide/navigation/navigation-3/save-state) — `rememberNavBackStack`, serialization, and entry-scoped ViewModels.
+- [Navigation 3 entry decorators](https://developer.android.com/guide/navigation/navigation-3/naventrydecorators) — current decorator APIs and ordering.
+- [Navigation 3 `NavBackStack` API](https://developer.android.com/reference/kotlin/androidx/navigation3/runtime/NavBackStack) — observable back-stack type and supported targets.
 - [Navigation 3 releases](https://developer.android.com/jetpack/androidx/releases/navigation3) — current stable and prerelease channels.
 - [Navigation 3 samples](https://github.com/android/nav3-recipes) — official sample patterns.

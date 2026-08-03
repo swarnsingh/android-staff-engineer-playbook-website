@@ -2,12 +2,12 @@
 
 ## Overview
 
-**Optimize for change** is the principle that the only certain property of software requirements is that they will change, so the highest-leverage thing architecture can do is make change cheap and reversible. A great system is not one that predicts the future correctly — that's impossible — but one that **doesn't punish you when the future turns out different from your guess**.
+**Optimize for change** is the principle that important requirements, dependencies, and operating constraints can change, so architecture should make likely changes affordable and risky changes recoverable. The goal is not to predict every future state; it is to manage the cost of revisiting consequential decisions.
 
 Two interpretations follow:
 
 1. **Cheap to change**: when a requirement shifts, the cost of adapting the code is small. The cost is measured in lines touched, files modified, modules rebuilt, tests rewritten, regressions risked.
-2. **Cheap to reverse**: when a change ships and turns out wrong, you can roll it back without redeploying. Feature flags, kill switches, staged rollouts, and reversible migrations all exist to convert "I shipped a mistake" from a 48-hour disaster into a 30-second config flip.
+2. **Cheap to reverse or mitigate**: when a change ships and turns out wrong, a compatible flag, kill switch, staged rollout, rollback, roll-forward, or reversible migration can reduce impact. Propagation delay, cached configuration, irreversible writes, old clients, and coupled server behavior determine whether a config change is sufficient.
 
 The principle is often confused with two siblings: "make everything configurable" (which adds complexity and rarely pays off) and "predict every future need" (the YAGNI anti-pattern). Optimize-for-change is neither. It's about **avoiding decisions that are expensive to revisit** and **keeping the cheap-to-revisit decisions actually cheap**. Jeff Bezos's "one-way doors vs two-way doors" framing captures it: identify which decisions are one-way (hard or impossible to reverse, like a database choice, a public API contract, a vendor lock-in) and which are two-way (easy to reverse, like an internal abstraction, a default value, a UI tweak). Spend the time you'd have spent on speculative flexibility on the one-way doors; let the two-way doors be quick.
 
@@ -17,8 +17,8 @@ The principle is often confused with two siblings: "make everything configurable
 
 Two empirical observations drive the principle:
 
-1. **Requirements always change.** Studies of software projects (Standish, McKinsey, internal data at every large tech company) consistently show that 30–60% of requirements as initially specified are wrong or incomplete. Some change because the business changes. Some change because the customer changes. Some change because the *engineer's understanding* changes after they build the first version. There is no project where the original spec survives unscathed.
-2. **Reversing a deployed mistake is hugely expensive.** A bug shipped in an APK takes days to fix and roll out. A user-facing schema migration that turns out wrong can cost weeks of recovery and data correction. A vendor decision made in Q1 might be unwindable only after a year of contractual notice.
+1. **Material requirements can change.** Business conditions, customer evidence, regulation, dependencies, and engineering understanding can invalidate an initial assumption. Estimate likely change from the product's own history instead of relying on an invented universal percentage.
+2. **Reversal cost is asymmetric.** A client bug can remain installed after a fix is available; a destructive schema migration can require data recovery; and a vendor change can be constrained by code, data export, and contract terms. Measure the relevant propagation and recovery paths for the decision.
 
 The principle says: **design assuming you will be wrong about specifics, and ensure that being wrong is recoverable**. This is the engineering analog of risk management. You don't pretend the future is predictable; you minimize the cost of any single wrong guess.
 
@@ -81,7 +81,7 @@ class BraintreeGateway(private val client: BraintreeClient) : PaymentGateway { .
 class CheckoutViewModel(private val payment: PaymentGateway) { ... }
 ```
 
-Switching from Stripe to Braintree changes one DI binding. No business logic touches anywhere else.
+The interface limits compile-time coupling in callers. A provider change can still require new authentication, error mapping, idempotency, settlement, webhook, compliance, migration, and operational behavior behind that boundary; an abstraction reduces a class of changes rather than making the swap a one-line operation.
 
 ### 3. Reversibility via feature flags
 
@@ -100,13 +100,13 @@ class CheckoutViewModel(
 }
 ```
 
-Both flows exist in production simultaneously. Flag set on the server controls which runs. A bug in the new flow? Flip the flag off; old flow runs again for 100% of users in seconds. This is reversibility at the **runtime** level — you didn't have to redeploy.
+Both flows exist in production simultaneously. A server-controlled flag can route clients that have fetched the relevant configuration back to the compatible old path. Define propagation, cached/default behavior, cohort targeting, and what the flag cannot undo, such as writes or server-side effects. This is runtime mitigation when both paths remain safe; it is not proof of instant or complete reversal.
 
 ### 4. YAGNI as the counter-discipline
 
 *You Aren't Gonna Need It* is the brake on speculative flexibility. Building a `PaymentProcessor` abstraction with five hooks "in case we want to plug in alternative processors" before there's a second processor is YAGNI violation. The hooks add complexity, slow comprehension, and frequently don't fit when the actual second processor arrives.
 
-The right move: write the Stripe code directly. When Braintree appears, the *refactor* to introduce the interface is easy (extract method, extract interface, swap binding). The cost of doing it later is small; the cost of building the wrong abstraction upfront is large.
+A reasonable default is to keep the first implementation local until another provider, consumer, or independently testable boundary gives evidence for an abstraction. Extracting that boundary later can still be expensive if vendor types and semantics have spread, so make the decision from coupling and migration cost rather than occurrence count alone.
 
 ### 5. Optionality has a cost
 
@@ -149,7 +149,7 @@ class CheckoutViewModel(private val payment: PaymentGateway) { ... }
 val viewModel = CheckoutViewModel(StripeGateway(client))
 ```
 
-If Stripe is later swapped for Braintree, only the wire-up site changes. The ViewModel, its tests, and every caller of the ViewModel are untouched.
+If the abstraction captures the required domain semantics, callers and many tests can remain unchanged while provider-specific authentication, errors, idempotency, settlement, and operations change behind it. Contract tests are needed to show that a new provider satisfies those semantics.
 
 ### Feature flags: runtime branching with config control
 
@@ -289,7 +289,7 @@ data class UserV2(
 )
 ```
 
-Old clients still parse the response (extra fields are ignored). New clients use the new fields when present. The schema change is reversible because no field was removed or renamed.
+Old clients continue only when their decoder ignores unknown fields and payload/semantic assumptions remain valid. Additive fields are often easier to roll out, but strict decoders, generated exhaustive models, payload budgets, and new semantics require provider/consumer compatibility tests.
 
 Removing a field requires a deprecation cycle: mark the field deprecated, wait for clients to stop using it, then remove. Premature removal is a one-way door that breaks deployed clients.
 
@@ -342,7 +342,7 @@ fun loadUser(
 ): User
 ```
 
-Default-argument parameters can be added without breaking existing callers. Compare this to Java's mandatory overload-flood pattern. Kotlin's default arguments make the "add an option" change a two-way door rather than a one-way door.
+Default arguments preserve many source callers that recompile, but they can affect precompiled binary consumers and Java callers unless the published API uses a compatible overload/versioning strategy. Treat the change as reversible only after testing every supported consumer mode.
 
 ---
 
@@ -372,7 +372,7 @@ Default-argument parameters can be added without breaking existing callers. Comp
 
 ## Failure Modes
 
-**Premature abstraction.** Building a `Strategy` for a problem with one variant. The abstraction usually doesn't fit when the second variant appears. Mitigation: introduce abstraction at the second occurrence (the "Rule of Three" is overcautious; two is fine for most cases, but never one).
+**Premature abstraction.** Building a `Strategy` before the expected variation or boundary is understood can encode the wrong similarities. Mitigation: introduce an abstraction when independent implementations, consumers, testing, policy, or migration economics justify it; occurrence count is a heuristic, not a rule.
 
 **Feature flag debt.** A flag shipped for a launch is never removed; six months later the code has two parallel paths, neither fully tested. Mitigation: every flag has an explicit removal date and an owner. Track flags as tech debt with a deadline.
 
@@ -390,8 +390,8 @@ Default-argument parameters can be added without breaking existing callers. Comp
 
 ## Performance Considerations
 
-- **Feature flag lookups have a cost.** A flag check on a hot frame loop is noticeable. Cache flag values in memory and re-read on app launch or remote-config update.
-- **Indirection through abstractions has a virtual-call cost.** Negligible in 99% of cases; in hot paths, the JIT usually inlines. Reserve micro-optimizations for measured hotspots.
+- **Feature flag lookups have a cost.** Remote I/O, parsing, synchronization, listeners, or allocation can matter on a hot path; a simple in-memory lookup may not. Keep network/config refresh off frame-sensitive paths and measure before adding caching complexity.
+- **Indirection through abstractions has a cost.** Runtime dispatch may be inlined or may remain, depending on code shape and runtime optimization. Reserve micro-optimizations for measured hotspots.
 - **Configuration parsing on startup.** Loading and parsing remote config on cold start adds latency. Cache locally and refresh in the background.
 - **Server-driven UI's flexibility costs render performance.** Dynamic component dispatch is slower than hardcoded composition. Reserve for components that genuinely need server-driven control.
 
@@ -399,10 +399,10 @@ Default-argument parameters can be added without breaking existing callers. Comp
 
 ## Reliability Considerations
 
-- **Kill switches as a reliability tool.** Every risky new feature should have a kill switch from day one. The cost is small; the value at incident time is enormous.
-- **Default to the safe behavior.** When a flag is unset or unreachable, fall back to the known-safe path. Never block a critical flow on flag availability.
-- **Test both flag paths.** A flag has two production paths; both must be tested. CI matrix should run with the flag on and off.
-- **Reversible deploys.** A deploy that can be rolled back in minutes is reliability infrastructure. Mobile deploys are nearly irreversible — rely on server-side flags as the actual reversibility mechanism.
+- **Kill switches as a reliability tool.** Add a kill switch when a feature can be disabled safely and the expected incident mitigation value exceeds the platform, test-matrix, and lifecycle cost. Security enforcement, destructive writes, and incompatible schemas need controls beyond a client flag.
+- **Default according to the threat and product model.** When configuration is absent, use a tested cached/default path. Availability features may degrade open, while security, legal, payment, or data-integrity controls may need to fail closed; do not make a critical flow depend on a live flag fetch without an explicit offline policy.
+- **Test relevant flag states and transitions.** Test both paths, default/fetch failure, cached configuration, and important interactions. Pairwise, model-based, or risk-based selection may be needed when many flags make an exhaustive matrix infeasible.
+- **Reversible deploys.** Mobile clients persist in the fleet after a new release is available, so rollback, roll-forward, server compatibility, staged rollout, and flags solve different parts of recovery. Do not treat a server-side flag as the only reversibility mechanism.
 
 ---
 
@@ -417,7 +417,7 @@ Default-argument parameters can be added without breaking existing callers. Comp
 
 ## Observability
 
-- **Flag exposure metrics.** Log every flag evaluation: which flag, which user segment, which value. Lets you correlate behavior changes with flag rollouts.
+- **Flag exposure evidence.** Record a versioned product exposure event once per defined exposure unit when experiment analysis needs it; use bounded operational metrics for configuration health. Do not log every lookup or attach unrestricted user/segment identifiers. Apply the [telemetry taxonomy](../observability/telemetry-taxonomy.md) to cardinality, sampling, privacy, retention, and deletion.
 - **A/B test instrumentation.** When a flag controls an experiment, instrument both arms with the same events for clean attribution.
 - **Rollout dashboards.** Show flag-on % vs key business metrics over time. Spike in error rate after 5% rollout → halt and investigate.
 - **Vendor abstraction lets you instrument the boundary.** Wrap the gateway calls with latency/error metrics; if you switch vendors, the metrics keep working.
@@ -432,15 +432,15 @@ Default-argument parameters can be added without breaking existing callers. Comp
 
 **Maintain a flag lifecycle policy.** Flags shipped with code must have removal dates. Track flags as tech debt with an owner and a deadline. Aged flags become structural debt.
 
-**Resist mocking out everything for "flexibility."** Abstracting a stable dependency just because "we might swap it" is YAGNI. Abstract when the second consumer arrives.
+**Resist mocking out everything for "flexibility."** Abstracting a stable dependency just because "we might swap it" is YAGNI. Introduce the boundary when independent implementations, consumers, policy, testing, or migration economics justify it; a second occurrence is evidence, not a rule.
 
 **Pay the upfront cost on one-way doors.** A bad API contract published to consumers is the most expensive mistake a team can make. Get those right with care, design reviews, and explicit deprecation/versioning strategies.
 
-**Make changes additive whenever possible.** Adding a field to a response is safer than renaming one. Adding a method to an interface is safer than changing its signature. Default arguments and nullable fields are your friends.
+**Prefer compatible evolution.** Additive wire changes are often easier to roll out than renames or removals, but clients with strict decoders, exhaustive matching, generated models, or bounded payloads can still break. Adding an abstract interface method can be source- or binary-incompatible for existing implementers. Validate each change against the language/wire compatibility rules and supported consumer fixtures.
 
-**Treat refactoring as a daily activity.** Continuous small improvements keep the change cost low. Code that hasn't been refactored in two years usually can't be — it's accumulated too much friction.
+**Treat refactoring as a routine activity.** Small evidence-driven improvements can keep change cost visible. Older code may be harder to change because tests, ownership, or dependency knowledge decayed, but age alone does not prove it is unrefactorable.
 
-**Plan for the rollback.** Every shipped change should answer the question "how would we undo this if it's wrong?" If the answer is "redeploy" or "hotfix," the change is risky. If the answer is "flip a flag," the change is safe.
+**Plan for recovery.** Every shipped change should name rollback, roll-forward, kill-switch, compatibility, and data-repair options. A flag reduces risk only when it propagates within the required time and both server and client paths remain compatible; it cannot by itself reverse completed side effects.
 
 ---
 
@@ -448,13 +448,13 @@ Default-argument parameters can be added without breaking existing callers. Comp
 
 **"Optimize-for-change means making everything abstract."** No. It means making the *expensive* things abstract and the *cheap* things simple. Speculative abstraction is anti-optimize-for-change.
 
-**"Feature flags are for A/B testing."** A/B testing is one use. The bigger one is reversibility — letting any feature be disabled without a release.
+**"Feature flags are for A/B testing."** Experimentation is one use. A flag can also mitigate a compatible feature path without a release, but it cannot undo completed writes, secure a fail-open control, or repair incompatible client/server state.
 
 **"YAGNI is the opposite of optimize-for-change."** They're complementary. Optimize-for-change says make the right things flexible; YAGNI says don't make the wrong things flexible.
 
 **"Build one, throw it away."** Sometimes accurate, but pessimistic. Aim to build one that's flexible at the joints you expect to revisit and rigid elsewhere.
 
-**"Reversibility is for big changes."** It's just as important for small ones. A tiny UI tweak behind a flag is a small change; a tiny UI tweak in a release is a small change you can't reverse for 48 hours.
+**"Reversibility is for big changes."** Small changes can still justify mitigation when their blast radius is large. A flag adds lifecycle and test cost, while an app update has store review and fleet-adoption latency that varies by channel and user behavior; choose from measured risk.
 
 **"Architecture should predict the future."** It shouldn't predict; it should *absorb*. The future will surprise you. Design to minimize the cost when it does.
 
@@ -466,7 +466,7 @@ Default-argument parameters can be added without breaking existing callers. Comp
 2. A team is choosing between Stripe and Braintree for a new app. What questions about reversibility should drive the choice?
 3. Explain why introducing a `PaymentGateway` interface on day one might be worse than introducing it when the second gateway arrives.
 4. A feature flag has been in production for 14 months. Both paths are still in the code. What's the cost of leaving it, and how do you decide when to remove it?
-5. Why are nullable fields and default-argument parameters reversibility tools?
+5. When can nullable fields and default-argument parameters support compatible evolution, and where do they fail?
 6. A schema migration drops a column. Walk through how you'd convert this to a reversible two-phase change.
 7. What's the operational cost of a 100-flag system at a mid-sized mobile org? How do you keep it manageable?
 8. Why is "make everything configurable" usually the wrong response to a feature being "too rigid"?
@@ -485,14 +485,14 @@ Default-argument parameters can be added without breaking existing callers. Comp
    Premature abstraction often guesses wrong about what the shared interface needs to be. It adds unnecessary complexity (YAGNI) until a second implementation actually proves the need and shape of the abstraction.
 4. **A feature flag has been in production for 14 months. Both paths are still in the code. What's the cost of leaving it, and how do you decide when to remove it?**
    The cost includes cognitive overload, increased testing surface area, and maintaining dead code. It should be removed immediately once the feature is fully rolled out and stabilized, using tech debt tracking with strict deadlines.
-5. **Why are nullable fields and default-argument parameters reversibility tools?**
-   They allow you to add new parameters or fields without breaking existing callers or older clients, making API evolution an additive, two-way door.
+5. **When can nullable fields and default-argument parameters support compatible evolution, and where do they fail?**
+   They can preserve source compatibility when absence has a defined meaning and callers recompile under supported rules. Strict wire decoders, semantic changes, Java callers, generated models, and precompiled binary consumers can still break, so validate actual provider/consumer fixtures and publish a support policy.
 6. **A schema migration drops a column. Walk through how you'd convert this to a reversible two-phase change.**
    Phase 1: Mark the column as deprecated, stop writing to it, and deploy. Phase 2: After sufficient soak time to ensure no clients or processes still rely on it, execute the migration to actually drop the column.
 7. **What's the operational cost of a 100-flag system at a mid-sized mobile org? How do you keep it manageable?**
-   The cost is combinatorial testing explosions, degraded app startup time, and massive code complexity. Manage it by treating flags as temporary infrastructure, enforcing expiration dates, and tracking them in sprints.
+   The cost includes interacting states, evaluation/config-refresh work, stale paths, ownership, and larger test/incident surfaces. Manage it with owners, types, expiry criteria, dependency constraints, observability, and risk-based/combinatorial testing rather than assuming every flag is temporary.
 8. **Why is "make everything configurable" usually the wrong response to a feature being "too rigid"?**
-   It creates an untestable, hyper-complex system where no one understands the combinatorial states. Instead, configure only what is proven to need changing and rely on sensible defaults.
+   It expands the state space and operational surface, sometimes beyond what the team can test exhaustively. Configure the variations supported by evidence, define safe defaults, and use risk-based or combinatorial test selection for the resulting states.
 9. **A risky redesign is being shipped behind a flag. Define three rollout milestones and three abort triggers.**
    Milestones: 1% internal/beta rollout, 10% canary rollout, 100% full rollout. Abort triggers: A spike in crash rates, a significant drop in primary conversion metrics, or increased latency beyond a defined threshold.
 10. **The Stripe SDK has a new "great" feature that's tightly coupled to their APIs. The product team wants to use it. What's the conversation about reversibility?**
@@ -511,6 +511,7 @@ In this repository:
 - [`../release-engineering/staged-rollouts.md`](../release-engineering/staged-rollouts.md) — operational reversibility.
 - [`../release-engineering/kill-switches.md`](../release-engineering/kill-switches.md) — the explicit kill-switch playbook.
 - [`../mobile-system-design/feature-flags-and-remote-config.md`](../mobile-system-design/feature-flags-and-remote-config.md) — the design of the flag platform itself.
+- [`../observability/telemetry-taxonomy.md`](../observability/telemetry-taxonomy.md) — signal selection for flag exposure and operational health.
 
 External:
 

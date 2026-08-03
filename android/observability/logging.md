@@ -236,6 +236,7 @@ When reviewing Logging architecture, a Staff engineer focuses on Signal-to-Noise
 ## Further Reading
 
 - [`crash-monitoring.md`](crash-monitoring.md) — How selected, approved release logs can become crash breadcrumbs.
+- [`../../observability/telemetry-taxonomy.md`](../../observability/telemetry-taxonomy.md) — Canonical signal-selection, privacy, sampling, retention, and deletion policy.
 - [`jank.md`](../performance/jank.md) — How allocation and logging work can contribute to frame pressure on measured hot paths.
 - [Timber GitHub Repository](https://github.com/JakeWharton/timber)
 - [Android `Log` reference](https://developer.android.com/reference/android/util/Log) — Platform priorities and behavior.

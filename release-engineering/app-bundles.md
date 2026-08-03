@@ -80,6 +80,14 @@ Ship features as separate downloadable modules — installed on demand or condit
 include(":app", ":feature:premium", ":feature:onboarding-rich")
 ```
 
+The example uses a version-catalog alias. Define it before copying the module snippet:
+
+```toml
+# gradle/libs.versions.toml
+[versions]
+android-compileSdk = "36"
+```
+
 ```kotlin
 // feature/premium/build.gradle.kts
 plugins {
@@ -89,7 +97,7 @@ plugins {
 
 android {
     namespace = "com.example.feature.premium"
-    compileSdk = 35
+    compileSdk = libs.versions.android.compileSdk.get().toInt()
     defaultConfig { minSdk = 26 }
 }
 
@@ -144,7 +152,7 @@ After installation, the new module's classes are available via `SplitCompat` int
 
 ## 5. Asset Packs (Large Assets, Out of the Base APK)
 
-For games or apps shipping > 200 MB of assets, asset packs separate them from the binary:
+For games or apps whose assets would push the base module past its download limit, asset packs separate them from the binary:
 
 ```kotlin
 // asset_pack/build.gradle.kts
@@ -158,13 +166,7 @@ assetPack {
 }
 ```
 
-Limits:
-- Base APK: up to 200 MB.
-- Each install-time asset pack: up to 1 GB.
-- Total install-time assets: up to 2 GB.
-- On-demand asset packs: up to 1 GB each, total uncapped (within Play's overall limits).
-
-Without asset packs, the 200 MB base APK cap is a hard wall. With them, you can ship games up to several GB.
+Play evaluates compressed download size, not the raw `.aab` file size. At the time of writing, the compressed base module generated from an app bundle is limited to 500 MB and the cumulative compressed download delivered to one device can be up to 4 GB. Asset-pack and feature-delivery limits can change independently, so check the official App Bundle FAQ while designing the module graph and keep a margin below the published limits.
 
 ---
 
@@ -204,9 +206,9 @@ bundletool build-apks \
   --bundle=app/build/outputs/bundle/release/app-release.aab \
   --output=local.apks \
   --connected-device \
-  --ks=upload-key.jks \
+  --ks=local-test-key.jks \
   --ks-pass=pass:$KS_PASS \
-  --ks-key-alias=upload \
+  --ks-key-alias=local-test \
   --key-pass=pass:$KEY_PASS
 
 # Install on the connected device
@@ -231,7 +233,7 @@ bundletool build-apks \
 }
 ```
 
-This is the only sane way to debug "this works on flagship, breaks on emerging market" issues.
+Device-spec APK sets are a practical way to reproduce configuration-specific failures such as “works on a flagship, fails on a lower-tier device.” Keep representative specs in source control and test them alongside at least one real or virtual device path.
 
 ---
 
@@ -344,6 +346,7 @@ This APK works on any device matching min-SDK. Never ship to Play — defeats th
 ## 12. Further Reading
 
 - [Android Developers — App Bundles overview](https://developer.android.com/guide/app-bundle) — official.
+- [App Bundle FAQ and current size limits](https://developer.android.com/guide/app-bundle/faq) — verify Play requirements and compressed-download limits.
 - [bundletool](https://developer.android.com/tools/bundletool) — local AAB inspection.
 - [Dynamic delivery](https://developer.android.com/guide/playcore/feature-delivery) — Play Feature Delivery API.
 - [Asset delivery](https://developer.android.com/guide/playcore/asset-delivery) — large assets.
@@ -351,4 +354,4 @@ This APK works on any device matching min-SDK. Never ship to Play — defeats th
 
 ---
 
-> **In short:** AAB is the only Play upload format that matters today. Enable `language`/`density`/`abi` splits. Dynamic features for on-demand. Asset packs for > 200 MB. Test with bundletool against a device-spec JSON. Gate size in CI.
+> **In short:** use AAB for Play delivery, enable appropriate language/density/ABI splits, choose dynamic features and asset packs from product and delivery constraints, test generated APK sets against representative device specs, and gate compressed per-device download size in CI.

@@ -451,6 +451,7 @@ class SessionTracker(private val processLifecycleOwner: ProcessLifecycleOwner) {
 
 ## 12. Further Reading
 
+- [`../observability/telemetry-taxonomy.md`](../observability/telemetry-taxonomy.md) — Distinguishes product events from operational metrics, logs, traces, exceptions, and breadcrumbs.
 - [Segment Analytics Android SDK](https://github.com/segmentio/analytics-kotlin) — open-source reference architecture.
 - [Mixpanel Android — design](https://docs.mixpanel.com/docs/tracking/reference/android) — events, identities, sessions.
 - [Android Developers — WorkManager](https://developer.android.com/topic/libraries/architecture/workmanager) — expedited + constraints.

@@ -369,18 +369,18 @@ plugins {
 
 android {
     namespace = "com.example.app"
-    compileSdk = 35
+    compileSdk = libs.versions.android.compileSdk.get().toInt()
 }
 
 // Complex (same blocks, deeper):
 android {
     namespace = "com.example.app"
-    compileSdk = 35
+    compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
         applicationId = "com.example.app"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 12
         versionName = "1.2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

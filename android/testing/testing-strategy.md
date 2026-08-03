@@ -18,10 +18,10 @@ Staff engineers own this system the way they own production reliability — with
 
 ## First Principles
 
-1.  **A test's value is information per unit cost.** Cost = write + run-time × frequency + maintenance + flake-triage. A slow, flaky E2E test that catches what a ViewModel test would catch has negative value.
-2.  **Trust is the product.** The moment engineers stop believing a red build means a real bug, the suite's value collapses to zero regardless of coverage numbers.
-3.  **Every test has exactly one owner.** A failure with no owner is a failure that gets muted.
-4.  **Determinism is designed, not hoped for.** Flakes come from unowned time, network, ordering, and shared state ([`../../principles/determinism.md`](../../principles/determinism.md)) — each is an injectable seam.
+1.  **A test's value is information per unit cost.** Cost = write + run-time × frequency + maintenance + flake-triage. A slow, flaky E2E test that catches no failure unavailable to a cheaper layer is a candidate to move, rewrite, or delete.
+2.  **Trust is the product.** Repeated unexplained red builds train engineers to rerun or ignore failures, reducing the suite's detection value even when coverage remains high.
+3.  **Every test has a primary owner.** Shared journeys can have contributors, but one team owns first response and disposition.
+4.  **Reproducibility is designed, not hoped for.** Flakes can come from uncontrolled time, network, ordering, shared state, device behavior, test infrastructure, or external services ([`../../principles/determinism.md`](../../principles/determinism.md)). Control or classify each source at the layer that owns it.
 
 ## Mental Model
 
@@ -37,7 +37,7 @@ The tiers themselves are defined in [`unit-testing.md`](unit-testing.md#the-test
 
 | Tier | Runs on | Cost/run | Flake source | Belongs in |
 |---|---|---|---|---|
-| JVM unit (JUnit, Turbine) | Every PR, pre-merge | Seconds | ~None if deterministic | PR gate |
+| JVM unit (JUnit, Turbine) | Commonly every PR, pre-merge | Seconds | Low when dependencies are controlled | PR gate |
 | JVM Android (Robolectric, Paparazzi screenshots) | Every PR | Seconds–minutes | Low | PR gate |
 | Instrumented (Gradle Managed Devices/ATD emulators) | Main branch per-merge; affected-module subset on PR | Minutes | Medium | Merge gate / main |
 | Real-device lab (Firebase Test Lab, device farms) | Nightly + release branch | Tens of minutes | High (hardware, OEM) | Nightly / release |
@@ -46,8 +46,8 @@ The tiers themselves are defined in [`unit-testing.md`](unit-testing.md#the-test
 Placement rules that keep the system honest:
 
 - **The PR gate is a latency budget first.** Pick a number (e.g., p95 ≤ 15 min) and treat regressions like production latency regressions. Everything that doesn't fit moves down the topology, not into the gate.
-- **Affected-module test selection** (build-graph-aware: only test what a change can reach) is the single highest-leverage CI optimization in a modularized app — it's why modularization is a *testing* strategy, not just a build strategy ([`../../platform-engineering/build-graph-scaling.md`](../../platform-engineering/build-graph-scaling.md)).
-- **Push checks down-tier aggressively.** Every check should run on the cheapest tier that can catch its failure class: screenshot diffs on JVM (Paparazzi) not devices; navigation logic in Robolectric not E2E; business logic in plain JUnit, always.
+- **Affected-module test selection** (build-graph-aware: test what a change can reach) can be a high-leverage CI optimization in a modularized app when the dependency graph is accurate ([`../../platform-engineering/build-graph-scaling.md`](../../platform-engineering/build-graph-scaling.md)). Include global configuration, tooling, generated code, and runtime-only relationships that make a wider selection necessary.
+- **Push checks to the cheapest sufficient tier.** Component screenshot coverage often fits JVM renderers; retain device screenshots for failures involving hardware rendering, platform fonts, OEM behavior, or other differences the host renderer cannot reproduce. Navigation and business logic similarly belong at the lowest layer that observes their production risk.
 
 ## Flakiness as a System, Not a Nuisance
 
@@ -62,7 +62,7 @@ Placement rules that keep the system honest:
 
 Blanket auto-retry ("run everything up to 3×") is the most common and most corrosive policy: it converts flakes into invisible latency, hides real race conditions (a test failing 40% of the time passes 78% of runs under 3 retries), and removes the pressure that gets flakes fixed.
 
-The defensible policy: **retry only quarantine-lane tests; blocking-lane failures are real until proven otherwise.** If the org insists on retries in the blocking lane, every retried-then-passed run must still count as a flake event feeding the quarantine system — retries may mask a failure for a merge, never for the metrics.
+A strong default is: **do not let an unclassified retry turn a blocking failure green.** A bounded rerun can be justified for a separately identified infrastructure failure or to collect diagnostic evidence, but the original failure and rerun outcome must remain visible and feed ownership/quarantine policy. Product-test failures remain blocking until the configured policy classifies or resolves them.
 
 ### Attribution
 
@@ -82,7 +82,7 @@ flowchart TD
 Feedback cost rises with fidelity: keep deterministic, high-signal checks close to the PR and reserve broad device, journey, stress, and performance coverage for later gates.
 
 - **Merge queue** (batching merges and testing the *combined* result) prevents the "two green PRs, red main" problem that otherwise burns the platform team's mornings.
-- **Device strategy:** Gradle Managed Devices with ATD images are the modern default for CI emulators — AGP provisions/tears down devices, ATD images strip non-test services for lower CPU/memory, snapshots cut startup, and sharding is one `gradle.properties` entry (`android.experimental.androidTest.numManagedDeviceShards=<n>` — note it provisions shards × devices in the group, so budget CI resources accordingly). Note ATD's documented limit: hardware-rendering-dependent screenshot tests aren't supported — another reason screenshot testing belongs on JVM. Real-device labs cover what emulators can't: OEM skins, thermal behavior, real cameras/radios.
+- **Device strategy:** Gradle Managed Devices can provision and tear down emulator groups; ATD images remove components that are unnecessary for many automated tests, and sharding provisions shards × devices in the group, so budget CI resources accordingly. ATD does not support hardware rendering, so use a compatible emulator or real device when that behavior is the subject; host-rendered screenshots remain useful for broad component coverage. Real-device labs cover OEM, thermal, camera, radio, and hardware behavior that host renderers and emulators cannot fully reproduce.
 - **Caching is strategy:** Gradle build cache + test-result caching means unchanged modules genuinely skip their tests. This only works if tests are hermetic — a test that reads the network or the clock silently defeats caching correctness.
 
 ## Contract Tests Against the BFF
@@ -90,7 +90,7 @@ Feedback cost rises with fidelity: keep deterministic, high-signal checks close 
 The mobile-specific gap in most pyramids: your integration tests mock the backend, the backend's tests mock you, and the wire contract drifts until production finds it.
 
 - **Consumer-driven contracts:** the app publishes the requests it makes and the response shapes it depends on (generated from the same serialization models the app ships). Backend CI replays them against the real BFF implementation; a breaking change fails *their* build before it ships.
-- The cheap version that captures 80% of the value: schema-validate recorded fixtures against the BFF's OpenAPI/GraphQL schema in *both* CIs, and version the fixtures with the API ([`../../backend-for-mobile/api-design-for-mobile.md`](../../backend-for-mobile/api-design-for-mobile.md), [`../../mobile-system-design/versioning-and-backward-compatibility.md`](../../mobile-system-design/versioning-and-backward-compatibility.md)).
+- A lower-cost starting point is to validate independently reviewed fixtures against the provider-owned OpenAPI/GraphQL contract in both CIs and version fixtures with the API. Generating both expectations and fixtures from the same mobile model can make the check tautological ([`../../backend-for-mobile/api-design-for-mobile.md`](../../backend-for-mobile/api-design-for-mobile.md), [`../../mobile-system-design/versioning-and-backward-compatibility.md`](../../mobile-system-design/versioning-and-backward-compatibility.md)).
 - What this buys: your E2E tier stops being the only place client/server drift is caught, so it can shrink to true journey validation.
 
 ## Metrics That Govern the System
@@ -101,7 +101,7 @@ The mobile-specific gap in most pyramids: your integration tests mock the backen
 | Blocking-lane flake rate | <0.1%, trending | Trust in red builds |
 | Quarantine dwell time | p90 < SLO (14 days) | Quarantine must not be a landfill |
 | Time-to-detection by tier | Most regressions caught at JVM tier | Validates down-tier pushing |
-| Escaped defects (prod bugs with no failing test) | Reviewed monthly | The only true measure of suite value |
+| Escaped defects (prod bugs with no failing test) | Reviewed monthly | Reveals important gaps alongside detection rate, flake, latency, and maintenance cost |
 
 The last one matters most and is measured least: every incident review asks "which tier *should* have caught this, and what's the cheapest test that would have?" — that question, asked consistently, is what evolves the portfolio.
 
@@ -136,7 +136,7 @@ The last one matters most and is measured least: every incident review asks "whi
 2. **Design the flake-quarantine pipeline: detection signal, threshold, what changes for a quarantined test, and the exit paths.**
    Signal: A test fails and then passes on a retry with no code change. Threshold: >0.5% failure rate in 7 days. Action: Automatically move test out of blocking gate, run it in a quarantine lane, and open a ticket. Exit: Fix within SLO (14 days) or delete it.
 3. **Why does blanket auto-retry corrode a test system even though it makes builds greener? When is retry defensible?**
-   It hides real race conditions, adds invisible latency, and removes the urgency to fix broken tests. Retry is only defensible for tests in the quarantine lane to gather data, never to mask a failure in the blocking merge lane.
+   It can hide races, add latency, and reduce urgency to fix failures. Retries are useful in quarantine for evidence and may be bounded for explicitly classified infrastructure failures, but the original failure must remain visible and an unclassified product-test failure must not silently become a green merge signal.
 4. **Where do contract tests against the BFF sit in the pyramid, and what do they let you remove from the E2E tier?**
    They sit between Unit and Integration on the JVM. By validating request/response shapes directly against the API schema, you can remove data-shape verification from the slow, flaky E2E journey tests.
 5. **What's your device strategy — what runs on ATD emulators vs real devices, and what data decides the real-device matrix?**
@@ -150,6 +150,6 @@ The last one matters most and is measured least: every incident review asks "whi
 - [`ui-testing.md`](ui-testing.md) — Compose/Robolectric/Paparazzi selection, UI-flake policy, semantics.
 - [`../../platform-engineering/build-graph-scaling.md`](../../platform-engineering/build-graph-scaling.md) — affected-module selection and build caching.
 - [`../../platform-engineering/internal-developer-platforms.md`](../../platform-engineering/internal-developer-platforms.md) — the platform team that runs this system.
-- [`../../principles/determinism.md`](../../principles/determinism.md) — the root cause of every flake.
+- [`../../principles/determinism.md`](../../principles/determinism.md) — controlling time, ordering, and hidden state; infrastructure and device variance still require separate classification.
 - [Gradle Managed Devices](https://developer.android.com/studio/test/gradle-managed-devices) — ATD images, snapshots, sharding (verified source for the CI-device claims here).
 - [Firebase Test Lab](https://firebase.google.com/docs/test-lab) — real-device matrix testing.

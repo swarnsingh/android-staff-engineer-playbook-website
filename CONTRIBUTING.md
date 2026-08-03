@@ -74,7 +74,11 @@ When the same word could plausibly live in multiple trees, this table pins the s
 | State machines — mechanics | `engineering-fundamentals/state-machines.md` | All application FSMs link here |
 | State machines — pattern | `patterns/state.md` | Cross-link both ways |
 | Observability concepts | `observability/` tree | `android/observability/` is application-only |
-| Distributed tracing | `observability/distributed-tracing.md` | `distributed-systems/distributed-tracing.md` (bridge file) |
+| Telemetry signal selection and data-governance controls | `observability/telemetry-taxonomy.md` | Product analytics, Android observability, crash, logging, metrics, and tracing chapters apply the matrix |
+| Tracing mechanics (traces, spans, in-process context, sampling) | `observability/tracing.md` | `observability/distributed-tracing.md` applies them across process/network boundaries |
+| Distributed tracing (wire propagation, ingress trust, cross-system correlation) | `observability/distributed-tracing.md` | `distributed-systems/distributed-tracing.md` (bridge file) |
+| Real-time transport mechanics and selection | `backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md` | `backend-for-mobile/sse-vs-websockets.md` is the focused SSE-vs-WebSocket decision |
+| Mobile API contract, error layers, and compatibility | `backend-for-mobile/api-design-for-mobile.md` | `backend-for-mobile/graphql-vs-rest.md` compares shapes; `android/networking-and-security/graphql.md` applies the contract with Apollo Kotlin |
 | Idempotency | `distributed-systems/idempotency.md` | `mobile-system-design/` |
 | Determinism — heuristic | `principles/determinism.md` | Cross-link to mechanics |
 | Determinism — mechanics | `engineering-fundamentals/` | Cross-link to principle |

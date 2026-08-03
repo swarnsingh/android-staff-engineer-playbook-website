@@ -144,14 +144,14 @@ When a customer support agent gets a ticket for this user, they can query `user_
 
 When setting up a logging architecture, a Staff engineer asks:
 
-1.  **Do we have a central schema?** I will not allow teams to make up their own JSON keys. We must have a shared Kotlin library or Protobuf schema that defines the exact keys allowed (e.g., `enum class LogKeys { USER_ID, SCREEN_NAME, LATENCY }`).
-2.  **Are we relying on Regex in our dashboards?** If I look at Datadog and see complex regex parsing rules applied to incoming mobile logs, I know our logging architecture is failing. We must shift left and emit the structure from the device.
-3.  **Is local debugging suffering?** If structured logging makes local development miserable because `logcat` is just a wall of unreadable JSON, developers will stop using it. I must ensure our `Timber` `DebugTree` intercepts the map and prints it beautifully for the developer, while the `CrashlyticsTree` sends the raw JSON.
+1.  **Do we have an owned schema?** Use a reviewed schema/data dictionary for remotely retained fields. Different event families may have different owners; raw user identifiers do not become safe merely because an enum names the key.
+2.  **Are dashboards parsing prose?** Repeated regex extraction is a sign to consider structured fields at the source, while preserving a migration path for legacy records.
+3.  **Is local debugging usable?** A facade can render approved fields for local development and route only policy-selected, redacted, sampled records to a remote diagnostic sink. Do not copy every log into Crashlytics.
 
 ## Common Misconceptions
 
 - **"We use Firebase Analytics, so we have structured logging."** Firebase Analytics is an *Analytics* tool (Product/Marketing), not a full Observability/Logging tool (Engineering). Analytics events are structured, but you cannot easily log thousands of debug/info technical state changes to Firebase Analytics without destroying your marketing data and blowing past quotas.
-- **"Structured logging takes up more bandwidth."** While JSON has overhead (brackets, quotes), the elimination of duplicate context (like OS versions in every string) and the fact that modern loggers use aggressive gzip compression means the network footprint is usually similar or smaller than verbose text logs.
+- **"Structured logging is always smaller than text."** Encoding, batching, compression, schema repetition, and payload content determine size. Measure representative records and enforce a budget.
 
 ## Probing Questions
 
@@ -168,64 +168,58 @@ When setting up a logging architecture, a Staff engineer asks:
 
 ## Mobile Implementation (Android)
 
-On Android, structured logs are typed payloads that flow through the analytics SDK rather than being printed. The "structure" is the `AnalyticsEvent` shape, serialized via `kotlinx.serialization` and batched via the durable queue.
+On Android, a structured diagnostic event is a typed record routed through a diagnostic logging/RUM sink under the [telemetry taxonomy](telemetry-taxonomy.md). It is not automatically a product-analytics event and need not be transmitted at all when local-only diagnostics are sufficient.
 
 ```kotlin
 @Serializable
-data class CheckoutEvent(
-    val orderId: String,
-    val amountMinor: Long,
-    val currency: String,
-    val paymentMethod: String,
-    val durationMs: Long,
-    val outcome: String,                       // succeeded | failed | cancelled
-    val failureCode: String? = null,
+data class CheckoutDiagnostic(
+    val operationId: String,
+    val endpointTemplate: String,
+    val durationBucket: String,
+    val outcome: String,
+    val failureCategory: String? = null,
 )
 
-fun trackCheckout(event: CheckoutEvent) {
-    Analytics.track(
-        AnalyticsEvent(
-            name = "checkout_completed",
-            properties = event.toPropertyMap(),
-            category = Category.PRODUCT,
-        )
+fun recordCheckoutDiagnostic(event: CheckoutDiagnostic) {
+    diagnosticSink.record(
+        schema = "checkout_diagnostic.v1",
+        fields = event.toFieldMap(),
     )
 }
 ```
 
-Crashlytics gets the same structure as **custom keys**, attached to whatever crash happens next:
+When a crash-report policy approves a small subset as useful parent-report context, attach only those bounded fields as custom keys:
 
 ```kotlin
 FirebaseCrashlytics.getInstance().apply {
-    setCustomKey("checkout.orderId", event.orderId)
-    setCustomKey("checkout.amountMinor", event.amountMinor)
-    setCustomKey("checkout.paymentMethod", event.paymentMethod)
+    setCustomKey("checkout.endpoint", event.endpointTemplate)
+    setCustomKey("checkout.duration_bucket", event.durationBucket)
     setCustomKey("checkout.outcome", event.outcome)
 }
 ```
 
 Three mobile-distinct considerations:
 
-1. **Schema enforcement at build time.** Use a KSP processor or a typed-event builder so `checkout_completed` always carries the same fields. Server-side schema registry validates. See `mobile-system-design/analytics-sdk.md`.
-2. **Bounded payload size.** FCM has a 4 KB ceiling; Crashlytics custom keys cap individual values at 1 KB. Truncate long fields explicitly rather than relying on the SDK to do it silently.
-3. **Locale/timezone matter.** Use `Instant` for absolute time; never `LocalDateTime` from `Date()` (which is in device-local TZ). All server-correlated timestamps are UTC milliseconds since epoch.
+1. **Schema enforcement.** Use typed builders or generated schemas and validate again at ingestion; compile-time shape does not validate privacy purpose or value cardinality.
+2. **Bounded payload and retention.** Enforce the selected sink's current count/size limits, sampling, local queue age, and server retention. Drop or truncate according to documented policy.
+3. **Time semantics.** Use an explicit instant and timezone/offset model where wall-clock correlation is needed; use monotonic time for local durations when available.
 
 ## Answer Key
 
 1. **Why is extracting variables from text logs using Regular Expressions considered a fragile practice in SRE?**
    Regex relies on exact string formats. If a developer changes a typo or wording in the log message, the regex silently breaks, dropping data and breaking dashboards.
 2. **Explain the concept of Mapped Diagnostic Context (MDC) or Global Context Injection. How does it improve debugging?**
-   MDC is a thread-local map of key-value pairs (like `user_id`) that automatically attaches to every log emitted. It improves debugging by ensuring every log has complete context without developers manually adding it each time.
+   MDC is a context map that a logging integration may attach to records in the current execution context. It can add approved correlation fields, but thread/coroutine propagation must be configured and fields remain subject to privacy and cardinality policy.
 3. **Write a simple JSON payload demonstrating a well-structured log vs a poorly structured log with dynamic keys.**
    Well-structured: `{"event": "error", "user_id": "123", "reason": "timeout"}`. Poorly structured: `{"error_user_123": "timeout"}` (which explodes database cardinality).
 4. **If Team A logs `latencyMs` and Team B logs `latency_ms`, how does this impact the SRE team's ability to create dashboards?**
-   It fragments the data, making it impossible to query and aggregate metrics globally across teams, requiring a strict Data Dictionary to resolve.
+   It fragments queries and dashboards unless ingestion maps both fields or the producers converge on a versioned schema. A shared data dictionary makes that migration explicit.
 5. **Why is it important to strictly enforce data types (e.g., String vs Int) for JSON values in structured logging?**
    Backend databases like Elasticsearch expect consistent types per key. If types clash (e.g., logging an Int instead of a String), the database rejects and drops the logs.
 6. **How do you balance the need for machine-readable JSON in production with the need for human-readable text during local Android Studio debugging?**
-   Use a logging facade (like Timber) that formats logs as human-readable strings locally (DebugTree) while transmitting the pure JSON object remotely in production (CrashlyticsTree).
+   Use a facade that can render developer-friendly local output and route only approved structured diagnostics to a remote sink. Remote production transmission is a policy decision, not the default fate of every log.
 7. **What is the difference between an Analytics Event (e.g., Mixpanel) and a Structured Log (e.g., Datadog)?**
-   Analytics track business/product events and are constrained by volume quotas, while structured logs track technical state changes and errors in high volume for engineering observability.
+   Product events answer product/experiment questions under their own schema and exposure rules. Structured logs preserve diagnostic execution context; they may also be sampled and tightly volume-limited. Choose by decision, owner, privacy, retention, and cost.
 8. **Describe a scenario where a "Stringified JSON Trap" prevents an engineer from writing a critical alert.**
    If a JSON object is converted into a string value (`"details": "{\"code\": 500}"`), the backend cannot index the nested fields, making it impossible to trigger an alert when `code == 500`.
 9. **Why does structured logging push the responsibility of data formatting from the backend (Logstash) to the client (Mobile App)?**
@@ -237,6 +231,7 @@ Three mobile-distinct considerations:
 
 - [`logging.md`](logging.md) — The foundation upon which structured logging is built.
 - [`metrics.md`](metrics.md) — If you are using structured logs just to count things, you should be using metrics instead.
+- [`telemetry-taxonomy.md`](telemetry-taxonomy.md) — Canonical signal-selection, privacy, sampling, retention, and deletion policy.
 - [The 12-Factor App: Logs](https://12factor.net/logs)
 - [Crashlytics custom keys](https://firebase.google.com/docs/crashlytics/customize-crash-reports) — structured context per crash.
 - [`mobile-system-design/analytics-sdk.md`](../mobile-system-design/analytics-sdk.md) — the typed event pipeline.

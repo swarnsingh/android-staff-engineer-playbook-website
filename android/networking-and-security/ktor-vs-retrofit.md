@@ -1,6 +1,6 @@
 # Ktor vs Retrofit+OkHttp — Android Networking Decision
 
-> For ~10 years, Retrofit + OkHttp was the only sensible Android networking stack. Then Kotlin Multiplatform happened and Ktor became a serious option. The decision isn't religion — it's about KMP needs, ecosystem maturity, and which weaknesses you'd rather work around. Staff-level mastery is knowing each stack's plugin/interceptor model deeply, when KMP makes Ktor non-optional, and the migration cost when you've picked wrong.
+> Retrofit with OkHttp is an established Android stack; Ktor adds a multiplatform client API and selectable platform engines. Choose from platform targets, protocol and serialization needs, operational evidence, team capability, ecosystem constraints, and migration cost—not novelty or a universal winner.
 
 ---
 
@@ -19,7 +19,7 @@
 | Mature app on Retrofit, no KMP need | **Stay on Retrofit** |
 | You need the largest plugin ecosystem and OkHttp's specific connection-pool tuning | **Retrofit + OkHttp** |
 | You want one client API across Android, iOS, Desktop, Web | **Ktor** |
-| Maximum binary size sensitivity | **Retrofit + OkHttp** (Ktor pulls more code) |
+| Strict binary-size budget | Measure both release variants with the required converters/plugins and selected engine |
 | Easy WebSocket + SSE + HTTP in one client | **Ktor** |
 
 Retrofit + OkHttp remains a strong Android-focused default; KMP-shared networking makes Ktor's multiplatform client model compelling. Both choices are valid when they match the actual boundary and operational needs.
@@ -56,10 +56,10 @@ graph LR
 
 Three concepts:
 - **`HttpClient`** — the high-level API.
-- **Engine** — pluggable; on Android usually OkHttp (so you don't escape OkHttp on this platform).
+- **Engine** — pluggable; Android projects commonly select OkHttp, CIO, or the Android engine.
 - **Plugins** — install via `install(Logging) { ... }`, similar to Express middleware.
 
-Ktor is one library, not two. On Android it still uses OkHttp under the hood — but the API you write against is Ktor-shaped.
+Ktor is one client API with selectable engines. Pass an engine to `HttpClient(engine)`, or let `HttpClient()` choose from the engine dependencies available to that source set.
 
 ---
 
@@ -234,13 +234,13 @@ actual class HttpClientFactory {
 
 `UserApi` is in `commonMain` — shared across Android, iOS, Desktop. Each platform plugs in its own engine.
 
-If you're building a KMP app and want to share networking code, Ktor isn't a preference — it's the only practical option. Retrofit can't go where Ktor can.
+If a KMP app shares HTTP code, Ktor is a common option because its API lives in common source sets and delegates to platform engines. Compare it with other maintained multiplatform clients or a project-owned boundary; Retrofit itself remains JVM/Android-oriented.
 
 ---
 
 ## Engines on Android
 
-Ktor's engine on Android is **`OkHttp`** by default:
+Ktor requires a client engine dependency. `OkHttp` is a common Android choice when its transport behavior and API-level floor fit the product:
 
 ```kotlin
 val client = HttpClient(OkHttp) {
@@ -253,12 +253,12 @@ val client = HttpClient(OkHttp) {
 Inside that `config { }` block, you have the full OkHttp builder API. So Ktor on Android is "Ktor's API + OkHttp's reliability."
 
 Alternative engines:
-- **`CIO`** — Ktor-native, pure Kotlin, no OkHttp dependency. Smaller; less battle-tested on Android cellular networks.
-- **`Android`** — `HttpURLConnection`-based. Don't use; deprecated.
+- **`CIO`** — Ktor's coroutine-based engine. Official Ktor documentation lists Android 7.0+ support, with Java API desugaring required for older Android versions; it currently supports HTTP/1.x rather than HTTP/2.
+- **`Android`** — the supported `io.ktor:ktor-client-android:$ktor_version` artifact, backed by `HttpURLConnection`. It currently lacks HTTP/2 and WebSocket support.
 
-**Recommendation: stick with `OkHttp` engine on Android.** You get Ktor's API and OkHttp's mature networking.
+**Contextual default:** Evaluate the OkHttp engine first for an Android application already standardized on OkHttp behavior. Choose another engine only from explicit platform floors, protocol needs, proxy/TLS requirements, footprint measurements, and operational evidence.
 
-This means: switching from Retrofit+OkHttp to Ktor doesn't actually replace OkHttp on Android. It replaces Retrofit with Ktor's API on top of the same OkHttp.
+When a Retrofit+OkHttp application selects Ktor's OkHttp engine, the migration replaces Retrofit's API layer while retaining OkHttp as the transport engine. Selecting CIO or the Android engine changes that transport choice as well.
 
 ---
 
@@ -291,7 +291,7 @@ install(ContentNegotiation) {
 
 Both work with kotlinx.serialization. Both work with Moshi. The mechanics differ but the result is the same: `response.body<User>()` works.
 
-For KMP: kotlinx.serialization is the only practical choice. Moshi is JVM-only.
+For shared KMP models, `kotlinx.serialization` is a common default because it supports Kotlin multiplatform. Moshi is JVM-oriented; other formats or platform adapters remain possible when their target and maintenance constraints fit.
 
 ---
 
@@ -307,7 +307,7 @@ client.newWebSocket(request, listener)
 
 Retrofit doesn't model WebSockets — you drop to OkHttp for them.
 
-SSE was awkward until Retrofit added OkHttp's SSE module. Today:
+Retrofit does not model SSE; the OkHttp SSE module can be used alongside it:
 
 ```kotlin
 EventSources.createFactory(client).newEventSource(request, listener)
@@ -338,21 +338,15 @@ client.serverSentEventsSession("https://api.example.com/ticker").apply {
 }
 ```
 
-One client, three protocols (HTTP, WebSocket, SSE), unified suspend API. This is genuinely nicer than mixing OkHttp + Retrofit + OkHttp-SSE.
+Ktor can expose HTTP, WebSocket, and SSE through one client API. Whether that is simpler than Retrofit plus OkHttp modules depends on existing abstractions, lifecycle policy, and the selected engine/plugins.
 
 ---
 
 ## Binary Size and Method Count
 
-| Stack | Approx. methods (release, R8) | APK size impact |
-|---|---|---|
-| OkHttp 4.x + Retrofit 2.x | ~4,500 methods | ~700 KB |
-| OkHttp 4.x + Retrofit 2.x + Moshi codegen | ~5,500 methods | ~900 KB |
-| Ktor client (OkHttp engine) + kotlinx.serialization | ~7,500 methods | ~1.4 MB |
+There is no portable stack delta: versions, engine, converters/plugins, desugaring, min SDK, ABIs, resources, consumer rules, and R8 optimization all change the result. Measure release artifacts for the two complete configurations with the same app code and toolchain.
 
-Ktor pulls in more code — it's a richer library with optional plugins, and the engine still includes OkHttp. R8 with `-keep` rules trims significant fat in release builds, but at debug-build time the difference is visible.
-
-For most apps, ~700 KB difference is irrelevant. For embedded / SDK use cases, it can matter.
+Record at least the signed download/install size by ABI, DEX method/reference change, mapping/configuration, and the exact dependency graph. Remove unused plugins/dependencies and keep rules only when runtime behavior requires them—`-keep` rules preserve code and can reduce shrinking.
 
 ---
 
@@ -460,7 +454,7 @@ Faster than MockWebServer; KMP-compatible.
 
 **`MockWebServer`** also works with Ktor's OkHttp engine — same as Retrofit.
 
-For KMP tests, `MockEngine` is the only option (MockWebServer is JVM-only).
+`MockEngine` is the portable Ktor common-test option. Interface fakes are also portable, while platform test source sets can use loopback servers or engine-specific tools such as MockWebServer on JVM/Android.
 
 ---
 
@@ -474,7 +468,7 @@ viewModelScope.launch {
 }
 ```
 
-When the scope cancels (ViewModel cleared), the suspending HTTP call is cancelled — TCP connection closes, no pending callbacks. Both stacks handle this correctly.
+When the scope cancels, a correctly integrated suspending call should stop delivering a result and cancel the in-flight request/stream. The engine decides whether to reset one HTTP/2 stream, close a socket, or retain a healthy pooled connection for reuse. Test cancellation, resource cleanup, callback suppression, and connection reuse on the selected versions.
 
 One subtle difference: Ktor's WebSocket session is more naturally bound to coroutine scope (`client.webSocket { ... }` is a suspend function whose body is the session lifetime). OkHttp's WebSocket has a callback API requiring manual cleanup. Net win for Ktor in real-time scenarios.
 
@@ -503,11 +497,11 @@ fun provideUserApi(client: HttpClient): UserApi = KtorUserApi(client)
 
 Endpoints migrate one at a time. After all endpoints are migrated, remove Retrofit.
 
-Net effort: ~1 engineer-week per 50 endpoints for a careful migration.
+Estimate from a representative slice that includes authentication, streaming, error mapping, serialization, caching, observability, tests, and rollout. Endpoint count alone does not predict migration effort.
 
 ### From Ktor to Retrofit
 
-Rarely happens (most teams migrate the other way for KMP). Same shape — wrap and swap.
+The same boundary-and-adapter approach can support a reverse migration when Android-only ecosystem or operational requirements justify it.
 
 ---
 
@@ -613,26 +607,26 @@ Same `UserRepository` runs on iOS, Android, JVM, and JS. Retrofit can't do this.
 | OkHttp `Authenticator` competes with Ktor's `Auth` plugin | Both attached; double-refresh | Pick one layer — Auth plugin OR OkHttp Authenticator |
 | `HttpRequestRetry` retries on 401 | Plugin retries before Auth refresh | Configure: `retryIf { request, response -> response.status.value !in 400..499 }` |
 | Different engines on Android vs iOS for KMP | OkHttp on Android, Darwin on iOS | Expected; test on both |
-| Ktor binary size much larger than Retrofit | Many plugins installed | R8 with proper `-keep` rules; strip unused plugins |
-| Compose recomposes from Ktor body parsing | Big JSON parsing on Main thread | `withContext(Dispatchers.IO) { body() }` |
+| Release artifact exceeds its size budget after a stack change | Engine, plugins, converters, transitive dependencies, or keep rules changed | Compare reproducible release artifacts and dependency/R8 reports; remove only unused components |
+| Parsing contributes to frame latency | Deserialization or mapping executes on a frame-sensitive path | Profile the selected engine/converter and move owned CPU work to an appropriate dispatcher when needed |
 | Tests pass with MockEngine, fail in prod | MockEngine doesn't simulate timeouts | Add `delay()` in mock; or test with MockWebServer |
-| Retrofit `@Body` of nullable returns null on parse failure | Loose Moshi config | Use codegen Moshi adapters; non-null in `data class` |
-| Coroutine cancel doesn't cancel HTTP call (OkHttp 3.x) | Old OkHttp version | Upgrade to OkHttp 4.x+ (cancels socket on coroutine cancel) |
+| Converter accepts an invalid/underspecified payload | Model and converter policy do not enforce required semantics | Validate critical fields and test missing/null/unknown values against provider fixtures |
+| Scope cancellation still delivers a result or leaks work | Adapter/engine/version integration does not propagate cancellation as expected | Test the maintained selected versions and fix the integration; do not infer behavior from a major-version label |
 | Ktor connection leak | Forgot to use `use { }` for streaming responses | `client.prepareGet(url).execute { response -> ... }` |
-| Retrofit error: "Method has dropped resolution" | Older Retrofit + newer Kotlin | Update Retrofit to 2.10+ |
+| Retrofit/Kotlin integration fails after a toolchain update | Unsupported or incompatible library/compiler combination | Check the maintained release compatibility notes and upgrade through a tested dependency change |
 | Bearer token attached to refresh-token request | `Auth` plugin's refresh endpoint also intercepted | Use a separate HttpClient for refresh; or exclude path from Auth |
 
 ---
 
 ## Common Pitfalls
 
-- **Migrating to Ktor without KMP intent.** Adds binary size + complexity with no benefit. Stay on Retrofit.
-- **Using Ktor's `CIO` engine on Android.** Less mature; use `OkHttp` engine.
-- **Mixing Retrofit and Ktor in one codebase.** Doubles the deps; doubles the configuration surface. Pick one.
+- **Migrating without a measured objective.** KMP sharing, protocol support, testability, engine behavior, or a common client API can justify Ktor; a working Retrofit stack can remain the lower-risk choice. Write the decision and success measures first.
+- **Choosing a Ktor engine by reputation alone.** Verify Android/API floors, protocol and proxy/TLS support, cancellation, streaming, footprint, and behavior on representative network cohorts.
+- **Unowned long-term coexistence.** Retrofit and Ktor can coexist during migration or for distinct boundaries, but duplicate auth, caching, pools, telemetry, and policy need owners and an exit/steady-state decision.
 - **Trusting `ignoreUnknownKeys = true` blindly.** Hides bugs. Validate explicitly for critical fields.
 - **Not testing the auth-refresh path.** Token expiry happens in production; tests should cover the refresh flow.
 - **Defining endpoints inline everywhere with Ktor.** Without a wrapper class, you have 50 free-floating call sites. Adopt a Retrofit-like API class convention.
-- **Multiple `HttpClient` instances per app.** Each opens its own connection pool. Singleton in DI.
+- **One client per call site.** Reuse compatible clients/engines and pools. Separate clients can still be appropriate for different trust material, proxies, authentication, engine configuration, or lifecycle boundaries.
 - **Cache without `Cache-Control` validation.** Cached responses can be stale; tune per-endpoint.
 - **No coroutine cancellation testing.** Network calls should cancel cleanly when the user navigates away.
 
@@ -646,9 +640,9 @@ Same `UserRepository` runs on iOS, Android, JVM, and JS. Retrofit can't do this.
 4. Compare OkHttp interceptor chain vs Ktor plugin model. Strengths of each?
 5. You inherit a Retrofit codebase; the team wants KMP. Walk through your migration plan.
 6. Bearer token refresh on 401 — implement in both OkHttp `Authenticator` and Ktor `Auth.bearer.refreshTokens`. Compare.
-7. Ktor's binary size is ~700 KB larger than Retrofit. When does it matter and when not?
+7. Design a reproducible release-artifact comparison for Ktor and Retrofit. Which inputs and outputs must be recorded?
 8. Mock testing: `MockWebServer` vs Ktor's `MockEngine`. Pick each.
-9. WebSocket + SSE + HTTP in one app — which stack is cleaner and why?
+9. WebSocket + SSE + HTTP in one app — which stack creates the simpler owned boundary for this product, and how would you prove it?
 10. Coroutine cancellation: prove a `viewModelScope.cancel()` actually cancels an in-flight HTTP request.
 11. Both stacks have an `Auth` story. When does it accidentally retry the refresh endpoint itself? How to prevent?
 12. A team wants Ktor "to be modern." No KMP plans. Walk through your code-review pushback.
@@ -669,18 +663,18 @@ Same `UserRepository` runs on iOS, Android, JVM, and JS. Retrofit can't do this.
    Wrap the existing Retrofit interfaces with Ktor-backed implementations via adapters. Migrate endpoint by endpoint, injecting the new Ktor wrapper, until Retrofit can be safely removed.
 6. **Bearer token refresh on 401 — implement in both OkHttp `Authenticator` and Ktor `Auth.bearer.refreshTokens`. Compare.**
    OkHttp uses `Authenticator` which triggers on a 401 and synchronously generates a new Request. Ktor's `Auth` plugin uses a DSL to define `loadTokens` and `refreshTokens`, which feels more declarative but can easily conflict if mixed with an underlying OkHttp Authenticator.
-7. **Ktor's binary size is ~700 KB larger than Retrofit. When does it matter and when not?**
-   It matters for highly size-constrained SDKs or Instant Apps. It rarely matters for standard consumer apps where modern devices and networks easily absorb a ~700 KB penalty.
+7. **Design a reproducible release-artifact comparison for Ktor and Retrofit. Which inputs and outputs must be recorded?**
+   Build equivalent minified release variants with pinned library/toolchain versions, engine, converters/plugins, min SDK, ABIs, keep rules, and app code. Compare signed download/install size, DEX references, dependency/R8 reports, startup/runtime measurements, and the product's size budget rather than reusing a universal delta.
 8. **Mock testing: `MockWebServer` vs Ktor's `MockEngine`. Pick each.**
    Use `MockWebServer` for JVM-only integration tests that need real HTTP loopback. Use `MockEngine` for KMP tests since it mocks the engine directly in memory and compiles natively for all platforms.
-9. **WebSocket + SSE + HTTP in one app — which stack is cleaner and why?**
-   Ktor is significantly cleaner because it treats WebSocket, SSE, and HTTP as first-class citizens in a single unified suspendable client API, rather than dropping down to raw OkHttp callbacks.
+9. **WebSocket + SSE + HTTP in one app — which stack creates the simpler owned boundary for this product, and how would you prove it?**
+   Ktor offers one plugin/client model; Retrofit plus OkHttp uses declarative HTTP APIs with OkHttp WebSocket/SSE modules. Compare lifecycle, cancellation, auth, replay, telemetry, test fixtures, engine needs, team support, and measured code/size rather than deciding from API aesthetics alone.
 10. **Coroutine cancellation: prove a `viewModelScope.cancel()` actually cancels an in-flight HTTP request.**
-   When `viewModelScope` is cancelled, it propagates to the suspending Retrofit/Ktor function. Both clients hook into the coroutine's cancellation block and physically close the underlying socket/TCP connection immediately.
+   Hold a test response open, cancel the owning job, assert prompt coroutine cancellation and no later delivery, and inspect server/engine events for request or stream cancellation. Do not require the pooled TCP connection to close: an implementation may retain a healthy connection for reuse.
 11. **Both stacks have an `Auth` story. When does it accidentally retry the refresh endpoint itself? How to prevent?**
    This happens if the token refresh request itself is routed through the same client/interceptor handling auth, causing an infinite 401 loop. Prevent it by using a separate un-intercepted client for the refresh call.
 12. **A team wants Ktor "to be modern." No KMP plans. Walk through your code-review pushback.**
-   Without KMP, migrating to Ktor adds binary size, learning curves, and rewrites functional Retrofit code for zero architectural benefit. A staff engineer blocks "modern for the sake of modern" changes if there is no concrete KMP roadmap.
+   Ask for the concrete problem, alternatives, representative spike, migration/rollback plan, ownership, and measurable success criteria. KMP is one possible benefit, not the only one; reject a migration whose demonstrated value does not exceed its compatibility, learning, artifact, and operational cost.
 
 ## Further Reading
 
@@ -694,6 +688,9 @@ Same `UserRepository` runs on iOS, Android, JVM, and JS. Retrofit can't do this.
 - [`../../platform-engineering/library-versioning.md`](../../platform-engineering/library-versioning.md) — versioning shared HTTP clients.
 - [`../../kotlin/coroutines-and-flow/coroutines.md`](../../kotlin/coroutines-and-flow/coroutines.md) — coroutine cancellation semantics.
 - [Ktor client documentation](https://ktor.io/docs/getting-started-ktor-client.html) — official.
+- [Ktor client engines](https://ktor.io/docs/client-engines.html) — supported engines, dependency-driven selection, platform floors, and protocol capabilities.
+- [Ktor Android engine API](https://api.ktor.io/ktor-client-android/io.ktor.client.engine.android/-android/index.html) — current `HttpURLConnection`-backed engine contract.
+- [Ktor releases](https://ktor.io/docs/releases.html) — current stable and supported release lines.
 - [Retrofit repository and documentation](https://github.com/square/retrofit) — official.
 - [OkHttp repository and documentation](https://github.com/square/okhttp) — official.
 - [Ktor + KMP guide](https://kotlinlang.org/docs/multiplatform-mobile-ktor-sqldelight.html) — KMP integration.

@@ -1,6 +1,6 @@
 # Release Engineering: CI/CD for Mobile
 
-> A working CI/CD pipeline for a multi-module Android app: GitHub Actions YAML, Gradle config, Firebase Test Lab for UI tests, secret-scoped release path. Pin everything; cache aggressively; sign in CI, never on a laptop.
+> A working CI/CD pipeline for a multi-module Android app: GitHub Actions YAML, Gradle config, Firebase Test Lab for UI tests, and a secret-scoped release path. Pin the release inputs, measure cache effectiveness, and keep signing access centralized and auditable.
 
 ---
 
@@ -9,8 +9,8 @@
 ```mermaid
 flowchart LR
     pr["PR opened"] --> prChecks["PR checks under 15 minutes<br/>Detekt and Android Lint<br/>Spotless or ktlint<br/>JVM unit tests and assembleDebug<br/>selected Firebase Test Lab tests<br/>secret scanning"]
-    merge["Merge to main"] --> nightly["Nightly full pipeline<br/>debug-signed release build<br/>full Firebase Test Lab suite<br/>Macrobenchmark startup gate<br/>Firebase App Distribution to QA"]
-    tag["Release tag pushed"] --> production["Production pipeline<br/>retrieve signing material from KMS<br/>build signed AAB<br/>upload to Play internal track<br/>upload mapping.txt<br/>gated promotion after soak"]
+    merge["Merge to main"] --> nightly["Nightly full pipeline<br/>QA-signed non-production build<br/>full Firebase Test Lab suite<br/>Macrobenchmark startup gate<br/>Firebase App Distribution to QA"]
+    tag["Release tag pushed"] --> production["Production pipeline<br/>retrieve scoped signing material<br/>build signed AAB<br/>upload to Play internal track<br/>upload mapping.txt<br/>gated promotion after soak"]
 ```
 
 ---
@@ -180,6 +180,7 @@ android.defaults.buildfeatures.shaders=false
 agp = "9.3.0"
 compose-bom = "2026.06.00"
 hilt = "2.55"
+android-targetSdk = "36"
 
 [libraries]
 androidx-core = { module = "androidx.core:core-ktx", version = "1.15.0" }
@@ -220,7 +221,7 @@ Develocity's remote build cache lets developers and CI reuse outputs for cacheab
 ```kotlin
 // settings.gradle.kts
 plugins {
-    id("com.gradle.develocity") version "3.18.1"
+    id("com.gradle.develocity") version "4.5.0"
 }
 
 develocity {
@@ -241,7 +242,7 @@ buildCache {
 }
 ```
 
-The contract: `main` builds *write* cached task outputs; PR builds *read* them. A PR that modifies one of 100 modules only recompiles that one. 45-minute clean builds become 3 minutes when the cache is warm.
+The contract: trusted `main` builds *write* eligible cached task outputs; PR builds *read* them. A narrowly scoped PR can reuse unaffected task outputs when all declared inputs match. Track hit rate, transfer time, and end-to-end duration rather than promising a fixed speedup.
 
 Equivalent without Develocity: Gradle Build Cache Node or self-hosted backed by S3 (`gradle/build-cache-node` Docker image + your own bucket).
 
@@ -279,10 +280,12 @@ jobs:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_RELEASE_SA }}
 
-      - name: Download upload keystore from KMS
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Materialize upload keystore from Secret Manager
         run: |
           gcloud secrets versions access latest --secret=android-upload-keystore --format='get(payload.data)' \
-            | base64 --decode > keystore.jks
+            | base64 --decode > "$RUNNER_TEMP/upload-keystore.jks"
 
       - name: Build signed AAB
         env:
@@ -291,14 +294,14 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           ./gradlew :app:bundleRelease \
-            -Pandroid.injected.signing.store.file=$PWD/keystore.jks \
+            -Pandroid.injected.signing.store.file="$RUNNER_TEMP/upload-keystore.jks" \
             -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
             -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
             -Pandroid.injected.signing.key.password=$KEY_PASSWORD
 
-      - name: Shred keystore
+      - name: Remove temporary keystore
         if: always()
-        run: shred -u keystore.jks || rm -f keystore.jks
+        run: rm -f "$RUNNER_TEMP/upload-keystore.jks"
 
       - name: Upload mapping to Crashlytics
         run: ./gradlew :app:uploadCrashlyticsMappingFileRelease
@@ -309,7 +312,7 @@ jobs:
         run: ./gradlew :app:publishReleaseBundle --track=internal
 ```
 
-The keystore lives in Cloud KMS / Secret Manager, pulled at runtime, deleted with `shred` before the runner shuts down. The runner never has long-lived access — workload identity federation issues a short-lived token from a GitHub-issued OIDC token; nothing persists.
+This example stores an exportable keystore in Secret Manager and retrieves it with a short-lived workload-identity token. Removing the temporary file narrows exposure but does not prove secure physical erasure on a hosted runner. A Cloud KMS/HSM design is different: the private key remains non-exportable and requires signing-tool integration. In either design, restrict principal, secret, environment, log, and artifact access and verify the certificate before upload.
 
 ### Release evidence artifact
 
@@ -394,13 +397,13 @@ fladle {
 }
 ```
 
-Flank shards tests across N devices in parallel. A 25-minute serial run becomes 5 minutes across 5 shards. Smart sharding uses historic data to balance.
+Flank can shard tests across the selected Firebase Test Lab matrix, and its historical timing data can improve balance. Wall time still includes provisioning, queueing, uneven tests, retries, and result collection; measure the actual matrix before setting a PR budget.
 
-Why FTL over CI-runner emulators:
-- Nested virtualization on cloud runners is slow and flaky.
-- FTL runs on real hardware — Pixel devices on a server rack.
+Why consider FTL alongside CI-runner emulators:
+- Hosted-runner virtualization, emulator image, and hardware acceleration affect emulator performance and reliability.
+- FTL offers both physical and virtual devices; select them according to the failure mode and required hardware fidelity.
 - Side-by-side reports of video, Logcat, performance metrics.
-- Stable rate of flake (< 1% with proper tests; emulator flake is 30%+).
+- A managed matrix can improve device coverage, but flake rate is determined by the tests, app, devices, orchestration, and infrastructure. Track it per suite rather than assuming a universal percentage.
 
 ---
 
@@ -427,8 +430,8 @@ dependencyResolutionManagement {
 
 ```properties
 # gradle/wrapper/gradle-wrapper.properties
-distributionUrl=https\://services.gradle.org/distributions/gradle-8.13-bin.zip
-distributionSha256Sum=8d12...c8a1   # pin the wrapper itself
+distributionUrl=https\://services.gradle.org/distributions/gradle-9.5.0-bin.zip
+distributionSha256Sum=553c78f50dafcd54d65b9a444649057857469edf836431389695608536d6b746
 ```
 
 Rules:
@@ -438,7 +441,7 @@ Rules:
 - **Pin Kotlin and AGP exact versions.**
 - **Lock dependency versions:** `./gradlew dependencies --write-locks` and commit `gradle/dependency-locks/`.
 
-A build from commit `abc123` today should produce a byte-identical APK as the same commit in 18 months.
+Those controls are necessary but not sufficient for byte-for-byte reproducibility. Pin or record the JDK, AGP, Gradle, SDK/NDK packages, dependency repositories, environment, archive ordering/timestamps, and signing inputs; then compare independently produced artifacts. Define separately whether the goal is repeatable source inputs, identical unsigned outputs, or identical signed release bytes.
 
 ---
 
@@ -447,12 +450,12 @@ A build from commit `abc123` today should produce a byte-identical APK as the sa
 ```yaml
 # In the workflow when needed
 env:
-  GRADLE_OPTS: -Xmx6g -Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx6g
+  GRADLE_OPTS: -Xmx6g
 ```
 
-`-Dorg.gradle.daemon=false` in CI: the daemon offers no benefit on a one-shot ephemeral runner and consumes memory at the end of the build with no chance to reuse.
+Do not disable the daemon by reflex. Ephemeral jobs cannot reuse a process across jobs, but multiple Gradle invocations inside one job can benefit from reuse. Even `--no-daemon` may start a single-use daemon to honor JVM settings. Compare wall time and peak memory for the actual workflow, then choose daemon policy explicitly.
 
-For Macrobenchmark and instrumented tests, runners need 6-8 GB Gradle heap. Standard GitHub `ubuntu-latest` is 7 GB total — explicitly cap to leave headroom for the daemon. If running out of memory in CI but not locally, you've hit this default JVM heap cap.
+Heap needs depend on module graph, worker count, Kotlin/AGP versions, and concurrent tools. Size the heap below runner memory so the OS, emulator, Kotlin compiler, and other processes retain headroom; use build scans, heap dumps, and runner metrics when CI fails but local builds pass.
 
 ---
 
@@ -462,13 +465,13 @@ For Macrobenchmark and instrumented tests, runners need 6-8 GB Gradle heap. Stan
 // app-benchmark/build.gradle.kts
 plugins {
     id("com.android.test")
-    id("androidx.baselineprofile") version "1.3.0"
+    id("androidx.baselineprofile") version "1.4.1"
 }
 
 android {
     defaultConfig {
         minSdk = 28
-        targetSdk = 35
+        targetSdk = libs.versions.android.targetSdk.get().toInt()
     }
     testOptions {
         managedDevices {
@@ -524,14 +527,14 @@ A nightly perf gate that diffs against a baseline. If cold-start regresses > 10%
 
 ## 11. Common Pitfalls
 
-- **Daemon enabled in CI.** Wastes memory on a single-shot runner. Disable with `-Dorg.gradle.daemon=false`.
+- **Using one daemon rule for every CI job.** Measure process reuse, wall time, and peak memory; an ephemeral job with several Gradle calls differs from a one-command job.
 - **Cache poisoning from PRs.** Allowing untrusted PRs to write to remote cache lets a malicious actor replace cached artifacts. `cache-read-only: true` on PRs.
-- **Signing on developer laptops.** Once a key is on someone's laptop, it's effectively public. CI-only, KMS-backed.
+- **Uncontrolled signing-key copies.** CI is not inherently safer than a laptop. Centralize access, prefer non-exportable or tightly scoped material, require audited authorization, and minimize every local or runner copy.
 - **Logging the keystore password.** A `set -x` in the workflow leaks it. Use GitHub Actions secrets and avoid printing.
-- **`./gradlew :app:assembleRelease` without injected signing.** Defaults to debug-signed in CI; ships an APK no Play Store will accept.
+- **Assuming `assembleRelease` proves release signing.** Without valid release credentials, output may be unsigned or the task may fail; assert the expected certificate on the artifact before publishing.
 - **Floating dependency versions.** `1.2.+` resolves differently over time; reproducibility dies.
 - **Skipping the build cache for "consistency."** A correctly configured cache *is* consistent — same inputs, same outputs. Distrust = symptom of bad config, not reason to disable.
-- **Running UI tests on emulators in CI.** 30% flake rate; engineers learn to ignore red runs. FTL or AWS Device Farm; physical devices.
+- **Treating every UI-test environment as equivalent.** Use local/managed emulators for fast deterministic coverage and physical devices for hardware- or vendor-sensitive risks; measure flake and quarantine root causes in each lane.
 - **No concurrency cancel.** Pushing twice to the same PR runs two full pipelines. `concurrency: cancel-in-progress: true`.
 - **Tag pushes without environment protection.** Anyone with write can publish to Play. `environment: production` with required reviewers blocks accidental releases.
 
@@ -542,10 +545,10 @@ A nightly perf gate that diffs against a baseline. If cold-start regresses > 10%
 - [Gradle build cache](https://docs.gradle.org/current/userguide/build_cache.html) — official.
 - [Gradle configuration cache](https://docs.gradle.org/current/userguide/configuration_cache.html) — what it caches and pitfalls.
 - [Macrobenchmark](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview) — CI startup/jank gates.
-- [Firebase Test Lab](https://firebase.google.com/docs/test-lab) — physical-device test infra.
+- [Firebase Test Lab](https://firebase.google.com/docs/test-lab) — managed physical and virtual Android device testing.
 - [Triple-T Gradle Play Publisher](https://github.com/Triple-T/gradle-play-publisher) — Play upload automation.
 - [Flank for FTL parallelism](https://github.com/Flank/flank) — sharding wrapper.
 
 ---
 
-> **In short:** GitHub Actions for orchestration; Develocity (or self-hosted node) for remote build cache; Firebase Test Lab for UI tests; Triple-T for Play publishing; Cloud KMS for signing secrets; pin every version; cancel duplicate runs; gate perf in nightly. The release path is a YAML file, not a person.
+> **In short:** use CI orchestration, measured caching, a risk-based emulator/device matrix, automated Play publishing, scoped signing access, pinned release inputs, duplicate-run cancellation, and nightly performance gates. Keep the release decision encoded, reviewable, and backed by artifact evidence.

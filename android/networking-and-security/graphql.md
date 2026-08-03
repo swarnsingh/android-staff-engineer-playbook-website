@@ -1,5 +1,7 @@
 # GraphQL (Apollo)
 
+> **Android application:** canonical mobile error layers, compatibility, and deprecation policy live in [`../../backend-for-mobile/api-design-for-mobile.md`](../../backend-for-mobile/api-design-for-mobile.md#canonical-response-and-evolution-contract). The REST-vs-GraphQL choice lives in [`../../backend-for-mobile/graphql-vs-rest.md`](../../backend-for-mobile/graphql-vs-rest.md). This chapter owns Apollo Kotlin schema inputs, generated operation models, execution, and normalized-cache behavior.
+
 ## Overview
 
 GraphQL is a query language for APIs developed at Facebook. A GraphQL operation selects requested data fields from a server-defined schema; the complete response can also contain errors or extensions, and tooling may add fields needed for execution or caching.
@@ -8,25 +10,25 @@ GraphQL is a query language for APIs developed at Facebook. A GraphQL operation 
 
 ## Why It Matters
 
-REST APIs are historically plagued by two massive problems on mobile devices:
-1.  **Over-fetching:** You hit `/users/123` just to get the user's name, but the server returns a 5MB JSON payload containing their entire post history, bio, and settings. This wastes battery, CPU parsing time, and the user's mobile data quota.
-2.  **Under-fetching (The N+1 Problem):** You hit `/users/123` to get the user, then you have to make 5 separate REST calls to `/users/123/posts/` to get their recent posts.
+Resource-oriented APIs can expose two mobile costs when their contracts do not match a screen:
+1.  **Over-fetching:** A broad representation transfers and parses fields the screen does not use. The cost depends on compressed bytes, decoder behavior, modeled fields, device, and network rather than one universal payload size.
+2.  **Client request fan-out:** A resource contract can require several dependent requests to assemble one screen. This is distinct from a server-side GraphQL resolver N+1 problem.
 
 GraphQL can reduce both problems when the schema and resolver design let one bounded operation request the needed fields. It does not guarantee one round trip, a small payload, efficient backend joins, or the removal of a mobile BFF; measure the actual contract and resolver cost.
 
 ## Historical Context
 
-In the mid-2010s, as mobile apps became incredibly complex (like the Facebook app Newsfeed), the Backend-For-Frontend (BFF) pattern emerged. Companies built entirely separate Backend servers just to format REST JSON specifically for the iOS and Android apps to prevent over-fetching. 
+Backend-for-Frontend services and screen-shaped endpoints are established ways to adapt backend contracts to mobile payload, compatibility, and failure needs. They can reduce client fan-out or over-fetching without requiring GraphQL.
 
 GraphQL offers a client-shaped query contract over a graph of fields. Some organizations expose it directly, while others retain a BFF or gateway for mobile compatibility, policy, aggregation, and operational ownership.
 
-Apollo Kotlin (formerly Apollo Android) was built to act as the bridge. It integrates heavily with Kotlin Coroutines and Kotlin Multiplatform (KMP), making it one of the most advanced networking libraries available.
+Apollo Kotlin (formerly Apollo Android) supplies GraphQL operation validation, generated Kotlin models, execution APIs, and optional normalized caching for Kotlin and supported multiplatform targets.
 
 ## First Principles
 
-1.  **The Schema (`schema.graphqls`):** The server's contract. It defines every possible Type, Query, and Mutation available.
-2.  **The Query (`.graphql` file):** Written by the Android developer. It specifies exactly what subset of the Schema the app wants to fetch.
-3.  **Code Generation:** Apollo reads your `.graphql` query, checks it against the `schema`, and generates a strongly-typed Kotlin Data Class specifically for that query.
+1.  **The schema input (`schema.graphqls` or supported equivalent):** A reviewed snapshot or registry/source artifact describing the types and operation roots available to the build.
+2.  **The operation (`.graphql` file):** Written by the client team. It selects fields from that schema; tooling may add fields required for execution or normalized caching.
+3.  **Apollo compiler/code generation:** The Apollo Gradle plugin invokes Apollo's compiler to validate checked operations against the pinned schema input and generate operation-specific Kotlin models.
 4.  **Normalized Cache:** Apollo can normalize response objects under configured cache keys. Watchers re-emit when a write affects fields in their selection; missing keys, omitted fields, or custom mutation behavior may require an explicit cache update or refetch.
 
 ## Mental Model
@@ -41,8 +43,9 @@ Think of GraphQL as a **Buffet with a Personal Shopper**.
 
 ## Internal Mechanics
 
-### 1. The Code Generation
-Unlike Retrofit where you write the Kotlin Data Classes manually, with Apollo, you write GraphQL syntax:
+### 1. Operation validation and code generation
+
+With Apollo, the client checks GraphQL operation documents into the project. REST clients may likewise generate models from OpenAPI; the distinction is the contract artifact and operation-specific selection, not that Retrofit requires handwritten models.
 
 ```graphql
 // GetUserProfile.graphql
@@ -62,7 +65,7 @@ class GetUserProfileQuery(val id: String) : Query<GetUserProfileQuery.Data> {
     data class User(val name: String, val avatarUrl: String)
 }
 ```
-When CI refreshes or checks the pinned schema, Apollo validation fails a new build whose operations still select a removed or renamed field. That protects builds checked against the new schema; already-shipped clients still require server-side compatibility, supported-operation checks, and a deprecation policy.
+When CI deliberately updates or checks the pinned schema, Apollo's compiler fails a new build whose checked operations are incompatible with that input. It does not contact the live server implicitly. Already-shipped clients still require server-side compatibility, supported-operation checks, and a deprecation policy.
 
 ### 2. Executing the Query
 ```kotlin
@@ -71,13 +74,21 @@ val apolloClient = ApolloClient.Builder()
     .serverUrl("https://api.example.com/graphql")
     .build()
 
-suspend fun fetchUser(id: String) {
+suspend fun fetchUser(id: String): UserResult {
     val response = apolloClient.query(GetUserProfileQuery(id)).execute()
-    
-    // It is fully type-safe!
-    val name = response.data?.user?.name 
+    val user = response.data?.user
+    val failures = response.errors.orEmpty().mapNotNull(::toStableDomainFailure)
+
+    // This operation permits partial content when `user` is present.
+    return when {
+        user != null -> UserResult.Content(user.toDomain(), warnings = failures)
+        failures.isNotEmpty() -> UserResult.Failure(failures)
+        else -> UserResult.Empty
+    }
 }
 ```
+
+The repository separately maps transport/parsing failures from the client's execution API. Another screen may reject all partial data; the policy belongs to the operation's product contract, not to GraphQL globally. Raw server error messages are diagnostic input, not user-facing copy.
 
 ## Architecture
 
@@ -91,7 +102,7 @@ graph TD
     
     subgraph "Apollo Runtime"
         Client[ApolloClient] -->|Executes Query| Server[(GraphQL Backend)]
-        Server -.->|Exact JSON| Client
+        Server -.->|GraphQL response representation| Client
         Client -->|Parses via| KT
         Client -->|Updates| Cache[(Normalized Cache)]
     end
@@ -99,9 +110,9 @@ graph TD
 
 ## Production Example
 
-**The Normalized Cache (Offline First)**
+**Optional normalized cache for observed data**
 
-The true power of Apollo lies in its `apollo-normalized-cache-sqlite` module.
+Apollo's normalized-cache modules can reduce duplicate entity storage and notify operation watchers when cache identity and selected fields align. Persistence, offline behavior, conflict handling, freshness, privacy, and migration remain application concerns.
 
 If Screen A fetches a User, and Screen B executes a "RenameUser" mutation, how does Screen A know to update?
 
@@ -118,7 +129,8 @@ val apolloClient = ApolloClient.Builder()
 
 // 2. Observe the Data Reactively
 fun observeUser(id: String): Flow<GetUserProfileQuery.Data> {
-    // watch() turns a one-off query into an infinite Flow!
+    // watch() returns a Flow that emits according to the fetch policy and
+    // relevant normalized-cache changes while it is collected.
     return apolloClient.query(GetUserProfileQuery(id))
         .fetchPolicy(FetchPolicy.CacheAndNetwork) // Read DB first, then hit Network
         .watch()
@@ -139,11 +151,11 @@ When a mutation result is written under the same stable cache key and includes t
 
 ## Failure Modes
 
-- **The Cache ID Nightmare:**
+- **Missing cache identity:**
   A normalized cache needs a stable cache key to share an entity across operation results. If a `UserSettings` object has no configured key, Apollo normally stores it as an embedded record associated with its parent; updating another occurrence will not automatically update this one.
   *(Fix: Define an appropriate cache-key policy when the domain has stable identity, or perform an explicit cache write/refetch when it does not.)*
-- **Massive Payload Parsing:**
-  GraphQL makes it very easy for a Junior developer to write a query that joins 10 deep tables. 
+- **Unbounded nested operation:**
+  A client operation can select a deeply nested graph without pagination or result limits.
   ```graphql
   query { users { posts { comments { author { friends } } } } }
   ```
@@ -166,22 +178,22 @@ When reviewing GraphQL integrations, a Staff engineer focuses on Cache policies 
 ## Probing Questions
 
 1.  Explain over-fetching and under-fetching in resource-oriented APIs. How can GraphQL reduce them, and what conditions limit the benefit?
-2.  How does Apollo Kotlin provide compile-time safety that Retrofit/Moshi cannot provide?
+2.  How does Apollo Kotlin validate and generate operation models from a pinned schema, and how does that compare with generated REST/OpenAPI clients?
 3.  Describe the "Normalized Cache" in Apollo. How does it enable reactive UI updates across different screens?
 4.  In GraphQL, why is relying on standard HTTP status codes (like 404 or 500) insufficient for error handling?
 5.  If a GraphQL object has no configured stable cache key, how does Apollo's normalized cache store it, and what update limitation results?
 6.  Explain the difference between the `CacheFirst` and `CacheAndNetwork` fetch policies.
-7.  Why is standard HTTP Caching (using Headers like `ETag` or `Cache-Control`) difficult to implement with GraphQL compared to REST?
-8.  How does the Apollo Gradle plugin know how to generate the correct Kotlin Data Classes for your queries?
+7.  Compare HTTP caching for a REST `GET`, a GraphQL `POST`, and a GraphQL query sent as `GET`. Where does Apollo's normalized cache fit?
+8.  Which inputs does the Apollo Gradle plugin/compiler use to generate operation-specific Kotlin models, and what does it not verify?
 9.  If you are using Apollo, do you still need to understand and configure `OkHttp`? Why or why not?
-10. Describe an architectural scenario where sticking to a legacy REST API via Retrofit would actually be superior to migrating to GraphQL.
+10. Describe an architectural scenario where retaining an existing REST API via Retrofit is preferable to migrating to GraphQL.
 
 ## Answer Key
 
 1. **Explain over-fetching and under-fetching in resource-oriented APIs. How can GraphQL reduce them, and what conditions limit the benefit?**
    Over-fetching returns fields a client does not need; under-fetching requires additional requests for a screen. GraphQL lets a bounded operation select fields across related types and can reduce both, but the result still depends on schema shape, pagination, caching, resolver behavior, and query splitting.
-2. **How does Apollo Kotlin provide compile-time safety that Retrofit/Moshi cannot provide?**
-   Apollo validates operations against the schema available to the build and generates operation-specific Kotlin models. A refreshed/pinned-schema check catches incompatible operations in new builds; shipped binaries still depend on the server honoring its supported-client compatibility policy.
+2. **How does Apollo Kotlin validate and generate operation models from a pinned schema, and how does that compare with generated REST/OpenAPI clients?**
+   Apollo's Gradle plugin invokes the Apollo compiler to validate checked operations against the schema pinned to that build and generate operation-specific Kotlin models. OpenAPI tooling can provide analogous generated REST models and calls. Either approach depends on a reviewed reproducible artifact and provider-side validation; neither protects shipped binaries by itself.
 3. **Describe the "Normalized Cache" in Apollo. How does it enable reactive UI updates across different screens?**
    It stores response objects under configured cache keys. When a mutation or explicit cache write updates a field selected by a watcher under the same key, affected queries can re-emit; missing keys or omitted fields require an explicit update or refetch.
 4. **In GraphQL, why is relying on standard HTTP status codes (like 404 or 500) insufficient for error handling?**
@@ -189,20 +201,22 @@ When reviewing GraphQL integrations, a Staff engineer focuses on Cache policies 
 5. **If a GraphQL object has no configured stable cache key, how does Apollo's normalized cache store it, and what update limitation results?**
    Apollo normally stores it as an embedded/path-associated record rather than one shared entity. Separate occurrences therefore do not automatically share updates. Define a type/key-fields policy or cache-key generator when stable identity exists; otherwise use an explicit cache write or refetch.
 6. **Explain the difference between the `CacheFirst` and `CacheAndNetwork` fetch policies.**
-   `CacheFirst` reads from the cache and only hits the network if the data is missing. `CacheAndNetwork` reads and emits from the cache immediately for a fast UI, while concurrently hitting the network and emitting a second time when fresh data arrives.
-7. **Why is standard HTTP Caching (using Headers like `ETag` or `Cache-Control`) difficult to implement with GraphQL compared to REST?**
-   Many GraphQL clients send POST requests to one endpoint, which does not naturally produce distinct cacheable URLs. Query operations may use GET, and persisted/APQ hashes can create stable cache keys, while Apollo's normalized cache remains a separate application-level mechanism.
-8. **How does the Apollo Gradle plugin know how to generate the correct Kotlin Data Classes for your queries?**
-   The plugin reads your `schema.graphqls` file and the `.graphql` query files, parses the AST, resolves the requested fields against the schema types, and outputs strict Kotlin Data Classes matching the specific query shape.
+   `CacheFirst` reads the normalized cache and uses the network when the required operation data is unavailable under that policy. `CacheAndNetwork` can emit a cache result and then a network result. Exact cache-miss, partial-data, error, and emission behavior depends on the selected Apollo Kotlin version and configuration, so test the states the UI consumes.
+7. **Compare HTTP caching for a REST `GET`, a GraphQL `POST`, and a GraphQL query sent as `GET`. Where does Apollo's normalized cache fit?**
+   Eligible REST `GET` representations map naturally to standard HTTP caches when directives and authorization permit. GraphQL commonly uses `POST`, which is not normally cached by shared HTTP caches, while query-over-GET and persisted/APQ identifiers can form cacheable representations under an explicit key/directive policy. Apollo's normalized cache is a separate application data cache keyed by records and selected fields.
+8. **Which inputs does the Apollo Gradle plugin/compiler use to generate operation-specific Kotlin models, and what does it not verify?**
+   It reads the pinned schema input and checked `.graphql` operations, validates their type selections, and generates models for those operation shapes. It does not prove the live server matches that artifact, validate operations absent from the build, or protect already-shipped binaries from a later breaking server change.
 9. **If you are using Apollo, do you still need to understand and configure `OkHttp`? Why or why not?**
    Yes. When Apollo Kotlin uses OkHttp as its HTTP engine, the application still owns appropriate timeout, authentication, TLS, and observability policy. Which interceptors or pools should be shared depends on the clients' security and lifecycle boundaries.
-10. **Describe an architectural scenario where sticking to a legacy REST API via Retrofit would actually be superior to migrating to GraphQL.**
-    A media-heavy app focused on massive file uploads (Multipart), where strict HTTP-level ETag caching on a CDN is essential, and the backend data models are already perfectly tailored to the UI without over-fetching.
+10. **Describe an architectural scenario where retaining an existing REST API via Retrofit is preferable to migrating to GraphQL.**
+    Keep the existing REST contract when measured screen payloads and request counts already meet budgets, resource `GET` responses benefit from established HTTP/CDN caching, multipart transfers are mature, compatibility governance is working, and GraphQL would add schema, resolver, registry, and cache-identity operations without a demonstrated product benefit.
 
 ## Further Reading
 
 - [`retrofit-and-okhttp.md`](retrofit-and-okhttp.md) — The REST alternative and the underlying engine (OkHttp).
+- [`../../backend-for-mobile/api-design-for-mobile.md`](../../backend-for-mobile/api-design-for-mobile.md#canonical-response-and-evolution-contract) — canonical response/error and compatibility contract.
+- [`../../backend-for-mobile/graphql-vs-rest.md`](../../backend-for-mobile/graphql-vs-rest.md) — API-shape decision and tradeoffs.
 - [GraphQL: Response](https://graphql.org/learn/response/) — `data`, `errors`, and partial responses.
 - [GraphQL over HTTP specification](https://graphql.github.io/graphql-over-http/draft/) — HTTP status and media-type semantics.
-- [`paging.md`](../data-and-di/paging.md) — How to handle massive data feeds, which integrates cleanly with Apollo.
+- [`paging.md`](../data-and-di/paging.md) — How to design bounded pagination for large result sets, including Apollo-backed repositories.
 - [Apollo Kotlin Documentation](https://www.apollographql.com/docs/kotlin/)

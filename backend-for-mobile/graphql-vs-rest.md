@@ -1,6 +1,8 @@
 # API Contracts: GraphQL vs REST
 
-> Mobile lives on a 16 ms frame budget, a 4G radio that costs battery to wake, and an unreliable connection. The API contract determines whether the UI renders in 200 ms or 2 seconds. GraphQL vs REST isn't a religion — it's a tradeoff between client power and HTTP caching, between schema enforcement and SDK independence, between a single round-trip and a CDN edge cache. Staff-level mastery means picking deliberately per screen, not per company.
+> Mobile API shape affects request count, transferred bytes, parsing, cache behavior, backend fan-out, and failure handling. GraphQL and REST can each be shaped well or poorly; choose from measured screen contracts, operational ownership, compatibility, and cache requirements rather than adopting one style company-wide by default.
+>
+> **Decision:** canonical response/error layers and compatibility governance live in [`api-design-for-mobile.md`](api-design-for-mobile.md#canonical-response-and-evolution-contract). Apollo Kotlin implementation lives in [`../android/networking-and-security/graphql.md`](../android/networking-and-security/graphql.md). This chapter compares API shapes without redefining those contracts.
 
 ---
 
@@ -16,7 +18,7 @@ This file covers **API shape / query language** only. Two related but independen
 
 You can have any combination — JSON-over-REST (most common), JSON-over-GraphQL (typical), Protobuf-over-gRPC (microservices), JSON-over-HTTP/2 (most modern stacks). Picking GraphQL vs REST doesn't auto-pick a wire format.
 
-A short note on **gRPC**: it's REST's strongest competitor when type safety + performance matter more than browser-cache friendliness. gRPC uses Protobuf over HTTP/2; clients get strongly-typed stubs; payloads are small and fast to parse. For server-to-server and KMP-shared logic, it's often the right choice. For Android-to-backend, the lack of browser/CDN tooling and the steeper ops learning curve keep most teams on REST or GraphQL. Deep dive in [`data-formats.md`](data-formats.md) and [`transport-protocols.md`](transport-protocols.md).
+A short note on **gRPC**: it combines generated RPC stubs with Protobuf and commonly HTTP/2. It can fit typed internal APIs or mobile clients when the infrastructure, streaming model, debugging, proxy, and compatibility requirements justify it. REST or GraphQL may fit better when standard HTTP caching, browser interoperability, or existing operational tooling dominates. Deep dive in [`data-formats.md`](data-formats.md) and [`transport-protocols.md`](transport-protocols.md).
 
 ---
 
@@ -40,7 +42,7 @@ A "User Profile Header" needs `displayName` and `avatarUrl`. REST returns this:
 }
 ```
 
-The mobile app downloads ~4 KB to use ~200 bytes. The Moshi adapter still allocates 40 fields; the GC churns; the radio stays on longer.
+In this illustrative representation, the wire payload is about 4 KB while the screen needs roughly 200 bytes. A decoder can skip fields absent from its model, so it does not necessarily allocate every field; transfer, tokenization, and any modeled values still have measurable cost.
 
 **GraphQL flips the paradigm** — the client declares exactly which fields it wants:
 
@@ -59,25 +61,25 @@ Response:
 { "data": { "user": { "displayName": "Swaransingh", "avatarUrl": "..." } } }
 ```
 
-Two hundred bytes. Two field allocations. Zero waste.
+For this example the response is much smaller, although envelope, headers, compression, pagination, and resolver work still contribute cost.
 
 ### REST's answer: sparse fieldsets
 
-REST isn't powerless against over-fetching. The JSON:API spec and most modern REST stacks support `?fields=id,name,avatar`:
+REST can also avoid over-fetching. JSON:API defines sparse fieldsets, and an API can expose an equivalent projection explicitly:
 
 ```http
 GET /users/123?fields=id,display_name,avatar_url
 ```
 
-Plus `?include=posts,comments` for related resources. Many teams ship REST APIs with these and get 80% of GraphQL's payload efficiency. The remaining 20% (deeply nested queries, conditional includes) is where GraphQL pulls ahead.
+An API may also define relationship inclusion such as `?include=posts,comments`. Whether this matches GraphQL's payload efficiency depends on the resource contract, nesting, authorization, cache keys, and the actual screens; measure both shapes rather than assuming a fixed percentage.
 
 ---
 
-## The N+1 Problem and Round-Trip Cost
+## Client Request Fan-out and Round-Trip Cost
 
 Profile screen needs: user info + recent posts + comment counts.
 
-REST forces multiple round-trips:
+This particular resource contract requires several application requests:
 
 ```http
 GET /users/123
@@ -85,9 +87,9 @@ GET /users/123/posts?limit=5
 GET /users/123/posts/<id>/comments/count   ← repeated for each post
 ```
 
-On a 4G radio with ~80 ms RTT and a cold connection, that's easily 2–3 seconds before the screen renders.
+Those requests may execute sequentially or concurrently and may reuse an existing connection. Their latency depends on cache state, radio/network path, server work, prioritization, and dependency ordering.
 
-GraphQL collapses to one round-trip:
+One GraphQL operation can request the same screen shape in one application exchange:
 
 ```graphql
 query UserProfile($id: ID!) {
@@ -103,52 +105,52 @@ query UserProfile($id: ID!) {
 }
 ```
 
-One TCP+TLS connection, one HTTP/2 stream, one parse. The radio modem turns on once.
+This removes client-visible request fan-out when the server can execute the operation efficiently. It does not imply a new TCP/TLS connection, one backend lookup, or one radio promotion: connection reuse, resolver fan-out, batching, and current radio state remain separate concerns.
 
 ### REST's answer: BFF (Backend-for-Frontend)
 
-A common pattern: a thin server-side aggregator exposes per-screen endpoints (`GET /screens/profile-with-posts/123`). The mobile team owns the BFF; calls are tailored. This delivers GraphQL's "one round-trip" benefit while keeping HTTP caching intact. See [`bff-pattern.md`](bff-pattern.md).
+A common pattern: a thin server-side aggregator exposes per-screen endpoints (`GET /screens/profile-with-posts/123`). The mobile team owns the BFF; calls are tailored. This can provide one application request while retaining ordinary HTTP-cache semantics when the response, authorization, validators, and directives make it cacheable. See [`bff-pattern.md`](bff-pattern.md).
 
-The tradeoff: BFF needs server work for every new screen; GraphQL doesn't.
+The tradeoff: a screen-shaped BFF may require endpoint work as screens evolve. GraphQL shifts that work into schema and resolver evolution, query governance, and server-side fan-out rather than eliminating it.
 
 ---
 
 ## The Caching Tradeoff
 
-This is where REST has an edge that GraphQL can never fully match.
+Resource-oriented `GET` contracts often map more directly to shared HTTP caches. GraphQL query caching depends on request method, operation identity, variables, authorization, response directives, and intermediary support.
 
-REST's caching ecosystem is **free** because the API maps to HTTP semantics:
+The common defaults differ, but neither style receives correct caching without an explicit contract:
 
 | Layer | Caches a REST `GET /users/123` | Caches a `POST /graphql` |
 |---|---|---|
-| Browser / OkHttp | Yes (Cache-Control header) | No (POST excluded by default) |
-| CDN edge (Cloudflare, Fastly) | Yes | Only with custom routing rules |
-| Reverse proxy (Nginx, Varnish) | Yes | No |
-| ETag / If-None-Match | Native | Custom |
-| 304 Not Modified | Native | Custom |
+| Browser / OkHttp | Eligible `GET` responses can be cached when directives permit | `POST` is commonly not cached; query-over-GET can be eligible |
+| CDN edge (Cloudflare, Fastly) | Resource URL, authorization, `Vary`, and directives define the key | Operation/hash, variables, authorization, and directives must define the key |
+| Reverse proxy (Nginx, Varnish) | Standard HTTP caching can apply | Support depends on method and configured operation-aware policy |
+| ETag / If-None-Match | Available when the server emits validators | Available to a cacheable GraphQL-over-HTTP `GET` representation when implemented |
+| 304 Not Modified | Available for conditional requests | Available when the GraphQL `GET` contract and intermediary support validators |
 
-If your app fetches a million times a day, REST's caching means the origin server sees 10,000 requests; GraphQL's `/graphql` POST sees 1,000,000 requests.
+At the same request volume, origin load depends on cache eligibility, hit rate, authorization partitioning, invalidation, operation shape, and whether GraphQL queries use `POST` or cacheable `GET`; the API label alone does not determine the result.
 
-### GraphQL's answer: persisted queries
+### Persisted operations and safelisting
 
-Modern GraphQL clients support **persisted (a.k.a. safelisted) queries**:
+GraphQL deployments can persist operation documents and, separately, enforce a safelist. A persisted-operation protocol lets the client identify a stored document; a safelist rejects operations outside an approved set. Automatic persisted queries (APQ) may register a previously unknown document at runtime, so APQ is not by itself a security allowlist.
 
-1. At build time, every `.graphql` file gets a hash (SHA-256 of the query body).
+1. The build or operation-registry pipeline derives an operation identifier, commonly a SHA-256 hash of a canonical operation document.
 2. The client sends the hash + variables instead of the full query.
 3. The server looks up the query by hash from a pre-registered list.
-4. The server responds; CDN can cache by `(hash, variables)`.
+4. A `GET` representation can be cached when the variables, authorization partition, headers, and response directives form a safe key.
 
 ```http
 GET /graphql?query_hash=a3f7…&variables=%7B%22id%22%3A%22123%22%7D
 ```
 
-Two benefits beyond caching:
+Potential benefits:
 
-- **CDN-cacheable.** It's now a `GET` with a unique URL.
-- **Security.** Clients can't construct arbitrary queries; the surface is fixed. Critical at scale — without this, attackers can write deeply nested queries that overwhelm your servers.
-- **GraphQL persisted queries:** By storing the actual query strings on the server and referencing them strictly by their hashes from the client, the payload sizes are drastically minimized over the wire, optimizing bandwidth for mobile environments.
+- **HTTP-cache participation.** A persisted operation sent as `GET` can use a stable operation/variables key when policy permits.
+- **Bounded accepted operation surface.** A safelist can reject unregistered operations, while authorization, resolver limits, depth/complexity controls, and rate limits remain necessary.
+- **Smaller request documents.** Sending an identifier instead of the complete operation can reduce request bytes; variables, headers, and response payload still dominate some workloads.
 
-Apollo Kotlin supports this via build-time code generation.
+Apollo Kotlin can generate operation manifests/identifiers as part of its Gradle compiler workflow; the server or router still needs the matching registration and enforcement policy.
 
 ### Apollo Normalized Cache (client side)
 
@@ -161,9 +163,9 @@ val apolloClient = ApolloClient.Builder()
     .build()
 ```
 
-Apollo parses every response, identifies objects by their `__typename` + `id`, and stores them keyed by `User:123`. Subsequent queries asking for `User:123` (even from a different screen) reuse the cached object. Updates to `displayName` from one mutation auto-propagate to every Composable observing that field — anywhere in the app.
+Apollo parses responses and normalizes objects when the client has a configured stable cache-key policy (often a type plus key fields such as `id`). Objects without a usable key remain embedded/path-associated records. A write re-emits affected watchers only when it targets the same normalized record and includes or explicitly updates the selected fields.
 
-This is closer to a *database* than to an HTTP cache. Powerful and the right answer for offline-first GraphQL.
+This is closer to an application data store than to an HTTP response cache. It can support offline-first GraphQL when cache identity, persistence, conflict, freshness, privacy, and migration policy are defined.
 
 ---
 
@@ -197,7 +199,7 @@ The honesty problem: **OpenAPI is often maintained by hand**, and drift between 
 ### GraphQL + Apollo Kotlin
 
 ```graphql
-# schema.graphqls (pulled from the server via introspection)
+# schema.graphqls (reviewed and pinned for reproducible builds)
 type User {
   id: ID!
   displayName: String!
@@ -212,11 +214,11 @@ query UserProfile($id: ID!) {
 }
 ```
 
-The Apollo KSP plugin generates `UserProfileQuery.Data.User` with non-null `displayName` and nullable `avatarUrl` — directly from the server's introspected schema. **No drift possible** — the build fails if the server's schema doesn't satisfy the query.
+The Apollo Gradle plugin invokes Apollo's compiler/code generation to validate the checked operation against the schema input pinned to that build and generate `UserProfileQuery.Data.User` with non-null `displayName` and nullable `avatarUrl`. The schema may come from a reviewed registry export, introspection snapshot, or source file; code generation does not read the live server implicitly. It catches incompatibility for operations and schema checked together, not drift affecting already-shipped clients.
 
 ```kotlin
 plugins {
-    id("com.apollographql.apollo3") version "4.0.0"
+    alias(libs.plugins.apollo)
 }
 
 apollo {
@@ -227,7 +229,7 @@ apollo {
 }
 ```
 
-GraphQL's schema-first nature is its strongest selling point after over-fetching. Build time fails if the API contract changes underneath you.
+The pinned schema makes operation compatibility reproducible for a build. Server CI must separately validate proposed schema changes against supported shipped/persisted operations before deployment.
 
 ---
 
@@ -263,15 +265,15 @@ apolloClient.mutation(LikePostMutation(postId = "1"))
     .execute()
 ```
 
-The cache updates → every Composable observing the post recomposes → the UI feels instant. If the server fails, the cache rolls back and the UI re-renders the prior state.
+When cache identity and selected fields align, the optimistic layer can notify affected watchers before the network result. Apollo replaces that layer with the server result or removes it when execution fails; the application still maps the failure and reconciles any server-side effect that may have occurred.
 
-REST equivalent: you implement the same flow manually (update local state, send request, revert on failure). Apollo bakes it into the cache layer.
+REST clients can implement the same optimistic state machine in a repository/local store. Apollo's normalized cache supplies an integrated optimistic layer, but identity, domain reconciliation, and user-visible failure policy remain application decisions.
 
 ---
 
 ## Subscriptions (Real-Time)
 
-GraphQL supports subscriptions over WebSocket:
+GraphQL defines subscription operations; WebSocket is a common transport, with exact protocol and lifecycle behavior chosen by the client/server stack:
 
 ```graphql
 subscription OnNewComment($postId: ID!) {
@@ -285,34 +287,21 @@ apolloClient.subscription(OnNewCommentSubscription(postId = "1"))
     .collect { response -> /* ... */ }
 ```
 
-REST has no native equivalent. You'd reach for [SSE](sse-vs-websockets.md), WebSockets, or polling. See [`push-vs-poll-vs-sse-vs-websockets.md`](push-vs-poll-vs-sse-vs-websockets.md).
+A REST-shaped API can pair ordinary requests with [SSE](sse-vs-websockets.md), WebSockets, or polling. See [`push-vs-poll-vs-sse-vs-websockets.md`](push-vs-poll-vs-sse-vs-websockets.md).
 
-If your app has heavy real-time needs *and* you've already committed to GraphQL, subscriptions are a nice consistency win. If real-time is incidental, REST + SSE is usually simpler.
+If the app already governs GraphQL operations and the subscription transport meets continuity and lifecycle needs, subscriptions can preserve one schema/tooling model. A separate SSE/WebSocket/polling path may be simpler when real-time is narrow or owned independently.
 
 ---
 
 ## Error Handling Differences
 
-### REST
+Both styles have transport, HTTP, API-execution, and domain layers. The canonical model is in [API Design for Mobile](api-design-for-mobile.md#canonical-response-and-evolution-contract); the decision difference is the shape of the API-execution payload.
 
-HTTP status code carries the error class:
+- A REST/BFF endpoint commonly uses HTTP status plus a structured representation, but status alone does not encode a domain outcome. Batch or aggregate endpoints can define partial member results.
+- A GraphQL-over-HTTP client evaluates the negotiated HTTP response together with `data`, `errors`, and extensions. Request, validation, execution, parsing, and transport failures do not all have one status-code rule.
+- A GraphQL operation can return usable partial `data` alongside `errors`. The repository applies an explicit product policy per operation instead of treating every non-empty `errors` list identically.
 
-- `200`/`201` — success.
-- `400` — client error (validation).
-- `401`/`403` — auth.
-- `404` — not found.
-- `429` — rate-limited.
-- `5xx` — server error.
-
-Body usually contains a structured error payload:
-
-```json
-{ "error": { "code": "VALIDATION_FAILED", "message": "Email is invalid" } }
-```
-
-### GraphQL
-
-The HTTP status is *almost always* `200`, even on errors. The response body carries the errors:
+For example, a well-formed GraphQL response may contain:
 
 ```json
 {
@@ -323,9 +312,7 @@ The HTTP status is *almost always* `200`, even on errors. The response body carr
 }
 ```
 
-Apollo Kotlin exposes errors as `ApolloException` subtypes plus the `errors` field on the response. You have to check `data == null || errors.isNotEmpty()` explicitly.
-
-Some queries can be **partial successes**: `data` populated for the fields that succeeded, `errors` array for the ones that failed. REST has no equivalent — it's all-or-nothing per endpoint.
+Apollo Kotlin exposes response data and GraphQL errors separately from transport/parsing failures. Map all layers at the repository boundary, preserve partial data only when the screen contract permits it, and retain stable machine-readable domain codes plus a generic fallback.
 
 ---
 
@@ -335,9 +322,9 @@ Some queries can be **partial successes**: `data` populated for the fields that 
 
 `/api/v1/users/123` → `/api/v2/users/123`. Clean break per major version. Easy to roll out gradually.
 
-### GraphQL — additive evolution
+### GraphQL — schema evolution without a required URL version
 
-GraphQL has no version. You add fields, deprecate old ones with `@deprecated(reason: "...")`, remove them eventually:
+GraphQL schemas often evolve in place: add fields, deprecate old ones with `@deprecated(reason: "...")`, and remove them only under a published compatibility/support policy:
 
 ```graphql
 type User {
@@ -347,7 +334,7 @@ type User {
 }
 ```
 
-Clients on old query strings keep working as long as the deprecated fields exist. Reduces release coordination but increases schema-sprawl over time.
+Clients on old operation strings keep working only while selected fields and their semantics remain compatible. In-place evolution can reduce endpoint migration work but does not remove contract lifecycle or release coordination.
 
 For mobile, "no version" does not mean "no lifecycle." A released Android app may contain persisted query hashes for months or years. If the server removes a deprecated field while an old app still sends a safelisted query that selects it, that old app now has a production outage.
 
@@ -358,7 +345,7 @@ Treat GraphQL schema evolution like mobile API evolution:
 | Persisted query inventory by app version | Shows which old clients still depend on each field |
 | Deprecation window tied to active installs | Removal waits for real adoption, not release-date optimism |
 | CI schema diff against shipped queries | Prevents server merges that break old Android builds |
-| Generic UI fallback for GraphQL errors | GraphQL can return HTTP 200 with partial `data` and `errors` |
+| Generic UI fallback for GraphQL errors | New domain/execution errors must not make old clients unusable; partial `data` follows operation policy |
 | Complexity and depth limits | Protects the backend from expensive queries, even from buggy clients |
 
 GraphQL helps mobile move faster only when the schema is governed as a contract. Without query safelisting, schema diffs, and app-version telemetry, it simply moves breakage from URL versions to field selection.
@@ -373,19 +360,24 @@ class ProfileViewModel @Inject constructor(
 ) : ViewModel() {
     val profile: StateFlow<ProfileState> = apolloClient
         .query(UserProfileQuery(id = "123"))
-        .watch()                                              // live updates from cache
+        .watch()
         .map { response ->
+            // This screen explicitly permits partial content when `user` is
+            // present. Map GraphQL error codes to bounded UI warnings; do not
+            // expose raw server messages directly.
+            val user = response.data?.user
+            val warnings = response.errors.orEmpty().mapNotNull(::toProfileWarning)
             when {
-                response.hasErrors() -> ProfileState.Error(response.errors!!.first().message)
-                response.data?.user == null -> ProfileState.Empty
-                else -> ProfileState.Success(response.data!!.user.toUiModel())
+                user != null -> ProfileState.Content(user.toUiModel(), warnings)
+                response.hasErrors() -> ProfileState.Error(mapProfileFailure(response.errors.orEmpty()))
+                else -> ProfileState.Empty
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProfileState.Loading)
 }
 ```
 
-`watch()` re-emits whenever the cache updates — from another query, a mutation, or a subscription. Compose + Flow + Apollo cache = a screen that auto-updates without manual invalidation. This is the "live UI" pattern that's nearly impossible to replicate cleanly in REST.
+`watch()` can emit the configured fetch-policy result and later cache changes that affect the watched operation's records and selected fields. Writes from another query, mutation, subscription, or explicit cache update therefore re-emit only when cache identity and field dependencies align. A REST client can provide the same UI contract by observing a repository-owned database/store; Apollo reduces custom normalized-cache plumbing rather than creating a uniquely possible pattern.
 
 ---
 
@@ -397,7 +389,7 @@ class ProfileViewModel @Inject constructor(
 | Many independent screen-specific queries against a complex graph | GraphQL |
 | Internal microservice-to-microservice | gRPC + Protobuf (not in this file's scope) |
 | Mobile-only app aggregating 3–5 backend services | GraphQL or BFF + REST |
-| Massive static catalog (product listings) | REST + CDN |
+| Large, mostly static catalog (product listings) | REST + CDN |
 | Live-updating UI (likes, comments, presence) | GraphQL + subscriptions, or REST + SSE/WebSocket |
 | Public SDK serving unknown clients | REST (universal toolchain) |
 | Backend team won't add fields fast enough for your screens | GraphQL (mobile team self-serves from the schema) |
@@ -412,83 +404,83 @@ Most apps end up with a hybrid: REST for static/large payloads (catalog, images)
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| 4 KB JSON on a simple profile fetch | REST over-fetching | Sparse fieldsets (`?fields=...`) or GraphQL |
-| 3-second cold-start time on a screen | N+1 REST round trips | BFF endpoint or GraphQL single query |
-| GraphQL request rate-limited / rejected by CDN | All POSTs hit origin | Persisted queries → GET → CDN cacheable |
-| Mobile attacker writes a query that fetches 1 GB | No persisted-query enforcement | Allow only safelisted queries in prod |
-| Apollo cache shows stale data after another screen mutated | `fetchPolicy` wrong or missing `__typename` | Use `FetchPolicy.NetworkFirst` or ensure schema includes `id` fields |
-| Build fails after server-side schema change | Apollo Kotlin schema out of sync | Re-run introspection: `./gradlew downloadApolloSchemaFromIntrospection` |
-| Apollo always returns `null` for some fields | Field selection forgot to include them | Add explicit field selections; GraphQL never returns unselected fields |
+| Measured profile payload contains many unused fields | Resource representation is broader than the screen | Sparse fieldsets, a screen-shaped BFF, or GraphQL field selection |
+| Measured screen latency is dominated by dependent client requests | Contract exposes client-visible request fan-out | Batch/include fields, add a BFF operation, or use a bounded GraphQL operation |
+| GraphQL query cannot participate in the intended CDN policy | Operation uses an ineligible method/key or unsafe authorization partition | Define persisted query-over-GET, variables, directives, and authorization-aware cache keys where safe |
+| Unregistered or expensive operation reaches resolvers | Accepted-operation, authorization, complexity, or rate controls are incomplete | Safelist where appropriate and enforce authorization, resolver, depth/complexity, and rate budgets |
+| Apollo cache shows stale data after another screen mutated | Records do not share a configured key, or the write omitted selected fields | Verify cache-key policy and perform an explicit cache update/refetch when normalization cannot connect the records |
+| Build fails after a reviewed schema update | A checked operation is incompatible with the pinned schema | Review the schema diff and operation; do not refresh mutable introspection merely to make CI pass |
+| A selected Apollo field is unexpectedly `null` | The server returned null or an execution error, the partial response omitted the value, or the cache/fetch result lacks it | Inspect `data` and `errors`, schema nullability, the operation selection, fetch policy, cache identity, and the screen's partial-data policy |
 | OkHttp cache hit rate dropped | Server changed `Cache-Control` or response varies on something unexpected | Inspect headers; check `Vary` and ETag |
 | REST endpoint accidentally returns `null` instead of `false` | Loose typing on server | Generate Kotlin types from OpenAPI; enforce non-null in schema |
-| GraphQL response carries 200 but errors present | Forgot to check `response.errors` | Always check `hasErrors()` before reading `data` |
-| Mutation rolled back but UI shows optimistic state | Cache update bug or wrong `__typename` | Verify cache normalization; restart Apollo client to reset |
+| GraphQL response carries 200 with errors | Client treated status as the complete outcome | Evaluate `data` and `errors` together; preserve partial data only under the operation's product policy |
+| Mutation reconciliation leaves stale optimistic state | Optimistic write/reconciliation or cache-key policy is incomplete | Test success, GraphQL-error, transport-failure, and cancellation paths; repair or explicitly evict/update the affected records |
 | Persisted query fails — "unknown query hash" | Hash list out of sync between client and server | Regenerate at build time; deploy together |
-| Apollo subscription drops connection on 4G | WebSocket idle timeout from mobile carrier | Implement keepalive ping; reconnect with exponential backoff |
-| API contracts drift silently between mobile and backend | OpenAPI hand-maintained, never validated | Contract testing (Pact); CI runs introspection diff |
+| Apollo subscription drops on particular networks | Lifecycle, server/intermediary idle policy, or network transition | Correlate the boundary; use measured liveness policy, bounded reconnect, and authoritative reconciliation |
+| API contracts drift silently between mobile and backend | Schema artifacts and shipped operations are not governed together | Validate reviewed schema changes against checked and shipped/persisted operations plus supported client cohorts |
 
 ---
 
 ## Common Pitfalls
 
-- **Switching to GraphQL "for performance."** GraphQL's perf wins come from over-fetching reduction + round-trip consolidation. If your screens already use sparse fieldsets and a BFF, the perf delta is small. Don't migrate for vibes.
-- **Allowing arbitrary client queries in production.** Persistent queries are not optional at scale. Without them, a single attacker can write a query that joins every table in your DB.
-- **GraphQL without normalized cache.** You've kept the over-fetching cost reduction but lost the offline-first + real-time benefits. Always pair Apollo with `SqlNormalizedCacheFactory`.
-- **Forgetting `__typename` in mutation results.** Without `__typename`, Apollo can't normalize the response → cache doesn't update → UI stays stale.
-- **Mixing REST and GraphQL on the same screen.** Possible but doubles cognitive load. Pick one per screen.
-- **Hand-coding types from OpenAPI.** Code-gen at build time. If your team rejects code-gen, your types will drift.
+- **Switching to GraphQL "for performance."** Its benefit depends on current over-fetching, client request fan-out, caching, parsing, and resolver behavior. Compare representative GraphQL operations with sparse REST or a BFF before accepting migration and governance cost.
+- **Allowing arbitrary unbounded client queries without a threat model.** Safelisted/persisted operations can reduce the accepted operation surface, but the server still needs authorization, resolver safeguards, and complexity/rate limits for every registered operation.
+- **Assuming every GraphQL screen needs a normalized cache.** Adopt it when identity, offline, shared-record, or watcher requirements justify its lifecycle and privacy cost; a network-only operation can be the simpler correct contract.
+- **Assuming `__typename` alone guarantees cache updates.** Configure stable key fields and ensure mutation/subscription writes include or explicitly update the fields observed by affected queries.
+- **Mixing REST and GraphQL on one screen without ownership.** A hybrid can be valid, but define cache, loading, partial-failure, cancellation, retry, and observability policy across both clients.
+- **Treating generation as proof of server compatibility.** Generate clients from a reviewed OpenAPI or GraphQL artifact, validate provider implementation and proposed changes in CI, and test supported shipped-client contracts. Generation alone does not prove the deployed server matches the artifact.
 - **Treating GraphQL `errors` as soft warnings.** A response with `data: null` and `errors: [...]` is a hard failure, not a warning. Branch UI accordingly.
-- **Using GraphQL for cacheable static content.** A product catalog that doesn't change for hours per user belongs behind a REST endpoint + CDN, not a GraphQL query.
-- **No build-time schema validation.** Apollo can validate every `.graphql` file at build time against the schema. Enable it. Stops bad queries from shipping.
+- **Ignoring shared-cache economics for static content.** A REST resource often maps directly to CDN caching, while a GraphQL persisted query-over-GET can also be cacheable when variables, authorization, and directives form a safe key. Choose from measured hit rate and operational simplicity.
+- **No reproducible operation validation.** Configure Apollo's Gradle compiler to validate checked `.graphql` operations against a reviewed pinned schema. This blocks incompatible operations in that build; it does not protect shipped binaries from later server changes.
 
 ---
 
 ## Probing Questions
 
-1. Walk through the over-fetching problem with a concrete payload. Show how GraphQL collapses 4 KB to 200 bytes.
-2. Why does REST get HTTP caching "for free" while GraphQL doesn't? What's the consequence at 1M requests/day?
-3. Explain persisted queries. What two problems do they solve?
+1. Walk through over-fetching with an illustrative payload. Which measurements show whether GraphQL, sparse fields, or a BFF improves it?
+2. Compare HTTP-cache eligibility for a REST `GET`, a GraphQL `POST`, and a persisted GraphQL query sent as `GET`. What determines origin load?
+3. Explain persisted operations and safelisting. Which payload, caching, and accepted-operation problems can they address?
 4. Apollo normalized cache vs OkHttp HTTP cache — what's the conceptual difference?
 5. Your API contract drifts between server and Android. Compare how OpenAPI + REST vs Apollo + GraphQL detect this.
 6. Walk through optimistic updates in Apollo Kotlin. What happens on success vs failure?
 7. Real-time updates: GraphQL subscriptions vs REST + SSE. When pick each?
 8. A team wants to switch from REST to GraphQL for "performance." Walk through the audit you'd run first.
-9. Error handling: REST uses HTTP status codes; GraphQL returns 200 with `errors`. Why? What's the practical implication for the Android client?
+9. Error handling: how do transport, HTTP, API-execution, and domain outcomes differ for REST/BFF and GraphQL, including partial results?
 10. Versioning: `/api/v2/users` vs schema deprecation. Compare the lifecycle costs of each.
 11. A new feature needs data from 5 microservices on one screen. REST + BFF or GraphQL? Justify.
 12. You're building an offline-first app with live UI updates. Walk through the Apollo + Flow + Compose pattern that delivers it.
-13. Where does gRPC fit in this picture? Why isn't it usually picked for Android-to-backend calls?
+13. Where does gRPC fit in this picture? Which mobile, infrastructure, caching, streaming, and tooling constraints favor or disfavor it?
 
 ---
 
 ## Answer Key
 
-1. **Walk through the over-fetching problem with a concrete payload. Show how GraphQL collapses 4 KB to 200 bytes.**
-   A REST profile fetch might return 40 fields (address, marketing_opt_in) totaling 4KB, even if the UI only needs `displayName` and `avatarUrl`. A GraphQL query explicitly requests only those two fields, and the server returns exactly 200 bytes, avoiding massive string allocation and parsing.
-2. **Why does REST get HTTP caching "for free" while GraphQL doesn't? What's the consequence at 1M requests/day?**
-   REST relies on HTTP `GET` requests, which CDNs, proxies, and OkHttp natively cache via `Cache-Control` headers. GraphQL uses `POST`, which is not cached by default. At 1M requests/day, REST offloads traffic to the edge, while GraphQL forces all 1M requests to hit the origin server.
-3. **Explain persisted queries. What two problems do they solve?**
-   Persisted queries replace the full GraphQL query string with a pre-registered hash. They solve caching by allowing clients to send `GET` requests with the hash, and they solve security by preventing attackers from executing arbitrary or excessively deep queries.
+1. **Walk through over-fetching with an illustrative payload. Which measurements show whether GraphQL, sparse fields, or a BFF improves it?**
+   In an illustrative measurement, a fixed REST representation may contain 4 KB across 40 fields while one screen selects two fields totaling about 200 bytes. GraphQL can reduce that payload when resolver and transport overhead do not offset the saving; measure the actual serialized, compressed, parsed response rather than treating those numbers as a platform constant.
+2. **Compare HTTP-cache eligibility for a REST `GET`, a GraphQL `POST`, and a persisted GraphQL query sent as `GET`. What determines origin load?**
+   Neither style gets useful caching for free. Cacheable REST `GET` responses often map directly to standard HTTP caches when validators and directives permit. GraphQL commonly uses `POST`, while persisted/APQ `GET` operations can also use HTTP/CDN caching. Origin load depends on eligibility, keys, directives, invalidation, hit rate, and query shape.
+3. **Explain persisted operations and safelisting. Which payload, caching, and accepted-operation problems can they address?**
+   A persisted-operation protocol lets the client send an identifier for a stored operation, reducing request-document bytes and potentially providing a stable query-over-`GET` cache key. Safelisting is the separate enforcement decision to reject operations outside an approved set. APQ that accepts runtime registration is useful persistence but is not an allowlist. Neither mechanism authorizes fields or bounds resolver cost, so authorization, complexity, resolver, and rate controls remain necessary.
 4. **Apollo normalized cache vs OkHttp HTTP cache — what's the conceptual difference?**
-   OkHttp caches raw network responses by URL (HTTP cache). Apollo's normalized cache breaks down the JSON response and stores individual objects by `__typename` + `id`, acting like a local database where updating a user's name automatically updates all screens showing that user.
+   OkHttp caches eligible HTTP representations using request/cache metadata. Apollo's normalized cache stores operation fields as records under configured cache keys; writes can notify affected watchers when identity and selected fields align. It is an optional application data cache, not automatic HTTP caching.
 5. **Your API contract drifts between server and Android. Compare how OpenAPI + REST vs Apollo + GraphQL detect this.**
-   OpenAPI specs are often manually maintained, allowing silent drift between backend code and client expectations that manifest as runtime crashes. Apollo reads the live server schema via introspection and generates Kotlin types at compile time; if the server contract breaks, the Android build fails immediately.
+   Either style needs a reviewed, reproducible contract artifact and CI validation. Apollo validates checked operations against the schema pinned to that build; OpenAPI generators can do the same for REST. Neither protects already-shipped binaries, so server CI must also validate changes against supported client operations/contracts.
 6. **Walk through optimistic updates in Apollo Kotlin. What happens on success vs failure?**
-   The client instantly writes the expected mutation result (e.g., `likeCount + 1`) to the local Apollo cache, triggering immediate UI recomposition. If the network request succeeds, the cache is confirmed; if it fails, Apollo automatically rolls back the cache and the UI reverts.
+   When the operation supplies optimistic data, Apollo publishes the optimistic record to affected watchers before the network result. The real result replaces it; on failure the optimistic layer is removed. The application still maps the failure and reconciles any related domain/server side effects.
 7. **Real-time updates: GraphQL subscriptions vs REST + SSE. When pick each?**
-   Use GraphQL subscriptions if the app is already heavily invested in the Apollo ecosystem and requires bidirectional WebSocket management. Use REST + SSE if the app only needs simple, one-way real-time updates and wants to leverage standard HTTP infrastructure.
+   Prefer GraphQL subscriptions when the schema, Apollo operation model, and selected subscription transport already fit the product's lifecycle and continuity contract. Prefer SSE for a downstream text stream when ordinary HTTP infrastructure and separate request commands are simpler. Either option still needs authentication refresh, replay/reconciliation, bounded reconnect, and lifecycle ownership.
 8. **A team wants to switch from REST to GraphQL for "performance." Walk through the audit you'd run first.**
-   Audit if the app actually suffers from massive over-fetching or N+1 round trips. If they already use sparse fieldsets (`?fields=`) and a BFF, the performance delta is negligible. Migrating just for "vibes" introduces massive caching and security complexities.
-9. **Error handling: REST uses HTTP status codes; GraphQL returns 200 with `errors`. Why? What's the practical implication for the Android client?**
-   GraphQL returns 200 because a query can partially succeed (e.g., profile loads, but related posts fail). The client must manually check `response.hasErrors()` because a 200 OK does not guarantee business logic success, unlike REST where a 4xx/5xx explicitly flags failure.
+   Measure request count, compressed payload, cache hit rate, parse cost, resolver/fan-out cost, latency distribution, and failure behavior for representative screens. Compare GraphQL with sparse REST or a BFF, and include migration, governance, caching, and security cost; the result depends on the current contract rather than the API label.
+9. **How do transport, HTTP, API-execution, and domain outcomes differ for REST/BFF and GraphQL, including partial results?**
+   Both styles require all four layers. HTTP status describes the exchange, not the complete domain outcome. GraphQL-over-HTTP evaluates status/media type with `data` and `errors`; REST/BFF evaluates status with its representation and may define partial batch/aggregate results. The repository maps each layer and preserves partial data only under an explicit screen contract.
 10. **Versioning: `/api/v2/users` vs schema deprecation. Compare the lifecycle costs of each.**
-    REST's `/v2` allows a clean break but forces coordinated API migrations. GraphQL's field deprecation allows continuous, additive evolution without breaking endpoints, but requires strict telemetry (persisted query tracking) to know when an old Android client finally stops requesting a deprecated field.
+    A `/v2` endpoint can isolate a breaking contract while requiring migration and parallel support. In-place GraphQL deprecation can avoid a new URL, but selected fields and semantics must remain compatible through the supported-client window. Both need usage evidence, published support policy, server validation against shipped clients, and an eventual removal plan.
 11. **A new feature needs data from 5 microservices on one screen. REST + BFF or GraphQL? Justify.**
-    If the mobile team wants to orchestrate the exact payload shape and the backend exposes a unified Graph, use GraphQL. If the backend doesn't have GraphQL, or if the payload needs custom server-side error mapping/business logic specific to mobile, build a REST + BFF.
+    Either can aggregate behind one mobile operation. A governed graph favors GraphQL when several clients need flexible selections and resolver ownership is mature. A BFF favors explicit screen contracts and mobile-owned orchestration/fallbacks. Compare fan-out, partial failure, caching, authorization, ownership, and compatibility rather than choosing from service count alone.
 12. **You're building an offline-first app with live UI updates. Walk through the Apollo + Flow + Compose pattern that delivers it.**
-    The ViewModel executes a GraphQL query and calls `.watch().toFlow()`. The Composable collects this StateFlow. Any local mutation or incoming subscription updates the Apollo normalized cache, which automatically triggers `.watch()` to emit a new state, recomposing the UI instantly.
-13. **Where does gRPC fit in this picture? Why isn't it usually picked for Android-to-backend calls?**
-    gRPC provides typed, binary RPCs over HTTP/2 via Protobuf. It is avoided for Android-to-backend because it lacks native browser/CDN caching, proxy debugging is extremely difficult (unreadable binary), and the tooling (protoc, OkHttp workarounds) is much heavier than REST or GraphQL.
+    The ViewModel watches a query as a Flow and exposes mapped UI state. Cache writes from a mutation, subscription, or refetch notify the watcher when configured record identity and selected fields overlap; Compose then renders the emitted state. Offline persistence, conflict, freshness, and error policy remain application-owned.
+13. **Where does gRPC fit in this picture? Which mobile, infrastructure, caching, streaming, and tooling constraints favor or disfavor it?**
+    gRPC provides generated Protobuf RPC contracts and streaming over supported HTTP/2 infrastructure. It can fit controlled clients that value typed RPCs, compact messages, or streaming. Standard browser/CDN caching, text-level inspection, intermediary compatibility, schema evolution, generated-code workflow, and mobile binary/runtime cost may favor another shape. Measure the selected implementation rather than treating gRPC as categorically unsuitable for Android.
 
 ## Further Reading
 

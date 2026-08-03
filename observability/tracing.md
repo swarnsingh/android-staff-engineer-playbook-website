@@ -1,5 +1,7 @@
 # Tracing
 
+> **Canonical owner:** traces, spans, in-process context propagation, instrumentation boundaries, and sampling semantics live here. [`distributed-tracing.md`](distributed-tracing.md) applies these mechanics to network carriers, ingress trust, and cross-system correlation.
+
 ## Overview
 
 Tracing is the observability pillar that tracks the lifecycle of a single request or operation as it flows through a system. While logs tell you *what* happened, and metrics tell you *how often* it happens, tracing tells you exactly *where* the time went and *which* components were involved in a specific execution path.
@@ -20,13 +22,13 @@ Tracing ties all these asynchronous, multi-threaded operations together into a s
 
 ## Historical Context
 
-In single-threaded applications, profiling was easy: you just looked at the call stack. But with the rise of multi-core processors, reactive programming (RxJava), and Coroutines, the call stack became useless. A Coroutine might suspend on Thread A and resume 5 seconds later on Thread B. The stack trace is broken. Tracing (specifically via Context Propagation) was invented to artificially stitch these asynchronous jumps back together.
+In synchronous code, a sampled call stack can often explain the active execution path. Asynchronous work, queues, callbacks, and coroutines split one logical operation across stacks and time. Tracing context connects those boundaries so an operation can still be inspected as a parent/child timeline.
 
 ## First Principles
 
 1.  **The Trace:** Represents the entire end-to-end journey of an operation (e.g., "The Checkout Process").
 2.  **The Span:** Represents a single unit of work *within* the Trace (e.g., "Database Read", "Payment API Call"). Spans have a start time, an end time, and a parent-child relationship.
-3.  **Context Propagation:** The mechanism of passing the `Trace ID` and `Span ID` along with the execution flow, jumping across threads and network boundaries.
+3.  **Context Propagation:** The mechanism that carries the current span context across in-process asynchronous boundaries. Cross-process carriers and trust policy are the application covered in [Distributed Tracing](distributed-tracing.md).
 
 ## Mental Model
 
@@ -39,11 +41,11 @@ Think of a package delivery.
     - Transit (Span): 1.5 Days
     - Out for Delivery (Span): 0.5 Days
 
-You can instantly see that Transit took the longest.
+The recorded spans make Transit the longest measured stage; uninstrumented gaps and clock quality still matter.
 
 ## Internal Mechanics
 
-To make tracing work, every step of the process must know the overarching `Trace ID`.
+To preserve parentage, each instrumented asynchronous boundary needs access to the current span context.
 
 ### The Manual Way (Painful)
 
@@ -60,9 +62,9 @@ fun readDatabase(traceId: String) {
 }
 ```
 
-### The Coroutine Way (Context Propagation)
+### A Coroutine Correlation Context
 
-Kotlin Coroutines provide a brilliant mechanism for tracing: `CoroutineContext`. You can inject the Trace ID into the Coroutine Context, and it will automatically follow the coroutine, even as it suspends and resumes across different threads.
+Kotlin `CoroutineContext` can carry an explicit correlation value across suspension. The simplified example below is useful for log correlation, but it is not a substitute for an OpenTelemetry context-storage/instrumentation integration: a trace also needs the current span, flags, baggage policy, and correct parentage.
 
 ```kotlin
 // 1. Define a Context Element
@@ -79,7 +81,7 @@ viewModelScope.launch(TraceContextElement(UUID.randomUUID().toString())) {
     
     withContext(Dispatchers.IO) {
         val ioTraceId = coroutineContext[TraceContextElement]?.traceId
-        // ioTraceId is GUARANTEED to be identical to myTraceId!
+        // This context element follows this structured coroutine boundary.
         Timber.d("[$ioTraceId] Doing DB work on ${Thread.currentThread().name}")
     }
 }
@@ -120,7 +122,7 @@ try {
 
 **OpenTelemetry (OTel)**
 
-The industry standard for true distributed tracing. It automatically handles context propagation and creating parent-child relationships between Spans.
+OpenTelemetry provides vendor-neutral tracing APIs, SDKs, propagation, and instrumentation. Context is not magically preserved across every callback or coroutine: use the supported coroutine/context integration and instrument unsupported asynchronous boundaries explicitly. The synchronous scope below illustrates parentage; do not carry a thread-local `makeCurrent()` scope across suspension unless the selected integration supports it.
 
 ```kotlin
 // Start the root Span (The Trace)
@@ -131,17 +133,31 @@ span.makeCurrent().use { scope ->
     try {
         // Child Span
         val dbSpan = tracer.spanBuilder("DatabaseRead").startSpan()
-        dbSpan.makeCurrent().use { 
-            readDb() 
+        try {
+            dbSpan.makeCurrent().use {
+                readDb()
+            }
+        } catch (t: Throwable) {
+            dbSpan.recordException(t)
+            dbSpan.setStatus(StatusCode.ERROR)
+            throw t
+        } finally {
+            dbSpan.end()
         }
-        dbSpan.end()
 
         // Child Span
         val netSpan = tracer.spanBuilder("NetworkCall").startSpan()
-        netSpan.makeCurrent().use { 
-            callApi() 
+        try {
+            netSpan.makeCurrent().use {
+                callApi()
+            }
+        } catch (t: Throwable) {
+            netSpan.recordException(t)
+            netSpan.setStatus(StatusCode.ERROR)
+            throw t
+        } finally {
+            netSpan.end()
         }
-        netSpan.end()
 
     } finally {
         span.end() // Finishes the root trace
@@ -152,51 +168,60 @@ span.makeCurrent().use { scope ->
 ## Tradeoffs
 
 **Advantages**
-- **Surgical Debugging:** You can visually see exactly where a bottleneck is occurring in a complex, multi-threaded flow.
-- **Dependency Mapping:** Tracing automatically visualizes which systems talk to which other systems.
+- **Execution-path diagnosis:** Recorded spans show timing and parentage across instrumented boundaries.
+- **Dependency evidence:** Aggregated traces can reveal observed call relationships, subject to sampling and coverage.
 
 **Disadvantages**
-- **Implementation Overhead:** Proper tracing requires massive instrumentation. Every major function, database call, and network request must be wrapped in a Span.
-- **Sampling:** Traces generate massive amounts of data. You cannot trace 100% of user requests in production. You must configure "Sampling" (e.g., only record 1 out of every 100 checkouts), which means you might miss the trace for a specific failing edge case.
+- **Implementation overhead:** Useful tracing needs consistent instrumentation at selected boundaries, correct context propagation, privacy review, export, and maintenance.
+- **Sampling:** Trace volume can add CPU, storage, bandwidth, privacy, and ingestion cost. A low-volume or targeted workload may record every trace, but large production fleets normally need an explicit sampling and retention budget.
 - **Context Leakage:** If you pass a `CoroutineContext` incorrectly, or use a global thread pool that doesn't respect the context, the Trace breaks, and the visualization is orphaned.
 
 ## Failure Modes
 
-- **The Broken Context:** A Coroutine makes a network call using an old Java callback library (e.g., Retrofit 1 or a legacy SDK). The callback executes on a random thread pool. The Trace ID is lost. The operation appears to finish instantly in the visualization, and the network call is untracked. *(Fix: All asynchronous jumps must propagate the context).*
+- **The Broken Context:** A coroutine calls a callback-based SDK whose executor is not instrumented. The child work may appear as an orphan or gap because the current span context did not cross the boundary. *(Fix: use supported instrumentation or explicitly capture/restore context at the boundaries that need correlation.)*
 - **Over-Instrumentation:** Creating a Span for every single function call in the app.
   ```kotlin
   fun add(a: Int, b: Int): Int {
-      val span = tracer.startSpan("add") // BAD! This takes 1ms. The overhead is 5ms!
+      val span = tracer.startSpan("add") // Usually too fine-grained to justify a span.
       val res = a + b
       span.end()
       return res
   }
   ```
   *(Fix: Only wrap significant architectural boundaries: Network, Disk IO, IPC).*
-- **100% Sampling Rate in Production:** Sending a massive, multi-span JSON object to Datadog every time any user taps a button. You will bankrupt the company within a week.
+- **Unbudgeted full capture:** Recording every high-volume operation without measuring overhead, privacy, retention, and ingestion cost. Full capture can still be appropriate for bounded or low-volume workloads.
 
 ## Staff Engineer Thinking
 
 When evaluating performance issues, a Staff engineer uses Tracing as a scalpel:
 
 1.  **Do we have a Waterfall?** I look at the Trace visualization. Are the Spans executing sequentially (Network 1 finishes -> Network 2 starts)? Can they be executed concurrently (`async { }`)? Tracing makes architectural inefficiencies blatantly obvious.
-2.  **Is the boundary traced?** I ensure that our standard OkHttp Interceptor automatically wraps every network call in a Span, and our standard Room Dao wrapper wraps every DB call. Developers shouldn't have to write tracing code manually for basic infrastructure.
-3.  **How are we tying Logs to Traces?** A Trace shows me the Database Read took 5 seconds. But *why*? I need the Logs. I enforce that the `Trace ID` is automatically injected into the MDC (Structured Logging) so I can pivot instantly from the slow Trace to the exact Logs emitted during that 5-second window.
+2.  **Is the right boundary traced?** Use supported infrastructure instrumentation where it produces actionable spans, then add manual spans only for product operations or gaps whose diagnostic value exceeds their cost.
+3.  **How are logs tied to traces?** Add trace/span correlation fields to approved structured diagnostic logs when that pivot is useful; apply the same privacy, sampling, retention, and access policy rather than copying identifiers into every message.
+
+### Sampling contract
+
+- **Head sampling** decides near trace creation using known context. It is cheap and propagates a consistent sampled flag, but it cannot know that a later span will fail.
+- **Parent-based sampling** follows the upstream decision so one trace is not arbitrarily fragmented at every hop. Public ingress may validate or replace untrusted client decisions.
+- **Tail sampling** decides after a collector has observed enough of the trace, enabling latency- or error-biased retention at higher collection cost.
+- **Targeted capture** can temporarily raise sampling for a privacy-approved cohort, operation, or diagnostic window. Bound it by time, volume, and rollback.
+
+Document where the decision is made, how it propagates, which attributes are allowed, and what happens when mobile and backend policies disagree. Distributed propagation and trust handling are covered in [`distributed-tracing.md`](distributed-tracing.md).
 
 ## Common Misconceptions
 
-- **"Tracing is just for the Backend."** Historically, yes. But as Mobile apps adopted complex asynchronous architectures (Coroutines/Flow/Rx), local on-device tracing became mandatory to understand UI performance.
-- **"Firebase Performance Traces are true Distributed Traces."** No. Firebase "Traces" are isolated metrics/histograms. They do not natively link together into a tree (Parent -> Child) or propagate across network boundaries to the backend server. For true tracing, you need OpenTelemetry.
+- **"Tracing is just for the backend."** Client tracing can help when a mobile workflow crosses meaningful asynchronous or network boundaries, but local profiling, metrics, or structured events may be sufficient for simpler problems.
+- **"Any product named a trace is a distributed span tree."** Vendor terminology differs. Verify whether the selected signal carries parent/child context across boundaries, or instead records independent duration/metric measurements.
 
 ## Probing Questions
 
 1.  What is the difference between a Trace and a Span?
-2.  Why did single-threaded applications not require complex Tracing infrastructure?
-3.  Explain how Kotlin `CoroutineContext` solves the problem of Context Propagation across multiple threads.
-4.  If a Trace shows a 10-second gap between two Spans, what does that usually indicate about the system?
-5.  Why is "Sampling" a mandatory concept when implementing Tracing in a production mobile app?
+2.  Why can a synchronous call stack be sufficient for some diagnoses, and which asynchronous boundaries make tracing useful?
+3.  What can a custom Kotlin `CoroutineContext` element propagate, and what additional integration does a tracing SDK need?
+4.  If a trace shows a 10-second gap between two spans, which hypotheses should you test?
+5.  When can full trace capture be reasonable, and what must a production sampling contract define?
 6.  How does an "Over-Instrumented" trace actually degrade the performance of the mobile app?
-7.  If a developer uses a third-party analytics SDK that relies on callbacks, how might that break the Trace?
+7.  If a third-party SDK invokes callbacks on its own executor, how might that affect trace context?
 8.  How do Traces, Metrics, and Logs work together during a severe production incident? (Describe the workflow).
 9.  What is a "Waterfall" in the context of a Trace visualization, and how do you fix it in Kotlin?
 10. Why is injecting the `Trace ID` into your Structured Logging payload (MDC) so critical for debugging?
@@ -207,8 +232,8 @@ The two canonical tracing surfaces on Android:
 
 | Source | What it traces | When |
 |---|---|---|
-| **Firebase Performance Monitoring** | Auto: app start, network calls (OkHttp), custom traces | Default first instinct |
-| **OpenTelemetry Android SDK** | Full OTel-compatible spans, manual instrumentation, exportable | When you self-host the backend |
+| **Firebase Performance Monitoring** | Auto-collected and custom performance measurements supported by the configured Android SDK | When its signal model and managed backend meet the product need |
+| **OpenTelemetry Android SDK** | OTel-compatible spans, context propagation, instrumentation, and configurable export | When vendor-neutral instrumentation/export and cross-boundary correlation meet the product need |
 
 ```kotlin
 // Firebase Performance custom trace + sub-spans
@@ -235,39 +260,40 @@ try {
 
 The mobile-distinct concerns:
 
-1. **Span granularity vs battery.** A span per HTTP call is reasonable; a span per Compose recomposition is not. Sample.
-2. **Foreground/background boundary.** A span open when the app backgrounds gets paused (or worse, abandoned). Either close before `onStop` or accept that long-tail traces will be incomplete.
-3. **Process death.** A span in progress when the process is killed is lost. Mitigate by writing partial trace data to Room before suspending high-stakes operations.
+1. **Span granularity vs cost.** A span per meaningful boundary may be reasonable; a span per Compose recomposition is usually noise. Measure overhead and sample deliberately.
+2. **Lifecycle boundary.** App backgrounding does not inherently pause a span. End spans when the represented operation ends or is abandoned, and let the SDK/exporter handle lifecycle flushing according to its documented policy rather than tying every span to `Activity.onStop()`.
+3. **Process death.** In-memory spans may be lost when the process dies. Preserve durable business-operation state separately; use supported exporter buffering when available, and start new work as a new span/trace linked or correlated to that operation instead of serializing an active SDK span ad hoc.
 4. **Cellular variance.** A 200 ms span on Wi-Fi is fine; on a 3G connection in a tunnel it's 8 seconds. Tag with `network_class` and slice dashboards accordingly.
-5. **JankStats integration.** `JankStats` reports per-frame durations; treat each janky frame as a synthetic span attached to the current screen for "where did the jank happen" forensics.
+5. **JankStats integration.** `JankStats` reports frame-performance data. Correlate that signal with a privacy-safe screen/interaction context as metrics, events, or spans according to the backend model; a janky frame is not automatically a distributed span.
 
 ## Answer Key
 
 1. **What is the difference between a Trace and a Span?**
    A Trace represents the entire end-to-end journey of an operation, while a Span represents a single unit of work within that journey.
-2. **Why did single-threaded applications not require complex Tracing infrastructure?**
-   In single-threaded apps, execution was strictly sequential, meaning a standard call stack was sufficient to profile performance and locate bottlenecks.
-3. **Explain how Kotlin `CoroutineContext` solves the problem of Context Propagation across multiple threads.**
-   It allows you to inject tracing metadata (like a Trace ID) that automatically follows the coroutine as it suspends and resumes across different dispatchers.
-4. **If a Trace shows a 10-second gap between two Spans, what does that usually indicate about the system?**
-   It indicates uninstrumented work, such as thread contention, a hidden background process, or a blocking operation outside the monitored spans.
-5. **Why is "Sampling" a mandatory concept when implementing Tracing in a production mobile app?**
-   Tracing every request generates massive data volumes, which drains battery, uses excessive network bandwidth, and leads to astronomical backend ingestion costs.
+2. **Why can a synchronous call stack be sufficient for some diagnoses, and which asynchronous boundaries make tracing useful?**
+   A stack sample can describe the active nested calls in one execution context. Queues, callbacks, coroutines, remote calls, and work separated in time require explicit context and timing if they must be reconstructed as one logical operation.
+3. **What can a custom Kotlin `CoroutineContext` element propagate, and what additional integration does a tracing SDK need?**
+   It can carry a chosen correlation value through structured coroutine suspension. A tracing integration must also preserve the current span and flags, establish correct parentage, bridge unsupported callbacks/executors, and close scopes safely.
+4. **If a trace shows a 10-second gap between two spans, which hypotheses should you test?**
+   Test for uninstrumented work, queueing, lock/thread contention, suspension, process/background delay, clock skew, lost context, and a missing exporter before treating the gap as one specific cause.
+5. **When can full trace capture be reasonable, and what must a production sampling contract define?**
+   Full capture may fit a low-volume workload or bounded diagnostic window. The contract must define decision point, head/parent/tail behavior, propagation, volume and retention budgets, allowed attributes, privacy controls, and disagreement at public ingress.
 6. **How does an "Over-Instrumented" trace actually degrade the performance of the mobile app?**
    Wrapping fast micro-operations (like basic math) in Spans introduces overhead that exceeds the cost of the operation itself, slowing down the app.
-7. **If a developer uses a third-party analytics SDK that relies on callbacks, how might that break the Trace?**
-   Callbacks executed on separate, untracked thread pools lose the coroutine context, dropping the Trace ID and breaking the parent-child span relationship.
+7. **If a third-party SDK invokes callbacks on its own executor, how might that affect trace context?**
+   The current context may not cross that executor automatically, creating an orphan span or missing parentage. Verify supported instrumentation or capture/restore context explicitly at the boundary.
 8. **How do Traces, Metrics, and Logs work together during a severe production incident? (Describe the workflow).**
    Metrics trigger the alert (the 'that'), Traces isolate the latency or bottleneck to a specific span (the 'where'), and Logs provide the granular context (the 'why').
 9. **What is a "Waterfall" in the context of a Trace visualization, and how do you fix it in Kotlin?**
-   A waterfall shows sequential execution of independent operations; you fix it by launching concurrent tasks using `async { }` and `awaitAll()`.
+   A waterfall is a sequence of spans. It is not automatically a defect: first confirm the operations are independent and concurrency will preserve ordering, resource, cancellation, and failure semantics; then structured concurrency such as `async`/`awaitAll` may reduce latency.
 10. **Why is injecting the `Trace ID` into your Structured Logging payload (MDC) so critical for debugging?**
-    It creates a common key that allows you to seamlessly pivot from a slow Trace visualization directly to the exact logs generated during that specific request.
+    A trace/span correlation field can support a useful pivot from a span to approved diagnostic logs. Include it only where the logging context propagation, privacy, retention, and query path are defined.
 
 ## Further Reading
 
 - [`distributed-tracing.md`](distributed-tracing.md) — How to pass the Trace ID from the mobile device to the backend server.
-- [`structured-logging.md`](structured-logging.md) — How to embed the Trace ID into every log.
+- [`structured-logging.md`](structured-logging.md) — How approved diagnostic logs can carry correlation fields.
+- [`telemetry-taxonomy.md`](telemetry-taxonomy.md) — Signal selection, privacy, sampling, retention, and deletion policy.
 - [OpenTelemetry documentation](https://opentelemetry.io/docs/) — current instrumentation and specification entry point.
 - [Firebase Performance Monitoring](https://firebase.google.com/docs/perf-mon) — auto-instrumented spans + custom traces.
 - [JankStats](https://developer.android.com/topic/performance/jankstats) — frame-level perf events.

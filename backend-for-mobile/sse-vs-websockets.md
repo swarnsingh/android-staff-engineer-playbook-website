@@ -1,62 +1,21 @@
-# Real-Time Data: SSE vs WebSockets (and Polling, and FCM)
+# Real-Time Data: SSE vs WebSockets
 
-> Real-time on mobile is a battery decision before it's a protocol decision. Every persistent connection keeps the radio in a higher power state; every reconnect spins it up. WebSockets and SSE are not the only options — polling and FCM are real, often better, alternatives. Staff-level mastery is picking the right tool *per feature*, not per app, and architecting a single shared connection that multiplexes every real-time need.
-
----
-
-## The Four Real-Time Options
-
-| Option | Direction | Connection lifetime | Battery cost | Best for |
-|---|---|---|---|---|
-| **Polling** (HTTP GET in a loop) | Client pulls | Short, repeated | Low–Medium (depending on interval) | Low-urgency data, < 1 update/min |
-| **Long polling** (HTTP GET held open) | Server → client (response holds) | Up to a minute per cycle | Medium | Backwards compatibility with HTTP/1.1 stacks |
-| **SSE** (Server-Sent Events) | Server → client | Persistent | Medium | Notifications, scores, stock prices, server-driven UI |
-| **WebSocket** | Bidirectional | Persistent | Medium–High | Chat, gaming, collaborative editing, voice |
-| **FCM** (Firebase Cloud Messaging) | Push to client | App can be killed | Near zero (OS-multiplexed) | "Wake me up when something happens" |
-
-Most apps think they need WebSockets but actually want a mix: FCM for off-process wakeups, polling for cheap status, and SSE or WebSockets only when active and needed. The pragmatic rule: **don't open a persistent socket unless the app is in the foreground and the user is actively viewing real-time data**.
+> **Decision:** this chapter compares SSE with WebSockets once the broader transport-selection process has narrowed the choice to a persistent stream. Canonical polling, FCM, lifecycle, retry, and reconciliation mechanics live in [`push-vs-poll-vs-sse-vs-websockets.md`](push-vs-poll-vs-sse-vs-websockets.md).
+>
+> Real-time on mobile is a lifecycle and continuity decision before it is a protocol decision. Pick per feature and workload; neither an open stream nor a push message is an authoritative event log.
 
 ---
 
-## Polling — Underrated for Many Use Cases
+## Decision Scope
 
-```kotlin
-class PollingService(private val api: Api, private val scope: CoroutineScope) {
-    fun startPolling(intervalMs: Long = 30_000) = scope.launch {
-        while (isActive) {
-            try {
-                val data = api.getLatest()
-                _state.value = data
-            } catch (e: IOException) { /* skip, retry next tick */ }
-            delay(intervalMs)
-        }
-    }
-}
-```
+Use the canonical [four-way comparison](push-vs-poll-vs-sse-vs-websockets.md) first. Continue here only when the experience needs a long-lived stream while its explicit feature/process owner is active.
 
-**Pros:**
-- Standard HTTP — works through every firewall, proxy, CDN.
-- Predictable battery cost (one request per interval).
-- Trivial to cache (each response is a normal `GET`).
-- No reconnection logic. The "reconnect" *is* the next request.
-- Easy to back off (`delay(intervalMs * 2)` after failure).
+| Choose | When | Reconsider when |
+|---|---|---|
+| **SSE** | Updates are server-to-client, text events fit, and upstream commands can use ordinary requests | The client needs frequent bidirectional control, binary frames, or one shared duplex protocol |
+| **WebSocket** | Both sides send frequently, a framed duplex channel fits, or binary messages matter | Traffic is almost entirely downstream and HTTP-stream infrastructure materially simplifies operation |
 
-**Cons:**
-- Latency = ~half the polling interval on average.
-- N polls × M users = wasted server cycles if most polls return "no change."
-- Doesn't scale to "real-time" feel below 5-second intervals.
-
-When polling works: cart count badge, "you have N unread messages," server-side feature flag refresh, profile-data freshness. Anything where a 30-second delay is invisible to users.
-
-### ETag-based conditional polling
-
-```http
-GET /messages/count
-If-None-Match: "v3-abc123"
-→ 304 Not Modified   (server saved bytes + GC pressure on client)
-```
-
-OkHttp handles this automatically with response cache. Drops 90%+ of polling cost for endpoints where the data changes rarely.
+In either case, specify authentication refresh, replay/reconciliation, backpressure, lifecycle ownership, heartbeat policy, and connection-state UX before selecting a client library.
 
 ---
 
@@ -76,8 +35,7 @@ data: {"symbol":"GOOG","price":2900.10}
 
 ```kotlin
 val client = OkHttpClient.Builder()
-    .readTimeout(0, TimeUnit.MILLISECONDS)   // critical — don't time out the stream
-    .pingInterval(30, TimeUnit.SECONDS)
+    .readTimeout(0, TimeUnit.MILLISECONDS)   // stream lifetime is owned elsewhere
     .build()
 
 val request = Request.Builder()
@@ -107,14 +65,14 @@ EventSources.createFactory(client).newEventSource(
 
 ### Built-in resume semantics: `Last-Event-ID`
 
-If the server gives each event an `id:`, the SSE specification dictates that on reconnect the client automatically sends `Last-Event-ID: <last>`. The server resumes from there. **Android Note:** While this is a killer feature of the web specification, OkHttp's SSE implementation *does not* automatically track or append this header for you. You must manually cache the last seen ID and append `Last-Event-ID` to your reconnection request headers.
+If the server gives each event an `id:`, browser `EventSource` reconnection uses the SSE-defined `Last-Event-ID` carrier. An Android OkHttp SSE integration does **not** automatically provide the browser's complete reconnect/resume behavior: cache the last accepted ID, append `Last-Event-ID` to the next request, and handle retention gaps and duplicates explicitly.
 
 ### Pros / Cons
 
 **Pros:**
-- Standard HTTP. Plays nicely with HTTP/2 multiplexing, proxies, CDNs.
-- One-line server implementation in most frameworks.
-- Automatic resume via `Last-Event-ID`.
+- Uses an HTTP response stream and can share supported HTTP/2 infrastructure; proxy buffering and idle policy still need validation.
+- Many server frameworks provide SSE response primitives.
+- Standard event IDs and `Last-Event-ID` reduce custom replay-protocol surface.
 - Text/UTF-8 only — easy to debug in Charles Proxy.
 
 **Cons:**
@@ -126,13 +84,13 @@ If the server gives each event an `id:`, the SSE specification dictates that on 
 
 ## WebSockets
 
-Full-duplex, persistent TCP connection after a one-time HTTP upgrade handshake.
+Full-duplex framed connection, commonly negotiated with an HTTP/1.1 upgrade; HTTP/2 support depends on the client, server, and intermediaries.
 
 ### OkHttp implementation
 
 ```kotlin
 val client = OkHttpClient.Builder()
-    .pingInterval(20, TimeUnit.SECONDS)   // ping/pong keepalive
+    .pingInterval(measuredPingInterval, TimeUnit.SECONDS) // only after validating idle policy
     .build()
 
 val request = Request.Builder().url("wss://api.example.com/socket").build()
@@ -162,162 +120,42 @@ val webSocket = client.newWebSocket(request, listener)
 - Low overhead per message (no HTTP headers per frame).
 
 **Cons:**
-- After the upgrade, it stops being HTTP. CDN caching is impossible.
+- WebSocket messages do not use ordinary HTTP response caching; gateways and intermediaries must support the negotiated WebSocket transport.
 - Custom protocol on top — you invent your own message envelope.
 - Reconnection is entirely your problem.
-- Heartbeats are mandatory or proxies kill the connection.
+- Heartbeat policy must match measured server, NAT, carrier, and intermediary idle behavior; OkHttp does not send pings unless configured.
 
 ---
 
-## FCM — The Battery-Free Option
+## Relationship to Background Delivery
 
-Firebase Cloud Messaging is the **only way** to deliver a message to your app while it's not running. The OS holds a single multiplexed connection to Google's servers; your app is woken when relevant.
-
-```kotlin
-class AppFcmService : FirebaseMessagingService() {
-    override fun onMessageReceived(message: RemoteMessage) {
-        val type = message.data["type"]
-        when (type) {
-            "new_message" -> showMessageNotification(message.data)
-            "trip_update" -> updateActiveTrip(message.data)
-        }
-    }
-
-    override fun onNewToken(token: String) {
-        sendTokenToServer(token)
-    }
-}
-```
-
-**Battery cost: effectively zero on top of what the OS already pays.** FCM rides one socket shared across every Google-Play-using app on the device.
-
-### Use FCM when
-
-- The user must be notified **even when the app is closed**.
-- The message rate is low (< 100 per device per day).
-- A small payload (~4 KB max) suffices to convey the event (often you just send "refresh now" and the app fetches the details).
-
-### Use FCM as the *backbone*, layered with WebSocket/SSE for active sessions
-
-The mature pattern:
-
-- App background → only FCM listens.
-- User opens the app → connect WebSocket/SSE for low-latency live updates.
-- App backgrounded again → close the live socket; rely on FCM.
-
-This costs almost nothing in the background and gets sub-second latency in the foreground.
+FCM is a best-effort notification or invalidation channel, not a durable continuation of either stream. When no foreground feature/process owner needs the connection, close or suspend it according to product policy and use platform push only as a hint to reconcile authoritative state. Multi-window, picture-in-picture, calls, foreground services, and navigation between activities mean `Activity.onStop()` is not a universal boundary. See the [canonical lifecycle and FCM model](push-vs-poll-vs-sse-vs-websockets.md#2-the-battery-cost-of-websockets).
 
 ---
 
-## The Decision Tree
+## Focused Decision
 
-```mermaid
-flowchart TD
-    background{"Must events reach a backgrounded or killed app?"}
-    background -->|"Yes"| fcm["FCM<br/>the reliable Android background path"]
-    background -->|"No; app is foregrounded"| bidi{"Need bidirectional binary traffic<br/>or sub-100 ms latency?"}
-    bidi -->|"Yes"| websocket["WebSocket"]
-    bidi -->|"No"| downstream{"Server-to-client only<br/>with POST available upstream?"}
-    downstream -->|"Yes"| sse["SSE"]
-    downstream -->|"No; 30s+ updates are acceptable"| polling["Polling with ETag"]
-```
-
-Then pair them: FCM for wakeups + SSE/WebSocket for active sessions + polling for "barely real-time" status data. Layered.
+Default to SSE for a downstream-only text event stream when the Android client and intermediaries support the required authentication, buffering, timeout, and replay behavior. Choose WebSocket when the same connection must carry material upstream traffic, binary frames, or a domain protocol that benefits from duplex messaging. Reverse either choice when measurements or infrastructure constraints invalidate those assumptions.
 
 ---
 
 ## Reconnection: The Hard Part
 
-A real-world reconnect loop with exponential backoff + jitter + cap:
+Use the canonical [shared continuity contract](push-vs-poll-vs-sse-vs-websockets.md#shared-continuity-contract): bounded exponential backoff with jitter, server hints, a stable-session reset rule, durable replay/reconciliation, and deduplication.
 
-```kotlin
-class ResilientWebSocket(
-    private val client: OkHttpClient,
-    private val request: Request,
-    private val onMessage: (String) -> Unit,
-) {
-    private var attempt = 0
-    private var current: WebSocket? = null
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    fun start() = connect()
-
-    private fun connect() {
-        current = client.newWebSocket(request, object : WebSocketListener() {
-            override fun onOpen(ws: WebSocket, response: Response) {
-                attempt = 0    // reset backoff on success
-            }
-            override fun onMessage(ws: WebSocket, text: String) = onMessage(text)
-            override fun onFailure(ws: WebSocket, t: Throwable, r: Response?) {
-                scheduleReconnect()
-            }
-            override fun onClosing(ws: WebSocket, code: Int, reason: String) {
-                ws.close(NORMAL_CLOSURE_STATUS, null)
-                scheduleReconnect()
-            }
-        })
-    }
-
-    private fun scheduleReconnect() {
-        val base = (1L shl attempt.coerceAtMost(6)) * 1_000   // 1s, 2s, 4s, ..., 64s
-        val jitter = Random.nextLong(0, base / 2)              // avoid thundering herd
-        attempt++
-        scope.launch {
-            delay(base + jitter)
-            if (isActive) connect()
-        }
-    }
-
-    fun stop() {
-        scope.cancel()
-        current?.close(NORMAL_CLOSURE_STATUS, "client stop")
-    }
-
-    companion object { private const val NORMAL_CLOSURE_STATUS = 1000 }
-}
-```
-
-Three things to get right:
-
-- **Exponential backoff** so a bad server doesn't get hammered.
-- **Jitter** so 10,000 clients reconnecting at once don't all hit the server in the same millisecond.
-- **Reset on success** — first connection after recovery shouldn't penalize the next failure.
-
-SSE needs the same pattern. `EventSource` doesn't auto-reconnect on Android (the W3C browser spec does; OkHttp's port doesn't).
+The protocol-specific difference is the resume token. SSE defines event IDs and the `Last-Event-ID` request header, but an Android OkHttp SSE integration still needs explicit storage, reconnect, and gap policy. WebSocket defines no equivalent application replay contract; design a cursor/event ID and catch-up API when continuity matters.
 
 ---
 
-## The Battery Reality
+## Mobile Cost Boundary
 
-Android's cellular radio has three power states:
-
-| State | Power | Time to leave |
-|---|---|---|
-| Idle (deep) | ~5 mW | 1–2 s to wake |
-| Low Power (FACH/CELL_PCH) | ~50 mW | 0 |
-| Active (DCH) | ~500 mW | 0 |
-
-When you open any persistent connection (WebSocket, SSE, long-poll), the radio sits in **Active** until traffic stops; then drops to **Low Power** after a "tail time" (~5–10 s); then to Idle after another ~30 s.
-
-A WebSocket sending ping every 20 seconds keeps the radio in **Low Power** indefinitely. **Battery drains even if the app is doing nothing.**
-
-### Mitigations
-
-1. **Close the socket when the app backgrounds.** Use lifecycle observers.
-2. **Multiplex.** One socket for all features, not one per feature.
-3. **Lengthen pings.** 60-second pings are usually enough; check what your load balancer tolerates.
-4. **Fall back to FCM** for background updates.
-5. **Doze-mode awareness.** When the device enters Doze, network access is denied; your socket will fail. Don't reconnect immediately — wait until the device leaves Doze or use a high-priority FCM.
-
-### Foreground service for persistent connections
-
-If the app *must* keep a connection alive while backgrounded (rare — usually a sign the design is wrong), wrap it in a `Service` with `startForeground` and a notification. The OS won't kill it, but the user sees an ongoing notification and the radio stays active. Suitable for: a delivery driver's app while on a trip, a video call. Not suitable for: chat (use FCM-driven notification + reconnect on open).
+Data activity can add radio promotion and tail energy, but the magnitude varies by radio technology, carrier, modem, signal, device, batching, concurrent traffic, and heartbeat interval. Measure representative sessions. Own the stream at the narrowest feature/process lifecycle that meets the product requirement, multiplex compatible traffic when that reduces total connections, and use a foreground service only when the user-visible ongoing task and current platform policy justify one.
 
 ---
 
-## Connection Multiplexing — One Socket To Rule Them All
+## Connection Multiplexing When Boundaries Align
 
-If your app has a chat feature, a live map, and a notifications drawer, **do not open three sockets**. Build a `ConnectionManager`:
+If chat, live map, and notifications share lifecycle, authorization, service ownership, protocol, and fault-isolation requirements, a `ConnectionManager` can multiplex them. Keep separate connections when those boundaries differ:
 
 ```kotlin
 @Singleton
@@ -362,7 +200,7 @@ Server side sends a discriminator in each frame:
 { "type": "notification", "title": "New offer" }
 ```
 
-Each feature filters the multiplexed flow. One socket; one set of heartbeats; one reconnect path.
+Each feature filters the multiplexed flow. One socket, one measured heartbeat policy, and one reconnect path can be simpler than independent feature connections when their lifecycle and security boundaries align.
 
 ---
 
@@ -370,12 +208,11 @@ Each feature filters the multiplexed flow. One socket; one set of heartbeats; on
 
 These don't usually live in app code, but staff engineers must know them:
 
-- **Sticky sessions.** Long-lived connections must terminate on the same backend node for the session lifetime. Load balancers need `ip_hash` or cookie-based stickiness.
-- **Max connections per origin.** Browsers limit ~6 per origin; Android doesn't have the same cap but cellular networks impose their own. Multiplex.
-- **Proxy timeouts.** AWS ALB defaults to 60s idle timeout. Set your ping interval to less than that.
+- **Routing state.** Sticky routing is necessary only when connection/session state cannot be recovered from shared infrastructure or the connection-owning node. Prefer stateless/shared routing where practical.
+- **Connection budgets.** Capacity-plan gateway, file-descriptor, memory, fan-out, and client limits using measurements from the selected stack.
+- **Proxy timeouts.** Discover the deployed intermediary idle policies, then configure heartbeat and reconnect behavior from evidence rather than a universal interval.
 - **TLS termination.** WebSocket Secure (`wss://`) and HTTPS-SSE both terminate TLS at the load balancer. Check your LB config supports it.
-- **Connection caps.** Each open socket costs ~50 KB of server RAM. 100k concurrent users = 5 GB. Plan capacity.
-- **Auth refresh.** A 24-hour open socket on a 1-hour token? You need a refresh-in-stream protocol (server sends `auth_refresh_required`, client reconnects with new token).
+- **Auth refresh.** When token TTL is shorter than a valid session, define whether the client reauthenticates in-stream or reconnects with a new token, and make failure explicit.
 
 ---
 
@@ -383,36 +220,34 @@ These don't usually live in app code, but staff engineers must know them:
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Battery drain even when app idle | Persistent socket with frequent pings | Multiplex; fall back to FCM in background |
-| Socket disconnects every ~60s | Load balancer idle timeout | Lower ping interval below LB timeout |
-| Messages lost during reconnect | No resume protocol | SSE: `Last-Event-ID`; WS: server-side message queue + replay token |
+| Unexpected energy use while inactive | Stream outlives its product owner or sends unnecessary traffic | Fix lifecycle ownership; measure heartbeat and batching; use push only as a best-effort hint |
+| Socket disconnects near an intermediary timeout | Load balancer or proxy idle policy | Align the deployed idle timeout and a measured heartbeat/liveness policy |
+| Messages lost during reconnect | No durable resume/reconciliation contract | SSE: persist event ID and explicitly send `Last-Event-ID`; WS: define cursor/replay or fetch authoritative state |
 | Thundering herd on reconnect | No jitter | Add `Random.nextLong(0, base/2)` to backoff |
-| Socket survives but no messages flow | Idle timeout closed by ISP/NAT silently | Ping/pong on a shorter interval; detect with timeout |
+| Socket survives but no messages flow | Intermediary idle policy or half-open path | Detect liveness under an explicit timeout; align any Ping/Pong cadence with measured network and server policy |
 | `wss://` fails on captive WiFi | Hotspot redirects HTTPS for sign-in | Detect via probe URL; show "sign in to WiFi" |
-| Doze mode kills socket | Device entered Doze | Don't reconnect immediately; wait for `ACTION_DEVICE_IDLE_MODE_CHANGED` |
-| FCM message dropped | Too many low-priority messages | Use `priority: high` sparingly; rely on tickle-then-fetch pattern |
+| Continuity breaks while app is inactive | Lifecycle, Doze, process death, or network policy interrupted the stream | Reconcile from a durable cursor/state when the owning experience resumes |
 | App crashes after rotation | Listener leaked Activity | Lifecycle-aware service or ViewModel-scoped manager |
 | Race: two sockets open after reconnect | New `connect()` called before old socket closed | Single source of truth — `ConnectionManager` with state |
 | SSE stream returns garbled UTF-8 | Server sent bytes mid-character | SSE spec requires UTF-8; server-side bug |
 | Auth expires mid-stream | Token TTL shorter than session | In-stream refresh protocol; reconnect with new JWT |
-| User sees stale messages after long background | Polling never ran while backgrounded | FCM "tickle" + foreground refresh |
+| User sees stale messages after long inactivity | Client treated stream/push delivery as authoritative | Refresh or replay from the server under the product freshness policy |
 | Multi-tab / multi-device chaos | Same user has chat open on phone + tablet | Server-side session tracking with idempotency keys per send |
-| Carrier MITM corrupts frames | Some carriers mangle bytes in headers | Use TLS only; investigate via test-only TLS-inspection proxy |
+| Stream fails only on some networks | Captive portal, proxy, TLS inspection, or intermediary policy | Keep TLS validation enabled; reproduce with approved test tooling and inspect the failing boundary |
 
 ---
 
 ## Common Pitfalls
 
-- **One socket per feature.** Costs N× battery; complicates auth refresh. Multiplex.
-- **No reconnect backoff.** Outage → 10k clients hammer your server in a loop. Always exponential + jitter.
-- **No `Last-Event-ID` (or equivalent).** Reconnect = lost messages. Either SSE's built-in or a custom replay protocol over WebSocket.
-- **WebSocket for one-way data.** Adds complexity (custom envelope, manual reconnect) without benefit. SSE is simpler.
-- **Persistent connection while backgrounded.** Wakelocks, battery drain, foreground-service requirement post-O. Almost always wrong; use FCM.
-- **Polling at 1-second intervals.** "Real-time enough" for the PM, "battery murder" for the user. Push the use case to FCM + open-on-app-foreground.
-- **No heartbeat.** Connections silently die behind NATs; you don't notice for minutes. Always send pings.
-- **Hand-rolled reconnection on every feature.** Centralize in `ConnectionManager`.
-- **Treating FCM as guaranteed delivery.** It isn't. FCM is best-effort. Use as a "tickle" — wake the app, let the app fetch authoritative state.
-- **TLS misconfiguration.** `ws://` instead of `wss://`. Always TLS; pin the cert; check captive-portal behavior.
+- **One socket per feature by default.** Independent streams multiply lifecycle, authentication, and reconnect work. Multiplex only when feature ownership, authorization, and failure isolation are compatible.
+- **Unbounded synchronized reconnects.** A fleet can delay recovery by retrying in lockstep. Apply bounded attempts, server hints, backoff, and jitter appropriate to the operation.
+- **No durable event ID/cursor.** Reconnect can create a gap. Persist and send SSE's `Last-Event-ID` explicitly on Android, or define an equivalent WebSocket replay/reconciliation contract.
+- **WebSocket for one-way data without a reason.** SSE may fit a downstream text stream more directly, but validate client support, authentication, proxy buffering, and operations before deciding.
+- **Implicit lifecycle ownership.** A connection tied mechanically to one activity can outlive or underlive the product experience. Name the feature/process owner and its foreground-service exceptions.
+- **Universal heartbeat interval.** Too-frequent traffic can waste energy; no heartbeat can miss silent intermediary closure. Measure the deployed path and choose an explicit liveness policy.
+- **Hand-rolled reconnection on every feature.** Centralize compatible policy in a tested connection boundary while preserving feature-specific replay and authorization rules.
+- **Treating FCM as guaranteed delivery.** It is best-effort. Use it as an invalidation hint when delivery/background policy permits work, and reconcile authoritative state independently.
+- **TLS misconfiguration.** Use `wss://`/HTTPS, validate the platform trust configuration, and adopt certificate pinning only with an operationally safe rotation/recovery policy.
 
 ---
 
@@ -420,11 +255,11 @@ These don't usually live in app code, but staff engineers must know them:
 
 1. Compare the battery cost of polling every 30 s vs holding an open WebSocket. Why is polling sometimes cheaper than you'd guess?
 2. Walk through what happens when an Android device enters Doze mode and your app has a WebSocket open.
-3. Why is SSE's `Last-Event-ID` header a killer feature compared to rolling your own resume protocol on WebSocket?
-4. Your app has Chat, Live Map, and Notifications — three persistent connections. Walk through how you'd refactor to one.
-5. Reconnection with exponential backoff and jitter — walk through the math for 10,000 clients reconnecting after a 30 s outage.
-6. Compare WebSocket vs SSE for: stock ticker, chat app, voice call, collaborative document editing. Pick each and justify.
-7. FCM as the backbone: walk through the "tickle then fetch" pattern and why it's superior to keeping a socket open in the background.
+3. What does SSE standardize with `Last-Event-ID`, and what continuity work remains on Android?
+4. Your app has Chat, Live Map, and Notifications — three persistent connections. When would you multiplex them, and when should they remain isolated?
+5. Reconnection with exponential backoff and jitter — explain how it reduces synchronized load after an outage and which caps/reset rules remain necessary.
+6. Compare SSE, WebSocket, and a media transport for a stock ticker, chat app, voice call, and collaborative document editor.
+7. Walk through an FCM "tickle then fetch" pattern and the cases where a user-visible ongoing stream may still be justified.
 8. Your WebSocket auth token expires every hour but sessions last days. Design the refresh protocol.
 9. Load balancer kills your socket every 60 s. How do you detect and prevent this?
 10. SSE vs polling with ETag — when is each cheaper?
@@ -436,33 +271,33 @@ These don't usually live in app code, but staff engineers must know them:
 ## Answer Key
 
 1. **Compare the battery cost of polling every 30 s vs holding an open WebSocket. Why is polling sometimes cheaper than you'd guess?**
-   Polling every 30s allows the radio to drop to Idle between requests, whereas an open WebSocket with frequent pings keeps the radio in an Active or Low Power state indefinitely, draining the battery constantly. Polling is cheaper when intervals are long enough to allow sleep states.
+   Neither has a universal energy ordering. Polling may be cheaper when a lifecycle-bound, cache-validated cadence batches with other traffic and leaves long idle periods; a quiet stream may be cheaper when updates are frequent. Compare measured radio activity, heartbeat cadence, payloads, update rate, and server cost.
 2. **Walk through what happens when an Android device enters Doze mode and your app has a WebSocket open.**
-   The OS restricts network access, causing the socket to silently fail or drop. The app should not immediately reconnect; instead, wait for `ACTION_DEVICE_IDLE_MODE_CHANGED` or rely on high-priority FCM to wake the app.
-3. **Why is SSE's `Last-Event-ID` header a killer feature compared to rolling your own resume protocol on WebSocket?**
-   It automatically handles resuming the event stream from the last seen ID after a disconnect, eliminating the need to design custom server-side message queues and replay token logic required by WebSockets.
-4. **Your app has Chat, Live Map, and Notifications — three persistent connections. Walk through how you'd refactor to one.**
-   Implement a `ConnectionManager` that establishes a single multiplexed WebSocket. The server sends frames with a type discriminator (e.g., `type: "chat"`), and the manager routes them to specific `Flow`s (Chat, Map, Notifications) for the UI to consume.
-5. **Reconnection with exponential backoff and jitter — walk through the math for 10,000 clients reconnecting after a 30 s outage.**
-   Clients calculate `delay = base * 2^attempt + jitter`. Instead of 10,000 clients hitting at 1s, they spread out between 1s and 1.5s, then 2s and 3s, absorbing the thundering herd and preventing server crash on restart.
-6. **Compare WebSocket vs SSE for: stock ticker, chat app, voice call, collaborative document editing. Pick each and justify.**
-   Stock ticker: SSE (one-way server-to-client). Chat app: WebSocket (bidirectional text). Voice call: WebSocket (bidirectional binary/low-latency). Collab editing: WebSocket (bidirectional low-latency state sync).
-7. **FCM as the backbone: walk through the "tickle then fetch" pattern and why it's superior to keeping a socket open in the background.**
-   FCM wakes the backgrounded app (tickle), prompting it to make a standard REST call (fetch) to get data. This costs near-zero battery compared to maintaining a persistent background socket, which keeps the cellular radio active.
+   Network access and process execution can become discontinuous, so the stream may stall or close. The client follows its lifecycle/retry policy rather than looping aggressively, then reconciles authoritative state when the owning experience resumes; FCM remains best-effort, not a guaranteed wake-up.
+3. **What does SSE standardize with `Last-Event-ID`, and what continuity work remains on Android?**
+   SSE standardizes the event ID and `Last-Event-ID` carrier, reducing protocol design work. The Android client must still persist the last accepted ID, send it on reconnect, handle retention gaps, and deduplicate; WebSocket requires an equivalent application contract.
+4. **Your app has Chat, Live Map, and Notifications — three persistent connections. When would you multiplex them, and when should they remain isolated?**
+   A shared connection can reduce duplicate lifecycle, authentication, heartbeat, and reconnect machinery when the features have compatible ownership, authorization, delivery, and failure-isolation requirements. Keep them isolated when security boundaries, protocols, service ownership, release cadence, or fault containment differ.
+5. **Reconnection with exponential backoff and jitter — explain how it reduces synchronized load after an outage and which caps/reset rules remain necessary.**
+   Each failed attempt increases a bounded delay and adds randomness, spreading a fleet across a time window instead of one instant. Cap attempts and total deadline, honor server hints, stop when the owner is inactive, and reset the attempt window only after a sufficiently stable session; backoff reduces synchronization but cannot guarantee server recovery.
+6. **Compare SSE, WebSocket, and a media transport for a stock ticker, chat app, voice call, and collaborative document editor.**
+   A downstream text ticker often fits SSE. Interactive chat or collaborative editing can fit WebSocket when a duplex application protocol is useful. Voice media normally needs a transport such as WebRTC that addresses real-time media, NAT traversal, loss, jitter, and congestion control; WebSocket may still carry signaling or control messages.
+7. **Walk through an FCM "tickle then fetch" pattern and the cases where a user-visible ongoing stream may still be justified.**
+   FCM can deliver a best-effort notification/invalidation hint through shared platform infrastructure. When delivery and background policy permit, the client performs bounded work or reconciles later; it never assumes a wake-up or durable event delivery. This often avoids an app-owned inactive stream, but the product must measure its own latency and energy tradeoff.
 8. **Your WebSocket auth token expires every hour but sessions last days. Design the refresh protocol.**
    Implement an in-stream refresh protocol where the server sends an `auth_refresh_required` event shortly before expiration. The client silently fetches a new JWT and sends an `auth` frame up the WebSocket to re-authenticate without dropping the connection.
 9. **Load balancer kills your socket every 60 s. How do you detect and prevent this?**
-   Detect it by observing silent connection drops or observing the `onClosing` callback around the 60s mark. Prevent it by configuring the OkHttp `pingInterval` to a value shorter than the load balancer's idle timeout (e.g., 45s).
+   Correlate client disconnect telemetry with gateway idle policy and network captures. Then align the gateway timeout and a measured heartbeat/liveness policy; do not hard-code an interval until the deployed intermediaries and mobile cost are known.
 10. **SSE vs polling with ETag — when is each cheaper?**
-    SSE is cheaper for high-frequency, low-latency updates where the server pushes state changes. Polling with ETag is cheaper for low-urgency data that rarely changes, as the server returns 304 Not Modified, saving bandwidth and battery.
+    SSE can reduce repeated requests when updates are frequent and low latency matters. Conditional polling can be cheaper and operationally simpler when updates are rare and a longer freshness interval is acceptable. Compare measured request/heartbeat traffic, radio activity, connection capacity, cache-hit rate, and lifecycle duration.
 11. **WebSocket connection multiplexer with sealed-class events — show the rough class design.**
-    Create a `ConnectionManager` that owns the `WebSocket` and exposes `Flow<ServerEvent>`. `ServerEvent` is a sealed class with subclasses like `ChatEvent`, `LocationEvent`, etc. The listener parses the JSON, determines the type, and emits the specific subclass to the shared flow.
+    For compatible features, a `ConnectionManager` can own the `WebSocket` and expose `Flow<ServerEvent>`. A sealed event hierarchy routes validated envelopes to feature flows, while the manager owns connection state and each feature retains authorization, cursor, deduplication, and reconciliation policy.
 12. **A user's phone shows a chat notification but the app never opened that conversation in the foreground. How did the notification arrive? Walk through.**
-    The server sent an FCM data payload to the device. The OS woke the app's `FirebaseMessagingService` in the background, which processed the payload and built a local system notification without launching the UI.
+    The server may have sent an FCM notification payload that the SDK displayed, or a data/mixed message may have reached app code under current app/device/priority policy. The exact callback and display path depends on payload type, app state, permission, delegation, and platform policy; the app reconciles durable message state independently.
 
 ## Further Reading
 
-- [`push-vs-poll-vs-sse-vs-websockets.md`](push-vs-poll-vs-sse-vs-websockets.md) — broader real-time comparison.
+- [`push-vs-poll-vs-sse-vs-websockets.md`](push-vs-poll-vs-sse-vs-websockets.md) — canonical transport, lifecycle, retry, and reconciliation mechanics.
 - [`graphql-vs-rest.md`](graphql-vs-rest.md) — GraphQL subscriptions live on WebSocket.
 - [`transport-protocols.md`](transport-protocols.md) — HTTP/2 multiplexing and SSE.
 - [`rate-limiting.md`](rate-limiting.md) — protecting socket endpoints from reconnect storms.
@@ -475,5 +310,8 @@ These don't usually live in app code, but staff engineers must know them:
 - [OkHttp WebSocket API](https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/WebSocket.kt) — official reference.
 - [OkHttp SSE module](https://github.com/square/okhttp/tree/master/okhttp-sse) — official.
 - [FCM HTTP v1 API](https://firebase.google.com/docs/cloud-messaging) — server side.
+- [FCM message priority](https://firebase.google.com/docs/cloud-messaging/android/message-priority) — background processing and delivery constraints.
 - [WHATWG — Server-Sent Events spec](https://html.spec.whatwg.org/multipage/server-sent-events.html) — protocol details.
+- [RFC 6455 — WebSocket Protocol](https://www.rfc-editor.org/rfc/rfc6455.html) — framing, control frames, and optional Ping/Pong behavior.
+- [Android network access optimization](https://developer.android.com/develop/connectivity/network-ops/network-access-optimization) — radio and batching considerations.
 - [Discord — How Discord scaled to 11M users on 5 servers](https://discord.com/blog/how-discord-handles-two-and-half-million-concurrent-voice-users-using-webrtc) — multiplex architectures.

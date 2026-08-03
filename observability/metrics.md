@@ -139,11 +139,11 @@ trace.stop() // Records the duration and pushes to Firebase
 
 ## Staff Engineer Thinking
 
-When designing a telemetry strategy, a Staff engineer applies the rule: **"Metrics for the What, Logs for the Why, Traces for the Where."**
+The phrase **"metrics for magnitude, logs for context, traces for execution path"** is a starting heuristic. The canonical [telemetry taxonomy](telemetry-taxonomy.md) selects a signal from the decision, owner, actionability, cardinality, privacy, sampling, retention, and deletion requirements.
 
-1.  **Is this an Alert?** If a developer wants to set up an alert (e.g., "Ping slack if login fails"), I enforce that the alert must be driven by a Metric, never by a Log query. Log queries are too slow and brittle for reliable alerting.
-2.  **Are we managing Cardinality?** I strictly audit the tags added to metrics. If a developer tries to add `device_id`, `session_id`, or `query_string` as a tag to a metric, I reject the PR. High cardinality destroys Time-Series Databases.
-3.  **Are we looking at Averages?** If a dashboard shows "Average Network Latency," I will delete it. Averages lie. If 90% of requests take 10ms, and 10% take 10,000ms (timeout), the average is 1,000ms. Everything looks fine, but 10% of users are completely broken. I insist on P95 and P99 percentiles.
+1.  **Is this an alert?** Prefer a stable SLI/metric when it directly represents the condition. Log-derived alerts can be valid when the pipeline has an explicit availability, latency, schema, and cost contract.
+2.  **Are we managing cardinality?** Metric labels need a bounded vocabulary. Raw device/session/user IDs, URLs, and free-form error text usually belong outside metric labels.
+3.  **Does the aggregation match the question?** A mean can be useful for cost or total-work questions but can hide latency tails. Preserve a mergeable distribution and report percentiles/buckets appropriate to the SLO instead of averaging per-device percentiles.
 
 ## Common Misconceptions
 
@@ -155,7 +155,7 @@ When designing a telemetry strategy, a Staff engineer applies the rule: **"Metri
 1.  What is the fundamental difference between a Log and a Metric in terms of storage and query performance?
 2.  Explain the concept of "Cardinality" in metrics tagging. Why is adding a `user_id` tag to a metric dangerous?
 3.  What is the difference between a Counter, a Gauge, and a Histogram? Give an Android example for each.
-4.  Why is it mathematically incorrect to calculate an average (mean) when measuring network latency? What should you use instead?
+4.  Why can a mean be insufficient for network latency, and what should you preserve instead?
 5.  How do mobile constraints (battery, network connectivity) change how metrics are delivered to the server compared to backend systems?
 6.  If you want to trigger a PagerDuty alert when the app crash rate spikes, why should you use a metric instead of querying crash logs?
 7.  Explain the mantra: "Metrics tell you *that* you have a problem; Logs tell you *why* you have a problem."
@@ -169,11 +169,11 @@ The metric-pipeline shape on Android pulls from three sources:
 
 | Source | What it measures | How |
 |---|---|---|
-| **Android Vitals** | Crash-free rate, ANR, slow start, slow render | Auto-collected by Play Services on every Play-installed device |
-| **Firebase Crashlytics** | Custom non-fatal counters, breadcrumbs | SDK call sites in your code |
-| **In-house telemetry SDK** | Domain metrics (cart_started, payment_succeeded), perf (frame jank) | See `mobile-system-design/telemetry-sdk.md` |
+| **Android vitals / Play Console** | Supported crash, ANR, startup, rendering, and related quality metrics | Platform/Play collection under documented eligibility and user/device settings |
+| **Performance/RUM SDK** | Supported startup, network, rendering, or custom measurements | Managed instrumentation plus explicitly configured custom signals |
+| **In-house operational metrics pipeline** | Bounded counters, gauges, and distributions for owned reliability questions | Aggregation/export policy selected under [`telemetry-taxonomy.md`](telemetry-taxonomy.md) |
 
-Foreground/background is the canonical mobile dimension every metric should carry. Battery saver state, network class (Wi-Fi / cellular / metered), Android API level, OEM (Samsung / Xiaomi / Pixel / etc.), and country are the next-most-load-bearing. **Never** tag with `userId`, `deviceId`, or `sessionId` — cardinality bombs.
+Choose dimensions per metric and question. Foreground state, app version, API cohort, device tier, or network class can be useful when their vocabularies and privacy purpose are bounded. OEM/country may create sparse or sensitive cohorts and need minimum-sample/access policy. Do not use raw user, device, session, URL, or request identifiers as metric labels.
 
 ```kotlin
 // Tagging a histogram with mobile-specific dimensions
@@ -206,24 +206,24 @@ class MobileTagsProvider @Inject constructor(
 }
 ```
 
-Mobile-distinctive metrics worth instrumenting from day one: cold-start TTID/TTFD (via `JankStats` + `ReportFullyDrawn`), jank frames per session (`JankStats`), network call duration broken down by `network_class`, crash-free sessions (Crashlytics), unhandled-exception rate (uncaught handler + Crashlytics), engagement (DAU/MAU as gauges).
+Start with metrics tied to declared user journeys, SLOs, release gates, or capacity decisions. Examples include startup distributions, slow/janky-frame rate, network duration/error distributions, crash/ANR rate, and sync success/freshness. DAU/MAU is normally a product aggregation computed from governed events, not an on-device gauge.
 
-Push cadence: aggregate in-memory in the SDK; flush every 30-60 seconds OR on transition to background (`ProcessLifecycleOwner.onStop`). Never push per-event — battery + bandwidth catastrophe.
+Batch/export cadence depends on action latency, loss tolerance, process death, battery/network cost, quotas, and SDK guarantees. Bound queue size/age and test lifecycle flushing; avoid a universal timer or per-event rule.
 
 ## Answer Key
 
 1. **What is the fundamental difference between a Log and a Metric in terms of storage and query performance?**
    Logs are heavy text records that are expensive to store and slow to query, while metrics are highly compressible numerical aggregations that are fast to query.
 2. **Explain the concept of "Cardinality" in metrics tagging. Why is adding a `user_id` tag to a metric dangerous?**
-   Cardinality is the number of unique combinations of tags; adding `user_id` creates an explosion of time-series, which will crash the database and skyrocket costs.
+   Cardinality is the number of unique attribute combinations. A user ID can create one series per user and expose personal/profiling data, driving storage/query cost and operational limits; use bounded cohorts for metrics.
 3. **What is the difference between a Counter, a Gauge, and a Histogram? Give an Android example for each.**
    A Counter strictly increases (e.g., `crash_count`), a Gauge goes up or down (e.g., `battery_level`), and a Histogram tracks distributions (e.g., `api_latency`).
-4. **Why is it mathematically incorrect to calculate an average (mean) when measuring network latency? What should you use instead?**
-   Averages mask extreme outliers and hide the pain of users experiencing severe timeouts; percentiles (like P95 or P99) should be used instead.
+4. **Why can a mean be insufficient for network latency, and what should you preserve instead?**
+   A mean hides distribution shape and tail cohorts even though it can answer total-work questions. Preserve a mergeable histogram/distribution and report percentiles or buckets aligned to the user/SLO question.
 5. **How do mobile constraints (battery, network connectivity) change how metrics are delivered to the server compared to backend systems?**
-   Mobile metrics cannot be scraped; they must be batched in memory and pushed over the network efficiently to minimize battery drain.
+   Public mobile devices are usually not scrape targets and have intermittent process/network lifetimes. The SDK batches or otherwise exports under explicit loss, queue, cadence, privacy, and battery budgets.
 6. **If you want to trigger a PagerDuty alert when the app crash rate spikes, why should you use a metric instead of querying crash logs?**
-   Evaluating numerical metrics is instantaneous and robust, whereas querying large volumes of text logs for alerts is slow, brittle, and expensive.
+   A crash-rate metric is directly aggregatable and can have a defined alert latency/error budget. A log-derived metric can also work if its ingestion/schema/availability contract is explicit; raw free-text search is usually the weaker alert input.
 7. **Explain the mantra: "Metrics tell you *that* you have a problem; Logs tell you *why* you have a problem."**
    Metrics provide high-level, aggregate signals indicating system health, while logs provide the granular, step-by-step forensic evidence needed to debug the root cause.
 8. **How does Firebase Performance Monitoring automatically generate metrics without requiring explicit code instrumentation?**
@@ -231,12 +231,13 @@ Push cadence: aggregate in-memory in the SDK; flush every 30-60 seconds OR on tr
 9. **Describe a scenario where a Gauge metric is more appropriate than a Counter metric.**
    Tracking the size of an on-device SQLite database over time, as it can both increase when data is added and decrease when data is cleared.
 10. **If a metric tells you that P99 checkout latency has spiked to 15 seconds, but the logs show no errors, what is the next Observability tool you need to find the bottleneck? (Hint: Tracing).**
-    Distributed Tracing, which will provide a visual breakdown of exactly where the 15 seconds were spent across multiple systems or threads.
+    Inspect sampled traces when the workflow is instrumented; they can localize recorded time across spans. Also check uninstrumented gaps, clock quality, and correlated metrics rather than assuming one trace is complete.
 
 ## Further Reading
 
 - [`structured-logging.md`](structured-logging.md) — Why you shouldn't use logs to count things.
 - [`tracing.md`](tracing.md) — The tool used to find *where* the latency reported by a metric is actually occurring.
 - [`slis.md`](slis.md) — How metrics are formulated into contractual promises of reliability.
+- [`telemetry-taxonomy.md`](telemetry-taxonomy.md) — Canonical signal-selection and data-governance matrix.
 - [Android Vitals](https://developer.android.com/topic/performance/vitals) — Play Console's auto-collected metrics.
 - [JankStats](https://developer.android.com/topic/performance/jankstats) — frame-jank RUM library.

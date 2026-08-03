@@ -203,6 +203,7 @@ Every top crash cluster should have an owner, a first-seen version, a last-seen 
 
 - [`app-size-and-r8.md`](../performance/app-size-and-r8.md) — The matching mapping used to de-obfuscate minified managed frames.
 - [`mobile-apm-and-rum.md`](mobile-apm-and-rum.md) — The APM/RUM layer that monitors performance when the app *isn't* crashing.
+- [`../../observability/telemetry-taxonomy.md`](../../observability/telemetry-taxonomy.md) — Canonical choice among exception reports, operational metrics, logs, traces, product events, and breadcrumbs.
 - [Firebase: Crashlytics Documentation](https://firebase.google.com/docs/crashlytics)
 - [AOSP: Diagnose native crashes](https://source.android.com/docs/core/tests/debug/native-crash) — Signals, tombstones, and native symbols.
 - [OpenTelemetry: Signals](https://opentelemetry.io/docs/concepts/signals/) — Logs, metrics, and traces as distinct operational signals.

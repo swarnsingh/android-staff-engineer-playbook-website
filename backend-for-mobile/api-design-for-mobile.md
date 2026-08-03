@@ -1,6 +1,8 @@
 # API Design for Mobile
 
 > A mobile phone operates on battery power, traverses variable Wi-Fi and cellular paths, and may run an older app version. Mobile API design therefore considers round trips, payload size, caching, compression, parsing cost, compatibility, and failure recovery against measured product requirements.
+>
+> **Canonical owner:** the shared mobile API contract—error layers, compatibility, deprecation, supported client cohorts, and contract governance—lives here. [`graphql-vs-rest.md`](graphql-vs-rest.md) compares API shapes; [`../android/networking-and-security/graphql.md`](../android/networking-and-security/graphql.md) applies this contract with Apollo Kotlin.
 
 ---
 
@@ -74,11 +76,26 @@ GraphQL is powerful when product teams need query flexibility, but production mo
 
 The practical Staff rule: pick one data shape per screen, own its lifecycle, and define how it fails. A checkout screen may deserve REST + BFF for deterministic cache headers and semantic error envelopes. A social feed may deserve GraphQL with normalized caching. A product catalog may stay REST because CDN behavior matters more than field-level flexibility.
 
+### Canonical response and evolution contract
+
+Keep four layers distinct for every API style:
+
+| Layer | Examples | Client responsibility |
+|---|---|---|
+| Transport | DNS, TLS, timeout, cancellation, offline | Classify retryability without inventing a domain outcome |
+| HTTP exchange | Status, headers, negotiated media type, cache validators | Preserve protocol metadata and parse only when the representation is valid |
+| API execution | GraphQL request/validation/execution errors; REST/BFF envelope or batch-member failures | Interpret the style-specific payload, including partial results where defined |
+| Domain outcome | Insufficient funds, item unavailable, stale version | Map stable machine-readable codes to product behavior and retain a generic fallback |
+
+An HTTP success status is not proof of domain success, and a non-2xx response does not by itself explain the domain outcome. For GraphQL-over-HTTP, evaluate the HTTP exchange together with `data`, `errors`, and negotiated response semantics; partial `data` is usable only under an explicit product policy. REST/BFF contracts can also define partial batch or aggregate results, so “REST is all-or-nothing” is not a safe model.
+
+Schema/build validation protects only operations checked against that schema. It does not protect already-shipped binaries. Preserve supported operations and semantics for the published client cohort, inventory persisted or safelisted operations by app version, deprecate before removal, and remove a field only after telemetry and policy show that no supported client depends on it. Additive fields, enum values, nullability changes, and new error codes still require compatibility tests and defensive client behavior.
+
 ---
 
 ## 3. Core Android Example: Defensive Parsing and Result Envelopes
 
-Backend teams deploy continuously. Mobile apps are shipped as static binaries (APKs/AABs) that users may never update. **Forward compatibility is mandatory.**
+Backend teams deploy continuously. Mobile apps are shipped as static binaries (APKs/AABs) that users may never update. Within the published supported-client window, forward compatibility is a release requirement rather than an optional decoder preference.
 
 ### 1. Ignore Unknown Keys
 If the backend adds a new `"badge_tier"` field to the JSON, older versions of the app must not crash.
@@ -109,10 +126,14 @@ sealed interface NetworkResult<out T> {
     
     data class BusinessError(
         val code: String, // e.g., "INSUFFICIENT_FUNDS"
-        val userMessage: String // e.g., "Your balance is too low."
     ) : NetworkResult<Nothing>
     
     data class HttpError(val code: Int) : NetworkResult<Nothing>
+
+    data class ProtocolError(
+        val reason: String,
+        val cause: Throwable? = null,
+    ) : NetworkResult<Nothing>
     
     data class IOError(val exception: IOException) : NetworkResult<Nothing> // No network
 }
@@ -123,18 +144,35 @@ In your Repository:
 suspend fun fetchProfile(): NetworkResult<Profile> {
     return try {
         val response = api.getProfile()
-        if (response.isSuccessful) {
-            NetworkResult.Success(response.body()!!)
-        } else {
-            // Parse custom error JSON from the backend
-            val errorBody = parseErrorJson(response.errorBody())
-            NetworkResult.BusinessError(errorBody.code, errorBody.message)
+        val body = response.body()
+        when {
+            response.isSuccessful && body != null ->
+                NetworkResult.Success(body)
+
+            response.isSuccessful ->
+                NetworkResult.ProtocolError("Successful response had no profile body")
+
+            else -> {
+                // A non-2xx status is an HTTP outcome. Promote it to a domain
+                // outcome only when the representation matches the reviewed
+                // machine-readable error contract.
+                val domainError = response.errorBody()?.use(::parseBusinessErrorOrNull)
+                if (domainError != null) {
+                    NetworkResult.BusinessError(domainError.code)
+                } else {
+                    NetworkResult.HttpError(response.code())
+                }
+            }
         }
+    } catch (e: SerializationException) {
+        NetworkResult.ProtocolError("Profile representation did not match the contract", e)
     } catch (e: IOException) {
-        NetworkResult.IOError(e) // Airplane mode
+        NetworkResult.IOError(e) // Connectivity, DNS, TLS, or stream I/O.
     }
 }
 ```
+
+`SerializationException` is illustrative for Kotlinx Serialization; catch the converter's specific decoding exception when using Moshi or another stack. Cancellation must retain the coroutine/client library's documented behavior rather than being translated into a generic offline result.
 
 ---
 
@@ -150,7 +188,7 @@ When a web app updates its API, the frontend is deployed simultaneously. When a 
 
 ### The startup handshake
 
-Every serious mobile API needs a startup handshake. It is not only a force-upgrade check. It is the server-client compatibility contract for this app launch.
+A startup policy handshake can be useful when one launch needs a coordinated compatibility decision across minimum-version policy, capabilities, schema/storage support, or kill switches. It adds an availability and caching dependency, so a smaller API may instead negotiate capabilities on individual requests, use ordinary remote configuration, or rely on a published server compatibility window. When a handshake is chosen, treat it as a versioned contract rather than only a force-upgrade check.
 
 ```http
 POST /v1/handshake
@@ -369,7 +407,7 @@ Many enterprise backends (especially legacy ones) return `HTTP 200 OK` for every
 4. **How can REST+BFF and GraphQL each minimize request count for a screen, and what HTTP/application-cache tradeoffs remain?**
    Either style can serve the screen in one or several requests depending on endpoint shape, batching, cache state, and query splitting. REST/BFF responses often map naturally to URL/HTTP caches; GraphQL commonly uses normalized application caching, while GET queries or persisted/APQ hashes can also participate in HTTP/CDN caching.
 5. **Walk through the architecture of a Force Upgrade system. How do you ensure the `/config` endpoint itself doesn't become a single point of failure that prevents the app from opening when the server is down?**
-   The app fetches a policy payload on startup. To prevent a single point of failure, the app must cache the last successful policy and gracefully degrade to a safe offline/minimal state if the endpoint is unreachable, rather than locking the user out.
+   If the product chooses a startup policy endpoint, cache a valid prior policy with explicit expiry, ship a safe bootstrap default, authenticate the response, and define unavailable/stale behavior that does not accidentally lock out supported clients. Security emergencies may require a different fail-safe posture. Simpler products can avoid a mandatory startup dependency and enforce compatibility at ordinary request boundaries.
 6. **Why is `versionCode >= 412010` a weaker backend switch than `supportsFeedV2=true`? Give a hotfix or backport scenario where version-based switching fails.**
    Version codes are linear, but features can be backported to older branches or staggered via staged rollouts. Relying on `versionCode` breaks when a hotfix build lacks the feature but has a higher version code; `supportsFeedV2=true` explicitly checks for the capability.
 7. **Design a CI test that proves a six-month-old Android client can still parse today's backend response.**
@@ -382,5 +420,7 @@ Many enterprise backends (especially legacy ones) return `HTTP 200 OK` for every
 - [`../mobile-system-design/versioning-and-backward-compatibility.md`](../mobile-system-design/versioning-and-backward-compatibility.md) — Full mobile version lifecycle: deprecation, schema migration, and force-update policy.
 - [`../android/networking-and-security/retrofit-and-okhttp.md`](../android/networking-and-security/retrofit-and-okhttp.md) — Deep dive into configuring OkHttp for mobile constraints.
 - [`../android/networking-and-security/ktor-vs-retrofit.md`](../android/networking-and-security/ktor-vs-retrofit.md) — Modern networking alternatives for Kotlin Multiplatform.
+- [`graphql-vs-rest.md`](graphql-vs-rest.md) — decision comparison that applies this contract to API shape.
+- [`../android/networking-and-security/graphql.md`](../android/networking-and-security/graphql.md) — Apollo Kotlin application of this contract.
 - [GraphQL specification: Field deprecation](https://spec.graphql.org/October2021/#sec-Field-Deprecation) — Schema deprecation semantics.
 - [GraphQL specification: Validation](https://spec.graphql.org/October2021/#sec-Validation) — Executable-document validation against a schema.

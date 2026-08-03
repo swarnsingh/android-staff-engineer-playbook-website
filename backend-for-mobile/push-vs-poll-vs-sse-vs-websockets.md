@@ -1,5 +1,7 @@
 # Real-Time Data (Push vs Poll vs SSE vs WebSockets)
 
+> **Canonical owner:** shared real-time transport mechanics and the four-way selection model live here. The focused [`sse-vs-websockets.md`](sse-vs-websockets.md) chapter applies this model as a decision between the two persistent-stream options; it should not redefine lifecycle, retry, or background-delivery semantics.
+
 ## Overview
 
 The naive way to build a chat app is a `while(true)` loop making an HTTP `GET` every few seconds. That creates radio and server work even when nothing changed; the actual energy and capacity impact depends on cadence, lifecycle, cache validators, connection reuse, network, and update frequency.
@@ -76,7 +78,16 @@ This is the most common debate. If you are building a Stock Trading app (where p
 - Some EventSource implementations provide reconnection and event IDs. Android clients still need an explicit retry/backoff, authentication, replay, and gap policy; WebSocket clients need the same product-level continuity decisions.
 - SSE can use an HTTP/2 stream. WebSocket transport and multiplexing support depend on protocol/library choices, so measure connection and intermediary behavior rather than relying on a universal port-count claim.
 
-*(See [ADR-003 SSE vs WebSockets](../backend-for-mobile/sse-vs-websockets.md) for a deeper architectural analysis).*
+*(See the focused [SSE vs WebSockets decision](sse-vs-websockets.md) for criteria, defaults, and reversal triggers).*
+
+### Shared continuity contract
+
+Neither SSE nor WebSocket delivery is durable merely because a connection stays open. Define the same product-level continuity contract for both:
+
+- Reconnect with bounded exponential backoff plus jitter; honor server retry hints and reset the attempt window only after a sufficiently stable session.
+- Resume from a durable event ID/cursor when the protocol and backend support it; otherwise reconcile authoritative state and deduplicate by event ID.
+- Tie the connection to an explicit feature/process owner. When that owner is inactive or continuity is uncertain, close or suspend the stream according to product policy and reconcile on resumption.
+- Treat heartbeat cadence as measured infrastructure policy, not a protocol constant.
 
 ### 2. The Battery Cost of WebSockets
 On Android, cellular data activity can change radio state and add promotion or tail energy. Magnitude depends on radio technology, carrier, signal, device, batching, concurrent traffic, and interval.

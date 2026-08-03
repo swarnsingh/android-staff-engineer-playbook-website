@@ -141,18 +141,30 @@ Logs on mobile aren't logs the way servers do them. There's no `tail -f`. The us
 | Sink | When |
 |---|---|
 | `Log.d/i/w/e` → logcat | Local dev only |
-| **Timber** | Wrapped logging; auto-disabled in release |
-| **Crashlytics breadcrumbs** | Up to 64 KB of recent events attached to next crash |
-| **In-house telemetry SDK** | Domain log events shipped per `analytics-sdk.md` |
+| **Timber or another facade** | Routes to trees/sinks selected by build and runtime policy; it is not automatically disabled in release |
+| **Crash-report breadcrumbs** | A bounded, approved context buffer attached to a later report |
+| **Remote diagnostic sink/RUM** | Sampled structured operational events selected under [`telemetry-taxonomy.md`](telemetry-taxonomy.md) |
 
 ```kotlin
-// Timber tree: dev uses debug; release routes warnings/errors to Crashlytics
-class CrashlyticsTree : Timber.Tree() {
+// Release routing is explicit; log priority alone does not select a remote signal.
+fun interface BreadcrumbPolicy {
+    fun approved(priority: Int, tag: String?, message: String): String?
+}
+
+fun interface NonFatalPolicy {
+    fun shouldRecord(priority: Int, throwable: Throwable): Boolean
+}
+
+class PolicyReleaseTree(
+    private val breadcrumbPolicy: BreadcrumbPolicy,
+    private val nonFatalPolicy: NonFatalPolicy,
+) : Timber.Tree() {
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
-        if (priority < Log.WARN) return
-        FirebaseCrashlytics.getInstance().run {
-            log("[$tag] ${PiiRedactor.redact(message)}")
-            t?.let { recordException(it) }
+        breadcrumbPolicy.approved(priority, tag, message)?.let {
+            FirebaseCrashlytics.getInstance().log(it)
+        }
+        if (t != null && nonFatalPolicy.shouldRecord(priority, t)) {
+            FirebaseCrashlytics.getInstance().recordException(t)
         }
     }
 }
@@ -161,18 +173,18 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         if (BuildConfig.DEBUG) Timber.plant(Timber.DebugTree())
-        else Timber.plant(CrashlyticsTree())
+        else Timber.plant(PolicyReleaseTree(breadcrumbPolicy, nonFatalPolicy))
     }
 }
 ```
 
 Three mobile-specific rules:
 
-1. **Redact PII at the log call site.** Logcat is readable by adjacent OEM apps on some devices, and crash reports may include logged messages. `PiiRedactor` strips emails, phone numbers, card patterns before the message ever leaves the process. See `mobile-system-design/security-and-privacy.md`.
-2. **Strip in release.** R8 doesn't remove `Log.d` calls by default — the strings still compile in. Either wrap in `if (BuildConfig.DEBUG)` (R8 elides the block), or use Timber with a no-op release tree.
+1. **Minimize at the call site.** Avoid secrets and unnecessary personal/stable identifiers before they enter Logcat, local buffers, or remote telemetry. Pattern redaction is a defense in depth, not proof that all sensitive data was removed.
+2. **Define release behavior.** Suppress or remove noisy calls where appropriate, use lazy arguments for expensive work, and verify the optimized artifact; neither R8 nor a facade universally strips calls by default.
 3. **Don't log identifiers that survive uninstall.** Even hashed `userId` lets adversaries correlate; if it's needed for cross-session debugging, use a session-scoped UUID with TTL.
 
-Mobile logs are a forensic trail attached to a crash, not a stream you watch. Engineer for the autopsy, not the live feed.
+Mobile logging can serve local debugging, bounded crash context, or sampled remote diagnosis. Each route needs a purpose and owner; a crash breadcrumb buffer is not a complete event stream.
 
 ## Answer Key
 
@@ -181,9 +193,9 @@ Mobile logs are a forensic trail attached to a crash, not a stream you watch. En
 2. **Explain the difference between `WARN` and `ERROR` log levels. Give a concrete Android example for each.**
    WARN means something unexpected happened but the app recovered (e.g., cache miss fallback), while ERROR means a failure impacted the user (e.g., payment failure).
 3. **How does a Facade pattern (like Timber) make a codebase more resilient to third-party SDK changes?**
-   It allows you to change the underlying logging implementation (e.g., switching from Crashlytics to Datadog) in one central place without rewriting thousands of log statements.
-4. **What is PII, and what mechanisms can an Android team put in place to ensure it never gets sent to a remote logging server?**
-   Personally Identifiable Information; teams can use automated `PiiRedactor` wrappers in their Timber trees and enforce strict `toString()` masking on data models.
+   It reduces call-site coupling and centralizes routing policy. A vendor change can still require schema, privacy, batching, sampling, retention, and migration work.
+4. **What is PII, and what mechanisms can reduce the risk of sending it to a remote logging server?**
+   Classify and minimize fields at the call site, prohibit secrets and raw identifiers, use typed allowlists, restrict generic object serialization, add redaction as defense in depth, and test representative payloads. No regex wrapper can guarantee that every sensitive value is detected.
 5. **Why is it dangerous to put a network call inside a `Timber.d()` block? (e.g., `Timber.d("Response: ${api.fetchData()}")`).**
    Because the string interpolation (and thus the network call) is evaluated unconditionally before being passed to Timber, executing the call even if debug logs are disabled.
 6. **How do logs complement Crash Reports when investigating a production bug?**
@@ -191,7 +203,7 @@ Mobile logs are a forensic trail attached to a crash, not a stream you watch. En
 7. **If you need to log the time it takes for an API to respond, is raw text logging the best tool? (Hint: See `metrics.md`).**
    No, raw text logging is expensive to parse; numerical metrics (histograms) are designed for tracking durations and aggregations efficiently.
 8. **Explain the performance impact of logging inside a hot loop (like a View's `onDraw` method).**
-   It causes massive string allocations and I/O operations per frame, triggering garbage collection and resulting in severe UI jank.
+   Eager construction and enabled output add allocation and sink work. Whether that causes jank depends on frequency, payload, device, build, and sink; profile the release-equivalent path.
 9. **How can you configure ProGuard/R8 to automatically strip `Log.d` statements from a production release build?**
    By wrapping log statements in `if (BuildConfig.DEBUG)` checks, allowing R8's dead code elimination to completely remove the block.
 10. **Describe a scenario where an over-zealous logging strategy could actually cause an app to crash with an `OutOfMemoryError` or `IOException`.**
@@ -202,5 +214,6 @@ Mobile logs are a forensic trail attached to a crash, not a stream you watch. En
 - [`structured-logging.md`](structured-logging.md) — The evolution of raw text logs into queryable JSON.
 - [`metrics.md`](metrics.md) — Why you shouldn't use logs to count things.
 - [`tracing.md`](tracing.md) — How to connect isolated logs across multiple asynchronous operations.
+- [`telemetry-taxonomy.md`](telemetry-taxonomy.md) — Canonical selection policy for logs, metrics, traces, exceptions, product events, and breadcrumbs.
 - [Timber](https://github.com/JakeWharton/timber) — the conventional Android logging wrapper.
 - [Crashlytics breadcrumbs / custom keys](https://firebase.google.com/docs/crashlytics/customize-crash-reports) — context attached to crash reports.
