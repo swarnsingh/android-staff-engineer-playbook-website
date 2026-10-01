@@ -93,7 +93,7 @@ val okHttp = OkHttpClient.Builder()
     .build()
 ```
 
-Disable plaintext via `network_security_config.xml`:
+Disallow plaintext in stacks that honor the app's `network_security_config.xml` policy:
 
 ```xml
 <network-security-config>
@@ -104,7 +104,8 @@ Disable plaintext via `network_security_config.xml`:
     </base-config>
     <domain-config>
         <domain includeSubdomains="true">api.example.com</domain>
-        <pin-set expiration="2026-12-31">
+        <!-- No expiry here: an expired pin set stops enforcing pinning. -->
+        <pin-set>
             <pin digest="SHA-256">primaryPinBase64==</pin>
             <pin digest="SHA-256">backupPinBase64==</pin>
         </pin-set>
@@ -116,17 +117,19 @@ Disable plaintext via `network_security_config.xml`:
 
 - **Always have a backup pin** — primary pin compromise without backup = bricked app.
 - **Rotate with overlap** — add new pin before retiring old.
-- **Expire annually** — forces rotation cadence.
+- **Review pins and rotation on a schedule** — an optional XML expiration disables pinning on that date; it does not rotate keys. Track any chosen expiration per shipped version.
 - **Pin only your domains** — don't pin third-party APIs.
 - **Have a kill switch** — flag to disable pinning in case of emergency (review carefully).
 
-### Cleartext blocker
+### Cleartext policy
 
 ```xml
-<application android:usesCleartextTraffic="false">
+<application
+    android:networkSecurityConfig="@xml/network_security_config"
+    android:usesCleartextTraffic="false">
 ```
 
-Hard fail if any code path tries `http://`.
+The Network Security Config above denies cleartext for cooperating network stacks on Android 7.0 (API 24) and higher. The manifest flag provides a fallback on Android 6.0 (API 23) devices, where Network Security Config is unavailable; on API 24 and higher, the flag is ignored when a Network Security Config is present. Neither setting guarantees that raw sockets or every third-party SDK will reject `http://`. Test the app's actual network paths. See [Android's application manifest reference](https://developer.android.com/guide/topics/manifest/application-element.html#usesCleartextTraffic) and the [canonical pinning chapter](../security/certificate-pinning.md).
 
 ---
 

@@ -6,7 +6,7 @@
 
 ## 1. The Threat Model
 
-TLS authenticates a server by checking the certificate chain against the OS root trust store. That store contains hundreds of CAs. Compromise any one of them, install a corporate MITM proxy, or trick the user into adding a rogue CA, and the OS-blessed `https://` connection lands on the attacker's server with a "valid" certificate.
+TLS authenticates a server by checking its certificate chain against trusted CAs. A compromised trusted CA, or an explicitly trusted inspection CA, can make an attacker's certificate appear valid. Android apps targeting API 24 or higher [trust system CAs by default but not user-added CAs](https://developer.android.com/privacy-and-security/security-config#customize-trusted-cas); older targets and apps with custom trust settings can differ.
 
 Pinning collapses the trust set from "any CA Android trusts" to "the specific certificate(s) we provisioned." Even with a perfectly forged cert, the connection fails.
 
@@ -16,7 +16,7 @@ To complement pinning, monitor **Certificate Transparency (CT) logs** for unexpe
 
 ## 2. What Exactly You Pin
 
-You don't pin the *certificate* (it rotates yearly). You pin the **SHA-256 hash of the SubjectPublicKeyInfo (SPKI)**. SPKI is the public-key portion of the cert; it can survive cert reissues if you re-use the same key pair (a "re-key").
+You don't pin the *certificate* (it rotates periodically). You pin the **SHA-256 hash of the SubjectPublicKeyInfo (SPKI)**. SPKI is the public-key portion of the cert; it can survive certificate reissues if you reuse the same key pair.
 
 ```bash
 # Extract SPKI hash from a live host
@@ -36,14 +36,14 @@ Pin this hash; not the cert's serial number, not the cert's full hash, not the i
 
 ## 3. Network Security Config (Declarative, Manifest-Driven)
 
-The simplest path, available since Android 7.0 (API 24). Pins live in XML; the platform enforces them on every HTTP stack.
+The declarative path, available since Android 7.0 (API 24), puts pins in XML. Verify that each networking stack in the app honors Network Security Config; a stack that uses its own TLS implementation may need its own pinning configuration. Android also [cautions against pinning for most apps](https://developer.android.com/privacy-and-security/security-ssl) because server changes can strand installed clients.
 
 ```xml
 <!-- res/xml/network_security_config.xml -->
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
 
-    <!-- Hard fail any cleartext anywhere. -->
+    <!-- Disallow cleartext in stacks that honor Network Security Config. -->
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
@@ -53,7 +53,9 @@ The simplest path, available since Android 7.0 (API 24). Pins live in XML; the p
     <!-- Production pins -->
     <domain-config>
         <domain includeSubdomains="true">api.example.com</domain>
-        <pin-set expiration="2026-12-31">
+        <!-- No expiration: this example keeps pinning active until an app update.
+             Choose a managed expiration only if you accept the resulting loss of pinning. -->
+        <pin-set>
             <pin digest="SHA-256">7HIpactkIAq2Y49orFOOQKurWxmmSFZhBCoQYcRhJ3Y=</pin>
             <!-- Backup pin: provisioned but not yet rotated to. -->
             <pin digest="SHA-256">fwza0LRMXouZHRC8Ei+4PyuldPDcf3UKgO/04cDM1oE=</pin>
@@ -80,16 +82,16 @@ The simplest path, available since Android 7.0 (API 24). Pins live in XML; the p
 
 ### What Network Security Config gets you
 
-- Enforced at the platform `URLConnection`/`HttpsURLConnection` layer — works for OkHttp, Ktor, Retrofit, WebView, native code using the OS networking stack.
-- `cleartextTrafficPermitted="false"` hard-fails any `http://` request anywhere in the app — including third-party SDKs you didn't write.
+- Applied by platform TLS components and networking libraries that use the app's Network Security Config. Check the actual behavior of OkHttp, Ktor/Retrofit engines, WebView, native code, and SDKs used by your app; do not assume coverage from the XML alone.
+- `cleartextTrafficPermitted="false"` blocks cleartext in stacks that honor the app's policy. It is [best effort](https://developer.android.com/guide/topics/manifest/application-element.html#usesCleartextTraffic), not a universal block for raw sockets or every third-party SDK. Test the release app's network paths.
 - `debug-overrides` only applies in `debuggable` builds, so Charles/Proxyman work in dev but never in production.
-- `expiration` causes the platform to log a warning when expiry approaches; on Android 12+ the OS surfaces a developer-visible warning.
+- An optional `expiration` date **disables pinning on that date**. This can preserve connectivity for clients that never update, but it also removes the extra authentication constraint. If you use it, alert and ship updated pins well before the date. See the [Network Security Config pin-set reference](https://developer.android.com/privacy-and-security/security-config#pin-set).
 
 ### What it does NOT do
 
 - No runtime rotation. Pins are baked into the APK; changing them requires an app release.
 - No conditional pinning by host header or path — only by domain.
-- WebView `loadUrl` is not pinned for content loaded inside the WebView itself; you need WebView client overrides for that.
+- It cannot cover a network stack that ignores the app's Network Security Config; verify WebView and other stacks on the Android versions you support.
 
 ---
 
@@ -155,7 +157,7 @@ flowchart LR
 
 Pin rotation must overlap across installed app cohorts; a missing backup pin can turn routine certificate rotation into a persistent outage.
 
-Certs expire. If your only pin is today's cert and ops rotates tomorrow, every install in the field breaks instantly — and they can't even download an update because the update-check endpoint also fails.
+Certificates expire. If your only pin is today's public key and ops rotates to a different key tomorrow, installed clients can lose connectivity to that host; recovery may require an app update.
 
 **Always pin at least two:**
 - **Active pin** — what the server actually serves today.
@@ -217,16 +219,21 @@ val ktorClient = HttpClient(OkHttp) {
 val builder = CronetEngine.Builder(context)
 builder.addPublicKeyPins(
     "api.example.com",
-    setOf("7HIpactkIAq2Y49orFOOQKurWxmmSFZhBCoQYcRhJ3Y="),
+    setOf(
+        Base64.decode("7HIpactkIAq2Y49orFOOQKurWxmmSFZhBCoQYcRhJ3Y=", Base64.DEFAULT),
+        Base64.decode("fwza0LRMXouZHRC8Ei+4PyuldPDcf3UKgO/04cDM1oE=", Base64.DEFAULT),
+    ),
     /* includeSubdomains = */ true,
-    Date(/* expiration */ 2026, 11, 31)
+    GregorianCalendar(2030, Calendar.JANUARY, 1).time // replace with a managed release expiry
 )
 val engine = builder.build()
 ```
 
+Cronet requires a `Date` expiration and a `Set<ByteArray>` of SHA-256 SPKI hashes; monitor that date before shipping. See [CronetEngine.Builder.addPublicKeyPins](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/CronetEngine.Builder#addPublicKeyPins(java.lang.String,%20java.util.Set%3Cbyte%5B%5D%3E,%20boolean,%20java.util.Date)).
+
 ### WebView
 
-WebView doesn't honor Network Security Config for its internal HTTPS traffic. Override `shouldInterceptRequest` or `onReceivedSslError`, but the better answer is: don't load sensitive content in WebView. If you must, pre-validate the URL is yours, and trust the OS root store only for `https://` content rendered inside.
+WebView behavior depends on Android and target SDK versions. Test that the app's Network Security Config applies to the hosts and content your WebView loads. Do not override `onReceivedSslError` to proceed past certificate failures; validate allowed URLs and keep sensitive content on HTTPS.
 
 ---
 
@@ -234,14 +241,14 @@ WebView doesn't honor Network Security Config for its internal HTTPS traffic. Ov
 
 | Pin target | Survives cert reissue? | Survives CA change? | Risk if compromised |
 |---|---|---|---|
-| **Leaf SPKI** | Only with re-key (same key pair on new cert) | No | Need rotation discipline |
+| **Leaf SPKI** | Only if the new cert reuses the same key pair | Yes, if the same key pair is recertified | Need rotation discipline |
 | **Intermediate CA SPKI** | Yes, any new leaf signed by same intermediate | No (rare in practice) | An attacker with that intermediate's key can impersonate you |
-| **Root CA SPKI** | Yes | Only if you change CAs | An attacker with root key can impersonate anyone using that root |
+| **Root CA SPKI** | Yes | No, if the new chain uses a different root | An attacker with root key can impersonate anyone using that root |
 
-**Most pragmatic for mobile**: pin the leaf SPKI **and** the intermediate as a backup. If ops re-keys without warning, the intermediate pin saves you; if ops changes CAs entirely, you have to ship a release anyway.
+Prefer the current leaf SPKI and a separately held backup leaf key that your team controls. An intermediate SPKI pin can keep clients connected through an unexpected leaf-key change, but it also trusts any certificate issued under that intermediate; include one only when that broader trust fits your threat model.
 
 ```xml
-<pin-set expiration="2026-12-31">
+<pin-set>
     <!-- Leaf SPKI (today's server cert) -->
     <pin digest="SHA-256">7HIpactkIAq2Y49orFOOQKurWxmmSFZhBCoQYcRhJ3Y=</pin>
     <!-- Next leaf SPKI (offline-held, will rotate to) -->
@@ -273,12 +280,14 @@ Verify the release build still pins:
 # Build release APK
 ./gradlew assembleRelease
 
-# Decode network security config to confirm debug-overrides removed
+# Inspect the packaged config and verify the release manifest is not debuggable
 aapt2 dump xmltree app/build/outputs/apk/release/app-release.apk \
     --file res/xml/network_security_config.xml
+aapt2 dump xmltree app/build/outputs/apk/release/app-release.apk \
+    --file AndroidManifest.xml
 ```
 
-The release-build dump should NOT contain `<debug-overrides>`.
+`<debug-overrides>` remains in the packaged XML, but Android [ignores it when `android:debuggable` is false](https://developer.android.com/privacy-and-security/security-config#debug-overrides). Confirm the release manifest is not debuggable. To test the pin itself, use a release build against an otherwise trusted certificate chain with a different SPKI; a user-CA proxy rejected by normal trust settings alone does not prove the pin is enforced.
 
 ---
 
@@ -306,18 +315,18 @@ class PinFailureInterceptor(...) : Interceptor {
 
 Dashboards to maintain:
 - Pin failure rate per host per app version. Spike = ops rotated without your knowing OR an active MITM in some user's environment.
-- Days until pin expiry per release. Alert at 90, 60, 30 days.
+- For releases with an explicit pin expiry, days until pinning turns off. Alert at 90, 60, and 30 days; monitor rotation for releases without an expiry too.
 - TLS handshake error breakdown (`SSLPeerUnverifiedException` vs `SSLHandshakeException` vs `CertificateException`).
 
 ---
 
 ## 11. Common Pitfalls
 
-- **Only one pin.** A single misstep (cert rotation, lost key) bricks the entire fleet permanently. Always at least two pins.
-- **Pinning the cert hash instead of SPKI.** Cert hash changes on every reissue, even with the same key. SPKI survives re-keys.
-- **Forgetting `expiration`.** Network Security Config ignores expired pin sets, falling back to OS trust — silent loss of pinning. Pick a date and rotate before.
+- **Only one pin.** A certificate or key rotation can cut installed clients off from the pinned host until they receive an updated app. Maintain an independently controlled backup pin.
+- **Pinning the cert hash instead of SPKI.** A certificate hash changes on reissue even when the key pair stays the same. An SPKI pin survives reissue with the same key pair, but a new key pair needs a new pin.
+- **Unmanaged `expiration`.** On that date, Network Security Config disables the pin set and falls back to normal certificate trust. Omitting the attribute keeps pins active indefinitely; choose this deliberately and maintain backup pins. If you set an expiry, track it per released app version and rotate beforehand.
 - **Pinning third-party domains.** You don't control their cert rotation; they will break you.
-- **Not testing release builds against pinning.** Debug builds bypass via `debug-overrides`; bugs slip into release. Run a release-mode smoke test in CI.
+- **Not testing release builds against pinning.** A debug-only trust anchor can bypass pins when its CA signs the connection; test pin rejection in a non-debuggable release build too.
 - **Failing to handle `SSLPeerUnverifiedException` in the UI.** Show a meaningful "couldn't verify server — possibly a network issue" message, not just a generic network error.
 - **Pin Network Security Config in shared library.** If your app and a library both ship a config, the manifest merge picks one — be explicit about which.
 - **Cleartext exemptions for "debug" still in the release manifest.** `usesCleartextTraffic="true"` for `app-staging.example.com` accidentally shipped to prod.

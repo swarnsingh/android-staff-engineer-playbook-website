@@ -27,7 +27,7 @@ Use this table during code review.
 - **Proto DataStore** (2020) — typed schema via Protobuf, atomic, the only Google-blessed option for "structured settings."
 - **Room** (2017) — official ORM on top of SQLite. Reactive via Flow.
 
-Why three (and the fourth lives on as legacy)? Each addresses a different access pattern. SharedPreferences is being deprecated in spirit, not in API — Google still keeps it for backward compatibility but won't add features.
+Why three (and the fourth remains supported)? Each addresses a different access pattern. Android [recommends DataStore instead of SharedPreferences](https://developer.android.com/training/data-storage/shared-preferences) for new small-data storage, but `SharedPreferences` has not been formally deprecated.
 
 ---
 

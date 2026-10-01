@@ -253,5 +253,5 @@ When auditing the network layer, a Staff engineer focuses on the physical transp
 - [`jank.md`](../android/performance/jank.md) — How large-payload parsing and allocation pressure can contribute to GC work and dropped frames.
 - [`retrofit-and-okhttp.md`](../android/networking-and-security/retrofit-and-okhttp.md) — The Android library responsible for managing the HTTP/2 connection pool.
 - [`push-vs-poll-vs-sse-vs-websockets.md`](push-vs-poll-vs-sse-vs-websockets.md) — Alternative protocols for real-time bidirectional communication.
-- [OkHttp `OkHttpClient`](https://square.github.io/okhttp/5.x/okhttp/okhttp3/-ok-http-client/index.html) — Client reuse and shared resources.
+- [OkHttp `OkHttpClient`](https://lysine.dev/okhttp/5.x/okhttp/okhttp3/-ok-http-client/index.html) — Client reuse and shared resources.
 - [RFC 9000 §9: Connection Migration](https://www.rfc-editor.org/rfc/rfc9000.html#section-9) — QUIC migration requirements and limitations.

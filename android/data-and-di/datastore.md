@@ -2,9 +2,9 @@
 
 ## Overview
 
-`DataStore` is the modern, Coroutine-powered data storage solution that officially replaces `SharedPreferences`. It is designed strictly for small, simple datasets like user settings, onboarding flags, or authentication tokens.
+`DataStore` is a modern, coroutine-powered storage solution that Android recommends instead of `SharedPreferences` for small datasets such as user settings and onboarding flags. `SharedPreferences` remains a supported API; it has not been deprecated.
 
-A Staff Engineer must understand exactly *why* `SharedPreferences` was deprecated. `SharedPreferences` was a notorious source of Application Not Responding (ANR) crashes due to its synchronous, blocking disk I/O. `DataStore` solves this by forcing all operations to be asynchronous via Kotlin `Flow` and `suspend` functions.
+A Staff Engineer should understand *why* Android recommends migrating from `SharedPreferences`: its synchronous access and pending writes can block the main thread and contribute to Application Not Responding (ANR) errors. `DataStore` exposes reads through Kotlin `Flow` and writes through `suspend` functions, making asynchronous access easier to build into the architecture. See the [SharedPreferences guide](https://developer.android.com/training/data-storage/shared-preferences) and [DataStore guide](https://developer.android.com/topic/libraries/architecture/datastore).
 
 ## Why It Matters
 
@@ -12,7 +12,7 @@ In older Android architectures, developers frequently called `sharedPreferences.
 
 While reading from memory is fast, reading from a physical flash storage drive takes milliseconds. If the OS was under heavy load, reading `SharedPreferences` could block the Main Thread long enough to trigger an ANR. Writing to `SharedPreferences` via `.apply()` also caused hidden blocking issues during Activity `onStop()`, leading to mysterious background crashes.
 
-`DataStore` makes it mathematically impossible to block the Main Thread.
+`DataStore` performs its own disk operations asynchronously, but callers can still block the main thread by wrapping a read in `runBlocking` (see the failure mode below).
 
 ## Historical Context
 

@@ -125,7 +125,7 @@ interface MusicDao {
     - *Pros:* Kotlin Multiplatform (KMP) natively supported. You write pure `.sq` files and it generates Kotlin code, rather than writing Kotlin and generating SQL.
     - *Cons:* Requires learning the SQLDelight specific syntax/plugin. Less tutorial material compared to Room.
 
-*Staff Note:* As of late 2023, Room introduced Kotlin Multiplatform (KMP) support, effectively removing SQLDelight's main competitive advantage for many teams.
+*Staff Note:* Room first introduced Kotlin Multiplatform (KMP) support in the [2.7.0-alpha01 release on May 1, 2024](https://developer.android.com/jetpack/androidx/releases/room#2.7.0-alpha01); it reached a stable 2.7.0 release in April 2025. Teams can now evaluate Room alongside SQLDelight for shared persistence, weighing each library's platform support, APIs, and migration needs.
 
 ## Failure Modes
 

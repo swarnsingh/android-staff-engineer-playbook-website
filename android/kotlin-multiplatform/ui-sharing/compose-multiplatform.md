@@ -6,13 +6,15 @@
 
 ## Current Baseline
 
-As of Compose Multiplatform 1.11.1:
+As of Compose Multiplatform 1.12.1:
 
 - Android and iOS are supported from Android 5.0 (API 21) and iOS 14 respectively.
 - Compose Multiplatform uses Jetpack Compose artifacts published by Google on Android and JetBrains-maintained implementations for other targets.
 - The current line uses the K2 compiler and requires the Compose Compiler Gradle plugin to match the Kotlin plugin version.
 - iOS support is stable. Web support has a different maturity and compatibility envelope, so do not infer web readiness from mobile readiness.
 - Navigation, Lifecycle, ViewModel, resources, accessibility, and UI testing have multiplatform implementations, but some Android APIs remain Android-only.
+
+The iOS 14 entry above is Compose Multiplatform's framework minimum, not the default deployment target of every Kotlin toolchain. Kotlin 2.4.0 raised Kotlin/Native's default iOS minimum to 15.0. If the product must run on iOS 14, explicitly [override the Kotlin/Native minimum](https://kotlinlang.org/docs/native-target-support.html#supporting-lower-apple-target-versions) (for example, `-Xoverride-konan-properties=minVersion.ios=14.0` for the relevant native binaries), set the iOS app's deployment target consistently, and verify the complete dependency set and release build on iOS 14. Without that configuration, plan for iOS 15 or later even though Compose Multiplatform itself supports iOS 14.
 
 Treat these as versioned facts. Pin the Kotlin, Compose Multiplatform, Android Gradle Plugin, Gradle, Xcode, and library versions validated by CI rather than copying the newest coordinates into a production branch without a compatibility check.
 
@@ -329,6 +331,7 @@ Automatic mapping is the foundation. Real completion requires correct semantics,
 ## Official Sources and Further Reading
 
 - [Compose Multiplatform compatibility and supported platforms](https://kotlinlang.org/docs/multiplatform/compose-compatibility-and-versioning.html)
+- [Kotlin/Native minimum Apple target versions and overrides](https://kotlinlang.org/docs/native-target-support.html#supporting-lower-apple-target-versions)
 - [Relationship between Compose Multiplatform and Jetpack Compose](https://kotlinlang.org/docs/multiplatform/compose-multiplatform-and-jetpack-compose.html)
 - [Navigation in Compose Multiplatform](https://kotlinlang.org/docs/multiplatform/compose-navigation.html)
 - [Compose and SwiftUI integration](https://kotlinlang.org/docs/multiplatform/compose-swiftui-integration.html)

@@ -23,9 +23,9 @@ The API everyone gets wrong is **`ViewCompositionStrategy`** — *when the compo
 | `DisposeOnDetachedFromWindowOrReleasedFromPool` (default) | `ComposeView` in a plain View hierarchy or `RecyclerView` — pooling-aware |
 | `DisposeOnViewTreeLifecycleDestroyed` | Fragments (lifecycle not known at construction) — the standard fragment choice |
 | `DisposeOnLifecycleDestroyed` | You hold a known `Lifecycle` explicitly |
-| `DisposeOnDetachedFromWindow` | Deprecated — superseded by the pool-aware default |
+| `DisposeOnDetachedFromWindow` | Still available but superseded by the pool-aware default; use only when disposal on every detach is intentional |
 
-The classic bug: the default strategy inside a fragment disposes composition on every detach while the fragment view survives, silently resetting `remember {}` state. In fragments, set `DisposeOnViewTreeLifecycleDestroyed`. And when a layout hosts multiple `ComposeView`s, each needs a unique `android:id` for `savedInstanceState` restoration to work.
+The classic bug: the default strategy inside a fragment disposes composition on every detach while the fragment view survives, silently resetting `remember {}` state. In fragments, set `DisposeOnViewTreeLifecycleDestroyed`. And when a layout hosts multiple `ComposeView`s, each needs a unique `android:id` for `savedInstanceState` restoration to work. Android's [Compose in Views guide](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views) describes the older strategy as *superseded*, not deprecated.
 
 ## 2. Views in Compose: `AndroidView`
 

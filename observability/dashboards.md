@@ -174,4 +174,4 @@ Mobile-distinct dashboarding principles:
 
 - [`alerting.md`](alerting.md) — The system that drives humans to look at the dashboard.
 - [`metrics.md`](metrics.md) — The raw numerical data that powers the graphs.
-- [The RED Method (Weaveworks)](https://www.weave.works/blog/the-red-method-key-metrics-for-microservices-architecture/)
+- [Grafana dashboard best practices: RED method](https://grafana.com/docs/grafana/latest/visualizations/dashboards/build-dashboards/best-practices/)

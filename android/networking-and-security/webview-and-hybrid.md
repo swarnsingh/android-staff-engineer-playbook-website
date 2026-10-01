@@ -2,14 +2,14 @@
 
 ## Overview
 
-Every large Android app embeds web content somewhere: help centers, promotional pages, 3-D Secure payment challenges, OAuth consent screens, embedded checkout, legal documents, hybrid features that iterate faster than releases. The component underneath all of it is **WebView** — a Chromium-based rendering engine running inside your process, updated independently of your app through Play.
+Many large Android apps embed web content somewhere: help centers, promotional pages, 3-D Secure payment challenges, embedded checkout, legal documents, and hybrid features that iterate faster than releases. **WebView** is one way to render these surfaces. Native OAuth authorization requests belong in an external user agent such as a browser or Custom Tab, as required by [RFC 8252](https://www.rfc-editor.org/rfc/rfc8252).
 
 WebView sits at an awkward intersection: it is simultaneously a UI widget, a browser with your app's permissions, and a bridge between two trust domains (your native code and whatever the web content does). Treating it as "just a view that shows URLs" is how apps ship cross-site-scripting-shaped holes into production.
 
 ## Why It Matters
 
 - **It's a browser inside your security boundary.** Content rendered in a WebView executes JavaScript inside your app's process. A JavaScript bridge exposed to the wrong page hands that page a native API surface with your app's identity and permissions.
-- **Payments and auth flow through it.** 3-DS challenges and OAuth redirects are WebView flows in most apps; getting cookie, redirect, and TLS-error handling wrong breaks revenue or leaks tokens.
+- **Payment challenges may flow through it.** A 3-DS challenge may require WebView cookie and redirect handling; mistakes can break checkout or expose sensitive data. Native OAuth authorization uses an external browser context and returns to the app through a registered redirect URI.
 - **It's the fastest hybrid escape hatch** — and the easiest to over-use. Staff engineers need a principled answer for *which* surfaces belong in web content and which never should.
 - **It ships separately from your app.** WebView updates through Play as its own package; the engine version under your feature changes without your release train's involvement.
 
@@ -100,7 +100,7 @@ Allowlist, don't blocklist — and gate every native side effect on `request.isF
 |---|---|---|
 | Help center, legal, blog content | WebView (or Custom Tabs) | High churn, low interactivity, no bridge needed |
 | 3-DS / PSD2 payment challenge | WebView, isolated | Bank-controlled content; needs cookies + redirect capture; no bridge |
-| OAuth to third parties | **Custom Tabs, not WebView** | Providers block embedded webviews for phishing reasons; Custom Tabs shares the browser's session safely |
+| OAuth authorization in native apps | **External browser or Custom Tab, not WebView** | [RFC 8252](https://www.rfc-editor.org/rfc/rfc8252) requires an external user agent; it keeps credentials and browser session state outside the app's WebView |
 | Checkout / high-iteration commerce flows | Hybrid with message-channel bridge | Iteration speed matters; scope the bridge per-origin |
 | Core navigation, feeds, camera/media surfaces | Native | Perf, gestures, offline, a11y — WebView tax too high |
 | Anything needing native capability exposure | Native or SDUI first | Every bridged capability is permanent API surface ([`../../mobile-system-design/server-driven-ui.md`](../../mobile-system-design/server-driven-ui.md) is often the better dynamism tool) |
@@ -121,7 +121,7 @@ The pattern across all three: WebView flows fail at the *edges* (cookies, redire
 
 - **Iteration speed vs capability tax:** web content deploys same-day but pays for it in gesture fidelity, startup cost (~100ms+ first-WebView-in-process init), memory (a renderer process), and a11y that must be correct in *two* stacks (TalkBack ↔ page semantics).
 - **WebView vs Custom Tabs:** Custom Tabs gives you the user's real browser (their sessions, their password manager, Safe Browsing UI) and takes away your bridge and your chrome. Default to Custom Tabs for third-party content; reserve WebView for content you need to *integrate*, not just display.
-- **One shared WebView vs per-feature instances:** sharing amortizes init cost but couples cookie/session state across features; per-flow instances isolate state but re-pay startup. Payments and auth get isolated instances; content browsing can share.
+- **One shared WebView vs per-feature instances:** sharing amortizes init cost but couples cookie/session state across features; per-flow instances isolate state but re-pay startup. Payment challenges can use a dedicated instance; OAuth authorization runs in an external user agent.
 
 ## Failure Modes
 
@@ -142,7 +142,7 @@ The pattern across all three: WebView flows fail at the *edges* (cookies, redire
 
 - **"It's our own page, so the bridge is safe."** Your page today; an open redirect, subdomain takeover, or compromised CDN tomorrow. Origin-scope the bridge anyway.
 - **"`shouldOverrideUrlLoading` sees all navigation."** It doesn't — POST requests never reach it, and XHR/resource loads go through `shouldInterceptRequest`. Meanwhile it *can* fire for subframes, so unguarded handlers turn iframes into native-side-effect triggers. Treat it as UX routing with an `isForMainFrame` gate, not a security boundary.
-- **"WebView is dying; everything is native/Compose now."** Payments (3-DS), OAuth pages, embedded commerce, and content surfaces keep WebView load-bearing in essentially every top-100 app. The skill isn't avoiding it; it's containing it.
+- **"WebView is dying; everything is native/Compose now."** Payment challenges (3-DS), embedded commerce, and content surfaces still create WebView use cases. The skill is to contain its trust boundary and route OAuth authorization through an external user agent.
 - **"Custom Tabs and WebView are interchangeable."** They differ in exactly the dimension that matters: whose session state and whose security UI the user gets.
 
 ## Probing Questions
@@ -174,6 +174,7 @@ The pattern across all three: WebView flows fail at the *edges* (cookies, redire
 - [WebView — native bridges risk](https://developer.android.com/privacy-and-security/risks/insecure-webview-native-bridges) — official guidance on `addJavascriptInterface` and message listeners.
 - [WebView — unsafe file inclusion](https://developer.android.com/privacy-and-security/risks/webview-unsafe-file-inclusion) — why the file-access flags are deprecated; `WebViewAssetLoader`.
 - [Build web apps in WebView](https://developer.android.com/develop/ui/views/layout/webapps/webview) — platform documentation.
+- [OAuth 2.0 for Native Apps (RFC 8252)](https://www.rfc-editor.org/rfc/rfc8252) — external user-agent requirement for authorization requests.
 - [`WebViewAssetLoader`](https://developer.android.com/reference/androidx/webkit/WebViewAssetLoader) / [`WebViewCompat.WebMessageListener`](https://developer.android.com/reference/androidx/webkit/WebViewCompat.WebMessageListener) — the two androidx.webkit APIs this file leans on.
 - [`security-and-keystore.md`](security-and-keystore.md) — the broader app trust model this plugs into.
 - [`../../mobile-system-design/payment-flow.md`](../../mobile-system-design/payment-flow.md) — where the 3-DS flow fits in checkout.
