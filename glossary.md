@@ -8,7 +8,7 @@ A centralized dictionary for terms used across the `android-staff-engineer-playb
 
 ### 0-9
 
-- **16 KB Page Size:** The larger memory-page configuration on modern ARM64 Android devices. Since November 2025, Google Play requires apps targeting Android 15+ to ship 16 KB-compatible native libraries (ELF segments aligned to 2^14). See [`release-engineering/16kb-page-sizes.md`](release-engineering/16kb-page-sizes.md).
+- **16 KB Page Size:** A memory-page configuration used by some 64-bit Android devices. Apps with native libraries may need 16 KB-aligned ELF segments and APK packaging. See [`release-engineering/16kb-page-sizes.md`](release-engineering/16kb-page-sizes.md) for the current Google Play policy and deadline.
 
 ### A-C
 

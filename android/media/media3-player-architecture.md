@@ -1,6 +1,6 @@
 # Media3 & ExoPlayer: Player Architecture
 
-Media playback is one of the few Android subsystems where a staff engineer routinely designs a *platform within the app*: one player stack shared by feed autoplay, full-screen playback, picture-in-picture, background audio, and offline downloads. Media3 (the successor packaging of ExoPlayer under `androidx.media3`, current stable 1.10.x as of mid-2026) is the assumed substrate; the interview and the production questions are about how you compose its pieces and what you own around them.
+Media playback is one of the few Android subsystems where a staff engineer routinely designs a *platform within the app*: one player stack shared by feed autoplay, full-screen playback, picture-in-picture, background audio, and offline downloads. Media3 (the successor packaging of ExoPlayer under `androidx.media3`, [stable 1.11.1 in the current release notes](https://developer.android.com/jetpack/androidx/releases/media3)) is the assumed substrate; the interview and the production questions are about how you compose its pieces and what you own around them.
 
 ## 1. The Component Model
 

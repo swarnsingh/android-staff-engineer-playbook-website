@@ -1,10 +1,10 @@
 # 16 KB Page Sizes: The Native-Code Compliance Gate
 
-Since **November 1, 2025**, Google Play requires that all new apps and updates targeting Android 15 (API 35) or higher support devices with 16 KB memory pages. This composes with the target-API policy — new apps and updates must target API 35+ already, and **API 36+ from August 31, 2026** (extension available to November 1, 2026) — so for any actively shipped app, 16 KB support is not optional. It belongs in release engineering because the failure mode is a *blocked release*: a single misaligned `.so` from a transitive SDK stops your submission.
+Google Play's [current 16 KB compatibility policy](https://developer.android.com/guide/practices/page-sizes#google-play-compatibility-requirement) applies to apps targeting Android 15 (API 35) or higher on 64-bit devices. Starting **February 1, 2027**, Play will block updates that do not support 16 KB memory pages. The earlier November 1, 2025 deadline was superseded. The separate target-API policy has required API 36+ for most new apps and updates since August 31, 2026 (with form-factor exceptions and an extension to November 1, 2026). Treat 16 KB support as release work now: a misaligned `.so` from a transitive SDK can prevent a future submission and can fail on devices already using 16 KB pages.
 
 ## 1. Why the platform moved
 
-ARM64 kernels can use 4 KB or 16 KB pages. Larger pages mean fewer TLB misses and less page-table overhead as devices grow RAM: Google measured ~3% faster average app launch (up to 30% for some apps), ~4.5% lower power draw during launch, and ~8% faster boot on 16 KB configurations. Manufacturers are shipping 16 KB devices, so Play now enforces compatibility at submission time.
+ARM64 kernels can use 4 KB or 16 KB pages. Larger pages mean fewer TLB misses and less page-table overhead as devices grow RAM: Google measured ~3% faster average app launch (up to 30% for some apps), ~4.5% lower power draw during launch, and ~8% faster boot on 16 KB configurations. Manufacturers are shipping 16 KB devices, and Play's update-submission block begins February 1, 2027.
 
 ## 2. Who is affected
 
@@ -40,7 +40,7 @@ Toolchain versions that make this automatic:
 | NDK ≤ r27 | manual | Add both `-Wl,-z,max-page-size=16384` and `-Wl,-z,common-page-size=16384` to linker flags |
 | AGP ≤ 8.5 | escape hatch | `jniLibs.useLegacyPackaging = true` (compressed libs; bigger installed size — a last resort) |
 
-Prebuilt third-party `.so` files ignore your toolchain: they were linked wherever the vendor built them. Those you can only *detect* and demand updates for. Managing these 16KB `.so` migrations is often the longest pole in the tent: platform engineers must audit all transitives and replace or escalate non-compliant vendor prebuilts. The November 1, 2025 API 35 enforcement deadline has passed, so 16KB alignment is an active Play submission requirement rather than future migration work.
+Prebuilt third-party `.so` files ignore your toolchain: they were linked wherever the vendor built them. Those you can only *detect* and demand updates for. Managing these 16KB `.so` migrations is often the longest pole in the tent: platform engineers must audit all transitives and replace or escalate non-compliant vendor prebuilts. Use the time before the February 1, 2027 update-submission block to replace incompatible vendor prebuilts and test on 16 KB devices.
 
 ## 4. Runtime assumptions (the subtle class)
 
@@ -82,7 +82,7 @@ This slots next to your existing [AAB size gates](app-bundles.md) in the release
 
 ## 7. Backcompat mode — and why not to rely on it
 
-Devices can run a 4 KB-aligned app on a 16 KB kernel in a compatibility mode, but it shows users a warning dialog on first launch, and **Android 17 can treat incompatible binaries as fatal** (`bionic.linker.16kb.app_compat.enabled fatal`). Play submission enforcement plus a user-visible warning plus a future hard failure means backcompat mode is a grace period, not a strategy. The `android:pageSizeCompat` manifest attribute only suppresses the warning; it doesn't fix the binaries.
+Devices can run a 4 KB-aligned app on a 16 KB kernel in a compatibility mode, but it shows users a warning dialog on first launch, and **Android 17 can treat incompatible binaries as fatal** (`bionic.linker.16kb.app_compat.enabled fatal`). The announced Play update-submission block, a user-visible warning, and a possible hard failure mean backcompat mode is a grace period, not a strategy. The `android:pageSizeCompat` manifest attribute only suppresses the warning; it doesn't fix the binaries.
 
 ## 8. The staff-level rollout playbook
 
@@ -98,4 +98,4 @@ The general lesson: Play compliance deadlines (target API, 16 KB, billing librar
 
 - [Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes) — the canonical guide: detection, fixes, testing
 - [Prepare your apps for Google Play's 16 KB requirement](https://android-developers.googleblog.com/2025/05/prepare-play-apps-for-devices-with-16kb-page-size.html) — the policy announcement
-- [Google Play target API level requirement](https://developer.android.com/google/play/requirements/target-sdk) — the composing deadline (API 36 from August 31, 2026)
+- [Google Play target API level requirement](https://developer.android.com/google/play/requirements/target-sdk) — API 36 from August 31, 2026 for most new apps and updates, with form-factor exceptions
