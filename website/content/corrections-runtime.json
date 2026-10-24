@@ -1,0 +1,403 @@
+[
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "Java callers see only the main `connect(String, int, boolean)` — no defaults.",
+    "new": "Java source callers use the main `connect(String, int, boolean)` — they cannot invoke the synthetic default-argument helper as an ordinary Java method.",
+    "reason": "Distinguish synthetic bytecode members from the Java source API.",
+    "sources": [
+      "https://kotlinlang.org/docs/java-to-kotlin-interop.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "`@JvmOverloads` only generates overloads for trailing parameters — Java still can't skip middle arguments.",
+    "new": "`@JvmOverloads` generates overloads by dropping defaulted parameters from right to left, retaining required parameters. For example, `(a: Int = 1, required: String, b: Int = 2)` also gets `(Int, String)` and `(String)` overloads. Java selects an overload; it does not gain Kotlin named arguments.",
+    "reason": "Kotlin 2.2.21 javap confirms overload generation can drop a defaulted parameter before a required one.",
+    "sources": [
+      "https://kotlinlang.org/docs/java-to-kotlin-interop.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "| sealed class | abstract class with package-private constructor | extendable only from same package — Java can extend, but Kotlin won't recognize new subtypes in `when` |",
+    "new": "| sealed class | abstract class with restricted construction; JVM 17 targets can also emit permitted-subclass metadata | Java cannot freely add direct subclasses; use an open interface for an intentionally extensible API |",
+    "reason": "Same-package Java subclass of a compiled Kotlin sealed class failed: constructor is private.",
+    "sources": [
+      "https://kotlinlang.org/docs/sealed-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "When you write `internal fun greet()`, Kotlin compiles it as `public` bytecode but **mangles the name** to include the module name:",
+    "new": "Internal declarations are normally public in JVM bytecode. Internal **member functions** commonly receive module-name mangling; a top-level internal function does not necessarily receive it:",
+    "reason": "Kotlin 2.2.21 javap: top-level greet(String), member greet$audit(String).",
+    "sources": [
+      "https://kotlinlang.org/docs/java-to-kotlin-interop.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "In bytecode: `public static String greet$mymodule_debug(String name)`.\n\nFrom Kotlin in the same module, you write `greet(\"Ana\")`. From any other Kotlin module or from Java, the function is invisible *by convention* (the IDE hides it), but callable *by name*. A determined Java caller can invoke `UtilKt.greet$mymodule_debug(\"Ana\")`. `internal` is **compiler-enforced encapsulation**, not a runtime security boundary.",
+    "new": "For this top-level example, the JVM method can be `public static String greet(String name)` on the generated file class. An internal member can instead appear as `greet$moduleName`. Kotlin enforces module visibility using metadata; Java can access public bytecode members. `internal` is encapsulation for Kotlin compilation, not a runtime security boundary.",
+    "reason": "Do not teach universal internal-name mangling or claim external Kotlin modules access internal APIs merely by knowing a JVM name.",
+    "sources": [
+      "https://kotlinlang.org/docs/java-to-kotlin-interop.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "If you treat it as `String` and the Java method returns null at runtime, you get a `NullPointerException` (or more precisely, an `IllegalStateException` from the intrinsics null check) at the point you assigned it to a non-null variable.",
+    "new": "If you assign it to an explicitly non-null `String` and Java returns null, modern Kotlin inserts an expression-value null check that throws `NullPointerException` at that boundary. Older compiler/runtime combinations can differ; do not infer the exception type from historical intrinsics implementations.",
+    "reason": "Modern checkNotNullExpressionValue throws NPE, not the claimed more-precise IllegalStateException.",
+    "sources": [
+      "https://kotlinlang.org/docs/java-interop.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "// In a Kotlin function returning a Box, the Java signature shows wildcards:\nfun makeBoxes(): List<Box<Number>>\n// Java sees: List<? extends Box<? extends Number>>",
+    "new": "// Return positions normally suppress declaration-site wildcards:\nfun makeBoxes(): List<Box<Number>> = emptyList()\n// Java sees: List<Box<Number>>\n// Parameter positions can introduce wildcards; inspect the signature\n// before applying @JvmWildcard or @JvmSuppressWildcards.",
+    "reason": "Compiled example returns List<Box<Number>>, with no extends wildcards.",
+    "sources": [
+      "https://kotlinlang.org/docs/java-to-kotlin-interop.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "Telemetry.event(\"user_signed_in\");\nTelemetry.event(\"checkout\", Map.of(\"amount\", 99.99));\nboolean ok = Telemetry.flush();\nString v = Telemetry.SDK_VERSION;",
+    "new": "TelemetryClient.event(\"user_signed_in\");\nTelemetryClient.event(\"checkout\", Map.of(\"amount\", 99.99));\nboolean ok = TelemetryClient.flush();\nString v = TelemetryClient.SDK_VERSION;",
+    "reason": "@file:JvmName changes the facade for top-level declarations; it does not move object members onto Telemetry.",
+    "sources": [
+      "https://kotlinlang.org/docs/java-to-kotlin-interop.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "TelemetryKt.TelemetryClient.INSTANCE.event(\"user_signed_in\", Collections.emptyMap());\nboolean ok = TelemetryKt.TelemetryClient.INSTANCE.flush();\nString v = TelemetryKt.TelemetryClient.INSTANCE.SDK_VERSION;  // would actually be getSDK_VERSION()",
+    "new": "TelemetryClient.INSTANCE.event(\"user_signed_in\", Collections.emptyMap());\nboolean ok = TelemetryClient.INSTANCE.flush();\nString v = TelemetryClient.INSTANCE.getSDK_VERSION();",
+    "reason": "Named object class is top-level, not nested under the file facade; ordinary property uses its getter.",
+    "sources": [
+      "https://kotlinlang.org/docs/java-to-kotlin-interop.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "val tag = view.tag                                   // type is Any! — view.getTag() returns Object with no annotation",
+    "new": "val tag = view.tag                                   // nullable/platform type depends on SDK annotations",
+    "reason": "The tag API annotation depends on SDK stubs; avoid universally asserting unannotated Any!.",
+    "sources": [
+      "https://developer.android.com/reference/android/view/View#getTag()"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "`view.getTag()` returns `Object` from Java with no `@Nullable` or `@NonNull` annotation, so Kotlin types it as `Any!`. Treating the result as non-null without checking will crash if the tag wasn't set.",
+    "new": "`view.getTag()` can return null when no tag is set. Modern SDK annotations can expose it as nullable; unannotated stubs expose a platform type. Check the value rather than assuming a tag exists.",
+    "reason": "Preserve the boundary lesson without depending on absent annotations.",
+    "sources": [
+      "https://developer.android.com/reference/android/view/View#getTag()"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "// CRASHES at runtime if tag is null:\nval tagStr: String = view.tag.toString()       // .toString() on Any! is fine, but if you assign to non-null String and tag is null...",
+    "new": "// Kotlin nullable-toString is safe and returns the text \"null\":\nval tagStr: String = view.tag.toString()\n// If a String tag is required, validate that contract explicitly:\nval requiredTag: String = requireNotNull(view.tag as? String)",
+    "reason": "Local Kotlin null Any?.toString() prints \"null\"; the claimed crash is false.",
+    "sources": [
+      "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/to-string.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "ImageLoader.with(context).load(\"https://...\", R.drawable.custom_placeholder, result -> { ... });",
+    "new": "ImageLoader.with(context).load(\"https://...\", R.drawable.custom_placeholder, result -> {\n    // Handle result, then return Kotlin Unit for Function1.\n    return kotlin.Unit.INSTANCE;\n});",
+    "reason": "Java lambda for Kotlin Function1<T, Unit> must return Unit; a void-style body is not sufficient.",
+    "sources": [
+      "https://kotlinlang.org/docs/java-interop.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "Lambda parameter (`((Result<Bitmap>) -> Unit)?`) compiles to a `Function1<Result<Bitmap>, Unit>` interface — Java callers can pass `null` or a lambda (Java 8+ SAM conversion handles function types automatically).",
+    "new": "The callback becomes a Kotlin `Function1` at the JVM boundary; a Java lambda must return `Unit.INSTANCE`. `Result` also has value-class interop details, so a Java-facing callback interface with a domain success/error type is often clearer than exposing `Result` directly.",
+    "reason": "Clarify Java return contract and Result ABI rather than promise effortless Java SAM ergonomics.",
+    "sources": [
+      "https://kotlinlang.org/docs/java-to-kotlin-interop.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "**Default-argument call from Java.** A library author adds a new default parameter; Java callers' code doesn't break, but the parameter is now mandatory for Java. Mitigation: add `@JvmOverloads` to public Kotlin APIs that take default arguments.",
+    "new": "**Default-argument call from Java.** Adding a defaulted parameter changes the JVM method descriptor and can break existing Java source and compiled callers. `@JvmOverloads` can preserve matching older overloads in suitable cases; inspect the generated ABI and run compatibility checks rather than assuming every defaulted-parameter change is compatible.",
+    "reason": "Adding a parameter changes descriptor; original claim that Java source does not break contradicts mandatory parameter.",
+    "sources": [
+      "https://kotlinlang.org/docs/java-to-kotlin-interop.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "**Sealed class extension from Java.** Java can extend a Kotlin sealed class within the same package, but the Kotlin compiler then doesn't know about the new subtype. `when` becomes non-exhaustive at runtime. Mitigation: don't expose sealed classes for cross-language inheritance; use closed `interface` for cross-language and `sealed` only for Kotlin internals.",
+    "new": "**Sealed hierarchy at the Java boundary.** Java cannot freely extend a compiled Kotlin sealed class: constructors restrict construction, and JVM 17 targets can encode permitted subclasses. Older JVM targets cannot enforce a Kotlin sealed interface with the same JVM mechanism. Use an ordinary interface when third-party implementations are intended, and test the actual target/ABI when relying on closed-world exhaustiveness.",
+    "reason": "Same-package Java subclass experiment failed; interface enforcement depends on target.",
+    "sources": [
+      "https://kotlinlang.org/docs/sealed-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "**Watch for sealed-class interop gotchas.** If a sealed class is part of your public API and Java extends it (legally, within the same package), runtime `when` exhaustiveness assumptions break. Either keep sealed types fully internal or use `interface` for cross-language extensibility.",
+    "new": "**Watch sealed hierarchy target compatibility.** Keep intended direct subclasses in the supported closed hierarchy. A public sealed API is valid, but it promises a closed set, not arbitrary same-package Java extension. Use an ordinary interface if external Java implementations are part of the API contract.",
+    "reason": "Remove repeated false legal-Java-extension assertion while preserving extensibility guidance.",
+    "sources": [
+      "https://kotlinlang.org/docs/sealed-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "**Java callers can't take advantage of `value class`.** Inline value classes box back to their underlying type when crossing into Java, losing the type-safety benefit at the interop boundary.",
+    "new": "**Value-class Java APIs need design.** Default lowering commonly exposes an unboxed underlying value through a mangled method, which ordinary Java source cannot conveniently call. Generic or interface uses can box the value class. Current Kotlin offers experimental `@JvmExposeBoxed` / `-Xjvm-expose-boxed` to generate Java-callable boxed APIs; choose and test the contract explicitly.",
+    "reason": "Unboxed/boxed terminology was reversed and current Java boxed exposure was omitted.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-classes.html",
+      "https://kotlinlang.org/docs/java-to-kotlin-interop.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "**Be wary of `companion object` factories returning sensitive resources.** They survive across the entire process; if they hold a network connection or unencrypted token, it persists.",
+    "new": "**Give factory-created resources explicit owners.** The companion object is long-lived, but merely returning a connection or token does not retain it. Retention depends on references stored by the companion or callers; define closing, clearing, and credential-storage policies at those owners.",
+    "reason": "Factory return value lifetime does not inherit factory lifetime.",
+    "sources": [
+      "https://developer.android.com/topic/performance/memory-overview"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "**\"Kotlin's `data class` is the same as Java records.\"** Similar but not identical. `data class` predates records (Java 14+) and has methods (`copy`, `componentN`) records don't. Records' canonical constructor is final; `data class` allows mutable `var` properties.",
+    "new": "**\"Kotlin's `data class` is the same as Java records.\"** Similar, but data classes provide `copy` and `componentN` and can declare mutable `var` properties. Java records became final in Java 16 (previewed in 14/15); record classes are final and their component fields are final. Constructors are not described as final methods.",
+    "reason": "Constructors cannot carry final; record stabilization version was unspecified.",
+    "sources": [
+      "https://docs.oracle.com/en/java/javase/21/language/records.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop.md",
+    "old": "The JVM has no concept of a \"module,\" so Kotlin compiles `internal` methods as `public` (to allow access from other packages within the same module) but mangles their names (e.g., `foo$module_name`) to discourage accidental use. Reflection ignores compiler visibility rules and sees the raw `public` method.",
+    "new": "Kotlin module visibility differs from JVM visibility and Java modules. Internal members are normally public in bytecode, with member-name mangling in common cases; top-level internal functions need not be mangled. Reflection can discover those public members without respecting Kotlin source visibility.",
+    "reason": "Answer key must agree with verified top-level/member mangling distinction.",
+    "sources": [
+      "https://kotlinlang.org/docs/java-to-kotlin-interop.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/bytecode.md",
+    "old": "javap -c -p Foo.jar FooKt",
+    "new": "javap -c -p -classpath Foo.jar FooKt",
+    "reason": "Original command passes a jar as a class name instead of a classpath.",
+    "sources": [
+      "https://docs.oracle.com/en/java/javase/21/docs/specs/man/javap.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/bytecode.md",
+    "old": "Generates 4 free methods. Look at `equals`:",
+    "new": "Generates accessors, `component1` / `component2`, `copy` (plus its default-argument helper), `equals`, `hashCode`, and `toString` for this two-property data class. Look at `equals`:",
+    "reason": "Generated method count is not four; preserve each generated-method concept.",
+    "sources": [
+      "https://kotlinlang.org/docs/data-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/bytecode.md",
+    "old": "Every `val` in the data class produces a field comparison. With 10 fields you'd see 10 such blocks.",
+    "new": "Every primary-constructor property participates in generated equality. Properties declared only in the class body do not. With 10 primary-constructor properties, the comparison includes all 10.",
+    "reason": "Body properties are excluded from generated equals/hashCode.",
+    "sources": [
+      "https://kotlinlang.org/docs/data-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/bytecode.md",
+    "old": "Without `inline`, the bytecode for `calc()` constructs a `Function2` object. With `inline`, the bytecode for `calc()` directly contains `iconst_5`, `bipush 10`, `iadd`. No object allocation; the lambda evaporated.",
+    "new": "With `inline`, this direct lambda body can be copied into `calc()`, removing the function-object call at that site. Without inlining, the lambda is represented as a function object or an `invokedynamic` lambda depending on compiler settings; this non-capturing lambda can be reused rather than allocated on every call. Inspect the selected compiler target before counting allocations.",
+    "reason": "A noncapturing noninline lambda need not allocate per call; code generation is compiler-option sensitive.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/bytecode.md",
+    "old": "Same bytecode, different encoding. JVM stack-based; DEX register-based.",
+    "new": "DEX uses a different instruction set and file format, not merely a different encoding of JVM instructions. JVM bytecode is stack-based; DEX is register-based.",
+    "reason": "Distinguish format conversion from semantic one-to-one encoding.",
+    "sources": [
+      "https://source.android.com/docs/core/runtime/dalvik-bytecode"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/bytecode.md",
+    "old": "You rarely need DEX. The optimizations you care about happen at JVM bytecode time before D8/R8.",
+    "new": "Use JVM bytecode to inspect Kotlin lowering, then inspect DEX or runtime evidence when investigating D8/R8 transformations or ART performance. Important optimizations also happen during shrinking, DEX generation, and runtime compilation.",
+    "reason": "Original claim excludes R8 and ART optimizations described by the same chapter.",
+    "sources": [
+      "https://developer.android.com/topic/performance/app-optimization/overview"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/bytecode.md",
+    "old": "2. See three calls: `Iterable.map`, `Iterable.filter`, `Iterable.firstOrNull`. Each allocates an intermediate `ArrayList`.\n3. Decompile: confirms three intermediate lists.\n4. Refactor to `asSequence().map { }.filter { }.firstOrNull()` and check bytecode again — now uses `Sequence` which fuses operations into a single pass.\n5. Macrobenchmark the change. Allocation count drops; scroll improves.",
+    "new": "2. Inspect the inlined collection loops: eager `map` and `filter` build two intermediate lists; terminal `firstOrNull` reads the first result and creates no third list.\n3. Check the resulting allocations rather than expecting three literal `Iterable` calls in bytecode.\n4. Compare with `asSequence().map { }.filter { }.firstOrNull()`, which processes lazily and can stop after the first match, while introducing sequence/iterator machinery.\n5. Benchmark the actual workload. Fewer intermediate lists do not by themselves prove faster scrolling.",
+    "reason": "firstOrNull allocates no result collection; eager map/filter inline; sequence speedup and scroll improvement were unmeasured.",
+    "sources": [
+      "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/first-or-null.html",
+      "https://kotlinlang.org/docs/sequences.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model.md",
+    "old": "- **All object references** live on the stack or in registers; the actual objects they point to live on the heap.",
+    "new": "- **Local references** can live in stack frames or registers; references stored in object fields or arrays live in the heap with those containers. Referenced objects are managed heap objects unless optimized away.",
+    "reason": "Object fields and array elements can themselves contain references.",
+    "sources": [
+      "https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-2.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model.md",
+    "old": "For perf-critical code, prefer `IntArray` / `LongArray` / `FloatArray` over `List<Int>` / `List<Long>` / `List<Float>`. The difference is huge: a `List<Int>` of 100k items is **100k+1** heap objects; an `IntArray` of 100k items is **1** heap object holding contiguous ints.",
+    "new": "For numeric buffers, primitive arrays avoid reference storage and boxing. `IntArray(100_000)` stores 100,000 primitive ints in one array. A typical `ArrayList<Int>` also has a list object, backing reference array, and boxed values; wrapper caching and shared values mean the object count is not universally 100,001. Measure retained bytes for the actual data/runtime.",
+    "reason": "Integer caching and backing arrays invalidate exact object count.",
+    "sources": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html#valueOf(int)"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model.md",
+    "old": "| **Phantom** (`PhantomReference<T>`) | No (cleared even before finalize) | Native-resource cleanup hooks |",
+    "new": "| **Phantom** (`PhantomReference<T>`) | No; referent cannot be retrieved and post-mortem processing uses a reference queue | Native-resource cleanup hooks |",
+    "reason": "Phantom reachability is not before finalization; get always returns null.",
+    "sources": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/ref/PhantomReference.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model.md",
+    "old": "| Concurrent generational GC (Android 8+) |",
+    "new": "| Concurrent Copying by default from Android 8; generational CC from Android 10 |",
+    "reason": "AOSP dates generational CC to Android 10, not Android 8.",
+    "sources": [
+      "https://source.android.com/docs/core/runtime/gc-debug"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model.md",
+    "old": "| No Large Object Space | Separate LOS for Bitmaps |",
+    "new": "| Large-object handling depends on Dalvik version | Large-object handling depends on ART collector/version; bitmap pixels are not universally managed-heap LOS objects |",
+    "reason": "Bitmap pixel allocation changed across Android releases; LOS is not a bitmap storage guarantee.",
+    "sources": [
+      "https://developer.android.com/topic/performance/graphics/manage-memory"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model.md",
+    "old": "ART introduced **generational GC** — most objects die young (short-lived locals), so the GC sweeps a small \"young generation\" frequently and the long-lived \"old generation\" rarely. Bitmaps go to a separate Large Object Space.",
+    "new": "Modern ART can use generational collection to reclaim short-lived objects separately from a full-heap collection. Concurrent Copying became the default in Android 8 and gained generational mode in Android 10. Bitmap pixel storage follows its own API-level/configuration rules; it is not generally a managed-heap Large Object Space allocation.",
+    "reason": "Correct collector chronology and universal bitmap LOS claim.",
+    "sources": [
+      "https://source.android.com/docs/core/runtime/gc-debug",
+      "https://developer.android.com/topic/performance/graphics/manage-memory"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model.md",
+    "old": "- **Bitmaps still hurt.** They're large, often go to LOS, and frequently allocated to native heap (`Bitmap.Config.HARDWARE`) where the GC can't see them at all.",
+    "new": "- **Bitmaps still hurt.** Large pixel buffers consume process memory even when outside the managed heap. From Android 8, bitmap pixels use native storage; hardware bitmaps use graphics-backed storage. Their Java wrappers can participate in cleanup, but that does not remove the need for a memory budget.",
+    "reason": "Native pixel storage also applies to software bitmaps; GC blindness is too absolute.",
+    "sources": [
+      "https://developer.android.com/topic/performance/graphics/manage-memory"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model.md",
+    "old": "Or better: use `viewModelScope.launch` with `delay(60_000)`, which auto-cancels.",
+    "new": "For this Activity UI callback, use its `lifecycleScope` with `delay(60_000)` so cancellation follows Activity destruction. Do not move an Activity-capturing lambda into `viewModelScope`, whose ViewModel can outlive that Activity during a configuration change.",
+    "reason": "Original fix transfers UI capture to longer-lived owner and can retain destroyed Activity.",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/coroutines"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model.md",
+    "old": "5. Sort by \"Allocations\" — anything with 5+ instances after a Force GC of a screen-scoped class is a leak.",
+    "new": "5. Inspect retained instances and their paths to GC roots. Repeated growth after the intended lifecycle ends is evidence to investigate; an arbitrary count such as five instances does not prove a leak.",
+    "reason": "Instance count alone does not establish unexpected retention.",
+    "sources": [
+      "https://developer.android.com/studio/profile/capture-heap-dump"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model.md",
+    "old": "The GC can't see these. Leaking them shows up as \"the app uses 800 MB according to RSS but only 80 MB heap.\" Profile with the **Native Memory Profiler** (Android Studio) or `dumpsys meminfo <pkg>`.",
+    "new": "Managed-heap size does not include all native, graphics, mapped-file, or shared-page costs. Some Java wrappers arrange native cleanup, while other resources require explicit closing. A large RSS-to-managed-heap gap is a reason to inspect `dumpsys meminfo`, native allocations, and graphics accounting; it is not by itself proof of a leak.",
+    "reason": "RSS includes legitimate non-Java categories; native wrappers can register cleanup.",
+    "sources": [
+      "https://developer.android.com/studio/profile/capture-heap-dump"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model.md",
+    "old": "- **\"Bitmaps are in the Java heap.\"** Pre-Oreo: yes. Post-Oreo: native heap by default (Glide/Coil exploit this).",
+    "new": "- **\"Bitmap pixels always live in the Java heap.\"** Pixel data used native memory through API 10, managed memory on API 11–25, and native memory again from API 26; hardware configuration adds graphics-backed restrictions. The managed Bitmap wrapper remains a separate object.",
+    "reason": "Restore the pre-Honeycomb native-storage era omitted by pre-Oreo blanket claim.",
+    "sources": [
+      "https://developer.android.com/topic/performance/graphics/manage-memory"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model.md",
+    "old": "   Because `x` is nullable (`Int?`), the primitive `5` must be boxed into a `java.lang.Integer` object. The reference `x` lives on the stack, while the `Integer` object containing `5` is allocated on the heap.",
+    "new": "   On the JVM, nullable `Int?` uses an `Integer` reference. Boxing `5` normally reuses a cached wrapper rather than creating a fresh object. The local reference can be held in a stack frame/register; object fields and arrays can also hold such references. Optimizers may eliminate unused values.",
+    "reason": "Local run confirms boxed 5 identity; distinguish representation from fresh allocation.",
+    "sources": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html#valueOf(int)"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model.md",
+    "old": "   `List<Int>` allocates 100,001 objects on the heap: one list object, plus 100,000 boxed `java.lang.Integer` objects. `IntArray` allocates exactly 1 object on the heap: a contiguous array of primitives. The `List<Int>` takes massively more memory and triggers much more GC pressure.",
+    "new": "   `IntArray(100_000)` has about 400,000 bytes of primitive payload plus an array header/alignment. A typical `ArrayList<Int>` adds a list object, a backing array of references, and boxed values; cached/reused wrappers change allocation counts. Exact bytes depend on capacity, pointer compression, headers, values, and runtime. Primitive arrays avoid those reference/boxing costs.",
+    "reason": "Answer must not repeat false universal object count; adds usable qualified footprint model.",
+    "sources": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html#valueOf(int)"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model.md",
+    "old": "   - **Weak**: Does not prevent GC; cleared immediately on the next pass. Useful for listeners or back-references (e.g., a bus holding observers).",
+    "new": "   - **Weak**: Does not keep an otherwise weakly reachable object alive; the collector clears the weak reference when it detects that reachability state. Collection timing is not guaranteed. Useful for optional back-references.\n   - **Phantom**: Cannot retrieve its referent (`get()` returns null); a reference queue can support cleanup after the object becomes phantom reachable. Prefer deterministic resource closing for timely release.",
+    "reason": "Original four-strength question answered only three and promised collection timing.",
+    "sources": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/ref/WeakReference.html",
+      "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/ref/PhantomReference.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model.md",
+    "old": "   `GlobalScope.launch` creates a coroutine that runs until completion or process death. If it captures a reference to an Activity or View, it will leak them if the screen closes before the coroutine finishes. `viewModelScope.launch` is tied to the ViewModel's lifecycle; it automatically cancels running coroutines when the ViewModel is cleared, breaking the reference chain and preventing the leak.",
+    "new": "   `GlobalScope.launch` has no screen owner; an unfinished coroutine can retain a captured Activity/View after destruction. `viewModelScope` requests cancellation when the ViewModel is cleared, but a retained ViewModel survives configuration changes and cancellation must still be observed. Keep View/Activity captures out of ViewModels; use the view/Activity lifecycle owner for UI-specific work.",
+    "reason": "ViewModel lifetime and cooperative cancellation do not guarantee immediate reference release.",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/coroutines"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model.md",
+    "old": "- [JEP 197 — Segmented Code Cache](https://openjdk.org/jeps/197) — JIT / generational GC background.",
+    "new": "- [AOSP — Debug ART garbage collection](https://source.android.com/docs/core/runtime/gc-debug) — collector modes, generational CC, and diagnostics. [JEP 197 — Segmented Code Cache](https://openjdk.org/jeps/197) concerns JVM compiled-code cache organisation, not generational heap collection.",
+    "reason": "JEP 197 is a code-cache proposal, not a generational-GC source.",
+    "sources": [
+      "https://source.android.com/docs/core/runtime/gc-debug",
+      "https://openjdk.org/jeps/197"
+    ]
+  }
+]

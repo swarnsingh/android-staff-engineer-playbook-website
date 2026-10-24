@@ -1,0 +1,42 @@
+<details class="deep-dive" id="full-experiment"><summary>Open the complete runnable JVM experiment</summary><div class="code-card"><div class="code-header"><span>ProfileExperiment.kt<small>Runnable · Kotlin/JVM · kotlinx.coroutines</small></span><button class="code-button" data-copy="concurrent-code">Copy code</button></div><pre tabindex="0" aria-label="ProfileExperiment.kt: horizontally scrollable code"><code id="concurrent-code" class="highlight">import kotlinx.coroutines.*
+import kotlin.time.TimeSource
+
+fun main() = runBlocking {
+    // Console bridge only: never block Android&#x27;s UI thread.
+    val concurrent = true // Change to false, then run again.
+    val start = TimeSource.Monotonic.markNow()
+    fun log(message: String) = println(
+        &quot;${start.elapsedNow().inWholeMilliseconds}ms &quot; +
+        &quot;[${Thread.currentThread().name}] $message&quot;
+    )
+    suspend fun fetchName(): String {
+        log(&quot;name: start&quot;)
+        delay(500)
+        log(&quot;name: done&quot;)
+        return &quot;Ada&quot;
+    }
+    suspend fun fetchAvatar(): String {
+        log(&quot;avatar: start&quot;)
+        delay(800)
+        log(&quot;avatar: done&quot;)
+        return &quot;avatar.png&quot;
+    }
+    val profile = coroutineScope {
+        if (concurrent) {
+            val name = async { fetchName() }
+            val avatar = async { fetchAvatar() }
+            val resolvedName = name.await()
+            val resolvedAvatar = avatar.await()
+            &quot;$resolvedName · $resolvedAvatar&quot;
+        } else {
+            val resolvedName = fetchName()
+            val resolvedAvatar = fetchAvatar()
+            &quot;$resolvedName · $resolvedAvatar&quot;
+        }
+    }
+    log(&quot;profile: $profile&quot;)
+}</code></pre></div>
+</details><div class="code-actions"><button class="primary-button" id="load-playground">Edit & run this Kotlin example</button><button class="secondary-button" data-open-tab="playground">Experiment guide</button></div>
+<p class="source-note"><code>runBlocking</code> is the console bridge that keeps this ordinary <code>main()</code> alive until the work finishes. Its calling thread is blocked from returning; its default event loop can still run the children’s continuations. This is a JVM experiment, not an Android UI entry point. <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html" target="_blank" rel="noreferrer">Read its contract ↗</a>.</p>
+<div id="inline-playground" hidden><div class="playground-shell"><div class="code-header"><span>Live Kotlin editor<small>External compilation service</small></span><button id="execute-kotlin" class="code-button" disabled>Run Kotlin ▶</button></div><div id="playground-host"><code id="runnable-code" data-target-platform="java"></code></div></div><p id="playground-status" role="status"></p></div>
+<p class="source-note">Loading the editor uses a CDN; running sends the snippet to the external Kotlin compiler service. Keep private data out of examples. <a href="https://play.kotlinlang.org/" target="_blank" rel="noreferrer">Standalone playground ↗</a>.</p>

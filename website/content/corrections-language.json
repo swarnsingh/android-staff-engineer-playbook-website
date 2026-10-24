@@ -1,0 +1,894 @@
+[
+  {
+    "path": "kotlin/language-core/variables.md",
+    "old": "The reward: concurrency-safe code by default. A `val name: String` is safe to share across coroutines; a `val xs: List<Int>` is safe as long as the underlying implementation is also immutable (which it is for `listOf(...)`).",
+    "new": "A read-only binding reduces reassignment, but shared data still needs safe publication and an appropriate immutability or synchronization contract. `listOf(...)` returns a read-only interface; it does not guarantee deep immutability.",
+    "reason": "Read-only collections and val do not establish thread safety; a JVM probe mutated a multi-element listOf through a MutableList cast.",
+    "sources": [
+      "https://kotlinlang.org/docs/collections-overview.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/variables.md",
+    "old": "To get full immutability, both must apply.",
+    "new": "For full immutability, the underlying object graph must also be immutable.",
+    "reason": "A List interface does not prevent mutation through another alias.",
+    "sources": [
+      "https://kotlinlang.org/docs/collections-overview.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/variables.md",
+    "old": "To get **value-level** immutability, use immutable types (`List<T>` over `MutableList<T>`, `Map<K, V>` over `MutableMap<K, V>`), or use `kotlinx.collections.immutable` for guaranteed-immutable variants.",
+    "new": "To restrict callers to reads, expose `List<T>` or `Map<K, V>`. For immutable collection structure, use an immutable implementation such as `kotlinx.collections.immutable`; elements may still be mutable.",
+    "reason": "Read-only and immutable collections are different contracts.",
+    "sources": [
+      "https://kotlinlang.org/docs/collections-overview.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/variables.md",
+    "old": "- Not allowed for top-level properties (must be inside a class).",
+    "new": "- Allowed for class-body properties, top-level properties, and local variables.",
+    "reason": "Official properties documentation and Kotlin/JVM 2.2.21 compilation confirm top-level and local lateinit.",
+    "sources": [
+      "https://kotlinlang.org/docs/properties.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/variables.md",
+    "old": "Full immutability → use only immutable types (`List`, `Map`, `Set`, immutable data classes).",
+    "new": "Full immutability → use immutable implementations and immutable elements; read-only interfaces and `data class` alone do not guarantee this.",
+    "reason": "The proposed types alone do not guarantee immutability.",
+    "sources": [
+      "https://kotlinlang.org/docs/collections-overview.html",
+      "https://kotlinlang.org/docs/data-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/variables.md",
+    "old": "All three values are inlined at every call site. Reflection on `NetworkConfig` won't even show them as ordinary fields — they appear as constants. Refactoring (renaming `BASE_URL`) requires recompiling every dependent file.",
+    "new": "All three values are inlined at Kotlin use sites. They also remain JVM constant fields visible through reflection. Recompile consumers when changing their values so they do not retain old literals.",
+    "reason": "Compile-time constants retain backing fields; value changes cause stale inlined literals rather than necessarily linkage failure.",
+    "sources": [
+      "https://kotlinlang.org/docs/properties.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/variables.md",
+    "old": "- Con: changing the value is a binary-incompatible change for callers — every caller must recompile.",
+    "new": "- Con: existing binaries retain the old inlined value. Recompile consumers to adopt a changed value; this is a behavioral compatibility risk, not automatically a linkage break.",
+    "reason": "Changing a constant value does not remove its binary symbol.",
+    "sources": [
+      "https://kotlinlang.org/docs/properties.html",
+      "https://kotlinlang.org/docs/compatibility-guide-17.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/variables.md",
+    "old": "- Con: small overhead per access (synchronization, even after init in SYNCHRONIZED mode); not usable on `var`; the block can't be cancelled or reset.",
+    "new": "- Con: delegate access has overhead; on JVM, SYNCHRONIZED uses a volatile fast path after initialization. The standard lazy delegate cannot be reset and does not provide coroutine cancellation.",
+    "reason": "JVM SynchronizedLazyImpl avoids locking once initialized.",
+    "sources": [
+      "https://github.com/JetBrains/kotlin/blob/v2.2.21/libraries/stdlib/jvm/src/kotlin/util/LazyJVM.kt"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/variables.md",
+    "old": "- **`by lazy` SYNCHRONIZED mode synchronizes on every read after init.** Use `LazyThreadSafetyMode.NONE` for single-threaded access (UI thread) for free reads.",
+    "new": "- **JVM SYNCHRONIZED lazy checks a volatile value after initialization without taking its initialization lock.** Use NONE only when all initialization and access are confined to one thread.",
+    "reason": "Correct the lock-on-every-read claim using stdlib implementation.",
+    "sources": [
+      "https://github.com/JetBrains/kotlin/blob/v2.2.21/libraries/stdlib/jvm/src/kotlin/util/LazyJVM.kt"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/variables.md",
+    "old": "**\"`by lazy` is free after the first access.\"** With `LazyThreadSafetyMode.SYNCHRONIZED` (the default), each access acquires a lock to check if initialized. For UI-thread-only code, use `LazyThreadSafetyMode.NONE`.",
+    "new": "**\"`by lazy` is free after the first access.\"** The JVM implementation still reads its cached value through the delegate, but does not acquire the initialization lock once initialized. NONE removes thread-safety guarantees.",
+    "reason": "Repeat of incorrect JVM lazy locking claim.",
+    "sources": [
+      "https://github.com/JetBrains/kotlin/blob/v2.2.21/libraries/stdlib/jvm/src/kotlin/util/LazyJVM.kt"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/variables.md",
+    "old": "**Treat `const val` as part of the public ABI.** Renaming, changing values, or removing them is a binary-incompatible change. Keep them stable; never use them for runtime configuration.",
+    "new": "**Treat public `const val` as API.** Renaming or removing its field can break binary consumers; changing its value can leave existing consumers using old inlined literals. Use a runtime configuration source for runtime changes.",
+    "reason": "Distinguish binary linkage from inlined behavioral compatibility.",
+    "sources": [
+      "https://kotlinlang.org/docs/properties.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/variables.md",
+    "old": "**Top-level `val` circular dependency.** `val A = B + 1` and `val B = A * 2` at top level can deadlock or NPE during class loading. Mitigation: use `by lazy` to break the cycle.",
+    "new": "**Top-level `val` circular dependency.** Initialization cycles can expose default field values, fail initialization, or deadlock across initializing threads. Remove the dependency cycle; lazy initialization only helps if the resulting evaluation graph is acyclic.",
+    "reason": "Mutually dependent lazy initializers can recurse rather than resolve a dependency cycle.",
+    "sources": [
+      "https://docs.oracle.com/javase/specs/jls/se17/html/jls-12.html#jls-12.4.2",
+      "https://github.com/JetBrains/kotlin/blob/v2.2.21/libraries/stdlib/jvm/src/kotlin/util/LazyJVM.kt"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/variables.md",
+    "old": "Fix it by changing one or both to `val A by lazy { ... }` so initialization is deferred until access.",
+    "new": "Fix the dependency graph so initialization is acyclic. Lazy initialization can defer work but does not resolve mutually recursive value definitions.",
+    "reason": "Laziness cannot generally solve circular definitions.",
+    "sources": [
+      "https://github.com/JetBrains/kotlin/blob/v2.2.21/libraries/stdlib/jvm/src/kotlin/util/LazyJVM.kt"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/variables.md",
+    "old": "the build takes 200ms; ANR.",
+    "new": "the build takes 200ms; missed frames and visible jank. Longer blocking can also contribute to an ANR.",
+    "reason": "A 200 ms stall is not itself the normal Android ANR threshold.",
+    "sources": [
+      "https://developer.android.com/topic/performance/vitals/anr"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/variables.md",
+    "old": "Hilt sets `imageLoader` in the generated `Fragment_HiltModules$KeyModule_BindUseInstance` code before `onViewCreated` runs.",
+    "new": "Hilt performs Fragment field injection during attachment, before this `onViewCreated` use.",
+    "reason": "The named generated KeyModule is not the field-injection mechanism.",
+    "sources": [
+      "https://dagger.dev/hilt/android-entry-point.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/variables.md",
+    "old": "object AppDatabase {\n    val instance: Database by lazy {",
+    "new": "// AppDatabase is an app-defined @Database class extending RoomDatabase.\nobject AppDatabaseProvider {\n    val instance: AppDatabase by lazy {",
+    "reason": "Room.databaseBuilder needs a RoomDatabase subclass, not the object holder used as its own database type.",
+    "sources": [
+      "https://developer.android.com/training/data-storage/room#database"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/null-safety.md",
+    "old": "Likewise, when you call a Kotlin function returning a non-null type from Java, the return is checked.",
+    "new": "Java does not automatically enforce Kotlin return nullability. Kotlin can insert checks when consuming Java platform values as non-null; reflection and unsafe initialization can still violate declared contracts.",
+    "reason": "Nullability annotations do not cause Java callers to perform Kotlin return checks.",
+    "sources": [
+      "https://kotlinlang.org/docs/java-interop.html#null-safety-and-platform-types"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/null-safety.md",
+    "old": "| `JSONObject.optString(key)` | Returns `\"null\"` (string!) when missing | Use Moshi/kotlinx instead |",
+    "new": "| `JSONObject.optString(key)` | Missing key defaults to `\"\"`; explicit JSON null can coerce to `\"null\"` | Check `has`/`isNull`, or use a typed serializer |",
+    "reason": "Missing keys and explicit JSONObject.NULL are different cases.",
+    "sources": [
+      "https://developer.android.com/reference/org/json/JSONObject#optString(java.lang.String)"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/null-safety.md",
+    "old": "| `StateFlow.value` | None — always has a value | Non-null |",
+    "new": "| `StateFlow.value` | Always has a value, which may itself be null for `StateFlow<T?>` | Respect its declared element type |",
+    "reason": "StateFlow always has a current value but does not force a non-null generic argument.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/null-safety.md",
+    "old": "suspend fun pay(): Result<String> = runCatching { api.pay() }",
+    "new": "suspend fun pay(): Result<String> = runCatching { api.pay() }\n    .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }",
+    "reason": "runCatching catches Throwable, including coroutine cancellation; preserve cancellation.",
+    "sources": [
+      "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/run-catching.html",
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices#watch-out-for-exceptions"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/null-safety.md",
+    "old": "this intrinsic immediately throws an `IllegalArgumentException` at the boundary.",
+    "new": "this intrinsic throws a `NullPointerException` at the boundary on current Kotlin/JVM.",
+    "reason": "Executed Kotlin/JVM 2.2.21 reflection probe confirms NullPointerException.",
+    "sources": [
+      "https://github.com/JetBrains/kotlin/blob/v2.2.21/libraries/stdlib/jvm/runtime/kotlin/jvm/internal/Intrinsics.java"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/data-classes.md",
+    "old": "- If you override one manually, you must override the other; the compiler stops generating both.",
+    "new": "- If you override one manually, provide a compatible implementation of the other; the compiler can still generate the other method.",
+    "reason": "Compiled OnlyEquals data class still has generated hashCode; overriding one does not suppress both.",
+    "sources": [
+      "https://kotlinlang.org/docs/data-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/data-classes.md",
+    "old": "| Implement interfaces | Extend other classes (`open class`, `abstract class`) |",
+    "new": "| Implement interfaces; extend an eligible ordinary or sealed class | Extend another data class |",
+    "reason": "Data classes can extend ordinary/open/abstract/sealed classes; they cannot themselves be open.",
+    "sources": [
+      "https://kotlinlang.org/docs/data-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/data-classes.md",
+    "old": "This restriction exists because inheritance breaks the value-equality contract: a `Sub(\"a\", 1)` and `Base(\"a\")` couldn't both be \"equal.\"",
+    "new": "A data class is final, so the shown `open data class Base` is illegal. A data class may extend an eligible ordinary or sealed class; inherited final members and incompatible component methods can restrict generation.",
+    "reason": "Separate inability to subclass a data class from legal superclass inheritance.",
+    "sources": [
+      "https://kotlinlang.org/docs/data-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/data-classes.md",
+    "old": "10. Why are data classes forbidden from being `open` or extending another class?",
+    "new": "10. Why are data classes forbidden from being `open`, and when may they extend another class?",
+    "reason": "Preserve question while correcting its false premise.",
+    "sources": [
+      "https://kotlinlang.org/docs/data-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/data-classes.md",
+    "old": "10. **Why are data classes forbidden from being `open` or extending another class?**\n    Extending a data class breaks the symmetry and transitivity contracts of `equals()`. If `Sub(x=1, y=2)` extends `Base(x=1)`, comparing `Base(1) == Sub(1, 2)` would be true (Base only checks `x`), but `Sub(1, 2) == Base(1)` would be false (Sub expects `y` to exist). To prevent contract violations, Kotlin forbids inheritance for data classes.",
+    "new": "10. **Why are data classes forbidden from being `open`, and when may they extend another class?**\n    Data classes are final, which prevents subclasses from changing their generated value semantics. They may extend eligible ordinary or sealed classes, provided inherited final methods or incompatible `componentN` methods do not conflict with generation.",
+    "reason": "Correct answer to inheritance question, confirmed by local compilation.",
+    "sources": [
+      "https://kotlinlang.org/docs/data-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/data-classes.md",
+    "old": "data class Cart(val items: List<String>)   // immutable List type",
+    "new": "data class Cart(val items: List<String>)   // read-only interface; keep elements immutable",
+    "reason": "List is read-only, not guaranteed immutable.",
+    "sources": [
+      "https://kotlinlang.org/docs/collections-overview.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/data-classes.md",
+    "old": "- **\"Data classes are just POJOs.\"** They're immutable value types with auto-generated structural equality. POJOs are mutable bean-style containers.",
+    "new": "- **\"Data classes are just POJOs.\"** They generate equality and other data-oriented methods, but do not enforce immutability: constructor properties may be `var`, and `val` properties can reference mutable objects.",
+    "reason": "Data classes do not enforce immutability.",
+    "sources": [
+      "https://kotlinlang.org/docs/data-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/data-classes.md",
+    "old": "- **\"`var` is fine if I'm careful.\"** It silently corrupts `HashSet`/`HashMap`/Compose. There is no safe `var` in a data class.",
+    "new": "- **\"`var` is fine if I'm careful.\"** Mutating equality/hash properties while an object is a hash key breaks lookup assumptions. Mutable data classes are legal, but shared or UI state needs deliberate observation and mutation rules.",
+    "reason": "Mutable data classes are legal; corruption depends on mutation and use.",
+    "sources": [
+      "https://kotlinlang.org/docs/data-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/data-classes.md",
+    "old": "- **Jetpack Compose** skips recomposition when state `equals` the previous state.",
+    "new": "- **Jetpack Compose** considers stability and parameter comparisons when skipping; observed state changes also drive invalidation.",
+    "reason": "Skip conditions are not a single global equals comparison.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/data-classes.md",
+    "old": "A complex screen with an unstable `UiState` will recompose every emission instead of skipping unchanged sub-trees. On a 60Hz display, you have 16ms per frame; unnecessary recomposition burns it fast. Stability isn't pedantry — it's the difference between a smooth screen and a janky one.",
+    "new": "With strong skipping (default since Kotlin 2.0.20), restartable composables with unstable parameters can still skip when those instances are unchanged. Stable parameters use equality. Diagnose actual recomposition cost before changing state shape or adding stability promises.",
+    "reason": "Modern strong skipping invalidates the every-emission/full-tree claim.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/data-classes.md",
+    "old": "| Compose recomposes the whole tree on every emission | Unstable data class (`var`, `List`) | `@Immutable`, or use `kotlinx.collections.immutable` |",
+    "new": "| Unexpected recomposition work | State invalidation or changed parameters; inspect compiler/runtime evidence | Verify skipping mode and immutable contracts before adding annotations |",
+    "reason": "Unstable parameters do not imply whole-tree recomposition under strong skipping.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/data-classes.md",
+    "old": "   Compose treats `List` as unstable (because `java.util.List` can be mutated). Because the data class contains an unstable field, Compose marks the entire data class as unstable. It will no longer trust value equality to skip recomposition, meaning every state emission will force a full, expensive recomposition of the UI tree, even if the data hasn't changed.",
+    "new": "   Kotlin `List` is generally inferred unstable because the interface does not guarantee immutability. Strong skipping can still skip restartable composables when the unstable instance is unchanged; without strong skipping, unstable parameters restrict skipping. `@Immutable` is a contract, not a universal fix.",
+    "reason": "Correct modern answer without removing stability explanation.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/data-classes.md",
+    "old": "8. **Stability annotations missing** when used in Compose — push for `@Immutable`/`@Stable`.",
+    "new": "8. **Stability assumptions** — inspect inferred stability and skipping before adding `@Immutable`/`@Stable`; annotations promise behavior and are often unnecessary.",
+    "reason": "Compiler already infers stability for suitable classes.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/data-classes.md",
+    "old": "| Random crash: `IllegalStateException: companion default value …` | Adding a new non-default field to a public data class | SDK-style data classes need `@JvmOverloads`-style defaults or use a Builder |",
+    "new": "| `NoSuchMethodError` after library upgrade | A constructor/copy signature changed | Preserve existing binary signatures; defaults alone do not preserve `copy` ABI |",
+    "reason": "The stated exception is not the linkage failure; defaults/overloads do not universally preserve copy ABI.",
+    "sources": [
+      "https://kotlinlang.org/docs/api-guidelines-backward-compatibility.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/data-classes.md",
+    "old": "You must provide `@JvmOverloads` or a Builder pattern to preserve the old signature.",
+    "new": "Preserve the existing constructor explicitly or through suitable defaulted overloads. Kotlin callers using generated `copy`/default helpers need their existing signatures preserved too; adding a Builder alone does not restore removed methods.",
+    "reason": "Builder addition does not preserve a removed constructor/copy signature.",
+    "sources": [
+      "https://kotlinlang.org/docs/api-guidelines-backward-compatibility.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes.md",
+    "old": "same module (and same package since Kotlin 1.7)",
+    "new": "same module and package for direct subclasses (package/module-wide subclasses have been supported since Kotlin 1.5)",
+    "reason": "Same-package restriction dates to package-wide sealed inheritance in 1.5, not 1.7.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew15.html#sealed-interfaces",
+      "https://kotlinlang.org/docs/sealed-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes.md",
+    "old": "4. **Module-local.** Subclasses must live in the same module (Kotlin 1.5+) and same package (Kotlin 1.7+) as the parent.",
+    "new": "4. **Direct-subclass boundary.** Direct subclasses must be in the same module and package; an open indirect branch can permit outside extensions.",
+    "reason": "Only direct subclasses share sealed restriction; source incorrectly dates package rule.",
+    "sources": [
+      "https://kotlinlang.org/docs/sealed-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes.md",
+    "old": "Exhaustiveness is enforced only when `when` is used as an **expression** (its result is used) — or when the language flag for \"exhaustive when statements\" is enabled.",
+    "new": "For sealed, enum, and Boolean subjects, Kotlin 1.7+ checks exhaustiveness for both expressions and statements. Older language versions had different statement rules.",
+    "reason": "Kotlin 1.7 enabled exhaustiveness by default for these statements.",
+    "sources": [
+      "https://kotlinlang.org/docs/compatibility-guide-17.html#make-when-statements-with-enum-sealed-and-boolean-subjects-exhaustive-by-default"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes.md",
+    "old": "Kotlin 1.7+ added the `-Xenable-exhaustive-when-statements` opt-in to enforce on statements too. Worth turning on.",
+    "new": "In Kotlin 1.7+ these sealed-subject statements are exhaustive by default; the historical expression-context workaround is unnecessary.",
+    "reason": "The described compiler opt-in is not the current rule.",
+    "sources": [
+      "https://kotlinlang.org/docs/compatibility-guide-17.html#make-when-statements-with-enum-sealed-and-boolean-subjects-exhaustive-by-default"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes.md",
+    "old": "suspend fun loadUser(id: String): Result<User> = runCatching {\n    api.getUser(id)\n}",
+    "new": "suspend fun loadUser(id: String): Result<User> = runCatching {\n    api.getUser(id)\n}.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }",
+    "reason": "Preserve cancellation in suspending runCatching wrapper.",
+    "sources": [
+      "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/run-catching.html",
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices#watch-out-for-exceptions"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes.md",
+    "old": "Now adding a new method type in the next minor version downgrades to `Unknown` for old clients, instead of crashing or breaking their build.",
+    "new": "A parser can deliberately map unrecognised wire values to `Unknown`. Merely declaring this branch does not map new runtime subclasses to it or preserve exhaustive `when` compatibility when the library adds subclasses.",
+    "reason": "Unknown subtype is not an automatic binary/source compatibility escape hatch.",
+    "sources": [
+      "https://kotlinlang.org/docs/sealed-classes.html",
+      "https://kotlinlang.org/docs/api-guidelines-backward-compatibility.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes.md",
+    "old": "| `when` not enforced exhaustive | Used as statement, Kotlin < 1.7 default | Use as expression; or `.let { }`; or enable exhaustive-statement flag |",
+    "new": "| Sealed-subject statement is not exhaustive | Older Kotlin language mode | Use expression context there; Kotlin 1.7+ checks these statements by default |",
+    "reason": "Correct legacy/current exhaustiveness distinction.",
+    "sources": [
+      "https://kotlinlang.org/docs/compatibility-guide-17.html#make-when-statements-with-enum-sealed-and-boolean-subjects-exhaustive-by-default"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes.md",
+    "old": "| Cannot inherit data class from another sealed | Data class restrictions | Use regular class, or restructure |",
+    "new": "| Cannot inherit from a data class | Data classes are final | Use an eligible ordinary/sealed superclass; data classes may extend it |",
+    "reason": "Data classes can extend sealed classes.",
+    "sources": [
+      "https://kotlinlang.org/docs/data-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes.md",
+    "old": "| SDK consumers' code breaks on minor version | Added a sealed case in a public API | Either MAJOR bump or include `Unknown` escape hatch |",
+    "new": "| SDK consumers' code breaks on minor version | Added a sealed subclass | Treat exhaustiveness as a source-compatibility promise; Unknown only helps with explicit wire fallback mapping |",
+    "reason": "Unknown does not automatically absorb newly added subclasses.",
+    "sources": [
+      "https://kotlinlang.org/docs/sealed-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes.md",
+    "old": "6. **Public SDK sealed without escape hatch.** Adding a case is a MAJOR break; include `Unknown` or document the cadence.",
+    "new": "6. **Public SDK sealed evolution.** Adding a direct case affects exhaustive callers; plan compatibility. An Unknown wire-value fallback does not make arbitrary new subclasses compatible.",
+    "reason": "Avoid presenting Unknown as universal compatibility remedy.",
+    "sources": [
+      "https://kotlinlang.org/docs/sealed-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes.md",
+    "old": "- **\"Sealed types make `when` exhaustive everywhere.\"** Only as expressions (or with the explicit `-Xenable-exhaustive-when-statements` flag). Statements aren't enforced by default.",
+    "new": "- **\"Sealed types make every branch safe.\"** Kotlin 1.7+ enforces exhaustiveness for sealed-subject statements and expressions, but an `else` still hides omitted specific cases.",
+    "reason": "Correct outdated when statement claim.",
+    "sources": [
+      "https://kotlinlang.org/docs/compatibility-guide-17.html#make-when-statements-with-enum-sealed-and-boolean-subjects-exhaustive-by-default"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes.md",
+    "old": "- **\"All subclasses must be nested inside the sealed type.\"** False. They must be in the same package (Kotlin 1.7+) and same module (1.5+). Top-level subclasses are fine.",
+    "new": "- **\"All subclasses must be nested inside the sealed type.\"** False. Direct subclasses can be top-level in the same package/module. Indirect subclasses follow the openness of their direct parent.",
+    "reason": "Correct package version and direct-versus-indirect boundary.",
+    "sources": [
+      "https://kotlinlang.org/docs/sealed-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes.md",
+    "old": "- **\"Sealed = bad for SDKs.\"** Not always — but adding a case is a major-version event. Plan accordingly or include `Unknown`.",
+    "new": "- **\"Sealed = bad for SDKs.\"** Not always, but adding a subclass can break exhaustive consumers. Plan the compatibility contract; Unknown only handles data that a parser explicitly maps to it.",
+    "reason": "Unknown is not an automatic sealed exhaustiveness escape.",
+    "sources": [
+      "https://kotlinlang.org/docs/sealed-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes.md",
+    "old": "Kotlin enforces exhaustiveness when the `when` block is used as an *expression* (its return value is assigned to a variable or returned). Before Kotlin 1.7, it did not enforce exhaustiveness when used as a *statement*, unless the `-Xenable-exhaustive-when-statements` compiler flag was enabled.",
+    "new": "Kotlin 1.7+ enforces exhaustiveness for sealed-subject expressions and statements. Before 1.7, non-exhaustive statements could compile (with migration warnings in 1.6); expressions already required coverage.",
+    "reason": "Make answer state current behavior explicitly.",
+    "sources": [
+      "https://kotlinlang.org/docs/compatibility-guide-17.html#make-when-statements-with-enum-sealed-and-boolean-subjects-exhaustive-by-default"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes.md",
+    "old": "Subclasses of a sealed type must reside in the exact same module as the sealed parent (enforced since Kotlin 1.5), and in the exact same package (enforced since Kotlin 1.7).",
+    "new": "Direct subclasses must be in the same package and module. Kotlin 1.5 enabled this package/module-wide arrangement; older sealed-class rules were more restrictive. Multiplatform source-set rules also apply.",
+    "reason": "Correct false version attribution and distinguish direct subclasses.",
+    "sources": [
+      "https://kotlinlang.org/docs/sealed-classes.html",
+      "https://kotlinlang.org/docs/whatsnew15.html#sealed-interfaces"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes.md",
+    "old": "You pick `data object`. `data class()` is wasteful because it allocates a new instance every time, even though there's no state to differ between instances. `object` is a singleton but lacks the clean, readable `toString()` implementation of a data class. `data object` (introduced in Kotlin 1.8) combines the singleton efficiency of `object` with the readable `toString()` of a data class.",
+    "new": "Use object for a singleton, or data object for generated readable toString/value-style object semantics. An empty `data class()` does not compile: data classes require a primary-constructor property. Data objects were previewed in 1.8.20 and became stable in 1.9.",
+    "reason": "Empty data classes are illegal, not merely wasteful; correct data object version precision.",
+    "sources": [
+      "https://kotlinlang.org/docs/data-classes.html",
+      "https://kotlinlang.org/docs/whatsnew19.html#stable-data-objects-for-symmetry-with-data-classes"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/delegation.md",
+    "old": "- Hilt's `@Inject lateinit var`, Compose's `LocalContext.current`, navArgs() — delegation under the hood.",
+    "new": "- `by navArgs()` uses a property delegate. Hilt field injection (`@Inject lateinit var`) and CompositionLocal reads (`LocalContext.current`) are different mechanisms.",
+    "reason": "Lateinit injection and CompositionLocal access are not property delegation.",
+    "sources": [
+      "https://kotlinlang.org/docs/delegated-properties.html",
+      "https://developer.android.com/develop/ui/compose/compositionlocal"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/delegation.md",
+    "old": "class Required<T>(private val source: Map<String, Any?>) : ReadOnlyProperty<Any?, T> {",
+    "new": "class Required<T : Any>(private val source: Map<String, Any?>) : ReadOnlyProperty<Any?, T> {",
+    "reason": "lateinit generic storage requires a non-null upper bound; local compiler rejects unconstrained T.",
+    "sources": [
+      "https://kotlinlang.org/docs/properties.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/delegation.md",
+    "old": "Reading `settings.theme` triggers `getValue`; writing it triggers `setValue`. **But:** every read hits disk synchronously — see the failure mode below.",
+    "new": "Reading `settings.theme` triggers `getValue`; writing triggers `setValue`. SharedPreferences normally reads an in-memory map after initial loading; that initial load can block, so avoid assuming getters are always cheap.",
+    "reason": "SharedPreferencesImpl.getString awaits initial load then reads mMap, rather than reading disk for every getter.",
+    "sources": [
+      "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/app/SharedPreferencesImpl.java"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/delegation.md",
+    "old": "Same as `remember`, but the value is restored after process death via `SavedStateHandle`.",
+    "new": "Unlike remember alone, rememberSaveable restores supported UI values through the saved-instance-state/SaveableStateRegistry mechanism. SavedStateHandle is a separate state-holder API.",
+    "reason": "rememberSaveable does not restore through SavedStateHandle.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/state-saving"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/delegation.md",
+    "old": "| `ConcurrentModificationException` on `lazy` initialization | Default `SYNCHRONIZED` mode + reentrant access from same thread | Restructure to avoid re-entrance; or use `PUBLICATION` |",
+    "new": "| Stack overflow or repeated initialization | Lazy initializer recursively reads its own uninitialized value | Remove the evaluation cycle; PUBLICATION does not resolve it |",
+    "reason": "Reentrant synchronized locks do not cause ConcurrentModificationException; recursive lazy initialization may overflow.",
+    "sources": [
+      "https://github.com/JetBrains/kotlin/blob/v2.2.21/libraries/stdlib/jvm/src/kotlin/util/LazyJVM.kt"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/delegation.md",
+    "old": "| `UninitializedPropertyAccessException` on `Delegates.notNull` | Property read before being set | Initialize before first read; or use `lateinit`-style alternative |",
+    "new": "| `IllegalStateException` on `Delegates.notNull` | Property read before being set | Initialize before first read |",
+    "reason": "Local execution confirms Delegates.notNull throws IllegalStateException.",
+    "sources": [
+      "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.properties/-delegates/not-null.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/delegation.md",
+    "old": "The performance concern is that every time the property is read (e.g., `settings.theme`), it triggers a synchronous disk read (`prefs.getString(...)`). If accessed in a tight loop or a UI hot path (like `onDraw` or Compose recomposition), this will cause severe UI jank. I/O should not be hidden behind innocent-looking property getters.",
+    "new": "SharedPreferences getters can block waiting for initial loading, but subsequent reads normally use an in-memory map. Keep blocking initialization out of UI hot paths and measure delegate cost; do not assume each getString call rereads disk.",
+    "reason": "Correct repeated disk-read explanation in answer key.",
+    "sources": [
+      "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/app/SharedPreferencesImpl.java"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/delegation.md",
+    "old": "2. **Custom delegate with hidden I/O.** A custom `by Preference(...)` that reads disk every time the property is accessed is a UI-jank bomb. Either move to coroutines, cache, or name explicitly (`preferencesSync` not `preferences`).",
+    "new": "2. **Custom delegate with hidden blocking.** Inspect what its getter actually does. SharedPreferences usually serves loaded values from memory, while initial loading or a different delegate may block. Keep such work out of UI hot paths.",
+    "reason": "Maintain hidden-work review point without mischaracterizing SharedPreferences.",
+    "sources": [
+      "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/app/SharedPreferencesImpl.java"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/delegation.md",
+    "old": "override fun flush() = file.flush()",
+    "new": "override fun flush() = Unit // appendText opens/closes its stream per call.",
+    "reason": "java.io.File has no flush() method; preserve example without pretending File is an output stream.",
+    "sources": [
+      "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.io/append-text.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/delegation.md",
+    "old": "or use Hilt's `by hiltViewModel()`",
+    "new": "or the appropriate Hilt ViewModel integration (`by viewModels()` for an @AndroidEntryPoint Fragment; `hiltViewModel()` in Compose)",
+    "reason": "hiltViewModel is a Compose function, not a by-delegate.",
+    "sources": [
+      "https://developer.android.com/training/dependency-injection/hilt-jetpack"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/extensions.md",
+    "old": "fun Box.greet() = \"hello from extension\"  // compiler accepts this silently",
+    "new": "fun Box.greet() = \"hello from extension\"  // warning: extension is shadowed by a member",
+    "reason": "Kotlin compiler emits EXTENSION_SHADOWED_BY_MEMBER warning.",
+    "sources": [
+      "https://kotlinlang.org/docs/extensions.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/extensions.md",
+    "old": "Worse, the compiler issues no warning — you have to know this rule.",
+    "new": "The compiler warns that the extension is shadowed by a member.",
+    "reason": "Correct directly observable compiler diagnostic.",
+    "sources": [
+      "https://kotlinlang.org/docs/extensions.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/extensions.md",
+    "old": "3. **Local functions** named `foo` that take the receiver as a parameter.",
+    "new": "3. **Other applicable extension candidates** according to lexical scope and import priority. A regular function `foo(receiver)` is not a candidate for `receiver.foo()`.",
+    "reason": "Ordinary parameter functions are not extension-call candidates; import priorities are more nuanced.",
+    "sources": [
+      "https://kotlinlang.org/spec/overload-resolution.html#call-with-an-explicit-receiver"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/extensions.md",
+    "old": "inline fun <reified T> Bundle.getParcelableSafe(key: String): T? =",
+    "new": "inline fun <reified T : Parcelable> Bundle.getParcelableSafe(key: String): T? =",
+    "reason": "API 33 typed getParcelable requires T bounded by Parcelable.",
+    "sources": [
+      "https://developer.android.com/reference/android/os/Bundle#getParcelable(java.lang.String,%20java.lang.Class%3CT%3E)"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/extensions.md",
+    "old": "The compiler does not warn to ensure backward compatibility: if a library adds a member function that matches an existing extension in consumer code, the library's member will safely take precedence.",
+    "new": "The compiler warns when an extension is shadowed by an applicable member. Adding such a member in a library can change binding when consumers recompile, so check collisions during upgrades.",
+    "reason": "Correct false absence of warning and distinguish recompilation behavior.",
+    "sources": [
+      "https://kotlinlang.org/docs/extensions.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/extensions.md",
+    "old": "**Untestable in isolation.** You cannot mock or stub an extension function. If a unit under test calls `someJavaClient.awaitLastLocation()`, you must inject the receiver or fake it; the extension itself isn't mockable.",
+    "new": "**Static-call test seam.** Ordinary instance mocks do not intercept top-level extensions. Static-mocking tools can, but an injected interface or receiver fake usually makes a clearer test boundary.",
+    "reason": "Static functions can be instrumented/mocked by supported tools; untestable is too absolute.",
+    "sources": [
+      "https://mockk.io/#top-level-functions"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/extensions.md",
+    "old": "Extensions can't be intercepted by Mockito or MockK. Keep extensions to pure-function utilities.",
+    "new": "Ordinary instance stubbing does not intercept top-level extensions; MockK supports static mocking. Prefer explicit injected seams for effects and test pure transformations directly.",
+    "reason": "MockK supports top-level/extension static mocking.",
+    "sources": [
+      "https://mockk.io/#top-level-functions"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/extensions.md",
+    "old": "Extensions cannot be mocked because they are static methods. To make the code testable,",
+    "new": "Ordinary receiver mocks do not replace a top-level extension; static mocking is tool-dependent. To make the code testable through an explicit boundary,",
+    "reason": "Correct absolute impossibility claim in answer.",
+    "sources": [
+      "https://mockk.io/#top-level-functions"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/extensions.md",
+    "old": "**Namespace pollution.** A `fun Any.log()` at the top level of a commonly-imported package shows up on every value in every file. The standard fix is to keep extensions package-private (`internal`) or file-private (`private fun`),",
+    "new": "**Namespace pollution.** A broadly imported `fun Any.log()` appears on many receivers. Keep helpers module-internal (`internal`) or file-private (`private fun`),",
+    "reason": "Kotlin internal visibility is module-wide, not package-private.",
+    "sources": [
+      "https://kotlinlang.org/docs/visibility-modifiers.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/extensions.md",
+    "old": "from Java code, an `internal` extension is still callable if the caller knows the name-mangled symbol (`StringExtKt.foo$mymodule_debug(...)`).",
+    "new": "from Java code, an internal top-level extension is generally a public static method (`StringExtKt.foo(...)`); internal member functions can be name-mangled.",
+    "reason": "Local javap confirms top-level internal extension is not module-name-mangled.",
+    "sources": [
+      "https://kotlinlang.org/docs/java-to-kotlin-visibility-guide.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/extensions.md",
+    "old": "but only when the chain has more than ~3 elements — for small lists the eager version is faster.",
+    "new": "when laziness or short-circuiting helps enough to offset iterator and dispatch overhead; there is no universal three-element threshold. Measure the actual chain.",
+    "reason": "No language/runtime contract supports a universal chain-size threshold.",
+    "sources": [
+      "https://kotlinlang.org/docs/sequences.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/functions.md",
+    "old": "every lambda you pass creates a small `Function` instance",
+    "new": "capturing lambdas can create function objects, while non-capturing lambdas may be cached or inlined",
+    "reason": "Non-capturing or inlined lambdas do not necessarily allocate per invocation.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/functions.md",
+    "old": "Function references are cheaper than lambdas — they're equivalent to passing a `Function` instance backed by a real named method, with no captured scope.",
+    "new": "Function-reference cost depends on the reference and call site. Bound references such as System.out::println capture a receiver; inlining and caching can eliminate allocation for either syntax.",
+    "reason": "Bound references capture state; references are not universally cheaper.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/functions.md",
+    "old": "Decompiled:\n\n```java\npublic static void greetAll",
+    "new": "Illustrative class-based lowering (`-Xlambdas=class`); Kotlin/JVM 2.0+ defaults to invokedynamic:\n\n```java\npublic static void greetAll",
+    "reason": "Default Kotlin/JVM lambda lowering changed in 2.0; label class-based sketch accurately.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/functions.md",
+    "old": "2. **A lambda is an anonymous class.** Per call site, a class is generated implementing the matching `FunctionN`. The `invoke` method holds the body.",
+    "new": "2. **Lowering depends on the backend/options.** This sketch shows class-based lowering. Kotlin/JVM 2.0+ normally uses invokedynamic for ordinary lambdas.",
+    "reason": "Anonymous-class-per-lambda is not current default lowering.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/functions.md",
+    "old": "3. **Captured variables become fields.** `prefix` is captured by reference and stored in the anonymous class instance. Every call to `greetAll` allocates a new instance.",
+    "new": "3. **Captures require retained state.** An escaping captured lambda can store needed values in its function object. Constants, non-capturing lambdas, inlining, and runtime optimization can avoid fresh allocation.",
+    "reason": "The shown constant capture can be optimized; caller invocation does not imply a fresh lambda.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/functions.md",
+    "old": "The wrapper lambda compiles to a new anonymous class per call site, also implementing `Function1<Int, Boolean>`. Functionally identical, but the reference is cheaper.",
+    "new": "The wrapper lambda can also be cached, and filter is inline, so either form can be compiled directly into its loop without a function-object allocation. Neither syntax is a universal performance winner.",
+    "reason": "filter inlines both argument forms; class/caching assertions are not universal.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/functions.md",
+    "old": "NonInline[\"Non-inline: greet becomes Function1 param.<br/>Each lambda call site allocates an anonymous class.\"]",
+    "new": "NonInline[\"Non-inline: greet is a Function1 parameter.<br/>Lowering and caching determine allocations.\"]",
+    "reason": "Diagram repeats false fresh anonymous-class guarantee.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/functions.md",
+    "old": "- **Lambda allocation.** Without `inline`, each lambda passed allocates a `FunctionN` instance. In tight loops this matters.",
+    "new": "- **Lambda allocation.** Escaping captures may require function objects; non-capturing lambdas may be reused. Inspect allocation evidence in hot paths.",
+    "reason": "Avoid universal per-call allocation claim.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/functions.md",
+    "old": "**\"Lambdas are free.\"** Each non-inline lambda allocates a `FunctionN` object. In tight loops this matters; for occasional calls (button clicks), it's negligible.",
+    "new": "**\"Lambdas are free.\"** Captures and escaping function objects can have allocation/dispatch costs, but non-capturing lambdas may be reused and inline arguments can avoid objects. Measure hot paths.",
+    "reason": "Correct same false guarantee in misconception section.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/functions.md",
+    "old": "- **Function references are usually faster than equivalent lambdas.** A single cached singleton instance vs a new allocation per call site. Compiler often optimizes both equally, but the reference form is the safer default.",
+    "new": "- **Choose references or lambdas for clarity.** Either can be inlined or reused; bound captures and generated code determine cost. Compare actual allocation evidence when performance matters.",
+    "reason": "No general reference-vs-lambda speed ordering.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/functions.md",
+    "old": "- When the behavior must be substitutable at runtime by external configuration (use an interface and dependency injection).",
+    "new": "- When a protocol needs multiple related operations or nominal identity, an interface may be clearer. Single function values can also be injected or selected at runtime.",
+    "reason": "Function values support runtime substitution, as the chapter itself demonstrates.",
+    "sources": [
+      "https://kotlinlang.org/docs/lambdas.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/functions.md",
+    "old": "- **Lambdas in coroutine scopes can leak.** A `launch { ... }` lambda captures everything in scope.",
+    "new": "- **Lambdas in coroutine scopes can extend lifetimes.** A launch lambda retains values it actually captures, which can include an enclosing receiver.",
+    "reason": "Lambdas do not indiscriminately capture every variable in lexical scope.",
+    "sources": [
+      "https://kotlinlang.org/docs/lambdas.html#closures"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/functions.md",
+    "old": "The lambda is captured into the Composer's slot table and re-invoked on subsequent compositions. Compose recomposition relies on lambda *identity* — when `onClick` is structurally the same closure (capturing the same values), Compose can skip recomposing the child.",
+    "new": "The onClick callback runs when clicked, not automatically on recomposition. The Compose compiler can memoize lambdas; strong skipping includes unstable captures, comparing them by identity and stable captures by equality. This supports reuse without replacing event semantics.",
+    "reason": "Event callback execution is not composable re-execution; modern compiler memoization handles unstable captures.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/functions.md",
+    "old": "**Watch for lambda-stability anti-patterns in Compose.** Inline lambdas with mutable captures defeat recomposition skipping. Tools like the Compose Compiler Reports catch this; CI should fail on unexpected `unstable` lambdas in hot Composables.",
+    "new": "**Check lambda reuse in Compose.** Strong skipping automatically remembers lambdas, including unstable captures. Use compiler/runtime evidence to diagnose unexpected work instead of assuming every mutable capture defeats skipping.",
+    "reason": "Strong skipping memoizes lambdas with unstable captures.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/functions.md",
+    "old": "If `viewModel` is considered unstable (e.g., an interface or a class with mutable `var` properties), the lambda captures an unstable reference. Compose generates a new lambda instance on every recomposition because it cannot guarantee the captured state hasn't changed. You keep it stable by using method references `onClick = viewModel::click` (if the ViewModel is stable) or by passing only stable primitives or explicitly `@Stable` parameters to the composable.",
+    "new": "With strong skipping, Compose remembers lambdas with unstable captures too; the unchanged ViewModel instance can reuse the callback. Earlier compiler modes had stricter reuse rules. A method reference is not a universal fix: inspect the compiler mode and keep capture/lifetime semantics correct.",
+    "reason": "Correct outdated default Compose callback behavior.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/functions.md",
+    "old": "Yes, a new object is allocated each time it evaluates, because the function reference must capture the specific `obj` instance to invoke the method on. (Unlike `Class::method` which compiles to a cached singleton).",
+    "new": "A bound reference retains obj and may allocate when it escapes. Inlining, memoization, or runtime optimization can eliminate or reuse that allocation; do not assume one allocation per evaluation in optimized code.",
+    "reason": "Physical allocation is not a universal guarantee, particularly at inline call sites.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/value-classes.md",
+    "old": "The doc-level rule is exact: **a value class is boxed whenever it is used as another type.** Inlined as itself; boxed as anything more abstract:",
+    "new": "The documentation gives a rule of thumb: using a value class through another type often requires boxing. Actual representation depends on the underlying type and use site; for example, a nullable wrapper around a non-null String can use a nullable String representation:",
+    "reason": "The docs call this a rule of thumb, and a compiled Name(String)? parameter uses java.lang.String without the wrapper.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/value-classes.md",
+    "old": "- **Collections box.** `List<UserId>` allocates one wrapper per element. For a hot path holding millions of wrapped longs, that's the same cost as not using primitives — use primitive arrays or rethink the type at the boundary.",
+    "new": "- **Generic collections use boxed representation.** `List<UserId>` stores wrappers rather than a primitive array layout. Wrapper reuse and optimization affect physical allocation counts; measure large numeric collections and consider primitive arrays where suitable.",
+    "reason": "Generic representation does not guarantee a fresh wrapper allocation for every element.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/value-classes.md",
+    "old": "- **Equality across representations is safe** (boxing preserves `equals`), but *identity* is not — two boxes of the same value are different references. `===` on value classes is a bug pattern.",
+    "new": "- **Use value equality.** Referential equality (`===`) on value-class operands is prohibited by the compiler because representation can vary.",
+    "reason": "Referential equality is prohibited, not simply a runtime bug pattern.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/value-classes.md",
+    "old": "Public API of libraries with Java consumers should either avoid value classes at the surface or `@JvmName` every entry point",
+    "new": "For Java-facing APIs, choose deliberate @JvmName bridges or supported boxed exposure via experimental @JvmExposeBoxed / -Xjvm-expose-boxed (with the required opt-in)",
+    "reason": "Current Kotlin provides boxed exposure in addition to JvmName bridges.",
+    "sources": [
+      "https://kotlinlang.org/docs/java-to-kotlin-interop.html#inline-value-classes"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/null-safety.md",
+    "old": "| `?:` (Elvis) | \"or else\" | Left-hand is null | Provide a default value |",
+    "new": "| `?:` (Elvis) | \"or else\" | Only if the selected fallback itself is null | Provide a default when the left side is null |",
+    "reason": "Elvis does not itself return null merely because its left side is null.",
+    "sources": [
+      "https://kotlinlang.org/docs/null-safety.html#elvis-operator"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/null-safety.md",
+    "old": "Gson uses `Unsafe` allocation: it constructs the object **without calling the constructor**, then injects fields by reflection. Constructor checks (`Intrinsics.checkNotNullParameter`) never run.",
+    "new": "When Gson cannot use a suitable constructor, it may use Unsafe allocation and set fields without running Kotlin constructor checks. Constructor use and Unsafe availability affect the exact behavior.",
+    "reason": "Gson does not always allocate via Unsafe.",
+    "sources": [
+      "https://google.github.io/gson/Troubleshooting.html#default-field-values-not-present-after-deserialization"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/null-safety.md",
+    "old": "Gson deserializes objects using `Unsafe` allocation, bypassing the class constructor entirely, and then sets fields via reflection. Since the constructor never runs, Kotlin's non-null intrinsic checks are bypassed. If the JSON omits a field, the field remains uninitialized (`null`), violating the type system. Prevent this by using Moshi or `kotlinx.serialization`.",
+    "new": "Gson may allocate without calling the constructor when it cannot use a suitable constructor. Reflection can then leave a non-null Kotlin reference field null. A properly configured Kotlin-aware Moshi adapter or kotlinx.serialization validates the declared contract.",
+    "reason": "Qualify Unsafe use and Kotlin-aware adapter requirement.",
+    "sources": [
+      "https://google.github.io/gson/Troubleshooting.html#default-field-values-not-present-after-deserialization"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes.md",
+    "old": "The whole point of sealed is exhaustiveness. Removing it bypasses the safety net.",
+    "new": "Explicit branches preserve exhaustiveness feedback. Adding an else bypasses that feedback.",
+    "reason": "Source reverses the effect of removing an else.",
+    "sources": [
+      "https://kotlinlang.org/docs/sealed-classes.html#use-sealed-classes-with-when-expression"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/data-classes.md",
+    "old": "| Two same-typed fields silently swapped after refactor | Destructuring positional, fields reordered | Access by name; or compiler warning \"Component name mismatch\" (Kotlin 1.9+) |",
+    "new": "| Two same-typed fields silently swapped after refactor | Destructuring is positional | Access properties by name; do not rely on a universal compiler warning |",
+    "reason": "Kotlin/JVM 2.2.21 does not universally warn for renamed same-typed destructuring variables.",
+    "sources": [
+      "https://kotlinlang.org/docs/destructuring-declarations.html"
+    ]
+  }
+]

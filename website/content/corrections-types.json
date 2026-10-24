@@ -1,0 +1,451 @@
+[
+  {
+    "path": "kotlin/type-system/generics.md",
+    "old": "fun <T> validate(value: T): Boolean\n    where T : Comparable<T>,\n          T : CharSequence\n{\n    return value.length > 0 && value > \"minimum\"\n}",
+    "new": "fun <T> validate(value: T, minimum: T): Boolean\n    where T : Comparable<T>,\n          T : CharSequence\n{\n    return value.isNotEmpty() && value > minimum\n}",
+    "reason": "The original passes a String where Comparable<T> requires T. Accepting a minimum of the same T preserves the threshold-validation intention; both bounds are exercised. The corrected fragment compiles.",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/generics.md",
+    "old": "println(strList::class.java)    // class kotlin.collections.EmptyList\nprintln(intList::class.java)    // class kotlin.collections.EmptyList (same!)\nstrList::class.java == intList::class.java   // true",
+    "new": "println(strList::class.java)    // e.g. class java.util.Arrays$ArrayList on JVM\nprintln(intList::class.java)    // same implementation for these two calls\nstrList::class.java == intList::class.java   // true in this example\n// Concrete collection classes depend on the factory, size, and platform.",
+    "reason": "Both lists have two elements and are not EmptyList. Kotlin/JVM 2.2.21 execution printed java.util.Arrays$ArrayList for both.",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/generics.md",
+    "old": "- `Function1<in P, out R>` — `(Animal) -> Number` works as `(Dog) -> Int`.",
+    "new": "- `Function1<in P, out R>` — `(Animal) -> Int` works as `(Dog) -> Number`; the reverse return-type conversion is unsafe.",
+    "reason": "The function may return a non-Int Number. Reversed return variance fails compilation; corrected direction compiles.",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/generics.md",
+    "old": "fun consume(@UnsafeVariance item: T): Unit   // ← T in 'in' position",
+    "new": "fun consume(item: @UnsafeVariance T): Unit   // ← T in 'in' position",
+    "reason": "UnsafeVariance targets the type usage, not the value parameter. Both rejection and corrected form were compiled.",
+    "sources": [
+      "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-unsafe-variance/"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/generics.md",
+    "old": "## Variance — `in`, `out`, and Why `List<Dog>` Isn't `List<Animal>`",
+    "new": "## Variance — `in`, `out`, and Why `MutableList<Dog>` Isn't `MutableList<Animal>`",
+    "reason": "Kotlin read-only List is covariant; MutableList is invariant.",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/generics.md",
+    "old": "- **\"`List<Dog>` is a `List<Animal>` because Dog is an Animal.\"** **False — that's invariance.** Variance (`in`/`out`) is opt-in.",
+    "new": "- **\"`List<Dog>` is a `List<Animal>` because Dog is an Animal.\"** This assignment is valid because Kotlin declares `List<out E>`. `MutableList<Dog>` cannot be assigned to `MutableList<Animal>` because `MutableList` is invariant.",
+    "reason": "Corrects the contradiction with Kotlin standard List declaration.",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/generics.md",
+    "old": "- **\"`<T : Any?>` is the same as `<T>`.\"** True for bounds, false in practice — `<T : Any>` (no `?`) excludes null.",
+    "new": "- **\"`<T : Any?>` is the same as `<T>`.\"** Correct: `Any?` is the default upper bound. The different bound `<T : Any>` excludes nullable type arguments.",
+    "reason": "The first two forms are equivalent; the original changes to a different bound midway through the explanation.",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/generics.md",
+    "old": "- **\"`List<*>` and `List<Any?>` are the same.\"** `List<*>` is read-only at the element type; `List<Any?>` accepts any input. Subtle but important.",
+    "new": "- **\"`List<*>` and `List<Any?>` are the same.\"** Both read-only List views expose elements as `Any?`; neither has `add` or `set`. The important write distinction is `MutableList<*>` versus `MutableList<Any?>`: only the latter accepts arbitrary nullable element values.",
+    "reason": "List<Any?> exposes no mutating element operations; the source already explains the correct MutableList distinction earlier.",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/generics.md",
+    "old": "- **\"Generics make the app larger or slower.\"** False on JVM. Type erasure means zero runtime cost. (C++ templates do bloat; the JVM does not.)",
+    "new": "- **\"Generics always create a specialised JVM class for every type argument.\"** False: JVM generics generally use erasure. This does not mean zero runtime cost: generic APIs can involve boxing and casts, while inline/reified bodies can increase call-site bytecode.",
+    "reason": "Erasure does not guarantee zero cost; generic Int values are boxed and casts are inserted.",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html",
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/generics.md",
+    "old": "| Cannot instantiate `T()` inside generic class | Erasure — `T::class.java` unavailable | Pass a `Class<T>` constructor arg or use `reified` (which needs `inline`) |",
+    "new": "| Cannot instantiate `T()` inside generic class | A type parameter has no constructor contract | Accept a factory `() -> T`; if reflection is required, pass/select a constructor explicitly. `reified` alone does not make `T()` legal. |",
+    "reason": "The class token or reification does not encode a no-argument-constructor bound.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/generics.md",
+    "old": "| Hilt fails to inject generic type | Erasure — Dagger sees raw `Repo`, not `Repo<User>` | Use `@Qualifier` or non-generic wrapper |",
+    "new": "| Hilt cannot resolve a generic dependency | Missing binding, unresolved type argument, or a Kotlin/Java wildcard mismatch | Provide the exact parameterised binding and inspect generated signatures; qualifiers distinguish multiple bindings of the same type. Dagger does not simply erase every `Repo<User>` binding to raw `Repo`. |",
+    "reason": "Dagger resolves declared compile-time type keys, including parameterised types, rather than treating all generic bindings as raw.",
+    "sources": [
+      "https://dagger.dev/semantics/"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/generics.md",
+    "old": "11. Hilt fails to inject `Repo<User>` because Dagger sees the raw type. How do you work around it?",
+    "new": "11. Hilt cannot resolve a `Repo<User>` binding. Which binding and wildcard checks should you make before changing the API?",
+    "reason": "Removes the incorrect premise while retaining the dependency-injection question.",
+    "sources": [
+      "https://dagger.dev/semantics/"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/generics.md",
+    "old": "11. **Hilt fails to inject `Repo<User>` because Dagger sees the raw type. How do you work around it?**\n    You can use `@Qualifier` annotations to differentiate the bindings, or wrap the generic type in a concrete non-generic class (e.g., `class UserRepo @Inject constructor(...) : Repo<User>`), which Dagger can easily identify and inject.",
+    "new": "11. **Hilt cannot resolve a `Repo<User>` binding. Which binding and wildcard checks should you make before changing the API?**\n    Check that the graph supplies the exact `Repo<User>` key and that Kotlin-generated wildcards match the requested Java signature. Dagger supports parameterised keys. Add qualifiers when selecting among multiple bindings of the same type; use a concrete wrapper only when it carries useful domain meaning.",
+    "reason": "Corrects the answer consistently with the question and Dagger type-key semantics.",
+    "sources": [
+      "https://dagger.dev/semantics/",
+      "https://kotlinlang.org/docs/java-to-kotlin-interop.html#variant-generics"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/generics.md",
+    "old": "| Compose recomposes more than expected with generic stable type | Inferred unstable | Annotate the generic class `@Immutable` |",
+    "new": "| Compose recomposes more than expected with generic parameters | Changed inputs, identity, or stability assumptions | Inspect compiler reports and measure. Use `@Immutable` only when its contract is true; under strong skipping, unstable parameters can still skip using identity. |",
+    "reason": "Stability annotations are contracts, not blanket fixes; strong skipping changes the original categorical implication.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/fix"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/generics.md",
+    "old": "    If `T` is an interface or from an external module, Compose compiler assumes it is Unstable, causing unnecessary recompositions. If you know `T` is actually immutable or stable, the inferred instability is \"wrong\" for performance. You fix it by annotating the generic class representing `T` with `@Immutable` / `@Stable`, or by wrapping it in a stable container.",
+    "new": "    Stability depends on the actual type, its observable mutation contract, and compiler configuration. An unstable parameter does not automatically force recomposition under strong skipping: identity can permit skipping. Inspect reports and measure first. Add `@Immutable` or `@Stable` only when the type satisfies the annotation contract; an annotation does not make mutable data safe.",
+    "reason": "Corrects categorical recomposition and unsafe blanket annotation guidance.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/fix"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/generics.md",
+    "old": "    return registry[T::class.java] as T\n        ?: error(\"Service ${T::class.java.simpleName} not registered\")",
+    "new": "    val service = registry[T::class.java]\n        ?: error(\"Service ${T::class.java.simpleName} not registered\")\n    return service as T // Registry must enforce that each key matches its value.",
+    "reason": "The original non-null cast occurs before Elvis and can throw before the intended missing-registration error. The registry still owns the type invariant.",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/generics.md",
+    "old": "If you need *generic-of-generic* type info at runtime (`List<User>` not just `List`), even `reified` isn't enough. You need a type token.",
+    "new": "If you need *generic-of-generic* type info at runtime (`List<User>` not just `List`), `T::class.java` is insufficient because a Class token has no type arguments. A reified wrapper can instead create `typeOf<T>()` or an appropriate library type token; the chosen serializer must support that representation.",
+    "reason": "Reified typeOf preserves nested statically known arguments; the limitation belongs to Class<T>, not all reified operations.",
+    "sources": [
+      "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.reflect/type-of.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/variance.md",
+    "old": "val f: (Animal) -> Number = { a -> a.legs }\nval g: (Dog) -> Int = f                          // ✅ legal: P (Dog) <: P (Animal); R (Int) <: R (Number)\nval n: Int = g(Dog())",
+    "new": "val f: (Animal) -> Int = { _ -> 4 }\nval g: (Dog) -> Number = f                       // ✅ accepts every Dog, returns an Int usable as Number\nval n: Number = g(Dog())",
+    "reason": "Original assignment is rejected because Number need not be Int; the corrected complete fragment compiles.",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/variance.md",
+    "old": "| `List<out T>` returned | `List<? extends T>` |",
+    "new": "| `List<T>` returned (`List` declares `out E`) | Normally `List<T>`; return wildcards are omitted unless requested |",
+    "reason": "Kotlin normally omits return wildcards; confirmed official Java interoperability contract.",
+    "sources": [
+      "https://kotlinlang.org/docs/java-to-kotlin-interop.html#variant-generics"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/variance.md",
+    "old": "3. Why is `List<out E>` valid but `MutableList<out E>` impossible?",
+    "new": "3. Why can `List` declare `out E`, while a mutable list with public `add(E)` and `get(): E` must be invariant? How is a use-site `MutableList<out E>` still valid?",
+    "reason": "Distinguishes invalid declaration-site covariance from valid use-site projection.",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/variance.md",
+    "old": "3. **Why is `List<out E>` valid but `MutableList<out E>` impossible?**\n   `List` in Kotlin is a read-only interface, meaning it only produces `E` (returns it from methods like `get`). Thus, `out E` is safe. `MutableList` has methods like `add(element: E)` which consume `E` in an input position. If it were `out E`, you could assign a `MutableList<Dog>` to a `MutableList<Animal>` and add a `Cat`, breaking type safety.",
+    "new": "3. **Why can `List` declare `out E`, while a mutable list with public `add(E)` and `get(): E` must be invariant? How is a use-site `MutableList<out E>` still valid?**\n   A public `get(): E` produces E, while `add(E)` consumes it. One declaration cannot promise both covariance and unrestricted element insertion. A use-site `MutableList<out E>` is valid: it prevents inserting or replacing elements through that reference, while element-free mutations such as `clear()` remain possible.",
+    "reason": "The original question and staff rule incorrectly ban valid projected mutable-list references.",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/variance.md",
+    "old": "8. **A `MutableSomething<out T>` attempt** — explain why this is structurally impossible and refactor.",
+    "new": "8. **Declaration-site covariance on a mutable API** — inspect the actual type positions. A type exposing both insertion of T and retrieval of T must be invariant; a use-site `MutableList<out T>` view is valid and restricts element writes.",
+    "reason": "Projection is not the same declaration contract.",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/variance.md",
+    "old": "`androidx.lifecycle.LiveData<T>` is invariant. This means you cannot assign `LiveData<Dog>` to `LiveData<Animal>` directly — annoying. The reason: `MutableLiveData<T>` writes; the design choice was to keep the API consistent. Use `.map { it as Animal }` or switch to `Flow<out T>` which is covariant.",
+    "new": "`androidx.lifecycle.LiveData<T>` is invariant, so `LiveData<Dog>` cannot be assigned directly to `LiveData<Animal>`. Its Java declaration has no Kotlin declaration-site `out`. A read-only covariant parent can still have an invariant mutable subtype, so `MutableLiveData` does not by itself prove covariance impossible. Adapt with a typed mapping or use an appropriate projected read-only API; `Flow<out T>` already declares covariance.",
+    "reason": "The claimed necessity is disproved by read-only List/covariant Flow and invariant mutable subtypes; the LiveData declaration itself is the contract.",
+    "sources": [
+      "https://developer.android.com/reference/androidx/lifecycle/LiveData",
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/variance.md",
+    "old": "    `LiveData` is invariant because it is deeply tied to `MutableLiveData`, which allows both reading (`value`) and writing (`setValue`). Making it covariant would break `MutableLiveData`. `Flow` is a purely read-only stream of emissions (production), so it is safely covariant.",
+    "new": "    `LiveData<T>` exposes an invariant Java generic declaration; `Flow<out T>` explicitly declares Kotlin covariance. A mutable subtype does not inherently prevent a read-only parent from being covariant: `List`/`MutableList` illustrate that separation. Choose an adapter or projected API according to the operations the caller needs.",
+    "reason": "Removes the incorrect explanation that a mutable subtype necessarily forbids a covariant read-only parent.",
+    "sources": [
+      "https://developer.android.com/reference/androidx/lifecycle/LiveData",
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/variance.md",
+    "old": "- `MutableList<out Animal>` — within this function, treat the list as read-only `Animal`.\n- `MutableList<in Animal>` — within this function, treat the list as write-only with `Animal` minimum.",
+    "new": "- `MutableList<out Animal>` — read elements as Animal; do not insert/replace them through this reference. Element-free mutations such as `clear()` remain possible.\n- `MutableList<in Animal>` — insert Animal values; reads remain available as `Any?`, rather than as Animal.",
+    "reason": "Variance restricts type-sensitive operations, not all reads or all mutations.",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/variance.md",
+    "old": "| Confusing variance inheritance | Subclass changes variance | Subclass cannot widen variance; can only narrow / preserve |",
+    "new": "| Confusing variance inheritance | Type arguments occur in incompatible positions in the chosen supertype | Check the declared positions: an invariant subtype can implement a covariant producer, but an `out T` subtype cannot pass T into an invariant supertype position. |",
+    "reason": "Widen/tighten is not a complete rule; actual type-position checking determines legality.",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/variance.md",
+    "old": "   A subclass cannot widen variance (e.g., change an invariant parameter to covariant) because it would violate the parent's contract. It can tighten or preserve it (e.g., an `out T` parameter remains `out T`).",
+    "new": "   Check how the subtype uses each parameter in its supertype declaration. `class Child<T> : Producer<T>` can implement `Producer<out T>` invariantly. In contrast, declaring `Child<out T>` while passing T into an invariant parent type position is rejected. Variance belongs to each declaration; use type positions rather than a general widening/tightening slogan.",
+    "reason": "Explains the actual compiler rule and preserves the inheritance question.",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/inline-functions.md",
+    "old": "In the JVM world, every time you define a lambda `{ it > 5 }`, the compiler creates an anonymous class implementation under the hood (e.g., `Function1<Int, Boolean>`). Every time that code is executed, the JVM allocates a new object on the heap. If you call `filter` inside a `RecyclerView` loop 60 times a second, you allocate 60 hidden objects a second. This causes massive Garbage Collection (GC) churn, freezing the UI.\n\nThe `inline` keyword solves this by removing the object allocation entirely.",
+    "new": "A non-inline higher-order call can involve a function object, captures, boxing, and indirect calls. This is not a new anonymous object on every invocation: noncapturing lambdas may be reused, and Kotlin/JVM 2.0+ uses `invokedynamic` by default. Capturing lambdas and runtime optimisations need separate inspection. Also, stdlib `filter` is already inline.\n\nInlining can remove the inlinable lambda object and indirect call at a Kotlin call site. It does not remove unrelated allocations, such as the result list. Measure hot paths before attributing UI jank to lambda allocation.",
+    "reason": "The universal allocation and jank assertions contradict compiler output; separates object overhead from result allocations.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic",
+      "https://kotlinlang.org/docs/inline-functions.html"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/inline-functions.md",
+    "old": "If you decompile the generated Java code for `calculate()`, you will see something horrifying:",
+    "new": "The following Java-shaped sketch illustrates a possible function-object call. It is pseudocode, not guaranteed decompiler output: this noncapturing lambda can be reused, and modern Kotlin/JVM normally emits `invokedynamic`.",
+    "reason": "Marks implementation-dependent illustration honestly and retains it.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/inline-functions.md",
+    "old": "// Decompiled Java (No Inline)",
+    "new": "// Conceptual Java-shaped sketch (No Inline)",
+    "reason": "The exact shown anonymous allocation is not current output for the example.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/inline-functions.md",
+    "old": "// The JVM instantiated a hidden object!",
+    "new": "// Illustrative function object; not proof of a fresh allocation per call.",
+    "reason": "Removes a false evidence claim from retained pseudocode.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/inline-functions.md",
+    "old": "**Without `inline`** — `calculate()` allocates a `Function2` object on every call:",
+    "new": "**Without `inline`** — this illustrative listing shows one possible class-based call shape. It is not the output of the noncapturing example on current defaults. Kotlin/JVM 2.2.21 emits `invokedynamic`; with `-Xlambdas=class` it uses a cached `INSTANCE` for this lambda:",
+    "reason": "Direct local compiler/javap evidence disproves a per-call new opcode for this example.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/inline-functions.md",
+    "old": "The `new #15` + `dup` + `invokespecial #19` triplet is the JVM allocating + initializing a brand-new `Function2` object every invocation. In a 60Hz scroll loop, that's 60 allocations per second → GC churn → jank.",
+    "new": "In the illustrative listing, `new` followed by construction would allocate a fresh function object. Do not apply that count to the source above: its noncapturing lambda can be cached or linked using `invokedynamic`. Actual allocation rates and jank require measurement.",
+    "reason": "Retains bytecode-reading lesson but removes invented evidence/performance causal certainty.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/inline-functions.md",
+    "old": "**The diff matters per call site.** If `doMath` is called 1,000 times in a scroll, the inlined version produces 8,000 stack ops total; the non-inlined version produces 1,000 heap allocations + 1,000 virtual dispatches. R8 + ART will optimize some away — but you've removed the regression entirely at the source instead of hoping.",
+    "new": "**Compare the actual call sites.** Inlining can eliminate the function-object invocation and boxing used by a generic Function interface. It does not establish a fixed number of heap allocations or a runtime speedup for this example. Inspect compiler output for the chosen version and flags, then measure the optimised Android build.",
+    "reason": "The operation/allocation counts are unsupported and the noncapturing example contradicts them.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/inline-functions.md",
+    "old": "This is why chaining 5 Kotlin collection operations together `list.filter{}.map{}.sortedBy{}` does not immediately crash an Android phone with out-of-memory errors. The compiler squashes all of those lambdas flat into massive blocks of inline bytecode.",
+    "new": "Inlining reduces overhead for many stdlib higher-order calls. It does not fuse eager collection operations: `filter` and `map` still create their result collections, and sorting has its own allocations and comparison cost. A chain is not guaranteed to crash without inlining or become allocation-free with it.",
+    "reason": "The original gives an unsupported OOM claim and wrongly implies inlining eliminates intermediate results.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/inline-functions.md",
+    "old": "- **No Encapsulation:** Inline functions cannot access `private` members of the class they are defined in, because their code will be executed in a completely different class (the caller's class).",
+    "new": "- **Public API visibility:** Public/protected inline bodies cannot access non-public implementation declarations. Private inline functions can use private members. An `internal` helper marked `@PublishedApi` can support a public inline wrapper, but then becomes part of its binary compatibility contract.",
+    "reason": "The restriction belongs to externally callable inline API, not every inline function; private inline example compiled.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/inline-functions.md",
+    "old": "1.  **Is the inline function too big?** I look at the line count. If an `inline` function is more than 3-4 lines of logic, I will reject the PR. Massive inline functions cause severe instruction cache misses at the CPU level and bloat the dex file. ",
+    "new": "1.  **Is inlining justified by the call sites?** Inspect generated code size and measure hot paths. Larger bodies can increase bytecode, but a universal 3–4-line threshold does not predict instruction-cache misses or APK impact. Extract substantial non-inline helpers when that preserves the API contract. ",
+    "reason": "A line-count threshold cannot establish cache misses or code-size severity.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/inline-functions.md",
+    "old": "3.  **Are we hiding massive logic in Scope Functions?** `apply` and `let` are inline. If a developer puts 50 lines of complex database transactions inside a `.let { }` block, it makes the bytecode of the caller massive. I will demand the logic be extracted to a standard `private fun`.",
+    "new": "3.  **Are we hiding substantial logic in scope functions?** `apply` and `let` inline their lambdas, but code written directly at a single call site is not multiplied just because it is inside `let`. Extract a named function for clarity, reuse, or measured size concerns rather than assuming scope-function syntax itself duplicates that one block.",
+    "reason": "A lambda literal used at one call site is not replicated across unspecified callers by let.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/inline-functions.md",
+    "old": "   It prevents the severe memory allocation overhead of Lambdas. Without it, passing a lambda to a function creates a new anonymous `Function` object on the heap per call. In hot loops, this causes massive Garbage Collection churn.",
+    "new": "   It can remove function-object invocation and allocation for inlinable lambdas. Non-inline lambdas do not necessarily allocate anew on every call: noncapturing instances can be reused, and current Kotlin/JVM normally uses `invokedynamic`. Measure allocation and latency on the target runtime.",
+    "reason": "Corrects the same false per-call allocation premise in the answer key.",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/inline-functions.md",
+    "old": "   Because functional programming chains (`list.filter{}.map{}`) are heavily used. If they weren't `inline`, every operation would allocate intermediate Lambda objects, immediately crashing Android apps with Out-Of-Memory errors or extreme GC jank.",
+    "new": "   Inlining can avoid inlinable function objects and indirect calls at many stdlib call sites. It does not imply that the non-inline alternative would crash; eager operations such as `filter` and `map` still allocate result collections.",
+    "reason": "Removes unsupported crash certainty and retains actual purpose.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/inline-functions.md",
+    "old": "8.  Why can't an `inline` function access a `private` variable belonging to the class it is declared inside?",
+    "new": "8.  Why can't a public API `inline` function access a private implementation declaration, while a private inline function can?",
+    "reason": "Scopes question to actual visibility restriction.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/inline-functions.md",
+    "old": "8. **Why can't an `inline` function access a `private` variable belonging to the class it is declared inside?**\n   Because the `inline` function's body is physically copied into the *caller's* class. If it copied private variables, the caller's class would suddenly have illegal bytecode instructions attempting to access private fields of a different class, violating JVM visibility rules.",
+    "new": "8. **Why can't a public API `inline` function access a private implementation declaration, while a private inline function can?**\n   A public API inline body can be copied into another module, so it cannot depend on private implementation declarations. A private inline function has no such external API exposure and can use private members. Use an appropriate public helper or an `internal @PublishedApi` helper when an external inline wrapper requires one.",
+    "reason": "Corrects answer consistently and preserves visibility topic.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/reified-types.md",
+    "old": "1.  **Reified means \"Made Real\":** A reified type parameter is not erased. It remains a real, queryable class at runtime.",
+    "new": "1.  **Reified means available at the call site:** The Kotlin compiler substitutes the concrete type into operations in the inlined body. `T::class` yields a class token without nested type arguments; `typeOf<T>()` can represent a statically known parameterised type. Generic objects on the JVM still obey erasure.",
+    "reason": "Reification is not a per-instance runtime generic class representation.",
+    "sources": [
+      "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.reflect/type-of.html"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/reified-types.md",
+    "old": "Same `isType<>` source function, two different bytecode call sites, two different hardcoded class references. The \"function\" doesn't exist at runtime; only its specialised copies do.",
+    "new": "The inlined call site can contain the concrete type check. A generic method artifact with reification markers may still be emitted in the class file; it is not a normal Java-callable implementation of the reified operation. Exact instructions, including constant folding, depend on the compiler version and input.",
+    "reason": "Local javap showed the generic isType method remains alongside expanded call sites.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/reified-types.md",
+    "old": "**This is what makes `reified` impossible without `inline`.** A normal function compiles to one method body shared across all type parameters. The JVM can't preserve `T` for that single body — type erasure. With `inline`, there is no shared body; every call site gets its own bytecode with `T` already substituted. The JVM never has to \"remember\" `T` because the compiler already wrote it down.",
+    "new": "**Kotlin supports reified parameters on inline functions.** Expansion supplies the concrete type at Kotlin call sites; an ordinary erased function has no automatic type token. Other API designs can pass an explicit `Class`, `KClass`, or `KType`, so this is Kotlin's language design rather than a universal mathematical impossibility. A method artifact may still be emitted for an inline declaration.",
+    "reason": "Clarifies actual mechanism without denying emitted artifacts or explicit-token alternatives.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html",
+      "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.reflect/type-of.html"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/reified-types.md",
+    "old": "2.  Why is the `reified` keyword mathematically impossible to implement without also using the `inline` keyword?",
+    "new": "2.  Why does Kotlin require `inline` for its `reified` type parameters, and what would an explicit type token provide instead?",
+    "reason": "Kotlin restriction is not universal mathematical impossibility.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/reified-types.md",
+    "old": "2. **Why is the `reified` keyword mathematically impossible to implement without also using the `inline` keyword?**\n   Without `inline`, the compiler generates a single method body for the generic function, forcing the JVM to use type erasure. With `inline`, the compiler copies the method body directly to every call site. At the call site, the concrete type is known, allowing the compiler to hardcode the exact class (e.g., replacing `T` with `String`) in the bytecode, bypassing erasure entirely.",
+    "new": "2. **Why does Kotlin require `inline` for its `reified` type parameters, and what would an explicit type token provide instead?**\n   Kotlin implements reified operations by substituting the concrete type when expanding an inline call. A normal erased generic method does not receive that type automatically. Passing a `Class<T>` or a richer type token is an explicit alternative for a non-inline API; it does not change JVM instance erasure.",
+    "reason": "Preserves mechanism but removes false impossibility and full-erasure-bypass assertions.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html",
+      "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.reflect/type-of.html"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/reified-types.md",
+    "old": "2.  **The Wrapper Rule:** I strictly enforce that `inline reified` functions are only used as tiny wrappers. They exist solely to extract `T::class.java` and pass it to a private, non-inline worker function. This prevents bytecode bloat while keeping the public API clean.",
+    "new": "2.  **The Wrapper Rule:** Keep a reified wrapper small when it delegates substantial work, but reified operations also support `is T`, casts, and richer type tokens. A public inline wrapper cannot call a private worker: use a suitable public helper or an `internal @PublishedApi` helper and account for its binary compatibility contract.",
+    "reason": "Original private-worker advice produces a compiler error for public inline wrappers.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/reified-types.md",
+    "old": "8. **Why is it impossible to apply the `reified` keyword to the generic type parameter of a `class`?**\n   A `class` definition lives on the heap and its bytecode is generated once. It cannot be `inline` (copied and pasted to call sites). Therefore, it must obey standard JVM Type Erasure, making reification impossible.",
+    "new": "8. **Why can't a Kotlin class declare a `reified` type parameter?**\n   Kotlin permits `reified` on inline function type parameters, not class parameters. JVM generic instances do not automatically retain their type arguments. A class that needs runtime type information can receive an explicit type token or factory; class definitions themselves are not heap instances of the declared class.",
+    "reason": "Corrects language restriction and class-definition/heap confusion.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html",
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  }
+]

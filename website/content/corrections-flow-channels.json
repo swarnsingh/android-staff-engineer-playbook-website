@@ -1,0 +1,156 @@
+[
+  {
+    "path": "kotlin/coroutines-and-flow/flow-operators-and-backpressure.md",
+    "old": "Everything above `flowOn` runs on `Dispatchers.Default`. Everything below it runs in the collector's context unless another boundary is introduced.",
+    "new": "In this pipeline, the context-preserving upstream mapping runs with `Dispatchers.Default`; downstream mapping stays in the collector's context. An upstream adapter may still manage its own execution context, such as a database API that makes its calls main-safe.",
+    "reason": "flowOn affects preceding operators without their own context; it cannot override every internal dispatcher chosen by an adapter.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flow-on.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/flow-operators-and-backpressure.md",
+    "old": "Staff-level rule: do not sprinkle `flowOn` randomly. Each `flowOn` creates a concurrency boundary that can change cancellation timing, buffering, and stack traces. Put it at ownership boundaries:",
+    "new": "Staff-level rule: place `flowOn` deliberately. A dispatcher change introduces upstream/downstream coroutines and a channel boundary; a context change without a dispatcher change can remain sequential. Adjacent `flowOn`, `buffer`, and related operators can fuse rather than create one channel per call. Cross-dispatcher cancellation may discard in-flight elements. Put context policy at ownership boundaries:",
+    "reason": "The original universal concurrency-boundary claim is false for same-dispatcher context changes and operator fusion.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flow-on.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/flow-operators-and-backpressure.md",
+    "old": "`buffer(n)` allows upstream to run ahead by `n` values.",
+    "new": "`buffer(n)` adds space for n queued values and lets upstream and downstream run concurrently. The total work in flight can also include a value being processed and a suspended producer; capacity is not an end-to-end request budget.",
+    "reason": "A buffer count bounds queued elements rather than all in-flight processing.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/buffer.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/flow-operators-and-backpressure.md",
+    "old": "`combine` emits whenever any upstream emits after every upstream has emitted at least once.",
+    "new": "After each upstream has supplied a value, `combine` transforms the most recent values from its inputs. Fast concurrent emissions can be combined using their latest values; it is not a promise to preserve every intermediate input combination.",
+    "reason": "Avoids implying one output for every individual upstream event.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/combine.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/flow-operators-and-backpressure.md",
+    "old": "`sample` emits the latest value at a fixed period.",
+    "new": "`sample` emits the latest new value observed during each sampling period. It does not repeat an unchanged value merely because another period elapsed, and the final value can be omitted if the flow completes before the next sampling window.",
+    "reason": "Clarifies the documented terminal-window omission and sampling semantics.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/sample.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/flow-operators-and-backpressure.md",
+    "old": "| `collect` | You need every value until cancellation/completion | Never returns for hot flows |",
+    "new": "| `collect` | Process delivered values until cancellation/completion | Does not complete normally for StateFlow/SharedFlow; other flows depend on their completion contract |",
+    "reason": "Hot does not universally mean noncompleting, and upstream dropping may already have removed values.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/flow-operators-and-backpressure.md",
+    "old": "| `first` | You need the first matching value | Hangs if no value arrives |",
+    "new": "| `first` | You need the first matching value | Waits on a noncompleting flow with no match; throws NoSuchElementException if the flow completes without one |",
+    "reason": "first() on an empty finite flow throws instead of hanging.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/first.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/flow-operators-and-backpressure.md",
+    "old": "| `toList` | Finite flow in tests or batch code | Never returns for hot flows |",
+    "new": "| `toList` | Finite flow in tests or batch code | Waits for completion; StateFlow/SharedFlow do not complete normally, but a channel-backed flow can complete when its channel closes |",
+    "reason": "A receiveAsFlow view is hot and can complete after the channel closes and drains.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/receive-as-flow.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/flow-operators-and-backpressure.md",
+    "old": "This pipeline makes cancellation semantics intentional: new query cancels old search, errors become UI state, and the cold pipeline becomes hot at the ViewModel boundary.",
+    "new": "This pipeline makes cancellation semantics intentional: a new query cancels the old search, errors become UI state, and stateIn shares the cold pipeline at the ViewModel boundary. WhileSubscribed keeps sharing for five seconds after the last collector leaves, then stops upstream work; the cached state remains by default. Ensure temporarily stale `.value` is acceptable, and collect with the UI lifecycle. DistinctUntilChanged is unnecessary if `query` is already a StateFlow, which already suppresses equal values.",
+    "reason": "The sharing contract needs explicit absent-subscriber and cached-state behavior.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-sharing-started/-companion/-while-subscribed.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/channels-and-select.md",
+    "old": "`send` suspends when the channel cannot accept a value. `receive` suspends when the channel has no value. Suspension preserves threads, but it still holds coroutine resources and can stall business logic if capacity is chosen carelessly.",
+    "new": "With the default suspending overflow policy, `send` suspends when the channel cannot accept another value; dropping overflow policies may discard values instead. `receive` waits when an open channel has no value, and a closed, drained channel reports closure. Suspension does not block the thread, but still retains coroutine resources and can stall business logic.",
+    "reason": "send suspension depends on overflow configuration and receive must account for closure.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/channels-and-select.md",
+    "old": "Closing a channel means no more values will be sent. Receivers can still drain already-buffered values.",
+    "new": "Closing rejects new send/trySend attempts. Buffered values remain receivable, and sends already suspended before close are not aborted by close. After these values drain, receive reports closure. Use cancellation when the owner must abort pending work instead.",
+    "reason": "close does not abort sends that were already suspended; official API explicitly preserves them.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/close.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/channels-and-select.md",
+    "old": "This is correct when every frame must be processed and the producer should slow down if the consumer cannot keep up. It is wrong for GPS or sensor streams where old values become stale quickly.",
+    "new": "This handoff fits a pipeline whose upstream can slow down and whose contract requires retained frames to be processed in order. A rendezvous channel alone cannot stop the camera or upstream adapter from dropping frames. The shown producer/consumer fragment also needs a shared lifetime, producer completion/close policy, and resource cleanup on cancellation. If Frame owns a resource, define its release on both successful consumption and undelivered cancellation; prefer onUndeliveredElement for channel-owned abandoned frames. Latest-only sensor display may instead justify conflation.",
+    "reason": "The fragment does not by itself guarantee every external frame is processed or released.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/channels-and-select.md",
+    "old": "class CartActor(\n    scope: CoroutineScope,\n    private val checkout: CheckoutService\n) {\n    private val commands = Channel<CartCommand>(capacity = Channel.BUFFERED)\n\n    init {\n        scope.launch {\n            var items = emptyList<Item>()\n            for (command in commands) {\n                when (command) {\n                    is CartCommand.Add -> items = items + command.item\n                    is CartCommand.Remove -> items = items.filterNot { it.id == command.id }\n                    is CartCommand.Checkout -> {\n                        command.replyTo.complete(checkout.submit(items))\n                    }\n                }\n            }\n        }\n    }\n\n    suspend fun add(item: Item) {\n        commands.send(CartCommand.Add(item))\n    }\n\n    suspend fun checkout(): CheckoutResult {\n        val reply = CompletableDeferred<CheckoutResult>()\n        commands.send(CartCommand.Checkout(reply))\n        return reply.await()\n    }\n}",
+    "new": "class CartActor(private val checkout: CheckoutService) {\n    private val commands = Channel<CartCommand>(\n        capacity = Channel.BUFFERED,\n        onUndeliveredElement = { command ->\n            if (command is CartCommand.Checkout) command.replyTo.cancel()\n        }\n    )\n    private var started = false\n\n    // The lifecycle owner explicitly starts exactly one run() call.\n    suspend fun run() {\n        check(!started) { \"CartActor is single-use\" }\n        started = true\n        var items = emptyList<Item>()\n        try {\n            for (command in commands) {\n                when (command) {\n                    is CartCommand.Add -> items = items + command.item\n                    is CartCommand.Remove -> items = items.filterNot { it.id == command.id }\n                    is CartCommand.Checkout -> {\n                        try {\n                            command.replyTo.complete(checkout.submit(items))\n                        } catch (expected: IOException) {\n                            command.replyTo.completeExceptionally(expected)\n                        } finally {\n                            // Cancellation/unexpected failure must release the waiter.\n                            if (!command.replyTo.isCompleted) command.replyTo.cancel()\n                        }\n                    }\n                }\n            }\n        } finally {\n            commands.cancel() // Discard queued commands and cancel their replies.\n        }\n    }\n\n    suspend fun add(item: Item) {\n        commands.send(CartCommand.Add(item))\n    }\n\n    suspend fun checkout(): CheckoutResult {\n        val reply = CompletableDeferred<CheckoutResult>()\n        try {\n            commands.send(CartCommand.Checkout(reply))\n            return reply.await()\n        } finally {\n            reply.cancel() // A departed caller must not retain its reply waiter.\n        }\n    }\n\n    fun close() { commands.close() } // Graceful drain while run() is still active.\n}",
+    "reason": "The original constructor starts hidden work and a checkout exception or cancellation can leave the reply deferred incomplete forever. The replacement makes startup explicit, reports expected I/O failures, releases active and queued replies, and preserves cancellation.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-completable-deferred.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/channels-and-select.md",
+    "old": "This is appropriate when serialized mutation is the central requirement. It is overkill for ordinary ViewModel state where `MutableStateFlow.update { }` is simpler and more transparent.",
+    "new": "The lifecycle owner must create the actor, start one `run()` coroutine, observe unexpected worker failure, and cancel that coroutine when its lifetime ends. `close()` requests a graceful drain; owner cancellation aborts work. This application-shaped fragment assumes Item, ItemId, CheckoutResult, CheckoutService and java.io.IOException imports. A caller cancelled while waiting does not automatically undo an already-started backend checkout; use idempotency and durable progress for that promise.\n\nAn actor is appropriate when serialized mutation is the central requirement. It is overkill for ordinary ViewModel state where `MutableStateFlow.update { }` is simpler and more transparent.",
+    "reason": "Makes the explicit startup/lifetime contract visible and prevents interpreting a cancelled caller as rollback.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/channels-and-select.md",
+    "old": "        .onFailure { error -> logger.warn(error) }",
+    "new": "        .onFailure { error ->\n            if (error is CancellationException) throw error\n            logger.warn(error)\n        }",
+    "reason": "runCatching catches CancellationException; a worker must not consume its cancellation signal.",
+    "sources": [
+      "https://kotlinlang.org/docs/cancellation-and-timeouts.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/channels-and-select.md",
+    "old": "    advanceUntilIdle()\n\n    assertEquals(listOf(1, 2), processed)",
+    "new": "    runCurrent() // Run queued backgroundScope tasks at the current virtual time.\n\n    assertEquals(listOf(1, 2), processed)",
+    "reason": "advanceUntilIdle stops when only backgroundScope tasks remain; runCurrent executes the queued same-time processing in this fragment.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-test-scope/background-scope.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/channels-and-select.md",
+    "old": "When the channel itself is public, use `receiveCatching` to avoid brittle close exceptions.",
+    "new": "Use `runCurrent()` for immediate background work; advance virtual time explicitly if processing delays. The QueueWorker type above is an application-defined fragment whose lifecycle must stop with backgroundScope. When the channel itself is public, use `receiveCatching` to inspect closure as a result; `getOrThrow()` still throws on closure/failure.",
+    "reason": "States scheduling assumptions and prevents presenting receiveCatching().getOrThrow() as inherently nonthrowing.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-test-scope/background-scope.html"
+    ]
+  }
+]

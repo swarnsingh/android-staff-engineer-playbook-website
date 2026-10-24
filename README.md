@@ -49,7 +49,7 @@ Two rules govern the whole repo. Both live in [`CONTRIBUTING.md`](CONTRIBUTING.m
 
 - New to the subject? Start with the [Complete Curriculum](learning-paths.md#path-0-complete-curriculum-for-new-learners), which orders the whole repository from foundations to Staff-level application.
 - Entering a specific tree such as Android or Kotlin? Open its parent index and follow its numbered **Guided Reading Sequence** top to bottom.
-- Contributing content? Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for ownership, structure, sources, and answer-key rules.
+- Contributing content? Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for ownership, structure, sources, and answer-key rules, and the [Content and Reader Experience Rulebook](content-rulebook.md) for problem-led teaching, depth, animations, and topic-specific presentation.
 - Need a term defined? See [`glossary.md`](glossary.md).
 
 ## The Knowledge Trees

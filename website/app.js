@@ -2,7 +2,6 @@
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 const sourceRoot = 'https://github.com/swarnsingh/android-staff-engineer-playbook/blob/main/';
-const sample = $('#concurrent-code').textContent;
 const escapeHtml = text => text.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 
 // The source text remains readable without this optional highlighting pass.
@@ -54,7 +53,7 @@ function applyPreferences() {
   $('#wrap-code').checked = !!preferences.wrap;
   $('#bookmark').setAttribute('aria-pressed',!!preferences.bookmarked);
   $('#bookmark').textContent = preferences.bookmarked ? '★ Lesson saved' : '☆ Save lesson';
-  $('#play-model').setAttribute('aria-disabled',effectiveReducedMotion);
+  $('#play-model')?.setAttribute('aria-disabled',effectiveReducedMotion);
   if (effectiveReducedMotion) pauseAnimation();
 }
 applyPreferences();
@@ -107,7 +106,8 @@ document.addEventListener('keydown',e => {
 });
 
 // Supplemental views derive from the same in-lesson answers and source links.
-$$('[data-question]').forEach(question => { const clone=question.cloneNode(true); clone.removeAttribute('id'); clone.removeAttribute('data-question'); $('#practice-questions').append(clone); });
+$$('[data-question]').forEach(question => { const clone=question.cloneNode(true); [clone,...clone.querySelectorAll('[id]')].forEach(node=>node.removeAttribute('id')); clone.removeAttribute('data-question'); $('#practice-questions').append(clone); });
+$('#qa-empty').hidden=!!$('#practice-questions').children.length;
 const seenSources = new Set();
 $$('article a[target=_blank]').forEach(link => {
   if(seenSources.has(link.href)) return;
@@ -180,73 +180,18 @@ const outlineLinks=$$('.page-outline a,.mobile-outline a');
 // Observe each section with one shared observer.
 const sectionObserver=new IntersectionObserver(entries=>{
   entries.forEach(entry=>{if(entry.isIntersecting){
-    outlineLinks.forEach(link=>{const current=link.hash===`#${entry.target.id}`;link.classList.toggle('current',current);if(current)link.setAttribute('aria-current','location');else link.removeAttribute('aria-current');});
-    $('#mobile-current').textContent=$(`.page-outline a[href="#${entry.target.id}"]`).textContent.replace(/^\d+\. /,'');
+    outlineLinks.forEach(link=>{const current=link.hash===`#${entry.target.querySelector('h2[id]')?.id || entry.target.id}`;link.classList.toggle('current',current);if(current)link.setAttribute('aria-current','location');else link.removeAttribute('aria-current');});
+    const anchor=entry.target.querySelector('h2[id]')?.id || entry.target.id;
+    const currentLink=$(`.page-outline a[href="#${anchor}"]`); if(currentLink)$('#mobile-current').textContent=currentLink.textContent.replace(/^\d+\. /,'');
   }});
 },{rootMargin:'-15% 0px -65% 0px'});
 $$('.lesson-section').forEach(section=>sectionObserver.observe(section));
 
-// Pure teaching frames live in lesson-model.js; this layer only presents them.
-let sceneId='success',position=0,playTimer=null;
-function statusKind(value){if(value==='Failed')return'error';if(value==='Cancelled')return'cancelled';return'normal';}
-function renderModel(rebuildTable=false){
-  const frame=COROUTINE_MODEL.frame(sceneId,position);position=frame.index;
-  const {scene,step}=frame;
-  $('#parent-status').textContent=step.parent;$('#name-status').textContent=step.name;$('#avatar-status').textContent=step.avatar;$('#thread-status').textContent=step.thread;
-  [['#parent-status',step.parent],['#name-status',step.name],['#avatar-status',step.avatar]].forEach(([id,status])=>$(id).parentElement.dataset.status=statusKind(status));
-  const tree=$('#job-tree');tree.dataset.signal='';
-  requestAnimationFrame(()=>{tree.dataset.signal=effectiveReducedMotion?'':step.signal;});
-  $('#step-count').textContent=`Step ${position+1} of ${scene.steps.length}`;$('#model-time').textContent=step.time;$('#model-caption').textContent=step.caption;
-  $('#previous-step').setAttribute('aria-disabled',position===0);$('#next-step').setAttribute('aria-disabled',position===scene.steps.length-1);
-  $('#model-position').max=scene.steps.length-1;$('#model-position').value=position;$('#model-position').setAttribute('aria-valuetext',`Step ${position+1}: ${step.time}`);
-  const code=$('#model-code');code.replaceChildren();
-  scene.code.forEach((line,index)=>{const span=document.createElement('span');span.className='model-line';if(step.lines.includes(index)){const mark=document.createElement('mark');mark.textContent=line;span.append(mark);}else span.textContent=line;code.append(span);});
-  if(rebuildTable){
-    $('#step-table-caption').textContent=scene.description;
-    $('#step-table').replaceChildren();
-    scene.steps.forEach((s,i)=>{const row=document.createElement('tr');[`${i+1}. ${s.time}`,s.name,s.avatar,s.parent,s.caption].forEach(value=>{const cell=document.createElement('td');cell.textContent=value;row.append(cell);});$('#step-table').append(row);});
-  }
-}
-function stopPlayback(){clearInterval(playTimer);playTimer=null;$('#play-model').textContent='Play steps';$('#play-model').setAttribute('aria-pressed','false');}
-pauseAnimation=stopPlayback;
-function moveStep(delta){stopPlayback();position+=delta;renderModel();}
-$('#previous-step').addEventListener('click',()=>moveStep(-1));$('#next-step').addEventListener('click',()=>moveStep(1));
-$('#reset-model').addEventListener('click',()=>{stopPlayback();position=0;renderModel();});
-$('#scene-select').addEventListener('change',e=>{stopPlayback();sceneId=e.target.value;position=0;renderModel(true);});
-$('#model-position').addEventListener('input',e=>{stopPlayback();position=Number(e.target.value);renderModel();});
-$('#play-model').addEventListener('click',()=>{
-  if(effectiveReducedMotion){toast('Reduced motion is active. Use Previous and Next to explore every step.');return;}
-  if(playTimer){stopPlayback();return;}
-  if(position===COROUTINE_MODEL.scenes[sceneId].steps.length-1){position=0;renderModel();}
-  $('#play-model').textContent='Pause steps';$('#play-model').setAttribute('aria-pressed','true');
-  playTimer=setInterval(()=>{position++;renderModel();if(position===COROUTINE_MODEL.scenes[sceneId].steps.length-1)stopPlayback();},2800);
-});
-new IntersectionObserver(entries=>{if(!entries[0].isIntersecting)stopPlayback();}).observe($('#model-figure'));
-document.addEventListener('visibilitychange',()=>{if(document.hidden)stopPlayback();});
-renderModel(true);
-
-let playgroundLoading=false,kotlinInstance;
-$('#execute-kotlin').addEventListener('click',()=>{if(kotlinInstance)kotlinInstance.execute();});
-$('#load-playground').addEventListener('click',()=>{
-  $('#inline-playground').hidden=false;
-  if(playgroundLoading){$('#inline-playground').scrollIntoView({block:'center',behavior:'instant'});return;}
-  playgroundLoading=true;$('#load-playground').textContent='Loading editor…';$('#load-playground').setAttribute('aria-disabled','true');
-  $('#runnable-code').textContent=sample;$('#playground-status').textContent='Loading the Kotlin editor…';
-  const script=document.createElement('script');script.src='https://unpkg.com/kotlin-playground@1';
-  function fail(){playgroundLoading=false;$('#load-playground').textContent='Retry loading Kotlin editor';$('#load-playground').setAttribute('aria-disabled','false');$('#playground-status').textContent='The editor could not load. Copy the code into the standalone Kotlin Playground linked above.';script.remove();}
-  script.onload=()=>{try{
-    if(typeof window.KotlinPlayground!=='function')throw new Error('Editor unavailable');
-    $('#runnable-code').setAttribute('theme',['dark','contrast'].includes(document.documentElement.dataset.theme)?'darcula':'idea');
-    KotlinPlayground('#runnable-code',{getInstance(instance){kotlinInstance=instance;$('#execute-kotlin').disabled=false;}});
-    $('#load-playground').textContent='Return to the live editor';$('#load-playground').setAttribute('aria-disabled','false');$('#playground-status').textContent='Edit concurrent = true to false, then choose Run Kotlin. Timestamps and thread names are real compiler-service output.';
-  }catch{fail();}};
-  script.onerror=fail;document.head.append(script);
-});
-
 function chapterLink(chapter){
-  const active=chapter.path==='kotlin/coroutines-and-flow/coroutines.md';
+  const active=chapter.path===document.body.dataset.source;
   const link=document.createElement('a');link.textContent=chapter.title;
   if(active){link.href='#problem';link.setAttribute('aria-current','page');link.addEventListener('click',e=>{e.preventDefault();closeCurriculum();setView('content',{anchor:'problem'});});}
+  else if(chapter.path.startsWith('kotlin/')){link.href='/'+chapter.path.replace(/\.md$/,'/');}
   else{link.href=sourceRoot+chapter.path;link.target='_blank';link.rel='noreferrer';link.setAttribute('aria-describedby','external-note');const cue=document.createElement('span');cue.className='external-cue';cue.textContent='GitHub ↗';link.append(cue);}
   return link;
 }
@@ -262,10 +207,17 @@ function renderNavigation(query=''){
     const name=document.createElement('span');name.textContent=topic.title;const chevron=document.createElement('span');chevron.className='chevron';chevron.textContent='›';chevron.setAttribute('aria-hidden','true');summary.append(icon,name,chevron);group.append(summary);
     const children=document.createElement('div');children.className='nav-children';
     if(topic.slug==='kotlin'&&!query){
-      const section=document.createElement('p');section.className='nav-subtitle';section.textContent='COROUTINES & FLOW';children.append(section);
-      const order=['coroutines.md','channels-and-select.md','flow-operators-and-backpressure.md','callbackflow-and-bridging-callbacks.md','coroutines-debugging-and-profiling.md','test-dispatchers-virtual-time.md'];
-      chapters.filter(c=>c.path.includes('coroutines-and-flow/')).sort((a,b)=>order.indexOf(a.path.split('/').pop())-order.indexOf(b.path.split('/').pop())).forEach(c=>children.append(chapterLink(c)));
-      const more=document.createElement('details');more.className='nav-group';const moreSummary=document.createElement('summary');moreSummary.textContent='Language, types & runtime';more.append(moreSummary);chapters.filter(c=>!c.path.includes('coroutines-and-flow/')).forEach(c=>more.append(chapterLink(c)));children.append(more);
+      let currentFolder='',folderGroup;
+      for(const chapter of chapters){
+        const folder=chapter.path.split('/')[1];
+        if(folder!==currentFolder){
+          folderGroup=document.createElement('details');folderGroup.className='nav-group';
+          folderGroup.open=chapters.some(c=>c.path===document.body.dataset.source && c.path.split('/')[1]===folder);
+          const heading=document.createElement('summary');heading.textContent=folder.replaceAll('-',' ');
+          folderGroup.append(heading);children.append(folderGroup);currentFolder=folder;
+        }
+        folderGroup.append(chapterLink(chapter));
+      }
     }else chapters.forEach(c=>children.append(chapterLink(c)));
     group.append(children);nav.append(group);
   }

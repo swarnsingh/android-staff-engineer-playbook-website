@@ -1,0 +1,129 @@
+[
+  {
+    "path": "kotlin/coroutines-and-flow/test-dispatchers-virtual-time.md",
+    "old": "`UnconfinedTestDispatcher` starts work eagerly on the current thread until the first suspension.",
+    "new": "`UnconfinedTestDispatcher` eagerly enters top-level `launch` / `async` children of `runTest`, which helps install collectors before emitting. It does not guarantee a universal execution order for nested or subsequently queued work.",
+    "reason": "Qualify eager-entry guarantee and avoid treating Unconfined scheduling as production ordering.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-unconfined-test-dispatcher.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/test-dispatchers-virtual-time.md",
+    "old": "`backgroundScope` is cancelled automatically when `runTest` finishes, which prevents never-ending hot-flow collectors from hanging the test.",
+    "new": "`backgroundScope` is cancelled when `runTest` finishes. Use `runCurrent()` to run its currently queued work or `advanceTimeBy()` for timed work: `advanceUntilIdle()` stops advancing once only background-scope tasks remain. Keep finite assertions in the main test scope.",
+    "reason": "advanceUntilIdle does not drain background work once no foreground tasks remain.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-test-scope/background-scope.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/test-dispatchers-virtual-time.md",
+    "old": "    repository.emit(User(\"Asha\"))\n    advanceUntilIdle()\n\n    assertEquals(UiState.Content(\"Asha\"), states.last())",
+    "new": "    repository.emit(User(\"Asha\"))\n    runCurrent() // Process work queued for the background collector now.\n\n    assertEquals(UiState.Content(\"Asha\"), states.last())",
+    "reason": "Manual hot-flow example must execute background collector before asserting.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-test-scope/background-scope.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/test-dispatchers-virtual-time.md",
+    "old": "@Test\nfun oldSearchIsCancelledWhenNewQueryArrives() = runTest {\n    val cancelledQueries = mutableListOf<String>()\n\n    val results = queryFlow\n        .flatMapLatest { query ->\n            flow {\n                try {\n                    awaitCancellation()\n                } finally {\n                    cancelledQueries += query\n                }\n            }\n        }\n\n    backgroundScope.launch { results.collect() }\n\n    queryFlow.emit(\"old\")\n    queryFlow.emit(\"new\")\n    advanceUntilIdle()\n\n    assertEquals(listOf(\"old\"), cancelledQueries)\n}",
+    "new": "@OptIn(ExperimentalCoroutinesApi::class)\n@Test\nfun oldSearchIsCancelledWhenNewQueryArrives() = runTest {\n    val queryFlow = MutableSharedFlow<String>()\n    val cancelledQueries = mutableListOf<String>()\n    val results = queryFlow.flatMapLatest { query ->\n        flow<Unit> {\n            try {\n                awaitCancellation()\n            } finally {\n                cancelledQueries += query\n            }\n        }\n    }\n    backgroundScope.launch { results.collect() }\n    runCurrent() // Subscribe before a replay-zero flow emits.\n\n    queryFlow.emit(\"old\")\n    runCurrent() // Ensure the old inner operation has actually started.\n    queryFlow.emit(\"new\")\n    runCurrent() // Run cancellation/cleanup before asserting.\n\n    assertEquals(listOf(\"old\"), cancelledQueries)\n    // backgroundScope cancels the new operation at test end.\n}",
+    "reason": "Original emits before queued collector subscribes, lacks a Flow element type, and relies on advanceUntilIdle for background-only work.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-test-scope/background-scope.html",
+      "https://developer.android.com/kotlin/coroutines/test"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/test-dispatchers-virtual-time.md",
+    "old": "This hangs because `StateFlow` never completes. Use Turbine, `first`, `take`, or `backgroundScope`.",
+    "new": "This collection never completes normally because `StateFlow` is hot. Inside `runTest`, uncompleted foreground work eventually fails at the test timeout; it does not wait forever by default. Use a bounded assertion (`first`, `take`, Turbine) or a collector in `backgroundScope`.",
+    "reason": "Distinguish never-completing flow contract from runTest timeout.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/test-dispatchers-virtual-time.md",
+    "old": "`delay(1.minutes)` does not sleep for one real minute. The scheduler advances instantly when the test tells it to.",
+    "new": "`delay(1.minutes)` on a test dispatcher uses virtual time. The scheduler can advance explicitly through the time-control APIs or automatically when the test suspends waiting for scheduled work. Delays on real IO/Default dispatchers are not skipped.",
+    "reason": "runTest also automatically advances virtual time; real-dispatcher delay is outside scheduler.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/test-dispatchers-virtual-time.md",
+    "old": "If the rule's dispatcher and `runTest` use different schedulers, pass the scheduler explicitly when creating dependencies:",
+    "new": "When Main is replaced by a test dispatcher before `runTest` starts, the test normally adopts that scheduler. Keep all dependencies on it. A new dispatcher constructed with a different scheduler is not repaired merely by advancing the test scheduler; reconstruct it using the shared scheduler:",
+    "reason": "Clarify Main scheduler adoption and avoid implying independent dispatchers are advanced together.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/test"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines-debugging-and-profiling.md",
+    "old": "- A state: active, suspended, cancelling, cancelled, or completed.",
+    "new": "- A Job lifecycle state such as active, cancelling, cancelled, or completed. Suspension is an execution condition: a suspended coroutine can still have an active Job.",
+    "reason": "Suspended is not a separate Job lifecycle state.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines-debugging-and-profiling.md",
+    "old": "If cancellation is swallowed, parent scopes believe work completed normally while child work may have skipped cleanup or hidden an aborted operation.",
+    "new": "Swallowing a cancellation exception does not reactivate a Job that was cancelled by its owner. It can still let later ordinary statements execute or turn an operation-local cancellation into an apparent success value. `finally` still runs; preserve cancellation so callers can observe the intended outcome.",
+    "reason": "A caught exception cannot reset Job cancellation, and finally cleanup is not skipped by catch.",
+    "sources": [
+      "https://kotlinlang.org/docs/cancellation-and-timeouts.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines-debugging-and-profiling.md",
+    "old": "The JVM debug agent can also enrich thread names with coroutine ids and names:",
+    "new": "The JVM coroutine debug mode can enrich thread names with coroutine ids/names; enable it with this system property (separate from installing DebugProbes instrumentation):",
+    "reason": "Thread-name debug property is distinct from the dynamic debug-probe agent.",
+    "sources": [
+      "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html#debugging-coroutines-and-threads"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines-debugging-and-profiling.md",
+    "old": "This is most useful in local JVM tests and debug builds.",
+    "new": "For example, `main @coroutine#2` means thread `main`, coroutine number 2; another id on `main` is not another OS thread. This is most useful in local JVM tests and debug builds.",
+    "reason": "Prevents the observed Playground debug ids from teaching multiple-thread execution.",
+    "sources": [
+      "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html#debugging-coroutines-and-threads"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines-debugging-and-profiling.md",
+    "old": "If cleanup must run after cancellation, use `NonCancellable` sparingly and keep it bounded.",
+    "new": "If cleanup must suspend after owner cancellation, use `NonCancellable` sparingly with a bounded, cooperatively cancellable cleanup operation. A timeout is not a hard interrupt for an arbitrary blocking call, and a cleanup failure can replace an exception already propagating; decide how required cleanup failures are reported.",
+    "reason": "Clarify cooperative deadline and exception masking around bounded cleanup.",
+    "sources": [
+      "https://kotlinlang.org/docs/cancellation-and-timeouts.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines-debugging-and-profiling.md",
+    "old": "@Test\nfun refreshCancelsWhenViewModelClears() = runTest {\n    val repository = FakeRepository(\n        refreshBlock = { awaitCancellation() }\n    )\n    val viewModel = InboxViewModel(repository, dispatcher = testDispatcher)\n\n    viewModel.refresh()\n    assertTrue(repository.refreshStarted)\n\n    viewModel.clearForTest()\n    advanceUntilIdle()\n\n    assertTrue(repository.refreshCancelled)\n}",
+    "new": "@OptIn(ExperimentalCoroutinesApi::class)\n@Test\nfun refreshCancelsWhenViewModelClears() = runTest {\n    val testDispatcher = StandardTestDispatcher(testScheduler)\n    Dispatchers.setMain(testDispatcher)\n    try {\n        val repository = FakeRepository(\n            refreshBlock = { awaitCancellation() }\n        )\n        val viewModel = InboxViewModel(repository, dispatcher = testDispatcher)\n\n        viewModel.refresh()\n        runCurrent() // Start queued viewModelScope work before asserting.\n        assertTrue(repository.refreshStarted)\n\n        viewModel.clearForTest()\n        runCurrent() // Observe cancellation and finally cleanup.\n        assertTrue(repository.refreshCancelled)\n    } finally {\n        Dispatchers.resetMain()\n    }\n}",
+    "reason": "Original test uses undefined dispatcher, does not replace Main, and asserts before StandardTestDispatcher starts queued work.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/test"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines-debugging-and-profiling.md",
+    "old": "If a coroutine is important enough to debug in production, it is important enough to test cancellation in isolation.",
+    "new": "This is an application-shaped fragment: FakeRepository records start/cancellation in its implementation, and clearForTest is a test-only hook that must actually clear the ViewModel owner. Use a ViewModelStore clear when exercising a real AndroidX ViewModel. Keep Main replacement scoped to the test (or use a reusable JUnit rule).\n\nIf a coroutine is important enough to debug in production, it is important enough to test cancellation in isolation.",
+    "reason": "State test-hook and fake prerequisites; do not imply clearForTest is a standard ViewModel API.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/test"
+    ]
+  }
+]

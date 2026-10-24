@@ -1,0 +1,66 @@
+[
+  {
+    "path": "kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks.md",
+    "old": "// Two collectors means two callback registrations.\nlocations.collect { renderMap(it) }\nlocations.collect { logDebug(it) }",
+    "new": "// Two concurrent collectors mean two callback registrations.\ncoroutineScope {\n    launch { locations.collect { renderMap(it) } }\n    launch { locations.collect { logDebug(it) } }\n}",
+    "reason": "Sequential collect on a long-lived first stream never reaches the second collection; launch both inside an owner.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks.md",
+    "old": "The key idea: collection owns registration. Cancellation owns cleanup.",
+    "new": "The key idea: collection owns registration. Cancellation owns cleanup. Registration and cleanup must also follow the source API's thread and concurrency contract: cancellation can race with callbacks, and callbackFlow thread-safety does not make arbitrary SDK calls thread-safe.",
+    "reason": "Expose thread-affinity and cancellation race obligation for callback registration and cleanup.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks.md",
+    "old": "`channelFlow` is colder and structured like Flow, but it permits concurrent sends from child coroutines.",
+    "new": "Like callbackFlow, channelFlow is cold: each collector runs its builder. It also permits concurrent sends from child coroutines.",
+    "reason": "There is no comparative colder contract.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/channel-flow.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks.md",
+    "old": "    val sensor = getDefaultSensor(Sensor.TYPE_ACCELEROMETER)\n    val listener = object : SensorEventListener {",
+    "new": "    val sensor = getDefaultSensor(Sensor.TYPE_ACCELEROMETER) ?: run {\n        close(IllegalStateException(\"Accelerometer unavailable\"))\n        return@callbackFlow\n    }\n    val listener = object : SensorEventListener {",
+    "reason": "getDefaultSensor can return null; make absent hardware a terminal result instead of awaiting forever.",
+    "sources": [
+      "https://developer.android.com/reference/android/hardware/SensorManager#getDefaultSensor(int)"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks.md",
+    "old": "    registerListener(listener, sensor, SensorManager.SENSOR_DELAY_GAME)\n\n    awaitClose {",
+    "new": "    if (!registerListener(listener, sensor, SensorManager.SENSOR_DELAY_GAME)) {\n        close(IllegalStateException(\"Accelerometer registration failed\"))\n        return@callbackFlow\n    }\n\n    awaitClose {",
+    "reason": "registerListener returns false on registration failure; otherwise the flow can remain open without values.",
+    "sources": [
+      "https://developer.android.com/reference/android/hardware/SensorManager#registerListener(android.hardware.SensorEventListener,%20android.hardware.Sensor,%20int)"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks.md",
+    "old": "    source.emit(Location(\"test\"))\n    advanceUntilIdle()\n\n    assertEquals(1, source.listenerCount)\n    job.cancel()\n    advanceUntilIdle()\n    assertEquals(0, source.listenerCount)",
+    "new": "    runCurrent() // Start collection and callback registration first.\n    assertEquals(1, source.listenerCount)\n\n    source.emit(Location(\"test\"))\n    runCurrent() // Process immediate backgroundScope work.\n    assertEquals(\"test\", values.single().provider)\n\n    job.cancelAndJoin() // Wait for awaitClose cleanup.\n    assertEquals(0, source.listenerCount)",
+    "reason": "backgroundScope work must start before emitting; advanceUntilIdle stops when only background work remains.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-test-scope/background-scope.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks.md",
+    "old": "    awaitClose {\n        removeTextChangedListener(watcher)\n    }\n}\n```",
+    "new": "    awaitClose {\n        removeTextChangedListener(watcher)\n    }\n}.flowOn(Dispatchers.Main.immediate)\n```",
+    "reason": "Register/read/unregister EditText on Main independently of downstream collector context.",
+    "sources": [
+      "https://developer.android.com/guide/components/processes-and-threads#Threads",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flow-on.html"
+    ]
+  }
+]

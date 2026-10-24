@@ -18,3 +18,24 @@ html{scroll-padding-top:9rem}
 @media print{.lesson-tabs{position:static}}
 /* View restoration owns scroll positioning when panels change. */
 body{overflow-anchor:none}
+/* Long chapters retain a comfortable measure and a scrollable section outline. */
+.reading-content{max-width:58ch;margin-inline:auto}
+.page-outline{max-height:calc(100dvh - 7rem);overflow:auto;overscroll-behavior:contain;padding-right:.5rem}
+.lesson-start .original-opening{margin-top:1.5rem;border-top:1px solid var(--line);padding-top:1rem}
+.lesson-section h3{margin-top:2em;line-height:1.4;font-size:1.12em}
+.lesson-section h4{font-size:1em;margin-top:1.6em}
+.lesson-section ul{padding-left:1.35em}
+.lesson-section blockquote{margin:1.25rem 0;padding:.8rem 1.1rem;border-left:3px solid var(--accent);background:var(--surface)}
+.lesson-section blockquote p{margin:.4rem 0}
+.lesson-section table{width:100%}
+.lesson-section>table{display:block;overflow-x:auto}
+.source-diagram{margin:1.5rem 0;padding:1rem;background:#fff;color:#253e32;border:1px solid var(--line);border-radius:.6rem;overflow:auto}
+.source-diagram img{display:block;width:100%;min-width:240px;height:auto;max-height:42rem}
+.source-diagram figcaption{font-size:.85em;margin-top:.8rem}
+.source-diagram details{font-size:.85em}
+.source-diagram pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.chapter-navigation{display:flex;justify-content:space-between;gap:1.5rem;border-top:1px solid var(--line);padding:2rem 0;margin-top:2rem;font-size:.95em}
+.chapter-navigation a{max-width:48%}
+.lesson-hero h1{overflow-wrap:anywhere}
+@media(max-height:500px){.topbar{position:static;height:3.5rem}.lesson-tabs{position:static}.mobile-outline{position:sticky;top:0}.sidebar,.reader-rail{top:0}.page-outline{max-height:90dvh}html{scroll-padding-top:4rem}}
+@media print{.source-diagram{break-inside:avoid}.chapter-navigation{display:none}}

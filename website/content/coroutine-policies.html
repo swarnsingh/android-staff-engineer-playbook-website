@@ -1,0 +1,28 @@
+<h3>Two ways to make the avatar optional</h3><p>The profile can still be useful without an avatar. Decide whether the child exposes a normal nullable result or a failed Deferred. Those are different contracts.</p>
+<div class="code-card"><div class="code-header"><span>Convert expected failure inside the child<small>Kotlin fragment · main-safe api; nullable Profile.avatar</small></span><button class="code-button" data-copy="local-fallback-code">Copy code</button></div><pre tabindex="0"><code id="local-fallback-code" class="highlight">suspend fun loadProfile(): Profile = coroutineScope {
+    val name = async { api.fetchName() }
+    val avatar = async {
+        try {
+            withTimeoutOrNull(1_000) { api.fetchAvatar() }
+        } catch (error: IOException) {
+            null
+        }
+    }
+    Profile(name.await(), avatar.await())
+}</code></pre></div>
+<p>The expected avatar failure becomes <code>null</code> before the child completes. The child therefore completes normally, so this policy works with an ordinary <code>coroutineScope</code>. The narrow IOException catch does not catch CancellationException. Unexpected failures still fail the group.</p>
+<div class="code-card"><div class="code-header"><span>Let the child fail; handle its result under supervision<small>Kotlin fragment · same api and Profile assumptions</small></span><button class="code-button" data-copy="supervised-fallback-code">Copy code</button></div><pre tabindex="0"><code id="supervised-fallback-code" class="highlight">suspend fun loadProfile(): Profile = supervisorScope {
+    val name = async { api.fetchName() }
+    val avatar = async {
+        withTimeoutOrNull(1_000) { api.fetchAvatar() }
+    }
+    val resolvedName = name.await()
+    val resolvedAvatar = try {
+        avatar.await()
+    } catch (error: IOException) {
+        null
+    }
+    Profile(resolvedName, resolvedAvatar)
+}</code></pre></div>
+<p>Here an IOException actually fails the avatar child. The supervisor keeps the name child active. The caller later converts that failed Deferred to a placeholder. With an ordinary parent, the failed avatar would already have cancelled the group; catching only around await cannot undo that cancellation.</p>
+<p>If name fails, its awaited exception escapes the scope block and fails the load. If the owner cancels, cancellation still reaches both children. A timeout covers only its own cooperative block and is not a hard interruption deadline. Neither supervision nor a timeout turns an unhandled failure into UI state; the outer launch boundary shown with the animation performs that conversion.</p>

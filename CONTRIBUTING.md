@@ -2,7 +2,7 @@
 
 These are the rules that keep this repo coherent as it grows to hundreds of files. They are not stylistic preferences — they are the structural commitments that prevent the repo from collapsing into entropy.
 
-Read this before adding any file.
+Read this before adding any file. For the teaching sequence, depth and internals coverage, animations, reading experience, and topic-specific flexibility, also follow the [Content and Reader Experience Rulebook](content-rulebook.md).
 
 ---
 

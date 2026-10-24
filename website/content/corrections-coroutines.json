@@ -1,0 +1,572 @@
+[
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "A coroutine is a \"lightweight thread\" — a unit of work that can be **suspended** (paused without blocking the OS thread) and **resumed** later. Tens of thousands of coroutines can share a handful of OS threads.",
+    "new": "A coroutine is a computation that can suspend and resume. It is often called a “lightweight thread”, but it is not an OS thread: many coroutines can share execution threads. Suspension can reduce the cost of waiting, while each coroutine still consumes memory and other resources.",
+    "reason": "Avoid a universal coroutine-count or memory-capacity guarantee.",
+    "sources": [
+      "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "- You cannot do heavy work (network, DB, JSON parse) on the Main thread, or the app freezes (ANR).\n- You cannot update the UI from a background thread, or the app crashes.",
+    "new": "- Keep blocking calls and substantial CPU work off Main. A slow Main thread causes missed frames and can eventually cause an ANR; every slow operation does not immediately trigger one. Already main-safe suspend APIs can be called from Main.\n- Android View operations normally belong on Main. Follow the UI toolkit’s thread-safety contract rather than treating every state holder as a View.",
+    "reason": "Distinguish blocking implementation work, main-safe APIs and toolkit-specific UI ownership.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "The Kotlin compiler rewrites every `suspend` function into a state machine. Each suspension point becomes a `case` label. The compiler injects a hidden `Continuation` parameter that captures local state.",
+    "new": "Kotlin lowers suspend calls to a continuation-passing convention. A function that needs to resume across multiple parts of its body can use a state machine, with a resume label and saved locals. Tail calls and inlining can avoid a separate state-machine object; a suspend call can also return immediately without suspending.",
+    "reason": "Not every suspend declaration allocates a distinct state machine.",
+    "sources": [
+      "https://kotlinlang.org/spec/asynchronous-programming-with-coroutines.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "```java\nObject fetchUserAndShow(Continuation cont) {\n    StateMachine sm = (StateMachine) cont;\n    switch (sm.label) {\n        case 0:\n            System.out.println(\"Start\");\n            sm.label = 1;\n            return api.fetchUser(sm);   // thread is returned to the pool!\n        case 1:\n            User user = (User) sm.result;\n            System.out.println(\"Name: \" + user.name);\n            return Unit;\n    }\n}\n```",
+    "new": "```java\n// Teaching pseudocode, not exact Java decompiler output.\nObject fetchUserAndShow(Continuation<? super Unit> completion) {\n    StateMachine sm = obtainOrReuseState(completion);\n    Object value = sm.result;\n    switch (sm.label) {\n        case 0:\n            throwIfFailure(value);\n            System.out.println(\"Start\");\n            sm.label = 1;\n            value = api.fetchUser(sm);\n            if (value == COROUTINE_SUSPENDED) {\n                return COROUTINE_SUSPENDED;\n            }\n            // Immediate completion falls through with its value.\n        case 1:\n            throwIfFailure(value);\n            User user = (User) value;\n            System.out.println(\"Name: \" + user.name);\n            return Unit.INSTANCE;\n        default:\n            throw invalidResumeState();\n    }\n}\n```",
+    "reason": "Preserve immediate completion and suspension marker paths in continuation pseudocode.",
+    "sources": [
+      "https://kotlinlang.org/spec/asynchronous-programming-with-coroutines.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "At the suspension point, the function returns; the thread is freed. When the network call completes, the runtime calls `fetchUserAndShow(cont)` again, dispatches based on `sm.label = 1`, and jumps straight to the second half. The \"stack frame\" of locals lives on the heap inside `Continuation`, not on the OS thread stack.",
+    "new": "If the call actually suspends, the suspension marker returns control through its callers. When its result becomes available, resumption continues from the saved label. A continuation stores the state needed later without holding an OS call stack throughout the wait. Resumption follows the dispatcher and API contracts; it does not necessarily return a thread to a pool or use a different thread.",
+    "reason": "Resumption and thread reuse depend on execution context.",
+    "sources": [
+      "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "**Key takeaway:** a suspended coroutine does *not* occupy a thread. That's why one app can have 50,000 coroutines in flight.",
+    "new": "**Key takeaway:** a suspending wait does not keep an execution thread occupied by that wait. This does not make coroutine creation, retained data or external resources free.",
+    "reason": "Remove unsupported universal capacity number while retaining suspension benefit.",
+    "sources": [
+      "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "A coroutine always runs on a `CoroutineDispatcher`, which decides *which thread pool* executes it. Picking the wrong one is the #1 cause of mysterious perf bugs.",
+    "new": "A dispatcher controls how execution is scheduled: onto a thread, onto shared workers, or without confinement. Choose it from the operation’s blocking, CPU and thread-affinity needs; a dispatcher is not always a separate thread pool.",
+    "reason": "Dispatchers include thread-confined and unconfined implementations.",
+    "sources": [
+      "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "| `Dispatchers.IO` | Large elastic pool (default 64 threads) | Disk I/O, network, Room reads, file ops. Threads wait a lot. |",
+    "new": "| `Dispatchers.IO` | Shared blocking-work workers; default parallelism limit is max(64, cores) on JVM | Blocking file or legacy network operations. Suspending Room/Retrofit APIs may already be main-safe. |",
+    "reason": "Correct IO parallelism and avoid wrapping already main-safe APIs.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html",
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "| `Dispatchers.Default` | Fixed pool = # of CPU cores | CPU-bound: JSON parsing, sorting, image transforms, crypto. |",
+    "new": "| `Dispatchers.Default` | Shared CPU workers; JVM default is core count, at least two | Substantial parsing, sorting, image transforms and computation. |",
+    "reason": "Correct Default minimum worker count.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "| `Dispatchers.Unconfined` | Whatever thread resumed you | Library code only; never use in app code (post-resumption thread is undefined). |",
+    "new": "| `Dispatchers.Unconfined` | Starts in the caller thread; resumes as determined by the suspension mechanism | Specialised execution needs; not a general background-work or UI dispatcher. |",
+    "reason": "Describe actual Unconfined contract.",
+    "sources": [
+      "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "| `Dispatchers.Main.immediate` | Same | Optimization: if already on Main, skip the dispatch. `viewModelScope` default. |",
+    "new": "| `Dispatchers.Main.immediate` | Main; can avoid dispatch when already in its immediate context | Default Android viewModelScope uses it; consider reentrancy and ordering when choosing it explicitly. |",
+    "reason": "Expose immediate scheduling consequence.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-main-coroutine-dispatcher/immediate.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "Suppose you have 10 API calls (each 500ms wait) + 10 CPU tasks (each 100ms) on a 4-core device.",
+    "new": "Consider a deliberately simplified, phase-ordered workload: first ten **blocking** I/O calls taking 500ms each, then ten CPU tasks taking 100ms each. Assume exactly four CPU workers, enough blocking-work capacity, no overhead and no other load. These are illustrative scheduling assumptions, not measured device timings.",
+    "reason": "Make assumptions behind original timing comparison explicit.",
+    "sources": [
+      "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "- All 10 IO calls run concurrently on the IO pool (64 threads available).",
+    "new": "- Under these assumptions, all ten blocking calls can wait concurrently using blocking-work capacity.",
+    "reason": "Avoid claiming a dedicated fixed 64-thread IO pool.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "- IO tasks monopolize the 4 threads. Batched 4 × 4 × 2 = 3 batches × 500ms = **1500ms**.",
+    "new": "- With exactly four workers unavailable for other work while blocked, ceil(10 / 4) = 3 batches × 500ms = **1500ms**.",
+    "reason": "Correct arithmetic and bound claim to the toy model.",
+    "sources": [
+      "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "- **Total: ~1800ms.** 2.25× slower.",
+    "new": "- **Toy total: ~1800ms**, compared with ~800ms in the assumed two-phase schedule. Real overlap, scheduler compensation, contention and API behaviour change these totals.",
+    "reason": "Do not present illustrative scheduling math as a measured speedup.",
+    "sources": [
+      "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "The IO pool is large because IO threads spend most of their time *waiting* — the OS can schedule something else on the same physical thread. CPU work needs dedicated cores; growing the pool past `#cores` just adds context-switch overhead.",
+    "new": "Blocking I/O occupies workers while waiting, so it needs a different scheduling budget from CPU-heavy work. On JVM, IO and Default share underlying workers; their execution policies differ. A suspended network request is different again: it need not occupy an I/O worker while waiting. Larger CPU worker counts do not create additional CPU cores.",
+    "reason": "Distinguish OS threads, CPU cores, shared scheduling and suspending I/O.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "A repository function `suspend fun getUsers(): List<User>` should be main-safe — it should be callable from `Main` without freezing the UI. Internally it does its own `withContext(Dispatchers.IO)`.",
+    "new": "A repository function `suspend fun getUsers(): List<User>` should be main-safe. If its implementation performs blocking I/O, it moves that work to an injected I/O dispatcher; substantial CPU work needs an appropriate computation dispatcher. An already main-safe suspending dependency may need no extra switch.",
+    "reason": "Main-safety does not mean wrapping every suspend function in IO.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "This is **Dispatcher injection** — and in practice you inject a `CoroutineDispatcher` rather than reference `Dispatchers.IO` directly so tests can substitute a `TestDispatcher`.",
+    "new": "To make execution policy replaceable, **inject** the `CoroutineDispatcher` through the constructor rather than hard-coding `Dispatchers.IO`, so tests can provide a shared `TestDispatcher`. The concise repository above still uses the hard-coded form; the injected version below completes that change.\n\n```kotlin\nclass MainSafeUserRepository(\n    private val api: BlockingUserApi,\n    private val ioDispatcher: CoroutineDispatcher\n) {\n    suspend fun getUsers(): List<User> = withContext(ioDispatcher) {\n        api.getUsers()\n    }\n}\n```",
+    "reason": "Original hard-coded example was incorrectly named dispatcher injection.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "| Result | None (fire-and-forget) | `.await()` to get the value |",
+    "new": "| Result | No result value; keep the Job to observe completion or cancel | `.await()` to get the value |",
+    "reason": "launch remains structurally owned rather than detached fire-and-forget.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "**Propagates immediately to parent** (if child of standard Job) AND holds in `Deferred` for `await()`",
+    "new": "**Notifies an ordinary parent Job on failure** AND stores the failure for `await()`",
+    "reason": "Distinguish failure notification from completed cancellation/cleanup.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "// starts in parallel",
+    "new": "// starts concurrently; parallel execution depends on dispatcher",
+    "reason": "Concurrency does not guarantee parallel CPU execution.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "This is **parallel decomposition** — run two independent things concurrently, combine.",
+    "new": "This is **concurrent decomposition**: start independent operations, then combine their results. It may overlap waits on one thread or execute work in parallel when the dispatcher and resources permit.",
+    "reason": "Use concurrency/parallelism accurately.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "This is **only true** if the `async` is a top-level coroutine or a direct child of a `SupervisorJob` (like `supervisorScope`).",
+    "new": "For a root `async` or a direct child of a supervisor, failure is stored for consumption through the `Deferred` without cancelling an ordinary parent.",
+    "reason": "Root async still exposes failure through await; avoid suggesting swallowed failure is good.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "```kotlin\nclass Repo {\n    private val scope = CoroutineScope(Job() + Dispatchers.IO)\n\n    fun save(data: Data) {\n        scope.launch { /* runs on IO */ }\n    }\n\n    fun close() {\n        scope.cancel()   // every in-flight save cancels\n    }\n}\n```",
+    "new": "```kotlin\n// Lower-layer API: the caller owns lifetime, completion and failures.\nclass Repo(private val storage: DataStorage) {\n    suspend fun save(data: Data) {\n        storage.save(data) // Main-safe storage dependency.\n    }\n}\n\n// UI event boundary: ViewModel lifecycle owns this launch.\nfun onSaveRequested(data: Data) {\n    viewModelScope.launch {\n        try {\n            repo.save(data)\n        } catch (error: IOException) {\n            state.value = SaveState.Failed(error)\n        }\n    }\n}\n```",
+    "reason": "Avoid hidden repository scope permanently cancelled by one failed save; retain explicit UI owner and failure handling.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "When you call `scope.cancel()`, every coroutine inside dies.",
+    "new": "Calling `scope.cancel()` requests cancellation of its Job and attached children. Cooperative work must observe cancellation, and completion waits for children and cleanup.",
+    "reason": "Cancellation request is not instantaneous termination.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "| `GlobalScope` | App process lifetime | `Job` | None enforced |",
+    "new": "| `GlobalScope` | Not tied to a lifecycle owner | No Job; empty context | Builders use Default when no dispatcher is supplied |",
+    "reason": "GlobalScope has no shared Job.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "**Never use `GlobalScope` in production** — it has no lifecycle, leaks coroutines past the screen, and bypasses structured concurrency. (Reserved for `kotlinx.coroutines` internals and tests.)",
+    "new": "For ordinary application work, **avoid GlobalScope**: it provides no common Job to cancel or join and loses structured lifetime ownership. It is a delicate API with rare legitimate application-wide uses, not a scope reserved for internals or tests. An explicit owner or durable scheduler normally makes the contract clearer.",
+    "reason": "Replace inaccurate absolute restriction with actual ownership contract.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "2. **Cancelling a parent cancels all children recursively.** Siblings are not affected.",
+    "new": "2. **Cancelling a parent requests cancellation of all attached children recursively.** Cancelling just one child normally leaves its parent and that child’s siblings active.",
+    "reason": "Disambiguate parent vs individual-child cancellation.",
+    "sources": [
+      "https://kotlinlang.org/docs/exception-handling.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "| `viewModelScope.launch { }` | inherits `SupervisorJob` from the scope's root | Yes (root-level only) |",
+    "new": "| Direct `viewModelScope.launch { }` children | Each launch creates its own ordinary Job attached to the root supervisor | Other direct launches are isolated; children inside one launch are not automatically supervised |",
+    "reason": "A launch does not itself become a SupervisorJob by inheriting a scope.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html",
+      "https://kotlinlang.org/docs/exception-handling.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "        launch { fetchProfile() }       // if this fails…\n        launch { fetchOrders() }        // …these keep running\n        launch { fetchRecommendations() }",
+    "new": "        launch {\n            try {\n                fetchProfile()\n            } catch (error: IOException) {\n                profileState.value = ProfileState.Error(error)\n            }\n        }\n        launch {\n            try { fetchOrders() }\n            catch (error: IOException) { ordersState.value = OrdersState.Error(error) }\n        }\n        launch {\n            try { fetchRecommendations() }\n            catch (error: IOException) { recommendationsState.value = RecommendationsState.Error(error) }\n        }",
+    "reason": "Supervision alone does not handle uncaught launch failures; each expected UI failure needs a boundary.",
+    "sources": [
+      "https://kotlinlang.org/docs/exception-handling.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "`SupervisorJob` is the same as `Job` except **a failing child does NOT cancel its siblings**.",
+    "new": "A `SupervisorJob` does not cancel itself or its other direct children when one child fails. **Isolation is not error handling:** an uncaught supervised launch failure can still reach the platform’s last-resort handler and crash an Android app. Catch expected failures locally or provide the appropriate uncaught-error policy.",
+    "reason": "Explain isolation versus handling.",
+    "sources": [
+      "https://kotlinlang.org/docs/exception-handling.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "`suspend` functions in `kotlinx.coroutines` (like `delay`, `withContext`, network suspending stubs) all check `isActive` at suspension points and throw `CancellationException` when cancelled.",
+    "new": "Cancellable library operations such as `delay` observe cancellation; many cancellable suspension APIs provide prompt cancellation guarantees. The suspend modifier itself promises neither suspension nor cancellation cooperation. Check third-party APIs and blocking adapters separately.",
+    "reason": "Not all suspend functions cooperate with cancellation.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "yield()                 // suspends briefly + checks cancel",
+    "new": "yield()                 // checks cancellation; may yield to ready work",
+    "reason": "yield does not guarantee actual suspension or delay.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/yield.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "further suspending calls fail immediately",
+    "new": "cancellable suspension operations can throw because the Job is already cancelled",
+    "reason": "The suspend modifier alone does not imply an immediate cancellation check.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-non-cancellable/"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "flushAnalytics()        // protected: actually completes",
+    "new": "flushAnalytics()        // use only for necessary, bounded cleanup",
+    "reason": "NonCancellable cannot guarantee completion of external or blocking work.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-non-cancellable/"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "        closeDb()\n    }\n}\n```",
+    "new": "        closeDb()\n    }\n}\n```\n\nNon-suspending release usually needs only `finally` or `use`. Protect only necessary suspending cleanup, and keep it bounded; for cooperative cleanup you can use a small `withTimeout` inside the `NonCancellable` block. Handle cleanup failures deliberately, because they can replace the original failure. A deadline still cannot forcibly stop an uncooperative blocking API.",
+    "reason": "Retain cleanup example with limits and non-suspending alternative.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-non-cancellable/"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "`CancellationException` is how cancellation flows. If you swallow it, when the ViewModel dies the coroutine receives the signal and ignores it — it becomes a zombie that keeps running. Always either:",
+    "new": "`CancellationException` carries a cancellation outcome. Swallowing it can let following ordinary statements execute or disguise an aborted operation as a result; it does not reactivate an already cancelled Job. A loop that repeatedly swallows cancellation can keep spinning. Use either a narrow expected-failure catch:",
+    "reason": "Preserve cancellation without claiming every catch creates an infinite zombie.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "The handler fires only at the *top level* of a scope, after exception propagation. It does not fire for child coroutines whose exceptions propagate to a parent. It also doesn't catch exceptions in `async` (which hold their exceptions in the Deferred).",
+    "new": "The handler is a last-resort reporting policy, not a way to resume a failed coroutine. Ordinary child failures propagate to their parent; direct supervised launch children can use a handler like root launches. An async failure is exposed through Deferred, and its handler is not called directly. Under an ordinary parent it can still cancel that parent, whose uncaught failure may eventually be handled.",
+    "reason": "Clarify handler behaviour across normal, supervised and async boundaries.",
+    "sources": [
+      "https://kotlinlang.org/docs/exception-handling.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "`repeatOnLifecycle(STARTED)` collects the flow only while the view is STARTED, **and cancels the collect when the view stops**. When it restarts, the collect re-subscribes. This is the modern replacement for `launchWhenStarted { }` (now deprecated) — the latter only paused, never cancelled, leaking upstream work.",
+    "new": "`repeatOnLifecycle(STARTED)` starts the block when the view reaches STARTED, cancels it below that state, and starts a fresh block on re-entry. A hot upstream may still run according to its own owner and sharing policy. The deprecated launchWhenStarted API suspends rather than using this cancel-and-restart contract; it may leave unnecessary upstream work active.",
+    "reason": "Separate collector cancellation from independently shared upstream lifetime.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices",
+      "https://developer.android.com/topic/libraries/architecture/coroutines"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "```kotlin\n@Test\nfun cartCheckout() = runTest {\n    val viewModel = CartViewModel(repo, dispatcher = StandardTestDispatcher(testScheduler))\n    viewModel.checkout()\n    advanceUntilIdle()      // run all pending coroutines without real waiting\n    assertEquals(Success, viewModel.state.value)\n}\n```",
+    "new": "```kotlin\n// Android local-unit-test fragment; kotlinx-coroutines-test + JUnit 4.\n// MainDispatcherRule is defined in the Test Dispatchers chapter.\n@get:Rule\nval mainRule = MainDispatcherRule()\n\n@Test\nfun cartCheckout() = runTest {\n    val ioDispatcher = StandardTestDispatcher(testScheduler)\n    val repo = CartRepo(fakeApi, ioDispatcher)\n    val viewModel = CartViewModel(repo)\n    viewModel.checkout()\n    advanceUntilIdle()\n    assertEquals(Success, viewModel.state.value)\n}\n```",
+    "reason": "Replace Main before creating viewModelScope; fix mismatched constructor parameter and share scheduler.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/test"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "Inject a dispatcher into your ViewModel/repo so tests can substitute:",
+    "new": "Replace `Dispatchers.Main` before constructing a ViewModel that uses viewModelScope. A JUnit rule calls `Dispatchers.setMain` and `Dispatchers.resetMain`; the dedicated testing chapter includes its implementation. Inject dispatchers into the components that actually move work, such as a repository. Main replacement and IO injection solve different problems.\n\nA repository-side injected boundary looks like:",
+    "reason": "Explain Main replacement instead of implying IO injection replaces Main.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/test"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "class CartViewModel(\n    private val repo: CartRepo,\n    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,\n) : ViewModel() { /* ... */ }",
+    "new": "class CartRepo(\n    private val api: BlockingCartApi,\n    private val ioDispatcher: CoroutineDispatcher,\n) {\n    suspend fun checkout() = withContext(ioDispatcher) { api.checkout() }\n}",
+    "reason": "Place dispatcher injection at actual blocking-work owner.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "| Exception swallowed silently | `async { throw }` without `.await()` | Use `launch` if you don't need a value |",
+    "new": "| Unobserved Deferred failure | Root async or direct supervised async result never consumed | Consume and handle Deferred outcomes; ordinary-parent async failure also cancels its parent |",
+    "reason": "Match failure table to async parent contract.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "| Test hangs forever | Production `Dispatchers.IO` in test | Inject `TestDispatcher`; use `runTest` |",
+    "new": "| Test waits in real time or reaches its timeout | Real dispatcher or a child/stream that never finishes | Inject a shared TestDispatcher; bound collection; use backgroundScope for appropriate long-lived test work |",
+    "reason": "runTest has timeout rather than unconditional infinite hang.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/test"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "| Network request runs on Main | Repository didn't `withContext(IO)` | Make repo main-safe internally |",
+    "new": "| Main is blocked by a legacy request | Blocking implementation was called on Main | Make blocking boundary main-safe; already main-safe suspend APIs do not need another IO wrapper |",
+    "reason": "Avoid marking a main-safe suspending request on Main as a defect.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "| 200ms parsing freezes UI | JSON parse on `Dispatchers.IO` | Move CPU work to `Dispatchers.Default` |",
+    "new": "| Main freezes during parsing | Substantial parsing executes on Main | Move CPU work to Default; CPU work on IO is a resource-budget concern, not proof it blocks Main |",
+    "reason": "Correct false IO-to-main-freeze causal claim.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "Only if both `async` calls happen before any `.await()`. If you write `async { a() }.await(); async { b() }.await()`, you've sequentialized them.",
+    "new": "Starting both async operations before awaiting allows concurrency. Actual parallel execution also depends on dispatcher and resources. Writing `async { a() }.await(); async { b() }.await()` sequences these operations.",
+    "reason": "Separate overlap from parallel execution.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "**`runBlocking` in production code.** Always wrong. Block on what?",
+    "new": "**`runBlocking` on an Android UI path.** It blocks that thread. A legitimate CLI main or required synchronous bridge has a different contract; inspect the boundary instead of banning the API universally.",
+    "reason": "Retain legitimate blocking bridges.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "**Generic `catch (e: Exception)`.** 9 times out of 10, this swallows `CancellationException`.",
+    "new": "**Generic `catch (e: Exception)`.** Check whether it preserves cancellation and whether its fallback hides programming failures. Prefer expected-failure types when possible.",
+    "reason": "Remove invented probability while retaining review check.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "**`GlobalScope.launch`.** Always wrong unless you can prove it's a daemon process.",
+    "new": "**`GlobalScope.launch`.** Require an explicit lifetime and cancellation/completion contract; ordinary screen work belongs to a lifecycle owner. GlobalScope itself supplies no common Job.",
+    "reason": "Explain actual ownership criterion.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "`../android/concurrency/structured-concurrency.md`",
+    "new": "`../android/architecture/structured-concurrency.md`",
+    "reason": "Correct displayed reading path to match destination.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "`delay()` is suspending; it schedules a resumption in the future and immediately returns the OS thread to the pool so it can execute other coroutines.",
+    "new": "`delay()` suspends for a positive wait and allows other ready work to use the thread; the dispatcher controls later resumption. The thread need not belong to a pool.",
+    "reason": "Keep answer key consistent with suspension model.",
+    "sources": [
+      "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "The function body is wrapped in a `switch` statement tracking states (labels). At a suspension point, local variables are saved to the continuation, the label is incremented, and the function returns. When the async work finishes, the function is called again with the continuation, jumping to the case label to resume execution.",
+    "new": "A function that needs a resumable body can use labels and saved locals. If a call actually suspends, it returns the suspension marker; immediate results continue normally. Resumption selects the saved state. Backend optimisations, tail calls and inlining can avoid a separate machine.",
+    "reason": "Keep compiler answer consistent with immediate completion and optimisation.",
+    "sources": [
+      "https://kotlinlang.org/spec/asynchronous-programming-with-coroutines.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "The coroutine will ignore the scope's request to stop and continue running as a zombie, potentially leaking memory or crashing when updating destroyed UI.",
+    "new": "ordinary statements can continue after the catch or the cancelled operation can be misreported as successful. The Job remains cancelled; a loop that repeatedly swallows cancellation can spin.",
+    "reason": "Avoid repeating incorrect zombie claim in answer key.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "Because cancellation is cooperative, a pure CPU loop never checks the cancellation flag automatically.",
+    "new": "Cancellation is cooperative: a pure CPU loop needs explicit cancellation checks.",
+    "reason": "Precise loop cancellation language.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "so it allows up to 64 threads. If you run 10 IO calls on `Default`, they monopolize the 4 cores while waiting, blocking the 10 CPU tasks and taking ~1800ms. On `IO`, all 10 wait concurrently, leaving `Default` free for CPU work, taking ~800ms.",
+    "new": "so JVM IO has a separate blocking-work parallelism limit, normally max(64, cores), while sharing underlying workers with Default. In the stated four-worker, two-phase toy schedule, blocking calls occupy workers in three batches instead of one; the 1800ms and 800ms totals depend on those assumptions. Waiting blocks workers, not CPU cores.",
+    "reason": "Keep scheduling answer consistent with assumptions and shared workers.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "A standard `Job` propagates failures bidirectionally: a failed child cancels the parent, which cancels all other children. A `SupervisorJob` prevents upward propagation. Example: in `supervisorScope { launch { fail() }; launch { succeed() } }`, the second launch successfully completes even though the first crashed. In a `coroutineScope` (which uses `Job`), the second launch would be cancelled.",
+    "new": "A non-cancellation failure in a child normally fails its ordinary parent, which cancels its other children. A supervisor isolates direct child failures, but it does not handle uncaught launch exceptions. For independent UI operations, handle each expected failure inside its launch as in the earlier example; unexpected supervised launch failures still require an uncaught-error policy. In the optional-avatar model, async stores its failure and the caller handles it at await. Cancellation of the supervisor still cancels its children.",
+    "reason": "Correct unsafe supervised launch answer; isolation is not exception handling.",
+    "sources": [
+      "https://kotlinlang.org/docs/exception-handling.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "Because the coroutine is already in a cancelled state, any suspending call inside the `finally` block will immediately throw a `CancellationException` and fail to execute. You fix it by wrapping the suspending call in `withContext(NonCancellable) { ... }` which ignores the parent's cancellation state.",
+    "new": "Cancellable suspension operations can throw when the Job is cancelled; the suspend modifier alone does not guarantee that check. Use finally or use for ordinary resource release. If essential cleanup must suspend after cancellation, give only that cleanup a narrow NonCancellable context and a bounded policy. It is not a general lifetime extension or a guarantee that an external service will respond.",
+    "reason": "Correct cleanup answer and retain boundedness.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-non-cancellable/"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "`Default` is CPU-bound, so its pool size equals the core count (4) to prevent context-switching overhead.",
+    "new": "On JVM, Default targets CPU work and normally uses the core count with at least two workers. In the simplified four-worker example,",
+    "reason": "Correct Default answer-key sizing.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "Pick `lifecycleScope` for UI-specific operations (like animations) that must stop if the view dies.",
+    "new": "For Fragment view-owned operations, use viewLifecycleOwner.lifecycleScope: the Fragment can outlive its view. Activity or Fragment lifecycleScope lasts until its own Lifecycle is destroyed. Use repeatOnLifecycle when collection must stop earlier, below STARTED.",
+    "reason": "Fragment lifecycle and view lifecycle differ.",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/coroutines"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "suspends briefly, checks cancellation, and yields the thread to others",
+    "new": "checks cancellation and may yield execution to other ready coroutines",
+    "reason": "yield does not guarantee a suspension.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/yield.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "In `main()` functions (CLI tools).\n- In test setup when bridging non-coroutine code.\n- Never in production Android code — it blocks the calling thread.",
+    "new": "In CLI main functions and required synchronous API bridges, after checking whether blocking is acceptable.\n- In tests that need a genuine blocking bridge; prefer runTest for coroutine unit tests.\n- Avoid it in Android UI paths: it blocks the calling thread and can deadlock when the work needs that same thread to resume.",
+    "reason": "Keep legitimate blocking bridges while forbidding UI-thread blocking.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines.md",
+    "old": "`Dispatchers.Main` | Single Android UI thread | UI updates, calling `suspend` orchestrators. Never blocks; only quick work.",
+    "new": "`Dispatchers.Main` | Android UI thread | UI updates and main-safe suspend orchestrators. The dispatcher does not prevent your code from blocking; keep work brief.",
+    "reason": "Main dispatcher does not prevent blocking operations.",
+    "sources": [
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+    ]
+  }
+]
