@@ -1,0 +1,60 @@
+<!-- Website teaching layer for kotlin/runtime-and-jvm/memory-model.md. -->
+
+<!-- @opening -->
+<p class="story-lead">Users say the app "gets slow during the day" and eventually crashes with <code>OutOfMemoryError</code> on the photo screen. Nothing on that screen is unusual. The real cause is elsewhere: every time the profile screen is opened, an analytics singleton keeps a reference to it — and every one of those screens, with all its views and bitmaps, stays in memory for the rest of the day.</p>
+
+Memory on Android comes down to one question the garbage collector asks constantly: **can this object still be reached from something that is definitely alive?** If yes, it stays — however long ago you stopped needing it. This chapter builds that picture from the stack and the heap, through reference strengths and the six classic leak patterns, to the tools that show you the reference chain, and finally the threading rules (the Java Memory Model) that decide what one thread can see of another's writes.
+
+<!-- @after Stack vs Heap :: visual -->
+### Inside `computeArea()`
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Stack frame (this call only)</span><div class="node"><strong><code>width = 10</code>, <code>height = 20</code></strong><small>primitive values, stored directly</small></div><div class="node"><strong><code>area = 200</code></strong><small>computed into a local slot</small></div><div class="node is-key"><strong><code>name</code> → ●</strong><small>only a reference lives here</small></div></div><div class="col"><span class="col-title">Heap (shared, garbage-collected)</span><div class="node is-key"><strong><code>String "Box"</code></strong><small>the object <code>name</code> points to</small></div><div class="node"><strong>Captured <code>var</code>s, boxed values, every object</strong><small>live here until nothing reachable points to them</small></div></div></div><figcaption>When the call returns, the frame disappears at once. Heap objects disappear only when the collector finds them unreachable — which is where leaks begin.</figcaption></figure>
+
+<!-- @after Reference Strengths (the Four Kinds) :: visual -->
+### How strongly is it held?
+
+<figure class="viz"><div class="viz-stack"><div class="node is-key"><strong>Strong</strong><small>the normal reference: the object stays while any strong path from a GC root exists</small></div><div class="down"></div><div class="node"><strong>Soft</strong><small>may be cleared when memory is short; the collector decides when</small></div><div class="down"></div><div class="node"><strong>Weak</strong><small>does not keep the object alive: cleared once only weak references remain</small></div><div class="down"></div><div class="node"><strong>Phantom</strong><small>never returns the object; tells cleanup code (for native resources) that it has been collected</small></div></div><figcaption>Weaker references make an object easier to reclaim — they do not fix a strong reference elsewhere in the chain.</figcaption></figure>
+
+<!-- @after The Six Classic Android Leak Patterns :: animation -->
+### Watch a destroyed screen stay alive
+
+<figure class="stepper"><span class="stepper-title">The opening story's leak, as a reference chain</span><div class="stage viz-stack"><div class="node" data-el="root"><strong>GC root</strong><small>a static field: <code>Analytics.instance</code> (lives for the whole process)</small></div><div class="down" data-el="d1"></div><div class="node" data-el="list"><strong><code>listeners</code> list</strong><small>held by the singleton</small></div><div class="down" data-el="d2"></div><div class="node" data-el="lambda"><strong>a listener lambda</strong><small>captured <code>this</code> — the Activity</small></div><div class="down" data-el="d3"></div><div class="node" data-el="activity"><strong><code>ProfileActivity</code></strong><small data-text="activityNote">on screen</small></div><div class="down" data-el="d4"></div><div class="node" data-el="views"><strong>view tree and bitmaps</strong><small>several MB, held by the Activity</small></div></div><script type="application/json" class="steps">[
+{"label":"On screen","caption":"While the screen is visible, the framework holds the Activity and the Activity holds its views. All normal.","add":["activity","d4","views"],"state":{"activity":"active"}},
+{"label":"A listener is registered","caption":"onCreate registers a lambda with the analytics singleton. The lambda uses a method of the Activity, so it captures the Activity itself.","add":["root","d1","list","d2","lambda","d3"],"state":{"lambda":"warn","activity":""}},
+{"label":"The user leaves","caption":"The Activity is destroyed and the framework drops its references. Nothing calls unregister.","state":{"activity":"warn"},"text":{"activityNote":"destroyed — but still referenced"}},
+{"label":"The collector runs","caption":"Starting from GC roots, it follows strong references: static field → list → lambda → Activity → views. Everything on that path is reachable, so nothing is freed.","state":{"root":"active","list":"active","lambda":"active","activity":"error","views":"error"},"text":{"activityNote":"retained: reachable from a GC root"}},
+{"label":"Repeat all day","caption":"Each visit adds another retained Activity with its views. Memory grows until an ordinary allocation fails — on whichever screen happens to be open.","state":{"views":"error"}},
+{"label":"Cut the first wrong edge","caption":"Unregister in the matching lifecycle callback (or use a lifecycle-aware observer). The path from the root now ends at the list, and the Activity and its views are collected.","remove":["d3"],"state":{"lambda":"ghost","activity":"done","views":"done","root":"","list":""},"text":{"activityNote":"unreachable → collected"}}
+]</script><figcaption>Every one of the six patterns is this picture with a different first edge: something that lives longer holding something that should have died.</figcaption></figure>
+
+<!-- @after Detecting Leaks: LeakCanary + Memory Profiler :: bridge -->
+LeakCanary prints exactly the chain from the animation above. The fix is never "call the GC"; it is removing the first reference that should not exist.
+
+<!-- @after Java Memory Model — Multithreading Semantics :: animation -->
+### Why double-checked locking needs `@Volatile`
+
+<figure class="stepper"><span class="stepper-title">Two threads call <code>Manager.get()</code></span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">Thread A (creates it)</span><div class="node" data-el="a1"><strong>allocate the object</strong><small>memory for a <code>Manager</code></small></div><div class="node" data-el="a2"><strong>publish: <code>INSTANCE = it</code></strong><small data-text="a2note">the reference becomes visible</small></div><div class="node" data-el="a3"><strong>run the constructor's writes</strong><small>fields get their values</small></div></div><div class="col"><span class="col-title">Thread B (reads it)</span><div class="node" data-el="b1"><strong><code>INSTANCE != null</code></strong><small>skips the lock</small></div><div class="node" data-el="b2"><strong>uses the fields</strong><small data-text="b2note">?</small></div></div></div><script type="application/json" class="steps">[
+{"label":"Without @Volatile","caption":"Nothing forces other threads to observe the constructor's writes before the reference. The compiler or CPU may effectively make them visible in a different order.","add":["a1"],"state":{"a1":"active"}},
+{"label":"Published early","caption":"Thread B can observe the reference before the field writes — as if A had published first and initialised second.","add":["a2"],"state":{"a2":"warn"}},
+{"label":"Thread B reads","caption":"B sees INSTANCE is non-null, skips the lock and uses the object.","add":["b1","b2"],"state":{"b1":"warn","b2":"error"},"text":{"b2note":"may see default values: a half-built object"}},
+{"label":"The writes land later","caption":"A's field writes become visible afterwards. The bug depends on timing and hardware — the \"impossible\" kind.","add":["a3"],"state":{"a3":"warn"}},
+{"label":"With @Volatile","caption":"A write to a volatile field happens-before every later read of it. Everything A did before publishing — including the constructor — is visible to B once B sees the reference.","state":{"a1":"done","a2":"done","a3":"done","b1":"done","b2":"done"},"text":{"a2note":"volatile write: publishes everything before it","b2note":"sees a fully constructed object"}}
+]</script><figcaption>In application code, <code>by lazy</code> (synchronized by default) gives you this pattern without writing it by hand.</figcaption></figure>
+
+<!-- @after OOM and the Heap Limit :: check -->
+**Check yourself.**
+
+<details><summary><code>object Logger { var context: Context? = null }</code> is set from <code>MainActivity.onCreate</code>. What leaks, and what is the fix?</summary>
+
+The Activity (and its views) stay reachable from a static field for the life of the process. Store `applicationContext` instead, or don't keep a Context at all.
+</details>
+
+<details><summary>Your app's process uses 600 MB, but the Java heap dump shows 80 MB. Where is the rest?</summary>
+
+Outside the managed heap: native allocations, graphics memory (hardware bitmaps, GPU buffers), direct buffers. Use the native memory tools or `dumpsys meminfo` rather than a heap dump.
+</details>
+
+<!-- @diagram d0cfb3da8da17ff0 -->
+### Reading a LeakCanary trace
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>GC root</strong><small>a system class</small></div><div class="arrow"></div><div class="node"><strong><code>ActivityThread</code></strong><small>process-wide singleton</small></div><div class="arrow"></div><div class="node"><strong><code>mActivities</code> map</strong><small>framework bookkeeping</small></div><div class="arrow"></div><div class="node"><strong><code>LocalActivityRecord</code></strong><small>one entry per activity</small></div><div class="arrow"></div><div class="node" data-state="error"><strong>Destroyed <code>MainActivity</code></strong><small>retained unexpectedly</small></div></div><figcaption>LeakCanary shows the shortest strong path from a GC root to the object that should be gone. Walk it from the leaked object back toward the root and find the first reference your code owns — that is the edge to remove. If every hop is framework code, check the known platform leaks before changing your app.</figcaption></figure>
