@@ -79,9 +79,18 @@ A `<figure class="stepper">` contains a `.stage` with elements marked `data-el="
 - Visuals and animations are used wherever they teach; added prose stays concise.
 - Kotlin first; other trees follow the same approach.
 
+## Self-review (Kotlin tree)
+
+- **Coverage:** all 23 pages blended. 90 visuals, 30 of them step-through animations. 3,521 original units preserved, 0 missing.
+- **Length:** added reading prose is about 10% of the page. Short chapters gain the most (value classes, test dispatchers, callbackFlow: 35–45% including animation captions).
+- **Splitting:** not needed. The longest chapters (JVM interop, extensions, functions) run about 4.3–5.3k words, which is 20–25 minutes, and the outline, story bands and per-section links make them navigable.
+- **Devices:** 23 pages × 320/390/768/1280px pass: no horizontal scroll, no wide figures, all animations ready, no broken images. Light and dark themes checked.
+- **Gaps:** the Kotlin 2.4 update page has no animation yet. The Coroutines and JVM interop pages could use one more each.
+- **Accuracy:** claims the blends rely on were compiled and run locally. Errors found in the originals are logged for step 3, not edited.
+
 ## Next steps
 
-1. Blend the remaining Kotlin chapters, verifying added code and claims.
-2. Self-review every page for length, splitting and visual coverage.
-3. Sort the 292 corrections and get the owner's approval.
-4. Replace the Codex audit notes in `reviews/` with the reviewed corrections table.
+1. Sort the 292 Codex corrections plus the new findings, and get the owner's approval chapter by chapter.
+2. Replace the Codex audit notes in `reviews/` with the reviewed corrections table.
+3. Add the missing animations listed above.
+4. Repeat the blend for the next tree.
