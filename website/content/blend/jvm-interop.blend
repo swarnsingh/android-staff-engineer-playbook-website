@@ -1,0 +1,45 @@
+<!-- Website teaching layer for kotlin/runtime-and-jvm/jvm-interop.md. -->
+
+<!-- @opening -->
+<p class="story-lead">Your team ships a Kotlin analytics SDK. Kotlin callers write <code>TelemetryClient.event("signup")</code>. The first Java customer writes <code>TelemetryKt.TelemetryClient.INSTANCE.event("signup", Collections.emptyMap())</code> — and a week later reports a crash from a Kotlin <code>String</code> that their Java code passed as <code>null</code>.</p>
+
+Kotlin and Java share one runtime, so calls cross between them freely — but each language has features the other lacks. Kotlin **lowers** its features (objects, companions, defaults, `internal`, properties) into ordinary JVM shapes, and offers `@Jvm*` annotations to make those shapes pleasant for Java. In the other direction, Java's missing nullability arrives in Kotlin as **platform types**. This chapter maps both directions so you can predict, and design, what the other side sees.
+
+<!-- @after Overview :: visual -->
+### Two directions across one seam
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Java → Kotlin</span><div class="node" data-state="warn"><strong>Unannotated Java returns <code>String</code></strong><small>Kotlin sees <code>String!</code>: null-safety is suspended</small></div><div class="node is-key"><strong>Your defence</strong><small>annotations on the Java side (JSpecify), or an explicit <code>String?</code> at the boundary</small></div></div><div class="col"><span class="col-title">Kotlin → Java</span><div class="node" data-state="warn"><strong>Kotlin features Java lacks</strong><small>objects, companions, default arguments, <code>internal</code>, top-level functions</small></div><div class="node is-key"><strong>Your tools</strong><small><code>@JvmStatic</code>, <code>@JvmOverloads</code>, <code>@JvmField</code>, <code>@JvmName</code>, <code>@Throws</code></small></div></div></div><figcaption>Most interop bugs live exactly at this seam: a missing annotation on one side or the other.</figcaption></figure>
+
+<!-- @diagram f79ef8185c1b2d3d -->
+### What a Java caller writes — before and after the annotation
+
+<figure class="stepper"><span class="stepper-title">Four Kotlin constructs, seen from Java</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="obj"><strong><code>object SessionManager { fun current() }</code></strong><small data-text="objJava">Java: SessionManager.INSTANCE.current()</small></div><div class="node" data-el="comp"><strong><code>class Config { companion object { fun load() } }</code></strong><small data-text="compJava">Java: Config.Companion.load()</small></div><div class="node" data-el="top"><strong>top-level <code>fun titleCase()</code> in <code>TextUtils.kt</code></strong><small data-text="topJava">Java: TextUtilsKt.titleCase(s)</small></div><div class="node" data-el="def"><strong><code>fun connect(host, port = 80, useTls = false)</code></strong><small data-text="defJava">Java: connect(host, 80, false) — every argument, every time</small></div></div><script type="application/json" class="steps">[
+{"label":"Default lowering","caption":"Without annotations, each construct becomes a valid but awkward Java API: the singleton's INSTANCE field, the Companion object, the FileNameKt class, and no default arguments.","add":["obj","comp","top","def"],"state":{"obj":"warn","comp":"warn","top":"warn","def":"warn"}},
+{"label":"@JvmStatic on the object","caption":"@JvmStatic also emits a real static method, so Java can call SessionManager.current() like any Java utility.","state":{"obj":"done"},"text":{"objJava":"Java: SessionManager.current()"}},
+{"label":"@JvmStatic in the companion","caption":"The same annotation in a companion object puts a static load() on Config itself.","state":{"comp":"done"},"text":{"compJava":"Java: Config.load()"}},
+{"label":"@file:JvmName","caption":"@file:JvmName(\"Strings\") names the generated class, so Java writes Strings.titleCase(s) — and renaming the Kotlin file no longer breaks Java callers.","state":{"top":"done"},"text":{"topJava":"Java: Strings.titleCase(s)"}},
+{"label":"@JvmOverloads","caption":"@JvmOverloads emits connect(host) and connect(host, port) as well. Only trailing parameters can be left out — Java still cannot skip port while passing useTls.","state":{"def":"done"},"text":{"defJava":"Java: connect(host) · connect(host, 443) · connect(host, 443, true)"}}
+]</script><figcaption>None of these annotations changes how Kotlin callers see the API; they only add a better shape for Java.</figcaption></figure>
+
+<!-- @after First Principles :: visual -->
+### Where a platform-type `null` actually fails
+
+<figure class="viz"><div class="viz-flow"><div class="node" data-state="warn"><strong>Java <code>findById(42)</code> returns <code>null</code></strong><small>no annotation, so Kotlin sees <code>String!</code></small></div><div class="arrow"></div><div class="node is-key"><strong><code>val name: String = dao.findById(42)</code></strong><small>you claimed non-null: the compiler inserts a null check on this assignment</small></div><div class="arrow"></div><div class="node" data-state="error"><strong>Fails right here</strong><small>at the boundary, naming the expression — not three screens later</small></div></div><figcaption>Declaring <code>String?</code> instead turns the same null into a value the compiler makes you handle. Leaving the type inferred keeps it a platform type, and the failure moves to wherever it is first used.</figcaption></figure>
+
+<!-- @after Production Example :: check -->
+**Check yourself.**
+
+<details><summary>A Kotlin <code>object</code> holds an SDK's public functions. Java users complain about <code>INSTANCE</code>. What do you add?</summary>
+
+`@JvmStatic` on each public function (and `@JvmField` or `const` for constants). Alternatively, publish top-level functions with `@file:JvmName`.
+</details>
+
+<details><summary>You rename <code>Util.kt</code> to <code>StringUtils.kt</code>. What breaks, and for whom?</summary>
+
+Java callers and anything that names the class (reflection, keep rules): `UtilKt` becomes `StringUtilsKt`. Pin the name with `@file:JvmName("Util")` before renaming.
+</details>
+
+<details><summary>Is <code>internal</code> a security boundary against a determined Java caller?</summary>
+
+No. It compiles to a public method with a mangled name; the Kotlin compiler hides it, the JVM does not. Use real module boundaries and checks for anything sensitive.
+</details>
