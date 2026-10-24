@@ -33,7 +33,7 @@ Coroutine code is full of time — retries, debounce windows, timeouts — and f
 Probably not: work due at exactly the new time runs on the next `runCurrent()`. Add it (or advance one more millisecond) — and keep the 299 ms assertion that proves nothing arrived early.
 </details>
 
-<details><summary>A ViewModel test throws "Module with the Main dispatcher is missing". What is needed?</summary>
+<details><summary>A ViewModel unit test fails with an error saying the Main dispatcher is missing or failed to initialize. What is needed?</summary>
 
 `Dispatchers.setMain(testDispatcher)` before creating the ViewModel (usually via a `MainDispatcherRule`), because `viewModelScope` uses Main.
 </details>
