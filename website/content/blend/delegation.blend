@@ -1,0 +1,56 @@
+<!-- Website teaching layer for kotlin/language-core/delegation.md. -->
+
+<!-- @opening -->
+<p class="story-lead">The team's <code>BaseActivity</code> is 900 lines long: logging, analytics, permissions, insets, crash reporting. Every screen inherits all of it, and changing one concern risks the other five. Meanwhile, the settings screen stutters whenever it reads <code>settings.theme</code> — a property that looks free but quietly reads from disk.</p>
+
+Both problems meet at one keyword. `by` lets a class **hand whole interfaces to helper objects** instead of inheriting everything, and lets a property **hand its reads and writes to a delegate object** — which is how `by lazy`, `by viewModels()` and `by remember { mutableStateOf(…) }` work. This chapter shows exactly where those calls go, what each delegate costs, and the traps hidden behind a single word.
+
+<!-- @after Overview :: visual -->
+### Where the call actually goes
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Class delegation</span><div class="node"><strong><code>logger.flush()</code></strong><small>called on <code>TimestampedLogger</code></small></div><div class="node is-key"><strong>Generated forwarder</strong><small>the compiler wrote <code>flush() = real.flush()</code> for every method you did not override</small></div><div class="node"><strong><code>real: Logger</code></strong><small>the helper does the work</small></div></div><div class="col"><span class="col-title">Property delegation</span><div class="node"><strong><code>settings.theme</code></strong><small>an ordinary-looking read</small></div><div class="node is-key"><strong>Generated getter</strong><small>calls <code>theme$delegate.getValue(this, ::theme)</code></small></div><div class="node"><strong>The delegate object</strong><small>decides what a read means: cached value, ViewModel store, Compose state — or disk</small></div></div></div><figcaption>In both forms you write less code, and the work moves to another object. Knowing which object, and what it does, is the whole skill.</figcaption></figure>
+
+<!-- @after Class Delegation :: animation -->
+### Forwarding, and the `var` trap
+
+<figure class="stepper"><span class="stepper-title"><code>class Screen(var tracker: Analytics) : Analytics by tracker</code></span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title"><code>Screen</code> object</span><div class="node" data-el="prop"><strong>property <code>tracker</code></strong><small data-text="propValue">→ Firebase</small></div><div class="node" data-el="hidden"><strong>hidden delegate field</strong><small>→ Firebase (set once, in the constructor)</small></div><div class="node" data-el="call"><strong><code>screen.logEvent("buy")</code></strong><small data-text="callNote">goes through the hidden field</small></div></div><div class="col"><span class="col-title">Analytics objects</span><div class="node" data-el="fb"><strong>Firebase</strong><small data-text="fbNote">receives events</small></div><div class="node" data-el="mp"><strong>Mixpanel</strong><small data-text="mpNote">new tracker</small></div></div></div><script type="application/json" class="steps">[
+{"label":"Construct","caption":"Screen(Firebase()) stores the tracker in the property and, separately, in a hidden field that the generated forwarders use.","add":["prop","hidden","fb"],"state":{"hidden":"active"}},
+{"label":"Forward","caption":"logEvent() was not overridden, so the generated forwarder calls the hidden field: Firebase receives the event.","add":["call"],"state":{"fb":"done","hidden":""}},
+{"label":"Reassign","caption":"screen.tracker = Mixpanel() changes the property. Nothing updates the hidden field — it was copied at construction.","add":["mp"],"state":{"prop":"warn","mp":"active","fb":""},"text":{"propValue":"→ Mixpanel"}},
+{"label":"Forward again","caption":"The next logEvent() still goes to Firebase. Mixpanel never hears about it, and no error tells you.","state":{"fb":"error","mp":"ghost","call":"error"},"text":{"callNote":"still routed to Firebase","fbNote":"still receives events","mpNote":"receives nothing"}},
+{"label":"Rule","caption":"Delegate to a val. If the target must change at run time, write the forwarding methods yourself so each call reads the current property.","state":{"call":"done","prop":"done","fb":"","mp":""},"text":{"callNote":"use val, or a hand-written forwarder"}}
+]</script><figcaption>The class-delegation target is captured once. That is what makes it cheap, and what makes a <code>var</code> target misleading.</figcaption></figure>
+
+<!-- @after Property Delegation :: animation -->
+### What a delegated read really does
+
+<figure class="stepper"><span class="stepper-title">Three properties, three very different reads</span><div class="stage viz-cols" style="--cols:3"><div class="col"><span class="col-title"><code>by lazy</code></span><div class="node" data-el="l1"><strong>First read</strong><small>runs the block, stores the result</small></div><div class="node" data-el="l2"><strong>Later reads</strong><small>return the stored value</small></div></div><div class="col"><span class="col-title"><code>by Delegates.observable</code></span><div class="node" data-el="o1"><strong>Write</strong><small>stores the new value</small></div><div class="node" data-el="o2"><strong>Then the callback</strong><small>runs with old and new values — after the change</small></div></div><div class="col"><span class="col-title">Custom <code>by Preference(…)</code></span><div class="node" data-el="p1"><strong>Every read</strong><small><code>prefs.getString(…)</code></small></div><div class="node" data-el="p2"><strong>On the main thread</strong><small>a storage read inside what looks like a field</small></div></div></div><script type="application/json" class="steps">[
+{"label":"lazy, first read","caption":"The getter calls the Lazy delegate. Nothing is stored yet, so it runs your block and keeps the result.","add":["l1"],"state":{"l1":"active"}},
+{"label":"lazy, later","caption":"Every later read gets the stored value back. The cost was paid once, at a moment you may not control — the first read.","add":["l2"],"state":{"l2":"done","l1":""}},
+{"label":"observable","caption":"A write goes to the delegate, which stores the value and then calls your callback. To reject a value instead, use Delegates.vetoable.","add":["o1","o2"],"state":{"o2":"active"}},
+{"label":"custom delegate","caption":"A custom delegate can do anything in getValue. Here every read of settings.theme asks SharedPreferences again.","add":["p1"],"state":{"p1":"warn","o2":""}},
+{"label":"the stutter","caption":"Called from drawing or recomposition, that read runs on the main thread each time. The property syntax hid the cost — the opening story.","add":["p2"],"state":{"p2":"error"}}
+]</script><figcaption>A delegated property is a function call wearing field syntax. Review the delegate, not just the property.</figcaption></figure>
+
+<!-- @after Android Property Delegates Worth Knowing :: visual -->
+### Which `ViewModelStore` answers `by viewModels()`?
+
+<figure class="viz"><div class="axis"><span>activity starts</span><span>fragment A</span><span>fragment B</span><span>graph popped</span></div><div class="viz-lanes"><div class="lane"><span class="lane-label"><code>activityViewModels()</code></span><div class="track"><span class="mark" style="--at:0%;--len:100%">one instance for the whole activity, shared by A and B</span></div></div><div class="lane"><span class="lane-label"><code>hiltNavGraphViewModels(graph)</code></span><div class="track"><span class="mark" data-tone="soft" style="--at:22%;--len:56%">lives while the graph is on the back stack</span></div></div><div class="lane"><span class="lane-label">A: <code>viewModels()</code></span><div class="track"><span class="mark" style="--at:22%;--len:28%">A's own</span></div></div><div class="lane"><span class="lane-label">B: <code>viewModels()</code></span><div class="track"><span class="mark" style="--at:50%;--len:28%">B's own</span></div></div></div><figcaption>Each delegate looks up (or creates) a ViewModel in a different store, so the choice is really a choice of lifetime and of who shares the instance. Rotation keeps all of them; leaving the scope for good clears them.</figcaption></figure>
+
+<!-- @after How the Compiler Actually Implements This :: check -->
+**Check yourself.**
+
+<details><summary>Two Fragments in one Activity each use <code>by viewModels()</code> to reach "the cart". Why does the badge reset when switching tabs?</summary>
+
+Each Fragment got its own ViewModel from its own store. Shared state needs a shared scope: `by activityViewModels()` or a nav-graph-scoped ViewModel.
+</details>
+
+<details><summary>Inside a composable, <code>var count by mutableStateOf(0)</code> keeps returning to 0. What is missing?</summary>
+
+`remember { }`. Without it, a new state object is created on every recomposition. `remember` keeps the object; `by` only forwards reads and writes to its `.value`.
+</details>
+
+<details><summary>A <code>BaseFragment</code> adds logging, analytics and insets handling. What shape would delegation give it?</summary>
+
+Small interfaces (`ScreenLogger`, `ScreenAnalytics`, …) implemented by focused classes, composed with `by` where a screen needs them — so each concern can change, be tested and be omitted on its own.
+</details>

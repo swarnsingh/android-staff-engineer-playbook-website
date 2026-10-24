@@ -1,0 +1,56 @@
+<!-- Website teaching layer for kotlin/language-core/value-classes.md. -->
+
+<!-- @opening -->
+<p class="story-lead"><code>cancelOrder(userId, orderId)</code> compiles, passes review, and ships. The function's parameters were declared the other way round — <code>(orderId: String, userId: String)</code> — so production tries to cancel an order whose id is a user's id. Both are <code>String</code>, so nothing complained.</p>
+
+Value classes let you give `UserId` and `OrderId` different types, so that swap fails to compile, while the compiler still passes a plain `String` at run time wherever it can. "Wherever it can" is the interesting part: this short chapter shows when the wrapper truly disappears, when it quietly comes back as an object, and why Java callers can find such functions hard to call.
+
+<!-- @part 1. Value Class vs Type Alias vs Data Class :: BEGINNING -->
+<!-- @part 2. Boxing: the Rule That Decides Whether You Got the Performance :: MECHANISM -->
+<!-- @part 5. Review Checklist :: STAFF -->
+
+<!-- @after 1. Value Class vs Type Alias vs Data Class :: visual -->
+### Two worlds: the type checker and the JVM
+
+<figure class="viz"><div class="viz-pair"><div class="pane"><span class="pane-title">What the compiler checks</span><pre>fun cancelOrder(order: <mark>OrderId</mark>, user: <mark>UserId</mark>)
+
+cancelOrder(userId, orderId)
+// ✕ type mismatch: UserId is not OrderId</pre></div><div class="pane"><span class="pane-title">What the JVM usually receives</span><pre>cancelOrder-&lt;hash&gt;(String order, String user)
+
+// the wrappers are gone: two plain Strings
+// (the name is mangled — see section 3)</pre></div></div><figcaption>The safety lives entirely at compile time. A <code>typealias</code> would give neither: <code>typealias UserId = String</code> accepts any <code>String</code>, including an order id.</figcaption></figure>
+
+<!-- @after 2. Boxing: the Rule That Decides Whether You Got the Performance :: animation -->
+### Follow one `Meters` value through a program
+
+<figure class="stepper"><span class="stepper-title">When does the wrapper become a real object?</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="self"><strong><code>asItself(m: Meters)</code></strong><small>used as Meters → passed as a plain <code>double</code></small></div><div class="node" data-el="nullable"><strong><code>asNullable(m: Meters?)</code></strong><small>needs a reference that can be null → boxed</small></div><div class="node" data-el="generic"><strong><code>listOf(m)</code></strong><small>stored as a generic <code>T</code> → boxed, one object per element</small></div><div class="node" data-el="iface"><strong>used as <code>Any</code> or an interface</strong><small>a more general type → boxed</small></div><div class="node" data-el="back"><strong><code>list[0].v</code></strong><small>read back as Meters → unboxed again</small></div><div class="node" data-el="identity"><strong><code>a === b</code></strong><small>two boxes of the same value are different objects</small></div></div><script type="application/json" class="steps">[
+{"label":"As itself","caption":"While the code treats the value as Meters, the compiler passes the underlying double. No object exists: this is the zero-cost case.","add":["self"],"state":{"self":"done"}},
+{"label":"Nullable","caption":"Meters? must be able to hold null, and a double cannot. So a wrapper object is created at this boundary.","add":["nullable"],"state":{"nullable":"warn"}},
+{"label":"Generic","caption":"Collections and other generic code work with references, so each element is boxed. A list of a million Meters holds a million small objects.","add":["generic"],"state":{"generic":"warn"}},
+{"label":"Supertype","caption":"Passing it as Any, or through an interface the value class implements, also needs a real object.","add":["iface"],"state":{"iface":"warn"}},
+{"label":"Back to itself","caption":"Where the code uses it as Meters again, the compiler unwraps the box. Equality still works across boxed and unboxed forms.","add":["back"],"state":{"back":"done"}},
+{"label":"Identity is not safe","caption":"Two boxes created separately are different objects, so === can be false for equal values. Compare value classes with ==.","add":["identity"],"state":{"identity":"error"}}
+]</script><figcaption>The rule from the chapter, as a picture: inlined when used as itself, boxed when used as anything more general.</figcaption></figure>
+
+<!-- @after 3. Mangling and Java Interop :: visual -->
+### Why Java cannot see the function, and the fix
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Kotlin</strong><small><code>fun compute(x: Millis)</code></small></div><div class="arrow"></div><div class="node" data-state="warn"><strong>Bytecode name</strong><small><code>compute-&lt;hash&gt;(long)</code>: the hyphen keeps it apart from <code>compute(long)</code>, and Java cannot write that name</small></div><div class="arrow"></div><div class="node is-key"><strong><code>@JvmName("computeMillis")</code></strong><small>chooses a Java-legal name: <code>computeMillis(long)</code></small></div></div><figcaption>Decide this before publishing: changing a parameter between a value class and a regular class later changes the method's signature for every compiled caller.</figcaption></figure>
+
+<!-- @after 4. Where They Earn Their Keep :: check -->
+**Check yourself.**
+
+<details><summary>A repository method takes <code>(userId: String, accountId: String, deviceId: String)</code>. Worth value classes?</summary>
+
+Yes — three same-typed identifiers side by side is exactly the transposition risk value classes remove, at no cost in straight-line Kotlin code.
+</details>
+
+<details><summary>A hot path keeps millions of <code>Millis</code> values in a <code>List&lt;Millis&gt;</code>. What is the cost?</summary>
+
+Every element is boxed, so you pay an object per value — the same as using `List<Long>`. Measure, and consider a `LongArray` at that boundary.
+</details>
+
+<details><summary>You need <code>Money(amount, currency)</code>. Value class?</summary>
+
+No. A value class wraps exactly one underlying value; two fields make it a data class.
+</details>

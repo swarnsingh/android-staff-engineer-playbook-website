@@ -1,0 +1,50 @@
+<!-- Website teaching layer for kotlin/language-core/sealed-classes.md. -->
+
+<!-- @opening -->
+<p class="story-lead">A bug report includes a screenshot: a loading spinner, an error banner reading "Timeout", and last week's items — all on screen at once. The state class allowed it: <code>isLoading = true</code>, <code>error = "Timeout"</code>, <code>data = cachedItems</code>. Every field was valid on its own. Together they describe a screen that cannot exist.</p>
+
+Sealed types let you write down the states that *can* exist, and nothing else — and then the compiler holds every `when` to that list, including the day someone adds a new state. This chapter starts with that idea, compares sealed types with enums and open interfaces, follows them through real Android patterns, and ends with the trade-off that matters most for libraries: a closed list is a promise you may later need to break.
+
+<!-- @after Why It Matters (Android Context) :: visual -->
+### Eight combinations, three real states
+
+<figure class="viz"><div class="viz-grid" style="--cols:4"><div class="node is-key"><strong>Loading</strong><small>loading · no data · no error</small></div><div class="node is-key"><strong>Success</strong><small>not loading · data · no error</small></div><div class="node is-key"><strong>Error</strong><small>not loading · no data · error</small></div><div class="node" data-state="ghost"><strong>?</strong><small>not loading · no data · no error</small></div><div class="node" data-state="error"><strong>?</strong><small>loading · data · no error</small></div><div class="node" data-state="error"><strong>?</strong><small>loading · no data · error</small></div><div class="node" data-state="error"><strong>?</strong><small>not loading · data · error</small></div><div class="node" data-state="error"><strong>The bug report</strong><small>loading · data · error</small></div></div><figcaption>Three fields allow 2 × 2 × 2 = 8 combinations; the product has three states. A sealed type with three cases makes the other five impossible to write. (Some screens deliberately show data while refreshing — model that as its own case, so it is a decision rather than an accident.)</figcaption></figure>
+
+<!-- @before When to Reach For Sealed — vs Alternatives :: visual -->
+### Two questions choose the tool
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Closed set · every case has the same shape</strong><small><code>enum class Role { ADMIN, EDITOR, VIEWER }</code></small></div><div class="node is-key"><strong>Closed set · cases carry different data</strong><small><code>sealed interface PaymentMethod</code> with <code>Card(last4)</code>, <code>Upi(handle)</code>, <code>Cash</code></small></div><div class="node"><strong>Open set · others may add cases</strong><small>a plain <code>interface</code>; no exhaustiveness, by design</small></div><div class="node" data-state="warn"><strong>Closed today, published to unknown clients</strong><small>sealed, plus an <code>Unknown</code> case for values newer than the client</small></div></div><figcaption>Ask: can anyone outside this module add a case? Does each case need its own data? The table below adds the finer distinctions.</figcaption></figure>
+
+<!-- @after Exhaustive when — the Headline Feature :: animation -->
+### Add a case and watch the compiler guide the change
+
+<figure class="stepper"><span class="stepper-title"><code>sealed interface NetworkResult</code> gains <code>Cancelled</code></span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">The type</span><div class="node" data-el="type"><strong><code>NetworkResult</code></strong><small data-text="cases">Success · Error · Loading</small></div></div><div class="col"><span class="col-title"><code>when</code> expressions in the app</span><div class="node" data-el="w1"><strong><code>val title = when (r) { … }</code></strong><small data-text="w1note">three branches</small></div><div class="node" data-el="w2"><strong><code>val icon = when (r) { … }</code></strong><small data-text="w2note">three branches</small></div><div class="node" data-el="w3"><strong><code>val event = when (r) { …; else -&gt; "other" }</code></strong><small data-text="w3note">two branches + else</small></div></div></div><script type="application/json" class="steps">[
+{"label":"Today","caption":"Three cases, three when expressions. All compile.","add":["type","w1","w2","w3"],"state":{"w1":"done","w2":"done","w3":"done"}},
+{"label":"Add Cancelled","caption":"Someone adds data object Cancelled : NetworkResult. Nothing else changes yet.","state":{"type":"active","w1":"","w2":"","w3":""},"text":{"cases":"Success · Error · Loading · Cancelled"}},
+{"label":"The compiler lists the work","caption":"Each when without else is now incomplete, and the build stops at exactly those places. The change becomes a checklist you cannot skip.","state":{"w1":"error","w2":"error","type":""},"text":{"w1note":"error: add a Cancelled branch","w2note":"error: add a Cancelled branch"}},
+{"label":"The silent one","caption":"The when with else -> still compiles. Cancelled quietly becomes \"other\" in analytics — nobody was asked to decide.","state":{"w3":"warn"},"text":{"w3note":"compiles — Cancelled falls into else"}},
+{"label":"Done properly","caption":"Each failing site gets a real decision. Removing else from the third site would have put it on the list too — that is why else over a sealed type is a review flag.","state":{"w1":"done","w2":"done","w3":"done"},"text":{"w1note":"Cancelled → \"Cancelled\"","w2note":"Cancelled → stop icon","w3note":"else removed; Cancelled tracked explicitly"}}
+]</script><figcaption>Exhaustiveness turns "find every place that should care about the new case" from a search into a compile error.</figcaption></figure>
+
+<!-- @after SDK and Public API Considerations :: visual -->
+### Why the `Unknown` case protects old clients
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Server v2</strong><small>starts sending <code>"type": "crypto"</code></small></div><div class="arrow"></div><div class="node"><strong>App v1</strong><small>its <code>PaymentMethod</code> has no <code>Crypto</code> case</small></div><div class="arrow"></div><div class="node is-key"><strong>Parser fallback → <code>Unknown(raw)</code></strong><small>configured once (a default deserializer in kotlinx.serialization, a fallback in Moshi's polymorphic factory)</small></div><div class="arrow"></div><div class="node" data-state="done"><strong>UI</strong><small>shows a generic "Other payment method" instead of failing</small></div></div><figcaption>A sealed type is closed at compile time, but data from newer servers or SDK versions is not. Give old clients a defined place to put what they cannot recognise yet.</figcaption></figure>
+
+<!-- @after Failure Modes :: check -->
+**Check yourself.**
+
+<details><summary><code>enum class Status { OK, FAILED }</code> sits next to <code>val errorMessage: String?</code> that is only set when FAILED. What does that signal?</summary>
+
+The cases carry different data, so the model wants a sealed type: `Ok` and `Failed(message: String)`. The nullable field disappears, and "OK with an error message" can no longer be represented.
+</details>
+
+<details><summary>A reviewer sees <code>else -&gt; Unit</code> in a <code>when</code> over a sealed UI state. What is the risk?</summary>
+
+A future case will be handled by `Unit` — silently doing nothing — instead of failing the build where a decision is needed.
+</details>
+
+<details><summary>Your SDK exposes <code>sealed interface PaymentMethod</code> to apps you do not control. What do you ship with it?</summary>
+
+An `Unknown` (or similar) case and a parser fallback that produces it, plus a stated policy that new cases may appear in minor versions. Otherwise each new case breaks either clients' builds or their parsing.
+</details>

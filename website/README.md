@@ -14,14 +14,14 @@ This folder builds the reader website for the playbook. Read [`../content-rulebo
 | Chapter | Blend file | Status |
 | --- | --- | --- |
 | `kotlin.md` (learning path) | — | Original only |
-| language-core/variables | `variables.blend` | Blended (pilot) |
-| language-core/null-safety | — | To do |
-| language-core/functions | — | To do |
-| language-core/extensions | — | To do |
-| language-core/data-classes | — | To do |
-| language-core/value-classes | — | To do |
-| language-core/sealed-classes | — | To do |
-| language-core/delegation | — | To do |
+| language-core/variables | `variables.blend` | Blended |
+| language-core/null-safety | `null-safety.blend` | Blended |
+| language-core/functions | `functions.blend` | Blended |
+| language-core/extensions | `extensions.blend` | Blended |
+| language-core/data-classes | `data-classes.blend` | Blended |
+| language-core/value-classes | `value-classes.blend` | Blended |
+| language-core/sealed-classes | `sealed-classes.blend` | Blended |
+| language-core/delegation | `delegation.blend` | Blended |
 | type-system/generics | — | To do |
 | type-system/variance | — | To do |
 | compiler-features/inline-functions | — | To do |
