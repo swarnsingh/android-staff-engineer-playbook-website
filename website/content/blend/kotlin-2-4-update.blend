@@ -1,0 +1,42 @@
+<!-- Website teaching layer for kotlin/version-updates/kotlin-2-4-update.md. -->
+
+<!-- @opening -->
+<p class="story-lead">The ticket says "Upgrade to Kotlin 2.4 — context parameters and Swift export look great." The version bump takes one line. Then the build fails: one compiler plugin does not support the new compiler yet, the iOS framework job breaks, and the release branch is blocked until someone reverts.</p>
+
+A Kotlin release is two things at once: **new tools for your code** (here: stable context parameters, explicit backing fields, a stable `Uuid`, Swift export in Alpha) and **a change to your build's foundations** that every compiler plugin must support. This chapter covers what changed and why it matters for Android and KMP teams, then the checklist that decides *when* upgrading is safe.
+
+<!-- @after Language Features :: visual -->
+### Explicit backing fields replace the `_state` pattern
+
+<figure class="viz"><div class="viz-pair"><div class="pane"><span class="pane-title">Before: a backing property (see Variables)</span><pre>private val _state = MutableStateFlow(0)
+val state: StateFlow&lt;Int&gt; = _state.asStateFlow()
+
+fun increment() { <mark>_state</mark>.value++ }</pre></div><div class="pane"><span class="pane-title">Kotlin 2.4: an explicit backing field</span><pre>val state: StateFlow&lt;Int&gt;
+    <mark>field = MutableStateFlow(0)</mark>
+
+fun increment() { <mark>state</mark>.value++ }
+// inside the class: smart-cast to MutableStateFlow
+// outside: only StateFlow&lt;Int&gt;</pre></div></div><figcaption>One property instead of two, with the same guarantee: only the class can write. Compiled and run with Kotlin 2.4.21. Explicit backing fields work only on read-only <code>val</code> properties without custom getters, and the field itself is private — a <code>var</code> with an explicit <code>field</code> is rejected with "only 'val' properties with explicit backing fields are supported".</figcaption></figure>
+
+<!-- @after Kotlin/Native and Swift Export :: visual -->
+### Shared `Flow` as Swift sees it
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Shared Kotlin</strong><small><code>val state: StateFlow&lt;ProfileState&gt;</code></small></div><div class="arrow"></div><div class="node is-key"><strong>Swift export (Alpha)</strong><small>Flow types exported with their element type preserved</small></div><div class="arrow"></div><div class="node"><strong>Swift</strong><small><code>for try await state in vm.state.asAsyncSequence()</code></small></div></div><figcaption>The Kotlin side still decides threading (exported code uses <code>Dispatchers.Default</code> unless it switches) and the Swift side still owns cancellation through its <code>Task</code>. Alpha means: evaluate in a sample module and agree on the generated API with the iOS team before relying on it.</figcaption></figure>
+
+<!-- @before Migration Review Checklist :: visual -->
+### When is an upgrade safe?
+
+<figure class="viz"><div class="viz-stack"><div class="node is-key"><strong>1 · Is the plugin matrix green?</strong><small>Android Gradle Plugin, Compose compiler, KSP, Hilt/Dagger, Room, serialization, SKIE, SQLDelight, Ktor — each must support the new compiler.</small></div><div class="down"></div><div class="node"><strong>2 · Does everything still build and pass?</strong><small>Android and iOS framework jobs in CI, with build times measured before and after.</small></div><div class="down"></div><div class="node"><strong>3 · Did any public API change shape?</strong><small>Binary-compatibility checks for libraries; generated Swift and Java APIs reviewed by their consumers.</small></div><div class="down"></div><div class="node" data-state="done"><strong>4 · Upgrade, with a way back</strong><small>a revertable change, so a late incompatibility does not block a release</small></div></div><figcaption>The language features are reasons to want the upgrade; these four answers are the reasons it is safe.</figcaption></figure>
+
+<!-- @after Staff Engineer Guidance :: check -->
+**Check yourself.**
+
+<details><summary>Can <code>var token: String?</code> use an explicit <code>field = null</code> with a <code>private set</code>?</summary>
+
+No — explicit backing fields are only for `val` properties. Keep the classic `var token: String? = null` with `private set`, or expose a `val` with an explicit field of a more specific type.
+</details>
+
+<details><summary>Context parameters are stable. Should a repository's dependencies become context parameters?</summary>
+
+Usually not. They suit cross-cutting context in constrained areas (tracing, formatting, policy). Core dependencies should stay visible in constructors, so readers can see where each one comes from.
+</details>

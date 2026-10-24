@@ -32,10 +32,10 @@ This folder builds the reader website for the playbook. Read [`../content-rulebo
 | coroutines-and-flow/callbackflow-and-bridging-callbacks | `callbackflow-and-bridging-callbacks.blend` | Blended |
 | coroutines-and-flow/coroutines-debugging-and-profiling | `coroutines-debugging-and-profiling.blend` | Blended |
 | coroutines-and-flow/test-dispatchers-virtual-time | `test-dispatchers-virtual-time.blend` | Blended |
-| runtime-and-jvm/memory-model | — | To do |
-| runtime-and-jvm/jvm-interop | — | To do |
-| runtime-and-jvm/bytecode | — | To do |
-| version-updates/kotlin-2-4-update | — | To do |
+| runtime-and-jvm/memory-model | `memory-model.blend` | Blended |
+| runtime-and-jvm/jvm-interop | `jvm-interop.blend` | Blended |
+| runtime-and-jvm/bytecode | `bytecode.blend` | Blended |
+| version-updates/kotlin-2-4-update | `kotlin-2-4-update.blend` | Blended |
 
 Update this table whenever a chapter changes state.
 
