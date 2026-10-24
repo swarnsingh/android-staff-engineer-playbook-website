@@ -1,0 +1,44 @@
+<!-- Website teaching layer for kotlin/compiler-features/reified-types.md. -->
+
+<!-- @opening -->
+<p class="story-lead">A teammate writes a tidy helper: <code>inline fun &lt;reified T&gt; Gson.fromJson(json: String): T = fromJson(json, T::class.java)</code>. It works beautifully for <code>fromJson&lt;User&gt;(json)</code>. Then someone calls <code>fromJson&lt;List&lt;User&gt;&gt;(json)</code>, and the screen crashes with the same <code>LinkedTreeMap</code> error the Generics chapter opened with.</p>
+
+`reified` is real and useful: it lets an inline function use `T` as if the type still existed at run time. But it has an exact boundary. The compiler copies the function into each caller and writes in **the type that caller used** — and `T::class.java` then asks for that type's *class*, which for `List<User>` is just `List`. This chapter shows the copy, the boundary, and the small-wrapper pattern that keeps reified helpers cheap.
+
+<!-- @after Internal Mechanics :: animation -->
+### One source function, a separate copy per call site
+
+<figure class="stepper"><span class="stepper-title"><code>inline fun &lt;reified T&gt; nameOf(): String = T::class.java.name</code></span><div class="stage viz-cols" style="--cols:3"><div class="col"><span class="col-title"><code>nameOf&lt;User&gt;()</code></span><div class="node" data-el="u"><strong>pasted body</strong><small><code>User::class.java.name</code> → "User"</small></div></div><div class="col"><span class="col-title"><code>nameOf&lt;Int&gt;()</code></span><div class="node" data-el="i"><strong>pasted body</strong><small><code>Integer::class.java.name</code> → "java.lang.Integer"</small></div></div><div class="col"><span class="col-title"><code>nameOf&lt;List&lt;User&gt;&gt;()</code></span><div class="node" data-el="l"><strong>pasted body</strong><small><code>List::class.java.name</code> → "java.util.List"</small></div></div></div><script type="application/json" class="steps">[
+{"label":"First call site","caption":"The compiler copies the body into the caller and writes User where the body said T. User's class object is hard-coded into this call site.","add":["u"],"state":{"u":"done"}},
+{"label":"Second call site","caption":"A different caller gets its own copy, with Int written in. There is no shared generic body that would have to remember T.","add":["i"],"state":{"i":"done","u":""}},
+{"label":"A generic argument","caption":"Here T is List<User>. The copy is made the same way, but T::class.java asks for a class, and a class has no type arguments: the result is java.util.List.","add":["l"],"state":{"l":"warn","i":""}},
+{"label":"The boundary","caption":"Reified keeps the whole type the caller wrote; Class objects cannot hold it. Use typeOf<T>() (a KType that keeps List<User>), a serializer obtained from T, or a type token when the arguments matter.","state":{"l":"error"}}
+]</script><figcaption>Verified with Kotlin 2.4: for <code>List&lt;User&gt;</code>, <code>T::class.java</code> is <code>java.util.List</code>, while <code>typeOf&lt;T&gt;()</code> is <code>List&lt;User&gt;</code>.</figcaption></figure>
+
+<!-- @after Bytecode Evidence :: visual -->
+### What each tool keeps of `List<User>`
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node" data-state="warn"><strong><code>T::class</code> / <code>T::class.java</code></strong><small>the class only: <code>List</code></small></div><div class="node" data-state="warn"><strong>A <code>Class&lt;T&gt;</code> parameter</strong><small>the class only: <code>List.class</code></small></div><div class="node is-key"><strong><code>typeOf&lt;T&gt;()</code> with reified <code>T</code></strong><small>the full type: <code>List&lt;User&gt;</code></small></div><div class="node is-key"><strong>Type tokens, <code>serializer&lt;T&gt;()</code></strong><small>the full type, in the form a parser can use</small></div></div><figcaption>Choose by what the receiving API needs. Gson's <code>fromJson(String, Class)</code> can only ever see the class; give it a <code>Type</code> (from a token) instead when the element type matters.</figcaption></figure>
+
+<!-- @after Failure Modes :: visual -->
+### The wrapper rule, as a shape
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Call sites</strong><small><code>parse&lt;User&gt;(json)</code>, <code>parse&lt;Cart&gt;(json)</code>, … 100 of them</small></div><div class="arrow"></div><div class="node is-key"><strong>Tiny <code>inline reified</code> wrapper</strong><small>one line, copied 100 times: <code>parseReal(json, T::class.java)</code></small></div><div class="arrow"></div><div class="node"><strong>Normal function <code>parseReal</code></strong><small>the 50 lines live here once</small></div></div><figcaption>The caller-friendly syntax stays, the duplicated code stays tiny, and the heavy logic can be tested and profiled like any other function.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: check -->
+**Check yourself.**
+
+<details><summary>Can you write <code>class Cache&lt;reified T&gt;</code>?</summary>
+
+No. Only type parameters of inline functions can be reified: a class body exists once, so there is no per-call copy in which the compiler could write the type.
+</details>
+
+<details><summary>Inside a reified function you want to create a <code>T</code>. Does <code>T()</code> work?</summary>
+
+No. Knowing `T`'s class says nothing about its constructors. Take a factory parameter (`create: () -> T`), or use reflection on a constructor you know exists.
+</details>
+
+<details><summary>Java code in your app needs the same helper. What do you publish?</summary>
+
+A normal function taking a `Class<T>` (or a `Type`) that Java can call, plus the reified wrapper for Kotlin callers that delegates to it.
+</details>

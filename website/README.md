@@ -22,10 +22,10 @@ This folder builds the reader website for the playbook. Read [`../content-rulebo
 | language-core/value-classes | `value-classes.blend` | Blended |
 | language-core/sealed-classes | `sealed-classes.blend` | Blended |
 | language-core/delegation | `delegation.blend` | Blended |
-| type-system/generics | — | To do |
-| type-system/variance | — | To do |
-| compiler-features/inline-functions | — | To do |
-| compiler-features/reified-types | — | To do |
+| type-system/generics | `generics.blend` | Blended |
+| type-system/variance | `variance.blend` | Blended |
+| compiler-features/inline-functions | `inline-functions.blend` | Blended |
+| compiler-features/reified-types | `reified-types.blend` | Blended |
 | coroutines-and-flow/coroutines | Codex fragments in `content/coroutine-*.html` | Partly blended; needs a `.blend` |
 | coroutines-and-flow/channels-and-select | — | To do |
 | coroutines-and-flow/flow-operators-and-backpressure | — | To do |

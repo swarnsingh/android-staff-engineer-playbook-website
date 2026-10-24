@@ -1,0 +1,45 @@
+<!-- Website teaching layer for kotlin/compiler-features/inline-functions.md. -->
+
+<!-- @opening -->
+<p class="story-lead">After reading that <code>inline</code> is "zero cost", a team adds it to dozens of helpers. The APK grows, a crash stack trace points at a line in a screen that "doesn't call" the failing code, and a code reviewer asks why a 60-line validation function is being pasted into forty places.</p>
+
+`inline` is not a speed switch. It tells the compiler to **copy a function's body — and the lambdas passed to it — into every caller**. That removes the function value a lambda would otherwise need, and makes a few things possible that are impossible otherwise (non-local `return`, `reified` types). It also changes code size, stack traces and what a `return` means. This chapter shows the copy happening, then the rules for when the trade is worth it.
+
+<!-- @diagram 867177bb2f66113e -->
+### Watch the compiler copy the body in
+
+<figure class="stepper"><span class="stepper-title"><code>myInlineFunc { doWork() }</code></span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">Before compilation</span><div class="node" data-el="func"><strong><code>inline fun myInlineFunc(block: () -&gt; Unit)</code></strong><small><code>println("Start")</code> · <code>block()</code> · <code>println("End")</code></small></div><div class="node" data-el="call"><strong>Caller</strong><small><code>myInlineFunc { doWork() }</code></small></div></div><div class="col"><span class="col-title">The caller's compiled body</span><div class="node" data-el="l1"><strong><code>println("Start")</code></strong><small>copied from the inline function</small></div><div class="node" data-el="l2"><strong><code>doWork()</code></strong><small>the lambda's body, placed where <code>block()</code> was</small></div><div class="node" data-el="l3"><strong><code>println("End")</code></strong><small>copied from the inline function</small></div><div class="node" data-el="none"><strong>No call to <code>myInlineFunc</code>, no function value</strong><small>nothing left to allocate or invoke</small></div></div></div><script type="application/json" class="steps">[
+{"label":"Two pieces","caption":"There is an inline function with a lambda parameter, and a caller that passes { doWork() }.","add":["func","call"],"state":{"func":"active","call":"active"}},
+{"label":"Copy the body","caption":"Instead of compiling a call, the compiler copies the inline function's statements into the caller.","add":["l1","l3"],"state":{"l1":"done","l3":"done","func":"","call":""}},
+{"label":"Substitute the lambda","caption":"Where the body said block(), it now places the lambda's own code: doWork(). The lambda never becomes an object.","add":["l2"],"state":{"l2":"active"}},
+{"label":"What is left","caption":"The caller ends up with three plain statements. There is no call to myInlineFunc and no function value to create or invoke.","add":["none"],"state":{"none":"done","l2":"done"}},
+{"label":"Consequences","caption":"The same copy happens at every call site: more code per caller, stack traces that point into the caller, and a return inside the lambda that now belongs to the caller.","state":{"l1":"warn","l2":"warn","l3":"warn","none":""}}
+]</script><figcaption>Every rule in this chapter follows from that copy: what it saves, what it costs, and why <code>crossinline</code>, <code>noinline</code> and <code>reified</code> exist.</figcaption></figure>
+
+<!-- @after First Principles :: visual -->
+### When does a lambda need an object?
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node" data-state="warn"><strong>Non-inline function, lambda captures values</strong><small>e.g. uses a local <code>prefix</code>: a new function object per call, holding the captured values</small></div><div class="node"><strong>Non-inline function, lambda captures nothing</strong><small>the compiler can reuse one instance; no per-call allocation is needed</small></div><div class="node is-key"><strong>Inline function, ordinary lambda parameter</strong><small>the body is pasted into the caller: no function object at all</small></div><div class="node"><strong>Inline function, <code>noinline</code> parameter</strong><small>that lambda stays a real object, because it must be stored or passed on</small></div></div><figcaption>Captured values are what force a fresh object each time. That is why hot paths with capturing lambdas are where <code>inline</code> pays off most.</figcaption></figure>
+
+<!-- @after Failure Modes :: visual -->
+### Choosing between plain, `crossinline` and `noinline`
+
+<figure class="viz"><div class="viz-stack"><div class="node is-key"><strong>Where does the inline function use the lambda parameter?</strong><small>Each answer picks the modifier.</small></div><div class="down"></div><div class="viz-grid" style="--cols:3"><div class="node" data-state="done"><strong>Called directly in the body</strong><small>no modifier. A <code>return</code> inside the lambda returns from the caller (non-local).</small></div><div class="node"><strong>Called inside another lambda or object</strong><small>e.g. <code>Thread { action() }</code>: <code>crossinline</code>. Still inlined, but non-local <code>return</code> is forbidden — the caller may have returned already.</small></div><div class="node"><strong>Stored, or passed to a non-inline function</strong><small><code>noinline</code>. Not inlined: it stays a function object.</small></div></div></div><figcaption>The compiler error in the chapter's <code>executeAsync</code> example is this decision being enforced: a lambda that runs later cannot be allowed to return from a caller that has already finished.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: check -->
+**Check yourself.**
+
+<details><summary><code>inline fun add(a: Int, b: Int) = a + b</code> — worth it?</summary>
+
+No. There is no lambda to eliminate and no `reified` type to keep; the JIT already handles small calls well. The compiler even warns that the expected impact is insignificant.
+</details>
+
+<details><summary>A 60-line function with one lambda parameter is called from 40 places. Should it be <code>inline</code>?</summary>
+
+Usually not. The body would be copied 40 times. Keep a small inline wrapper (if the lambda really is hot) that calls a normal function for the heavy part.
+</details>
+
+<details><summary>Inside <code>list.forEach { if (it.isBad) return }</code>, what does <code>return</code> exit?</summary>
+
+The enclosing function, because `forEach` is inline and its body was copied into it. Use `return@forEach` to skip just that element.
+</details>
