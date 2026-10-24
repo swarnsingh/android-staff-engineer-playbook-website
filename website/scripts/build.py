@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Render the original Kotlin chapters without shortening their content."""
 from pathlib import Path
-from html import escape
+from html import escape, unescape
 from urllib.parse import urlsplit, unquote, quote
 import argparse, hashlib, json, os, re, shlex, shutil, subprocess, sys
 from markdown_it import MarkdownIt
@@ -37,7 +37,9 @@ def slug(text):
 
 
 def clean(text):
-    return re.sub(r'<[^>]*>|[`*_~]', '', text).strip()
+    # Keep code spans verbatim (they may contain generics such as `List<Dog>`); strip markup elsewhere.
+    parts = re.split(r'(`[^`]*`)', text)
+    return ''.join(p[1:-1] if p.startswith('`') and p.endswith('`') and len(p) > 1 else re.sub(r'<[^>]*>|[*_~]', '', p) for p in parts).strip()
 
 
 def title(path):
@@ -270,7 +272,7 @@ def render_chapter(path, raw, is_course=False):
         if not anchor:
             before=body[:match.start()]
             anchor=re.findall(r'<section[^>]* id="([^"]+)"',before)[-1]
-        outline.append(f'<a href="#{anchor}">{escape(clean(match[3]))}</a>')
+        outline.append(f'<a href="#{anchor}">{escape(unescape(clean(match[3])))}</a>')
     rendered_text = re.sub('<[^>]+>',' ',body)
     source_headings=[t.content for i,t in enumerate(tokens) if t.type=='inline' and i>0 and tokens[i-1].type=='heading_open' and tokens[i-1].tag!='h1']
     report={'source':path,'source_sha256':hashlib.sha256(raw.encode()).hexdigest(),'source_words':len(raw.split()),'headings':headings,'original_sections':len(sections),'code_blocks':len(codes),'diagrams':diagram_count[0],'corrections':len(fixes),'source_content':'Full corrected Markdown token stream rendered; no section or code-block selection.'}

@@ -1,0 +1,56 @@
+<!-- Website teaching layer for kotlin/type-system/variance.md. -->
+
+<!-- @opening -->
+<p class="story-lead">A feed has <code>Post</code>, <code>Ad</code> and <code>Header</code> items, all subtypes of <code>FeedItem</code>. One analytics listener can handle any <code>FeedItem</code>, yet the compiler refuses to pass it where a <code>ClickListener&lt;Post&gt;</code> is expected. The team "fixes" it with <code>as</code> casts. Months later one of those casts is wrong, and it crashes in production.</p>
+
+The listener was fine; its *declaration* was missing one word. Variance answers a precise question: if `Dog` is an `Animal`, is a `Box<Dog>` a `Box<Animal>`? The answer depends on whether the box only hands values **out**, only takes values **in**, or does both. This chapter turns that into a rule you can apply by looking at where `T` appears — and shows why getting it right removes casts instead of adding them.
+
+<!-- @after The Big Idea in One Sentence :: animation -->
+### Which way does the arrow point?
+
+<figure class="stepper"><span class="stepper-title">Start from <code>Dog : Animal</code> and follow the arrow</span><div class="stage viz-stack"><div class="node is-key" data-el="base"><strong><code>Dog</code> → <code>Animal</code></strong><small>every Dog can be used where an Animal is expected</small></div><div class="viz-grid" style="--cols:3"><div class="node" data-el="out"><strong><code>Producer&lt;out T&gt;</code></strong><small data-text="outNote">?</small></div><div class="node" data-el="in"><strong><code>Consumer&lt;in T&gt;</code></strong><small data-text="inNote">?</small></div><div class="node" data-el="inv"><strong><code>Box&lt;T&gt;</code> (reads and writes)</strong><small data-text="invNote">?</small></div></div></div><script type="application/json" class="steps">[
+{"label":"The starting fact","caption":"Dog is a subtype of Animal. The question is what that implies for generic types built from them.","add":["base"]},
+{"label":"Producers keep the direction","caption":"A Producer<Dog> only hands out Dogs, and every Dog is an Animal. So it can stand in for a Producer<Animal>. Same direction: covariance, out.","add":["out"],"state":{"out":"done"},"text":{"outNote":"Producer<Dog> → Producer<Animal>"}},
+{"label":"Consumers flip it","caption":"A Consumer<Animal> accepts any Animal — including every Dog. So it can stand in for a Consumer<Dog>. Reversed direction: contravariance, in.","add":["in"],"state":{"in":"done"},"text":{"inNote":"Consumer<Animal> → Consumer<Dog>"}},
+{"label":"Both: no arrow at all","caption":"A Box<T> you can read and write gets no arrow either way: as a Box<Animal>, a box of dogs would accept a Cat; as a Box<Dog>, a box of animals could hand back a Cat. Invariance.","add":["inv"],"state":{"inv":"error"},"text":{"invNote":"Box<Dog> and Box<Animal> are unrelated"}},
+{"label":"The rule","caption":"out T keeps the arrow, in T reverses it, and no modifier means no arrow. The keyword is a promise about where T may appear — and the compiler checks the promise.","state":{"base":"active","inv":""}}
+]</script><figcaption>Every row in this chapter is one of these three cases. When in doubt, ask: does this type only give me T, only take T, or both?</figcaption></figure>
+
+<!-- @after The Java Arrays Catastrophe (Why This Matters) :: animation -->
+### Same idea, two languages: when is the mistake caught?
+
+<figure class="stepper"><span class="stepper-title">Putting a Cat into a collection of dogs</span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">Java arrays (covariant)</span><div class="node" data-el="j1"><strong><code>Animal[] animals = dogs;</code></strong><small>accepted</small></div><div class="node" data-el="j2"><strong><code>animals[0] = new Cat();</code></strong><small>accepted by the compiler</small></div><div class="node" data-el="j3"><strong>At run time</strong><small><code>ArrayStoreException</code> — the JVM checks every array write</small></div></div><div class="col"><span class="col-title">Kotlin generics (invariant by default)</span><div class="node" data-el="k1"><strong><code>val animals: MutableList&lt;Animal&gt; = dogs</code></strong><small>rejected at compile time</small></div><div class="node" data-el="k2"><strong><code>val animals: List&lt;Animal&gt; = dogs</code></strong><small>accepted — <code>List</code> is read-only, <code>out E</code></small></div></div></div><script type="application/json" class="steps">[
+{"label":"Java aliasing","caption":"Java lets a Dog[] be used as an Animal[]. Nothing is wrong yet.","add":["j1"],"state":{"j1":"warn"}},
+{"label":"Java write","caption":"Writing a Cat into an Animal[] looks fine to the compiler.","add":["j2"],"state":{"j2":"warn","j1":""}},
+{"label":"Java run time","caption":"The array really holds dogs, so the JVM's per-write check throws. The bug is found by users, not the compiler.","add":["j3"],"state":{"j3":"error","j2":""}},
+{"label":"Kotlin mutable","caption":"Kotlin refuses the aliasing itself for MutableList: a mutable list of dogs is not a mutable list of animals. The mistake never compiles.","add":["k1"],"state":{"k1":"done"}},
+{"label":"Kotlin read-only","caption":"For List, which cannot be written through, the alias is safe and allowed. Variance gives flexibility exactly where it is safe.","add":["k2"],"state":{"k2":"done"}}
+]</script><figcaption>Kotlin moves the check from every write at run time to one decision at compile time.</figcaption></figure>
+
+<!-- @after First Principles :: visual -->
+### The position rule, inside a class body
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title"><code>interface Source&lt;out T&gt;</code></span><div class="node" data-state="done"><strong><code>fun next(): T</code></strong><small>T comes out — allowed</small></div><div class="node" data-state="done"><strong><code>val latest: T</code></strong><small>read-only property — allowed</small></div><div class="node" data-state="error"><strong><code>fun push(item: T)</code></strong><small>T goes in — compile error</small></div></div><div class="col"><span class="col-title"><code>interface Sink&lt;in T&gt;</code></span><div class="node" data-state="done"><strong><code>fun accept(item: T)</code></strong><small>T goes in — allowed</small></div><div class="node" data-state="error"><strong><code>fun emit(): T</code></strong><small>T comes out — compile error</small></div><div class="node" data-state="error"><strong><code>var current: T</code></strong><small>read and write — compile error for either</small></div></div></div><figcaption>"In" and "out" describe positions in this class's API — parameters versus results — not where data travels in your app.</figcaption></figure>
+
+<!-- @after Function Types — Variance Built-In :: visual -->
+### A function type is both at once
+
+<figure class="viz"><div class="viz-flow"><div class="node is-key"><strong>Have: <code>(Animal) -&gt; Int</code></strong><small>accepts any animal, returns an Int</small></div><div class="arrow"></div><div class="node"><strong>Wanted: <code>(Dog) -&gt; Number</code></strong><small>will be given dogs, expects a Number back</small></div></div><figcaption>Parameters are <code>in</code>: something that accepts any Animal can certainly accept a Dog. Results are <code>out</code>: an Int is a Number. So the function on the left fits the slot on the right.</figcaption></figure>
+
+<!-- @after Real Android Patterns :: check -->
+**Check yourself.**
+
+<details><summary><code>interface ItemClickListener&lt;T&gt; { fun onClick(item: T) }</code> — what one word fixes the opening story?</summary>
+
+`in`: `ItemClickListener<in T>`. T only appears as a parameter, so a listener for any `FeedItem` is now accepted wherever a `ItemClickListener<Post>` is required — no casts.
+</details>
+
+<details><summary>A <code>Cache&lt;K, V&gt;</code> has <code>get(key): V?</code> and <code>put(key, value: V)</code>. Can <code>V</code> be <code>out</code>?</summary>
+
+No. `V` appears in both positions, so the cache must be invariant in `V`. If a function only reads from a cache, project at the use site: `Cache<K, out V>`.
+</details>
+
+<details><summary>Your <code>sealed interface Resource&lt;T&gt;</code> makes <code>Loading : Resource&lt;Nothing&gt;</code> fail to assign to <code>Resource&lt;User&gt;</code>. Why?</summary>
+
+`Resource` is invariant. Declare it `Resource<out T>`: then `Nothing` (a subtype of every type) makes `Resource<Nothing>` a subtype of `Resource<User>`.
+</details>
