@@ -76,6 +76,100 @@ def link_rules(path):
     MD.renderer.rules['link_open'] = link_open
 
 
+# The story every chapter moves through. Sections are mapped to a part by their heading;
+# a blend file can override the mapping with `<!-- @part Heading :: KEY -->`.
+PARTS = [
+    ('BEGINNING', 'The problem and the idea', 'Why this exists, and the picture to keep in mind.'),
+    ('MECHANISM', 'How it really works', 'What the compiler and runtime actually do.'),
+    ('PRODUCTION', 'In real apps', 'Patterns, trade-offs and the ways it fails.'),
+    ('STAFF', 'Staff-level judgement', 'Decisions, reviews and the misconceptions to correct.'),
+    ('PRACTICE', 'Practise', 'Questions with worked answers.'),
+    ('DEEPER', 'Go deeper', 'Sources and next steps.'),
+]
+PART_KEYS = [key for key, _, _ in PARTS]
+PART_WORDS = [
+    ('DEEPER', ['further reading', 'references']),
+    ('PRACTICE', ['probing question', 'answer key', 'review checklist', 'review question', 'interview']),
+    ('STAFF', ['staff', 'misconception']),
+    ('PRODUCTION', ['production', 'android example', 'android pattern', 'real android', 'tradeoff', 'trade-off',
+                    'failure mode', 'performance', 'reliability', 'security', 'observability', 'pitfall',
+                    'android failure', 'testing', 'where they earn', 'migration', 'when to reach', 'right choice',
+                    'wrong choice', 'sdk and public', 'lifecycle collection', 'common failure']),
+    ('BEGINNING', ['overview', 'why it', 'why this', 'historical context', 'first principles', 'mental model',
+                   'big idea', 'debugging model']),
+]
+
+
+def classify_part(heading):
+    lower = heading.lower()
+    for key, words in PART_WORDS:
+        if any(word in lower for word in words):
+            return PART_KEYS.index(key)
+    return PART_KEYS.index('MECHANISM')
+
+
+BLEND_LABELS = {'story': 'Start here', 'guide': 'In plain words', 'visual': 'See it', 'animation': 'Step through it',
+                'check': 'Check yourself', 'deeper': 'Under the hood', 'staff': 'Staff lens', 'try': 'Try it', 'bridge': ''}
+
+
+def load_blend(path):
+    """Read website/content/blend/<chapter>.blend: Markdown fragments placed by markers.
+
+    <!-- @opening -->                      replaces the generic intro with a problem-first story
+    <!-- @before Heading :: kind -->       inserted before that H2 section
+    <!-- @after Heading :: kind -->        appended inside that H2 section
+    <!-- @diagram <hash> -->               designed redraw shown instead of that Mermaid diagram
+    <!-- @part Heading :: KEY -->          force the part a section belongs to
+    Headings are matched on their visible text (backticks and emphasis removed).
+    """
+    file = WEB / 'content/blend' / (Path(path).stem + '.blend')
+    if not file.exists():
+        return {}
+    pieces = re.split(r'<!--\s*@(opening|before|after|diagram|part)\b(.*?)-->', file.read_text(), flags=re.S)
+    blend = {}
+    for i in range(1, len(pieces), 3):
+        marker, argument, content = pieces[i], pieces[i + 1].strip(), pieces[i + 2].strip()
+        target, _, kind = (part.strip() for part in argument.partition('::'))
+        if marker == 'opening':
+            key = ('opening', '')
+        elif marker == 'diagram':
+            key = ('diagram', target)
+        elif marker == 'part':
+            if kind not in PART_KEYS:
+                raise ValueError(f'{file.name}: unknown part {kind!r}')
+            blend[('part', target)] = kind
+            continue
+        else:
+            if kind not in BLEND_LABELS:
+                raise ValueError(f'{file.name}: unknown kind {kind!r} for {target!r}')
+            key = (marker, target, kind)
+            if key in blend:  # several inserts of one kind at one place stay in order
+                content = blend[key] + '\n\n' + content
+        blend[key] = content
+    return blend
+
+
+def steps_as_text(html):
+    """Print every animation step as a numbered list, so no step depends on motion or JavaScript."""
+    def add(match):
+        steps = json.loads(match.group(2))
+        items = ''.join(f'<li>{"<strong>"+escape(s["label"])+".</strong> " if s.get("label") else ""}{escape(s.get("caption",""))}</li>' for s in steps)
+        return match.group(1) + match.group(2) + match.group(3) + f'<details class="steps-text"><summary>Read every step as text</summary><ol>{items}</ol></details>'
+    return re.sub(r'(<script type="application/json" class="steps">)(.*?)(</script>)', add, html, flags=re.S)
+
+
+def wrap(kind, markdown, env):
+    """Render an added fragment and label it, so readers can tell it from the original text."""
+    env['blend'] = True
+    try:
+        html = MD.render(markdown, env)
+    finally:
+        env['blend'] = False
+    label = BLEND_LABELS[kind]
+    label_html = f'<span class="blend-label">{label}</span>' if label else ''
+    return f'<div class="blend" data-kind="{kind}">{label_html}{steps_as_text(html)}</div>'
+
+
 def render_chapter(path, raw, is_course=False):
     source, fixes = corrected(raw, path)
     tokens = MD.parse(source)
@@ -90,6 +184,8 @@ def render_chapter(path, raw, is_course=False):
             if token.tag == 'h2': sections.append((i,heading,anchor))
         if token.type == 'fence': codes.append({'language':token.info,'text':token.content})
     link_rules(path)
+    blend = load_blend(path)
+    used = set()
     diagram_count = [0]
     def fence(tokens, idx, options, env):
         token=tokens[idx]; language=token.info.split()[0] if token.info.strip() else 'text'
@@ -98,26 +194,52 @@ def render_chapter(path, raw, is_course=False):
             key=hashlib.sha256(token.content.encode()).hexdigest()[:16]
             diagram_count[0]+=1
             (OUT/'diagram-sources'/f'{key}.mmd').write_text(token.content)
-            return f'<figure class="source-diagram"><img src="{BASE}diagrams/{key}.svg" alt="{escape(env.get("heading","Concept relationships"))}" loading="lazy"><figcaption>Concept relationships from this section.</figcaption><details><summary>Read diagram source</summary><pre tabindex="0"><code>{escape(token.content)}</code></pre></details></figure>'
-        label={'kotlin':'Kotlin','java':'Java','groovy':'Gradle / Groovy','kts':'Gradle / Kotlin','text':'Illustrative output'}.get(language,language)
-        return f'<div class="code-card"><div class="code-header"><span>{escape(label)}<small>Chapter example · surrounding text defines its assumptions</small></span><button class="code-button" data-copy="{code_id}">Copy code</button></div><pre tabindex="0" aria-label="{escape(label)} example"><code id="{code_id}" class="highlight language-{escape(language)}">{escape(token.content)}</code></pre></div>\n'
+            original=f'<img src="{BASE}diagrams/{key}.svg" alt="{escape(env.get("heading","Concept relationships"))}" loading="lazy">'
+            source=f'<details><summary>Read diagram source</summary><pre tabindex="0"><code>{escape(token.content)}</code></pre></details>'
+            if ('diagram', key) in blend:
+                # A designed redraw leads; the chapter's own diagram stays one tap away.
+                used.add(('diagram', key))
+                return wrap('visual', blend[('diagram', key)], env) + f'<details class="original-diagram"><summary>Original diagram from the chapter</summary>{original}{source}</details>'
+            return f'<figure class="source-diagram">{original}<figcaption>Concept relationships from this section.</figcaption>{source}</figure>'
+        if env.get('blend'):
+            label, note = {'kotlin':'Kotlin','java':'Java','text':'Output'}.get(language,language), 'Added example'
+        else:
+            label={'kotlin':'Kotlin','java':'Java','groovy':'Gradle / Groovy','kts':'Gradle / Kotlin','text':'Illustrative output'}.get(language,language)
+            note='Chapter example · surrounding text defines its assumptions'
+        return f'<div class="code-card"><div class="code-header"><span>{escape(label)}<small>{note}</small></span><button class="code-button" data-copy="{code_id}">Copy code</button></div><pre tabindex="0" aria-label="{escape(label)} example"><code id="{code_id}" class="highlight language-{escape(language)}">{escape(token.content)}</code></pre></div>\n'
     MD.renderer.rules['fence']=fence
     env={'prefix':slug(path),'code_index':0}
     initial=tokens[:sections[0][0]] if sections else tokens
     # H1 is represented by the page hero; all other opening content stays intact.
     if initial and initial[0].type=='heading_open' and initial[0].tag=='h1': initial=initial[3:]
     opening=MD.renderer.render(initial,MD.options,env)
-    desc=INTRO.get(Path(path).stem, 'Follow the concepts, examples, failure modes and design decisions in this chapter.')
-    body=f'<section class="lesson-section lesson-start" id="problem"><span class="eyebrow">START WITH THE NEED</span><h2>Why this topic matters</h2><p>{escape(desc)}</p><div class="original-opening">{opening}</div></section>'
+    if ('opening', '') in blend:
+        used.add(('opening', ''))
+        body=f'<section class="lesson-section lesson-start" id="problem"><h2>Start here</h2>{wrap("story", blend[("opening","")], env)}<div class="original-opening">{opening}</div></section>'
+    else:
+        desc=INTRO.get(Path(path).stem, 'Follow the concepts, examples, failure modes and design decisions in this chapter.')
+        body=f'<section class="lesson-section lesson-start" id="problem"><span class="eyebrow">START WITH THE NEED</span><h2>Why this topic matters</h2><p>{escape(desc)}</p><div class="original-opening">{opening}</div></section>'
     if path.endswith('/coroutines.md'):
         body += '<section class="lesson-section" id="experiment"><span class="eyebrow">TRY THE IDEA</span><h2>Watch independent waits overlap</h2><p>A profile needs a name and an avatar. Waiting for one request before starting the other adds avoidable waiting. Run the example, switch <code>concurrent</code> from <code>true</code> to <code>false</code>, and compare the start messages.</p>' + (WEB/'content/coroutine-experiment.html').read_text() + '<p>In Playground output, <code>main @coroutine#2</code> means thread <code>main</code>, coroutine #2. Different coroutine numbers can share the same thread.</p></section>'
+    part_index = 0
     for j,(start,heading,anchor) in enumerate(sections):
         end=sections[j+1][0] if j+1<len(sections) else len(tokens)
-        env['heading']=clean(heading)
+        name=clean(heading)
+        env['heading']=name
         rendered=MD.renderer.render(tokens[start:end],MD.options,env)
         qa=' data-question' if any(s in heading.lower() for s in ['answer key','probing question','review checklist','review questions']) else ''
-        part='BEGINNING' if j<2 else 'STAFF DECISIONS' if any(s in heading.lower() for s in ['staff','failure modes','misconception','probing','answer key','further reading']) else 'MECHANISM'
-        body += f'<section class="lesson-section" id="section-{anchor}" data-part="{part}"{qa}>{rendered}</section>'
+        # Parts only move forward, so the story reads as one progression.
+        wanted = PART_KEYS.index(blend[('part', name)]) if ('part', name) in blend else classify_part(name)
+        if ('part', name) in blend: used.add(('part', name))
+        if j == 0 or wanted > part_index:
+            part_index = max(part_index, wanted) if j else wanted
+            key, title_text, promise = PARTS[part_index]
+            body += f'<div class="part-band" data-part-band="{key}"><span class="part-number">PART {part_index+1}</span><span class="part-name">{title_text}</span><p class="part-promise">{promise}</p></div>'
+        part = PARTS[part_index][0]
+        before = ''.join(wrap(kind, html, env) for key, html in blend.items() if len(key) == 3 and key[0] == 'before' and key[1] == name for kind in [key[2]])
+        after = ''.join(wrap(kind, html, env) for key, html in blend.items() if len(key) == 3 and key[0] == 'after' and key[1] == name for kind in [key[2]])
+        used.update(k for k in blend if k[:2] in (('before', name), ('after', name)))
+        body += before + f'<section class="lesson-section" id="section-{anchor}" data-part="{part}"{qa}>{rendered}{after}</section>'
         if path.endswith('/coroutines.md') and heading=='How `suspend` Works (Mental Model + Mechanism)':
             body += (WEB/'content/coroutine-internals.html').read_text()
         if path.endswith('/coroutines.md') and heading=='Exception Handling Patterns':
@@ -126,14 +248,20 @@ def render_chapter(path, raw, is_course=False):
             figure=(WEB/'content/coroutine-model.html').read_text()
             body += '<section class="lesson-section" id="ownership"><h2>See the ownership and failure policy</h2><p>The Android UI owner starts the profile load. The model assumes main-safe requests and shows an illustrative sequence, not measured Android frames or a captured runtime trace.</p><p>In the failure scenario, the outer UI boundary catches the expected <code>IOException</code> and sets an error state. Cancellation is allowed to propagate.</p>'+owner_code()+figure+'</section>'
     body += '<section class="lesson-section" id="continue-learning"><span class="eyebrow">CONNECT THE IDEAS</span><h2>Continue your Kotlin learning path</h2><p>The chapter above presents the original explanations, code examples, questions and answers in full. Use the learning path to connect this topic to the next one.</p><a class="secondary-button" href="'+BASE+'kotlin/">Explore all Kotlin chapters →</a></section>'
-    # Outline is generated from exactly the displayed H2 headings, including extra teaching sections.
+    unused = set(blend) - used
+    if unused:
+        raise ValueError(f'{path}: blend inserts target headings or diagrams that do not exist: {sorted(unused)}')
+    # Outline is generated from exactly the displayed H2 headings, grouped by part.
     outline=[]
-    for match in re.finditer(r'<h2(?: id="([^"]+)")?>(.*?)</h2>',body,re.S):
-        anchor=match[1]
+    for match in re.finditer(r'<div class="part-band" data-part-band="[^"]+"><span class="part-number">[^<]*</span><span class="part-name">([^<]*)</span>|<h2(?: id="([^"]+)")?>(.*?)</h2>',body,re.S):
+        if match[1]:
+            outline.append(f'<span class="outline-part">{match[1]}</span>')
+            continue
+        anchor=match[2]
         if not anchor:
             before=body[:match.start()]
             anchor=re.findall(r'<section[^>]* id="([^"]+)"',before)[-1]
-        outline.append(f'<a href="#{anchor}">{escape(clean(match[2]))}</a>')
+        outline.append(f'<a href="#{anchor}">{escape(clean(match[3]))}</a>')
     rendered_text = re.sub('<[^>]+>',' ',body)
     source_headings=[t.content for i,t in enumerate(tokens) if t.type=='inline' and i>0 and tokens[i-1].type=='heading_open' and tokens[i-1].tag!='h1']
     report={'source':path,'source_sha256':hashlib.sha256(raw.encode()).hexdigest(),'source_words':len(raw.split()),'headings':headings,'original_sections':len(sections),'code_blocks':len(codes),'diagrams':diagram_count[0],'corrections':len(fixes),'source_content':'Full corrected Markdown token stream rendered; no section or code-block selection.'}
@@ -238,7 +366,7 @@ def build(skip_diagrams=False):
         destination=OUT/route(path)[len(BASE):].strip('/')/'index.html';destination.parent.mkdir(parents=True,exist_ok=True);destination.write_text(html)
         report['url']=route(path);reports.append(report)
         if path=='kotlin.md':(OUT/'index.html').write_text(html)
-    for name in ['styles.css','app.js','coroutines.js','lesson-model.js']:
+    for name in ['styles.css','blend.css','app.js','blend.js','coroutines.js','lesson-model.js']:
         shutil.copy2(WEB/name,OUT/name)
     if not skip_diagrams: render_diagrams()
     (OUT/'coverage/kotlin.json').write_text(json.dumps(reports,ensure_ascii=False,indent=2)+'\n')

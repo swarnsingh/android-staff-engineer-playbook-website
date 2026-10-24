@@ -246,3 +246,30 @@ Check the work that changed; do not invent tests or repeatedly run unrelated sui
 Revisit presentation choices when evidence or reader feedback shows a better approach. Preserve explicit owner requirements unless they are revised in the conversation. A proposal from a reviewer is not automatically an approved requirement.
 
 When deviating from a recommended structure, preserve the actual learning outcome and record the reason in review notes. Do not add approval gates for routine authoring decisions, and do not interpret the flexibility in this rulebook as permission to omit meaningful depth, accuracy, or accessibility.
+
+## 16. Completeness: readers should not need to go elsewhere
+
+The owner's goal is that a reader can understand a topic from this handbook alone, without needing official documentation, videos or blogs to fill gaps. Those sources remain the evidence trail and further reading, not required detours. If a chapter needs a concept to make sense, explain it on the page (briefly, in plain language) or link to the playbook chapter that owns it. A chapter may be split into several parts or pages when that keeps it readable, as long as nothing is dropped.
+
+## 17. The website layer: original content is read-only
+
+The original chapters (for example `kotlin/**/*.md`) are the owner's verified "gold" content. They are **never edited** as part of website work — not to fix errors, not to restructure, not through a separate pull request.
+
+The website page for a chapter is a blend of two layers:
+
+1. **The original chapter, rendered in full.** Every heading, paragraph, list item, table row, code block and diagram appears, in the original order. `website/scripts/check_preservation.py` runs on every build and fails it if any original unit is missing or headings are out of order. The original order changes only when the owner approves a specific move.
+2. **An added teaching layer** in website-only files (`website/content/blend/<chapter>.blend`): a problem-first opening story, plain-language guides before dense passages, designed diagrams, step-through animations, checkpoints with answers, bridges between sections, and staff-level framing. Every added fragment is visibly labelled ("Start here", "In plain words", "See it", "Step through it", "Check yourself" and similar) so readers can always tell the original from the additions.
+
+**Corrections** to original text are also website-only. They live in `website/content/corrections-*.json`, each with the exact original text, the replacement, a reason and sources. A correction is applied only after the owner approves it (`"status": "approved"`), and an applied correction must be visibly marked on the page. Wording or style rewrites are not corrections and are not applied.
+
+**Diagrams.** Original Mermaid or text diagrams may be redrawn as designed, theme-aware visuals that reflow on phones. The original diagram stays available beside the redraw ("Original diagram from the chapter"), so it is never lost.
+
+## 18. Quality bar for the blended pages
+
+- **Different and impactful, not decoration.** Each addition must teach something the original text alone makes harder to see: the problem that makes the concept necessary, a mental picture, a sequence over time, a cause and effect, or a decision. Do not add material just to fill a format.
+- **Use visuals and animation generously where they teach.** Aim for a designed visual in each part of the story where structure, timing or ownership matters, and a step-through animation wherever behaviour unfolds over time (initialisation, capture, suspension, cancellation, backpressure, visibility between threads, compilation steps). Every animation has Previous/Next/Play controls, a caption per step, respects reduced motion, and prints all its steps as text.
+- **Stay concise.** Additions should sharpen the chapter, not double it. As a working target, keep added prose under roughly a quarter of the original chapter's words; visuals and animations do not count against it. Review each finished chapter for verbosity and whether it should be split.
+- **Be exactly right.** Added explanations, code and captions follow sections 6 and 7: verify against primary sources, compile or run added code where possible, and never restate an original claim that is pending correction review.
+- **Follow the story parts.** Pages are grouped into parts — The problem and the idea, How it really works, In real apps, Staff-level judgement, Practise, Go deeper — shown as bands in the page and groups in the outline. Additions should make each transition between parts feel necessary.
+
+How to build, preview and continue this work — including the blend file format, the animation format, the per-chapter progress table and the open decisions — is documented in [`website/README.md`](website/README.md). Any model or person picking up the website work should read this rulebook and that guide first.
