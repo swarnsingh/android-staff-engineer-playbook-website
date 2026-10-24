@@ -340,7 +340,9 @@ def build(skip_diagrams=False):
     if OUT.exists(): shutil.rmtree(OUT)
     OUT.mkdir()
     for directory in ['diagram-sources','diagrams','coverage']:(OUT/directory).mkdir(exist_ok=True)
-    template=(WEB/'templates/reader.html').read_text().replace('{{base}}',BASE)
+    # Content hash in asset URLs, so browsers never mix a new page with stale CSS or JS.
+    asset_version=hashlib.sha256(b''.join((WEB/n).read_bytes() for n in ['styles.css','blend.css','app.js','blend.js','coroutines.js','lesson-model.js'])).hexdigest()[:10]
+    template=(WEB/'templates/reader.html').read_text().replace('{{base}}',BASE).replace('{{asset_version}}',asset_version)
     index=(ROOT/'kotlin.md').read_text()
     order=[]
     for relative in re.findall(r'\]\((kotlin/[^)#]+\.md)\)',index):
@@ -369,7 +371,7 @@ def build(skip_diagrams=False):
             if i: links.append(f'<a href="{route(order[i-1])}">← {escape(title(ROOT/order[i-1]))}</a>')
             if i+1<len(order):links.append(f'<a href="{route(order[i+1])}">{escape(title(ROOT/order[i+1]))} →</a>')
             navigation='<nav class="chapter-navigation" aria-label="Chapter navigation">'+''.join(links)+'</nav>'
-        scripts=f'<script defer src="{BASE}lesson-model.js"></script><script defer src="{BASE}coroutines.js"></script>' if path.endswith('/coroutines.md') else ''
+        scripts=f'<script defer src="{BASE}lesson-model.js?v={asset_version}"></script><script defer src="{BASE}coroutines.js?v={asset_version}"></script>' if path.endswith('/coroutines.md') else ''
         playground='<section id="panel-playground" role="tabpanel" aria-labelledby="tab-playground" tabindex="0" hidden><div class="panel-intro"><span class="eyebrow">LEARN THROUGH CODE</span><h2>Keep the example with its explanation.</h2><p>Code blocks throughout Content can be copied. Application fragments depend on the surrounding app types, imports and libraries; they are not presented as standalone programs.</p>'
         if path.endswith('/coroutines.md'): playground+='<p>The runnable console example demonstrates overlapping waits. Return to Content to edit and run it beside the explanation.</p><button class="primary-button" data-go="experiment">Go to the example →</button>'
         else: playground+='<p>Use a Kotlin/JVM project or an Android project as indicated by each example. Read the assumptions and expected behaviour before running or changing a block.</p><button class="primary-button" data-open-tab="content">Return to Content</button>'
