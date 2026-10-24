@@ -191,7 +191,7 @@ function chapterLink(chapter){
   const active=chapter.path===document.body.dataset.source;
   const link=document.createElement('a');link.textContent=chapter.title;
   if(active){link.href='#problem';link.setAttribute('aria-current','page');link.addEventListener('click',e=>{e.preventDefault();closeCurriculum();setView('content',{anchor:'problem'});});}
-  else if(chapter.path.startsWith('kotlin/')){link.href='/'+chapter.path.replace(/\.md$/,'/');}
+  else if(chapter.path.startsWith('kotlin/')){link.href=(document.body.dataset.base||'/')+chapter.path.replace(/\.md$/,'/');}
   else{link.href=sourceRoot+chapter.path;link.target='_blank';link.rel='noreferrer';link.setAttribute('aria-describedby','external-note');const cue=document.createElement('span');cue.className='external-cue';cue.textContent='GitHub ↗';link.append(cue);}
   return link;
 }

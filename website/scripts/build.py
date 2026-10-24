@@ -3,23 +3,30 @@
 from pathlib import Path
 from html import escape
 from urllib.parse import urlsplit, unquote, quote
-import argparse, hashlib, json, re, shutil, subprocess, sys
+import argparse, hashlib, json, os, re, shlex, shutil, subprocess, sys
 from markdown_it import MarkdownIt
 
 ROOT = Path(__file__).resolve().parents[2]
 WEB = ROOT / 'website'
 OUT = WEB / 'dist'
+CACHE = WEB / '.cache'
 SOURCE_ROOT = 'https://github.com/swarnsingh/android-staff-engineer-playbook/blob/main/'
 MD = MarkdownIt('commonmark', {'html': True}).enable(['table', 'strikethrough'])
 FILES = sorted((ROOT/'kotlin').rglob('*.md'))
 PATHS = {p.relative_to(ROOT).as_posix() for p in FILES} | {'kotlin.md'}
+# Site prefix, so the same build works at a domain root or under a project path.
+BASE = '/' + os.environ.get('SITE_BASE', '/').strip('/') + '/' if os.environ.get('SITE_BASE', '/').strip('/') else '/'
+MERMAID_RENDERER = os.environ.get('MERMAID_RENDERER', 'npx --yes @mermaid-js/mermaid-cli@11.16.0')
+# Original chapters are never edited. Corrections are a website-only overlay and are
+# applied only after the owner approves them (status "approved").
 ALL_CORRECTIONS = []
 for path in sorted((WEB/'content').glob('corrections-*.json')):
     ALL_CORRECTIONS.extend(json.loads(path.read_text()))
+APPROVED_CORRECTIONS = [fix for fix in ALL_CORRECTIONS if fix.get('status') == 'approved']
 
 
 def route(path):
-    return '/kotlin/' if path == 'kotlin.md' else '/' + path.removesuffix('.md') + '/'
+    return BASE + 'kotlin/' if path == 'kotlin.md' else BASE + path.removesuffix('.md') + '/'
 
 
 def slug(text):
@@ -39,7 +46,7 @@ def title(path):
 
 def corrected(source, path):
     applied = []
-    for fix in ALL_CORRECTIONS:
+    for fix in APPROVED_CORRECTIONS:
         if fix['path'] != path: continue
         if source.count(fix['old']) != 1:
             raise ValueError(f"Correction no longer matches exactly once: {path}: {fix['reason']}")
@@ -91,7 +98,7 @@ def render_chapter(path, raw, is_course=False):
             key=hashlib.sha256(token.content.encode()).hexdigest()[:16]
             diagram_count[0]+=1
             (OUT/'diagram-sources'/f'{key}.mmd').write_text(token.content)
-            return f'<figure class="source-diagram"><img src="/diagrams/{key}.svg" alt="{escape(env.get("heading","Concept relationships"))}" loading="lazy"><figcaption>Concept relationships from this section.</figcaption><details><summary>Read diagram source</summary><pre tabindex="0"><code>{escape(token.content)}</code></pre></details></figure>'
+            return f'<figure class="source-diagram"><img src="{BASE}diagrams/{key}.svg" alt="{escape(env.get("heading","Concept relationships"))}" loading="lazy"><figcaption>Concept relationships from this section.</figcaption><details><summary>Read diagram source</summary><pre tabindex="0"><code>{escape(token.content)}</code></pre></details></figure>'
         label={'kotlin':'Kotlin','java':'Java','groovy':'Gradle / Groovy','kts':'Gradle / Kotlin','text':'Illustrative output'}.get(language,language)
         return f'<div class="code-card"><div class="code-header"><span>{escape(label)}<small>Chapter example · surrounding text defines its assumptions</small></span><button class="code-button" data-copy="{code_id}">Copy code</button></div><pre tabindex="0" aria-label="{escape(label)} example"><code id="{code_id}" class="highlight language-{escape(language)}">{escape(token.content)}</code></pre></div>\n'
     MD.renderer.rules['fence']=fence
@@ -118,7 +125,7 @@ def render_chapter(path, raw, is_course=False):
         if path.endswith('/coroutines.md') and heading=='Job Hierarchy and Cancellation':
             figure=(WEB/'content/coroutine-model.html').read_text()
             body += '<section class="lesson-section" id="ownership"><h2>See the ownership and failure policy</h2><p>The Android UI owner starts the profile load. The model assumes main-safe requests and shows an illustrative sequence, not measured Android frames or a captured runtime trace.</p><p>In the failure scenario, the outer UI boundary catches the expected <code>IOException</code> and sets an error state. Cancellation is allowed to propagate.</p>'+owner_code()+figure+'</section>'
-    body += '<section class="lesson-section" id="continue-learning"><span class="eyebrow">CONNECT THE IDEAS</span><h2>Continue your Kotlin learning path</h2><p>The chapter above preserves the original explanations, code examples, questions and answers, with reviewed technical corrections. Use the learning path to connect this topic to the next one.</p><a class="secondary-button" href="/kotlin/">Explore all Kotlin chapters →</a></section>'
+    body += '<section class="lesson-section" id="continue-learning"><span class="eyebrow">CONNECT THE IDEAS</span><h2>Continue your Kotlin learning path</h2><p>The chapter above presents the original explanations, code examples, questions and answers in full. Use the learning path to connect this topic to the next one.</p><a class="secondary-button" href="'+BASE+'kotlin/">Explore all Kotlin chapters →</a></section>'
     # Outline is generated from exactly the displayed H2 headings, including extra teaching sections.
     outline=[]
     for match in re.finditer(r'<h2(?: id="([^"]+)")?>(.*?)</h2>',body,re.S):
@@ -173,10 +180,24 @@ INTRO = {
 'kotlin':'Start with values and functions, then connect types, compiler transformations, asynchronous work and runtime behaviour. Follow the guided phases or open a chapter directly.'}
 
 
-def build():
-    OUT.mkdir(exist_ok=True)
+def render_diagrams():
+    """Render each Mermaid source to diagrams/<hash>.svg, reusing a local cache."""
+    cache=CACHE/'diagrams'; cache.mkdir(parents=True,exist_ok=True)
+    config=ROOT/'.github/puppeteer-config.json'
+    for source in sorted((OUT/'diagram-sources').glob('*.mmd')):
+        cached=cache/(source.stem+'.svg')
+        if not cached.exists():
+            command=shlex.split(MERMAID_RENDERER)+['-i',str(source),'-o',str(cached),'-b','transparent']
+            if config.exists(): command+=['-p',str(config)]
+            subprocess.run(command,check=True,capture_output=True,text=True)
+        shutil.copy2(cached,OUT/'diagrams'/cached.name)
+
+
+def build(skip_diagrams=False):
+    if OUT.exists(): shutil.rmtree(OUT)
+    OUT.mkdir()
     for directory in ['diagram-sources','diagrams','coverage']:(OUT/directory).mkdir(exist_ok=True)
-    template=(WEB/'templates/reader.html').read_text()
+    template=(WEB/'templates/reader.html').read_text().replace('{{base}}',BASE)
     index=(ROOT/'kotlin.md').read_text()
     order=[]
     for relative in re.findall(r'\]\((kotlin/[^)#]+\.md)\)',index):
@@ -205,7 +226,7 @@ def build():
             if i: links.append(f'<a href="{route(order[i-1])}">← {escape(title(ROOT/order[i-1]))}</a>')
             if i+1<len(order):links.append(f'<a href="{route(order[i+1])}">{escape(title(ROOT/order[i+1]))} →</a>')
             navigation='<nav class="chapter-navigation" aria-label="Chapter navigation">'+''.join(links)+'</nav>'
-        scripts='<script defer src="/lesson-model.js"></script><script defer src="/coroutines.js"></script>' if path.endswith('/coroutines.md') else ''
+        scripts=f'<script defer src="{BASE}lesson-model.js"></script><script defer src="{BASE}coroutines.js"></script>' if path.endswith('/coroutines.md') else ''
         playground='<section id="panel-playground" role="tabpanel" aria-labelledby="tab-playground" tabindex="0" hidden><div class="panel-intro"><span class="eyebrow">LEARN THROUGH CODE</span><h2>Keep the example with its explanation.</h2><p>Code blocks throughout Content can be copied. Application fragments depend on the surrounding app types, imports and libraries; they are not presented as standalone programs.</p>'
         if path.endswith('/coroutines.md'): playground+='<p>The runnable console example demonstrates overlapping waits. Return to Content to edit and run it beside the explanation.</p><button class="primary-button" data-go="experiment">Go to the example →</button>'
         else: playground+='<p>Use a Kotlin/JVM project or an Android project as indicated by each example. Read the assumptions and expected behaviour before running or changing a block.</p><button class="primary-button" data-open-tab="content">Return to Content</button>'
@@ -214,13 +235,21 @@ def build():
         html=template
         for key,value in values.items():html=html.replace('{{'+key+'}}',value)
         if re.search(r'\{\{[a-z_]+\}\}',html):raise ValueError('Unexpanded page template')
-        destination=OUT/route(path).strip('/')/'index.html';destination.parent.mkdir(parents=True,exist_ok=True);destination.write_text(html)
+        destination=OUT/route(path)[len(BASE):].strip('/')/'index.html';destination.parent.mkdir(parents=True,exist_ok=True);destination.write_text(html)
         report['url']=route(path);reports.append(report)
-        if path.endswith('/coroutines.md'):(OUT/'index.html').write_text(html)
+        if path=='kotlin.md':(OUT/'index.html').write_text(html)
     for name in ['styles.css','app.js','coroutines.js','lesson-model.js']:
         shutil.copy2(WEB/name,OUT/name)
+    if not skip_diagrams: render_diagrams()
     (OUT/'coverage/kotlin.json').write_text(json.dumps(reports,ensure_ascii=False,indent=2)+'\n')
-    (OUT/'coverage/corrections.json').write_text(json.dumps(ALL_CORRECTIONS,ensure_ascii=False,indent=2)+'\n')
-    print(f'Rendered {len(order)} Kotlin chapters + learning path; {sum(r["original_sections"] for r in reports)} source sections; {sum(r["code_blocks"] for r in reports)} code/diagram blocks; {len(ALL_CORRECTIONS)} documented corrections.')
+    (OUT/'coverage/corrections.json').write_text(json.dumps(APPROVED_CORRECTIONS,ensure_ascii=False,indent=2)+'\n')
+    print(f'Rendered {len(order)} Kotlin chapters + learning path; {sum(r["original_sections"] for r in reports)} source sections; {sum(r["code_blocks"] for r in reports)} code/diagram blocks; {len(APPROVED_CORRECTIONS)} of {len(ALL_CORRECTIONS)} proposed corrections approved and applied.')
 
-if __name__=='__main__':build()
+if __name__=='__main__':
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--skip-diagrams',action='store_true',help='do not render Mermaid diagrams to SVG')
+    args=parser.parse_args()
+    build(args.skip_diagrams)
+    # Never publish a build that dropped original content.
+    import check_preservation
+    sys.exit(check_preservation.main())
