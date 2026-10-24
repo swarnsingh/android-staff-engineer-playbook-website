@@ -226,7 +226,7 @@ def render_chapter(path, raw, is_course=False):
         key, title_text, promise = PARTS[index]
         return f'<div class="part-band" data-part-band="{key}"><span class="part-number">PART {number}</span><span class="part-name">{title_text}</span><p class="part-promise">{promise}</p></div>'
     # The opening story always belongs to the first part of the chapter.
-    first_band = band(1, 0)
+    first_band = '' if is_course else band(1, 0)
     if ('opening', '') in blend:
         used.add(('opening', ''))
         body=first_band+f'<section class="lesson-section lesson-start" id="problem"><h2>Start here</h2>{wrap("story", blend[("opening","")], env)}<div class="original-opening">{opening}</div></section>'
@@ -246,7 +246,7 @@ def render_chapter(path, raw, is_course=False):
         # Parts only move forward, so the story reads as one progression.
         wanted = PART_KEYS.index(blend[('part', name)]) if ('part', name) in blend else classify_part(name)
         if ('part', name) in blend: used.add(('part', name))
-        if wanted > part_index:
+        if wanted > part_index and not is_course:
             part_index = wanted
             bands += 1
             body += band(bands, part_index)
