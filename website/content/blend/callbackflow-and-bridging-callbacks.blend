@@ -1,0 +1,45 @@
+<!-- Website teaching layer for kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks.md. -->
+
+<!-- @opening -->
+<p class="story-lead">Battery complaints arrive after a release. The trace shows GPS updates still being delivered long after users left the map screen — and, after every rotation, one more listener than before. The listener was registered in an initializer and removed "when the screen is destroyed", which happened later than anyone expected, or not at all.</p>
+
+Android is full of push-style APIs: location, sensors, connectivity, text watchers, database listeners. `callbackFlow` turns each into a `Flow` with one simple rule: **collecting starts the listener, and cancelling the collection stops it.** This chapter shows that lifecycle step by step, then the details that decide whether the bridge is safe — how values are sent from a callback, buffering, sharing one registration, completion and errors, and collecting with the screen's lifecycle.
+
+<!-- @after Overview :: animation -->
+### The life of one registration
+
+<figure class="stepper"><span class="stepper-title"><code>locations().collect { render(it) }</code></span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">Your code</span><div class="node" data-el="collector"><strong>Collector</strong><small data-text="collectorNote">starts collecting</small></div><div class="node" data-el="block"><strong><code>callbackFlow { … }</code> block</strong><small data-text="blockNote">runs for this collector</small></div><div class="node" data-el="await"><strong><code>awaitClose { removeLocationUpdates(cb) }</code></strong><small data-text="awaitNote">waiting</small></div></div><div class="col"><span class="col-title">Platform</span><div class="node" data-el="listener"><strong>Location listener</strong><small data-text="listenerNote">not registered</small></div><div class="node" data-el="values"><strong>Callbacks</strong><small data-text="valuesNote">—</small></div></div></div><script type="application/json" class="steps">[
+{"label":"Collect","caption":"Nothing is registered until something collects. Collection starts the callbackFlow block for this collector.","add":["collector","block"],"state":{"collector":"active","block":"active"}},
+{"label":"Register","caption":"The block registers the platform listener, then reaches awaitClose and suspends there — keeping the flow open without blocking a thread.","add":["listener","await"],"state":{"listener":"done","await":"active","block":""},"text":{"listenerNote":"registered","awaitNote":"suspended, holding the flow open"}},
+{"label":"Values flow","caption":"Each platform callback calls trySend(location). The values travel through the flow's internal channel to the collector.","add":["values"],"state":{"values":"active","collector":"done"},"text":{"valuesNote":"onLocationResult → trySend","collectorNote":"rendering locations"}},
+{"label":"Cancel","caption":"The screen stops collecting — its scope is cancelled. Cancellation reaches the block, which is suspended in awaitClose.","state":{"collector":"ghost","values":"ghost","await":"warn"},"text":{"collectorNote":"cancelled"}},
+{"label":"Clean up","caption":"awaitClose runs its block: the listener is removed. Registration and cleanup are tied to collection, so they cannot drift apart — the opening bug cannot happen.","state":{"listener":"ghost","await":"done"},"text":{"listenerNote":"removed","awaitNote":"ran removeLocationUpdates(cb)"}}
+]</script><figcaption>If the block could return without <code>awaitClose</code>, the listener would outlive the flow; that is why <code>callbackFlow</code> treats a missing <code>awaitClose</code> as an error.</figcaption></figure>
+
+<!-- @after Coldness and Duplicate Registration :: visual -->
+### Two collectors, two listeners — unless you share
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Cold <code>callbackFlow</code></span><div class="node"><strong>map screen collects</strong><small>registers listener #1</small></div><div class="node" data-state="warn"><strong>debug overlay collects</strong><small>registers listener #2 — twice the GPS work</small></div></div><div class="col"><span class="col-title">After <code>shareIn(scope, WhileSubscribed(5_000), replay = 1)</code></span><div class="node is-key"><strong>one upstream collection</strong><small>one listener, shared by every subscriber</small></div><div class="node"><strong>last subscriber leaves</strong><small>after 5 s with no subscribers the listener is removed; short gaps like rotation reuse it</small></div></div></div><figcaption>Cold is the safe default; share deliberately, at the owner whose lifetime should keep the listener alive.</figcaption></figure>
+
+<!-- @after Lifecycle Collection :: visual -->
+### Collecting with the screen's lifecycle
+
+<figure class="viz"><div class="axis"><span>STARTED</span><span>STOPPED (home button)</span><span>STARTED again</span></div><div class="viz-lanes"><div class="lane"><span class="lane-label">screen visible</span><div class="track"><span class="mark" style="--at:0%;--len:33%">visible</span><span class="mark" data-tone="ghost" style="--at:33%;--len:34%">in background</span><span class="mark" style="--at:67%;--len:33%">visible</span></div></div><div class="lane"><span class="lane-label"><code>repeatOnLifecycle(STARTED)</code></span><div class="track"><span class="mark" style="--at:0%;--len:33%">listener on</span><span class="mark" data-tone="ghost" style="--at:33%;--len:34%">cancelled → removed</span><span class="mark" style="--at:67%;--len:33%">re-registered</span></div></div><div class="lane"><span class="lane-label">plain <code>lifecycleScope.launch</code></span><div class="track"><span class="mark" style="--at:0%;--len:33%">listener on</span><span class="mark" data-tone="warn" style="--at:33%;--len:34%">still running in background</span><span class="mark" style="--at:67%;--len:33%">listener on</span></div></div></div><figcaption>The callbackFlow cleans up perfectly — but only when its collection is cancelled. Lifecycle-aware collection is what cancels it at the right moment.</figcaption></figure>
+
+<!-- @after Error and Completion Semantics :: check -->
+**Check yourself.**
+
+<details><summary>A sensor callback fires on a binder thread and cannot suspend. How does it hand values to the flow?</summary>
+
+`trySend(value)`, with a decision for when it fails (usually: drop it, maybe count it) — and typically `.conflate()` on the flow, since only the latest reading matters.
+</details>
+
+<details><summary>A Firestore listener reports an error. When should the flow <code>close(error)</code>, and when emit an error state?</summary>
+
+Close when the stream cannot continue (collection should end and the caller decides what next). Emit an explicit error state when the listener keeps working and the UI should keep observing.
+</details>
+
+<details><summary>A repository exposes <code>EditText.textChanges()</code>. What is wrong?</summary>
+
+That flow holds a View reference, so it belongs to the view layer. A repository should not depend on, or outlive, a screen's views.
+</details>

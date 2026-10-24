@@ -26,12 +26,12 @@ This folder builds the reader website for the playbook. Read [`../content-rulebo
 | type-system/variance | `variance.blend` | Blended |
 | compiler-features/inline-functions | `inline-functions.blend` | Blended |
 | compiler-features/reified-types | `reified-types.blend` | Blended |
-| coroutines-and-flow/coroutines | Codex fragments in `content/coroutine-*.html` | Partly blended; needs a `.blend` |
-| coroutines-and-flow/channels-and-select | — | To do |
-| coroutines-and-flow/flow-operators-and-backpressure | — | To do |
-| coroutines-and-flow/callbackflow-and-bridging-callbacks | — | To do |
-| coroutines-and-flow/coroutines-debugging-and-profiling | — | To do |
-| coroutines-and-flow/test-dispatchers-virtual-time | — | To do |
+| coroutines-and-flow/coroutines | `coroutines.blend` + `content/coroutine-*.html` | Blended |
+| coroutines-and-flow/channels-and-select | `channels-and-select.blend` | Blended |
+| coroutines-and-flow/flow-operators-and-backpressure | `flow-operators-and-backpressure.blend` | Blended |
+| coroutines-and-flow/callbackflow-and-bridging-callbacks | `callbackflow-and-bridging-callbacks.blend` | Blended |
+| coroutines-and-flow/coroutines-debugging-and-profiling | `coroutines-debugging-and-profiling.blend` | Blended |
+| coroutines-and-flow/test-dispatchers-virtual-time | `test-dispatchers-virtual-time.blend` | Blended |
 | runtime-and-jvm/memory-model | — | To do |
 | runtime-and-jvm/jvm-interop | — | To do |
 | runtime-and-jvm/bytecode | — | To do |

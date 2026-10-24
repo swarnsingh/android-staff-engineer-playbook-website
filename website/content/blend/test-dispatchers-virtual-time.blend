@@ -1,0 +1,44 @@
+<!-- Website teaching layer for kotlin/coroutines-and-flow/test-dispatchers-virtual-time.md. -->
+
+<!-- @opening -->
+<p class="story-lead">The unit-test job takes four minutes, mostly spent sleeping through retry delays. One debounce test fails about one run in fifty on CI and never locally. Nobody trusts a red build any more, so real failures get re-run until they turn green.</p>
+
+Coroutine code is full of time — retries, debounce windows, timeouts — and full of ordering. `kotlinx-coroutines-test` replaces both with something you control: a **virtual clock** that jumps instantly, and dispatchers that run queued work exactly when the test says so. This chapter shows how that clock moves, which dispatcher to pick, how to share one scheduler, and how to test the behaviours that matter most: debounce and cancellation.
+
+<!-- @after The Test Scheduler :: animation -->
+### Moving the virtual clock by hand
+
+<figure class="stepper"><span class="stepper-title">A retry that waits 60 seconds, tested in about a millisecond</span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">Test thread</span><div class="node" data-el="launch"><strong><code>launch(StandardTestDispatcher(testScheduler))</code></strong><small>attempt 1, <code>delay(60_000)</code>, attempt 2</small></div><div class="node" data-el="action"><strong>Last call</strong><small data-text="actionNote">—</small></div></div><div class="col"><span class="col-title">Scheduler</span><div class="node" data-el="clock"><strong>Virtual clock</strong><small data-text="clockNote">0 ms</small></div><div class="node" data-el="queue"><strong>Queue</strong><small data-text="queueNote">empty</small></div><div class="node" data-el="log"><strong><code>attempts</code></strong><small data-text="logNote">[]</small></div></div></div><script type="application/json" class="steps">[
+{"label":"Launch","caption":"With StandardTestDispatcher, launching only queues the coroutine. Nothing has run: attempts is still empty.","add":["launch","clock","queue","log"],"state":{"queue":"active"},"text":{"queueNote":"coroutine start @ 0 ms"}},
+{"label":"runCurrent()","caption":"runCurrent() runs what is due now. Attempt 1 runs, then the coroutine reaches delay(60_000) and schedules itself for 60 000 ms.","add":["action"],"state":{"log":"done","queue":"active"},"text":{"actionNote":"runCurrent()","logNote":"[attempt1@0]","queueNote":"resume @ 60 000 ms"}},
+{"label":"advanceTimeBy(60s)","caption":"The clock jumps to 60 000 ms instantly. Work scheduled at exactly the new time has not run yet — attempts still has one entry.","state":{"clock":"active","log":"warn"},"text":{"actionNote":"advanceTimeBy(60_000)","clockNote":"60 000 ms"}},
+{"label":"runCurrent() again","caption":"Now the task due at 60 000 ms runs and attempt 2 is recorded. Real time spent on the whole test: about a millisecond.","state":{"log":"done","queue":"","clock":"done"},"text":{"actionNote":"runCurrent()","logNote":"[attempt1@0, attempt2@60000]","queueNote":"empty"}}
+]</script><figcaption>Verified with kotlinx-coroutines-test 1.11. <code>advanceUntilIdle()</code> would have done all of this in one call; the step-by-step calls are how you assert what happens <em>between</em> the moments.</figcaption></figure>
+
+<!-- @after UnconfinedTestDispatcher :: visual -->
+### Queued versus eager
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title"><code>StandardTestDispatcher</code> (default choice)</span><div class="node"><strong><code>launch { started = true }</code></strong><small>queued</small></div><div class="node" data-state="warn"><strong>right after launch</strong><small><code>started == false</code> until <code>runCurrent()</code> or an advance</small></div><div class="node" data-state="done"><strong>Why prefer it</strong><small>ordering is explicit, so tests catch code that wrongly assumes work has already run</small></div></div><div class="col"><span class="col-title"><code>UnconfinedTestDispatcher</code></span><div class="node"><strong><code>launch { started = true; delay(1) }</code></strong><small>runs at once, up to the first suspension</small></div><div class="node" data-state="done"><strong>right after launch</strong><small><code>started == true</code></small></div><div class="node"><strong>Use it for</strong><small>collectors that must be subscribed before the test emits</small></div></div></div><figcaption>Both use the same virtual clock; they differ only in when newly launched work starts.</figcaption></figure>
+
+<!-- @after Dispatcher Injection :: visual -->
+### One clock for everything in the test
+
+<figure class="viz"><div class="viz-stack"><div class="node is-key"><strong><code>runTest { … testScheduler … }</code></strong><small>owns the virtual clock</small></div><div class="down"></div><div class="viz-grid" style="--cols:3"><div class="node" data-state="done"><strong>Main</strong><small><code>Dispatchers.setMain(StandardTestDispatcher(testScheduler))</code></small></div><div class="node" data-state="done"><strong>"IO" for the repository</strong><small><code>StandardTestDispatcher(testScheduler)</code>, injected</small></div><div class="node" data-state="error"><strong>Hard-coded <code>Dispatchers.IO</code></strong><small>a real thread pool: the virtual clock cannot move or see it</small></div></div></div><figcaption>Every dispatcher the code under test uses must share <code>testScheduler</code>, or <code>advanceUntilIdle()</code> leaves some work behind — the source of many "hangs only in CI" tests.</figcaption></figure>
+
+<!-- @after Testing Cancellation :: check -->
+**Check yourself.**
+
+<details><summary>A debounce test calls <code>advanceTimeBy(300)</code> and the value has not arrived. Bug?</summary>
+
+Probably not: work due at exactly the new time runs on the next `runCurrent()`. Add it (or advance one more millisecond) — and keep the 299 ms assertion that proves nothing arrived early.
+</details>
+
+<details><summary>A ViewModel test throws "Module with the Main dispatcher is missing". What is needed?</summary>
+
+`Dispatchers.setMain(testDispatcher)` before creating the ViewModel (usually via a `MainDispatcherRule`), because `viewModelScope` uses Main.
+</details>
+
+<details><summary>How do you test that an old search is really cancelled, not just ignored?</summary>
+
+Record cleanup in the inner flow (a `finally` that notes the query), emit two queries, advance, and assert the old one was cancelled — as the chapter's `flatMapLatest` test does.
+</details>

@@ -1,0 +1,40 @@
+<!-- Website teaching layer for kotlin/coroutines-and-flow/coroutines-debugging-and-profiling.md. -->
+
+<!-- @opening -->
+<p class="story-lead">The inbox spinner sometimes never stops. There is no crash and no error log — the last line says "refresh started", and nothing after it. The code reads perfectly. Somewhere, a coroutine is neither running nor finished.</p>
+
+Coroutine bugs rarely sit on one line. They live between **who owns a piece of work** (the job tree) and **where it is actually executing or waiting** (dispatchers, threads, suspension points). This chapter gives you both views and a short list of questions that connect them, then the tools — names, probes, profilers, metrics — that make the answers visible in a real app.
+
+<!-- @after The Debugging Model :: visual -->
+### Two views of the same coroutine
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Ownership view — the job tree</span><div class="node"><strong>Who launched it?</strong><small>which scope, which parent Job</small></div><div class="node"><strong>What cancels it?</strong><small>the owner's lifetime, a timeout, a parent failure</small></div><div class="node"><strong>Where do its exceptions go?</strong><small>up to the parent, into a Deferred, or to a handler</small></div></div><div class="col"><span class="col-title">Execution view — the runtime</span><div class="node"><strong>Which dispatcher runs each part?</strong><small>Main, Default, IO, a limited view</small></div><div class="node"><strong>Where can it suspend?</strong><small>and is it waiting for a result, or for a free thread?</small></div><div class="node"><strong>Does it cooperate with cancellation?</strong><small>suspension points, <code>ensureActive</code>, blocking calls</small></div></div></div><figcaption>The six questions from the chapter, sorted by the view that answers them. A bug is usually a mismatch between the two.</figcaption></figure>
+
+<!-- @after Dispatcher Starvation :: animation -->
+### Solving the stuck spinner with the six questions
+
+<figure class="stepper"><span class="stepper-title"><code>Inbox/refresh</code> never finishes</span><div class="stage viz-grid" style="--cols:3"><div class="node" data-el="q1"><strong>Who launched it?</strong><small data-text="a1">?</small></div><div class="node" data-el="q2"><strong>What cancels it?</strong><small data-text="a2">?</small></div><div class="node" data-el="q3"><strong>Where do exceptions go?</strong><small data-text="a3">?</small></div><div class="node" data-el="q4"><strong>Which dispatcher?</strong><small data-text="a4">?</small></div><div class="node" data-el="q5"><strong>Where is it suspended?</strong><small data-text="a5">?</small></div><div class="node" data-el="q6"><strong>What is that dispatcher doing?</strong><small data-text="a6">?</small></div></div><script type="application/json" class="steps">[
+{"label":"Ownership","caption":"The coroutine is named Inbox/refresh, so a coroutine dump finds it at once: launched in viewModelScope, still active. Not leaked, not orphaned.","add":["q1","q2","q3"],"state":{"q1":"done","q2":"done","q3":"done"},"text":{"a1":"viewModelScope — fine","a2":"ViewModel clearing — not cleared","a3":"no exception was thrown"}},
+{"label":"Execution","caption":"Its parsing step runs in withContext(Dispatchers.Default). The dump shows it suspended — not inside parse, but before it ever started.","add":["q4","q5"],"state":{"q4":"active","q5":"warn"},"text":{"a4":"withContext(Default) for parsing","a5":"waiting to be dispatched"}},
+{"label":"The runtime","caption":"The profiler shows every Default worker blocked inside a legacy SDK's synchronous network call that another feature runs on Default.","add":["q6"],"state":{"q6":"error"},"text":{"a6":"all workers blocked in socket reads"}},
+{"label":"Cause","caption":"Default has about one thread per core. Blocking calls occupied all of them, so the refresh's parsing task waits in the queue indefinitely. Correct code, starved dispatcher.","state":{"q4":"error","q5":"error"}},
+{"label":"Fix","caption":"Move the blocking SDK call to an IO dispatcher at its edge (a wrapper with withContext(io)), keep Default for CPU work, and add a queue-latency metric so this shows up before users do.","state":{"q4":"done","q5":"done","q6":"done"},"text":{"a5":"runs immediately","a6":"blocking calls moved to IO"}}
+]</script><figcaption>Neither view alone explains the bug: the tree says the work is healthy; only the runtime view shows it cannot get a thread.</figcaption></figure>
+
+<!-- @after Flow-Specific Debugging :: visual -->
+### Where upstream work starts and stops
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>DAO <code>Flow</code></strong><small>cold: runs only while collected</small></div><div class="arrow"></div><div class="node"><strong>Repository <code>map</code></strong><small>still cold</small></div><div class="arrow"></div><div class="node is-key"><strong>ViewModel <code>stateIn(…, WhileSubscribed(5_000), …)</code></strong><small>the hot boundary: upstream starts with the first subscriber, stops 5 s after the last</small></div><div class="arrow"></div><div class="node"><strong>UI collector</strong><small>lifecycle-aware collection subscribes and unsubscribes</small></div></div><figcaption>When upstream work restarts too often, or never stops, look first at the hot boundary and its <code>SharingStarted</code> policy — then at how many collectors exist.</figcaption></figure>
+
+<!-- @after Deadlocks and Hangs :: check -->
+**Check yourself.**
+
+<details><summary>Crash reports for a coroutine failure point at generated continuation frames, not your code. What makes the next one easier to read?</summary>
+
+A `CoroutineName` with the feature and purpose, small named suspend functions instead of long lambdas in `launch`, and converting expected failures to state near the boundary.
+</details>
+
+<details><summary>A test calls <code>viewModel.uiState.toList()</code> and hangs. Why?</summary>
+
+`StateFlow` never completes, so `toList()` waits forever. Take what you need (`first()`, `take(n)`), use Turbine, or collect in a scope you cancel.
+</details>
