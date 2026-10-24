@@ -1,0 +1,81 @@
+<!-- Website teaching layer for kotlin/language-core/null-safety.md. -->
+
+<!-- @opening -->
+<p class="story-lead">Your app is 100% Kotlin, yet the top crash in last night's release is a <code>NullPointerException</code> — thrown from a line that reads a perfectly ordinary, non-null <code>String</code>.</p>
+
+How? Kotlin's compiler really does make nulls visible inside your code. But values also arrive from places the compiler cannot check: Java methods without annotations, JSON parsed by reflection, a `!!` someone typed, a Fragment view that has already been destroyed. Think of a **walled city**: inside the walls the compiler guards every door; the crashes that remain come in through a handful of **gates**. This chapter explains the walls first, then each gate and how to seal it.
+
+<!-- @after Overview :: visual -->
+### The walls and the gates
+
+<figure class="viz"><div class="viz-stack"><div class="node is-key"><strong>Inside the walls: your Kotlin code</strong><small><code>String</code> and <code>String?</code> are different types. Every nullable access must be handled before the code compiles.</small></div><div class="down"></div><div class="viz-grid" style="--cols:4"><div class="node" data-state="warn"><strong>Java without annotations</strong><small>arrives as a platform type <code>String!</code> — unchecked</small></div><div class="node" data-state="warn"><strong>Reflection</strong><small>Gson can create objects without running the constructor</small></div><div class="node" data-state="warn"><strong><code>!!</code></strong><small>a promise the compiler cannot verify</small></div><div class="node" data-state="warn"><strong>Lifecycles</strong><small>a view or <code>lateinit</code> read outside its valid window</small></div></div></div><figcaption>Every remaining NPE in Kotlin code comes through one of these gates. The sections below show how to seal each one: wrappers, honest deserializers, named checks, and lifecycle-aware state.</figcaption></figure>
+
+<!-- @before The Operators — When to Use What :: visual -->
+### Choose by asking what absence means
+
+The table below lists every operator. Before reaching for one, ask a single question: **if this value is missing, whose fault is it?**
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node is-key"><strong>Missing is normal</strong><small>A user without an avatar, an optional field. Use <code>?.</code>, <code>?:</code>, <code>?.let</code> and carry on.</small></div><div class="node"><strong>The caller broke the contract</strong><small>A Fragment created without its argument. <code>requireNotNull(x) { "why" }</code> → <code>IllegalArgumentException</code> with your message.</small></div><div class="node"><strong>My own state is broken</strong><small>An invariant inside the class failed. <code>checkNotNull(x) { "why" }</code> → <code>IllegalStateException</code> with your message.</small></div><div class="node" data-state="warn"><strong>"I'm sure" and it is local and obvious</strong><small><code>!!</code>, with the invariant visible right next to it. Anything else deserves a named check.</small></div></div><figcaption>The difference matters in a crash report: a named check tells the next engineer what was expected and who should have provided it.</figcaption></figure>
+
+<!-- @after The Operators — When to Use What :: animation -->
+### Watch a safe-call chain short-circuit
+
+<figure class="stepper"><span class="stepper-title"><code>response.profile?.address?.city ?: "Unknown City"</code></span><div class="stage viz-flow"><div class="node" data-el="response"><strong><code>response</code></strong><small>present</small></div><div class="arrow" data-el="a1"></div><div class="node" data-el="profile"><strong><code>?.profile</code></strong><small data-text="profileNote">?</small></div><div class="arrow" data-el="a2"></div><div class="node" data-el="address"><strong><code>?.address</code></strong><small data-text="addressNote">?</small></div><div class="arrow" data-el="a3"></div><div class="node" data-el="city"><strong><code>?.city</code></strong><small data-text="cityNote">?</small></div><div class="arrow" data-el="a4"></div><div class="node" data-el="result"><strong>Result</strong><small data-text="resultNote">?</small></div></div><script type="application/json" class="steps">[
+{"label":"Start","caption":"The response arrived. Each ?. asks one question: is the thing on my left null?","add":["response"],"state":{"response":"active"}},
+{"label":"Profile","caption":"profile is present, so the chain continues to the next step.","add":["a1","profile"],"state":{"profile":"done","response":""},"text":{"profileNote":"present"}},
+{"label":"Address","caption":"address is null in this response. ?. does not throw — the whole remaining chain becomes null right here.","add":["a2","address"],"state":{"address":"error"},"text":{"addressNote":"null → chain stops"}},
+{"label":"Skipped","caption":"?.city is never evaluated. There is nothing to call it on, and no exception is created.","add":["a3","city"],"state":{"city":"ghost"},"text":{"cityNote":"skipped"}},
+{"label":"Elvis","caption":"?: sees null on its left and supplies the fallback. The variable's type is plain String: no further null checks downstream.","add":["a4","result"],"state":{"result":"active"},"text":{"resultNote":"\"Unknown City\" : String"}}
+]</script><figcaption>One expression replaces the nested null checks of the Java example: absence is handled once, at the end.</figcaption></figure>
+
+<!-- @after Smart Casts — When the Compiler Auto-Narrows :: animation -->
+### Why the compiler refuses to trust a `var` property
+
+<figure class="stepper"><span class="stepper-title">The gap between the check and the use</span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">Your function</span><div class="node" data-el="check"><strong><code>if (name != null)</code></strong><small>reads the property once</small></div><div class="node" data-el="use"><strong><code>name.length</code></strong><small data-text="useNote">reads the property again</small></div><div class="node" data-el="local"><strong><code>val n = name</code></strong><small>one read, kept in a local nobody else can change</small></div></div><div class="col"><span class="col-title">Everything else</span><div class="node" data-el="other"><strong>Another writer</strong><small>another thread, a function you call, or an override with a custom getter</small></div></div></div><script type="application/json" class="steps">[
+{"label":"Check","caption":"The check reads name and finds a value.","add":["check"],"state":{"check":"done"}},
+{"label":"The gap","caption":"Before the next line runs, anything that can write the property may set it to null. A var property is shared state; a check is only a snapshot.","add":["other"],"state":{"other":"warn","check":""}},
+{"label":"Use","caption":"name.length reads the property a second time. The compiler cannot prove it is still non-null, so it rejects the smart cast instead of risking an NPE.","add":["use"],"state":{"use":"error"}},
+{"label":"Fix","caption":"Copy it once into a local val. Nothing else can reassign a local, so the check and the use see the same value and the smart cast is allowed.","remove":["use"],"add":["local"],"state":{"local":"done","other":"ghost","check":"done"}}
+]</script><figcaption>The same rule explains the other cases the chapter lists: open properties and custom getters may return a different value on each read.</figcaption></figure>
+
+<!-- @after Platform Types — The Java Boundary Hole :: visual -->
+### Seal the Java gate once, at the boundary
+
+<figure class="viz"><div class="viz-flow"><div class="node" data-state="warn"><strong>Java <code>getName()</code></strong><small>no annotation: null or not, nobody says</small></div><div class="arrow"></div><div class="node" data-state="warn"><strong><code>String!</code></strong><small>platform type: the compiler lets you choose, and stops checking</small></div><div class="arrow"></div><div class="node is-key"><strong>Wrapper returns <code>String?</code></strong><small>the decision is made once, in one file</small></div><div class="arrow"></div><div class="node" data-state="done"><strong>Your code</strong><small>back inside the walls; every access is checked again</small></div></div><figcaption>An anti-corruption layer turns an unknown into an explicit type. Annotating the Java source (or <code>@NullMarked</code> with JSpecify) achieves the same without a wrapper.</figcaption></figure>
+
+<!-- @after Reflection-Based Libraries Can Lie :: animation -->
+### Two ways to read `{ "age": 25 }` into `User(name: String, age: Int)`
+
+<figure class="stepper"><span class="stepper-title">Where does the missing <code>name</code> fail?</span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">Gson (reflection)</span><div class="node" data-el="g1"><strong>Allocate without the constructor</strong><small>no parameter checks run</small></div><div class="node" data-el="g2"><strong>Set fields found in JSON</strong><small><code>age = 25</code>; <code>name</code> stays null</small></div><div class="node" data-el="g3"><strong>Later: <code>user.name.length</code></strong><small>NPE far from the parsing code</small></div></div><div class="col"><span class="col-title">Moshi / kotlinx.serialization</span><div class="node" data-el="m1"><strong>Read every declared property</strong><small>generated adapter knows <code>name</code> is required</small></div><div class="node" data-el="m2"><strong>Missing required value</strong><small>parse fails with a message naming <code>$.name</code></small></div></div></div><script type="application/json" class="steps">[
+{"label":"Gson allocates","caption":"Gson creates the object without calling its constructor, so Kotlin's non-null parameter checks never run.","add":["g1"],"state":{"g1":"warn"}},
+{"label":"Gson fills","caption":"It sets the fields present in the JSON. name is absent, so the field keeps the JVM default: null — inside a type that says String.","add":["g2"],"state":{"g2":"warn","g1":""}},
+{"label":"Crash later","caption":"The lie surfaces wherever name is first used, often screens away from the network code, with no clue that parsing caused it.","add":["g3"],"state":{"g3":"error","g2":""}},
+{"label":"Honest parser","caption":"A Kotlin-aware parser reads the declared properties and knows name is non-null and has no default.","add":["m1"],"state":{"m1":"active"}},
+{"label":"Fail at the gate","caption":"It rejects the response during parsing with a clear message. The bad data never enters your walls, and the failure points at its cause.","add":["m2"],"state":{"m2":"done","m1":""}}
+]</script><figcaption>Failing at the boundary is the whole idea of null safety; reflection that skips constructors moves the failure somewhere far worse.</figcaption></figure>
+
+<!-- @after Real Android NPE Traps :: visual -->
+### The ViewBinding window, on a timeline
+
+<figure class="viz"><div class="axis"><span>onCreate</span><span>onCreateView</span><span>onDestroyView</span><span>back stack → return</span></div><div class="viz-lanes"><div class="lane"><span class="lane-label">Fragment instance</span><div class="track"><span class="mark" data-tone="soft" style="--at:0%;--len:100%">alive the whole time</span></div></div><div class="lane"><span class="lane-label">Its view</span><div class="track"><span class="mark" style="--at:25%;--len:30%">view 1</span><span class="mark" style="--at:80%;--len:20%">view 2</span></div></div><div class="lane"><span class="lane-label"><code>_binding</code></span><div class="track"><span class="mark" style="--at:25%;--len:30%">non-null</span><span class="mark" data-tone="ghost" style="--at:55%;--len:25%">null</span><span class="mark" style="--at:80%;--len:20%">non-null</span></div></div><div class="lane"><span class="lane-label">Delayed callback</span><div class="track"><span class="mark" data-tone="warn" style="--at:62%;--len:12%">crash</span></div></div></div><figcaption>A Fragment outlives its view and can get a new one later. Clearing <code>_binding</code> in <code>onDestroyView</code> frees the old view tree; a callback that touches <code>binding</code> in the gap hits <code>_binding!!</code> and throws. Collect UI work with the view's lifecycle so it stops in that gap.</figcaption></figure>
+
+<!-- @after Don't Use null for Errors — Use Result or Sealed :: check -->
+**Check yourself.**
+
+<details><summary>Your Kotlin repository calls an unannotated Java SDK method <code>String getToken()</code>. Where should the null decision live?</summary>
+
+In one wrapper at the boundary that returns `String?` (or throws a named error if a missing token is a bug). Everything else in the codebase then sees an honest type.
+</details>
+
+<details><summary>A Fragment reads <code>requireArguments().getString("id")</code>. A missing id would be a bug in the code that opened the screen. Which check?</summary>
+
+`requireNotNull(…) { "ProfileFragment needs an id" }`: the caller broke the contract, and the message names the contract.
+</details>
+
+<details><summary>A function returns <code>Receipt?</code>, and <code>null</code> means "card declined" in one place and "network down" in another. What should change?</summary>
+
+Model the outcomes as a sealed type (or `Result` when the failure is just an exception), so every caller must handle each case by name.
+</details>
+
+<!-- @after Failure Modes :: bridge -->
+Each symptom in the table maps back to one gate in the opening picture. The staff lens below turns those gates into review questions.

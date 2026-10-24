@@ -160,6 +160,13 @@ def steps_as_text(html):
 
 def wrap(kind, markdown, env):
     """Render an added fragment and label it, so readers can tell it from the original text."""
+    # A blank line would end a raw HTML block early; keep blank lines inside figures as newlines.
+    def keep_blank_lines(match):
+        text = match.group(0)
+        while '\n\n' in text:
+            text = text.replace('\n\n', '\n&#10;')
+        return text
+    markdown = re.sub(r'<figure\b.*?</figure>', keep_blank_lines, markdown, flags=re.S)
     env['blend'] = True
     try:
         html = MD.render(markdown, env)

@@ -1,0 +1,79 @@
+<!-- Website teaching layer for kotlin/language-core/functions.md. -->
+
+<!-- @opening -->
+<p class="story-lead">Two tickets land in the same sprint. A list scrolls with tiny hitches, and the profiler shows thousands of short-lived objects created by a helper the team wrote, <code>withRetry { … }</code>. Separately, a ViewModel is never garbage-collected after its screen closes.</p>
+
+They look unrelated, but both come from one fact: **in Kotlin a function can be a value** — an object you pass, store and return, which carries whatever it captured from the place it was written. That is what makes `forEach { }`, `launch { }` and `onClick = { }` feel effortless, and it is also why some lambdas allocate, some keep objects alive, and some `return` statements leave more than you expected. This chapter starts with the shapes a function can take and ends with the API decisions that follow from them.
+
+<!-- @before First Principles :: visual -->
+### One behaviour, five shapes
+
+The same idea — "is this number even?" — can be written in every form this chapter covers. Each shape answers a different need.
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node is-key"><strong>Declaration</strong><small><code>fun isEven(n: Int) = n % 2 == 0</code> — a named function, top-level or in a class.</small></div><div class="node"><strong>Lambda (a value)</strong><small><code>val isEven = { n: Int -&gt; n % 2 == 0 }</code> — has a type, can be stored and passed.</small></div><div class="node"><strong>Function reference</strong><small><code>::isEven</code> — an existing declaration passed by name.</small></div><div class="node"><strong>Function type</strong><small><code>(Int) -&gt; Boolean</code> — the type any of the above can be assigned to.</small></div><div class="node"><strong><code>fun interface</code></strong><small><code>fun interface IntPredicate { fun test(n: Int): Boolean }</code> — a named type, useful when Java callers need an interface.</small></div><div class="node"><strong>Higher-order call</strong><small><code>numbers.filter(::isEven)</code> — a function that takes any of them.</small></div></div><figcaption>Kotlin lets the type describe the shape of the behaviour, <code>(Int) -&gt; Boolean</code>, instead of forcing you to name an interface for it.</figcaption></figure>
+
+<!-- @after Mental Model :: animation -->
+### Each closure carries its own captured state
+
+<figure class="stepper"><span class="stepper-title"><code>val a = makeCounter(10)</code> · <code>val b = makeCounter(0)</code></span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">Function value <code>a</code></span><div class="node" data-el="aCode"><strong>Code</strong><small><code>{ count++ }</code></small></div><div class="node" data-el="aState"><strong>Captured <code>count</code></strong><small data-text="aCount">10</small></div></div><div class="col"><span class="col-title">Function value <code>b</code></span><div class="node" data-el="bCode"><strong>Code</strong><small>the same <code>{ count++ }</code></small></div><div class="node" data-el="bState"><strong>Captured <code>count</code></strong><small data-text="bCount">0</small></div></div></div><script type="application/json" class="steps">[
+{"label":"Create a","caption":"makeCounter(10) returns a function value: the code { count++ } packaged with the variable it captured, which starts at 10.","add":["aCode","aState"],"state":{"aState":"active"}},
+{"label":"Call a()","caption":"a() returns 10 and increments its own captured count. The function \"remembers\" because the value lives with the function, not on a stack frame.","state":{"aState":"active"},"text":{"aCount":"11"}},
+{"label":"Create b","caption":"makeCounter(0) runs again and creates a second package with the same code but its own captured variable.","add":["bCode","bState"],"state":{"bState":"active","aState":""}},
+{"label":"Call b(), then a()","caption":"b() returns 0; a() returns 11. The two counters never see each other's state: each call to makeCounter produced a separate closure.","state":{"aState":"active","bState":"active"},"text":{"aCount":"12","bCount":"1"}},
+{"label":"What it costs","caption":"Captured state lives as long as the function value does. Store a closure in something long-lived and everything it captured stays alive with it — the second ticket from the opening.","state":{"aState":"warn","bState":""}}
+]</script><figcaption>This is the same mechanism behind Compose's <code>onClick = { count++ }</code> and every callback that "remembers" its context.</figcaption></figure>
+
+<!-- @diagram 1a4416e0a5786e86 -->
+### What the call site becomes
+
+<figure class="viz"><div class="viz-pair"><div class="pane"><span class="pane-title">Without inline — a function value is passed</span><pre>main():
+  prefix = "Hello, "
+  greet = <mark>function value capturing prefix</mark>
+  greetAll(names, greet)
+
+greetAll(names, greet):
+  for n in names:
+    <mark>greet.invoke(n)</mark></pre></div><div class="pane"><span class="pane-title">With inline — the bodies are copied in</span><pre>main():
+  prefix = "Hello, "
+  names = ["Ana", "Ben"]
+  for n in names:
+    <mark>println(prefix + n)</mark>
+
+(no function value,
+ no invoke call)</pre></div></div><figcaption>Pseudocode, not decompiler output. Without <code>inline</code>, the lambda survives as an object the callee invokes; with it, the compiler pastes both bodies into the caller, at the cost of a larger caller.</figcaption></figure>
+
+<!-- @after Failure Modes :: animation -->
+### Step through the `return` that leaves too much
+
+<figure class="stepper"><span class="stepper-title"><code>process(listOf(3, -1, 5))</code> with <code>forEach { if (it &lt; 0) return; println(it) }</code></span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">Bare <code>return</code></span><div class="node" data-el="r3"><strong>3</strong><small>printed</small></div><div class="node" data-el="rneg"><strong>-1</strong><small>return exits <code>process()</code></small></div><div class="node" data-el="r5"><strong>5</strong><small>never reached</small></div><div class="node" data-el="rdone"><strong><code>println("Done")</code></strong><small>never reached</small></div></div><div class="col"><span class="col-title"><code>return@forEach</code></span><div class="node" data-el="l3"><strong>3</strong><small>printed</small></div><div class="node" data-el="lneg"><strong>-1</strong><small>skips this element only</small></div><div class="node" data-el="l5"><strong>5</strong><small>printed</small></div><div class="node" data-el="ldone"><strong><code>println("Done")</code></strong><small>runs</small></div></div></div><script type="application/json" class="steps">[
+{"label":"First element","caption":"forEach is inline, so its loop and your lambda body are pasted into process(). 3 is not negative and is printed.","add":["r3"],"state":{"r3":"done"}},
+{"label":"The surprise","caption":"For -1 the bare return runs. Because the code was pasted into process(), return means return from process().","add":["rneg"],"state":{"rneg":"error"}},
+{"label":"Everything after is skipped","caption":"5 is never visited and \"Done\" never prints. Nothing threw; the function simply ended early.","add":["r5","rdone"],"state":{"r5":"ghost","rdone":"ghost"}},
+{"label":"Label the return","caption":"return@forEach returns from the lambda only — like continue in a for loop — so -1 is skipped.","add":["l3","lneg"],"state":{"l3":"done","lneg":"active"}},
+{"label":"The loop finishes","caption":"5 is printed and \"Done\" runs. When a lambda must never return non-locally, the inline function can mark the parameter crossinline.","add":["l5","ldone"],"state":{"l5":"done","ldone":"done","lneg":""}}
+]</script><figcaption>Non-local returns are a feature of inline functions; they are only surprising until you picture the body being pasted into the caller.</figcaption></figure>
+
+<!-- @after Advanced Features :: visual -->
+### The five scope functions as a 2 × 2
+
+Two questions pick the function: **how do you refer to the object** inside the block, and **what should the whole expression return**?
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node is-key"><strong><code>apply</code></strong><small>object as <code>this</code> · returns the object — configure and keep it.</small></div><div class="node is-key"><strong><code>also</code></strong><small>object as <code>it</code> · returns the object — a side effect, then pass it on.</small></div><div class="node"><strong><code>run</code> / <code>with</code></strong><small>object as <code>this</code> · returns the block result — compute something from it.</small></div><div class="node"><strong><code>let</code></strong><small>object as <code>it</code> · returns the block result — transform it, often after <code>?.</code>.</small></div></div><figcaption>Left column: <code>this</code>. Right column: <code>it</code>. Top row returns the receiver; bottom row returns whatever the block produces. <code>with</code> is <code>run</code> written as a normal call: <code>with(obj) { … }</code>.</figcaption></figure>
+
+<!-- @after Production Example :: check -->
+**Check yourself.**
+
+<details><summary>A pure-Kotlin API takes a single "on finished" callback. Function type or <code>fun interface</code>?</summary>
+
+A function type such as `(Result) -> Unit`. Reach for `fun interface` when Java callers need a named interface, or when the name carries meaning a bare signature cannot.
+</details>
+
+<details><summary>Your helper <code>measure(block: () -&gt; Unit)</code> runs in a scroll path for every item. What should you check?</summary>
+
+Whether it should be a small `inline` function, so callers don't create a function value per call — and that it stays small, because each call site gets a copy of its body.
+</details>
+
+<details><summary>A lambda stored in a singleton listener list mentions <code>viewModel</code>. What happens when the screen closes?</summary>
+
+The singleton keeps the lambda, the lambda keeps the ViewModel, and nothing is collected. Unregister the listener with the owner's lifecycle, or avoid capturing the long-lived reference.
+</details>
