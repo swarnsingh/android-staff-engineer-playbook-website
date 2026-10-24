@@ -1,0 +1,62 @@
+<!-- Website teaching layer for kotlin/language-core/extensions.md. -->
+
+<!-- @opening -->
+<p class="story-lead">After a routine library upgrade, a helper your team wrote — <code>fun Response.isRetryable()</code> — quietly stops running. Nothing fails to compile. The library had added its own <code>isRetryable()</code> member, and from that day every call goes to the library's version, with different rules.</p>
+
+In the same week, someone "overrides" an extension for a subclass and is surprised that the parent's version still runs. Both surprises come from one fact the rest of this chapter keeps returning to: **an extension does not change the class at all. It is a static function, chosen by the compiler from the *declared* type at the call site.** Once that picture is clear, discovery, DSLs, KTX-style facades and the review rules for public extensions all follow from it.
+
+<!-- @after Overview :: visual -->
+### What you write, and what actually exists
+
+<figure class="viz"><div class="viz-pair"><div class="pane"><span class="pane-title">You write</span><pre>// StringExt.kt
+fun String.titleCase(): String = …
+
+val t = <mark>name.titleCase()</mark></pre></div><div class="pane"><span class="pane-title">What the JVM gets (simplified)</span><pre>final class StringExtKt {
+  static String titleCase(String receiver) { … }
+}
+
+String t = <mark>StringExtKt.titleCase(name)</mark></pre></div></div><figcaption><code>java.lang.String</code> is untouched. The "receiver" is just the first argument of a static method, which is also how Java code calls it.</figcaption></figure>
+
+<!-- @after First Principles :: animation -->
+### Member call versus extension call on the same object
+
+<figure class="stepper"><span class="stepper-title"><code>val pet: Animal = Dog()</code></span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">Member: <code>pet.describe()</code></span><div class="node" data-el="m1"><strong>Compile time</strong><small>"Animal has a member describe()" — the call is left open</small></div><div class="node" data-el="m2"><strong>Run time</strong><small>the object is a Dog → <code>Dog.describe()</code> runs</small></div></div><div class="col"><span class="col-title">Extension: <code>pet.speak()</code></span><div class="node" data-el="e1"><strong>Compile time</strong><small>declared type is Animal → pick <code>Animal.speak()</code></small></div><div class="node" data-el="e2"><strong>Run time</strong><small><code>AnimalExtKt.speak(pet)</code> runs: "generic sound"</small></div></div></div><script type="application/json" class="steps">[
+{"label":"Compile a member call","caption":"For a member function, the compiler only checks that Animal has describe(). Which implementation runs is decided later.","add":["m1"],"state":{"m1":"active"}},
+{"label":"Run it","caption":"At run time the JVM looks at the actual object, a Dog, and calls Dog's override. This is virtual dispatch — polymorphism.","add":["m2"],"state":{"m2":"done","m1":""}},
+{"label":"Compile an extension call","caption":"For pet.speak(), the compiler must pick a static function now. It only knows the declared type, Animal, so it chooses Animal.speak().","add":["e1"],"state":{"e1":"active"}},
+{"label":"Run it","caption":"At run time there is nothing left to decide: a static call to Animal's version runs, even though the object is a Dog. Dog.speak() is never considered.","add":["e2"],"state":{"e2":"warn","e1":""}}
+]</script><figcaption>Behaviour that must vary with the runtime type belongs in members, sealed hierarchies or injected strategies — not in extensions.</figcaption></figure>
+
+<!-- @diagram f551760c2d3cc682 -->
+### How the compiler resolves `name.titleCase()`
+
+<figure class="stepper"><span class="stepper-title">Resolution, then compilation</span><div class="stage viz-stack"><div class="node" data-el="src"><strong><code>name.titleCase()</code></strong><small>declared type of <code>name</code>: String</small></div><div class="down" data-el="d1"></div><div class="node" data-el="member"><strong>Is <code>titleCase</code> a member of String (or a supertype)?</strong><small data-text="memberNote">checked first</small></div><div class="down" data-el="d2"></div><div class="node" data-el="ext"><strong>Is an extension <code>String.titleCase</code> in scope?</strong><small>declared or imported here; the most specific receiver wins</small></div><div class="down" data-el="d3"></div><div class="node" data-el="out"><strong data-text="outTitle">Compiled call</strong><small data-text="outNote">…</small></div></div><script type="application/json" class="steps">[
+{"label":"Start","caption":"The compiler sees a call on an expression whose declared type is String.","add":["src"],"state":{"src":"active"}},
+{"label":"Members first","caption":"It first looks for a member. String has no titleCase, so resolution continues.","add":["d1","member"],"state":{"member":"done","src":""},"text":{"memberNote":"no member found"}},
+{"label":"Then extensions","caption":"It then looks for extensions visible at this call site and finds String.titleCase in StringExt.kt.","add":["d2","ext"],"state":{"ext":"active"}},
+{"label":"A static call","caption":"The call is compiled as StringExtKt.titleCase(name). At run time this is indistinguishable from any static utility call.","add":["d3","out"],"state":{"out":"done","ext":"done"},"text":{"outTitle":"StringExtKt.titleCase(name)","outNote":"static, no virtual dispatch"}},
+{"label":"If a member appears later","caption":"If a future String (or library type) gains a member with the same signature, the first check succeeds and the extension is never reached — the opening story.","state":{"member":"warn","ext":"ghost","out":"active"},"text":{"memberNote":"member found → it wins","outTitle":"virtual member call","outNote":"your extension is no longer used"}}
+]</script><figcaption>The runtime never sees a difference between an extension call and a static helper call; everything interesting happens in the compiler.</figcaption></figure>
+
+<!-- @before Advanced Features :: visual -->
+### Lambdas with receivers: who is `this`?
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title"><code>block: (HtmlBuilder) -&gt; Unit</code></span><div class="node"><strong>Call site</strong><small><code>html { it.p("Hello"); it.b("World") }</code></small></div><div class="node"><strong>Inside the lambda</strong><small>the builder is an ordinary parameter, named <code>it</code> or anything you choose</small></div></div><div class="col"><span class="col-title"><code>block: HtmlBuilder.() -&gt; Unit</code></span><div class="node is-key"><strong>Call site</strong><small><code>html { p("Hello"); b("World") }</code></small></div><div class="node is-key"><strong>Inside the lambda</strong><small>the builder is <code>this</code>, so its functions are called without a prefix</small></div></div></div><figcaption>Both receive a builder; the receiver form only changes how the code inside reads. That small change is what makes Compose, Gradle's Kotlin DSL and Ktor routing look like languages of their own.</figcaption></figure>
+
+<!-- @after Tradeoffs :: check -->
+**Check yourself.**
+
+<details><summary>Pricing rules must differ for <code>PremiumUser</code> and <code>FreeUser</code>, which share a <code>User</code> parent. Extension or member?</summary>
+
+A member (or a sealed `when`, or an injected strategy). The behaviour depends on the runtime type, and extensions are chosen from the declared type.
+</details>
+
+<details><summary>You add a helper <code>fun Uri.isTrustedHost()</code> used only by one feature module. What visibility?</summary>
+
+`internal` (or `private` to its file). Public extensions on common types show up in every caller's autocomplete and become an API you cannot easily remove.
+</details>
+
+<details><summary>A ViewModel calls <code>repository.fetchWithRetry()</code>, an extension. Your test mocks the repository. What does the test miss?</summary>
+
+The extension's retry logic always runs for real: it cannot be stubbed. If tests must control it, make retry part of an injected interface instead.
+</details>

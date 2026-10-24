@@ -1,0 +1,55 @@
+<!-- Website teaching layer for kotlin/language-core/data-classes.md. -->
+
+<!-- @opening -->
+<p class="story-lead">Tapping "Add to cart" does nothing on screen. The logs prove <code>addItem()</code> ran and the item is in the list — yet the badge still shows 2. The code looks innocent: <code>_state.value = _state.value.copy(items = _state.value.items.apply { add(item) })</code>.</p>
+
+The new state and the old state hold *the same* `MutableList`, which was just changed in place — so they compare **equal**, and `StateFlow` skips "unchanged" values. Nothing updates. Data classes give you equality, hashing and `copy()` for free, and modern Android leans on that equality everywhere: `StateFlow`, Compose, `DiffUtil`, hash-based collections. This chapter shows what the compiler generates, the six ways it bites, and how to decide when a data class is the wrong tool.
+
+<!-- @after Why It Matters (Android Context) :: visual -->
+### Who calls your `equals()`?
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node is-key"><strong><code>StateFlow</code></strong><small>a new value equal to the current one is not emitted</small></div><div class="node is-key"><strong>Compose</strong><small>can skip a composable when its parameters equal last time's (for types it treats as stable)</small></div><div class="node"><strong><code>DiffUtil</code> / <code>ListAdapter</code></strong><small>item callbacks commonly compare contents with <code>==</code></small></div><div class="node"><strong><code>HashSet</code>, <code>HashMap</code>, caches</strong><small>find entries by <code>hashCode()</code>, then confirm with <code>equals()</code></small></div></div><figcaption>A wrong <code>equals</code> rarely crashes. It silently skips updates, duplicates work, or loses entries — which is why the pitfalls below matter.</figcaption></figure>
+
+<!-- @before The Six Most Common Pitfalls :: animation -->
+### The opening bug, step by step
+
+<figure class="stepper"><span class="stepper-title">A shallow <code>copy()</code> that StateFlow ignores</span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">States</span><div class="node" data-el="old"><strong>old <code>CartState</code></strong><small>items → list #1</small></div><div class="node" data-el="new"><strong>new <code>CartState</code> from <code>copy()</code></strong><small>items → list #1 (the same one)</small></div><div class="node" data-el="flow"><strong><code>StateFlow</code></strong><small data-text="flowNote">holds old</small></div></div><div class="col"><span class="col-title">Heap</span><div class="node" data-el="list"><strong>MutableList #1</strong><small data-text="listItems">[a, b]</small></div></div></div><script type="application/json" class="steps">[
+{"label":"Current state","caption":"The StateFlow holds a CartState whose items property points to MutableList #1, containing [a, b].","add":["old","list","flow"],"state":{"old":"active"}},
+{"label":"Mutate in place","caption":"items.apply { add(c) } changes list #1 itself. The old state now also contains [a, b, c] — it shares the list.","state":{"list":"warn","old":""},"text":{"listItems":"[a, b, c]"}},
+{"label":"copy()","caption":"copy(items = …) creates a new CartState, but the items argument is the very same list #1. copy() never duplicates what you pass in.","add":["new"],"state":{"new":"active","list":""}},
+{"label":"Assign","caption":"StateFlow compares new with old. Every property is equal — they point to the same list — so it treats the value as unchanged and does not emit.","state":{"flow":"error","new":""},"text":{"flowNote":"new == old → no emission, UI stays stale"}},
+{"label":"Fix","caption":"Keep List<T> (read-only) in the state and build a new list: copy(items = items + c). Old and new now differ, and the UI updates.","state":{"flow":"done","list":"done","old":"","new":"done"},"text":{"listItems":"old: [a, b] · new: [a, b, c]","flowNote":"new != old → emitted"}}
+]</script><figcaption>The same sharing explains pitfall 3 below. Immutable state plus a new list per change makes equality mean what you expect.</figcaption></figure>
+
+<!-- @after The Six Most Common Pitfalls :: animation -->
+### Pitfall 2 inside a `HashSet`
+
+<figure class="stepper"><span class="stepper-title">How a <code>var</code> loses an element</span><div class="stage viz-grid" style="--cols:4"><div class="node" data-el="b1"><strong>Bucket 1</strong><small>empty</small></div><div class="node" data-el="b2"><strong>Bucket 2</strong><small data-text="b2note">empty</small></div><div class="node" data-el="b3"><strong>Bucket 3</strong><small>empty</small></div><div class="node" data-el="b4"><strong>Bucket 4</strong><small data-text="b4note">empty</small></div></div><script type="application/json" class="steps">[
+{"label":"Insert","caption":"set.add(CartItem(\"a\", qty = 1)). Its hashCode, computed from id and qty, selects bucket 2, where the item is stored.","add":["b1","b2","b3","b4"],"state":{"b2":"active"},"text":{"b2note":"CartItem(a, qty=1)"}},
+{"label":"Mutate","caption":"item.qty = 2. The object changes, but the set is not told. It is still filed under bucket 2.","state":{"b2":"warn"},"text":{"b2note":"CartItem(a, qty=2) — filed by the old hash"}},
+{"label":"Look it up","caption":"set.contains(item) recomputes the hash from qty = 2, which now selects bucket 4, and looks only there.","state":{"b4":"active"}},
+{"label":"Not found","caption":"Bucket 4 is empty, so contains returns false — even though the very same object is in the set. It is now effectively lost: remove() cannot find it either.","state":{"b4":"error"},"text":{"b4note":"nothing here → false"}}
+]</script><figcaption>Hash-based collections assume a key's hash never changes. Use <code>val</code> properties and replace elements with <code>copy()</code>.</figcaption></figure>
+
+<!-- @after Inheritance Restrictions :: visual -->
+### Destructuring follows position, not names
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title"><code>data class LatLng(val lat, val lng)</code></span><div class="node"><strong><code>component1()</code></strong><small>returns <code>lat</code></small></div><div class="node"><strong><code>component2()</code></strong><small>returns <code>lng</code></small></div></div><div class="col"><span class="col-title"><code>val (lng, lat) = location</code></span><div class="node" data-state="error"><strong>first variable, named <code>lng</code></strong><small>receives component1() = the latitude</small></div><div class="node" data-state="error"><strong>second variable, named <code>lat</code></strong><small>receives component2() = the longitude</small></div></div></div><figcaption>Both are <code>Double</code>, so it compiles and the map pin lands on the wrong continent. With same-typed properties, read them by name.</figcaption></figure>
+
+<!-- @after Equals/HashCode Contract :: check -->
+**Check yourself.**
+
+<details><summary>A Room entity is fetched, one field is edited, and the two versions are compared. Should they be "equal"?</summary>
+
+It depends on what the comparison is for. As database rows they are the same entity (same `id`); as UI snapshots they differ. A data class always answers "differ", so decide deliberately — compare ids, or use a class with `equals` based on the primary key.
+</details>
+
+<details><summary>A data class holds <code>val avatar: ByteArray</code>. Two instances with identical bytes compare unequal. Why?</summary>
+
+Arrays use reference equality on the JVM, and the generated `equals` compares each property with its own `equals`. Override `equals`/`hashCode` with `contentEquals`/`contentHashCode`, or store a type with value equality.
+</details>
+
+<details><summary>Scroll position lives in a 35-property <code>HomeUiState</code> and updates every frame. What do you change?</summary>
+
+Split the state so the fast-changing part is its own small object. Then each frame copies a small slice instead of the whole screen state, and fewer composables see a changed parameter.
+</details>
