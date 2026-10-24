@@ -1,0 +1,56 @@
+<!-- Website teaching layer for kotlin/coroutines-and-flow/flow-operators-and-backpressure.md. -->
+
+<!-- @opening -->
+<p class="story-lead">A user types "kotlin" into search. Results for "kotlin" appear — and then, a moment later, are replaced by results for "kot". The request for "kot" was simply slower, finished last, and won.</p>
+
+Flow's default is calm: one value at a time, each step waiting for the next, so a slow collector naturally slows the producer. Operators are where you deliberately change that — queue values, drop them, cancel obsolete work, or move work to another dispatcher. Each of those is a product decision ("is an old search result still wanted?"), and the bug above is what happens when it is made by accident. This chapter makes every such choice visible.
+
+<!-- @after First Principles :: animation -->
+### One value at a time, by default
+
+<figure class="stepper"><span class="stepper-title"><code>flow { emit(…) }.map { … }.filter { … }.collect { render(it) }</code></span><div class="stage viz-flow"><div class="node" data-el="emit"><strong><code>emit</code></strong><small data-text="emitNote">producer</small></div><div class="arrow"></div><div class="node" data-el="map"><strong><code>map</code></strong><small data-text="mapNote">—</small></div><div class="arrow"></div><div class="node" data-el="filter"><strong><code>filter</code></strong><small data-text="filterNote">—</small></div><div class="arrow"></div><div class="node" data-el="collect"><strong><code>collect</code></strong><small data-text="collectNote">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Emit value 1","caption":"emit(1) does not drop the value into a queue. It calls into the next operator and waits.","add":["emit","map","filter","collect"],"state":{"emit":"active"},"text":{"emitNote":"emit(1) — suspended"}},
+{"label":"Through map and filter","caption":"The same call continues: map transforms the value, filter checks it, all in one chain.","state":{"map":"active","filter":"active","emit":"warn"},"text":{"mapNote":"1 → user 1","filterNote":"active? yes"}},
+{"label":"Collector runs","caption":"render(user 1) runs. If it is slow, everything upstream is still waiting inside emit(1).","state":{"collect":"active","map":"","filter":""},"text":{"collectNote":"rendering user 1 (slow)"}},
+{"label":"Only now, value 2","caption":"When render returns, emit(1) returns, and the producer may compute and emit value 2. This waiting is Flow's built-in backpressure.","state":{"emit":"active","collect":"done"},"text":{"emitNote":"emit(2)","collectNote":"done with 1"}}
+]</script><figcaption>Nothing runs ahead unless an operator such as <code>buffer</code>, <code>conflate</code>, <code>flowOn</code> or a <code>flatMapMerge</code> adds a boundary.</figcaption></figure>
+
+<!-- @after Context with flowOn :: visual -->
+### `flowOn` moves only what is above it
+
+<figure class="viz"><div class="viz-stack"><div class="node"><strong><code>dao.observeUsers()</code></strong><small>runs on Default</small></div><div class="down"></div><div class="node"><strong><code>.map { rows -&gt; rows.map(::toDomain) }</code></strong><small>runs on Default</small></div><div class="down"></div><div class="node is-key"><strong><code>.flowOn(Dispatchers.Default)</code></strong><small>a boundary: values cross it through a small buffer</small></div><div class="down"></div><div class="node"><strong><code>.map { it.sortedBy { u -&gt; u.name } }</code></strong><small>runs in the collector's context</small></div><div class="down"></div><div class="node"><strong><code>.collect { render(it) }</code></strong><small>the collector's context (for UI code, Main)</small></div></div><figcaption>Read <code>flowOn</code> as "everything above me runs here". Each one also adds a buffer between the two sides — which is why the chapter asks for it only at ownership boundaries.</figcaption></figure>
+
+<!-- @before Backpressure and Buffering :: visual -->
+### Same producer, same slow collector, four policies
+
+Values 0–3 are emitted one time unit apart; handling each one takes 2.5 units. The bars show when each value is being handled.
+
+<figure class="viz"><div class="axis"><span>0</span><span>3.25</span><span>6.5</span><span>9.75</span><span>13</span></div><div class="viz-lanes"><div class="lane"><span class="lane-label">default</span><div class="track"><span class="mark" style="--at:0.0%;--len:19.2%">0</span><span class="mark" style="--at:26.9%;--len:19.2%">1</span><span class="mark" style="--at:53.8%;--len:19.2%">2</span><span class="mark" style="--at:80.8%;--len:19.2%">3</span></div></div><div class="lane"><span class="lane-label"><code>buffer()</code></span><div class="track"><span class="mark" style="--at:0.0%;--len:19.2%">0</span><span class="mark" style="--at:19.2%;--len:19.2%">1</span><span class="mark" style="--at:38.5%;--len:19.2%">2</span><span class="mark" style="--at:57.7%;--len:19.2%">3</span></div></div><div class="lane"><span class="lane-label"><code>conflate()</code></span><div class="track"><span class="mark" style="--at:0.0%;--len:19.2%">0</span><span class="mark" data-tone="ghost" style="--at:7.7%;--len:4.6%">1</span><span class="mark" style="--at:19.2%;--len:19.2%">2</span><span class="mark" style="--at:38.5%;--len:19.2%">3</span></div></div><div class="lane"><span class="lane-label"><code>collectLatest</code></span><div class="track"><span class="mark" data-tone="ghost" style="--at:0.0%;--len:7.7%">0 ✕</span><span class="mark" data-tone="ghost" style="--at:7.7%;--len:7.7%">1 ✕</span><span class="mark" data-tone="ghost" style="--at:15.4%;--len:7.7%">2 ✕</span><span class="mark" style="--at:23.1%;--len:19.2%">3</span></div></div></div><figcaption><strong>Default</strong>: every value is handled, but sequentially — the producer's one-unit pause only starts after each value has been handled, so the last value finishes at t = 13. <strong>buffer</strong>: the producer runs ahead and finishes emitting at t = 3; every value is still handled, and the last finishes at t = 10. <strong>conflate</strong>: value 1 is skipped because 2 was newer by the time the collector was free; done at t = 7.5. <strong>collectLatest</strong>: each new value cancels the work for the previous one, so only value 3 finishes, at t = 5.5 — right for search, wrong for uploads. Timings measured with kotlinx-coroutines-test virtual time (1 unit = 1 second of virtual time).</figcaption></figure>
+
+<!-- @after Flattening Operators :: visual -->
+### A new input arrives while the old inner flow is still running
+
+<figure class="viz"><div class="viz-cols" style="--cols:3"><div class="col"><span class="col-title"><code>flatMapLatest</code></span><div class="node" data-state="ghost"><strong>old search</strong><small>cancelled</small></div><div class="node is-key"><strong>new search</strong><small>starts immediately</small></div><div class="node"><strong>Use for</strong><small>anything the new input makes obsolete — the opening bug's fix</small></div></div><div class="col"><span class="col-title"><code>flatMapConcat</code></span><div class="node"><strong>old upload</strong><small>finishes first</small></div><div class="node"><strong>new upload</strong><small>waits its turn</small></div><div class="node"><strong>Use for</strong><small>order-sensitive work; one slow item delays all later ones</small></div></div><div class="col"><span class="col-title"><code>flatMapMerge(4)</code></span><div class="node"><strong>old thumbnail</strong><small>keeps running</small></div><div class="node"><strong>new thumbnail</strong><small>runs alongside, up to 4 at once</small></div><div class="node"><strong>Use for</strong><small>independent work; always set the limit</small></div></div></div><figcaption>The question is always the same: what should happen to work already in progress when the next input arrives?</figcaption></figure>
+
+<!-- @after Error Operators :: visual -->
+### What a `catch` can see
+
+<figure class="viz"><div class="viz-stack"><div class="node" data-state="done"><strong><code>repository.observeProfile()</code></strong><small>a failure here is caught below</small></div><div class="down"></div><div class="node" data-state="done"><strong><code>.map { it.toUi() }</code></strong><small>a failure here is caught below</small></div><div class="down"></div><div class="node is-key"><strong><code>.catch { emit(Error(...)) }</code></strong><small>sees only what happens above it</small></div><div class="down"></div><div class="node" data-state="error"><strong><code>.collect { render(it) }</code></strong><small>a failure here is <em>not</em> caught by that <code>catch</code></small></div></div><figcaption>Position is meaning: move <code>catch</code> below the operator you want to protect, and handle collector failures in the collector's own scope.</figcaption></figure>
+
+<!-- @after Terminal Operators :: check -->
+**Check yourself.**
+
+<details><summary>Location updates feed a map marker; the renderer sometimes lags. Which operator?</summary>
+
+`conflate()`: only the newest position matters, so dropping stale ones is correct — and the producer never waits.
+</details>
+
+<details><summary>Analytics events are posted from a flow with <code>collectLatest { api.post(it) }</code>. What goes wrong under load?</summary>
+
+Each new event cancels the in-flight post of the previous one, so events are lost. Use `collect` (optionally with `buffer`), or persist events and send them in batches.
+</details>
+
+<details><summary>A screen combines <code>user</code>, <code>settings</code> and <code>permissions</code> flows. <code>combine</code> or <code>zip</code>?</summary>
+
+`combine`: it re-emits with the latest of each whenever any changes. `zip` pairs values by position and would wait for every flow to emit again.
+</details>

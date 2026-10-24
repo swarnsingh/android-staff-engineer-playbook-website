@@ -1,0 +1,50 @@
+<!-- Website teaching layer for kotlin/coroutines-and-flow/channels-and-select.md. -->
+
+<!-- @opening -->
+<p class="story-lead">An upload queue is a <code>Channel(UNLIMITED)</code> inside an app-wide singleton. It works in testing. Then a user spends an hour offline: every photo, log and analytics event piles up in memory, the process is eventually killed, and every queued item disappears with it.</p>
+
+A channel is a **handoff between coroutines**: one side sends, the other receives, and the channel's capacity decides what happens when the receiver falls behind — wait, keep the latest, or keep everything. This chapter makes those choices visible, separates channels from the streams that look similar (`Flow`, `SharedFlow`, `StateFlow`), and ends with the ownership questions a staff engineer asks before any channel ships.
+
+<!-- @after First Principles :: visual -->
+### A queue, not a broadcast
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title"><code>Channel</code>: each value to one receiver</span><div class="node is-key"><strong>send(A), send(B), send(C)</strong><small>three values</small></div><div class="viz-grid" style="--cols:3"><div class="node"><strong>worker 1</strong><small>gets A</small></div><div class="node"><strong>worker 2</strong><small>gets B</small></div><div class="node"><strong>worker 3</strong><small>gets C</small></div></div></div><div class="col"><span class="col-title"><code>SharedFlow</code>: each value to every collector</span><div class="node is-key"><strong>emit(A)</strong><small>one value</small></div><div class="viz-grid" style="--cols:3"><div class="node"><strong>collector 1</strong><small>sees A</small></div><div class="node"><strong>collector 2</strong><small>sees A</small></div><div class="node"><strong>collector 3</strong><small>sees A</small></div></div></div></div><figcaption>Choose a channel to divide work; choose a shared or state flow to tell everyone the same thing.</figcaption></figure>
+
+<!-- @after Channel Capacities :: animation -->
+### One fast producer, one slow consumer, four capacities
+
+<figure class="stepper"><span class="stepper-title">The producer sends 1, 2, 3, 4 quickly; the consumer takes one value per step</span><div class="stage viz-grid" style="--cols:4"><div class="node" data-el="r"><strong>RENDEZVOUS</strong><small data-text="rq">empty</small><small data-text="rp">producer: —</small></div><div class="node" data-el="b"><strong><code>Channel(2)</code></strong><small data-text="bq">empty</small><small data-text="bp">producer: —</small></div><div class="node" data-el="c"><strong>CONFLATED</strong><small data-text="cq">empty</small><small data-text="cp">producer: —</small></div><div class="node" data-el="u"><strong>UNLIMITED</strong><small data-text="uq">empty</small><small data-text="up">producer: —</small></div></div><script type="application/json" class="steps">[
+{"label":"Producer sends 1","caption":"With no buffer, the rendezvous sender waits for a receiver. The others store 1 and the producer carries on.","add":["r","b","c","u"],"state":{"r":"warn"},"text":{"rq":"handoff pending","rp":"producer: waiting at send(1)","bq":"[1]","bp":"producer: free","cq":"[1]","cp":"producer: free","uq":"[1]","up":"producer: free"}},
+{"label":"Producer sends 2 and 3","caption":"Channel(2) is now full, so send(3) waits. Conflated keeps only the newest value. Unlimited keeps everything.","state":{"b":"warn","c":"active","u":"active"},"text":{"bq":"[1, 2] full","bp":"producer: waiting at send(3)","cq":"[3] — 1 and 2 were overwritten","uq":"[1, 2, 3]"}},
+{"label":"Consumer takes one","caption":"Rendezvous hands over 1 and frees its producer. Channel(2) delivers 1 and accepts 3. Conflated delivers 3, the latest. Unlimited delivers 1.","state":{"r":"done","b":"done","c":"done","u":"done"},"text":{"rq":"delivered 1","rp":"producer: free, now waiting at send(2)","bq":"delivered 1 · [2, 3]","bp":"producer: free","cq":"delivered 3 · empty","uq":"delivered 1 · [2, 3]"}},
+{"label":"Producer sends 4","caption":"Conflated stores 4 and never makes the producer wait. Unlimited grows again. Channel(2) is full, so the producer waits.","state":{"b":"warn","u":"warn","c":"active","r":"warn"},"text":{"bq":"[2, 3] full","bp":"producer: waiting at send(4)","cq":"[4]","uq":"[2, 3, 4] — grows while the consumer is behind"}},
+{"label":"The trade-offs","caption":"Rendezvous and fixed buffers slow the producer down: backpressure. Conflated never waits but drops intermediate values. Unlimited never waits and never drops — until memory runs out, as in the opening story.","state":{"r":"done","b":"done","c":"warn","u":"error"}}
+]</script><figcaption>No capacity is "best": each answers "what happens when the receiver is slow?" differently. Pick the answer before picking the constant.</figcaption></figure>
+
+<!-- @after Closing and Cancellation :: visual -->
+### `close()` versus `cancel()`
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title"><code>close()</code> — "no more values"</span><div class="node"><strong>Senders</strong><small>further <code>send</code> calls fail</small></div><div class="node is-key"><strong>Buffered values</strong><small>still delivered: receivers drain them</small></div><div class="node" data-state="done"><strong><code>for (x in channel)</code></strong><small>ends normally after the last value</small></div></div><div class="col"><span class="col-title"><code>cancel()</code> — "stop everything now"</span><div class="node"><strong>Senders and receivers</strong><small>waiting calls are aborted</small></div><div class="node" data-state="error"><strong>Buffered values</strong><small>discarded</small></div><div class="node" data-state="warn"><strong>Use when</strong><small>the owner is going away, as in <code>onCleared()</code></small></div></div></div><figcaption>Whoever creates the channel decides which of these ends its life — that is the ownership question in the checklist below.</figcaption></figure>
+
+<!-- @after Actor-Style State Ownership :: visual -->
+### The actor shape
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Callers</strong><small><code>add()</code>, <code>remove()</code>, <code>checkout()</code> from any coroutine</small></div><div class="arrow"></div><div class="node"><strong>Command channel</strong><small>commands queue up in order</small></div><div class="arrow"></div><div class="node is-key"><strong>One coroutine owns the state</strong><small>handles one command at a time, so <code>items</code> needs no lock</small></div><div class="arrow"></div><div class="node"><strong>Replies</strong><small>through a <code>CompletableDeferred</code> the caller awaits</small></div></div><figcaption>Serialised mutation without locks. For ordinary screen state, <code>MutableStateFlow.update { }</code> gives the same safety with less machinery.</figcaption></figure>
+
+<!-- @after Android Failure Modes :: check -->
+**Check yourself.**
+
+<details><summary>A camera produces frames faster than the encoder can handle, and every frame must be encoded. Which capacity?</summary>
+
+Rendezvous or a small fixed buffer, so the producer is slowed down rather than dropping frames or growing memory. (If only the newest frame matters, conflated instead.)
+</details>
+
+<details><summary>A location callback cannot suspend. How does it put values into a channel?</summary>
+
+`trySend(location)`, checking the result — and usually a conflated channel, because an old location is worthless once a newer one exists.
+</details>
+
+<details><summary>Important offline uploads are queued in a <code>Channel</code>. What survives process death?</summary>
+
+Nothing in memory. Persist the commands (a database outbox) and schedule the work (for example with WorkManager); a channel can still be the in-memory handoff on top.
+</details>
