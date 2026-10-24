@@ -1,0 +1,47 @@
+<!-- Website teaching layer for kotlin/runtime-and-jvm/bytecode.md. -->
+
+<!-- @opening -->
+<p class="story-lead">A code review stalls on a performance argument: "Is <code>user.name</code> a field read or a method call? Does this lambda allocate?" Meanwhile, the top crash in production reads <code>at a.b.c.a(SourceFile:42)</code>, which tells nobody anything.</p>
+
+Both disputes end the same way: look at what the compiler actually produced. Kotlin's features — properties, null checks, data classes, coroutines, inlining — all leave recognisable **fingerprints in JVM bytecode**, and the release pipeline (R8, DEX, ART) transforms that bytecode in ways you can reverse with a mapping file. This chapter teaches you to read those fingerprints well enough to settle arguments with evidence rather than intuition.
+
+<!-- @part 1. The Compilation Pipeline :: BEGINNING -->
+
+<!-- @diagram 2e6c2f4790beb102 -->
+### From source to running app
+
+<figure class="viz"><div class="viz-stack"><div class="viz-flow"><div class="node"><strong>Kotlin source</strong><small><code>.kt</code> files</small></div><div class="arrow"></div><div class="node is-key"><strong><code>kotlinc</code></strong><small>JVM <code>.class</code> bytecode — where Kotlin's features are lowered, and what you read with <code>javap</code></small></div><div class="arrow"></div><div class="node"><strong>D8 / R8</strong><small>desugar, shrink, optimise, rename → DEX</small></div></div><div class="down"></div><div class="viz-flow"><div class="node"><strong>Install</strong><small>ART loads the DEX from the APK or bundle</small></div><div class="arrow"></div><div class="node"><strong>Baseline and runtime profiles</strong><small>tell ART which code is hot</small></div><div class="arrow"></div><div class="node"><strong>Execution</strong><small>interpreted, JIT-compiled, or compiled ahead of time from the profiles</small></div></div></div><figcaption>Kotlin's own decisions are all visible in the class files. Later steps change names and layout, which is why release crashes need a mapping file to read.</figcaption></figure>
+
+<!-- @after 2. The JVM Stack Machine :: animation -->
+### Run `add(2, 3)` on the stack machine
+
+<figure class="stepper"><span class="stepper-title"><code>fun add(a: Int, b: Int): Int = a + b</code></span><div class="stage viz-cols" style="--cols:3"><div class="col"><span class="col-title">Instruction</span><div class="node" data-el="pc"><strong data-text="instr">—</strong><small data-text="instrNote">ready</small></div></div><div class="col"><span class="col-title">Local variable slots</span><div class="node" data-el="l0"><strong>slot 0: <code>a</code> = 2</strong><small>parameter</small></div><div class="node" data-el="l1"><strong>slot 1: <code>b</code> = 3</strong><small>parameter</small></div></div><div class="col"><span class="col-title">Operand stack</span><div class="node" data-el="stack"><strong data-text="stackTop">empty</strong><small data-text="stackNote">top of stack shown first</small></div></div></div><script type="application/json" class="steps">[
+{"label":"Enter","caption":"The caller's arguments are already in local slots 0 and 1. The operand stack, where all computation happens, starts empty.","add":["pc","l0","l1","stack"],"text":{"instr":"(method entry)"}},
+{"label":"iload_0","caption":"Push the int in slot 0 onto the operand stack. The i prefix means int; a would mean a reference.","state":{"l0":"active","pc":"active"},"text":{"instr":"iload_0","instrNote":"push local 0","stackTop":"2"}},
+{"label":"iload_1","caption":"Push the int in slot 1. The stack now holds both operands.","state":{"l0":"","l1":"active"},"text":{"instr":"iload_1","instrNote":"push local 1","stackTop":"3 · 2"}},
+{"label":"iadd","caption":"Pop two ints, add them, push the result. There are no registers: instructions communicate only through this stack.","state":{"l1":"","stack":"active"},"text":{"instr":"iadd","instrNote":"pop 2, push sum","stackTop":"5"}},
+{"label":"ireturn","caption":"Pop the int and return it to the caller. Four instructions, two local slots, no allocation.","state":{"stack":"done","pc":"done"},"text":{"instr":"ireturn","instrNote":"return the top int","stackTop":"empty — 5 returned"}}
+]</script><figcaption>Once this model is familiar, every listing in this chapter reads as a sequence of pushes, pops and jumps.</figcaption></figure>
+
+<!-- @after 5. Bytecode For Common Kotlin Constructs :: visual -->
+### Kotlin fingerprints to look for
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Property read: <code>user.name</code></strong><small><code>invokevirtual getName()</code> — a method call, not <code>getfield</code>, from outside the class</small></div><div class="node"><strong><code>?.</code> and <code>?:</code></strong><small>an <code>ifnull</code> branch and a fallback value: no wrapper objects</small></div><div class="node"><strong><code>lateinit</code> read</strong><small><code>ifnull</code> → <code>throwUninitializedPropertyAccessException</code></small></div><div class="node"><strong>Non-null parameter</strong><small><code>Intrinsics.checkNotNullParameter</code> at the top of public methods</small></div><div class="node"><strong><code>suspend fun</code></strong><small>an extra <code>Continuation</code> parameter, a <code>tableswitch</code> over a saved label, and checks against <code>COROUTINE_SUSPENDED</code></small></div><div class="node"><strong><code>inline</code> call with a lambda</strong><small>no call to the inline function and no function object: the bodies appear in the caller</small></div></div><figcaption>Use <code>javap -c -p</code> (or "Show Kotlin Bytecode") to check these claims against the build you actually ship — compiler versions and targets can change the details.</figcaption></figure>
+
+<!-- @after 8. Reading An Obfuscated Stack Trace :: visual -->
+### Retracing a release crash
+
+<figure class="viz"><div class="viz-flow"><div class="node" data-state="warn"><strong><code>at a.b.c.a(SourceFile:42)</code></strong><small>what the release build reports</small></div><div class="arrow"></div><div class="node is-key"><strong><code>mapping.txt</code> from that exact build</strong><small><code>com.example.UserRepository -&gt; a.b.c</code> · <code>getUser -&gt; a</code></small></div><div class="arrow"></div><div class="node" data-state="done"><strong><code>at com.example.UserRepository.getUser(…:42)</code></strong><small>readable again</small></div></div><figcaption>The mapping belongs to one build. Upload it automatically for every release, or the crash you need most may be unreadable.</figcaption></figure>
+
+<!-- @after 10. Practical Workflow: Investigating "Why Is This Slow?" :: check -->
+**Check yourself.**
+
+<details><summary>Inside <code>class User</code>, is reading <code>name</code> different from reading <code>user.name</code> in another class?</summary>
+
+Often yes: code inside the class may access the field directly, while other classes call `getName()`. The bytecode shows which you got — check rather than assume.
+</details>
+
+<details><summary>A decompiled Java view shows a neat loop; the bytecode shows extra allocations. Which do you trust?</summary>
+
+The bytecode. Decompiled Java is a reconstruction for reading intent; the instructions are what runs.
+</details>
