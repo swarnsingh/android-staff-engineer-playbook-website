@@ -90,6 +90,6 @@ A `<figure class="stepper">` contains a `.stage` with elements marked `data-el="
 
 ## Next steps
 
-1. Sort the 292 Codex corrections plus the new findings, and get the owner's approval chapter by chapter.
+1. Sort the 292 Codex corrections plus the new findings, and get the owner's approval chapter by chapter. Progress lives in `reviews/corrections-triage.md` (Variables done: 16 of 292, awaiting owner approval).
 2. Replace the Codex audit notes in `reviews/` with the reviewed corrections table.
 3. Repeat the blend for the next tree.
