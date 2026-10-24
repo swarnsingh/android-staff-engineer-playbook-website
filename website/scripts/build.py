@@ -222,16 +222,21 @@ def render_chapter(path, raw, is_course=False):
     # H1 is represented by the page hero; all other opening content stays intact.
     if initial and initial[0].type=='heading_open' and initial[0].tag=='h1': initial=initial[3:]
     opening=MD.renderer.render(initial,MD.options,env)
+    def band(number, index):
+        key, title_text, promise = PARTS[index]
+        return f'<div class="part-band" data-part-band="{key}"><span class="part-number">PART {number}</span><span class="part-name">{title_text}</span><p class="part-promise">{promise}</p></div>'
+    # The opening story always belongs to the first part of the chapter.
+    first_band = band(1, 0)
     if ('opening', '') in blend:
         used.add(('opening', ''))
-        body=f'<section class="lesson-section lesson-start" id="problem"><h2>Start here</h2>{wrap("story", blend[("opening","")], env)}<div class="original-opening">{opening}</div></section>'
+        body=first_band+f'<section class="lesson-section lesson-start" id="problem"><h2>Start here</h2>{wrap("story", blend[("opening","")], env)}<div class="original-opening">{opening}</div></section>'
     else:
         desc=INTRO.get(Path(path).stem, 'Follow the concepts, examples, failure modes and design decisions in this chapter.')
-        body=f'<section class="lesson-section lesson-start" id="problem"><span class="eyebrow">START WITH THE NEED</span><h2>Why this topic matters</h2><p>{escape(desc)}</p><div class="original-opening">{opening}</div></section>'
+        body=first_band+f'<section class="lesson-section lesson-start" id="problem"><span class="eyebrow">START WITH THE NEED</span><h2>Why this topic matters</h2><p>{escape(desc)}</p><div class="original-opening">{opening}</div></section>'
     if path.endswith('/coroutines.md'):
         body += '<section class="lesson-section" id="experiment"><span class="eyebrow">TRY THE IDEA</span><h2>Watch independent waits overlap</h2><p>A profile needs a name and an avatar. Waiting for one request before starting the other adds avoidable waiting. Run the example, switch <code>concurrent</code> from <code>true</code> to <code>false</code>, and compare the start messages.</p>' + (WEB/'content/coroutine-experiment.html').read_text() + '<p>In Playground output, <code>main @coroutine#2</code> means thread <code>main</code>, coroutine #2. Different coroutine numbers can share the same thread.</p></section>'
     part_index = 0
-    bands = 0
+    bands = 1
     for j,(start,heading,anchor) in enumerate(sections):
         end=sections[j+1][0] if j+1<len(sections) else len(tokens)
         name=clean(heading)
@@ -241,11 +246,10 @@ def render_chapter(path, raw, is_course=False):
         # Parts only move forward, so the story reads as one progression.
         wanted = PART_KEYS.index(blend[('part', name)]) if ('part', name) in blend else classify_part(name)
         if ('part', name) in blend: used.add(('part', name))
-        if j == 0 or wanted > part_index:
-            part_index = max(part_index, wanted) if j else wanted
-            key, title_text, promise = PARTS[part_index]
+        if wanted > part_index:
+            part_index = wanted
             bands += 1
-            body += f'<div class="part-band" data-part-band="{key}"><span class="part-number">PART {bands}</span><span class="part-name">{title_text}</span><p class="part-promise">{promise}</p></div>'
+            body += band(bands, part_index)
         part = PARTS[part_index][0]
         before = ''.join(wrap(kind, html, env) for key, html in blend.items() if len(key) == 3 and key[0] == 'before' and key[1] == name for kind in [key[2]])
         after = ''.join(wrap(kind, html, env) for key, html in blend.items() if len(key) == 3 and key[0] == 'after' and key[1] == name for kind in [key[2]])

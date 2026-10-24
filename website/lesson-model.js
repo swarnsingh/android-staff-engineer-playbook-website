@@ -40,15 +40,15 @@
       ]
     },
     supervised: {
-      title: 'Avatar is optional',
-      description: 'Same failing input at 300ms, but expected avatar failure is converted to a nullable fallback inside a supervised group.',
-      code: ['supervisorScope {', '    val name = async { fetchName() } // required', '    val avatar = async {', '        try { fetchAvatar() }', '        catch (e: CancellationException) { throw e }', '        catch (e: IOException) { null } // optional', '    }', '    Profile(name.await(), avatar.await())', '}'],
+      title: 'Avatar is optional (handled at await)',
+      description: 'Same failing input at 300ms. The avatar child really fails; supervision keeps the name running, and the caller turns the failure into a placeholder where it reads the result.',
+      code: ['supervisorScope {', '    val name = async { fetchName() }            // required', '    val avatar = async { failAvatarAfter(300) } // optional', '    val resolvedName = name.await()', '    val resolvedAvatar = try { avatar.await() }', '        catch (e: IOException) { null }         // fallback here', '    Profile(resolvedName, resolvedAvatar)', '}'],
       steps: [
-        step('Before start', 'Not started', 'Not started', 'Not started', 'Ready for input', 'The product policy now permits an avatar fallback. Supervision and expected-failure handling express that policy together.', [0]),
-        step('0ms · after requests start', 'Waiting for results', 'Suspended', 'Suspended', 'Available for UI events', 'Both requests start. The name remains required, while the avatar has a local expected-failure boundary.', [1, 2, 3], 'ui'),
-        step('300ms · expected avatar failure', 'Waiting for name', 'Suspended', 'Fallback: null', 'Brief fallback handling, then available', 'The expected IOException becomes null. The name request continues. External cancellation would instead be rethrown.', [4, 5], 'ui'),
-        step('About 500ms', 'Combining partial result', 'Complete', 'Fallback: null', 'Brief result-handling work', 'The required name is ready. Awaiting avatar returns its nullable result, so the block can build a usable partial profile.', [7]),
-        step('After completion', 'Complete with fallback', 'Complete', 'Fallback: null', 'Available for UI events', 'The caller receives a profile with a placeholder avatar. An unhandled await failure escaping the block would still fail the load; supervision alone would not rescue it.', [8])
+        step('Before start', 'Not started', 'Not started', 'Not started', 'Ready for input', 'The product now allows a profile without an avatar. This scene lets the avatar child fail for real and decides what that means where the result is read.', [0]),
+        step('0ms · after requests start', 'Waiting for results', 'Suspended', 'Suspended', 'Available for UI events', 'Both requests start inside a supervisorScope. The block suspends at name.await().', [1, 2, 3], 'ui'),
+        step('300ms · avatar child fails', 'Waiting for name', 'Suspended', 'Failed', 'Brief failure handling, then available', 'The avatar child fails with IOException. A supervisor does not cancel itself or the name sibling, so the name keeps loading. Under coroutineScope this same failure would have cancelled the name — see "Required avatar fails".', [2], 'ui'),
+        step('About 500ms · name ready', 'Combining partial result', 'Complete', 'Failed', 'Brief result-handling work', 'name.await() returns. avatar.await() rethrows the stored IOException, which the try/catch at this line turns into null.', [3, 4, 5]),
+        step('After completion', 'Complete with fallback', 'Complete', 'Fallback: null', 'Available for UI events', 'The caller receives a profile with a placeholder avatar. Catching inside the avatar child instead would also work — and then a plain coroutineScope is enough, because that child never fails.', [6, 7])
       ]
     }
   };

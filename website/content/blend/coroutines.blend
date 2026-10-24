@@ -1,0 +1,60 @@
+<!-- Website teaching layer for kotlin/coroutines-and-flow/coroutines.md.
+     The experiment, continuation table, optional-avatar policies and the job-tree model
+     are separate fragments in website/content/coroutine-*.html, placed by build.py. -->
+
+<!-- @opening -->
+<p class="story-lead">You tap a profile. The app needs a name and an avatar from two requests. You try to scroll while they load — and nothing moves. The code "works": the requests finish, the data appears. But for half a second the main thread was busy waiting, so it could not draw a single frame.</p>
+
+Coroutines exist to make **waiting stop occupying a thread**. This chapter follows that one profile screen all the way down: what `suspend` really does (a state machine and a continuation), where code runs (dispatchers), who owns the work (scopes and the job tree), what happens when the user leaves (cancellation), when a request fails (exception propagation and supervision), and finally the production contract a staff engineer writes down for the screen.
+
+<!-- @after Overview :: visual -->
+### The frozen screen, measured
+
+A single thread runs a "frame" every 100 ms while a 500 ms load happens on the same thread. Only the way the load waits changes.
+
+<figure class="viz"><div class="axis"><span>0 ms</span><span>250 ms</span><span>500 ms</span><span>750 ms</span></div><div class="viz-lanes"><div class="lane"><span class="lane-label">frames, load uses <code>delay(500)</code></span><div class="track"><span class="mark" style="--at:0%;--len:4%">0</span><span class="mark" style="--at:12%;--len:4%">1</span><span class="mark" style="--at:25%;--len:4%">2</span><span class="mark" style="--at:37%;--len:4%">3</span><span class="mark" style="--at:50%;--len:4%">4</span><span class="mark" style="--at:62%;--len:4%">5</span></div></div><div class="lane"><span class="lane-label">frames, load uses <code>Thread.sleep(500)</code></span><div class="track"><span class="mark" style="--at:0%;--len:4%">0</span><span class="mark" data-tone="warn" style="--at:4%;--len:58%">no frames: the thread is asleep</span><span class="mark" style="--at:63%;--len:4%">1</span><span class="mark" style="--at:75%;--len:4%">2</span></div></div></div><figcaption>Measured on a desktop JVM (Kotlin 2.4, kotlinx.coroutines 1.11) with one thread standing in for a UI thread: with <code>delay</code>, frames kept arriving every ~100 ms; with <code>Thread.sleep</code>, frame 1 arrived at 503 ms. Not an Android measurement — the same principle, made visible.</figcaption></figure>
+
+<!-- @after The Four Dispatchers :: visual -->
+### The thread pools behind the dispatchers
+
+<figure class="viz"><div class="viz-cols" style="--cols:3"><div class="col"><span class="col-title"><code>Dispatchers.Main</code></span><div class="node is-key"><strong>1 thread: the UI thread</strong><small>input, drawing and your UI updates share it. Keep each piece of work short.</small></div></div><div class="col"><span class="col-title"><code>Dispatchers.Default</code></span><div class="node"><strong>about one thread per CPU core</strong><small>at least two. For computation: parsing, sorting, image work.</small></div></div><div class="col"><span class="col-title"><code>Dispatchers.IO</code></span><div class="node"><strong>up to 64 threads (or more on many-core machines)</strong><small>for blocking calls that mostly wait. Shares threads with Default, so switching between them is often cheap.</small></div></div></div><figcaption>A suspending API that is already main-safe (a <code>suspend</code> Retrofit or Room call) needs no <code>withContext(IO)</code> around it; wrap code that genuinely blocks or computes.</figcaption></figure>
+
+<!-- @after launch vs async — Two Builders, Different Contracts :: visual -->
+### Two builders, one question: do you need a value back?
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title"><code>launch { … }</code> → <code>Job</code></span><div class="node"><strong>"Do this"</strong><small>save, refresh, update state. No result to collect.</small></div><div class="node" data-state="warn"><strong>If it throws</strong><small>the failure goes to its parent straight away; at the top level, to the uncaught-exception handler.</small></div></div><div class="col"><span class="col-title"><code>async { … }</code> → <code>Deferred&lt;T&gt;</code></span><div class="node"><strong>"Compute this, I'll await it"</strong><small>start several before awaiting any, so they overlap.</small></div><div class="node" data-state="warn"><strong>If it throws</strong><small>under a normal parent, it still fails the parent immediately — awaiting later does not delay that. Only under a supervisor (or with no parent) does the failure wait inside the Deferred for <code>await()</code>.</small></div></div></div><figcaption>The "async exception trap" below, as one rule: the parent's Job type, not the builder, decides whether a failure travels now or waits.</figcaption></figure>
+
+<!-- @diagram 4b00da8fd97c81d4 -->
+### A failure travelling through the job tree
+
+<figure class="stepper"><span class="stepper-title">Job 4 throws</span><div class="stage viz-tree"><div class="row"><div class="node" data-el="root"><strong><code>viewModelScope</code></strong><small data-text="rootNote">SupervisorJob</small></div></div><div class="row"><div class="node" data-el="j0"><strong>Job 0</strong><small data-text="j0Note"><code>viewModelScope.launch</code></small></div><div class="node" data-el="other"><strong>another launch</strong><small data-text="otherNote">unrelated work</small></div></div><div class="row"><div class="node" data-el="j1"><strong>Job 1</strong><small data-text="j1Note">launch</small></div><div class="node" data-el="j2"><strong>Job 2</strong><small data-text="j2Note">launch</small></div></div><div class="row"><div class="node" data-el="j3"><strong>Job 3</strong><small data-text="j3Note">child of Job 2</small></div><div class="node" data-el="j4"><strong>Job 4</strong><small data-text="j4Note">child of Job 2</small></div></div></div><script type="application/json" class="steps">[
+{"label":"The tree","caption":"Every coroutine has a Job, linked to its parent's. Job 0 is a launch in viewModelScope; Jobs 1–4 were started inside it.","add":["root","j0","other","j1","j2","j3","j4"],"state":{"j0":"active"}},
+{"label":"Job 4 fails","caption":"Job 4 throws an exception that is not a CancellationException. A child's failure is reported up to its parent.","state":{"j4":"error","j0":""},"text":{"j4Note":"threw IOException"}},
+{"label":"Up to Job 2","caption":"Job 2 is an ordinary parent, so it fails too — and cancels its other child, Job 3.","state":{"j2":"error","j3":"ghost"},"text":{"j2Note":"failed","j3Note":"cancelled"}},
+{"label":"Up to Job 0","caption":"The failure continues to Job 0, which fails and cancels Job 1. Everything Job 0 started is now stopped.","state":{"j0":"error","j1":"ghost"},"text":{"j0Note":"failed","j1Note":"cancelled"}},
+{"label":"The supervisor stops it","caption":"viewModelScope's root is a SupervisorJob, so the other top-level launch keeps running. But Job 0's exception was never caught: it reaches the uncaught-exception handler, which crashes an Android app.","state":{"other":"done","root":"warn"},"text":{"otherNote":"keeps running","rootNote":"isolates siblings, does not handle errors"}},
+{"label":"The fix lives at the edge","caption":"Catch the expected failure inside Job 0 (or deeper) and turn it into state. Supervision limits how far a failure spreads; only a catch decides what it means.","state":{"j0":"done","root":"done"},"text":{"j0Note":"catches IOException → error state"}}
+]</script><figcaption>Cancellation flows down; failure flows up, then down to siblings — until it reaches a supervisor or a catch.</figcaption></figure>
+
+<!-- @after Job Hierarchy and Cancellation :: visual -->
+### Cooperative cancellation, on a timeline
+
+<figure class="viz"><div class="axis"><span>start</span><span>cancel requested</span><span></span><span>later</span></div><div class="viz-lanes"><div class="lane"><span class="lane-label">loop with <code>delay</code> / suspending calls</span><div class="track"><span class="mark" style="--at:0%;--len:40%">working</span><span class="mark" data-tone="soft" style="--at:40%;--len:6%">stops</span></div></div><div class="lane"><span class="lane-label">CPU loop with <code>ensureActive()</code></span><div class="track"><span class="mark" style="--at:0%;--len:46%">working</span><span class="mark" data-tone="soft" style="--at:46%;--len:6%">stops</span></div></div><div class="lane"><span class="lane-label">CPU loop, never checks</span><div class="track"><span class="mark" style="--at:0%;--len:40%">working</span><span class="mark" data-tone="warn" style="--at:40%;--len:60%">ignores the request and runs to the end</span></div></div></div><figcaption>Cancellation is a request. Code notices it only at a check: every cancellable suspending call is one; a pure computation loop must add its own.</figcaption></figure>
+
+<!-- @after Android Lifecycle Integration :: check -->
+**Check yourself.**
+
+<details><summary>A repository wraps a suspending Retrofit call in <code>withContext(Dispatchers.IO)</code>. Needed?</summary>
+
+No. Retrofit's `suspend` functions are already main-safe. Use `withContext(io)` where code really blocks (a legacy blocking client, file I/O) or computes (`Default`).
+</details>
+
+<details><summary>Inside <code>viewModelScope.launch</code>, an <code>async</code> that is never awaited throws. What happens?</summary>
+
+Its parent is an ordinary `launch` Job, so the failure cancels the launch immediately and, uncaught, crashes the app — awaiting has nothing to do with it.
+</details>
+
+<details><summary>The user rotates the device mid-load. Is the profile load cancelled?</summary>
+
+No: the ViewModel survives configuration changes, so `viewModelScope` keeps running. It is cancelled when the ViewModel is cleared — for example, when the screen is removed from the back stack.
+</details>
