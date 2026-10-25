@@ -40,3 +40,243 @@ To approve, mark the row. Approved rows get `"status": "approved"` in the JSON; 
 - **V15:** "Hilt injects the Fragment's fields in `onAttach`, before this `onViewCreated` use."
 
 **Summary:** 13 approve, 3 approve with edit, 0 reject.
+
+## Null Safety — 8 proposed
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| N1 | A Kotlin function returning a non-null type has its return checked when called from Java | Kotlin adds no return check; checks run on parameters and on Java values Kotlin uses as non-null | Approve with edit | `javap`: `title()` is just `ldc "x"; areturn` |
+| N2 | `optString(key)` returns `"null"` when the key is missing | A missing key gives `""`; only an explicit JSON `null` gives `"null"` | Approve | Android `JSONObject.optString` source |
+| N3 | `StateFlow.value` is always non-null | It always has a value, but a `StateFlow<T?>` value can be null | Approve | StateFlow API docs |
+| N4 | `runCatching { api.pay() }` in a suspend function | It also catches `CancellationException`, so cancellation is swallowed | Approve | Kotlin `runCatching` docs; Android coroutine best practices |
+| N5 | `checkNotNullParameter` throws `IllegalArgumentException` | It throws `NullPointerException` | Approve | Run: `NullPointerException: Parameter specified as non-null is null` |
+| N6 | Elvis `?:` returns null when the left side is null | It returns the right side then | Approve | Kotlin null-safety docs |
+| N7 | Gson allocates with `Unsafe`, skipping the constructor | Only when there is no no-args constructor, which is the usual Kotlin data class | Approve with edit | Gson troubleshooting guide |
+| N8 | Same claim, in the Answer Key | Same, and Moshi validates only with a Kotlin-aware adapter | Approve with edit | Same |
+
+**Amended text**
+
+- **N1:** "There is no matching check on return values. Kotlin's compiler already guarantees a non-null return, and the generated `@NotNull` only informs Java tools. Checks run the other way: when Kotlin uses a Java value as non-null."
+- **N7:** "For a class without a no-args constructor, which includes a typical Kotlin data class, Gson falls back to `Unsafe` allocation: it creates the object **without calling the constructor**, then sets fields by reflection. The constructor's `Intrinsics.checkNotNullParameter` checks never run."
+- **N8:** "Gson creates a Kotlin class without a no-args constructor through `Unsafe` allocation, bypassing the constructor, then sets fields by reflection. The non-null checks never run, so a field missing from the JSON stays `null` despite its non-null type. Prevent this with `kotlinx.serialization` or Moshi with its Kotlin adapter (codegen or `KotlinJsonAdapterFactory`), which reject the missing field."
+
+**Summary:** 5 approve, 3 approve with edit, 0 reject.
+
+## Functions — 16 proposed, 1 new
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| F1 | Every lambda you pass creates a `Function` instance | A non-capturing lambda is created once and reused | Approve | Run: non-capturing lambda is the same object every time |
+| F2 | Function references are cheaper than lambdas, with no captured scope | `System.out::println` is bound and captures; neither form is cheaper in general | Approve | Run: bound reference is a new object each time |
+| F3 | "Decompiled:" shows an anonymous `Function1` class | Since Kotlin 2.0 lambdas use `invokedynamic`; the listing is the old `-Xlambdas=class` shape | Approve | Kotlin 2.0 release notes; run: lambda class is `FnsKt$$Lambda$7/…` |
+| F4 | A lambda is an anonymous class per call site | Not the default since 2.0 | Approve | Same |
+| F5 | `prefix` is captured by reference; every call allocates | It is a `val`, so its value is copied; the per-evaluation allocation is right for a capturing lambda | Approve with edit | Run: capturing lambda is a new object each time |
+| F6 | `filter { isEven(it) }` creates an anonymous class; the reference is cheaper | `filter` is `inline`: both forms become a loop that calls `isEven` directly | Approve | `javap`: two direct `invokestatic isEven`, no function objects |
+| F7 | Diagram: each non-inline lambda call site allocates an anonymous class | Same as F1 and F4 | Approve | Same |
+| F8 | Without `inline`, each lambda passed allocates a `FunctionN` | Same as F1 | Approve | Same |
+| F9 | "Each non-inline lambda allocates a `FunctionN` object" | Same as F1 | Approve | Same |
+| F10 | Function references are usually faster than lambdas | No general ordering; both non-capturing forms are reused | Approve | Run: unbound reference and non-capturing lambda both reused |
+| F11 | Avoid function types when behaviour is configured at runtime; use an interface and DI | This is design guidance, not an error | Reject | — |
+| F12 | A `launch { }` lambda captures everything in scope | It captures only what it uses, which can include `this` | Approve | Kotlin closures docs |
+| F13 | `onClick` is re-invoked on later compositions; skipping relies on lambda identity | Event lambdas run on click; strong skipping remembers lambdas | Approve | Strong skipping docs: default since Kotlin 2.0.20 |
+| F14 | Lambdas with mutable captures defeat skipping; CI should fail on unstable lambdas | Strong skipping remembers lambdas with unstable captures too | Approve | Same |
+| F15 | An unstable `viewModel` capture makes a new lambda every recomposition | Not with strong skipping, which compares unstable captures by identity | Approve | Same |
+| F16 | `obj::method` allocates a new object each time it is evaluated | The original is right at the bytecode level | Reject | Run: bound reference is a new object each time |
+| F17 (new) | `::isEven` compiles to one cached class when passed to `filter` | `filter` is `inline`, so no class or object is created | Approve with text below | `javap`, as in F6 |
+
+**Amended text**
+
+- **F5:** "3. **Captured values are stored in the function object.** `prefix` is a `val`, so its value is copied in. Because the lambda captures, each evaluation creates a new function object. A non-capturing lambda is created once and reused."
+- **F17** (replaces "The function reference compiles to a *single* generated class … the same singleton."): "`filter` is `inline`, so neither form creates a function object: both compile into a loop that calls `isEven` directly. The difference matters only for non-inline parameters, where a non-capturing reference or lambda is created once and reused."
+
+**Summary:** 12 approve, 2 approve with edit (one of them new), 2 reject.
+
+## Extensions — 11 proposed
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| E1 | An extension with a member's signature compiles silently | The compiler warns that the member shadows it | Approve | Compiler: `warning: this extension is shadowed by a member` |
+| E2 | "The compiler issues no warning" | Same | Approve | Same |
+| E3 | Resolution step 3: local functions that take the receiver as a parameter | `x.foo()` never resolves to `foo(x)` | Approve | Kotlin spec, calls with an explicit receiver |
+| E4 | `inline fun <reified T> Bundle.getParcelableSafe` | The proposal says API 33 needs `T : Parcelable`, but that overload is unbounded `<T>` and the original compiles | Reject | AOSP `Bundle.java`; compiled both versions against `android.jar` (API 36) |
+| E5 | No warning, so a library's new member safely takes precedence | There is a warning, and behaviour changes only when consumers recompile | Approve | Compiler warning, as in E1 |
+| E6 | Extensions cannot be mocked or stubbed | MockK can mock them with `mockkStatic` | Approve | MockK docs |
+| E7 | Mockito and MockK cannot intercept extensions | Same | Approve | Same |
+| E8 | "Extensions cannot be mocked because they are static" | Same | Approve | Same |
+| E9 | `internal` makes an extension package-private | `internal` means visible in the whole module | Approve | Kotlin visibility docs |
+| E10 | Java calls an `internal` extension through a mangled name `foo$mymodule_debug` | Top-level `internal` functions are not mangled; only `internal` members are | Approve | `javap`: `public static … shout(String)`; member `memberInternal$main()` |
+| E11 | Sequences are faster only when the chain has more than about 3 elements | There is no fixed threshold | Approve | Kotlin sequences docs |
+
+**Summary:** 10 approve, 0 approve with edit, 1 reject.
+
+## Data Classes — 16 proposed
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| D1 | Override `equals` or `hashCode` and the compiler stops generating both | It still generates the one you did not write | Approve | Run: data class overriding only `equals` still has a generated `hashCode` |
+| D2 | Table: data classes cannot extend other classes | They can extend `open`, `abstract` or `sealed` classes; they cannot be extended | Approve with edit | Run: `data class Sub(…) : Base(name)` compiles and runs |
+| D3 | The restriction exists because inheritance breaks equality | The real rule is that data classes are final; they may still extend a class | Approve | Same |
+| D4 | Question: "Why are data classes forbidden from … extending another class?" | False premise | Approve | Same |
+| D5 | Answer to the same question | Same | Approve | Same |
+| D6 | `List<String>` comment: "immutable List type" | Read-only, not immutable | Approve | Same as V1 |
+| D7 | Data classes are immutable value types | `var` properties are allowed; `val`s can hold mutable objects | Approve | Kotlin data classes docs |
+| D8 | "There is no safe `var` in a data class" | Legal; the danger is mutating a key used in a hash collection | Approve | Kotlin data classes docs |
+| D9 | Compose skips recomposition when state `equals` the previous state | Only stable parameters use `equals`; unstable ones are compared by instance | Approve with edit | Strong skipping docs |
+| D10 | An unstable `UiState` recomposes on every emission | Strong skipping (default since Kotlin 2.0.20) still skips unchanged instances | Approve | Same |
+| D11 | Unstable data class: "Compose recomposes the whole tree on every emission" | Same | Approve | Same |
+| D12 | A `List` field makes every emission force a full recomposition | Same | Approve | Same |
+| D13 | Review checklist: push for `@Immutable`/`@Stable` | They are promises; check inferred stability first | Approve | Same |
+| D14 | Adding a field causes `IllegalStateException: companion default value …` | The real failure is `NoSuchMethodError` when a constructor or `copy` signature changes | Approve | Kotlin backward-compatibility guidelines |
+| D15 | `@JvmOverloads` or a Builder preserves the old signature | Neither restores the old `copy` signature | Approve | Same |
+| D16 | Kotlin 1.9+ warns "Component name mismatch" when destructured names are swapped | No warning by default | Approve | Compiler: `val (city, name) = Person(…)` compiles silently and swaps the values |
+
+**Amended text**
+
+- **D2** (table row): "| Implement interfaces; extend an `open`, `abstract` or `sealed` class | Be extended by another class (data classes are final) |"
+- **D9:** "**Jetpack Compose** can skip a composable whose parameters are unchanged: stable parameters are compared with `equals`, unstable ones by instance."
+
+**Summary:** 14 approve, 2 approve with edit, 0 reject.
+
+## Value Classes — 4 proposed
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| VA1 | "The doc-level rule is exact": boxed whenever used as another type | The docs call it a rule of thumb; `Name?` wrapping a `String` is not boxed | Approve | Docs: "As a rule of thumb"; `javap`: `takeName(String)` for a `Name?` parameter |
+| VA2 | `List<UserId>` allocates one wrapper per element | The original is right | Reject | Run: the same `UserId` added twice gives two distinct boxes |
+| VA3 | `===` on value classes is a bug pattern | The compiler prohibits it | Approve | Compiler: "identity equality … is prohibited" |
+| VA4 | Java-facing APIs: avoid value classes or `@JvmName` every entry point | `@JvmExposeBoxed` / `-Xjvm-expose-boxed` now exist (opt-in) | Approve | Kotlin "Calling Kotlin from Java" docs |
+
+**Summary:** 3 approve, 0 approve with edit, 1 reject.
+
+## Sealed Classes — 17 proposed
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| SE1 | Same package since Kotlin 1.7 | The same-module, same-package rule arrived in 1.5 | Approve | Kotlin 1.5 release notes |
+| SE2 | Same module (1.5+) and same package (1.7+) | Same; the rule also applies only to direct subclasses | Approve | Same; sealed classes docs |
+| SE3 | Exhaustiveness is enforced only for `when` expressions | Since 1.7, statements on sealed, enum and Boolean subjects are checked too | Approve | Compiler: a statement missing a branch fails with "'when' expression must be exhaustive" |
+| SE4 | 1.7 added an opt-in flag to check statements | It is the default since 1.7 | Approve | Same |
+| SE5 | `runCatching { api.getUser(id) }` in a suspend function | Swallows `CancellationException` | Approve | Same as N4 |
+| SE6 | With an `Unknown` case, a new type "downgrades to `Unknown`" instead of crashing or breaking builds | Holds for old clients whose parser maps unknown values; adding the subclass still breaks consumers' builds when they upgrade | Approve with edit | Sealed classes docs; exhaustiveness as in SE3 |
+| SE7 | Troubleshooting: statements need expression form or a flag | Outdated since 1.7 | Approve | Same as SE3 |
+| SE8 | "Cannot inherit data class from another sealed" | Data classes can extend sealed classes; data classes cannot be extended | Approve | Same as D2 |
+| SE9 | An `Unknown` case avoids a major version bump | Same as SE6 | Approve | Same |
+| SE10 | Review checklist: include `Unknown` | Same as SE6 | Approve | Same |
+| SE11 | Exhaustiveness only for expressions or with a flag | Same as SE3 | Approve | Same |
+| SE12 | Same package (1.7+) and same module (1.5+) | Same as SE1, and only direct subclasses | Approve | Same |
+| SE13 | "Plan accordingly or include `Unknown`" | Same as SE6 | Approve | Same |
+| SE14 | Answer Key: statements are checked only with a flag before 1.7 | Rewritten to state current behaviour first | Approve | Same as SE3 |
+| SE15 | Module rule since 1.5, package rule since 1.7 | Same as SE1 | Approve | Same |
+| SE16 | Empty `data class()` is wasteful; `data object` arrived in 1.8 | An empty data class does not compile; data objects previewed in 1.8.20 and became stable in 1.9 | Approve | Kotlin 1.9 release notes |
+| SE17 | "Removing it bypasses the safety net," about `else` | Reads backwards: adding `else` bypasses it | Approve | Sealed classes docs |
+
+**Amended text**
+
+- **SE6:** "Now, when the server starts sending a new payment type, old clients whose parser maps unrecognised values to `Unknown` show a fallback instead of crashing. Adding the new subclass to the SDK still breaks exhaustive `when`s when consumers upgrade, so it remains a source-breaking change."
+
+**Summary:** 16 approve, 1 approve with edit, 0 reject.
+
+## Delegation — 10 proposed
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| DE1 | Hilt's `@Inject lateinit var` and `LocalContext.current` are delegation under the hood | Only `by navArgs()` is a delegate; the others are field injection and CompositionLocal | Approve | Kotlin delegated properties docs; CompositionLocal docs |
+| DE2 | `class Required<T>` with `private lateinit var value: T` | Does not compile: `lateinit` needs a non-null bound | Approve | Compiler: "'lateinit' modifier is not allowed on properties of a type with nullable upper bound" |
+| DE3 | Every read of the preference delegate hits disk | `SharedPreferences` reads an in-memory map after the first load | Approve | AOSP `SharedPreferencesImpl.getString`: `awaitLoadedLocked()` then `mMap.get(key)` |
+| DE4 | `rememberSaveable` restores through `SavedStateHandle` | It uses the saved-instance-state registry; `SavedStateHandle` is separate | Approve | Compose state-saving docs |
+| DE5 | Reentrant `lazy` access throws `ConcurrentModificationException` | It recurses until `StackOverflowError` | Approve | Run: two lazies reading each other give `StackOverflowError` |
+| DE6 | `Delegates.notNull` throws `UninitializedPropertyAccessException` | It throws `IllegalStateException` | Approve | Run: `IllegalStateException: Property later should be initialized before get.` |
+| DE7 | Answer Key: every read is a synchronous disk read | Same as DE3 | Approve | Same |
+| DE8 | Review checklist: a preference delegate reads disk every time | Same as DE3 | Approve | Same |
+| DE9 | `override fun flush() = file.flush()` on a `java.io.File` | `File` has no `flush()`; the example does not compile | Approve | `java.io.File` API |
+| DE10 | "use Hilt's `by hiltViewModel()`" | `hiltViewModel()` is a Composable function, not a delegate | Approve | Android Hilt-Jetpack docs |
+
+**Summary:** 10 approve, 0 approve with edit, 0 reject.
+
+## Generics — 17 proposed
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| GE1 | `validate` compares `value > "minimum"` | Does not compile: `T` is expected, `String` given | Approve | Compiler: "argument type mismatch: actual type is 'String'" |
+| GE2 | `listOf("a","b")::class.java` prints `EmptyList` | Both print `java.util.Arrays$ArrayList` | Approve | Run: `class java.util.Arrays$ArrayList` twice |
+| GE3 | `(Animal) -> Number` works as `(Dog) -> Int` | Backwards for the return type: `(Animal) -> Int` works as `(Dog) -> Number` | Approve | Compiler rejects the original assignment |
+| GE4 | `fun consume(@UnsafeVariance item: T)` | The annotation targets the type: `item: @UnsafeVariance T` | Approve | Compiler: "not applicable to target 'value parameter'"; corrected form compiles |
+| GE5 | Heading: why `List<Dog>` isn't `List<Animal>` | Kotlin's `List` is covariant, so it is; `MutableList` is the invariant one | Approve | Kotlin generics docs |
+| GE6 | Misconception: `List<Dog>` is not a `List<Animal>` | Same | Approve | Same |
+| GE7 | `<T : Any?>` vs `<T>`: "false in practice" | They are the same; the original switches to `<T : Any>` midway | Approve | Kotlin generics docs |
+| GE8 | `List<*>` is read-only, `List<Any?>` accepts any input | Neither read-only `List` can add; the difference is for `MutableList` | Approve | Same |
+| GE9 | Generics have zero runtime cost on the JVM | No code bloat, but primitives are boxed and casts are inserted | Approve with edit | Same |
+| GE10 | Fix for "cannot instantiate `T()`": pass a `Class<T>` or use `reified` | The original fix (reflection through a class token) is valid | Reject | — |
+| GE11 | Dagger sees raw `Repo`, not `Repo<User>` | Dagger keys are full Java types, including type arguments; Kotlin wildcards are the usual mismatch | Approve | Dagger semantics: a key is "a pair of a Java type and an optional qualifier", with `Map<Integer, String>` as an example |
+| GE12 | Question with the same premise | Same | Approve | Same |
+| GE13 | Answer with the same premise | Same | Approve | Same |
+| GE14 | Generic type unstable: annotate it `@Immutable` | A promise, not a fix; strong skipping changes the picture | Approve | Same as D10–D13 |
+| GE15 | Answer: annotate `T`'s class `@Immutable` / `@Stable` | Same | Approve | Same |
+| GE16 | `registry[…] as T ?: error(…)` | The cast runs first, so a miss throws before the error message | Approve | Run: `NullPointerException: null cannot be cast to non-null type Service`; compiler warns the Elvis is unreachable |
+| GE17 | Even `reified` cannot give `List<User>` at runtime | `typeOf<T>()` can; only `T::class.java` cannot | Approve | Earlier run: `typeOf` gives `List<User>` |
+
+**Amended text**
+
+- **GE9:** "**"Generics make the app larger or slower."** Mostly false on the JVM: erasure means one class serves every type argument, so there is no code bloat (unlike C++ templates). It is not completely free: primitive type arguments are boxed (`List<Int>` holds `Integer` objects) and the compiler inserts casts."
+
+**Summary:** 15 approve, 1 approve with edit, 1 reject.
+
+## Variance — 10 proposed
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| VR1 | `val g: (Dog) -> Int = f` where `f: (Animal) -> Number` is legal | Rejected by the compiler | Approve | Compiler: "expected '(Dog) -> Int', actual '(Animal) -> Number'" |
+| VR2 | Returned `List<out T>` appears in Java as `List<? extends T>` | Kotlin omits wildcards on return types | Approve | `javap`: return `List<Animal>`, parameter `List<? extends Animal>` |
+| VR3 | Question: `MutableList<out E>` is impossible | Only as a declaration; as a use-site projection it is valid | Approve | Run: a `MutableList<out Animal>` reference works and can `clear()` |
+| VR4 | Answer with the same premise | Same | Approve | Same |
+| VR5 | Review checklist: `MutableSomething<out T>` is structurally impossible | Same | Approve | Same |
+| VR6 | `LiveData` is invariant because `MutableLiveData` writes | `LiveData` is a Java class, so it has no declaration-site variance; `List`/`MutableList` show a mutable subtype does not force invariance | Approve | Kotlin generics docs; LiveData reference |
+| VR7 | Answer with the same reason | Same | Approve | Same |
+| VR8 | `MutableList<out Animal>` is read-only; `MutableList<in Animal>` is write-only | `clear()` still works on `out`; `in` can still be read, as `Any?` | Approve | Run: both observed |
+| VR9 | A subclass cannot widen variance | The real rule is about type positions | Approve | Compiler: "'T' is declared as 'out' but occurs in 'invariant' position" for `class C<out T> : Box<T>`; `class Child<T> : Producer<T>` compiles |
+| VR10 | Answer with the same rule | Same | Approve | Same |
+
+**Summary:** 10 approve, 0 approve with edit, 0 reject.
+
+## Inline Functions — 15 proposed
+
+The `doMath { x, y -> x + y }` example passes a non-capturing lambda. On Kotlin 2.x it compiles to `invokedynamic` and the same object is reused on every call. The chapter's "new object per call → GC churn → jank" story does not hold for it.
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| IN1 | Every lambda allocates a new object on each execution; 60 a second freezes the UI | Non-capturing lambdas are reused; `filter` is already inline | Approve | `javap`: `invokedynamic` for the example; earlier run: non-capturing lambda is the same object |
+| IN2 | "If you decompile … you will see" an anonymous class | That is old class-based output, not current | Approve | Same; Kotlin 2.0 release notes |
+| IN3 | Label: "Decompiled Java (No Inline)" | Same | Approve | Same |
+| IN4 | Comment: "The JVM instantiated a hidden object!" | Same | Approve | Same |
+| IN5 | `calculate()` allocates a `Function2` on every call | Same | Approve | Same |
+| IN6 | `new` + `dup` + `invokespecial` every invocation → jank | Not produced by this example | Approve | Same |
+| IN7 | 8,000 stack operations vs 1,000 heap allocations | Invented counts | Approve | Same |
+| IN8 | Without inlining, a `filter.map.sortedBy` chain would hit out-of-memory | Unsupported; inlining also does not remove the intermediate lists | Approve | Kotlin inline functions docs |
+| IN9 | Inline functions cannot access `private` members | Only public-API inline functions; a private inline function can | Approve | Compiler: private inline reading a private field compiles; public inline calling a private function fails with "public-API inline function cannot access non-public-API function" |
+| IN10 | Reject inline functions over 3–4 lines; they cause severe instruction-cache misses | No basis for a line threshold or the cache claim | Approve | Kotlin inline functions docs |
+| IN11 | 50 lines in `.let { }` makes the caller's bytecode massive | Code at one call site is not duplicated by `let` | Approve | Same |
+| IN12 | Answer Key: a new `Function` object per call | Same as IN1 | Approve | Same as IN1 |
+| IN13 | Answer Key: without inlining, chains would crash with OOM | Same as IN8 | Approve | Same as IN8 |
+| IN14 | Question: why can't inline functions access `private` members? | Same as IN9 | Approve | Same as IN9 |
+| IN15 | Answer with the same premise | Same as IN9 | Approve | Same as IN9 |
+
+**Summary:** 15 approve, 0 approve with edit, 0 reject.
+
+## Reified Types — 7 proposed
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| RE1 | A reified type parameter "remains a real, queryable class at runtime" | The type is substituted at each call site; `T::class` has no type arguments, `typeOf<T>()` does | Approve | Earlier run: `T::class.java` gives `java.util.List`, `typeOf` gives `List<User>` |
+| RE2 | "The function doesn't exist at runtime; only its specialised copies do" | The method is still emitted alongside the inlined copies | Approve | `javap`: `public static final <T> boolean isType(Object)` present |
+| RE3 | Why `reified` needs `inline`: one shared body cannot keep `T` | The original explains Kotlin's mechanism correctly | Reject | — |
+| RE4 | Question: why is `reified` "mathematically impossible" without `inline`? | "Mathematically impossible" overstates it; other languages pass type information at runtime | Approve with edit | — |
+| RE5 | Answer to the same question | The answer is right; only the question line needs the same fix | Approve with edit | — |
+| RE6 | Reified wrappers pass `T::class.java` to a private non-inline worker | A public inline function cannot call a private worker | Approve | Compiler: "public-API inline function cannot access non-public-API function" |
+| RE7 | A class "lives on the heap", so it cannot be reified | Mixes up class definitions and instances; the rule is that only inline functions may declare `reified` | Approve | Kotlin inline functions docs |
+
+**Amended text**
+
+- **RE4:** "2. Why does Kotlin allow `reified` only on `inline` functions?"
+- **RE5:** Replace only the question line with "2. **Why does Kotlin allow `reified` only on `inline` functions?**" and keep the original answer.
+
+**Summary:** 4 approve, 2 approve with edit, 1 reject.
