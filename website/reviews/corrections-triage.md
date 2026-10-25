@@ -280,3 +280,179 @@ The `doMath { x, y -> x + y }` example passes a non-capturing lambda. On Kotlin 
 - **RE5:** Replace only the question line with "2. **Why does Kotlin allow `reified` only on `inline` functions?**" and keep the original answer.
 
 **Summary:** 4 approve, 2 approve with edit, 1 reject.
+
+## Coroutines — 63 proposed
+
+Most rejections here are hedges on statements that are correct as taught: "lightweight thread", "parallel" for overlapping `async` work, "fire-and-forget", strong review rules such as "never `GlobalScope`". The approved rows are where the original is actually wrong or its example fails.
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| C1 | Tens of thousands of coroutines share a few threads | Correct; the Kotlin docs show 50,000 | Reject | — |
+| C2 | Heavy work on Main freezes the app; UI updates off Main crash | Correct simplification for the opening problem | Reject | — |
+| C3 | Every `suspend` function becomes a state machine | A function whose only suspend call is a tail call gets none | Approve | `javap`: `twoPoints` has a continuation class, `tailOnly` has none |
+| C4 | Pseudocode `return api.fetchUser(sm)` | Loses the path where the call completes without suspending (`COROUTINE_SUSPENDED` check) | Approve | Kotlin spec, coroutines chapter |
+| C5 | At suspension the function returns and the thread is freed | Correct | Reject | — |
+| C6 | One app can have 50,000 coroutines in flight | Correct | Reject | — |
+| C7 | A dispatcher decides which thread pool runs the coroutine | Simplification; "#1 cause" is rhetoric | Reject | — |
+| C8 | `IO`: elastic pool, default 64 threads | Correct on Android (max(64, cores)) | Reject | — |
+| C9 | `Default`: fixed pool = number of cores | At least two threads | Approve | `Dispatchers.Default` API docs |
+| C10 | `Unconfined`: whatever thread resumed you | Correct after the first suspension | Reject | — |
+| C11 | `Main.immediate` skips dispatch when already on Main | Correct | Reject | — |
+| C12 | 10 API calls of 500 ms on `Default` vs `IO` | Holds only if the calls *block*; suspending calls would not occupy threads | Approve | Same reasoning as the chapter's dispatcher section |
+| C13 | All 10 run on the IO pool concurrently | Correct once C12 says "blocking" | Reject | — |
+| C14 | "Batched 4 × 4 × 2 = 3 batches" | The arithmetic is wrong: ceil(10 / 4) = 3 | Approve | Arithmetic |
+| C15 | ~1800 ms total, 2.25× slower | Correct for the model | Reject | — |
+| C16 | While IO threads wait, "the OS can schedule something else on the same physical thread" | It is the CPU core that gets reused, not the thread | Approve | `Dispatchers.IO` API docs |
+| C17 | A main-safe repository does its own `withContext(IO)` | Fine for the blocking example shown | Reject | — |
+| C18 | Calls the hard-coded `Dispatchers.IO` example "Dispatcher injection" | Hard-coding is not injection | Approve with edit | — |
+| C19 | `launch` result: none (fire-and-forget) | Standard wording | Reject | — |
+| C20 | `async` failure propagates to the parent and is held for `await()` | Correct | Reject | — |
+| C21 | `async` comment: "starts in parallel" | Standard wording | Reject | — |
+| C22 | "Parallel decomposition" | Standard wording | Reject | — |
+| C23 | Await-only failures only for top-level or supervised `async` | Correct | Reject | — |
+| C24 | `Repo` scope built on `Job()` | After one failed save, the scope is cancelled and every later save silently never runs | Approve with edit | Run: second `launch` is cancelled and the scope is inactive |
+| C25 | `scope.cancel()`: every coroutine inside dies | Simplification; the cancellation section explains cooperation | Reject | — |
+| C26 | Table: `GlobalScope` has a `Job` | It has no Job (empty context) | Approve | `GlobalScope` API docs |
+| C27 | `GlobalScope` is reserved for internals and tests | It is a delicate API with rare legitimate uses, not internal | Approve | Same |
+| C28 | Cancelling a parent cancels children; siblings unaffected | Correct | Reject | — |
+| C29 | Table: `viewModelScope.launch` "inherits `SupervisorJob`" | Each launch gets an ordinary `Job` whose parent is the supervisor | Approve | Kotlin exception-handling docs |
+| C30 | `supervisorScope` example: if one fails, the others keep running | True, but the uncaught failure still crashes an Android app; the example needs local catches | Approve | Kotlin exception-handling docs |
+| C31 | `SupervisorJob` is `Job` except siblings are not cancelled | Correct; C30 carries the caveat | Reject | — |
+| C32 | kotlinx.coroutines suspend functions check for cancellation | Correct | Reject | — |
+| C33 | `yield()` suspends briefly and checks cancellation | Close enough for the example | Reject | — |
+| C34 | Suspending calls in `finally` fail immediately | Correct | Reject | Run: `delay` in `finally` threw at once |
+| C35 | `NonCancellable` block "actually completes" | Correct | Reject | Run: the save completed |
+| C36 | Adds a paragraph after the cleanup example | Addition, not a correction | Reject | — |
+| C37 | Swallowing `CancellationException` makes a zombie that keeps running | It continues only to the next suspension point, which throws again | Approve | Run: code after the catch ran, then the next `delay` threw; job completed |
+| C38 | Exception handler fires only at the top level, not for `async` | Correct for the standard case | Reject | — |
+| C39 | `launchWhenStarted` only pauses | Correct | Reject | — |
+| C40 | `runTest` builds a `ViewModel` without replacing `Dispatchers.Main`; passes `dispatcher =` | `viewModelScope` needs `Dispatchers.setMain` in JVM tests; the parameter is named `ioDispatcher` | Approve with edit | Android coroutine testing docs |
+| C41 | "Inject a dispatcher into your ViewModel/repo" | Fine once C40 replaces Main | Reject | — |
+| C42 | `CartViewModel` with an injected `ioDispatcher` | Valid design | Reject | — |
+| C43 | Failure mode: `async { throw }` without `await` is swallowed | Under an ordinary parent it cancels the parent, as the chapter itself explains | Approve | Same as C20 |
+| C44 | Real `Dispatchers.IO` in a test hangs forever | It runs in real time; `runTest` times out rather than hanging | Approve | Android coroutine testing docs |
+| C45 | Network on Main because the repository did not switch | Fine for blocking clients | Reject | — |
+| C46 | 200 ms JSON parse on `Dispatchers.IO` freezes the UI | Work on `IO` cannot freeze the main thread | Approve | Dispatcher model |
+| C47 | Two `async`s started before `await` run in parallel | Standard wording | Reject | — |
+| C48 | `runBlocking` in production is always wrong | Review rule, not a factual claim | Reject | — |
+| C49 | "9 times out of 10" a generic catch swallows cancellation | Rhetoric | Reject | — |
+| C50 | `GlobalScope.launch` is always wrong unless a daemon | Review rule | Reject | — |
+| C51 | Link text says `android/concurrency/structured-concurrency.md` | The file is `android/architecture/structured-concurrency.md` | Approve | File system |
+| C52 | `delay` returns the thread to the pool | Close enough | Reject | — |
+| C53 | Answer Key: state machine description | Close enough; C4 fixes the pseudocode | Reject | — |
+| C54 | Answer Key: the swallowed-cancellation zombie | Same as C37 | Approve | Same as C37 |
+| C55 | A pure CPU loop never checks cancellation | Correct | Reject | — |
+| C56 | Answer Key: blocking calls "monopolize the 4 cores while waiting" | They occupy threads, not cores | Approve with edit | Same as C16 |
+| C57 | `supervisorScope`: second launch completes although the first crashed | Correct | Reject | — |
+| C58 | Suspending calls in `finally` throw; fix with `NonCancellable` | Correct | Reject | Same as C34 |
+| C59 | `Default` pool equals core count | At least two | Approve | Same as C9 |
+| C60 | Use `lifecycleScope` for work that must stop when the view dies | In a Fragment, use `viewLifecycleOwner.lifecycleScope`; the Fragment outlives its view | Approve | Android lifecycle-aware coroutines docs |
+| C61 | `yield()` suspends briefly | Same as C33 | Reject | — |
+| C62 | Never use `runBlocking` in production Android code | Review rule | Reject | — |
+| C63 | `Main`: never block; only quick work | That is the instruction, correctly given | Reject | — |
+
+**Amended text**
+
+- **C18:** "Now no caller anywhere thinks about threading. The repository owns its own main-safety. In practice you also **inject** the `CoroutineDispatcher` instead of referencing `Dispatchers.IO` directly, so tests can substitute a `TestDispatcher`."
+- **C24:** Keep the example; change only the scope line to `private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)  // one failed save must not cancel every later save`.
+- **C40:**
+  ```kotlin
+  @get:Rule
+  val mainDispatcherRule = MainDispatcherRule()   // replaces Dispatchers.Main; see the Test Dispatchers chapter
+
+  @Test
+  fun cartCheckout() = runTest {
+      val viewModel = CartViewModel(repo, ioDispatcher = StandardTestDispatcher(testScheduler))
+      viewModel.checkout()
+      advanceUntilIdle()      // run all pending coroutines without real waiting
+      assertEquals(Success, viewModel.state.value)
+  }
+  ```
+- **C56:** "so it allows up to 64 threads. If you run 10 blocking calls on `Default`, they occupy all 4 `Default` threads while waiting, delaying the 10 CPU tasks: ~1800 ms. On `IO`, all 10 wait concurrently, leaving `Default` free for CPU work: ~800 ms."
+
+**Summary:** 18 approve, 4 approve with edit, 41 reject.
+
+## Channels and Select — 8 proposed
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| CH1 | `send` suspends when the channel cannot accept; `receive` when empty | Correct for the default channels taught here | Reject | — |
+| CH2 | Closing means no more sends; receivers drain the buffer | Correct | Reject | — |
+| CH3 | Rendezvous is right when every frame must be processed | Adds lifecycle guidance; the original is not wrong | Reject | — |
+| CH4 | `CartActor` completes `replyTo` with `checkout.submit(items)` | If `submit` throws, the actor's loop dies and every `checkout()` caller waits forever | Approve with edit | Run: after one `IOException`, both calls still waiting after 500 ms; with the edit, the first fails and the second succeeds |
+| CH5 | Actor is right when serialized mutation is central | Goes with Codex's larger rewrite of CH4, which the smaller edit makes unnecessary | Reject | — |
+| CH6 | Worker loop: `runCatching { upload(work) }` | Catches `CancellationException`, so the worker cannot be cancelled cleanly | Approve | Same as N4 |
+| CH7 | Test: `advanceUntilIdle()` then assert both items processed | `advanceUntilIdle` does not run `backgroundScope` work; the list is empty | Approve | Run: `[]` after `advanceUntilIdle`, `[1, 2]` after `runCurrent` |
+| CH8 | Use `receiveCatching` for public channels | Addition | Reject | — |
+
+**Amended text**
+
+- **CH4:** Keep the actor; replace only the `Checkout` branch:
+  ```kotlin
+  is CartCommand.Checkout -> try {
+      command.replyTo.complete(checkout.submit(items))
+  } catch (e: Throwable) {
+      command.replyTo.completeExceptionally(e)   // the caller sees the failure instead of waiting forever
+      if (e is CancellationException) throw e
+  }
+  ```
+
+**Summary:** 2 approve, 1 approve with edit, 5 reject.
+
+## Flow Operators and Backpressure — 9 proposed
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| FL1 | Everything above `flowOn` runs on `Default` | Correct for the pipeline shown | Reject | — |
+| FL2 | Each `flowOn` creates a concurrency boundary | Only when the dispatcher changes; adjacent operators fuse | Approve | `flowOn` API docs |
+| FL3 | `buffer(n)` lets upstream run ahead by n values | Close enough | Reject | — |
+| FL4 | `combine` emits whenever any upstream emits | Close enough for teaching | Reject | — |
+| FL5 | `sample` emits the latest value at a fixed period | Close enough | Reject | — |
+| FL6 | `collect` never returns for hot flows | True for `StateFlow`/`SharedFlow`, the hot flows the chapter means | Reject | — |
+| FL7 | `first`: hangs if no value arrives | A completing flow without a match throws `NoSuchElementException` | Approve | `first` API docs |
+| FL8 | `toList` never returns for hot flows | Same as FL6 | Reject | — |
+| FL9 | Search pipeline summary | Addition about `WhileSubscribed` | Reject | — |
+
+**Summary:** 2 approve, 0 approve with edit, 7 reject.
+
+## callbackFlow and Bridging Callbacks — 7 proposed
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| CA1 | `locations.collect { … }` twice in a row: "two collectors" | The first `collect` never returns, so the second never starts | Approve | `callbackFlow` API docs |
+| CA2 | "Collection owns registration. Cancellation owns cleanup." | Addition about thread contracts | Reject | — |
+| CA3 | `channelFlow` is "colder" than `callbackFlow` | Both are cold; there is no "colder" | Approve | `channelFlow` API docs |
+| CA4 | `getDefaultSensor(…)` used directly | Returns null on devices without the sensor; the flow then waits forever | Approve | `SensorManager.getDefaultSensor` reference |
+| CA5 | `registerListener(…)` result ignored | Returns false on failure; same silent wait | Approve | `SensorManager.registerListener` reference |
+| CA6 | Test emits, then `advanceUntilIdle()`, expects one listener | Collection in `backgroundScope` has not started, so the listener count is 0 and the test fails | Approve | Run: `listeners=0 values=[]`; Codex's version gives `listeners=1`, `values=[test]`, then 0 after cancel |
+| CA7 | `EditText` callback flow without `flowOn(Main.immediate)` | Collected from the UI, it already runs on Main | Reject | — |
+
+**Summary:** 5 approve, 0 approve with edit, 2 reject.
+
+## Coroutines Debugging and Profiling — 7 proposed
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| CO1 | Job states include "suspended" | Not a Job state; a suspended coroutine's Job is active | Approve | `Job` API docs: New, Active, Completing, Cancelling, Cancelled, Completed |
+| CO2 | Swallowed cancellation means child work "may have skipped cleanup" | `finally` still runs, and the Job stays cancelled | Approve | Run (C37): code continued, the next suspension threw, `finally` ran |
+| CO3 | "The JVM debug agent" enriches thread names | That is the `kotlinx.coroutines.debug` property (debug mode), not the `DebugProbes` agent | Approve | Kotlin coroutine context and dispatchers docs, debugging section |
+| CO4 | Thread-name debugging is most useful in local tests | Addition | Reject | — |
+| CO5 | Use `NonCancellable` sparingly and bounded | Addition | Reject | — |
+| CO6 | Cancellation test: `dispatcher = testDispatcher`, then asserts `refreshStarted` right away | `testDispatcher` is never defined, `Main` is not replaced, and queued work has not started when it asserts | Approve | Same pattern as CA6: `StandardTestDispatcher` work waits for `runCurrent()` |
+| CO7 | Closing sentence | Addition | Reject | — |
+
+**Summary:** 4 approve, 0 approve with edit, 3 reject.
+
+## Test Dispatchers and Virtual Time — 7 proposed
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| TE1 | `UnconfinedTestDispatcher` starts work eagerly until the first suspension | Correct | Reject | — |
+| TE2 | `backgroundScope` is cancelled when `runTest` ends | Correct | Reject | — |
+| TE3 | Manual hot-flow test with an unconfined collector, then `advanceUntilIdle()` | Correct: the collector is unconfined and the ViewModel work is not background | Reject | — |
+| TE4 | `flatMapLatest` cancellation test | Emits before the background collector subscribes, and `advanceUntilIdle()` never runs it; no query is cancelled | Approve | Run: `cancelled=[]` with both a `SharedFlow` and a `StateFlow` (test expects `[old]`) |
+| TE5 | Collecting a `StateFlow` in the test "hangs" | `runTest` fails at its timeout rather than hanging forever | Approve | Same as C44 |
+| TE6 | Virtual time advances "when the test tells it to" | Also advances automatically when the test is idle; minor | Reject | — |
+| TE7 | Pass the scheduler explicitly when schedulers differ | Correct advice | Reject | — |
+
+**Summary:** 2 approve, 0 approve with edit, 5 reject.
