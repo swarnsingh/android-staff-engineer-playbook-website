@@ -1,0 +1,41 @@
+<!-- Website teaching layer for android/compose/compose-accessibility.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (Accessibility in Compose; Semantics; merging and clearing) on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A TalkBack user opens an inbox. Each email takes three swipes: "Unlabeled image", then the sender, then the subject, and none of them says it can be opened. Double-tapping the subject does nothing, because the click handler is on the row, not the text. The screen looks finished; to this user it does not work.</p>
+
+Accessibility services do not see pixels or composables. They see the **semantics tree**: what each element is, what state it has and what it can do. Compose builds a good tree for built-in components, and custom components must describe themselves. This chapter covers labels, merging, state and errors, traversal, large text, touch targets, and how to test all of them.
+
+<!-- @after Accessibility Model :: visual -->
+### Two trees for one screen
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Composition (what draws)</span><div class="node"><strong><code>Row</code> (clickable)</strong></div><div class="node"><strong><code>Icon</code></strong><small>decorative</small></div><div class="node"><strong><code>Text</code> sender</strong></div><div class="node"><strong><code>Text</code> subject</strong></div></div><div class="col"><span class="col-title">Semantics (what is announced)</span><div class="node is-key"><strong>One merged node</strong><small>"Asha · Lunch on Friday?" · role Button · click action</small></div><div class="node" data-state="ghost"><strong>Icon</strong><small>hidden: <code>contentDescription = null</code></small></div></div></div><figcaption>Merging turns several drawn children into one thing a user can find, understand and activate.</figcaption></figure>
+
+<!-- @after Merging Semantics :: animation -->
+### Swipe through one email row, before and after
+
+<figure class="stepper"><span class="stepper-title">What TalkBack focuses and says</span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">Unmerged row</span><div class="node" data-el="u1"><strong>Stop 1</strong><small>"Unlabeled image"</small></div><div class="node" data-el="u2"><strong>Stop 2</strong><small>"Asha"</small></div><div class="node" data-el="u3"><strong>Stop 3</strong><small>"Lunch on Friday?"</small></div><div class="node" data-el="u4"><strong>Double-tap</strong><small>nothing: the text has no action</small></div></div><div class="col"><span class="col-title">Merged row</span><div class="node" data-el="m1"><strong>Stop 1</strong><small>"Asha, Lunch on Friday?, Button"</small></div><div class="node" data-el="m2"><strong>Double-tap</strong><small>opens the message</small></div></div></div><script type="application/json" class="steps">[
+{"label":"First swipe","caption":"Unmerged, focus lands on an icon with no description, so TalkBack can only say it is an image. Merged, the whole row is one stop that reads both texts and its role.","add":["u1","m1"],"state":{"u1":"error","m1":"done"}},
+{"label":"Keep swiping","caption":"Unmerged, the sender and subject are separate stops, with nothing telling the user they belong together or are actionable.","add":["u2","u3"],"state":{"u2":"warn","u3":"warn"}},
+{"label":"Try to open","caption":"Double-tap activates the focused element. Unmerged, that is the subject Text, which has no click action. Merged, the row's click action belongs to the focused node.","add":["u4","m2"],"state":{"u4":"error","m2":"done"}},
+{"label":"The fix","caption":"Set the icon's contentDescription to null and merge the row's descendants with a Button role. Three silent stops become one clear, actionable element.","state":{"u1":"ghost","u2":"ghost","u3":"ghost","u4":"ghost"}}
+]</script><figcaption>Merge when children form one logical control; keep them separate when each child has its own action.</figcaption></figure>
+
+<!-- @after Production Failure Modes :: check -->
+**What does the user hear?** Decide before opening each answer.
+
+<details><summary>An <code>IconButton</code> with <code>Icon(Icons.Default.Close, contentDescription = null)</code>.</summary>
+
+"Button", with no name: the only content was hidden. Give the icon a purpose-based description such as "Close".
+</details>
+
+<details><summary>A donut chart drawn on a <code>Canvas</code> with no semantics.</summary>
+
+Nothing at all. Add `clearAndSetSemantics` with a description and progress information that carries the same meaning.
+</details>
+
+<details><summary>A text field shows red error text below it, with no semantics change.</summary>
+
+The error may be read as a separate text, unconnected to the field. Mark the field with `isError` and set its `error(…)` semantics so the problem is announced with the field.
+</details>

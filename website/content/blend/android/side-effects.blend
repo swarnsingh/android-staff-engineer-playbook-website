@@ -1,0 +1,50 @@
+<!-- Website teaching layer for android/compose/side-effects.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Effect semantics per developer.android.com "Side-effects in Compose". The smart-cast finding was compiled
+     with Kotlin 2.4.21: "smart cast to 'String' is impossible, because 'errorMessage' is a delegated property". 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">The analytics dashboard says users open the profile screen eleven times per visit. Product is delighted; engineering is suspicious. The tracking call sits directly in the composable body, and every recomposition (a loading flag, an image arriving, a theme change) sends another "Profile Opened".</p>
+
+A composable body may run many times, be skipped, or be abandoned, so anything that touches the world outside it needs an owner that defines **when it starts, when it restarts, and when it is cleaned up**. Compose's effect APIs provide exactly those owners, tied to a position in the composition. This chapter picks the right one for each job and shows how keys decide restarts.
+
+<!-- @after The Toolbelt (Mental Models) :: visual -->
+### Pick the effect by what starts the work
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>Entering, or a key changing</strong><small><code>LaunchedEffect(key)</code>: a coroutine per key, cancelled when it leaves</small></div><div class="node" data-state="done"><strong>A user action</strong><small><code>rememberCoroutineScope()</code>: launch from the click handler</small></div><div class="node" data-state="done"><strong>A register/unregister pair</strong><small><code>DisposableEffect(key)</code>: setup, then <code>onDispose</code></small></div><div class="node" data-state="done"><strong>Every successful recomposition</strong><small><code>SideEffect</code>: publish state to non-Compose code</small></div></div><figcaption>Business operations belong to a state owner; these effects are for work whose lifetime is the UI's.</figcaption></figure>
+
+<!-- @after Internal Mechanics :: animation -->
+### Follow one <code>LaunchedEffect(userId)</code>
+
+<figure class="stepper"><span class="stepper-title">Keys decide when the coroutine restarts</span><div class="stage viz-stack"><div class="viz-grid" style="--cols:2"><div class="node" data-el="screen"><strong><code>ProfileScreen</code></strong><small data-text="screenV">—</small></div><div class="node" data-el="job"><strong>Effect coroutine</strong><small data-text="jobV">—</small></div></div><div class="node is-key" data-el="why"><strong>Why</strong><small data-text="whyV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Enter","caption":"The effect enters the composition with key \"A\". Compose launches its block in a coroutine scoped to that position.","add":["screen","job","why"],"state":{"screen":"done","job":"active"},"text":{"screenV":"userId = \"A\"","jobV":"loading A","whyV":"effect entered"}},
+{"label":"Recompose, same key","caption":"A loading flag changes and ProfileScreen recomposes. The key is still \"A\", so the running coroutine is left alone. This is what the inline analytics call lacked.","state":{"screen":"warn"},"text":{"screenV":"recomposed (spinner changed)","whyV":"key unchanged → keep the job"}},
+{"label":"Key changes","caption":"The user opens the next profile. The key \"B\" differs from \"A\": Compose cancels the old job (cooperatively) and launches the block again.","state":{"screen":"done","job":"warn"},"text":{"screenV":"userId = \"B\"","jobV":"A cancelled → loading B","whyV":"key changed → restart"}},
+{"label":"Leave","caption":"Navigating away removes the effect from the composition, and its job is cancelled. Nothing is left running for a screen that is gone.","state":{"screen":"ghost","job":"ghost"},"text":{"screenV":"left the composition","jobV":"cancelled","whyV":"effect left"}}
+]</script><figcaption>Choose keys for "when should this work restart?" Use <code>rememberUpdatedState</code> for values that should stay current without a restart.</figcaption></figure>
+
+<!-- @diagram 03ceefc33d2b36f2 -->
+### Two ways a coroutine starts from the UI
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Composition-driven</span><div class="node"><strong>Screen enters</strong></div><div class="node is-key"><strong><code>LaunchedEffect</code> launches a job</strong></div><div class="node" data-state="warn"><strong>Screen leaves → job cancelled</strong></div></div><div class="col"><span class="col-title">Event-driven</span><div class="node"><strong>Button <code>onClick</code></strong></div><div class="node is-key"><strong><code>rememberCoroutineScope().launch { }</code></strong></div><div class="node" data-state="warn"><strong>Scope's call leaves → its jobs cancelled</strong></div></div></div><figcaption>Both scopes end with the composition; they differ in what starts the work.</figcaption></figure>
+
+<!-- @before Production Example :: review -->
+The Snackbar example in the next section is under technical review: it calls `showSnackbar(message = errorMessage)` after `if (errorMessage != null)`, but `errorMessage` is a delegated local (`by collectAsStateWithLifecycle()`), and Kotlin does not smart-cast delegated properties. Compiled with Kotlin 2.4.21: "smart cast to 'String' is impossible, because 'errorMessage' is a delegated property".
+
+<!-- @after Failure Modes :: check -->
+**Which effect?** Decide before opening each answer.
+
+<details><summary>Register a <code>SensorEventListener</code> while a compass screen is shown.</summary>
+
+`DisposableEffect(sensorManager)`: register in the block and unregister the same listener in `onDispose`.
+</details>
+
+<details><summary>Show "Saved" in a snackbar when the user taps Save.</summary>
+
+`rememberCoroutineScope()`, then `scope.launch { snackbarHostState.showSnackbar("Saved") }` in the click handler.
+</details>
+
+<details><summary>Run a search whenever the query changes, cancelling the previous one.</summary>
+
+`LaunchedEffect(query) { … }` restarts per query, or better, send queries to the ViewModel and use `mapLatest`/`flatMapLatest` there, so the search survives recreation.
+</details>

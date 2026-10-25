@@ -16,7 +16,7 @@ MD = MarkdownIt('commonmark', {'html': True}).enable(['table', 'strikethrough'])
 # renders (None renders the whole tree); chapters outside them keep linking to GitHub.
 TREES = {
     'kotlin': {'title': 'Kotlin', 'phases': None},
-    'android': {'title': 'Android', 'phases': [1, 2]},
+    'android': {'title': 'Android', 'phases': [1, 2, 3]},
 }
 
 
@@ -420,7 +420,20 @@ INTRO = {
 'android/data-and-di/dependency-injection.md':'Classes that build their own collaborators are slow to test and share nothing by accident or by design. Learn how dependency injection and Hilt decide how each dependency is built, shared and released.',
 'android/data-and-di/components.md':'A Hilt scope is a promise about which container holds an instance, and each container lives for one Android lifetime. Map the standard components to those lifetimes and learn how a request finds its binding.',
 'android/data-and-di/scopes.md':'A singleton says nothing about when its background work stops. Separate Hilt scopes, which decide how many instances exist, from coroutine scopes, which decide when work is cancelled.',
-'android/data-and-di/hilt-vs-koin-vs-manual-di.md':'Every app does dependency injection; the choice is when the graph is checked, what it costs to build and where it can run. Compare manual DI, Hilt and Koin on those trade-offs.'}
+'android/data-and-di/hilt-vs-koin-vs-manual-di.md':'Every app does dependency injection; the choice is when the graph is checked, what it costs to build and where it can run. Compare manual DI, Hilt and Koin on those trade-offs.',
+'android/compose/compose-runtime.md':'Compose has no virtual DOM to diff. Follow how the compiler and runtime record what each composable emitted, so you can predict what re-runs after a state change and what is skipped.',
+'android/compose/snapshot-system.md':'Every mutableStateOf keeps versioned records read through snapshots. Learn how Compose tracks reads, publishes several writes at once, and bridges state to coroutines.',
+'android/compose/recomposition-and-state.md':'Nothing redraws because a variable changed; it redraws because observable state that a composable read was written. Build that model, then use it for hoisting, lists and loops.',
+'android/compose/stability.md':'Whether Compose can skip a child depends on how it compares arguments. Learn what is inferred stable, what the annotations promise, and why instance reuse matters under strong skipping.',
+'android/compose/modifiers-and-layout.md':'A Modifier chain is an ordered list of wrappers, not a set of attributes. Read it in the right direction and backgrounds, ripples, clipping and margins all follow from one rule.',
+'android/compose/custom-layout-measurement.md':'A custom layout is a contract: measure each child once, choose a size within the constraints, then place children. Learn when to write one and how to keep each clause.',
+'android/compose/side-effects.md':'A composable may run many times, be skipped or be abandoned. Give every effect on the outside world an owner that defines when it starts, restarts and is cleaned up.',
+'android/compose/compose-navigation.md':'Navigation Compose 2 keeps the back stack inside a controller; Navigation 3 makes it app-owned state. Compare the two lines, choose one, and migrate without breaking deep links or ViewModel lifetimes.',
+'android/compose/adaptive-compose-large-screens.md':'Large screens rarely need different features; they need the same product state in a different arrangement that can change at any moment. Separate state from layout across windows, folds and input modes.',
+'android/compose/form-factors-matrix.md':'Wear OS, TV, cars and widgets each have their own UI toolkit and rules, and only the layers below the UI carry over. Decide which surfaces to build with a cost model, not a wish list.',
+'android/compose/compose-accessibility.md':'Accessibility services see a semantics tree, not pixels. Make every element say what it is, what state it has and what it can do, then test it with real assistive technology.',
+'android/compose/view-interop-and-migration.md':'Most apps move to Compose over years, with Views and Compose embedded in each other. Learn both interop directions, what every seam costs, and a migration order that keeps features shipping.',
+'android/compose/compose-performance-tooling.md':'Compose performance work starts with measurement, not techniques. Reproduce the journey in a release-like build, find the phase that costs time, fix it, and guard it with a benchmark.'}
 
 
 def intro(path):

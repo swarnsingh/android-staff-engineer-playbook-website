@@ -1,0 +1,42 @@
+<!-- Website teaching layer for android/compose/form-factors-matrix.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Uses only the surfaces, toolkits and constraints the chapter cites from developer.android.com. 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A roadmap slide says "Q3: Wear, TV, Auto". Engineering estimates it as three ports of the phone app. Six weeks in, the watch team has rebuilt every screen with different components, the car team learns their category does not allow custom UI while driving, and nobody owns the TV app's focus bugs.</p>
+
+Each Android surface beyond phones and tablets has its **own UI toolkit, interaction model and review rules**, and only the layers below the UI carry over. Whether to build for it is therefore a cost model: which session belongs there, how many of your users can reach it, and who maintains it. This chapter is that model, with a decision sequence you can apply to any "let's be everywhere" proposal.
+
+<!-- @after 1. The Matrix :: visual -->
+### What carries over, and what is new
+
+<figure class="viz"><div class="viz-stack"><div class="viz-grid" style="--cols:4"><div class="node" data-state="warn"><strong>Wear OS UI</strong><small>Compose for Wear components</small></div><div class="node" data-state="warn"><strong>TV UI</strong><small>Compose for TV, focus-first</small></div><div class="node" data-state="warn"><strong>Car UI</strong><small>templates or host-rendered media</small></div><div class="node" data-state="warn"><strong>Widget UI</strong><small>Glance → RemoteViews</small></div></div><div class="down"></div><div class="node is-key" data-state="done"><strong>Shared: domain, data, sync, and for media apps the playback stack</strong><small>the modules that pay for modularization</small></div></div><figcaption>Budget each surface's UI as new code; reuse comes from the layers beneath it.</figcaption></figure>
+
+<!-- @after 3. The Decision Framework :: animation -->
+### Run one proposal through the framework
+
+<figure class="stepper"><span class="stepper-title">"Let's build a full Wear OS app"</span><div class="stage viz-stack"><div class="node" data-el="q1"><strong>1 · A session that belongs on the wrist?</strong><small data-text="q1V">—</small></div><div class="node" data-el="q2"><strong>2 · Reachable users?</strong><small data-text="q2V">—</small></div><div class="node" data-el="q3"><strong>3 · What shares?</strong><small data-text="q3V">—</small></div><div class="node" data-el="q4"><strong>4 · Who owns it after launch?</strong><small data-text="q4V">—</small></div><div class="node is-key" data-el="out"><strong>Outcome</strong><small data-text="outV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Session","caption":"A fitness app: logging a set mid-workout is a moment when the phone is the wrong device. The proposal passes the first gate.","add":["q1"],"state":{"q1":"done"},"text":{"q1V":"yes: workout logging"}},
+{"label":"Denominator","caption":"Instrumentation shows what fraction of active users own a watch. This is the gate most proposals fail; here the overlap is small.","add":["q2"],"state":{"q2":"warn"},"text":{"q2V":"small overlap measured"}},
+{"label":"Sharing","caption":"Domain and sync modules carry over. The UI does not: Wear has its own components and navigation, so every screen is new code.","add":["q3"],"state":{"q3":"warn"},"text":{"q3V":"data yes, UI no"}},
+{"label":"Ownership","caption":"A watch app needs its own test matrix and release train. No team has committed to it.","add":["q4"],"state":{"q4":"error"},"text":{"q4V":"no owner yet"}},
+{"label":"Climb the ladder instead","caption":"Following the leverage sequence, the team ships a Wear tile for the active workout first: high value per engineering hour, little new UI, and a cheap way to measure demand.","add":["out"],"state":{"out":"done"},"text":{"outV":"tile first; full app only if demand appears"}}
+]</script><figcaption>The framework rarely says "never"; it usually says "a smaller surface first".</figcaption></figure>
+
+<!-- @after 4. Review Checklist :: check -->
+**Allowed on that surface?** Decide before opening each answer.
+
+<details><summary>Using phone Material 3 components inside a Wear OS app.</summary>
+
+No. Wear has its own Material implementation, and the documentation warns that mixing in the mobile artifacts can cause unexpected behaviour.
+</details>
+
+<details><summary>A widget with a scrolling, live-updating chat list.</summary>
+
+Not as designed. Glance renders to RemoteViews with explicit, periodic updates: treat a widget as a tap-through projection, not a mini-app.
+</details>
+
+<details><summary>A shopping app's custom browsing UI on Android Auto while driving.</summary>
+
+No. Driving experiences are limited to approved categories and templates; free-form UI is reserved for supported parked categories.
+</details>

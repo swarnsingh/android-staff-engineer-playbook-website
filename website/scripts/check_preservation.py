@@ -178,7 +178,8 @@ def verify(path, panel):
         checked += 1
         if kind == 'heading':
             level = next(heading_levels)
-        if kind == 'heading' and build.clean(unit) == page_title and checked == 1:
+        # Inline code in a title renders with different spacing, so compare without whitespace.
+        if kind == 'heading' and re.sub(r'\s+', '', build.clean(unit)) == re.sub(r'\s+', '', page_title) and checked == 1:
             continue  # the H1 is shown as the page title
         if kind in ('code', 'diagram'):
             found = next((i for i in range(code_index, len(page.codes)) if page.codes[i][0].rstrip('\n') == unit), None)
@@ -223,7 +224,10 @@ def check(path):
     page_file = build.OUT / build.route(path)[len(build.BASE):].strip('/') / 'index.html'
     html = page_file.read_text()
     problems, checked = verify(path, content_panel(html))
-    titles = re.findall(r'<h1\b[^>]*>(.*?)</h1>', html, re.S)
+    # The page title is the hero's H1; an original chapter may contain further H1 headings of its own,
+    # which verify() checks in place like any other heading.
+    hero = re.search(r'<div class="lesson-hero">.*?</h1>', html, re.S)
+    titles = re.findall(r'<h1\b[^>]*>(.*?)</h1>', hero.group(0) if hero else '', re.S)
     if len(titles) != 1 or normalise(titles[0]) != build.title(build.ROOT / path):
         problems.append(('structure', 'heading', 'The original H1 must appear once as the page title'))
     return problems, checked

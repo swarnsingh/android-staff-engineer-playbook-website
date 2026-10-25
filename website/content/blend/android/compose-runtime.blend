@@ -1,0 +1,48 @@
+<!-- Website teaching layer for android/compose/compose-runtime.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Follows the chapter's own conceptual model and the AndroidX design note "How Composition Works";
+     generated code is described conceptually, as the chapter does. Checked 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A search screen has a text field and a list of 500 results. Typing one letter makes the whole screen stutter. A profiler shows the list header being rebuilt on every keystroke, even though nothing in it changed. The engineer asks the obvious question: how does Compose decide what to run again?</p>
+
+Compose has no virtual DOM to diff. Instead, the compiler turns each `@Composable` into code that talks to a runtime `Composer`, which records what was emitted, and where, in a **slot table**. When state changes, only the scopes that read it are invalidated, and everything else can be skipped by jumping over its group. This chapter follows that machinery from the compiler to the UI tree, so you can predict what re-runs, and why.
+
+<!-- @diagram 848679d1d075013c -->
+### Three layers, one loop
+
+<figure class="viz"><div class="viz-stack"><div class="viz-flow"><div class="node"><strong><code>@Composable</code> source</strong></div><div class="node"><strong>Compose compiler plugin</strong><small>adds the composer, change masks and restart scopes</small></div><div class="node is-key"><strong>Composer</strong><small>walks groups; reads and writes the slot table</small></div><div class="node"><strong>Applier</strong><small>mutates the Compose UI node tree</small></div></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="warn"><strong>Observed snapshot state</strong><small>a write invalidates the scopes that read it</small></div><div class="node"><strong>Recomposer</strong><small>re-runs invalidated scopes on the next frame</small></div></div></div><figcaption>The compiler prepares the code once; the runtime loop of invalidate, recompose and apply runs whenever observed state changes.</figcaption></figure>
+
+<!-- @after The Slot Table (Gap Buffer) :: animation -->
+### One state write, followed through the slot table
+
+<figure class="stepper"><span class="stepper-title">Positional memoization at work</span><div class="stage viz-stack"><div class="viz-flow"><div class="node" data-el="screen"><strong><code>SearchScreen</code></strong><small>reads <code>query</code></small></div><div class="node" data-el="header"><strong><code>Header(title)</code></strong><small data-text="headerV">—</small></div><div class="node" data-el="field"><strong><code>SearchField(query)</code></strong><small data-text="fieldV">—</small></div><div class="node" data-el="list"><strong><code>Results(items)</code></strong><small data-text="listV">—</small></div></div><div class="node is-key" data-el="cursor"><strong>Composer</strong><small data-text="cursorV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"First composition","caption":"Each call opens a group at its position and stores its parameters and remembered values in the slot table. The Applier creates the UI nodes.","add":["screen","header","field","list","cursor"],"state":{"screen":"done","header":"done","field":"done","list":"done"},"text":{"headerV":"stored: title = \"Search\"","fieldV":"stored: query = \"\"","listV":"stored: items (500)","cursorV":"writing groups left to right"}},
+{"label":"User types \"k\"","caption":"The write to query's MutableState is observed: SearchScreen read it, so its restart scope is invalidated. Nothing runs yet; the Recomposer schedules work for the next frame.","state":{"screen":"warn","header":"","field":"","list":""},"text":{"cursorV":"invalidated: SearchScreen"}},
+{"label":"Recompose SearchScreen","caption":"The composer re-enters SearchScreen at the same position. Header's argument equals the stored one, so the composer skips its whole group without running its body.","state":{"screen":"active","header":"ghost"},"text":{"headerV":"unchanged → skipToGroupEnd()","cursorV":"comparing stored arguments"}},
+{"label":"Changed and unchanged children","caption":"SearchField's query changed, so its body runs and its slots are updated in place. Results gets the same items instance, so it is skipped too.","state":{"field":"active","list":"ghost"},"text":{"fieldV":"\"\" → \"k\": body runs","listV":"same instance → skipped"}},
+{"label":"Apply","caption":"Only the changed text reaches the Applier. The stutter in the opening came from a header that received a new object on every keystroke, so it could never be skipped.","state":{"screen":"done","field":"done","header":"done","list":"done"},"text":{"cursorV":"apply: one text node updated"}}
+]</script><figcaption>Skipping depends on comparing what was stored with what is passed now, which is why argument stability matters for performance.</figcaption></figure>
+
+<!-- @after CompositionLocal — Implicit Tree Data :: visual -->
+### What a provider change invalidates
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title"><code>compositionLocalOf</code></span><div class="node"><strong>Provider value changes</strong></div><div class="node" data-state="done"><strong>Only readers recompose</strong><small>scopes that read <code>.current</code> were tracked</small></div><div class="node"><strong>Suits</strong><small>values that can change while the UI is shown</small></div></div><div class="col"><span class="col-title"><code>staticCompositionLocalOf</code></span><div class="node"><strong>Provider value changes</strong></div><div class="node" data-state="warn"><strong>All provided content recomposes</strong><small>reads were not tracked, so every descendant is invalidated</small></div><div class="node"><strong>Suits</strong><small>values that effectively never change</small></div></div></div><figcaption>Static locals trade a cheaper read for a much more expensive change.</figcaption></figure>
+
+<!-- @after remember Under the Hood :: check -->
+**Predict the slot.** Decide before opening each answer.
+
+<details><summary><code>if (expanded) { val draft = remember { mutableStateOf("") } … }</code>: the user collapses and re-expands.</summary>
+
+The draft resets. Its group left the composition when the branch did, so the remembered value was forgotten. Hoist it above the `if` if hiding must not reset it.
+</details>
+
+<details><summary><code>val sorted = remember(items) { items.sortedBy { it.name } }</code>: the parent passes a new list with the same contents.</summary>
+
+It does not re-sort. `remember` compares keys with `equals`, and a list with equal contents is equal, so the cached result is reused. Only a list with different contents re-runs the sort.
+</details>
+
+<details><summary>A <code>LazyColumn</code> without item keys; one item is inserted at the top.</summary>
+
+Every visible row's state shifts by one position. With `key = { it.id }`, each row keeps its slots as it moves.
+</details>

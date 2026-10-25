@@ -1,0 +1,42 @@
+<!-- Website teaching layer for android/compose/view-interop-and-migration.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (Compose in Views, Views in Compose, migration strategy) on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">The team ships its first Compose screen inside a Fragment. A week later: switch tabs and back, and the half-written review on that screen is gone. In the next release, a list that embeds a legacy map view stutters on every scroll. Both bugs sit exactly on the seams between the two UI toolkits.</p>
+
+Most apps migrate to Compose over years, so the two toolkits live side by side, with Compose inside Views and Views inside Compose. Each direction has a small API and one lifecycle rule that is easy to get wrong. This chapter covers both directions, what every seam costs, and a migration order that keeps shipping features while the codebase moves.
+
+<!-- @after 2. Views in Compose: AndroidView :: animation -->
+### The life of one <code>AndroidView</code> in a list
+
+<figure class="stepper"><span class="stepper-title"><code>factory</code>, <code>update</code> and <code>onReset</code></span><div class="stage viz-stack"><div class="viz-grid" style="--cols:3"><div class="node" data-el="factory"><strong><code>factory</code></strong><small data-text="factoryV">—</small></div><div class="node" data-el="update"><strong><code>update</code></strong><small data-text="updateV">—</small></div><div class="node" data-el="reset"><strong><code>onReset</code></strong><small data-text="resetV">—</small></div></div><div class="node is-key" data-el="view"><strong>The View instance</strong><small data-text="viewV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"First composition","caption":"factory builds the View once: construct it and wire listeners that send events up. Then update applies the current state.","add":["factory","update","reset","view"],"state":{"factory":"done","update":"active","reset":"ghost"},"text":{"factoryV":"ran once","updateV":"zoom = 12","resetV":"not used yet","viewV":"MapView #1 created"}},
+{"label":"State changes","caption":"update reads state.zoom, so a change to it re-runs update, and only update. factory does not run again.","state":{"update":"active"},"text":{"updateV":"zoom = 14","viewV":"same MapView #1"}},
+{"label":"Scrolled out of view","caption":"In a lazy list, the item leaves the screen. With onReset provided, the View is kept for reuse instead of being released.","state":{"reset":"active","update":"ghost"},"text":{"resetV":"clear item-specific state","viewV":"MapView #1 parked for reuse"}},
+{"label":"Reused for a new item","caption":"A new item scrolls in. The same View is reused and update applies the new item's state, so no inflation happens during the scroll.","state":{"reset":"done","update":"active"},"text":{"updateV":"zoom = 9 for the new item","viewV":"MapView #1 reused"}},
+{"label":"Without onReset","caption":"Without onReset, every item that scrolls in runs factory again and builds a new View, the stutter in the opening.","state":{"factory":"error","reset":"error"},"text":{"factoryV":"runs for every item","resetV":"not provided","viewV":"new MapView per item"}}
+]</script><figcaption>Events go up through listeners set in <code>factory</code>; data comes down through <code>update</code>.</figcaption></figure>
+
+<!-- @after 4. Migration Strategy (the part reviews actually probe) :: visual -->
+### Migrate in this order
+
+<figure class="viz"><div class="viz-flow"><div class="node" data-state="done"><strong>1 · New features</strong><small>in Compose, hosted in fragments</small></div><div class="node"><strong>2 · Design-system components</strong><small>ported once</small></div><div class="node"><strong>3 · Screens, simplest first</strong><small>bottom-up inside mixed screens</small></div><div class="node"><strong>4 · Navigation</strong><small>last, once screens are composables</small></div><div class="node is-key"><strong>Throughout: screenshot tests</strong><small>parity asserted before and after</small></div></div><figcaption>Each step reduces risk for the next; swapping navigation early doubles the moving parts.</figcaption></figure>
+
+<!-- @after 5. Review Checklist :: check -->
+**Find the seam bug.** Decide before opening each answer.
+
+<details><summary>A Fragment hosts <code>ComposeView</code> with the default composition strategy.</summary>
+
+The composition can be disposed while the fragment's view lifecycle continues, resetting remembered state. Use `DisposeOnViewTreeLifecycleDestroyed` in fragments.
+</details>
+
+<details><summary>A layout contains two <code>ComposeView</code>s without IDs.</summary>
+
+Saved state cannot be restored to the right one. Give each `ComposeView` a unique `android:id`.
+</details>
+
+<details><summary>A screen keeps its form state inside a custom View, and half of it is being rewritten in Compose.</summary>
+
+Hoist the state into the ViewModel first, so both halves read and write one owner.
+</details>
