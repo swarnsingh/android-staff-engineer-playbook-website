@@ -108,3 +108,10 @@
   .stepper-buttons .text-button{margin-left:0}
 }
 @media print{.stepper-controls{display:none}.steps-text{display:block}.is-off{opacity:1;transform:none}}
+
+/* Approved corrections: the corrected words are marked, and each section lists what changed and why. */
+.correction-mark{background:color-mix(in srgb,var(--warning) 18%,transparent);color:inherit;border-bottom:2px solid var(--warning);border-radius:.15rem;padding:0 .1rem}
+.correction-note{margin:1.5rem 0;padding:1rem 1.2rem;border:1px solid var(--line);border-left:3px solid var(--warning);border-radius:0 .6rem .6rem 0;background:var(--surface);font-size:.92em}
+.correction-note>.blend-label{display:inline-block;margin-bottom:.4rem;font:700 .68rem/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--warning)}
+.correction-note ul{margin:.4rem 0 0;padding-left:1.2em}
+.correction-note pre{white-space:pre-wrap;overflow-wrap:anywhere;font:.85em/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;margin:.4rem 0}

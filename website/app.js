@@ -32,7 +32,9 @@ try { preferences = JSON.parse(localStorage.getItem('playbook-reader-v1')) || {}
 if (typeof preferences !== 'object' || Array.isArray(preferences)) preferences = {};
 const systemMotion = matchMedia('(prefers-reduced-motion:reduce)');
 let effectiveReducedMotion = false;
-let pauseAnimation = () => {};
+// Every animation registers its stop function here; dialogs and reduced motion stop them all.
+const animationStops = [];
+function pauseAnimation() { animationStops.forEach(stop => stop()); }
 function savePreferences() { try { localStorage.setItem('playbook-reader-v1',JSON.stringify(preferences)); } catch {} }
 function applyPreferences() {
   const theme = ['light','dark','sepia','contrast'].includes(preferences.theme) ? preferences.theme : 'light';
@@ -55,6 +57,7 @@ function applyPreferences() {
   $('#bookmark').textContent = preferences.bookmarked ? '★ Lesson saved' : '☆ Save lesson';
   $('#play-model')?.setAttribute('aria-disabled',effectiveReducedMotion);
   if (effectiveReducedMotion) pauseAnimation();
+  document.dispatchEvent(new Event('playbook:motion'));
 }
 applyPreferences();
 $('#font-family').addEventListener('change',e => { preferences.font=e.target.value; applyPreferences(); savePreferences(); });

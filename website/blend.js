@@ -78,8 +78,17 @@
         if (position === all.length - 1) position = 0;
         render();
         $('[data-act=play]').textContent = 'Pause'; $('[data-act=play]').setAttribute('aria-pressed', 'true');
-        timer = setInterval(() => { position++; render(); if (position === all.length - 1) stop(); }, 2600);
+        timer = setInterval(() => {
+          if (reducedMotion()) { stop(); return; }
+          position++; render(); if (position === all.length - 1) stop();
+        }, 2600);
       }
+    });
+    // Stop with every other animation (dialogs open, reduced motion turned on), and keep Play's state current.
+    if (typeof animationStops !== 'undefined') animationStops.push(stop);
+    document.addEventListener('playbook:motion', () => {
+      if (reducedMotion()) stop();
+      $('[data-act=play]').setAttribute('aria-disabled', reducedMotion());
     });
     new IntersectionObserver(entries => { if (!entries[0].isIntersecting) stop(); }).observe(figure);
     document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });

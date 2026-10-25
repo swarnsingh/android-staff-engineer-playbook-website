@@ -1,7 +1,7 @@
 <!-- Website teaching layer for kotlin/runtime-and-jvm/jvm-interop.md. -->
 
 <!-- @opening -->
-<p class="story-lead">Your team ships a Kotlin analytics SDK. Kotlin callers write <code>TelemetryClient.event("signup")</code>. The first Java customer writes <code>TelemetryKt.TelemetryClient.INSTANCE.event("signup", Collections.emptyMap())</code> — and a week later reports a crash from a Kotlin <code>String</code> that their Java code passed as <code>null</code>.</p>
+<p class="story-lead">Your team ships a Kotlin analytics SDK. Kotlin callers write <code>TelemetryClient.event("signup")</code>. The first Java customer writes <code>TelemetryClient.INSTANCE.event("signup", Collections.emptyMap())</code> — and a week later reports a crash from a Kotlin <code>String</code> that their Java code passed as <code>null</code>.</p>
 
 Kotlin and Java share one runtime, so calls cross between them freely — but each language has features the other lacks. Kotlin **lowers** its features (objects, companions, defaults, `internal`, properties) into ordinary JVM shapes, and offers `@Jvm*` annotations to make those shapes pleasant for Java. In the other direction, Java's missing nullability arrives in Kotlin as **platform types**. This chapter maps both directions so you can predict, and design, what the other side sees.
 
@@ -47,5 +47,5 @@ Java callers and anything that names the class (reflection, keep rules): `UtilKt
 
 <details><summary>Is <code>internal</code> a security boundary against a determined Java caller?</summary>
 
-No. It compiles to a public method with a mangled name; the Kotlin compiler hides it, the JVM does not. Use real module boundaries and checks for anything sensitive.
+No. An <code>internal</code> member compiles to a public method with a mangled name (<code>name$module</code>); a top-level <code>internal</code> function keeps its plain name and is simply public in bytecode. The Kotlin compiler hides both; the JVM hides neither. Use real module boundaries and checks for anything sensitive.
 </details>

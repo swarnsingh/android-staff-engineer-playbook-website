@@ -58,5 +58,5 @@ A member (or a sealed `when`, or an injected strategy). The behaviour depends on
 
 <details><summary>A ViewModel calls <code>repository.fetchWithRetry()</code>, an extension. Your test mocks the repository. What does the test miss?</summary>
 
-The extension's retry logic always runs for real: it cannot be stubbed. If tests must control it, make retry part of an injected interface instead.
+The extension's retry logic. Mocking the repository does not replace a top-level extension: it is a static method in the file's class, so the real retry runs against the mock. MockK can replace it with <code>mockkStatic</code> on that file class (non-inline extensions only), but that is global and brittle. If tests must control retry, make it part of an injected interface instead.
 </details>

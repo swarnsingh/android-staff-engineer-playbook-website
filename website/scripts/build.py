@@ -46,15 +46,47 @@ def title(path):
     return clean(re.search(r'^# (.+)', path.read_text(), re.M).group(1))
 
 
-def corrected(source, path):
+def corrected(source, path, mark=False):
+    """Apply approved corrections. Returns the corrected source and, per fix, the line it landed on.
+
+    With mark=True, a single-line fix outside code is wrapped in <mark class="correction-mark">, so the
+    corrected words are visible where they stand; every fix is also listed in its section's correction note.
+    """
     applied = []
     for fix in APPROVED_CORRECTIONS:
         if fix['path'] != path: continue
         if source.count(fix['old']) != 1:
             raise ValueError(f"Correction no longer matches exactly once: {path}: {fix['reason']}")
-        source = source.replace(fix['old'], fix['new'], 1)
-        applied.append(fix)
+        at = source.index(fix['old'])
+        line_start = source.rfind('\n', 0, at) + 1
+        in_fence = len(re.findall(r'^\s*(```|~~~)', source[:at], re.M)) % 2 == 1
+        in_span = source[line_start:at].count('`') % 2 == 1
+        new = fix['new']
+        if mark and '\n' not in fix['old'] + new and at > line_start and not in_fence and not in_span:
+            new = f'<mark class="correction-mark" title="Corrected on this website">{new}</mark>'
+        source = source[:at] + new + source[at + len(fix['old']):]
+        shift = len(new) - len(fix['old'])
+        for earlier in applied:  # keep earlier fixes pointing at their own text
+            if earlier['at'] > at: earlier['at'] += shift
+        applied.append({**fix, 'at': at})
+    for fix in applied:
+        fix['line'] = source.count('\n', 0, fix['at'])
     return source, applied
+
+
+def correction_note(fixes):
+    """Show what an approved correction changed, why, and the chapter's original wording."""
+    items = ''.join(
+        f'<li><p>{escape(fix["reason"])}</p><details><summary>Original wording</summary><pre>{escape(fix["old"])}</pre></details>'
+        + (f'<p class="original-note">Sources: ' + ', '.join(f'<a href="{escape(url)}" target="_blank" rel="noreferrer">{escape(urlsplit(url).netloc)}</a>' for url in fix['sources']) + '</p>' if fix.get('sources') else '')
+        + '</li>' for fix in fixes)
+    return f'<aside class="correction-note"><span class="blend-label">Corrected on this website</span><p>The original chapter says this differently; the text above includes an approved correction.</p><ul>{items}</ul></aside>'
+
+
+def added(kind, html):
+    """Label website-only material, so readers can tell it from the original chapter."""
+    label = BLEND_LABELS[kind]
+    return f'<div class="blend" data-kind="{kind}">' + (f'<span class="blend-label">{label}</span>' if label else '') + html + '</div>'
 
 
 def link_rules(path):
@@ -174,13 +206,11 @@ def wrap(kind, markdown, env):
         html = MD.render(markdown, env)
     finally:
         env['blend'] = False
-    label = BLEND_LABELS[kind]
-    label_html = f'<span class="blend-label">{label}</span>' if label else ''
-    return f'<div class="blend" data-kind="{kind}">{label_html}{steps_as_text(html)}</div>'
+    return added(kind, steps_as_text(html))
 
 
 def render_chapter(path, raw, is_course=False):
-    source, fixes = corrected(raw, path)
+    source, fixes = corrected(raw, path, mark=True)
     tokens = MD.parse(source)
     counts = {}; sections = []; headings = []; codes = []
     for i, token in enumerate(tokens):
@@ -204,7 +234,7 @@ def render_chapter(path, raw, is_course=False):
             diagram_count[0]+=1
             (OUT/'diagram-sources'/f'{key}.mmd').write_text(token.content)
             original=f'<img src="{BASE}diagrams/{key}.svg" alt="{escape(env.get("heading","Concept relationships"))}" loading="lazy">'
-            source=f'<details><summary>Read diagram source</summary><pre tabindex="0"><code>{escape(token.content)}</code></pre></details>'
+            source=f'<details class="diagram-source"><summary>Read diagram source</summary><pre tabindex="0"><code>{escape(token.content)}</code></pre></details>'
             if ('diagram', key) in blend:
                 # A designed redraw leads; the chapter's own diagram stays one tap away.
                 used.add(('diagram', key))
@@ -222,6 +252,12 @@ def render_chapter(path, raw, is_course=False):
     # H1 is represented by the page hero; all other opening content stays intact.
     if initial and initial[0].type=='heading_open' and initial[0].tag=='h1': initial=initial[3:]
     opening=MD.renderer.render(initial,MD.options,env)
+    # Each approved correction is noted at the end of the section it changed.
+    def fixes_in(first_line, end_line):
+        return [fix for fix in fixes if first_line <= fix['line'] < end_line]
+    section_lines = [tokens[start].map[0] for start, _, _ in sections] + [len(source.splitlines()) + 1]
+    opening_fixes = fixes_in(0, section_lines[0])
+    if opening_fixes: opening += correction_note(opening_fixes)
     def band(number, index):
         key, title_text, promise = PARTS[index]
         return f'<div class="part-band" data-part-band="{key}"><span class="part-number">PART {number}</span><span class="part-name">{title_text}</span><p class="part-promise">{promise}</p></div>'
@@ -234,7 +270,7 @@ def render_chapter(path, raw, is_course=False):
         desc=INTRO.get(Path(path).stem, 'Follow the concepts, examples, failure modes and design decisions in this chapter.')
         body=first_band+f'<section class="lesson-section lesson-start" id="problem"><span class="eyebrow">START WITH THE NEED</span><h2>Why this topic matters</h2><p>{escape(desc)}</p><div class="original-opening">{opening}</div></section>'
     if path.endswith('/coroutines.md'):
-        body += '<section class="lesson-section" id="experiment"><span class="eyebrow">TRY THE IDEA</span><h2>Watch independent waits overlap</h2><p>A profile needs a name and an avatar. Waiting for one request before starting the other adds avoidable waiting. Run the example, switch <code>concurrent</code> from <code>true</code> to <code>false</code>, and compare the start messages.</p>' + (WEB/'content/coroutine-experiment.html').read_text() + '<p>In Playground output, <code>main @coroutine#2</code> means thread <code>main</code>, coroutine #2. Different coroutine numbers can share the same thread.</p></section>'
+        body += '<section class="lesson-section" id="experiment">' + added('try', '<h2>Watch independent waits overlap</h2><p>A profile needs a name and an avatar. Waiting for one request before starting the other adds avoidable waiting. Run the example, switch <code>concurrent</code> from <code>true</code> to <code>false</code>, and compare the start messages.</p>' + (WEB/'content/coroutine-experiment.html').read_text() + '<p>In Playground output, <code>main @coroutine#2</code> means thread <code>main</code>, coroutine #2. Different coroutine numbers can share the same thread.</p>') + '</section>'
     part_index = 0
     bands = 1
     for j,(start,heading,anchor) in enumerate(sections):
@@ -254,14 +290,16 @@ def render_chapter(path, raw, is_course=False):
         before = ''.join(wrap(kind, html, env) for key, html in blend.items() if len(key) == 3 and key[0] == 'before' and key[1] == name for kind in [key[2]])
         after = ''.join(wrap(kind, html, env) for key, html in blend.items() if len(key) == 3 and key[0] == 'after' and key[1] == name for kind in [key[2]])
         used.update(k for k in blend if k[:2] in (('before', name), ('after', name)))
-        body += before + f'<section class="lesson-section" id="section-{anchor}" data-part="{part}"{qa}>{rendered}{after}</section>'
+        section_fixes = fixes_in(section_lines[j], section_lines[j + 1])
+        note = correction_note(section_fixes) if section_fixes else ''
+        body += before + f'<section class="lesson-section" id="section-{anchor}" data-part="{part}"{qa}>{rendered}{note}{after}</section>'
         if path.endswith('/coroutines.md') and heading=='How `suspend` Works (Mental Model + Mechanism)':
-            body += (WEB/'content/coroutine-internals.html').read_text()
+            body += added('deeper', (WEB/'content/coroutine-internals.html').read_text())
         if path.endswith('/coroutines.md') and heading=='Exception Handling Patterns':
-            body += (WEB/'content/coroutine-policies.html').read_text()
+            body += added('guide', (WEB/'content/coroutine-policies.html').read_text())
         if path.endswith('/coroutines.md') and heading=='Job Hierarchy and Cancellation':
             figure=(WEB/'content/coroutine-model.html').read_text()
-            body += '<section class="lesson-section" id="ownership"><h2>See the ownership and failure policy</h2><p>The Android UI owner starts the profile load. The model assumes main-safe requests and shows an illustrative sequence, not measured Android frames or a captured runtime trace.</p><p>In the failure scenario, the outer UI boundary catches the expected <code>IOException</code> and sets an error state. Cancellation is allowed to propagate.</p>'+owner_code()+figure+'</section>'
+            body += '<section class="lesson-section" id="ownership">' + added('visual', '<h2>See the ownership and failure policy</h2><p>The Android UI owner starts the profile load. The model assumes main-safe requests and shows an illustrative sequence, not measured Android frames or a captured runtime trace.</p><p>In the failure scenario, the outer UI boundary catches the expected <code>IOException</code> and sets an error state. Cancellation is allowed to propagate.</p>'+owner_code()+figure) + '</section>'
     body += '<section class="lesson-section" id="continue-learning"><span class="eyebrow">CONNECT THE IDEAS</span><h2>Continue your Kotlin learning path</h2><p>The chapter above presents the original explanations, code examples, questions and answers in full. Use the learning path to connect this topic to the next one.</p><a class="secondary-button" href="'+BASE+'kotlin/">Explore all Kotlin chapters →</a></section>'
     unused = set(blend) - used
     if unused:

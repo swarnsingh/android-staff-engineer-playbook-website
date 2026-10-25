@@ -22,7 +22,7 @@ function renderModel(rebuildTable=false){
   }
 }
 function stopPlayback(){clearInterval(playTimer);playTimer=null;$('#play-model').textContent='Play steps';$('#play-model').setAttribute('aria-pressed','false');}
-pauseAnimation=stopPlayback;
+animationStops.push(stopPlayback);
 function moveStep(delta){stopPlayback();position+=delta;renderModel();}
 $('#previous-step').addEventListener('click',()=>moveStep(-1));$('#next-step').addEventListener('click',()=>moveStep(1));
 $('#reset-model').addEventListener('click',()=>{stopPlayback();position=0;renderModel();});

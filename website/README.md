@@ -7,7 +7,7 @@ This folder builds the reader website for the playbook. Read [`../content-rulebo
 - **Branch:** `claude/reader-website-kotlin` (built on Codex's snapshot `60b8c2a` on `codex/reader-website`). Nothing is pushed or merged without the owner's approval.
 - **Scope:** the Kotlin tree — `kotlin.md` plus all 22 Kotlin chapters render as pages.
 - **Originals:** byte-identical to `main`. Do not edit them.
-- **Corrections:** 292 proposals from Codex's automated audits sit in `content/corrections-*.json`. None is approved, so none is applied. They still need sorting into factual errors, needed updates and wording-only changes (drop the last), then the owner's approval per item.
+- **Corrections:** 292 proposals from Codex's audits sit in `content/corrections-*.json`, plus 3 new findings. All are triaged in `reviews/corrections-triage.md` (revised after Codex's review). None is approved yet, so none is applied.
 
 ### Progress by chapter
 
@@ -51,7 +51,9 @@ Run from the repository root. The build writes `website/dist/` (ignored by git),
 
 ## How a page is assembled
 
-`scripts/build.py` parses each original chapter with markdown-it and renders it into `templates/reader.html`. Sections are grouped into six parts (`PARTS` in the script) by their headings; parts only move forward. Then it adds, in order: the chapter's blend fragments, the Codex coroutine fragments for the coroutines page, and approved corrections (none yet). `scripts/check_preservation.py` compares every original heading, paragraph, list item, table row, code block and diagram source with the page's Content tab.
+`scripts/build.py` parses each original chapter with markdown-it and renders it into `templates/reader.html`. Sections are grouped into six parts (`PARTS` in the script) by their headings; parts only move forward. Then it adds, in order: the chapter's blend fragments, the Codex coroutine fragments for the coroutines page (each wrapped in a labelled `.blend` container), and approved corrections. An approved correction highlights the changed words (`mark.correction-mark`, when the change is one line outside code) and adds a `.correction-note` to its section with the reason, the original wording and the sources.
+
+`scripts/check_preservation.py` reads only the original areas of each page (`.original-opening` and `section#section-…`), skipping labelled additions. Every original heading, paragraph, list item, table row, code block, HTML block and diagram source must appear there in order, as many times as in the Markdown, and visible; any other text there fails the build. It first runs a self-test that swaps, hides, folds, relabels, removes and duplicates content and must catch each case.
 
 ## Writing a blend file
 
@@ -86,10 +88,10 @@ A `<figure class="stepper">` contains a `.stage` with elements marked `data-el="
 - **Splitting:** not needed. The longest chapters (JVM interop, extensions, functions) run about 4.3–5.3k words, which is 20–25 minutes, and the outline, story bands and per-section links make them navigable.
 - **Devices:** 23 pages × 320/390/768/1280px pass: no horizontal scroll, no wide figures, all animations ready, no broken images. Light and dark themes checked.
 - **Animation gaps closed:** Kotlin 2.4 (context-parameter resolution), Coroutines (cancellation then cleanup), JVM interop (where a Java null fails). Each was compiled and run first.
-- **Accuracy:** claims the blends rely on were compiled and run locally. Errors found in the originals are logged for step 3, not edited.
+- **Accuracy:** claims the blends rely on were compiled and run locally. Errors found in the originals are logged in the triage, not edited.
+- **Codex review (2026-10-25):** all 11 findings reproduced and fixed: stricter preservation check, CH4/C24 amended code, VA2 and the cancellation/concurrency rows re-verdicted, three blend claims corrected (Flow buffering, JVM names, extension mocking), reduced motion now stops running animations, coroutine supplements labelled, correction markers built.
 
 ## Next steps
 
-1. Owner approves `reviews/corrections-triage.md` (all 292 + 3 new reviewed: 191 approve, 22 approve with edit, 82 reject). Then set `"status": "approved"` (and amended text) in `content/corrections-*.json` and add the three new findings.
-2. Show applied corrections on the page with a visible marker.
-3. Repeat the blend for the next tree.
+1. Owner approves `reviews/corrections-triage.md` (all 292 + 3 new reviewed: 199 approve, 23 approve with edit, 73 reject). Then set `"status": "approved"` (and amended text) in `content/corrections-*.json` and add the three new findings. The markers are already built; check each approved page after the build.
+2. Repeat the blend for the next tree.

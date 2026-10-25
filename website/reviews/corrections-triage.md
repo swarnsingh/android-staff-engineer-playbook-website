@@ -18,9 +18,9 @@ All 292 proposals are reviewed, plus 3 new errors found while checking (F17, BY8
 
 | | Rows |
 |---|---|
-| Approve | 191 |
-| Approve with edit | 22 (3 of them new findings) |
-| Reject | 82 |
+| Approve | 199 |
+| Approve with edit | 23 (3 of them new findings) |
+| Reject | 73 |
 | **Total** | **295** |
 
 The language, type-system and compiler chapters are mostly real errors. Coroutines and Flow have the most rejections: there, many proposals hedge statements that are correct as taught.
@@ -30,7 +30,14 @@ Some rows show that an example in the original does not compile or fails when ru
 - **Tests that fail:** CH7, CA6, TE4, CO6, C40.
 - **Hang forever:** CH4, C24.
 
-Two proposals were themselves wrong, so they are rejected or replaced:
+**Revised after Codex's review (2026-10-25).** Codex re-checked the triage and was right on these points, each reproduced locally:
+- **CH4:** the first amended actor still left queued checkouts waiting forever when the owner's scope was cancelled. The new text fails them and closes the channel.
+- **C24:** `SupervisorJob` keeps later saves alive, but an uncaught failure still crashes. The new text catches the expected failure.
+- **VA2:** now approved with edit: boxing happens where a value enters generic code, so one box can fill several slots.
+- **C21, C47:** now approved: `async` gives concurrency; parallelism depends on the dispatcher.
+- **C32–C35, C58, C61:** now approved: only cancellable suspending calls throw after cancellation (`delay(0)` and `currentCoroutineContext()` return normally in a cancelled `finally`), `yield` need not suspend, and `NonCancellable` protects cleanup without guaranteeing it finishes.
+
+Two proposals were themselves wrong, so they are rejected or replaced (Codex confirmed both):
 - **E4:** the API 33 `Bundle.getParcelable` overload is unbounded.
 - **JV12:** `toString()` on a platform-typed null crashes; it does not return "null".
 
@@ -164,11 +171,15 @@ Two proposals were themselves wrong, so they are rejected or replaced:
 | # | Original says | Problem | Verdict | Evidence |
 |---|---|---|---|---|
 | VA1 | "The doc-level rule is exact": boxed whenever used as another type | The docs call it a rule of thumb; `Name?` wrapping a `String` is not boxed | Approve | Docs: "As a rule of thumb"; `javap`: `takeName(String)` for a `Name?` parameter |
-| VA2 | `List<UserId>` allocates one wrapper per element | The original is right | Reject | Run: the same `UserId` added twice gives two distinct boxes |
+| VA2 | `List<UserId>` allocates one wrapper per element | Elements are stored boxed, but a box is made where a value enters generic code, not per slot; one box can fill several slots | Approve with edit | Run: two `add(id)` calls give two boxes; `fun <T> twice(x: T) = listOf(x, x)` gives one box in both slots |
 | VA3 | `===` on value classes is a bug pattern | The compiler prohibits it | Approve | Compiler: "identity equality … is prohibited" |
 | VA4 | Java-facing APIs: avoid value classes or `@JvmName` every entry point | `@JvmExposeBoxed` / `-Xjvm-expose-boxed` now exist (opt-in) | Approve | Kotlin "Calling Kotlin from Java" docs |
 
-**Summary:** 3 approve, 0 approve with edit, 1 reject.
+**Amended text**
+
+- **VA2:** "- **Collections box.** `List<UserId>` stores each element as a `UserId` box, not as a raw `long`. Usually that means one allocation each time a value enters the list or other generic code, so millions of wrapped longs cost about what boxed `Long`s cost — use primitive arrays (`LongArray`) or rethink the type at the boundary, and measure before deciding."
+
+**Summary:** 3 approve, 1 approve with edit, 0 reject.
 
 ## Sealed Classes — 17 proposed
 
@@ -305,7 +316,7 @@ The `doMath { x, y -> x + y }` example passes a non-capturing lambda. On Kotlin 
 
 ## Coroutines — 63 proposed
 
-Most rejections here are hedges on statements that are correct as taught: "lightweight thread", "parallel" for overlapping `async` work, "fire-and-forget", strong review rules such as "never `GlobalScope`". The approved rows are where the original is actually wrong or its example fails.
+Most rejections here are hedges on statements that are correct as taught: "lightweight thread", "fire-and-forget", strong review rules such as "never `GlobalScope`". The approved rows are where the original is actually wrong, overstates a guarantee, or its example fails.
 
 | # | Original says | Problem | Verdict | Evidence |
 |---|---|---|---|---|
@@ -329,10 +340,10 @@ Most rejections here are hedges on statements that are correct as taught: "light
 | C18 | Calls the hard-coded `Dispatchers.IO` example "Dispatcher injection" | Hard-coding is not injection | Approve with edit | — |
 | C19 | `launch` result: none (fire-and-forget) | Standard wording | Reject | — |
 | C20 | `async` failure propagates to the parent and is held for `await()` | Correct | Reject | — |
-| C21 | `async` comment: "starts in parallel" | Standard wording | Reject | — |
+| C21 | `async` comment: "starts in parallel" | `async` starts work concurrently; it runs in parallel only if the dispatcher has free threads | Approve | `async` API docs; overlapping waits can share one thread |
 | C22 | "Parallel decomposition" | Standard wording | Reject | — |
 | C23 | Await-only failures only for top-level or supervised `async` | Correct | Reject | — |
-| C24 | `Repo` scope built on `Job()` | After one failed save, the scope is cancelled and every later save silently never runs | Approve with edit | Run: second `launch` is cancelled and the scope is inactive |
+| C24 | `Repo` scope built on `Job()` | After one failed save, the scope is cancelled and every later save silently never runs. `SupervisorJob` alone fixes that but an uncaught failure still crashes an Android app | Approve with edit | Run: with `Job()`, the second `launch` is cancelled; with `SupervisorJob()`, the scope stays active but the `IOException` reaches the thread's uncaught handler |
 | C25 | `scope.cancel()`: every coroutine inside dies | Simplification; the cancellation section explains cooperation | Reject | — |
 | C26 | Table: `GlobalScope` has a `Job` | It has no Job (empty context) | Approve | `GlobalScope` API docs |
 | C27 | `GlobalScope` is reserved for internals and tests | It is a delicate API with rare legitimate uses, not internal | Approve | Same |
@@ -340,10 +351,10 @@ Most rejections here are hedges on statements that are correct as taught: "light
 | C29 | Table: `viewModelScope.launch` "inherits `SupervisorJob`" | Each launch gets an ordinary `Job` whose parent is the supervisor | Approve | Kotlin exception-handling docs |
 | C30 | `supervisorScope` example: if one fails, the others keep running | True, but the uncaught failure still crashes an Android app; the example needs local catches | Approve | Kotlin exception-handling docs |
 | C31 | `SupervisorJob` is `Job` except siblings are not cancelled | Correct; C30 carries the caveat | Reject | — |
-| C32 | kotlinx.coroutines suspend functions check for cancellation | Correct | Reject | — |
-| C33 | `yield()` suspends briefly and checks cancellation | Close enough for the example | Reject | — |
-| C34 | Suspending calls in `finally` fail immediately | Correct | Reject | Run: `delay` in `finally` threw at once |
-| C35 | `NonCancellable` block "actually completes" | Correct | Reject | Run: the save completed |
+| C32 | kotlinx.coroutines suspend functions check for cancellation | Only cancellable operations do; `suspend` alone promises no check | Approve | Run: in a cancelled `finally`, `currentCoroutineContext()` and `delay(0)` return normally; `delay(10)` throws |
+| C33 | `yield()` suspends briefly and checks cancellation | It checks cancellation but need not actually suspend | Approve | `yield` API docs |
+| C34 | Suspending calls in `finally` fail immediately | Cancellable suspending calls do; others return normally | Approve | Same run as C32 |
+| C35 | `NonCancellable` block "actually completes" | It is protected from cancellation; it still has to finish and can still fail | Approve | `NonCancellable` API docs |
 | C36 | Adds a paragraph after the cleanup example | Addition, not a correction | Reject | — |
 | C37 | Swallowing `CancellationException` makes a zombie that keeps running | It continues only to the next suspension point, which throws again | Approve | Run: code after the catch ran, then the next `delay` threw; job completed |
 | C38 | Exception handler fires only at the top level, not for `async` | Correct for the standard case | Reject | — |
@@ -355,7 +366,7 @@ Most rejections here are hedges on statements that are correct as taught: "light
 | C44 | Real `Dispatchers.IO` in a test hangs forever | It runs in real time; `runTest` times out rather than hanging | Approve | Android coroutine testing docs |
 | C45 | Network on Main because the repository did not switch | Fine for blocking clients | Reject | — |
 | C46 | 200 ms JSON parse on `Dispatchers.IO` freezes the UI | Work on `IO` cannot freeze the main thread | Approve | Dispatcher model |
-| C47 | Two `async`s started before `await` run in parallel | Standard wording | Reject | — |
+| C47 | Two `async`s started before `await` run in parallel | Same as C21 | Approve | Same as C21 |
 | C48 | `runBlocking` in production is always wrong | Review rule, not a factual claim | Reject | — |
 | C49 | "9 times out of 10" a generic catch swallows cancellation | Rhetoric | Reject | — |
 | C50 | `GlobalScope.launch` is always wrong unless a daemon | Review rule | Reject | — |
@@ -366,17 +377,38 @@ Most rejections here are hedges on statements that are correct as taught: "light
 | C55 | A pure CPU loop never checks cancellation | Correct | Reject | — |
 | C56 | Answer Key: blocking calls "monopolize the 4 cores while waiting" | They occupy threads, not cores | Approve with edit | Same as C16 |
 | C57 | `supervisorScope`: second launch completes although the first crashed | Correct | Reject | — |
-| C58 | Suspending calls in `finally` throw; fix with `NonCancellable` | Correct | Reject | Same as C34 |
+| C58 | Suspending calls in `finally` throw; fix with `NonCancellable` | Same as C34 and C35 | Approve | Same as C32 |
 | C59 | `Default` pool equals core count | At least two | Approve | Same as C9 |
 | C60 | Use `lifecycleScope` for work that must stop when the view dies | In a Fragment, use `viewLifecycleOwner.lifecycleScope`; the Fragment outlives its view | Approve | Android lifecycle-aware coroutines docs |
-| C61 | `yield()` suspends briefly | Same as C33 | Reject | — |
+| C61 | `yield()` suspends briefly | Same as C33 | Approve | Same as C33 |
 | C62 | Never use `runBlocking` in production Android code | Review rule | Reject | — |
 | C63 | `Main`: never block; only quick work | That is the instruction, correctly given | Reject | — |
 
 **Amended text**
 
 - **C18:** "Now no caller anywhere thinks about threading. The repository owns its own main-safety. In practice you also **inject** the `CoroutineDispatcher` instead of referencing `Dispatchers.IO` directly, so tests can substitute a `TestDispatcher`."
-- **C24:** Keep the example; change only the scope line to `private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)  // one failed save must not cancel every later save`.
+- **C24:**
+  ```kotlin
+  class Repo {
+      // SupervisorJob: one failed save must not cancel every later save.
+      private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+      fun save(data: Data) {
+          scope.launch {
+              try {
+                  /* runs on IO */
+              } catch (e: IOException) {
+                  // Expected failure: record it here. Anything unexpected still crashes,
+                  // unless the scope gets a CoroutineExceptionHandler on purpose.
+              }
+          }
+      }
+
+      fun close() {
+          scope.cancel()   // every in-flight save cancels
+      }
+  }
+  ```
 - **C40:**
   ```kotlin
   @get:Rule
@@ -392,7 +424,7 @@ Most rejections here are hedges on statements that are correct as taught: "light
   ```
 - **C56:** "so it allows up to 64 threads. If you run 10 blocking calls on `Default`, they occupy all 4 `Default` threads while waiting, delaying the 10 CPU tasks: ~1800 ms. On `IO`, all 10 wait concurrently, leaving `Default` free for CPU work: ~800 ms."
 
-**Summary:** 18 approve, 4 approve with edit, 41 reject.
+**Summary:** 26 approve, 4 approve with edit, 33 reject.
 
 ## Channels and Select — 8 proposed
 
@@ -401,7 +433,7 @@ Most rejections here are hedges on statements that are correct as taught: "light
 | CH1 | `send` suspends when the channel cannot accept; `receive` when empty | Correct for the default channels taught here | Reject | — |
 | CH2 | Closing means no more sends; receivers drain the buffer | Correct | Reject | — |
 | CH3 | Rendezvous is right when every frame must be processed | Adds lifecycle guidance; the original is not wrong | Reject | — |
-| CH4 | `CartActor` completes `replyTo` with `checkout.submit(items)` | If `submit` throws, the actor's loop dies and every `checkout()` caller waits forever | Approve with edit | Run: after one `IOException`, both calls still waiting after 500 ms; with the edit, the first fails and the second succeeds |
+| CH4 | `CartActor` completes `replyTo` with `checkout.submit(items)` | If `submit` throws, the actor's loop dies and every `checkout()` caller waits forever. The same happens to queued callers when the owner's scope is cancelled, and the channel keeps accepting commands nobody will read | Approve with edit | Run: after one `IOException`, both calls still waiting after 500 ms. With the edit: the failed call fails, the next succeeds; after the owner is cancelled, the active and the queued checkout both fail with `CartActor stopped`, and a new `checkout()` fails at once |
 | CH5 | Actor is right when serialized mutation is central | Goes with Codex's larger rewrite of CH4, which the smaller edit makes unnecessary | Reject | — |
 | CH6 | Worker loop: `runCatching { upload(work) }` | Catches `CancellationException`, so the worker cannot be cancelled cleanly | Approve | Same as N4 |
 | CH7 | Test: `advanceUntilIdle()` then assert both items processed | `advanceUntilIdle` does not run `backgroundScope` work; the list is empty | Approve | Run: `[]` after `advanceUntilIdle`, `[1, 2]` after `runCurrent` |
@@ -409,15 +441,42 @@ Most rejections here are hedges on statements that are correct as taught: "light
 
 **Amended text**
 
-- **CH4:** Keep the actor; replace only the `Checkout` branch:
+- **CH4:** Keep the class; replace the `init` block:
   ```kotlin
-  is CartCommand.Checkout -> try {
-      command.replyTo.complete(checkout.submit(items))
-  } catch (e: Throwable) {
-      command.replyTo.completeExceptionally(e)   // the caller sees the failure instead of waiting forever
-      if (e is CancellationException) throw e
+  init {
+      scope.launch {
+          var items = emptyList<Item>()
+          var inFlight: CompletableDeferred<CheckoutResult>? = null
+          try {
+              for (command in commands) {
+                  when (command) {
+                      is CartCommand.Add -> items = items + command.item
+                      is CartCommand.Remove -> items = items.filterNot { it.id == command.id }
+                      is CartCommand.Checkout -> {
+                          inFlight = command.replyTo
+                          try {
+                              command.replyTo.complete(checkout.submit(items))
+                          } catch (e: Exception) {
+                              if (e is CancellationException) throw e   // the owner stopped the actor: handled below
+                              command.replyTo.completeExceptionally(e)  // only this checkout fails; the actor keeps serving
+                          }
+                      }
+                  }
+              }
+          } finally {
+              // The actor is stopping: refuse new commands and fail every checkout still waiting.
+              val stopped = IllegalStateException("CartActor stopped")
+              commands.close(stopped)
+              inFlight?.completeExceptionally(stopped)   // no effect if it already completed
+              while (true) {
+                  val left = commands.tryReceive().getOrNull() ?: break
+                  if (left is CartCommand.Checkout) left.replyTo.completeExceptionally(stopped)
+              }
+          }
+      }
   }
   ```
+  After this, `checkout()` called on a stopped actor throws `CartActor stopped` from `send`.
 
 **Summary:** 2 approve, 1 approve with edit, 5 reject.
 
