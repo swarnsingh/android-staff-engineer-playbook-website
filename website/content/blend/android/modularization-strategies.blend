@@ -1,0 +1,61 @@
+<!-- Website teaching layer for android/architecture/modularization-strategies.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Navigation type-safety version per the Navigation 2.8.0 release; Kotlin `internal` visibility per the
+     Kotlin language reference (visible inside the same module). Checked 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A developer fixes a typo in the cart screen's button label. The build takes eleven minutes, the same as a full clean build. Forty engineers do this many times a day. When someone finally reads the build scan, the cause is not the typo. It is that every screen lives in one module, so any change invalidates everything.</p>
+
+Modules are how you tell Gradle and the compiler which code can see which. Draw the boundaries well and a change rebuilds only its own slice of the app; draw them badly and you pay the configuration cost of many modules while still rebuilding the world. This chapter compares the ways to slice an app, and shows why features split into `:api` and `:impl` are the usual answer at scale.
+
+<!-- @after The Four Slicing Strategies :: animation -->
+### What does one change rebuild?
+
+Modules lit up are downstream of the change: their compilation may have to run again. Fewer lit modules means faster feedback.
+
+<figure class="stepper"><span class="stepper-title">The blast radius of a change in a vertical + api/impl graph</span><div class="stage viz-stack"><div class="node" data-el="model"><strong><code>:core:model</code></strong><small>shared types</small></div><div class="viz-grid" style="--cols:3"><div class="node" data-el="cartApi"><strong><code>:cart:api</code></strong></div><div class="node" data-el="profileApi"><strong><code>:profile:api</code></strong></div><div class="node" data-el="checkoutApi"><strong><code>:checkout:api</code></strong></div><div class="node" data-el="cartImpl"><strong><code>:cart:impl</code></strong></div><div class="node" data-el="profileImpl"><strong><code>:profile:impl</code></strong></div><div class="node" data-el="checkoutImpl"><strong><code>:checkout:impl</code></strong><small data-text="checkoutNote">uses cart and profile APIs</small></div></div><div class="node" data-el="app"><strong><code>:app</code></strong><small>assembles every <code>:impl</code></small></div><div class="node is-key" data-el="change"><strong>Change</strong><small data-text="changeNote">—</small></div></div><script type="application/json" class="steps">[
+{"label":"The graph","caption":"Each feature has a small, stable :api and a high-churn :impl. Checkout's implementation depends on the cart and profile APIs, never on their implementations.","add":["model","cartApi","profileApi","checkoutApi","cartImpl","profileImpl","checkoutImpl","app","change"],"state":{},"text":{"changeNote":"nothing changed yet"}},
+{"label":"Edit inside :cart:impl","caption":"The typo fix. Only cart's implementation and the app that assembles it are downstream. Profile and checkout are untouched.","state":{"cartImpl":"active","app":"active"},"text":{"changeNote":"button label in CartScreen.kt"}},
+{"label":"Change a route in :cart:api","caption":"An API change reaches every implementation that uses it: cart's own implementation and checkout's. That is why :api modules should change rarely.","state":{"cartApi":"warn","cartImpl":"active","checkoutImpl":"active","app":"active"},"text":{"changeNote":"add a parameter to CartRoute"}},
+{"label":"Change :core:model","caption":"Everything sits downstream of the core, so the whole graph lights up. Keep core modules small, leaf and stable.","state":{"model":"error","cartApi":"active","profileApi":"active","checkoutApi":"active","cartImpl":"active","profileImpl":"active","checkoutImpl":"active","app":"active"},"text":{"changeNote":"rename a field in a shared model"}},
+{"label":"The shortcut: impl depends on impl","caption":"Someone lets checkout depend on :profile:impl directly. Now every profile implementation edit also reaches checkout, and a reverse edge would create a cycle that fails the build.","state":{"model":"","cartApi":"","profileApi":"","checkoutApi":"","cartImpl":"","app":"active","profileImpl":"active","checkoutImpl":"error"},"text":{"checkoutNote":"depends on :profile:impl ✗","changeNote":"edit inside :profile:impl"}}
+]</script><figcaption>The api/impl split keeps the common case, an edit inside one feature's implementation, at the smallest blast radius.</figcaption></figure>
+
+<!-- @diagram 93e91ce3e0c1490e -->
+### Bad shape: a deep chain
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong><code>:core:model</code></strong></div><div class="node"><strong><code>:data:network</code></strong></div><div class="node"><strong><code>:data:repo</code></strong></div><div class="node"><strong><code>:domain</code></strong></div><div class="node"><strong><code>:presentation</code></strong></div><div class="node" data-state="error"><strong><code>:app</code></strong><small>waits for all five before it</small></div></div><figcaption>Six modules on one critical path. Extra CPU cores cannot help, because each module waits for the previous one.</figcaption></figure>
+
+<!-- @diagram 4f0ca5d18f390762 -->
+### Good shape: wide fan-out from a thin core
+
+<figure class="viz"><div class="viz-stack"><div class="node is-key"><strong><code>:core:model</code></strong><small>thin and stable</small></div><div class="down"></div><div class="viz-grid" style="--cols:3"><div class="node"><strong><code>:feature:cart:api</code></strong></div><div class="node"><strong><code>:feature:profile:api</code></strong></div><div class="node"><strong><code>:feature:checkout:api</code></strong></div></div><div class="down"></div><div class="viz-grid" style="--cols:3"><div class="node"><strong><code>:feature:cart:impl</code></strong></div><div class="node"><strong><code>:feature:profile:impl</code></strong></div><div class="node"><strong><code>:feature:checkout:impl</code></strong><small>also uses the cart and profile APIs</small></div></div><div class="down"></div><div class="node" data-state="done"><strong><code>:app</code></strong><small>assembles every implementation</small></div></div><figcaption>Three modules on the critical path, and the three features compile in parallel. A fourth feature widens the graph without deepening it.</figcaption></figure>
+
+<!-- @after api vs implementation Gradle Configurations :: visual -->
+### How an `api` edge leaks
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title"><code>implementation(project(":data:network"))</code></span><div class="node"><strong><code>:feature:cart:impl</code></strong><small>can use network types internally</small></div><div class="node" data-state="done"><strong>Its consumers</strong><small>do not see network types on their compile classpath; a network change does not reach them</small></div></div><div class="col"><span class="col-title"><code>api(project(":core:design-system"))</code></span><div class="node"><strong><code>:feature:cart:impl</code></strong><small>re-exports design-system types</small></div><div class="node" data-state="warn"><strong>Its consumers</strong><small>compile against design-system types too; its changes now reach them</small></div></div></div><figcaption>Use <code>api</code> only when your public signatures mention the dependency's types. Otherwise the leak widens every change's blast radius.</figcaption></figure>
+
+<!-- @before Type-Safe Navigation Across Modules :: review -->
+The version in the next section ("Compose Navigation 2.7+ supports type-safe routes") is under technical review. The Navigation chapter in this phase gives 2.8, the release that introduced type-safe routes.
+
+<!-- @before Failure Modes :: review -->
+One row in the next table ("`internal` classes accessible from another module | Modules in same package") is under technical review: Kotlin's `internal` visibility is scoped to the module, independent of packages.
+
+<!-- @after Common Pitfalls :: check -->
+**Review the dependency.** Decide before opening each answer.
+
+<details><summary><code>:feature:search:impl</code> adds <code>implementation(project(":feature:product:impl"))</code> to open a product screen.</summary>
+
+Reject it. Depend on `:feature:product:api` and navigate with the product route defined there; the app's graph supplies the implementation.
+</details>
+
+<details><summary>A new <code>DateFormats.kt</code> helper goes into <code>:core:common</code>, used by one feature.</summary>
+
+Keep it in that feature. A core module changed for one consumer still reaches every module downstream of it.
+</details>
+
+<details><summary><code>:feature:cart:api</code> declares <code>fun interface CartNavigator { fun open(activity: Activity) }</code>.</summary>
+
+It pulls Android into an API module that could be pure Kotlin. Pass a route or a callback type instead, so consumers' unit tests do not need an Android runtime.
+</details>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the original Kotlin chapters without shortening their content."""
+"""Render the original chapters of each lesson tree without shortening their content."""
 from pathlib import Path
 from html import escape, unescape
 from urllib.parse import urlsplit, unquote, quote
@@ -12,8 +12,37 @@ OUT = WEB / 'dist'
 CACHE = WEB / '.cache'
 SOURCE_ROOT = 'https://github.com/swarnsingh/android-staff-engineer-playbook/blob/main/'
 MD = MarkdownIt('commonmark', {'html': True}).enable(['table', 'strikethrough'])
-FILES = sorted((ROOT/'kotlin').rglob('*.md'))
-PATHS = {p.relative_to(ROOT).as_posix() for p in FILES} | {'kotlin.md'}
+# Topic trees rendered as lessons, in site order. `phases` lists the guided-reading phases a pilot
+# renders (None renders the whole tree); chapters outside them keep linking to GitHub.
+TREES = {
+    'kotlin': {'title': 'Kotlin', 'phases': None},
+    'android': {'title': 'Android', 'phases': [1]},
+}
+
+
+def phases(slug):
+    """[(phase heading, chapter paths)] from the `### Phase …` lists of a tree's guided reading sequence."""
+    result = []
+    for block in re.split(r'^### ', (ROOT/f'{slug}.md').read_text(), flags=re.M)[1:]:
+        heading, _, body = block.partition('\n')
+        chapters = []
+        for target in re.findall(r'\]\(([^)#]+\.md)(?:#[^)]*)?\)', body.split('\n## ')[0]):
+            if target.startswith(slug + '/') and target not in chapters: chapters.append(target)
+        if chapters and heading.startswith('Phase'): result.append((heading.strip(), chapters))
+    return result
+
+
+ORDER, SECTION = {}, {}
+for _slug, _tree in TREES.items():
+    ORDER[_slug] = []
+    for _heading, _chapters in phases(_slug):
+        if _tree['phases'] is None or int(re.match(r'Phase (\d+)', _heading)[1]) in _tree['phases']:
+            ORDER[_slug] += [p for p in _chapters if p not in ORDER[_slug]]
+            SECTION.update({p: _heading for p in _chapters})
+    if _tree['phases'] is None and set(ORDER[_slug]) != {p.relative_to(ROOT).as_posix() for p in (ROOT/_slug).rglob('*.md')}:
+        raise ValueError(f'{_slug} reading sequence does not cover every chapter')
+PAGES = [p for slug in TREES for p in [f'{slug}.md'] + ORDER[slug]]
+PATHS = set(PAGES)
 # Site prefix, so the same build works at a domain root or under a project path.
 BASE = '/' + os.environ.get('SITE_BASE', '/').strip('/') + '/' if os.environ.get('SITE_BASE', '/').strip('/') else '/'
 MERMAID_RENDERER = os.environ.get('MERMAID_RENDERER', 'npx --yes @mermaid-js/mermaid-cli@11.16.0')
@@ -26,7 +55,11 @@ APPROVED_CORRECTIONS = [fix for fix in ALL_CORRECTIONS if fix.get('status') == '
 
 
 def route(path):
-    return BASE + 'kotlin/' if path == 'kotlin.md' else BASE + path.removesuffix('.md') + '/'
+    return BASE + path.removesuffix('.md') + '/'
+
+
+def tree_of(path):
+    return path.split('/')[0].removesuffix('.md')
 
 
 def slug(text):
@@ -161,7 +194,9 @@ def load_blend(path):
     <!-- @part Heading :: KEY -->          force the part a section belongs to
     Headings are matched on their visible text (backticks and emphasis removed).
     """
-    file = WEB / 'content/blend' / (Path(path).stem + '.blend')
+    # Kotlin blends predate other trees and sit at the top level; other trees use a folder per tree.
+    folder = WEB / 'content/blend' if tree_of(path) == 'kotlin' else WEB / 'content/blend' / tree_of(path)
+    file = folder / (Path(path).stem + '.blend')
     if not file.exists():
         return {}
     pieces = re.split(r'<!--\s*@(opening|before|after|diagram|part)\b(.*?)-->', file.read_text(), flags=re.S)
@@ -272,7 +307,7 @@ def render_chapter(path, raw, is_course=False):
         used.add(('opening', ''))
         body=first_band+f'<section class="lesson-section lesson-start" id="problem"><h2>Start here</h2>{wrap("story", blend[("opening","")], env)}<div class="original-opening">{opening}</div></section>'
     else:
-        desc=INTRO.get(Path(path).stem, 'Follow the concepts, examples, failure modes and design decisions in this chapter.')
+        desc=intro(path)
         body=first_band+f'<section class="lesson-section lesson-start" id="problem"><span class="eyebrow">START WITH THE NEED</span><h2>Why this topic matters</h2><p>{escape(desc)}</p><div class="original-opening">{opening}</div></section>'
     if path.endswith('/coroutines.md'):
         body += '<section class="lesson-section" id="experiment">' + added('try', '<h2>Watch independent waits overlap</h2><p>A profile needs a name and an avatar. Waiting for one request before starting the other adds avoidable waiting. Run the example, switch <code>concurrent</code> from <code>true</code> to <code>false</code>, and compare the start messages.</p>' + (WEB/'content/coroutine-experiment.html').read_text() + '<p>In Playground output, <code>main @coroutine#2</code> means thread <code>main</code>, coroutine #2. Different coroutine numbers can share the same thread.</p>') + '</section>'
@@ -305,7 +340,8 @@ def render_chapter(path, raw, is_course=False):
         if path.endswith('/coroutines.md') and heading=='Job Hierarchy and Cancellation':
             figure=(WEB/'content/coroutine-model.html').read_text()
             body += '<section class="lesson-section" id="ownership">' + added('visual', '<h2>See the ownership and failure policy</h2><p>The Android UI owner starts the profile load. The model assumes main-safe requests and shows an illustrative sequence, not measured Android frames or a captured runtime trace.</p><p>In the failure scenario, the outer UI boundary catches the expected <code>IOException</code> and sets an error state. Cancellation is allowed to propagate.</p>'+owner_code()+figure) + '</section>'
-    body += '<section class="lesson-section" id="continue-learning"><span class="eyebrow">CONNECT THE IDEAS</span><h2>Continue your Kotlin learning path</h2><p>The chapter above presents the original explanations, code examples, questions and answers in full. Use the learning path to connect this topic to the next one.</p><a class="secondary-button" href="'+BASE+'kotlin/">Explore all Kotlin chapters →</a></section>'
+    tree = TREES[tree_of(path)]['title']
+    body += f'<section class="lesson-section" id="continue-learning"><span class="eyebrow">CONNECT THE IDEAS</span><h2>Continue your {tree} learning path</h2><p>The chapter above presents the original explanations, code examples, questions and answers in full. Use the learning path to connect this topic to the next one.</p><a class="secondary-button" href="{route(tree_of(path) + ".md")}">Explore all {tree} chapters →</a></section>'
     unused = set(blend) - used
     if unused:
         raise ValueError(f'{path}: blend inserts target headings or diagrams that do not exist: {sorted(unused)}')
@@ -363,7 +399,22 @@ INTRO = {
 'jvm-interop':'Your Kotlin API may be called from Java or exposed through JVM tooling. Inspect what callers actually see: signatures, nullability, properties, wildcards, defaults and binary compatibility.',
 'bytecode':'Readable Kotlin can hide allocations, generated methods and dispatch. Connect source constructs to JVM output before making a performance or compatibility claim.',
 'kotlin-2-4-update':'A compiler upgrade changes language and platform capabilities. Separate stable concepts from release-specific changes, and verify compatibility before changing a production build.',
-'kotlin':'Start with values and functions, then connect types, compiler transformations, asynchronous work and runtime behaviour. Follow the guided phases or open a chapter directly.'}
+'kotlin':'Start with values and functions, then connect types, compiler transformations, asynchronous work and runtime behaviour. Follow the guided phases or open a chapter directly.',
+# Other trees are keyed by path, because chapter names repeat across trees.
+'android.md':'Start with the lifecycle the system imposes on every screen, then decide who owns state and data, how the UI renders it, where work runs, and how you verify and measure the result. Follow the guided phases or open a chapter directly.',
+'android/architecture/activity.md':'The system can stop or destroy your screen at any moment: on rotation, when another app comes forward, or to reclaim memory. Learn what an Activity is in that contract, which callbacks you can rely on, and what must not live inside it.',
+'android/architecture/fragment.md':'Many production screens are still built from Fragments, which add a second, shorter-lived view lifecycle inside their host. Learn where that split causes leaks and stale UI, and how Fragments fit a Compose-first codebase.',
+'android/architecture/viewmodel.md':'Rotation recreates the Activity, but the user expects loaded data to stay. A ViewModel keeps screen state across configuration changes; know exactly what it survives, what it does not, and who owns its work.',
+'android/architecture/savedstatehandle.md':'A ViewModel is lost when the system kills a backgrounded process. SavedStateHandle keeps small, critical screen inputs in saved instance state, so the screen can rebuild after process death.',
+'android/architecture/process-death-and-state-restoration.md':'Android kills background processes to free memory, and the user returns expecting the same screen. Learn what the system restores, what you must restore, and how to test that path deliberately.',
+'android/architecture/navigation.md':'A flow of screens must survive Back, deep links, rotation and process death while passing each destination only what it needs. Learn how the back stack is modelled and what belongs in navigation arguments.',
+'android/architecture/mvvm-vs-mvi.md':'Two screens with the same features can behave very differently under concurrent events and failures. Compare how MVVM and MVI shape state, events and tests before choosing one for a team.',
+'android/architecture/state-management.md':'Duplicated or ambiguously owned state shows stale data and races between updates. Give each piece of screen state one owner, one source of truth and one direction of flow.',
+'android/architecture/modularization-strategies.md':'As an app and its team grow, build times, ownership and accidental coupling grow with them. Learn how to split modules by feature and layer, and what each boundary costs.'}
+
+
+def intro(path):
+    return INTRO.get(path) or INTRO[Path(path).stem]
 
 
 def render_diagrams():
@@ -386,12 +437,8 @@ def build(skip_diagrams=False):
     # Content hash in asset URLs, so browsers never mix a new page with stale CSS or JS.
     asset_version=hashlib.sha256(b''.join((WEB/n).read_bytes() for n in ['styles.css','blend.css','app.js','blend.js','coroutines.js','lesson-model.js'])).hexdigest()[:10]
     template=(WEB/'templates/reader.html').read_text().replace('{{base}}',BASE).replace('{{asset_version}}',asset_version)
-    index=(ROOT/'kotlin.md').read_text()
-    order=[]
-    for relative in re.findall(r'\]\((kotlin/[^)#]+\.md)\)',index):
-        if relative not in order: order.append(relative)
-    if set(order)!=PATHS-{'kotlin.md'}: raise ValueError('Kotlin reading sequence does not cover every chapter')
     # Generate catalog from checked-in tree indexes, using guided order rather than filenames.
+    # Each chapter carries its guided-reading phase, so wide trees group into sub-sections.
     catalog=json.loads((WEB/'nav-data.js').read_text().split('=',1)[1].strip().rstrip(';'))
     for tree in catalog:
         tree_index=ROOT/(tree['slug']+'.md')
@@ -401,13 +448,15 @@ def build(skip_diagrams=False):
             if target.startswith(tree['slug']+'/') and target not in tree_order:tree_order.append(target)
         actual=sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/tree['slug']).rglob('*.md'))
         tree_order += [p for p in actual if p not in tree_order]
-        tree['chapters']=[{'title':title(ROOT/p),'path':p} for p in tree_order]
+        section={p:heading for heading,paths in phases(tree['slug']) for p in paths}
+        tree['chapters']=[{'title':title(ROOT/p),'path':p,'section':section.get(p,'More chapters'),'rendered':p in PATHS} for p in tree_order]
     (OUT/'nav-data.js').write_text('window.PLAYBOOK_CATALOG = '+json.dumps(catalog,ensure_ascii=False)+';\n')
     reports=[]
-    for path in ['kotlin.md']+order:
-        raw=(ROOT/path).read_text(); article,outline,report=render_chapter(path,raw,path=='kotlin.md')
+    for path in PAGES:
+        slug=tree_of(path); order=ORDER[slug]; is_index=path==f'{slug}.md'
+        raw=(ROOT/path).read_text(); article,outline,report=render_chapter(path,raw,is_index)
         name=title(ROOT/path)
-        category='Learning path' if path=='kotlin.md' else Path(path).parent.name.replace('-',' ').title()
+        category='Learning path' if is_index else SECTION[path]
         navigation=''
         if path in order:
             i=order.index(path); links=[]
@@ -419,7 +468,8 @@ def build(skip_diagrams=False):
         if path.endswith('/coroutines.md'): playground+='<p>The runnable console example demonstrates overlapping waits. Return to Content to edit and run it beside the explanation.</p><button class="primary-button" data-go="experiment">Go to the example →</button>'
         else: playground+='<p>Use a Kotlin/JVM project or an Android project as indicated by each example. Read the assumptions and expected behaviour before running or changing a block.</p><button class="primary-button" data-open-tab="content">Return to Content</button>'
         playground+='</div></section>'
-        values={'title':escape(name),'description':escape(INTRO[Path(path).stem]),'article':article,'outline':outline,'source':path,'source_url':SOURCE_ROOT+path,'category':escape(category),'chapter_navigation':navigation,'lesson_scripts':scripts,'playground_panel':playground}
+        tree=TREES[slug]['title']
+        values={'title':escape(name),'description':escape(intro(path)),'tree_title':escape(tree),'tree_route':route(f'{slug}.md'),'tree_eyebrow':escape(tree.upper()),'article':article,'outline':outline,'source':path,'source_url':SOURCE_ROOT+path,'category':escape(category),'chapter_navigation':navigation,'lesson_scripts':scripts,'playground_panel':playground}
         html=template
         for key,value in values.items():html=html.replace('{{'+key+'}}',value)
         if re.search(r'\{\{[a-z_]+\}\}',html):raise ValueError('Unexpanded page template')
@@ -430,10 +480,11 @@ def build(skip_diagrams=False):
         shutil.copy2(WEB/name,OUT/name)
     shutil.copytree(WEB/'fonts',OUT/'fonts')
     if not skip_diagrams: render_diagrams()
-    (OUT/'coverage/kotlin.json').write_text(json.dumps(reports,ensure_ascii=False,indent=2)+'\n')
+    (OUT/'coverage/pages.json').write_text(json.dumps(reports,ensure_ascii=False,indent=2)+'\n')
     (OUT/'coverage/diagram-sources.json').write_text(json.dumps({p.stem:p.read_text() for p in sorted((OUT/'diagram-sources').glob('*.mmd'))},ensure_ascii=False,indent=2)+'\n')
     (OUT/'coverage/corrections.json').write_text(json.dumps(APPROVED_CORRECTIONS,ensure_ascii=False,indent=2)+'\n')
-    print(f'Rendered {len(order)} Kotlin chapters + learning path; {sum(r["original_sections"] for r in reports)} source sections; {sum(r["code_blocks"] for r in reports)} code/diagram blocks; {len(APPROVED_CORRECTIONS)} of {len(ALL_CORRECTIONS)} proposed corrections approved and applied.')
+    trees='; '.join(f'{TREES[s]["title"]}: {len(ORDER[s])} chapters + learning path' for s in TREES)
+    print(f'Rendered {trees}; {sum(r["original_sections"] for r in reports)} source sections; {sum(r["code_blocks"] for r in reports)} code/diagram blocks; {len(APPROVED_CORRECTIONS)} of {len(ALL_CORRECTIONS)} proposed corrections approved and applied.')
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)

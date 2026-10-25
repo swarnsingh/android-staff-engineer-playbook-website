@@ -275,7 +275,7 @@ def self_test():
 def main():
     fixture_count = self_test()
     print(f'Preservation self-tests: {fixture_count} tampering cases detected.')
-    order = ['kotlin.md'] + sorted(p for p in build.PATHS if p != 'kotlin.md')
+    order = build.PAGES
     total_problems = total_checked = 0
     report, manifest = {}, {}
     for path in order:

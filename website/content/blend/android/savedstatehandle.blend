@@ -1,0 +1,52 @@
+<!-- Website teaching layer for android/architecture/savedstatehandle.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (Saved State module for ViewModel; Parcelables and Bundles:
+     1MB per-process Binder buffer, <50KB saved-state recommendation) on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A user is halfway through a long support message when a two-factor code arrives. They switch to the authenticator app, then to a heavy game while they wait for a call back. Twenty minutes later they return: the support screen is open again, on the right ticket, but the message box is empty.</p>
+
+The previous chapter's ViewModel did its job: it survived rotation. But this time the system killed the whole process, and the ViewModel went with it. Android already keeps a small saved-state **Bundle** for every activity the user can navigate back to, even after the process dies. `SavedStateHandle` connects that Bundle to your ViewModel, so a new ViewModel in a new process can start with the inputs the user had given. This chapter shows how the value travels, and why only small values belong there.
+
+<!-- @after First Principles :: animation -->
+### Follow the draft out of the process and back
+
+<figure class="stepper"><span class="stepper-title">Saving and restoring through SavedStateHandle</span><div class="stage viz-stack"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">App process</span><div class="node" data-el="vm"><strong><code>SupportViewModel</code></strong><small data-text="vmNote">—</small></div><div class="node" data-el="handle"><strong><code>SavedStateHandle</code></strong><small data-text="handleNote">—</small></div></div><div class="col"><span class="col-title">System process</span><div class="node" data-el="bundle"><strong>Saved-state Bundle</strong><small data-text="bundleNote">—</small></div></div></div><div class="node is-key" data-el="event"><strong>What happens</strong><small data-text="eventNote">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Open the ticket","caption":"Navigation opens the screen with ticketId=812. The ViewModel's handle already contains that argument when the ViewModel is created.","add":["vm","handle","bundle","event"],"state":{"vm":"done","handle":"done","bundle":"ghost"},"text":{"vmNote":"instance #1","handleNote":"ticketId = 812","bundleNote":"nothing saved yet","eventNote":"argument from the navigation route"}},
+{"label":"Type","caption":"Each keystroke writes the draft into the handle. getStateFlow(\"draft\", \"\") emits it to the UI, so the handle is the only source of truth for the draft.","state":{"handle":"active"},"text":{"handleNote":"ticketId = 812, draft = \"My order arrived…\"","eventNote":"savedStateHandle[\"draft\"] = text"}},
+{"label":"Switch apps","caption":"The activity stops. Its SavedStateRegistry asks every registered provider, including this handle, for its values and writes them into the instance-state Bundle. The system process now holds that Bundle.","state":{"handle":"done","bundle":"done"},"text":{"bundleNote":"ticketId, draft (a few hundred bytes)","eventNote":"onStop() → onSaveInstanceState(): registry collects providers"}},
+{"label":"Process killed","caption":"Memory is needed, so the system kills the process. The ViewModel and the handle object are gone. The Bundle is not: the system keeps it as long as the user can navigate back to this activity.","state":{"vm":"error","handle":"error","bundle":"done"},"text":{"vmNote":"gone","handleNote":"gone","eventNote":"no callback runs"}},
+{"label":"Return from Recents","caption":"A new process recreates the activity and passes the Bundle back. The SavedStateRegistry restores it, and the ViewModel factory builds a new ViewModel with a handle that already contains ticketId and draft.","state":{"vm":"warn","handle":"done","bundle":"done"},"text":{"vmNote":"instance #2, new process","handleNote":"ticketId = 812, draft = \"My order arrived…\"","eventNote":"onCreate(bundle) → registry restored → factory creates the ViewModel"}},
+{"label":"The screen rebuilds","caption":"getStateFlow emits the restored draft, so the text field shows it. The ticket itself is loaded again from the repository by its ID: only the ID and the user's input were saved.","state":{"vm":"done","handle":"active"},"text":{"vmNote":"loads ticket 812 from the repository","eventNote":"UI shows the draft; data reloads by ID"}}
+]</script><figcaption>Only the user's input and the IDs travelled. Everything else was rebuilt from the data layer.</figcaption></figure>
+
+<!-- @diagram 19d28b22e8ce623d -->
+### Two processes, one small parcel between them
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">App process: dies and restarts</span><div class="node"><strong>Activity / Fragment</strong><small>observes the ViewModel</small></div><div class="node"><strong>ViewModel</strong><small>reads and writes the handle</small></div><div class="node is-key"><strong><code>SavedStateHandle</code></strong><small>a provider in the owner's <code>SavedStateRegistry</code></small></div></div><div class="col"><span class="col-title">System process: survives</span><div class="node" data-state="done"><strong>Saved-state Bundle</strong><small>serialized when the activity stops; handed back when it is recreated</small></div></div></div><figcaption>The Bundle crosses the process boundary through Binder, which is why its size is limited.</figcaption></figure>
+
+<!-- @before Tradeoffs :: review -->
+The size limit sentence in the next section ("1MB across the entire OS IPC system") is under technical review. Android documents the 1MB Binder transaction buffer as shared by all transactions in progress for the process, and recommends keeping saved state below 50KB.
+
+<!-- @after Tradeoffs :: visual -->
+### A size budget, not a storage system
+
+<figure class="viz"><div class="viz-lanes"><div class="lane"><span class="lane-label">IDs, query, tab, draft text</span><div class="track"><span class="mark" style="--at:0%;--len:4%">bytes</span></div></div><div class="lane"><span class="lane-label">Recommended saved-state ceiling</span><div class="track"><span class="mark" style="--at:0%;--len:5%">&lt; 50KB</span></div></div><div class="lane"><span class="lane-label">Binder buffer, whole process</span><div class="track"><span class="mark" style="--at:0%;--len:100%">1MB, shared with every in-flight transaction</span></div></div></div><figcaption>Saved state shares the process's Binder buffer with every other in-flight transaction, and the system keeps it in memory for as long as the user can return. Save what reconstructs the screen; store the data itself in Room, DataStore or a cache.</figcaption></figure>
+
+<!-- @after Common Misconceptions :: check -->
+**Handle, ViewModel field, or database?** Decide before opening each answer.
+
+<details><summary>The text of an unsent comment.</summary>
+
+The handle. It is small, it is the user's own input, and nothing else can restore it after process death.
+</details>
+
+<details><summary>The 200 products shown on a search results screen.</summary>
+
+Not the handle. Keep the query in the handle and the results in a cache or database, then reload by query after restoration.
+</details>
+
+<details><summary>A loading flag for a request in progress.</summary>
+
+A ViewModel field. After process death the request is gone too, so restoring "loading = true" would show a spinner for work that is no longer running; derive it again when the new ViewModel starts.
+</details>

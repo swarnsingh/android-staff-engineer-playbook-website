@@ -1,0 +1,15 @@
+<!-- Website teaching layer for android.md (the Android learning path).
+     The original index is rendered in full; everything here is added around it. -->
+
+<!-- @opening -->
+<p class="story-lead">A "simple" profile screen ships. In week one, users report that the screen forgets their edits after a phone call. In week two, it drains the battery syncing in the background. In week three, a slow test suite hides an ANR that only appears on low-end devices.</p>
+
+Each bug came from a different layer of the platform: the lifecycle, background execution, and performance. None of them was visible in the Kotlin code alone. This path builds an Android feature from the outside in. It starts with the lifecycle the system imposes on every screen, then works through data ownership, UI, concurrency, integrations, testing and performance, down to the operating system underneath. Each phase is a sub-section in the Topics menu.
+
+<!-- @diagram c80f7dd94c6c9b65 -->
+### Nine phases, one feature
+
+<figure class="viz"><div class="viz-stack"><div class="node"><strong>Prerequisites</strong><small>Engineering fundamentals, then Kotlin: language core, type system, coroutines and Flow</small></div><div class="down"></div><div class="viz-grid" style="--cols:2"><div class="node is-key"><strong>1 · Lifecycle, state, architecture</strong><small>Survive rotation and process death. Lessons on this site.</small></div><div class="node"><strong>2 · Data ownership and DI</strong><small>One source of truth; who creates what</small></div><div class="node"><strong>3 · Compose runtime and UI</strong><small>How state becomes pixels</small></div><div class="node"><strong>4 · Concurrency and background work</strong><small>Where work runs, and what the OS allows</small></div><div class="node"><strong>5 · Network, security, device APIs, media</strong><small>The integrations a feature depends on</small></div><div class="node"><strong>6 · Testing strategy</strong><small>Proving the feature still works</small></div><div class="node"><strong>7 · Performance and observability</strong><small>Startup, jank, memory, battery</small></div><div class="node"><strong>8 · Build tooling and OS internals</strong><small>From source to process to Binder</small></div></div><div class="down"></div><div class="node" data-state="ghost"><strong>9 · Kotlin Multiplatform (optional)</strong><small>Only after the Android core: sharing code needs these boundaries first</small></div></div><figcaption>Phase 1 is rendered as lessons on this site. Chapters in later phases open their original Markdown on GitHub until they are converted.</figcaption></figure>
+
+<!-- @after Guided Reading Sequence :: guide -->
+**How to use this path on the website.** Open **Topics**, then **Android**: chapters are grouped by phase, in reading order. Phase 1 opens here as full lessons, with the original chapter plus labelled explanations, visuals and step-through animations. Other chapters are marked "GitHub ↗" and open the original Markdown in a new tab. Each lesson ends with its Probing Questions and Answer Key, also gathered in the **Q&A** tab.

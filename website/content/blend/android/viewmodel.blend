@@ -1,0 +1,57 @@
+<!-- Website teaching layer for android/architecture/viewmodel.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Retention path checked against androidx ComponentActivity source (onRetainNonConfigurationInstance,
+     ON_DESTROY clearing when !isChangingConfigurations) and developer.android.com ViewModel docs on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A user opens a product page on a slow train connection. The spinner turns for eight seconds. Halfway through, they rotate the phone to see the photos larger, and the spinner starts again from zero. Rotate once more and it restarts again: the screen never finishes loading.</p>
+
+Rotation destroys the activity, and in this app the network request lived inside it, so every rotation threw the request away and started a new one. The fix is to keep the request and its result in an object that is **not** destroyed by rotation but **is** cleared when the user leaves the screen for good. That object is the Jetpack `ViewModel`. This chapter shows where it lives, exactly which events it survives, and what it must never hold.
+
+<!-- @after First Principles :: visual -->
+### Three lifetimes, three kinds of state
+
+<figure class="viz"><div class="viz-lanes"><div class="lane"><span class="lane-label">Activity / Fragment / UI</span><div class="track"><span class="mark" style="--at:0%;--len:30%">instance #1</span><span class="mark" style="--at:34%;--len:30%">#2 after rotation</span></div></div><div class="lane"><span class="lane-label">ViewModel</span><div class="track"><span class="mark" style="--at:0%;--len:64%">one instance until the screen is finished</span></div></div><div class="lane"><span class="lane-label">Repository / data layer</span><div class="track"><span class="mark" style="--at:0%;--len:100%">the whole process, or longer if persisted</span></div></div></div><figcaption>Put each piece of state in the shortest lifetime that is still long enough. Rotation ends only the top lane.</figcaption></figure>
+
+<!-- @before Internal Mechanics :: review -->
+One paragraph in the next section describes the `ViewModelStore` being handed to the OS during rotation. That description is under technical review; answer 1 of this chapter's Answer Key describes the retained store staying in the app process.
+
+<!-- @after Internal Mechanics :: animation -->
+### Follow one ViewModel through rotation, Back and process death
+
+<figure class="stepper"><span class="stepper-title">Where the ViewModel lives, and what ends it</span><div class="stage viz-stack"><div class="viz-grid" style="--cols:2"><div class="node" data-el="activity"><strong>Activity</strong><small data-text="activityNote">—</small></div><div class="node" data-el="store"><strong><code>ViewModelStore</code></strong><small data-text="storeNote">—</small></div><div class="node" data-el="vm"><strong><code>ProductViewModel</code></strong><small data-text="vmNote">—</small></div><div class="node" data-el="job"><strong><code>viewModelScope</code> load</strong><small data-text="jobNote">—</small></div></div><div class="node is-key" data-el="event"><strong>What happens</strong><small data-text="eventNote">—</small></div></div><script type="application/json" class="steps">[
+{"label":"First request","caption":"The screen asks for its ViewModel through the activity, its ViewModelStoreOwner. The store is empty, so the factory creates one and stores it. Its init block starts the load in viewModelScope.","add":["activity","store","vm","job","event"],"state":{"activity":"done","store":"done","vm":"active","job":"active"},"text":{"activityNote":"instance #1","storeNote":"owned by the activity","vmNote":"created, stored under its key","jobNote":"loading…","eventNote":"ViewModelProvider(owner).get(…) → factory.create(…)"}},
+{"label":"Rotation starts","caption":"Before destroying the instance, ComponentActivity returns its ViewModelStore from onRetainNonConfigurationInstance(). The platform keeps that object in the app process. Because isChangingConfigurations is true, the store is not cleared.","state":{"activity":"error","store":"warn","vm":"active","job":"active"},"text":{"activityNote":"destroyed","storeNote":"retained in the app process","eventNote":"onRetainNonConfigurationInstance() → onDestroy() (store kept)"}},
+{"label":"New activity","caption":"The new instance reads lastNonConfigurationInstance and gets the same store back. The same ViewModel is returned, and the load was never interrupted.","state":{"activity":"done","store":"done","vm":"active","job":"done"},"text":{"activityNote":"instance #2","storeNote":"same store","vmNote":"same instance","jobNote":"finished: result in StateFlow","eventNote":"new UI collects uiState and gets the latest value at once"}},
+{"label":"User presses Back","caption":"Now the activity is finishing, not changing configuration. On ON_DESTROY, ComponentActivity clears the store: each ViewModel's onCleared() runs and viewModelScope is cancelled.","state":{"activity":"error","store":"error","vm":"error","job":"error"},"text":{"activityNote":"finished","storeNote":"cleared","vmNote":"onCleared()","jobNote":"cancelled","eventNote":"onDestroy() with isChangingConfigurations == false → viewModelStore.clear()"}},
+{"label":"Instead: process death","caption":"Rewind: the user switched apps and the system killed the process. Nothing runs: no onCleared(), no cancellation callback. The store and ViewModel simply vanish with the process.","state":{"activity":"ghost","store":"ghost","vm":"ghost","job":"ghost"},"text":{"activityNote":"gone with the process","storeNote":"gone","vmNote":"gone, no onCleared()","jobNote":"gone","eventNote":"process killed: no callbacks"}},
+{"label":"Return after process death","caption":"A new process creates a new activity and a new, empty ViewModel, so the load starts again. Anything the user typed is lost unless it was in saved state or persisted: that is the next chapter.","state":{"activity":"done","store":"done","vm":"warn","job":"active"},"text":{"activityNote":"new process, new instance","storeNote":"new, empty","vmNote":"new instance","jobNote":"loading again","eventNote":"use SavedStateHandle for small inputs, the data layer for the rest"}}
+]</script><figcaption>A ViewModel survives exactly one kind of event: recreation of its owner inside the same process.</figcaption></figure>
+
+<!-- @diagram a81c01eac0dc0de7 -->
+### The state loop and each layer's lifetime
+
+<figure class="viz"><div class="viz-stack"><div class="node"><strong>UI (Activity, Fragment or composable)</strong><small>recreated on rotation · renders state, sends events</small></div><div class="viz-grid" style="--cols:2"><div class="node"><strong>1 · event ↓</strong><small><code>viewModel.refresh()</code></small></div><div class="node" data-state="done"><strong>5 · state ↑</strong><small>UI collects <code>uiState</code></small></div></div><div class="node is-key"><strong><code>ViewModel</code> → <code>StateFlow&lt;UiState&gt;</code></strong><small>survives rotation · 4 · produces the next state</small></div><div class="viz-grid" style="--cols:2"><div class="node"><strong>2 · fetch ↓</strong><small><code>repository.fetchUser()</code></small></div><div class="node"><strong>3 · data ↑</strong><small>result or failure</small></div></div><div class="node"><strong>Repository</strong><small>application scope · source of truth</small></div></div><figcaption>Events go down, state comes up. Only the ViewModel writes the state; the UI only reads it.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: visual -->
+### Choosing the owner chooses who shares the instance
+
+<figure class="viz"><div class="viz-grid" style="--cols:3"><div class="node"><strong>This screen</strong><small><code>by viewModels()</code>, or <code>viewModel()</code> in a composable</small><small>cleared when this Fragment, Activity or navigation entry is finished</small></div><div class="node is-key"><strong>A navigation graph</strong><small>the graph's back-stack entry as owner</small><small>shared by every screen in the flow; cleared when the graph is popped</small></div><div class="node" data-state="warn"><strong>The host activity</strong><small><code>by activityViewModels()</code></small><small>shared by everything in the activity; in a single-activity app, close to app-wide</small></div></div><figcaption>The <code>ViewModelStoreOwner</code> you pass decides both identity and lifetime. A wider owner shares more, and holds memory longer.</figcaption></figure>
+
+<!-- @after Common Misconceptions :: check -->
+**Will it survive?** Decide before opening each answer.
+
+<details><summary>A <code>MutableStateFlow</code> of search results inside the ViewModel, after a rotation.</summary>
+
+Yes. Rotation recreates only the activity; the retained store returns the same ViewModel with its flows and values.
+</details>
+
+<details><summary>The same search results after the app was killed in the background.</summary>
+
+No. Process death removes the ViewModel without `onCleared()`. Keep the query in `SavedStateHandle` and reload or read cached results from the data layer.
+</details>
+
+<details><summary>A coroutine in <code>viewModelScope</code> when the user presses Back to leave the screen.</summary>
+
+It is cancelled. Finishing clears the store, `onCleared()` runs, and the scope's job is cancelled. Work that must outlive the screen belongs in an application-scoped component or WorkManager.
+</details>

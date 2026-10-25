@@ -1,0 +1,61 @@
+<!-- Website teaching layer for android/architecture/process-death-and-state-restoration.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (activity lifecycle: the system kills processes, not activities;
+     Parcelables and Bundles: per-process Binder buffer, <50KB guidance) on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">The release checklist says "rotate every screen". Every screen passes. Yet the crash dashboard shows a <code>NullPointerException</code> in <code>DashboardActivity.onCreate()</code> in a small share of sessions, and nobody can reproduce it. The stack traces have one thing in common: the app had been in the background for a while.</p>
+
+Rotation recreates the activity inside the same process, so singletons, statics and ViewModels are all still there. When the system kills the process instead, all of them are gone, and only what was saved or persisted comes back. A test plan that only rotates never exercises that path. This chapter explains how Android kills and restores a process, what survives, and how to test restoration deliberately.
+
+<!-- @after First Principles :: visual -->
+### What survives which event
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Activity object</strong><small>Rotation: <b>new instance</b></small><small>Process death: <b>new instance</b></small><small>Task removed: <b>gone</b></small></div><div class="node" data-state="warn"><strong>ViewModel, singletons, statics</strong><small>in memory</small><small>Rotation: <b>kept</b></small><small>Process death: <b>gone, back to initial values</b></small><small>Task removed: <b>gone</b></small></div><div class="node" data-state="done"><strong>Saved state</strong><small><code>SavedStateHandle</code>, <code>rememberSaveable</code></small><small>Rotation: <b>restored</b></small><small>Process death: <b>restored</b></small><small>Task removed: <b>discarded</b></small></div><div class="node" data-state="done"><strong>Room, DataStore, files</strong><small>on disk</small><small>Rotation: <b>kept</b></small><small>Process death: <b>kept</b></small><small>Task removed: <b>kept</b></small></div></div><figcaption>"Task removed" means the user swiped the app away from Recents. The process-death line is the one users meet during ordinary multitasking, and the one a rotation test never exercises.</figcaption></figure>
+
+<!-- @after Internal Mechanics :: animation -->
+### Two apps restore the same dashboard
+
+Both apps logged the user in, kept a session, and were killed in the background. Follow what each one does when the user returns.
+
+<figure class="stepper"><span class="stepper-title">Restoring after process death, two ways</span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">App A: session in a singleton</span><div class="node" data-el="a1"><strong>Before the kill</strong><small><code>SessionManager.currentUser</code> = Asha</small></div><div class="node" data-el="a2"><strong>New process</strong><small><code>SessionManager.currentUser</code> = null</small></div><div class="node" data-el="a3"><strong><code>DashboardActivity.onCreate(bundle)</code></strong><small><code>currentUser!!.name</code></small></div><div class="node" data-el="a4"><strong>Result</strong><small>NullPointerException on launch</small></div></div><div class="col"><span class="col-title">App B: session in durable storage</span><div class="node" data-el="b1"><strong>Before the kill</strong><small>token in an encrypted store; screen ID in saved state</small></div><div class="node" data-el="b2"><strong>New process</strong><small>store still on disk; Bundle returned by the system</small></div><div class="node" data-el="b3"><strong><code>DashboardViewModel</code> created</strong><small>reads the session from the data layer; shows loading</small></div><div class="node" data-el="b4"><strong>Result</strong><small>dashboard reloads, or sign-in if the session expired</small></div></div></div><script type="application/json" class="steps">[
+{"label":"Logged in, in the background","caption":"Both apps look identical to the user. App A keeps the current user in a Kotlin object; App B keeps the token in durable storage and only the screen's inputs in saved state.","add":["a1","b1"],"state":{"a1":"done","b1":"done"}},
+{"label":"Process killed","caption":"The system needs memory and kills both processes. No callback runs in either app. Saved-state Bundles stay with the system; files stay on disk.","state":{"a1":"ghost","b1":"ghost"}},
+{"label":"User returns","caption":"A new process starts. In App A every object starts from its initializer, so the singleton's user is null. App B's storage is unaffected.","add":["a2","b2"],"state":{"a2":"warn","b2":"done"}},
+{"label":"Activity recreated","caption":"Both activities receive the saved Bundle in onCreate(). App A assumes the login flow already ran in this process. App B's ViewModel asks the data layer for the session.","add":["a3","b3"],"state":{"a3":"error","b3":"active"}},
+{"label":"Outcome","caption":"App A crashes on launch, which is the unreproducible dashboard crash. App B shows its loading state, then the dashboard, or routes to sign-in if the session is no longer valid.","add":["a4","b4"],"state":{"a4":"error","b4":"done"}}
+]</script><figcaption>Restoration starts from nothing but saved state and storage. Any screen that depends on an earlier screen having run in the same process is broken.</figcaption></figure>
+
+<!-- @diagram 27f1ff10a08314da -->
+### The save, kill and restore sequence
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Home</strong><small>activity stops; its state is saved and handed to the system</small></div><div class="node" data-state="done"><strong>System holds the Bundle</strong><small>e.g. <code>{id: 42}</code></small></div><div class="node" data-state="error"><strong>Process 123 killed</strong><small>SIGKILL, no callback</small></div><div class="node"><strong>User taps the app in Recents</strong><small>new process 456 forked from Zygote</small></div><div class="node is-key"><strong><code>Application.onCreate()</code> → <code>Activity.onCreate(bundle)</code></strong><small>a cold start that must rebuild the screen from <code>{id: 42}</code></small></div></div><figcaption>The process ID changes; the saved Bundle is the only thing carried across.</figcaption></figure>
+
+<!-- @before Tradeoffs :: review -->
+The size-limit wording in the next section ("IPC limit of 1MB total across all apps") is under technical review. Android documents the 1MB Binder transaction buffer as shared by all transactions in progress for the process.
+
+<!-- @before Staff Engineer Thinking :: review -->
+Point 1 of the next section suggests "Don't keep activities" for process-death testing. That suggestion is under technical review; answer 3 of this chapter's Answer Key explains that the option tests activity recreation rather than process death.
+
+<!-- @after Common Misconceptions :: check -->
+**Which test proves what?** Decide before opening each answer.
+
+<details><summary>Rotate the device on every screen.</summary>
+
+Activity recreation with the process alive. ViewModels and singletons survive, so it cannot reveal a dependency on in-memory state.
+</details>
+
+<details><summary>Turn on "Don't keep activities" and switch away.</summary>
+
+Activity destruction and saved-state restoration, still in the same process. Singletons keep their values, so App A in the animation would pass.
+</details>
+
+<details><summary>Send the app to the background, then <code>adb shell am kill &lt;package&gt;</code>, then reopen it from Recents.</summary>
+
+Process death with the task kept, which is the real restoration path. App A crashes; App B restores.
+</details>
+
+<details><summary>Swipe the app away from Recents, then launch it again.</summary>
+
+A fresh start: the task and its saved state are discarded. Use it to test cold launch, not restoration.
+</details>

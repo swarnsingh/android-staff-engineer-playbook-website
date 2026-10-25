@@ -194,7 +194,7 @@ function chapterLink(chapter){
   const active=chapter.path===document.body.dataset.source;
   const link=document.createElement('a');link.textContent=chapter.title;
   if(active){link.href='#problem';link.setAttribute('aria-current','page');link.addEventListener('click',e=>{e.preventDefault();closeCurriculum();setView('content',{anchor:'problem'});});}
-  else if(chapter.path.startsWith('kotlin/')){link.href=(document.body.dataset.base||'/')+chapter.path.replace(/\.md$/,'/');}
+  else if(chapter.rendered){link.href=(document.body.dataset.base||'/')+chapter.path.replace(/\.md$/,'/');}
   else{link.href=sourceRoot+chapter.path;link.target='_blank';link.rel='noreferrer';link.setAttribute('aria-describedby','external-note');const cue=document.createElement('span');cue.className='external-cue';cue.textContent='GitHub ↗';link.append(cue);}
   return link;
 }
@@ -205,21 +205,22 @@ function renderNavigation(query=''){
     const chapters=topic.chapters.filter(chapter=>!query||all||`${chapter.title} ${chapter.path} ${chapter.path.endsWith('/coroutines.md')?'suspend cancellation cancel viewmodelscope continuation async await':''}`.toLowerCase().includes(query));
     if(!chapters.length)continue;count+=chapters.length;
     if(topic.category!==previousCategory){const label=document.createElement('p');label.className='nav-label';label.textContent=topic.category;nav.append(label);previousCategory=topic.category;}
-    const group=document.createElement('details');group.className='nav-group';group.open=!!query||topic.slug==='kotlin';
+    const group=document.createElement('details');group.className='nav-group';const here=document.body.dataset.source;group.open=!!query||here===topic.slug+'.md'||topic.chapters.some(c=>c.path===here);
     const summary=document.createElement('summary');const icon=document.createElement('span');icon.className='nav-icon';icon.textContent=topic.icon;icon.setAttribute('aria-hidden','true');
     const name=document.createElement('span');name.textContent=topic.title;const chevron=document.createElement('span');chevron.className='chevron';chevron.textContent='›';chevron.setAttribute('aria-hidden','true');summary.append(icon,name,chevron);group.append(summary);
     const children=document.createElement('div');children.className='nav-children';
-    if(topic.slug==='kotlin'&&!query){
-      let currentFolder='',folderGroup;
+    // Trees with lessons on this site open at their learning path; wide trees group by guided-reading phase.
+    if(topic.chapters.some(c=>c.rendered)&&!query){const path=document.createElement('a');path.href=(document.body.dataset.base||'/')+topic.slug+'/';path.textContent='Learning path';if(here===topic.slug+'.md')path.setAttribute('aria-current','page');children.append(path);}
+    if(!query&&new Set(chapters.map(c=>c.section)).size>1){
+      let currentSection='',sectionGroup;
       for(const chapter of chapters){
-        const folder=chapter.path.split('/')[1];
-        if(folder!==currentFolder){
-          folderGroup=document.createElement('details');folderGroup.className='nav-group';
-          folderGroup.open=chapters.some(c=>c.path===document.body.dataset.source && c.path.split('/')[1]===folder);
-          const heading=document.createElement('summary');heading.textContent=folder.replaceAll('-',' ');
-          folderGroup.append(heading);children.append(folderGroup);currentFolder=folder;
+        if(chapter.section!==currentSection){
+          sectionGroup=document.createElement('details');sectionGroup.className='nav-group';
+          sectionGroup.open=chapters.some(c=>c.path===here&&c.section===chapter.section);
+          const heading=document.createElement('summary');heading.textContent=chapter.section;
+          sectionGroup.append(heading);children.append(sectionGroup);currentSection=chapter.section;
         }
-        folderGroup.append(chapterLink(chapter));
+        sectionGroup.append(chapterLink(chapter));
       }
     }else chapters.forEach(c=>children.append(chapterLink(c)));
     group.append(children);nav.append(group);

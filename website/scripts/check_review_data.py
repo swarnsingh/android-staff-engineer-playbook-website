@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check triage totals, exact proposed replacements, and the read-only Kotlin snapshot."""
+"""Check triage totals, exact proposed replacements, and the read-only Kotlin and Android snapshot."""
 from collections import Counter
 from pathlib import Path
 import hashlib, json, re
@@ -59,14 +59,18 @@ def check():
         occupied[fix['path']].append((start,end))
         if fix['old'].strip() not in prose or fix['new'].strip() not in prose:
             raise ValueError('Markdown/JSON wording differs: '+fix['id'])
-    snapshot = json.loads((ROOT/'source-snapshot.json').read_text())['kotlin_sha256']
-    actual_paths = {'kotlin.md'} | {str(p.relative_to(ROOT)) for p in (ROOT/'kotlin').rglob('*.md')}
-    if actual_paths != set(snapshot):
-        raise ValueError('Kotlin snapshot file set changed')
-    for path, digest in snapshot.items():
-        if hashlib.sha256((ROOT/path).read_bytes()).hexdigest() != digest:
-            raise ValueError('Read-only source changed: '+path)
-    print(f'Review data: {sum(totals.values())} triage rows, {len(edited)} amended IDs / {len(proposals)} replacements, 23 source hashes verified.')
+    snapshot = json.loads((ROOT/'source-snapshot.json').read_text())
+    verified = 0
+    for tree in ('kotlin', 'android'):
+        hashes = snapshot[tree+'_sha256']
+        actual_paths = {tree+'.md'} | {str(p.relative_to(ROOT)) for p in (ROOT/tree).rglob('*.md')}
+        if actual_paths != set(hashes):
+            raise ValueError(tree+' snapshot file set changed')
+        for path, digest in hashes.items():
+            if hashlib.sha256((ROOT/path).read_bytes()).hexdigest() != digest:
+                raise ValueError('Read-only source changed: '+path)
+        verified += len(hashes)
+    print(f'Review data: {sum(totals.values())} triage rows, {len(edited)} amended IDs / {len(proposals)} replacements, {verified} source hashes verified.')
     return totals
 
 
