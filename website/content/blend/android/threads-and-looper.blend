@@ -1,0 +1,51 @@
+<!-- Website teaching layer for android/concurrency/threads-and-looper.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Looper/Handler behaviour per developer.android.com reference (Looper.quit / quitSafely) and
+     "Processes and threads"; checked 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A screen shows "Saved!" ten minutes after a save, then crashes because the activity it belonged to was destroyed long ago. The code posted a delayed update with a <code>Handler</code>. Nobody remembered that the message was sitting in the main thread's queue all that time, holding the old activity.</p>
+
+Everything on Android's main thread, including clicks, frames, lifecycle callbacks and coroutine resumptions on `Dispatchers.Main`, is a message taken from one queue by one loop. `Looper`, `MessageQueue` and `Handler` are that loop, that queue and the way to put work into it. This chapter shows how they fit, why blocking the loop freezes the app, and how queued work can outlive the code that queued it.
+
+<!-- @after First Principles :: visual -->
+### One thread, one loop, one queue
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Any thread</strong><small><code>handler.post { … }</code></small></div><div class="node"><strong><code>MessageQueue</code></strong><small>ordered by due time</small></div><div class="node is-key"><strong><code>Looper.loop()</code></strong><small>takes the next due message, runs it, repeats</small></div><div class="node" data-state="done"><strong>The Looper's thread</strong><small>for the main Looper: the UI thread</small></div></div><figcaption>A <code>Handler</code> runs code on its Looper's thread, whoever calls <code>post</code>.</figcaption></figure>
+
+<!-- @after Internal Mechanics :: animation -->
+### Watch the main queue for a few seconds
+
+<figure class="stepper"><span class="stepper-title">The main Looper taking one message at a time</span><div class="stage viz-stack"><div class="node is-key" data-el="loop"><strong>Main thread</strong><small data-text="loopV">—</small></div><div class="viz-grid" style="--cols:3"><div class="node" data-el="m1"><strong>Frame</strong><small>draw the UI</small></div><div class="node" data-el="m2"><strong>Touch</strong><small>a button click</small></div><div class="node" data-el="m3"><strong>Delayed post</strong><small>"Saved!" in 10 minutes</small></div></div></div><script type="application/json" class="steps">[
+{"label":"Queue","caption":"A frame callback and a touch event are due now; a delayed post is due in ten minutes. The Looper takes them in due-time order.","add":["loop","m1","m2","m3"],"state":{"loop":"done","m3":"ghost"},"text":{"loopV":"idle, waiting for the next due message"}},
+{"label":"Run the frame","caption":"The Looper runs the frame message on the main thread. Nothing else on this thread runs until it returns.","state":{"m1":"active"},"text":{"loopV":"drawing"}},
+{"label":"Run the click","caption":"Next, the touch message runs the click listener. A listener that calls Thread.sleep() here would hold the loop, and frames and input would stop being handled: the path to an ANR.","state":{"m1":"done","m2":"active"},"text":{"loopV":"running onClick"}},
+{"label":"The activity is destroyed","caption":"The user rotates the phone. The old activity is destroyed, but the delayed message is still queued, and its lambda still references that activity.","state":{"m2":"done","m3":"warn"},"text":{"loopV":"idle · delayed post still holds the old activity"}},
+{"label":"Ten minutes later","caption":"The message comes due and runs against a destroyed activity: the opening crash. Remove pending callbacks when the owner is destroyed, or use a lifecycle-aware coroutine instead.","state":{"m3":"error"},"text":{"loopV":"runs the stale update"}}
+]</script><figcaption>Queued work keeps everything it captured alive until it runs or is removed.</figcaption></figure>
+
+<!-- @diagram ecb7e8b069453bfd -->
+### Background work, main-thread update
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Background thread</span><div class="node"><strong>Worker logic</strong><small>download, parse</small></div><div class="node"><strong><code>mainHandler.post { … }</code></strong><small>enqueue the UI update</small></div></div><div class="col"><span class="col-title">Main thread</span><div class="node"><strong>Message queue</strong></div><div class="node is-key"><strong>Looper pulls the task</strong></div><div class="node" data-state="done"><strong>Update UI</strong><small>then the loop repeats</small></div></div></div><figcaption>The main Handler is the only way across: the background thread never touches views itself.</figcaption></figure>
+
+<!-- @before Answer Key :: review -->
+Answer 9 in the next section is under technical review. A correction is pending the owner's approval.
+
+<!-- @after Common Misconceptions :: check -->
+**Which thread runs it?** Decide before opening each answer.
+
+<details><summary><code>Handler(Looper.getMainLooper()).post { … }</code> called from a background thread.</summary>
+
+The main thread. A Handler runs work on its Looper's thread, not the caller's.
+</details>
+
+<details><summary>Parsing a 10 MB JSON file posted to a <code>HandlerThread</code> that also handles camera frames.</summary>
+
+That one thread: and while it parses, no camera frame is handled. Run CPU-heavy work on `Dispatchers.Default` or a pool.
+</details>
+
+<details><summary>A coroutine resumes on <code>Dispatchers.Main</code>.</summary>
+
+The main thread, through the main Looper: the resumption is posted to its queue like any other message.
+</details>

@@ -1,0 +1,46 @@
+<!-- Website teaching layer for android/concurrency/services.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (Services overview; Foreground service types; background start
+     restrictions) and the kotlinx.coroutines Flow context-preservation rule on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A running app records a workout in a background coroutine. On the test phone it works. On a user's phone with twenty other apps open, the recording stops after a few minutes in the pocket, with no crash and no error. The system had no reason to keep a backgrounded process alive, because nothing told it the work mattered.</p>
+
+A `Service` is not a thread. It is a **declaration to the system**: this process is doing work that matters, even without a visible screen. Android has narrowed what that declaration can claim, release after release, until long-running user-visible work became a typed foreground service with a notification. This chapter covers the three kinds of service, the main-thread trap, foreground service types, and when WorkManager is the better tool.
+
+<!-- @after First Principles :: visual -->
+### Three kinds of service, three contracts
+
+<figure class="viz"><div class="viz-grid" style="--cols:3"><div class="node" data-state="error"><strong>Background (started)</strong><small>restricted since Android 8: stopped soon after the app leaves the foreground</small></div><div class="node is-key"><strong>Foreground</strong><small>visible notification + declared type (Android 14) · the system keeps the process at high priority</small></div><div class="node"><strong>Bound</strong><small>lives while clients are bound · a client-server API, often over Binder</small></div></div><figcaption>Whatever its kind, a service's callbacks run on the main thread; the work itself needs its own thread or coroutine scope.</figcaption></figure>
+
+<!-- @after Internal Mechanics :: animation -->
+### Start a location-tracking foreground service, step by step
+
+<figure class="stepper"><span class="stepper-title">What each step proves to the system</span><div class="stage viz-stack"><div class="node" data-el="manifest"><strong>Manifest</strong><small data-text="manifestV">—</small></div><div class="node" data-el="perm"><strong>Runtime permission</strong><small data-text="permV">—</small></div><div class="node" data-el="start"><strong>Start while visible</strong><small data-text="startV">—</small></div><div class="node" data-el="fg"><strong><code>startForeground(…, TYPE_LOCATION)</code></strong><small data-text="fgV">—</small></div><div class="node is-key" data-el="work"><strong>The work</strong><small data-text="workV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Declare","caption":"The manifest declares the service with foregroundServiceType=\"location\" and the matching FOREGROUND_SERVICE permissions. Without a declared type, Android 14 refuses to start it in the foreground.","add":["manifest"],"state":{"manifest":"done"},"text":{"manifestV":"type location + permissions declared"}},
+{"label":"Ask the user","caption":"A location-type foreground service also needs location permission granted at runtime. The type is a claim the system checks, not a label.","add":["perm"],"state":{"perm":"done"},"text":{"permV":"location granted"}},
+{"label":"Start from the foreground","caption":"The user taps Start Workout while the app is visible. Since Android 12, starting a foreground service from the background is blocked except for documented exemptions.","add":["start"],"state":{"start":"done"},"text":{"startV":"started from a visible activity"}},
+{"label":"Promote with a notification","caption":"The service calls startForeground with its notification and type. The user can now see that tracking is running.","add":["fg"],"state":{"fg":"active"},"text":{"fgV":"notification shown"}},
+{"label":"Do the work off the main thread","caption":"onStartCommand returns quickly; a coroutine scope owned by the service records locations. When the workout ends, the service stops itself and the notification disappears.","add":["work"],"state":{"fg":"done","work":"done"},"text":{"workV":"coroutine in the service's scope; stopSelf() at the end"}}
+]</script><figcaption>Every step is required; skipping any one is either an exception at start or a process the system is free to kill.</figcaption></figure>
+
+<!-- @before Production Example :: review -->
+The Flow in the next section's example is under technical review. A correction is pending the owner's approval.
+
+<!-- @after Tradeoffs :: check -->
+**Service or WorkManager?** Decide before opening each answer.
+
+<details><summary>Navigation with turn-by-turn voice while the screen is off.</summary>
+
+A foreground service of the matching type: user-initiated, continuous, and visible as a notification.
+</details>
+
+<details><summary>Upload yesterday's photos when the device is on Wi-Fi and charging.</summary>
+
+WorkManager: deferrable, constrained, and guaranteed to run even after process death or reboot.
+</details>
+
+<details><summary>Sync a draft the moment the user taps Send, finishing even if they leave the app.</summary>
+
+WorkManager with expedited work: it starts promptly, survives the app leaving the foreground, and does not need a long-lived service.
+</details>

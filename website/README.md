@@ -5,7 +5,7 @@ This folder builds the reader website for the playbook. Read [`../content-rulebo
 ## Current state
 
 - **Repository:** private `swarnsingh/android-staff-engineer-playbook-website`. Current work: `codex/reader-website-fixes`, published from `main`. Historical branches `codex/reader-website` (`60b8c2a`) and `claude/reader-website-kotlin` (`8a77e22`) are preserved unchanged. Since repository separation, website work makes no pushes or merges to the original repository. Its earlier remote `codex/reader-website` branch remains at `390f8f8`; its `main` and canonical chapters are unchanged. Do not delete or rewrite that historical branch.
-- **Scope:** the Kotlin tree (`kotlin.md` plus all 22 chapters) and the Android tree (`android.md` plus 32 chapters, phases 1, 2, 3) render as pages. `TREES` in `scripts/build.py` lists the rendered trees and, for a pilot, which guided-reading phases render; other chapters link to GitHub.
+- **Scope:** the Kotlin tree (`kotlin.md` plus all 22 chapters) and the Android tree (`android.md` plus 41 chapters, phases 1, 2, 3, 4) render as pages. `TREES` in `scripts/build.py` lists the rendered trees and, for a pilot, which guided-reading phases render; other chapters link to GitHub.
 - **Sub-sections:** each tree's chapters are grouped by the `### Phase …` lists in its index (`kotlin.md`, `android.md`). The Topics menu shows one group per phase, and each chapter's breadcrumb shows its phase.
 - **Originals:** read-only snapshot from `60b8c2a`; provenance and file hashes for the Kotlin and Android trees are recorded in `../source-snapshot.json` and checked on every build. Do not edit them.
 - **Corrections:** 292 Kotlin proposals from Codex's audits sit in `content/corrections-*.json`, plus 3 new findings. All are triaged in `reviews/corrections-triage.md` (revised after Codex's review). None is approved yet, so none is applied.
@@ -71,7 +71,16 @@ This folder builds the reader website for the playbook. Read [`../content-rulebo
 | compose/compose-accessibility | `android/compose-accessibility.blend` | Blended |
 | compose/view-interop-and-migration | `android/view-interop-and-migration.blend` | Blended |
 | compose/compose-performance-tooling | `android/compose-performance-tooling.blend` | Blended |
-| Android phases 4, 5, 6, 7, 8, 9 | — | Not rendered yet; links open GitHub |
+| architecture/structured-concurrency | `android/structured-concurrency.blend` | Blended |
+| architecture/flow | `android/flow.blend` | Blended |
+| concurrency/coroutines-under-the-hood | `android/coroutines-under-the-hood.blend` | Blended |
+| concurrency/threads-and-looper | `android/threads-and-looper.blend` | Blended |
+| concurrency/shared-flow-and-state-flow | `android/shared-flow-and-state-flow.blend` | Blended |
+| concurrency/synchronization-and-mutex | `android/synchronization-and-mutex.blend` | Blended |
+| concurrency/services | `android/services.blend` | Blended |
+| concurrency/workmanager | `android/workmanager.blend` | Blended |
+| concurrency/battery-optimizations | `android/battery-optimizations.blend` | Blended |
+| Android phases 5, 6, 7, 8, 9 | — | Not rendered yet; links open GitHub |
 
 Update this table whenever a chapter changes state.
 

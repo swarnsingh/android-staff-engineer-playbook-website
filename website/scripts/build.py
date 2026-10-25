@@ -16,7 +16,7 @@ MD = MarkdownIt('commonmark', {'html': True}).enable(['table', 'strikethrough'])
 # renders (None renders the whole tree); chapters outside them keep linking to GitHub.
 TREES = {
     'kotlin': {'title': 'Kotlin', 'phases': None},
-    'android': {'title': 'Android', 'phases': [1, 2, 3]},
+    'android': {'title': 'Android', 'phases': [1, 2, 3, 4]},
 }
 
 
@@ -434,7 +434,16 @@ INTRO = {
 'android/compose/form-factors-matrix.md':'Wear OS, TV, cars and widgets each have their own UI toolkit and rules, and only the layers below the UI carry over. Decide which surfaces to build with a cost model, not a wish list.',
 'android/compose/compose-accessibility.md':'Accessibility services see a semantics tree, not pixels. Make every element say what it is, what state it has and what it can do, then test it with real assistive technology.',
 'android/compose/view-interop-and-migration.md':'Most apps move to Compose over years, with Views and Compose embedded in each other. Learn both interop directions, what every seam costs, and a migration order that keeps features shipping.',
-'android/compose/compose-performance-tooling.md':'Compose performance work starts with measurement, not techniques. Reproduce the journey in a release-like build, find the phase that costs time, fix it, and guard it with a benchmark.'}
+'android/compose/compose-performance-tooling.md':'Compose performance work starts with measurement, not techniques. Reproduce the journey in a release-like build, find the phase that costs time, fix it, and guard it with a benchmark.',
+'android/architecture/structured-concurrency.md':'Background work that nothing owns keeps running after its screen is gone. Give every coroutine a parent and every parent a lifetime, so cancellation flows down and failure flows up.',
+'android/architecture/flow.md':'A Flow runs its producer once per collector, which is wrong for an expensive source many screens share. Keep sources cold, share them once in the ViewModel, and collect with lifecycle awareness.',
+'android/concurrency/coroutines-under-the-hood.md':'A suspend function does not hold a thread while it waits. Follow the compiler-generated state machine to see where locals live, where execution resumes, and why thread-confined state is lost.',
+'android/concurrency/threads-and-looper.md':'Everything on the main thread is a message taken from one queue by one loop. Learn how Looper, MessageQueue and Handler fit together, why blocking the loop freezes the app, and how queued work outlives its owner.',
+'android/concurrency/shared-flow-and-state-flow.md':'StateFlow, SharedFlow and Channel make different promises about values nobody is collecting and what new collectors receive. Match the contract to the job, especially for effects the user must not miss.',
+'android/concurrency/synchronization-and-mutex.md':'Shared mutable state needs a rule for who may touch it and when. Match atomics, locks, Mutex and confinement to the problems each actually solves, without blocking threads coroutines depend on.',
+'android/concurrency/services.md':'A Service is not a thread but a declaration to the system that the process is doing work that matters. Learn the three kinds, the main-thread trap, foreground service types, and when WorkManager fits better.',
+'android/concurrency/workmanager.md':'Some work must happen eventually, even across process death and reboots. Follow a WorkManager request from enqueue to success, with constraints, retries and backoff.',
+'android/concurrency/battery-optimizations.md':'Android defers background work when a device is idle and rations it by how recently each app was used. Learn how Doze and App Standby Buckets behave, and which narrow exits fit work that cannot wait.'}
 
 
 def intro(path):

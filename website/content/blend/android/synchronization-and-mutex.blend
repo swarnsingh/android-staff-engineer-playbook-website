@@ -1,0 +1,52 @@
+<!-- Website teaching layer for android/concurrency/synchronization-and-mutex.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Mutex semantics per kotlinx.coroutines API; the synchronized/suspension rule was compiled with Kotlin 2.4.21:
+     "the 'networkCall' suspension point is inside a critical section". Checked 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">An analytics counter reports 9,812 events in a session where the server received 10,000. No crash, no error, just a number that is slightly wrong every day. Two coroutines on <code>Dispatchers.Default</code> were running <code>count++</code> at the same moment, and each overwrote the other's update.</p>
+
+Shared mutable state needs a rule for who may touch it and when: otherwise reads and writes from different threads interleave in ways no single line of code shows. The JVM offers thread-level tools (`@Volatile`, atomics, `synchronized`), and coroutines add `Mutex`, which waits by suspending instead of blocking a thread. This chapter matches each tool to the problem it actually solves.
+
+<!-- @before The Toolbelt :: review -->
+The description of `@Volatile` in the next section is under technical review. A correction is pending the owner's approval.
+
+<!-- @after The Toolbelt :: visual -->
+### Match the tool to the problem
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>One flag, written by one thread</strong><small><code>@Volatile</code>: visibility and ordering, no atomic read-modify-write</small></div><div class="node" data-state="done"><strong>A counter or one swapped reference</strong><small><code>AtomicInteger</code> / <code>AtomicReference</code>: lock-free compare-and-set</small></div><div class="node" data-state="warn"><strong>A short, non-suspending critical section</strong><small><code>synchronized</code> / <code>ReentrantLock</code>: blocks the thread while waiting</small></div><div class="node is-key"><strong>A critical section in suspend code</strong><small><code>Mutex.withLock</code>: suspends while waiting, frees the thread</small></div></div><figcaption>Or avoid sharing entirely: confine the state to one thread or one actor, and send it messages.</figcaption></figure>
+
+<!-- @after Internal Mechanics :: animation -->
+### Three coroutines, one <code>Mutex</code>
+
+<figure class="stepper"><span class="stepper-title">Waiting without holding a thread</span><div class="stage viz-stack"><div class="node is-key" data-el="lock"><strong><code>Mutex</code></strong><small data-text="lockV">—</small></div><div class="viz-grid" style="--cols:3"><div class="node" data-el="c1"><strong>Coroutine 1</strong><small data-text="c1V">—</small></div><div class="node" data-el="c2"><strong>Coroutine 2</strong><small data-text="c2V">—</small></div><div class="node" data-el="c3"><strong>Coroutine 3</strong><small data-text="c3V">—</small></div></div><div class="node" data-el="threads"><strong>Dispatcher threads</strong><small data-text="threadsV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Acquire","caption":"Coroutine 1 calls withLock. The mutex is free, so it takes it and runs the critical section.","add":["lock","c1","c2","c3","threads"],"state":{"lock":"active","c1":"active"},"text":{"lockV":"owned by 1","c1V":"in critical section","c2V":"—","c3V":"—","threadsV":"one thread running coroutine 1"}},
+{"label":"Contend","caption":"Coroutines 2 and 3 call withLock. The mutex is taken, so each one's continuation joins the mutex's queue and the coroutine suspends.","state":{"c2":"warn","c3":"warn"},"text":{"lockV":"owned by 1 · queue: 2, 3","c2V":"suspended in queue","c3V":"suspended in queue","threadsV":"no thread is waiting: they run other work"}},
+{"label":"Release","caption":"Coroutine 1 leaves the critical section and unlocks. The mutex resumes the first waiter, coroutine 2, which now owns the lock.","state":{"c1":"done","c2":"active"},"text":{"lockV":"owned by 2 · queue: 3","c1V":"done","c2V":"in critical section"}},
+{"label":"Next","caption":"Coroutine 2 releases, coroutine 3 resumes. The critical section ran three times, strictly one at a time, without ever parking a thread.","state":{"c2":"done","c3":"active"},"text":{"lockV":"owned by 3","c2V":"done","c3V":"in critical section"}},
+{"label":"Contrast: synchronized","caption":"With synchronized, coroutines 2 and 3 would each block their thread while waiting; on a small pool, that can stall unrelated coroutines. Kotlin also rejects suspension points inside synchronized at compile time.","state":{"lock":"warn","threads":"warn"},"text":{"threadsV":"synchronized: waiting threads are blocked"}}
+]</script><figcaption>A <code>Mutex</code> serialises the critical section without blocking threads. It is not reentrant: acquiring it again while holding it suspends forever.</figcaption></figure>
+
+<!-- @before Failure Modes :: review -->
+The "Using `synchronized` in a Coroutine" item in the next section is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Answer Key :: review -->
+Answer 4 in the next section is under technical review. A correction is pending the owner's approval.
+
+<!-- @after Common Misconceptions :: check -->
+**Which tool?** Decide before opening each answer.
+
+<details><summary>Count analytics events from many coroutines.</summary>
+
+`AtomicLong.incrementAndGet()`, or `MutableStateFlow.update { it + 1 }`: one atomic operation, no lock.
+</details>
+
+<details><summary>Refresh a token once when several requests see it expire at the same time.</summary>
+
+`Mutex.withLock`: re-check the token inside the lock so only the first caller refreshes and the rest reuse its result.
+</details>
+
+<details><summary>A large in-memory cache updated thousands of times a second.</summary>
+
+Confine it: one single-threaded dispatcher or actor owns the cache, and callers send it requests. No lock per access.
+</details>

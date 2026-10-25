@@ -1,0 +1,41 @@
+<!-- Website teaching layer for android/concurrency/shared-flow-and-state-flow.md.
+     The original chapter is rendered in full; everything here is added around it.
+     MutableSharedFlow no-subscriber and replay semantics per the kotlinx.coroutines API reference; checked 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">After login, the ViewModel emits <code>NavigateHome</code> on a <code>MutableSharedFlow</code>. Most users land on Home. A few, who switched apps while the login request was running, stay on the login screen forever. When a teammate "fixes" it with <code>replay = 1</code>, other users are sent Home again every time they rotate the phone.</p>
+
+Both bugs come from the **delivery contract**: what happens to a value when nobody is collecting, and what a new collector receives. `StateFlow`, `SharedFlow` and `Channel` each answer those questions differently, and only one answer fits each job. This chapter compares their contracts, how `stateIn` and `shareIn` set them up, and how to deliver effects the user must not miss.
+
+<!-- @after Mental Model :: visual -->
+### Three contracts
+
+<figure class="viz"><div class="viz-grid" style="--cols:3"><div class="node is-key"><strong><code>StateFlow</code></strong><small>always a value · new collectors get the latest · equal values skipped · slow collectors skip ahead</small></div><div class="node"><strong><code>SharedFlow</code></strong><small>broadcast to active collectors · replay 0…n · no value kept without replay</small></div><div class="node"><strong><code>Channel</code></strong><small>a queue · each value goes to one receiver · can buffer while nobody receives</small></div></div><figcaption>State, broadcast and hand-off are different promises; pick the one the feature actually needs.</figcaption></figure>
+
+<!-- @after The Single-Event Problem :: animation -->
+### One navigation event, three ways
+
+<figure class="stepper"><span class="stepper-title">The user backgrounds the app while login completes</span><div class="stage viz-grid" style="--cols:3"><div class="node" data-el="shared"><strong><code>MutableSharedFlow()</code></strong><small data-text="sharedV">—</small></div><div class="node" data-el="replay"><strong><code>MutableSharedFlow(replay = 1)</code></strong><small data-text="replayV">—</small></div><div class="node" data-el="state"><strong>Event as state</strong><small data-text="stateV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Login succeeds in the background","caption":"The UI is stopped, so lifecycle-aware collection has stopped too. There are zero subscribers when the ViewModel signals success.","add":["shared","replay","state"],"state":{},"text":{"sharedV":"emit(NavigateHome), 0 subscribers","replayV":"emit(NavigateHome), 0 subscribers","stateV":"state.pendingNavigation = Home"}},
+{"label":"What was kept","caption":"With replay 0 and no subscriber, the value is simply gone. With replay 1 it sits in the replay cache. The state version holds it as part of the screen state.","state":{"shared":"error","replay":"done","state":"done"},"text":{"sharedV":"lost","replayV":"in replay cache","stateV":"stored in state"}},
+{"label":"User returns","caption":"Collection restarts. The plain SharedFlow has nothing to deliver: the user is stuck on login. The other two deliver the navigation.","state":{"shared":"error"},"text":{"sharedV":"nothing arrives: stuck","replayV":"replayed → navigates","stateV":"UI sees it → navigates, then reports it handled"}},
+{"label":"User rotates on Home","caption":"A new collector subscribes. The replay cache still holds NavigateHome and delivers it again. The state version was cleared when the UI reported it handled.","state":{"replay":"error"},"text":{"replayV":"replayed again → navigates twice","stateV":"pendingNavigation = null → nothing"}}
+]</script><figcaption>For effects the user must not miss, keep them as state and have the UI acknowledge them; reserve SharedFlow and Channel for effects whose loss is acceptable.</figcaption></figure>
+
+<!-- @after Common Misconceptions :: check -->
+**Which primitive?** Decide before opening each answer.
+
+<details><summary>The current list of items in a cart, shown on two screens.</summary>
+
+`StateFlow`. It always has the latest value, and a new screen gets it immediately.
+</details>
+
+<details><summary>Price ticks that several widgets display; a late widget should show the last price.</summary>
+
+`SharedFlow` with `replay = 1` (or `shareIn(…, replay = 1)`), with a deliberate overflow policy for slow collectors.
+</details>
+
+<details><summary>Upload jobs that exactly one worker should process each.</summary>
+
+A `Channel`: point-to-point delivery. A SharedFlow would give each job to every subscriber.
+</details>

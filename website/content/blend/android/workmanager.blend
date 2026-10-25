@@ -1,0 +1,44 @@
+<!-- Website teaching layer for android/concurrency/workmanager.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (WorkManager guide: persistence, constraints, backoff, expedited work)
+     on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A notes app syncs in a coroutine started from the ViewModel. Users on a train edit notes offline, close the app and lose signal. Hours later, the edits still exist only on the phone. Nobody's code was wrong; nothing was left running to try again once the network came back.</p>
+
+Some work must happen **eventually**, under the right conditions, even if the app process dies or the phone restarts in between. WorkManager records that work in its own database, hands scheduling to the system, and runs your `Worker` when constraints are met, retrying with backoff when asked. This chapter follows a request from `enqueue` to `SUCCEEDED`, and shows where WorkManager fits next to foreground services.
+
+<!-- @after Internal Mechanics :: animation -->
+### Follow one sync request across a reboot
+
+<figure class="stepper"><span class="stepper-title">From <code>enqueue</code> to <code>SUCCEEDED</code></span><div class="stage viz-stack"><div class="viz-grid" style="--cols:3"><div class="node" data-el="db"><strong>WorkManager database</strong><small data-text="dbV">—</small></div><div class="node" data-el="sched"><strong>System scheduler</strong><small data-text="schedV">—</small></div><div class="node" data-el="worker"><strong><code>DataSyncWorker</code></strong><small data-text="workerV">—</small></div></div><div class="node is-key" data-el="device"><strong>Device</strong><small data-text="deviceV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Enqueue","caption":"enqueueUniqueWork writes the request to WorkManager's own database first, then asks the system scheduler to run it when the constraints hold (unmetered network, battery not low).","add":["db","sched","worker","device"],"state":{"db":"done","sched":"warn","worker":"ghost"},"text":{"dbV":"ENQUEUED","schedV":"waiting: on cellular","workerV":"not created","deviceV":"on a train, cellular only"}},
+{"label":"Process dies","caption":"The user swipes away to another app and the process is killed. The request is still in the database and still scheduled.","state":{"device":"warn"},"text":{"deviceV":"app process killed"}},
+{"label":"Reboot","caption":"The phone restarts overnight. WorkManager reschedules pending work from its database, so the request survives the reboot.","state":{"sched":"warn"},"text":{"deviceV":"rebooted","schedV":"rescheduled from the database"}},
+{"label":"Constraints met","caption":"At home, the phone joins Wi-Fi. The system starts the app process and WorkManager runs doWork() on a background dispatcher.","state":{"sched":"done","worker":"active","device":"done"},"text":{"deviceV":"on Wi-Fi, battery fine","workerV":"doWork() running","dbV":"RUNNING"}},
+{"label":"Retry","caption":"The server returns an error. doWork() returns Result.retry(), and WorkManager schedules another attempt with exponential backoff.","state":{"worker":"warn","db":"warn"},"text":{"workerV":"Result.retry()","dbV":"ENQUEUED (backoff)"}},
+{"label":"Success","caption":"The next attempt syncs the notes. Result.success() marks the work SUCCEEDED in the database; nothing more is scheduled.","state":{"worker":"done","db":"done"},"text":{"workerV":"Result.success()","dbV":"SUCCEEDED"}}
+]</script><figcaption>The database is what makes the guarantee: the request outlives the process, the reboot, and the failed attempt.</figcaption></figure>
+
+<!-- @diagram 6b7c18c9f8073fff -->
+### Who does what
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>ViewModel / UI</strong><small><code>enqueue</code></small></div><div class="node is-key"><strong>WorkManager</strong><small>1 · saves state in its Room database · 2 · delegates to JobScheduler</small></div><div class="node"><strong>System scheduler</strong><small>3 · wakes the app when conditions hold</small></div><div class="node" data-state="done"><strong><code>CoroutineWorker</code></strong><small>4 · runs, then status is updated in the database</small></div></div><figcaption>Your code only enqueues and does the work; persistence and scheduling belong to WorkManager and the system.</figcaption></figure>
+
+<!-- @after Tradeoffs :: check -->
+**Will it run?** Decide before opening each answer.
+
+<details><summary>Periodic work requested every 5 minutes.</summary>
+
+Not that often: periodic work has a minimum interval of 15 minutes. Use a different design for near-real-time updates.
+</details>
+
+<details><summary>A sync enqueued with <code>ExistingWorkPolicy.KEEP</code> while an identical one is already queued.</summary>
+
+The new request is dropped and the queued one stays, so taps do not stack up duplicate syncs.
+</details>
+
+<details><summary>A Hilt worker whose dependencies are constructor-injected, with the default initializer still enabled.</summary>
+
+WorkManager creates workers with its default factory, which cannot supply those dependencies, so creating the worker fails. Use `HiltWorkerFactory` and on-demand initialization.
+</details>
