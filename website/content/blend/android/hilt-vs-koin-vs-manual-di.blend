@@ -1,0 +1,45 @@
+<!-- Website teaching layer for android/data-and-di/hilt-vs-koin-vs-manual-di.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Dagger 2.48 release notes: "includes the alpha release of the Dagger and Hilt KSP processors" (github.com/google/dagger
+     releases); Hilt component docs as in components.blend. Checked 2026-10-25. Koin compiler-plugin claims not verified here. -->
+
+<!-- @opening -->
+<p class="story-lead">Two teams ship the same feature. Team A's app crashes for 2% of users the first time they open Settings: a dependency was never registered, and nothing noticed until runtime. Team B never sees that crash, but its incremental build takes forty seconds longer, and the team argues about whether that is worth it.</p>
+
+Both teams are doing dependency injection; they chose different machines for it. Manual DI, Hilt and Koin all pass collaborators in from outside. They differ in **when the graph is checked** (build time or first use), **what it costs to build**, and **where it can run** (Android only, or shared Kotlin). This chapter compares them on those axes so the choice is a trade-off you name, not a habit.
+
+<!-- @after Why DI Matters (Briefly) :: visual -->
+### Who asks, and who is told
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Dependency injection</span><div class="node"><strong><code>CheckoutViewModel(repo: UserRepository)</code></strong><small>needs are visible in the constructor</small></div><div class="node" data-state="done"><strong>Test</strong><small>pass a fake directly; no container involved</small></div></div><div class="col"><span class="col-title">Service locator</span><div class="node"><strong><code>val repo = container.get&lt;UserRepository&gt;()</code></strong><small>needs are hidden inside the class body</small></div><div class="node" data-state="warn"><strong>Test</strong><small>configure the global container before the class can even be built</small></div></div></div><figcaption>The difference is not the library: Koin used with <code>get()</code> inside classes is a locator; Koin with constructor injection is DI.</figcaption></figure>
+
+<!-- @before Option 2: Hilt (Dagger Wrapped) :: review -->
+Three passages in the Hilt and Koin sections are under technical review. The scope table maps "ViewModels via `@HiltViewModel`" to `@ActivityRetainedScoped`, but Hilt injects ViewModels from `ViewModelComponent`. The build-time section says Hilt's KSP support is stable "since Hilt 2.48", but Dagger's 2.48 release notes call it the alpha release of the KSP processors. A Common Pitfalls item says `@Singleton` graphs are wired eagerly, but Dagger creates scoped bindings when they are first requested.
+
+<!-- @after Manual DI vs Hilt vs Koin: Side-by-Side :: animation -->
+### When does a missing dependency get caught?
+
+<figure class="stepper"><span class="stepper-title">The same mistake under three approaches</span><div class="stage viz-grid" style="--cols:3"><div class="node" data-el="manual"><strong>Manual DI</strong><small data-text="manualV">—</small></div><div class="node" data-el="hilt"><strong>Hilt</strong><small data-text="hiltV">—</small></div><div class="node" data-el="koin"><strong>Koin DSL</strong><small data-text="koinV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"The mistake","caption":"A new SettingsViewModel needs a PrivacyRepository. The developer forgets to wire it.","add":["manual","hilt","koin"],"state":{},"text":{"manualV":"AppContainer has no privacyRepository","hiltV":"no @Inject constructor, @Provides or @Binds","koinV":"no single { PrivacyRepository(…) }"}},
+{"label":"Compile","caption":"Manual DI fails to compile, because the factory must pass a real object to the constructor. Hilt fails too: Dagger checks the whole graph and reports a missing binding. The Koin DSL compiles; the graph is only a set of lambdas.","state":{"manual":"done","hilt":"done","koin":"warn"},"text":{"manualV":"✗ build fails: no value to pass","hiltV":"✗ build fails: [Dagger/MissingBinding]","koinV":"✓ compiles"}},
+{"label":"Ship","caption":"Only the Koin build reaches users, and only users who open Settings hit the missing definition.","state":{"koin":"error"},"text":{"koinV":"runtime NoBeanDefFoundException when Settings opens"}},
+{"label":"Mitigate","caption":"Koin teams can check the graph in a unit test or use Koin Annotations' compile-time checks; Hilt and manual DI teams pay for the safety in build time or boilerplate instead.","state":{"koin":"warn","manual":"","hilt":""},"text":{"manualV":"cost: wiring by hand","hiltV":"cost: annotation processing time","koinV":"cost: a verification step you must remember"}}
+]</script><figcaption>Every approach catches the mistake somewhere. The question is whether that place is your build or your user's device.</figcaption></figure>
+
+<!-- @after When Each Wins :: check -->
+**Pick the approach.** Decide before opening each answer.
+
+<details><summary>A payments SDK distributed to other companies' apps.</summary>
+
+Manual DI. Your consumers must not inherit your DI framework, its version or its annotation processing.
+</details>
+
+<details><summary>An Android-only app with 60 feature modules and many contributors.</summary>
+
+Hilt. Build-time graph validation and lifecycle-matched components pay for their build cost at that size.
+</details>
+
+<details><summary>A Kotlin Multiplatform app sharing repositories with iOS.</summary>
+
+Koin, or manual DI, in the shared code. Hilt is Android-only and cannot run in shared iOS code.
+</details>

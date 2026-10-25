@@ -1,0 +1,50 @@
+<!-- Website teaching layer for android/data-and-di/room-vs-datastore.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (RoomDatabase.Builder reference: fallbackToDestructiveMigration(dropAllTables)
+     "Allows Room to destructively recreate database tables"; DataStore guide) on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A settings screen has a "last opened" timestamp that updates every time the user visits. Someone stored it in the same Proto DataStore document as a cached list of 3,000 contacts. Every visit now rewrites several megabytes to flash storage. A battery complaint leads, three weeks later, to a one-line write.</p>
+
+Room and DataStore both keep data on the device, both expose `Flow` reads and `suspend` writes, and both survive process death. They differ in what one write costs and what you can ask of the data. This chapter turns that difference into a decision you can make in code review, then covers what follows from it: migrations, encryption, backup and tests.
+
+<!-- @after TL;DR Decision Table :: visual -->
+### Decide by the shape of the data
+
+<figure class="viz"><div class="viz-stack"><div class="node is-key"><strong>Do you query, filter or sort many items?</strong></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>Yes → Room</strong><small>tables, indexes, partial updates, observable queries</small></div><div class="node"><strong>No → one settings document?</strong><small>a handful of fields read and written together</small></div></div><div class="down"></div><div class="viz-grid" style="--cols:3"><div class="node" data-state="done"><strong>Structured, evolving</strong><small>Proto DataStore</small></div><div class="node"><strong>A few flags</strong><small>Preferences DataStore</small></div><div class="node" data-state="warn"><strong>Blobs or secrets</strong><small>files with a path in Room; secrets need a Keystore-backed design</small></div></div></div><figcaption>The shape of the data decides first; encryption and backup decisions follow from it.</figcaption></figure>
+
+<!-- @before Room — When You Need a Real Database :: review -->
+The builder example in the next section calls `.fallbackToDestructiveMigration(false)` with the comment "never silently drop user data". That line is under technical review: Room's reference says this overload "allows Room to destructively recreate database tables"; its argument only chooses whether all tables or only Room's tables are dropped.
+
+<!-- @after The Update-Pattern Difference (Why It Matters) :: animation -->
+### What one small change writes to disk
+
+<figure class="stepper"><span class="stepper-title">One field changes in each store</span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">Room</span><div class="node" data-el="rRead"><strong>Find the row</strong><small>index seek on the primary key</small></div><div class="node" data-el="rWrite"><strong>Update one page</strong><small>only the changed row's page and the journal</small></div><div class="node" data-el="rNotify"><strong>Notify</strong><small>queries reading <code>users</code> re-run</small></div></div><div class="col"><span class="col-title">Proto DataStore</span><div class="node" data-el="dRead"><strong>Read the whole document</strong><small>already in memory after the first read</small></div><div class="node" data-el="dBuild"><strong>Build a new object</strong><small><code>toBuilder().setX(…).build()</code></small></div><div class="node" data-el="dWrite"><strong>Write every byte</strong><small>to a temporary file, then replace the old one</small></div><div class="node" data-el="dNotify"><strong>Emit</strong><small><code>data</code> emits the new document</small></div></div></div><script type="application/json" class="steps">[
+{"label":"Locate","caption":"Room seeks to the one row by its key. DataStore starts from the complete document it holds in memory.","add":["rRead","dRead"],"state":{"rRead":"active","dRead":"active"}},
+{"label":"Change","caption":"Room changes one column of one row inside a transaction. DataStore builds a whole new immutable object with one field changed.","add":["rWrite","dBuild"],"state":{"rRead":"done","dRead":"done","rWrite":"active","dBuild":"active"}},
+{"label":"Persist","caption":"Room writes the affected page. DataStore serializes and writes the entire document, however large it has become. That is the difference that matters as data grows.","add":["dWrite"],"state":{"rWrite":"done","dBuild":"done","dWrite":"warn"}},
+{"label":"Observers update","caption":"Both notify observers. The cost of the write was the difference: proportional to the change in Room, to the document size in DataStore.","add":["rNotify","dNotify"],"state":{"dWrite":"done","rNotify":"done","dNotify":"done"}}
+]</script><figcaption>Keep DataStore documents small enough that rewriting them on every change does not matter.</figcaption></figure>
+
+<!-- @after Backup Behavior :: visual -->
+### Backup is a per-data decision
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>Back up</strong><small>user settings, onboarding completion: users expect them after reinstalling</small></div><div class="node" data-state="error"><strong>Exclude</strong><small>auth tokens and Keystore-bound ciphertext: the key does not travel to a new device</small></div><div class="node" data-state="warn"><strong>Exclude</strong><small>server caches: refetchable, and they bloat every backup</small></div><div class="node"><strong>Decide explicitly</strong><small>encrypted databases: only useful if the key can be recovered</small></div></div><figcaption>Auto Backup includes app files and databases by default; the backup rules file is where these decisions become code.</figcaption></figure>
+
+<!-- @after Common Pitfalls :: check -->
+**Room or DataStore?** Decide before opening each answer.
+
+<details><summary>A queue of analytics events waiting to upload.</summary>
+
+Room. Events are appended, queried by "unsent", uploaded in batches and deleted by ID. DataStore would rewrite the whole queue on every event.
+</details>
+
+<details><summary>The user's chosen theme, text size and notification level.</summary>
+
+Proto DataStore (or Preferences DataStore for a few flags): one small document, read and written together.
+</details>
+
+<details><summary>Profile photos the user has taken offline.</summary>
+
+Neither for the bytes: write them to app storage and keep the path and metadata in Room.
+</details>

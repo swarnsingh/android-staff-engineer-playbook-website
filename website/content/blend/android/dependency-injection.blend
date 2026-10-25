@@ -1,0 +1,51 @@
+<!-- Website teaching layer for android/data-and-di/dependency-injection.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Component lifetimes per developer.android.com "Dependency injection with Hilt" (component lifetimes table);
+     Dagger scoped bindings are created lazily on first request (dagger.dev semantics). Checked 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A login screen's tests take forty seconds because each one starts a real Retrofit client, a real database and a real analytics SDK: the screen's ViewModel creates them itself. In production, five ViewModels each create their own HTTP client, five connection pools compete, and nobody can tell which instance a bug report came from.</p>
+
+The fix is to stop letting classes build their own collaborators. With dependency injection, each class **declares** what it needs, and one graph decides how each dependency is built, which instance is shared, and for how long. Hilt generates that graph at compile time from Dagger, with containers matched to Android lifecycles. This chapter shows how the graph is resolved, how scopes set lifetimes, and the mistakes that leak or bloat memory.
+
+<!-- @after First Principles :: visual -->
+### How Hilt resolves one request
+
+<figure class="viz"><div class="viz-flow"><div class="node is-key"><strong><code>MainViewModel</code></strong><small>needs a <code>Repository</code></small></div><div class="node"><strong><code>Repository</code></strong><small><code>@Inject constructor(api: NetworkApi)</code></small></div><div class="node"><strong><code>NetworkApi</code></strong><small><code>@Provides</code> from <code>NetworkModule</code></small></div><div class="node" data-state="done"><strong><code>Retrofit</code></strong><small><code>@Provides @Singleton</code>: one per app</small></div></div><figcaption>Every arrow is checked at compile time. A missing link fails the build, not the user's session.</figcaption></figure>
+
+<!-- @after Internal Mechanics :: animation -->
+### Watch each component live and die
+
+<figure class="stepper"><span class="stepper-title">Hilt components across one user journey</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="single"><strong><code>SingletonComponent</code></strong><small data-text="singleV">—</small></div><div class="node" data-el="retained"><strong><code>ActivityRetainedComponent</code></strong><small data-text="retainedV">—</small></div><div class="node" data-el="vm"><strong><code>ViewModelComponent</code></strong><small data-text="vmV">—</small></div><div class="node" data-el="act"><strong><code>ActivityComponent</code></strong><small data-text="actV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"App starts","caption":"The application component is created with the Application. @Singleton bindings inside it are built the first time something asks for them, then kept for the process.","add":["single","retained","vm","act"],"state":{"single":"active","retained":"ghost","vm":"ghost","act":"ghost"},"text":{"singleV":"created; Retrofit built on first request","retainedV":"—","vmV":"—","actV":"—"}},
+{"label":"Open the screen","caption":"The activity starts: an activity-retained component and an activity component are created for it. Requesting the ViewModel creates a ViewModel component for that ViewModel.","state":{"single":"done","retained":"active","vm":"active","act":"active"},"text":{"retainedV":"created for this activity","vmV":"created with MainViewModel","actV":"created (instance #1)"}},
+{"label":"Rotate","caption":"The activity is recreated. Its activity component is destroyed and a new one made; the retained component and the ViewModel component survive, with every binding scoped to them.","state":{"act":"warn","retained":"done","vm":"done"},"text":{"actV":"destroyed, recreated (instance #2)","retainedV":"survives","vmV":"survives"}},
+{"label":"Back","caption":"The activity finishes for good. The ViewModel is cleared, so its component goes; the activity's retained and activity components go with it.","state":{"act":"ghost","retained":"ghost","vm":"ghost","single":"done"},"text":{"actV":"destroyed","retainedV":"destroyed","vmV":"destroyed with onCleared()","singleV":"still alive"}},
+{"label":"Process killed","caption":"Only now does the application component disappear, and with it every @Singleton instance.","state":{"single":"error"},"text":{"singleV":"gone with the process"}}
+]</script><figcaption>A scope annotation ties an instance to one of these lifetimes. Without a scope, every request gets a new instance.</figcaption></figure>
+
+<!-- @diagram 395274f9516f690a -->
+### Which component holds what
+
+<figure class="viz"><div class="viz-stack"><div class="node is-key"><strong><code>SingletonComponent</code></strong><small>Application · Room database · Retrofit</small></div><div class="viz-grid" style="--cols:2"><div class="node"><strong><code>ViewModelComponent</code></strong><small>ViewModel · Repository requested by it</small></div><div class="node"><strong><code>ActivityComponent</code></strong><small>the Activity; requests the ViewModel</small></div></div></div><figcaption>Child components can use bindings from their ancestors: the repository reaches the singleton database and network, never the other way round.</figcaption></figure>
+
+<!-- @before Failure Modes :: review -->
+The over-scoping item in the next section (and answer 6 of the Answer Key) says `@Singleton` classes are instantiated "from the moment the app boots". That is under technical review: Dagger creates a scoped binding when it is first requested, then holds it for the component's lifetime.
+
+<!-- @after Common Misconceptions :: check -->
+**Which scope?** Decide before opening each answer.
+
+<details><summary>An <code>OkHttpClient</code> with a connection pool.</summary>
+
+`@Singleton`. Sharing one client shares its connection pool and cache across the app.
+</details>
+
+<details><summary>A form validator with no state, used by one screen.</summary>
+
+Unscoped. It is cheap, holds nothing, and a new instance per request avoids keeping it alive longer than its user.
+</details>
+
+<details><summary>A cache shared by the ViewModel and its use cases for one screen.</summary>
+
+`@ViewModelScoped`. Every class injected into that ViewModel gets the same instance, and it is released when the ViewModel is cleared.
+</details>

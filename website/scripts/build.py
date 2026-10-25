@@ -16,7 +16,7 @@ MD = MarkdownIt('commonmark', {'html': True}).enable(['table', 'strikethrough'])
 # renders (None renders the whole tree); chapters outside them keep linking to GitHub.
 TREES = {
     'kotlin': {'title': 'Kotlin', 'phases': None},
-    'android': {'title': 'Android', 'phases': [1]},
+    'android': {'title': 'Android', 'phases': [1, 2]},
 }
 
 
@@ -410,7 +410,17 @@ INTRO = {
 'android/architecture/navigation.md':'A flow of screens must survive Back, deep links, rotation and process death while passing each destination only what it needs. Learn how the back stack is modelled and what belongs in navigation arguments.',
 'android/architecture/mvvm-vs-mvi.md':'Two screens with the same features can behave very differently under concurrent events and failures. Compare how MVVM and MVI shape state, events and tests before choosing one for a team.',
 'android/architecture/state-management.md':'Duplicated or ambiguously owned state shows stale data and races between updates. Give each piece of screen state one owner, one source of truth and one direction of flow.',
-'android/architecture/modularization-strategies.md':'As an app and its team grow, build times, ownership and accidental coupling grow with them. Learn how to split modules by feature and layer, and what each boundary costs.'}
+'android/architecture/modularization-strategies.md':'As an app and its team grow, build times, ownership and accidental coupling grow with them. Learn how to split modules by feature and layer, and what each boundary costs.',
+'android/data-and-di/repository-source-of-truth.md':'When the network, the database and the UI each hold a copy, users see stale screens and lose offline edits. Decide which copy is the truth for each kind of data, then build the read path, durable writes and merge rules around it.',
+'android/data-and-di/room.md':'A database outlives every version of the code that writes to it. Learn how Room checks SQL at build time, keeps queries live as tables change, and migrates schemas without losing users\' data.',
+'android/data-and-di/datastore.md':'Settings stored with SharedPreferences can block the main thread in places you never wrote disk code. Learn how DataStore makes reads and writes asynchronous and transactional, and how to migrate safely.',
+'android/data-and-di/room-vs-datastore.md':'Both Room and DataStore persist data with Flow reads and suspend writes, but one rewrites a whole document on every change. Choose by the shape of the data, then plan migrations, encryption and backup.',
+'android/data-and-di/storage-and-content-sharing.md':'Access to a file your app does not own is a permission attached to a URI, and it can expire before your background work runs. Pick the right storage primitive and keep its grant valid for as long as you need it.',
+'android/data-and-di/paging.md':'Infinite lists show duplicates, reset on rotation and go blank offline when pages are loaded by hand. Learn how Paging 3 loads pages, survives configuration changes and pages from a database the network fills.',
+'android/data-and-di/dependency-injection.md':'Classes that build their own collaborators are slow to test and share nothing by accident or by design. Learn how dependency injection and Hilt decide how each dependency is built, shared and released.',
+'android/data-and-di/components.md':'A Hilt scope is a promise about which container holds an instance, and each container lives for one Android lifetime. Map the standard components to those lifetimes and learn how a request finds its binding.',
+'android/data-and-di/scopes.md':'A singleton says nothing about when its background work stops. Separate Hilt scopes, which decide how many instances exist, from coroutine scopes, which decide when work is cancelled.',
+'android/data-and-di/hilt-vs-koin-vs-manual-di.md':'Every app does dependency injection; the choice is when the graph is checked, what it costs to build and where it can run. Compare manual DI, Hilt and Koin on those trade-offs.'}
 
 
 def intro(path):

@@ -1,0 +1,48 @@
+<!-- Website teaching layer for android/data-and-di/paging.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (Paging 3 overview, network + database paging) on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A feed shows the same post twice, a few rows apart. Users who scroll quickly see it most. After a rotation, the feed jumps back to the top and downloads page one again. On a train with no signal, the screen is blank, although the user read these exact posts an hour ago.</p>
+
+Each symptom has a manual-pagination cause: two requests for the same page, list state that lived in the activity, and a list that came only from the network. Paging 3 moves page loading into a component that tracks what is in flight, survives configuration changes when cached in a scope, and can page from a local database that the network fills. This chapter follows those pieces and the places they still need care.
+
+<!-- @after First Principles :: visual -->
+### Four pieces, four jobs
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong><code>PagingSource</code></strong><small>loads one page for a key</small></div><div class="node"><strong><code>RemoteMediator</code></strong><small>optional: fills the database from the network</small></div><div class="node is-key"><strong><code>Pager</code></strong><small>decides when to load; one load per direction at a time</small></div><div class="node" data-state="done"><strong><code>Flow&lt;PagingData&gt;</code></strong><small><code>cachedIn(viewModelScope)</code>, collected by the list</small></div></div><figcaption>The UI never asks for "page 3"; it reports what is visible, and the Pager decides what to load.</figcaption></figure>
+
+<!-- @after Internal Mechanics :: animation -->
+### Scroll an offline-first feed
+
+<figure class="stepper"><span class="stepper-title">Room-backed paging with a RemoteMediator</span><div class="stage viz-stack"><div class="viz-grid" style="--cols:3"><div class="node" data-el="ui"><strong>LazyColumn</strong><small data-text="uiV">—</small></div><div class="node" data-el="db"><strong>Room</strong><small data-text="dbV">—</small></div><div class="node" data-el="net"><strong>Network</strong><small data-text="netV">idle</small></div></div><div class="node is-key" data-el="state"><strong><code>loadState.append</code></strong><small data-text="stateV">NotLoading</small></div></div><script type="application/json" class="steps">[
+{"label":"Open the feed","caption":"The Pager reads the first page from Room's PagingSource and the list shows it immediately, online or not.","add":["ui","db","net","state"],"state":{"ui":"done","db":"done"},"text":{"uiV":"items 1–20","dbV":"20 cached posts"}},
+{"label":"Near the end","caption":"The user scrolls to within prefetchDistance of the last loaded item. The Pager asks the RemoteMediator for an APPEND before the user reaches the bottom.","state":{"net":"active","ui":"active"},"text":{"uiV":"showing item 16","netV":"fetching page 2","stateV":"Loading"}},
+{"label":"Fast scroll back and forth","caption":"More scroll signals arrive while the request is in flight. The Pager does not start a second append in the same direction, so page 2 is requested once.","text":{"uiV":"item 15 → 18 → 16","netV":"still one request"}},
+{"label":"Insert and invalidate","caption":"The mediator writes page 2 into Room in one transaction. Room invalidates its PagingSource, the Pager loads from the new source, and the list grows without losing its position.","state":{"db":"active","net":"done","ui":"done"},"text":{"dbV":"40 cached posts","netV":"done","uiV":"items 1–40","stateV":"NotLoading"}},
+{"label":"Signal lost","caption":"The next append fails. The error becomes part of the load state rather than an exception: the UI shows a retry row and keeps all 40 posts.","state":{"net":"error","state":"error","db":"done"},"text":{"netV":"IOException","stateV":"Error → show Retry"}},
+{"label":"Like a post","caption":"The tap updates the row in Room. Invalidation re-emits the page containing it, so the heart fills without touching PagingData.","state":{"net":"ghost","state":"","db":"active","ui":"active"},"text":{"dbV":"post 7: liked = true","uiV":"post 7 shows a filled heart","stateV":"Error (unchanged)"}}
+]</script><figcaption>The database is the only thing the list reads. The network only ever writes to it.</figcaption></figure>
+
+<!-- @diagram 2301ffe70d644897 -->
+### Who talks to whom
+
+<figure class="viz"><div class="viz-stack"><div class="node"><strong><code>LazyColumn</code></strong><small>reports scrolling; renders <code>PagingData</code></small></div><div class="down"></div><div class="node is-key"><strong><code>Pager</code> (in the ViewModel)</strong><small>reads pages from the database; triggers the mediator when they run out</small></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>Room database</strong><small>source of every page the UI sees</small></div><div class="node"><strong><code>RemoteMediator</code></strong><small>fetches from the network API and inserts into Room</small></div></div></div><figcaption>The UI never talks to the network; it only observes the database through a PagingSource.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: check -->
+**Which fix?** Decide before opening each answer.
+
+<details><summary>The list jumps back to the top after every rotation.</summary>
+
+The `Pager` flow is not cached. Apply `cachedIn(viewModelScope)` in the ViewModel so the new UI collects the same paged data.
+</details>
+
+<details><summary>New posts at the top of the server feed cause duplicates further down.</summary>
+
+Offset pagination shifted under the user. Use a cursor key from the server so continuation does not depend on positions.
+</details>
+
+<details><summary>Refresh briefly shows an empty list before the new data.</summary>
+
+Clearing and inserting happened in separate transactions. Do both inside one `withTransaction` so invalidation never observes the empty table.
+</details>

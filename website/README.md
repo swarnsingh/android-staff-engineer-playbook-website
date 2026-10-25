@@ -5,11 +5,11 @@ This folder builds the reader website for the playbook. Read [`../content-rulebo
 ## Current state
 
 - **Repository:** private `swarnsingh/android-staff-engineer-playbook-website`. Current work: `codex/reader-website-fixes`, published from `main`. Historical branches `codex/reader-website` (`60b8c2a`) and `claude/reader-website-kotlin` (`8a77e22`) are preserved unchanged. Since repository separation, website work makes no pushes or merges to the original repository. Its earlier remote `codex/reader-website` branch remains at `390f8f8`; its `main` and canonical chapters are unchanged. Do not delete or rewrite that historical branch.
-- **Scope:** the Kotlin tree (`kotlin.md` plus all 22 chapters) and the Android pilot (`android.md` plus the nine Phase 1 chapters) render as pages. `TREES` in `scripts/build.py` lists the rendered trees and, for a pilot, which guided-reading phases render; other chapters link to GitHub.
+- **Scope:** the Kotlin tree (`kotlin.md` plus all 22 chapters) and the Android tree (`android.md` plus 19 chapters, phases 1, 2) render as pages. `TREES` in `scripts/build.py` lists the rendered trees and, for a pilot, which guided-reading phases render; other chapters link to GitHub.
 - **Sub-sections:** each tree's chapters are grouped by the `### Phase …` lists in its index (`kotlin.md`, `android.md`). The Topics menu shows one group per phase, and each chapter's breadcrumb shows its phase.
 - **Originals:** read-only snapshot from `60b8c2a`; provenance and file hashes for the Kotlin and Android trees are recorded in `../source-snapshot.json` and checked on every build. Do not edit them.
 - **Corrections:** 292 Kotlin proposals from Codex's audits sit in `content/corrections-*.json`, plus 3 new findings. All are triaged in `reviews/corrections-triage.md` (revised after Codex's review). None is approved yet, so none is applied.
-- **Android findings:** 12 possible errors found while blending Android Phase 1 are listed in `reviews/android-phase1-findings.md`. None is approved or applied; each is flagged on its page with an **Under review** note.
+- **Android findings:** possible errors found while blending each Android phase are listed in `reviews/android-phaseN-findings.md` (one file per phase). None is approved or applied; each is flagged on its page with an **Under review** note.
 
 ### Progress by chapter
 
@@ -39,16 +39,26 @@ This folder builds the reader website for the playbook. Read [`../content-rulebo
 | runtime-and-jvm/bytecode | `bytecode.blend` | Blended |
 | version-updates/kotlin-2-4-update | `kotlin-2-4-update.blend` | Blended |
 | `android.md` (learning path) | `android/android.blend` | Blended (phase map) |
-| android/architecture/activity | `android/activity.blend` | Blended |
-| android/architecture/fragment | `android/fragment.blend` | Blended |
-| android/architecture/viewmodel | `android/viewmodel.blend` | Blended |
-| android/architecture/savedstatehandle | `android/savedstatehandle.blend` | Blended |
-| android/architecture/process-death-and-state-restoration | `android/process-death-and-state-restoration.blend` | Blended |
-| android/architecture/navigation | `android/navigation.blend` | Blended |
-| android/architecture/mvvm-vs-mvi | `android/mvvm-vs-mvi.blend` | Blended |
-| android/architecture/state-management | `android/state-management.blend` | Blended |
-| android/architecture/modularization-strategies | `android/modularization-strategies.blend` | Blended |
-| Android phases 2–9 | — | Not rendered yet; links open GitHub |
+| architecture/activity | `android/activity.blend` | Blended |
+| architecture/fragment | `android/fragment.blend` | Blended |
+| architecture/viewmodel | `android/viewmodel.blend` | Blended |
+| architecture/savedstatehandle | `android/savedstatehandle.blend` | Blended |
+| architecture/process-death-and-state-restoration | `android/process-death-and-state-restoration.blend` | Blended |
+| architecture/navigation | `android/navigation.blend` | Blended |
+| architecture/mvvm-vs-mvi | `android/mvvm-vs-mvi.blend` | Blended |
+| architecture/state-management | `android/state-management.blend` | Blended |
+| architecture/modularization-strategies | `android/modularization-strategies.blend` | Blended |
+| data-and-di/repository-source-of-truth | `android/repository-source-of-truth.blend` | Blended |
+| data-and-di/room | `android/room.blend` | Blended |
+| data-and-di/datastore | `android/datastore.blend` | Blended |
+| data-and-di/room-vs-datastore | `android/room-vs-datastore.blend` | Blended |
+| data-and-di/storage-and-content-sharing | `android/storage-and-content-sharing.blend` | Blended |
+| data-and-di/paging | `android/paging.blend` | Blended |
+| data-and-di/dependency-injection | `android/dependency-injection.blend` | Blended |
+| data-and-di/components | `android/components.blend` | Blended |
+| data-and-di/scopes | `android/scopes.blend` | Blended |
+| data-and-di/hilt-vs-koin-vs-manual-di | `android/hilt-vs-koin-vs-manual-di.blend` | Blended |
+| Android phases 3, 4, 5, 6, 7, 8, 9 | — | Not rendered yet; links open GitHub |
 
 Update this table whenever a chapter changes state.
 
@@ -115,8 +125,8 @@ The first review's eleven fixes are historical context, not a blanket accuracy g
 ## Next steps
 
 1. The owner reviews the exact texts in `reviews/corrections-with-edits.md` (and `.json`) for the 23 "approve with edit" rows, including the revised CH4 actor proposal. Then the owner approves `reviews/corrections-triage.md` (all 292 + 3 new reviewed: 199 approve, 23 approve with edit, 73 reject). Then set `"status": "approved"` (and amended text) in `content/corrections-*.json` and add the three new findings. The markers are already built; check each approved page after the build.
-2. The owner reviews the Android Phase 1 findings in `reviews/android-phase1-findings.md`, approving by ID.
-3. Continue Android phase by phase: add the next phase number to `TREES['android']['phases']` in `scripts/build.py`, add its intros to `INTRO`, and write `content/blend/android/<chapter>.blend` for each chapter. Phase 2 (data ownership and DI) is next.
+2. The owner reviews the Android findings in `reviews/android-phase*-findings.md`, approving by ID.
+3. Continue Android phase by phase: add the next phase number to `TREES['android']['phases']` in `scripts/build.py`, add its intros to `INTRO`, and write `content/blend/android/<chapter>.blend` for each chapter. Each finished phase gets an independent review before the next phase starts.
 
 ## Regression checks for the final review fixes
 

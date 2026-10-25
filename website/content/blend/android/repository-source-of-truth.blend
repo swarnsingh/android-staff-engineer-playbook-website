@@ -1,0 +1,52 @@
+<!-- Website teaching layer for android/data-and-di/repository-source-of-truth.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Room's withTransaction is an extension on RoomDatabase (androidx.room room-ktx); checked 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A field technician renames an inspection note in a basement with no signal. The app shows the new name, so they move on. That evening the office still sees the old name. The next morning, after a failed refresh, the technician's app shows an empty list and an error banner instead of yesterday's notes.</p>
+
+Neither bug is a networking bug. The app never decided **which copy of the data is the truth**: the rename lived only in memory until a request succeeded, and the list was replaced by the latest network result, even when that result was a failure. This chapter makes that decision explicit for each kind of data, then shows the read path, the durable write path and the tests that prove both.
+
+<!-- @after Offline-First Read Pattern :: visual -->
+### The UI reads one place; the network only writes to it
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Network</strong><small><code>api.getProducts()</code></small></div><div class="node"><strong><code>refreshProducts()</code></strong><small>writes rows in one transaction</small></div><div class="node is-key"><strong>Room</strong><small>the source of truth for the screen</small></div><div class="node" data-state="done"><strong><code>observeProducts()</code></strong><small>Flow re-emits when the table changes</small></div><div class="node"><strong>UI</strong><small>renders whatever Room holds</small></div></div><figcaption>A failed refresh writes nothing, so the last committed rows stay on screen. The UI never waits on, or is blanked by, the network.</figcaption></figure>
+
+<!-- @before Offline-First Read Pattern :: review -->
+The example in the next section calls `dao.withTransaction { … }` on a DAO. That line is under technical review: Room's `withTransaction` is an extension on the `RoomDatabase`, as the write-path example later in this chapter uses it (`database.withTransaction`).
+
+<!-- @after Network-Bound Resource, Staff Version :: visual -->
+### Data and sync status are separate axes
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>Data present · Idle · Fresh</strong><small>normal screen</small></div><div class="node" data-state="warn"><strong>Data present · Failed · Stale</strong><small>show the data, a "couldn't refresh" banner and a retry</small></div><div class="node"><strong>Data present · Refreshing</strong><small>show the data with a subtle progress indicator</small></div><div class="node" data-state="error"><strong>No data · Failed · Unknown</strong><small>the only case that deserves a full-screen error</small></div></div><figcaption>A single Loading/Error/Success value cannot express the top-right case, which is the most common one offline.</figcaption></figure>
+
+<!-- @after Write Path: Outbox First :: animation -->
+### Follow one offline rename until the server has it
+
+<figure class="stepper"><span class="stepper-title">Outbox-first write path</span><div class="stage viz-stack"><div class="viz-grid" style="--cols:3"><div class="node" data-el="note"><strong>notes table</strong><small data-text="noteV">title: "Pump A"</small></div><div class="node" data-el="outbox"><strong>outbox table</strong><small data-text="outboxV">empty</small></div><div class="node" data-el="server"><strong>Server</strong><small data-text="serverV">title: "Pump A"</small></div></div><div class="viz-grid" style="--cols:2"><div class="node" data-el="ui"><strong>UI</strong><small data-text="uiV">"Pump A"</small></div><div class="node" data-el="worker"><strong>WorkManager</strong><small data-text="workerV">idle</small></div></div><div class="node is-key" data-el="event"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Before","caption":"Local, outbox and server agree. The device is offline.","add":["note","outbox","server","ui","worker","event"],"state":{"note":"done","server":"done","ui":"done"},"text":{"eventV":"offline"}},
+{"label":"Rename","caption":"One database transaction updates the note and inserts an outbox operation with its own operation ID. Either both rows are committed or neither is.","state":{"note":"active","outbox":"active"},"text":{"noteV":"title: \"Pump A – leaking\"","outboxV":"op-81 RenameNote · Pending","eventV":"database.withTransaction { update + insert }"}},
+{"label":"UI updates","caption":"The UI observes Room, so it shows the new title at once. Nothing has been sent yet.","state":{"ui":"active"},"text":{"uiV":"\"Pump A – leaking\"","eventV":"Room invalidation → Flow emits"}},
+{"label":"Unique work queued","caption":"enqueueUniqueWork(\"outbox-drain\", KEEP, …) asks WorkManager to drain the outbox. WorkManager persists the request, so it survives process death.","state":{"worker":"warn"},"text":{"workerV":"enqueued, waiting for network","eventV":"process may now die safely"}},
+{"label":"Process killed","caption":"The app is killed overnight. Both tables are on disk, and the work request is too.","state":{"ui":"ghost"},"text":{"uiV":"(app not running)","eventV":"no data lost"}},
+{"label":"Network returns","caption":"WorkManager runs the worker. It sends op-81 with its operation ID as an idempotency key. The request times out after the server applied it.","state":{"worker":"active","server":"active"},"text":{"workerV":"running op-81","serverV":"title: \"Pump A – leaking\"","eventV":"timeout: outcome unknown to the client"}},
+{"label":"Retry, deduplicated","caption":"The worker retries with the same key. The server recognises op-81 and returns the earlier result instead of applying it twice. The worker marks the operation done.","state":{"outbox":"done","worker":"done","server":"done","note":"done"},"text":{"outboxV":"op-81 · Done","workerV":"succeeded","eventV":"idempotency key collapses the duplicate"}}
+]</script><figcaption>Durability comes from the transaction and the persisted work; safety on retry comes from the idempotency key. Both are needed.</figcaption></figure>
+
+<!-- @after Merge Semantics :: check -->
+**Pick the source of truth.** Decide before opening each answer.
+
+<details><summary>A shopping list the user edits on a plane.</summary>
+
+The local database until each change is uploaded, with an outbox for pending edits. Losing user-created work is unacceptable.
+</details>
+
+<details><summary>The price shown on a product page.</summary>
+
+The server. Cache it locally for display, mark its freshness, and re-check it before anything that charges money.
+</details>
+
+<details><summary>Whether a beta feature is enabled.</summary>
+
+Remote config, cached in memory with a sensible default. It reflects current server policy, not a user's work.
+</details>

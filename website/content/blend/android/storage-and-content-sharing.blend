@@ -1,0 +1,47 @@
+<!-- Website teaching layer for android/data-and-di/storage-and-content-sharing.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (Photo Picker, persisting media access; Storage Access Framework;
+     FileProvider sharing) on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A user picks a video to upload, then locks the phone. The upload worker starts twenty minutes later and fails with a <code>SecurityException</code>. The video still exists; the app still has the URI string. What it no longer has is the permission that came with the user's choice.</p>
+
+On modern Android, access to a file the app does not own is a **grant attached to a URI**, not a path. Who granted it, for how long, and for which operation decides whether the code that runs later can still open it. This chapter picks the right primitive for each storage need, then follows a URI through its lifetime.
+
+<!-- @after Decision Matrix :: visual -->
+### Who owns it, and who chose it?
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node is-key"><strong>The app owns it</strong><small><code>filesDir</code> / <code>cacheDir</code>, Room, DataStore: private, deleted on uninstall, no permission</small></div><div class="node"><strong>The app publishes it</strong><small>MediaStore: photos, video, audio added to shared collections</small></div><div class="node" data-state="done"><strong>The user chooses media</strong><small>Photo Picker: access to the selected items only, no library permission</small></div><div class="node" data-state="done"><strong>The user chooses a document or folder</strong><small>Storage Access Framework: a document or tree URI</small></div></div><figcaption>To give another app one of your files, use <code>FileProvider</code> with a temporary URI grant.</figcaption></figure>
+
+<!-- @after URI Ownership and Lifetime :: animation -->
+### Follow one picked video until the upload runs
+
+<figure class="stepper"><span class="stepper-title">A temporary grant versus a persisted one</span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">Temporary grant only</span><div class="node" data-el="t1"><strong>User picks a video</strong><small>app receives <code>content://…/42</code></small></div><div class="node" data-el="t2"><strong>Store the URI string</strong><small>enqueue an upload worker</small></div><div class="node" data-el="t3"><strong>Process ends</strong><small>the temporary grant ends with it</small></div><div class="node" data-el="t4"><strong>Worker opens the URI</strong><small><code>SecurityException</code></small></div></div><div class="col"><span class="col-title">Persisted grant</span><div class="node" data-el="p1"><strong>User picks a video</strong><small>same URI</small></div><div class="node" data-el="p2"><strong><code>takePersistableUriPermission()</code></strong><small>record the URI and the intended operation</small></div><div class="node" data-el="p3"><strong>Process ends</strong><small>the persisted grant remains</small></div><div class="node" data-el="p4"><strong>Worker opens the URI</strong><small>streams through <code>ContentResolver</code>, still handling revocation</small></div></div></div><script type="application/json" class="steps">[
+{"label":"Pick","caption":"Both apps receive a content URI from the picker. Neither receives a file path, and neither owns the bytes.","add":["t1","p1"],"state":{"t1":"done","p1":"done"}},
+{"label":"Record","caption":"The first app stores only the string. The second also takes a persistable permission, which the picker's URIs support, and records why it needs it.","add":["t2","p2"],"state":{"t2":"warn","p2":"done"}},
+{"label":"Time passes","caption":"The user locks the phone and the process is killed. A temporary grant does not outlive the process lifecycle; a persisted grant does.","add":["t3","p3"],"state":{"t3":"error","p3":"done"}},
+{"label":"Upload","caption":"The first worker fails. The second opens a stream, and still treats revocation or a vanished item as an expected outcome, not a crash.","add":["t4","p4"],"state":{"t4":"error","p4":"done"}}
+]</script><figcaption>If a persistable grant is not available, copy the validated bytes into app storage while the temporary grant is still valid.</figcaption></figure>
+
+<!-- @after Production Design :: visual -->
+### Ingest a file as a state machine
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Selected</strong></div><div class="node"><strong>Permission recorded</strong></div><div class="node"><strong>Copying / streaming</strong><small>off the main thread</small></div><div class="node is-key"><strong>Validated</strong><small>sniffed type, byte and pixel limits</small></div><div class="node" data-state="done"><strong>Uploaded / stored</strong></div></div><figcaption>Every step can also end in failure or cancellation. Filename extensions and declared MIME types are hints, not validation.</figcaption></figure>
+
+<!-- @after Failure Modes :: check -->
+**Pick the primitive.** Decide before opening each answer.
+
+<details><summary>Attach one photo to a chat message.</summary>
+
+The Photo Picker. It grants access to the chosen photo only, with no media-library permission.
+</details>
+
+<details><summary>Let the user export a PDF report into a folder they choose.</summary>
+
+The Storage Access Framework (`ACTION_CREATE_DOCUMENT`), writing through the returned URI.
+</details>
+
+<details><summary>Send a generated invoice PDF to the user's email app.</summary>
+
+`FileProvider` for that one file, with a temporary read grant on the share intent. Never a `file://` URI.
+</details>

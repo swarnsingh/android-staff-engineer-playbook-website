@@ -1,0 +1,51 @@
+<!-- Website teaching layer for android/data-and-di/components.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com "Dependency injection with Hilt" (component lifetimes; "Injector for":
+     ViewModelComponent → ViewModel; ActivityRetainedComponent lives across configuration changes) on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A shopping cart lives in a class annotated <code>@ActivityScoped</code>. It works in every demo, until a tester rotates the phone and the cart empties. The quick fix moves it to <code>@Singleton</code>; now the cart survives rotation, but also survives logout, and the next user of a shared tablet sees the previous user's items.</p>
+
+Both fixes chose a scope by trial and error. In Hilt, a scope is a promise about **which container holds the instance**, and each container is created and destroyed with a specific Android lifetime. This chapter maps every standard component to that lifetime, shows how a request finds its binding, and covers the escape hatches for code Hilt does not create.
+
+<!-- @before The Seven Standard Components :: review -->
+Several passages in the next sections say `@HiltViewModel` ViewModels live in, or are scoped to, `ActivityRetainedComponent` (the table's "Default for" column, the `ActivityRetainedComponent` drill-down, one Failure Modes row and answer 5). They are under technical review: Hilt documents `ViewModelComponent` as the component that injects `ViewModel`, a child of `ActivityRetainedComponent`, as the hierarchy diagram in this chapter shows.
+
+<!-- @diagram e53267b523603f05 -->
+### The hierarchy, with each lifetime
+
+<figure class="viz"><div class="viz-stack"><div class="node is-key"><strong><code>SingletonComponent</code></strong><small>Application created → Application destroyed (the process)</small></div><div class="viz-grid" style="--cols:2"><div class="node"><strong><code>ActivityRetainedComponent</code></strong><small>first <code>Activity#onCreate()</code> → last <code>Activity#onDestroy()</code>: survives rotation</small></div><div class="node"><strong><code>ServiceComponent</code></strong><small><code>Service#onCreate()</code> → <code>Service#onDestroy()</code></small></div></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong><code>ViewModelComponent</code></strong><small>one per ViewModel: created with it, destroyed when it is cleared</small></div><div class="node" data-state="warn"><strong><code>ActivityComponent</code></strong><small>one per activity instance: recreated on rotation</small></div></div><div class="viz-grid" style="--cols:2"><div class="node"><strong><code>FragmentComponent</code></strong><small>child of the activity component</small></div><div class="node"><strong><code>ViewComponent</code></strong><small>child of the activity component (or of the fragment component, as <code>ViewWithFragmentComponent</code>)</small></div></div></div><figcaption>A child can use everything its ancestors provide. Nothing flows downward: an ancestor cannot see a child's bindings.</figcaption></figure>
+
+<!-- @after The Hierarchy (Visualized) :: animation -->
+### Resolving a request walks up, never down
+
+<figure class="stepper"><span class="stepper-title">Where Hilt looks for each binding</span><div class="stage viz-stack"><div class="node" data-el="single"><strong><code>SingletonComponent</code></strong><small><code>ImageLoader</code> (<code>@Singleton</code>)</small></div><div class="node" data-el="retained"><strong><code>ActivityRetainedComponent</code></strong></div><div class="viz-grid" style="--cols:2"><div class="node" data-el="vm"><strong><code>ViewModelComponent</code></strong><small><code>CartViewModel</code></small></div><div class="node" data-el="act"><strong><code>ActivityComponent</code></strong><small><code>ToolbarController</code> (<code>@ActivityScoped</code>)</small></div></div><div class="node" data-el="frag"><strong><code>FragmentComponent</code></strong><small><code>ProductListFragment</code></small></div><div class="node is-key" data-el="result"><strong>Result</strong><small data-text="resultV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"The graph","caption":"Three bindings live in three components. The fragment's component sits under the activity component, which sits under the retained and singleton components.","add":["single","retained","vm","act","frag","result"],"state":{},"text":{"resultV":"nothing requested yet"}},
+{"label":"Fragment needs ImageLoader","caption":"The fragment's component does not provide it, so Hilt looks at its ancestors: activity, retained, singleton. Found at the top.","state":{"frag":"active","act":"ghost","retained":"ghost","single":"done"},"text":{"resultV":"✓ resolved in SingletonComponent"}},
+{"label":"Fragment needs ToolbarController","caption":"One step up, the activity component provides it. The fragment gets the activity's instance, recreated on rotation along with it.","state":{"single":"","retained":"","act":"done"},"text":{"resultV":"✓ resolved in ActivityComponent"}},
+{"label":"ViewModel needs ToolbarController","caption":"The ViewModel component's ancestors are the retained and singleton components. The activity component is a sibling branch, so the binding is unreachable and the build fails.","state":{"frag":"","act":"error","vm":"active","retained":"ghost","single":"ghost"},"text":{"resultV":"✗ [Dagger/MissingBinding] at compile time"}},
+{"label":"Why that is good","caption":"A ViewModel outlives each activity instance. If Hilt let it hold an activity-scoped object, it would keep a destroyed activity alive. The compile error is the leak, caught early.","state":{"act":"warn","vm":"done"},"text":{"resultV":"pass data in, or re-scope the dependency"}}
+]</script><figcaption>Choose the smallest component whose lifetime covers every consumer, and Hilt checks the rest at build time.</figcaption></figure>
+
+<!-- @after EntryPoints — Escape Hatch for Non-Hilt Classes :: visual -->
+### An entry point is a typed door into a component
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong><code>ContentProvider</code></strong><small>created by the system before Hilt can inject it</small></div><div class="node is-key"><strong><code>@EntryPoint</code> interface</strong><small>installed in the component that holds the binding</small></div><div class="node" data-state="done"><strong><code>EntryPointAccessors.fromApplication()</code></strong><small>returns that component as the interface</small></div></div><figcaption>The interface is generated into the component at compile time, so the lookup is a cast, not reflection.</figcaption></figure>
+
+<!-- @after Common Pitfalls :: check -->
+**Which component?** Decide before opening each answer.
+
+<details><summary>A cart that must survive rotation but reset when the user finishes the activity.</summary>
+
+`@ActivityRetainedScoped`, or state in the screen's ViewModel. `@ActivityScoped` resets on rotation; `@Singleton` outlives the user's session.
+</details>
+
+<details><summary>Per-user state that lives from login to logout across several activities.</summary>
+
+A custom component (`@DefineComponent(parent = SingletonComponent::class)` with its own scope), built on login and released on logout.
+</details>
+
+<details><summary>A helper that needs the current activity's theme to inflate a dialog.</summary>
+
+`ActivityComponent` with `@ActivityContext`. It is recreated with the activity, which is exactly what its context requires.
+</details>

@@ -1,0 +1,59 @@
+<!-- Website teaching layer for android/data-and-di/room.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (Room, one-to-many relationships: "Room to run two queries")
+     on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">Version 4.2 of a notes app adds a "colour" column. Users who update from 4.1 are fine. Users who skipped from 3.9 open the app and see it crash at launch; the ones who don't crash find their notes gone, because a teammate added <code>fallbackToDestructiveMigration()</code> "just in case".</p>
+
+A database outlives every version of the code that writes to it. Room's job is to keep the Kotlin side and the SQLite schema in agreement: it checks your SQL against your entities at build time, keeps query results live as tables change, and runs migrations when the schema moves on. This chapter follows each of those mechanisms and the review discipline that keeps users' data intact across releases they skipped.
+
+<!-- @after Mental Model :: visual -->
+### Three annotations, three generated pieces
+
+<figure class="viz"><div class="viz-grid" style="--cols:3"><div class="node"><strong><code>@Entity</code></strong><small>a data class → a table (<code>CREATE TABLE …</code>)</small></div><div class="node"><strong><code>@Dao</code></strong><small>an interface of queries → a generated implementation that runs SQL and maps rows</small></div><div class="node is-key"><strong><code>@Database</code></strong><small>lists entities and DAOs, holds the version, opens the connection</small></div></div><figcaption>You write Kotlin declarations and SQL; Room's annotation processor checks them against each other and generates the cursor code.</figcaption></figure>
+
+<!-- @after Internal Mechanics :: animation -->
+### Watch an observable query stay live
+
+<figure class="stepper"><span class="stepper-title">How a <code>Flow</code> query re-emits</span><div class="stage viz-stack"><div class="viz-grid" style="--cols:3"><div class="node" data-el="users"><strong><code>users</code> table</strong><small data-text="usersV">2 rows</small></div><div class="node" data-el="tracker"><strong><code>InvalidationTracker</code></strong><small data-text="trackerV">—</small></div><div class="node" data-el="other"><strong><code>playlists</code> table</strong><small>unrelated to this query</small></div></div><div class="node" data-el="flow"><strong><code>observeUsers(): Flow&lt;List&lt;User&gt;&gt;</code></strong><small data-text="flowV">—</small></div><div class="node is-key" data-el="event"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Collect","caption":"A collector starts. Room runs the query once and emits the current rows. It also registers an observer for the tables the query reads: here, users.","add":["users","tracker","other","flow","event"],"state":{"flow":"active","tracker":"done"},"text":{"usersV":"2 rows","trackerV":"watching: users","flowV":"emitted [Ana, Ben]","eventV":"initial query"}},
+{"label":"Insert a user","caption":"A repository inserts a row. Room's triggers record that the users table changed.","state":{"users":"active","flow":""},"text":{"usersV":"3 rows","eventV":"INSERT INTO users …"}},
+{"label":"Invalidate and re-run","caption":"After the write, the tracker sees users was modified and notifies its observers. The query runs again and the Flow emits the new list.","state":{"tracker":"active","flow":"active","users":"done"},"text":{"trackerV":"users invalidated","flowV":"emitted [Ana, Ben, Chen]","eventV":"observer → re-query → emit"}},
+{"label":"Write elsewhere","caption":"A write to playlists does not touch any table this query reads, so the tracker does not wake this observer.","state":{"other":"active","tracker":"done","flow":"done"},"text":{"trackerV":"watching: users","eventV":"INSERT INTO playlists … (no re-query)"}},
+{"label":"Stop collecting","caption":"When the collector is cancelled, the observer is removed. Unobserved queries cost nothing on later writes.","state":{"flow":"ghost","tracker":"ghost","other":""},"text":{"flowV":"cancelled","trackerV":"no observers","eventV":"collection ended"}}
+]</script><figcaption>Invalidation is tracked per table. The query re-runs when a table it reads is written, which is why UI that observes Room updates without any manual refresh.</figcaption></figure>
+
+<!-- @diagram b33f8a4b14376953 -->
+### Where Room sits in the data flow
+
+<figure class="viz"><div class="viz-stack"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Compose UI</strong><small>observes <code>StateFlow</code></small></div><div class="node"><strong>ViewModel</strong><small>observes the repository's <code>Flow</code></small></div></div><div class="down"></div><div class="node is-key"><strong>Repository</strong><small>queries Room as a <code>Flow</code>; inserts what the network returns</small></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>Room database</strong><small>source of truth; its InvalidationTracker re-triggers queries</small></div><div class="node"><strong>Retrofit network</strong><small>syncs into the repository, never straight to the UI</small></div></div></div><figcaption>The network writes; Room notifies; the UI reads. Each arrow has one direction.</figcaption></figure>
+
+<!-- @before Failure Modes :: review -->
+The N+1 item in the next section, and answer 7 of the Answer Key, say `@Relation` loads related rows with one query per parent. That is under technical review: Android's documentation says a `@Relation` method "requires Room to run two queries", one for the parents and one for their related rows.
+
+<!-- @after Schema Evolution Discipline :: visual -->
+### A user who skipped nine releases
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Installed: v3</strong></div><div class="node" data-state="done"><strong>3→4 … 6→7</strong><small>registered</small></div><div class="node" data-state="error"><strong>7→8</strong><small>missing</small></div><div class="node" data-state="ghost"><strong>8→9 … 11→12</strong><small>never reached</small></div><div class="node is-key"><strong>Shipping: v12</strong></div></div><figcaption>Room needs a path of migrations from the installed version to the current one. One missing hop fails the first database open; a destructive fallback silently deletes the user's data instead.</figcaption></figure>
+
+<!-- @before Staff Engineer Thinking :: review -->
+Point 2 of the next section (and answer 6 of the Answer Key) says that projecting fewer columns stops a `Flow` from re-emitting when another column changes. That is under technical review: Room invalidates observable queries per table, as the Internal Mechanics section describes.
+
+<!-- @after Common Misconceptions :: check -->
+**Will it ship safely?** Decide before opening each answer.
+
+<details><summary>A PR adds a nullable <code>colour TEXT</code> column, bumps the version to 13 and adds <code>MIGRATION_12_13</code>.</summary>
+
+Not yet. It also needs the exported schema JSON committed, a test for 12→13, and a long-hop test from the oldest supported version, so users who skipped releases still get a full migration path.
+</details>
+
+<details><summary>A cache-only database of server responses enables destructive fallback for versions 1–4.</summary>
+
+Acceptable if the fallback is limited to those start versions (`fallbackToDestructiveMigrationFrom(…)`) on that cache database only, the app can refetch everything, and the decision is documented. Never on the database that holds drafts or the outbox.
+</details>
+
+<details><summary>A DAO method <code>fun insert(note: Note)</code> without <code>suspend</code>, called from a click handler.</summary>
+
+It runs on the main thread, which Room rejects by default. Make it `suspend` and call it from a coroutine, or the app crashes at the first click.
+</details>

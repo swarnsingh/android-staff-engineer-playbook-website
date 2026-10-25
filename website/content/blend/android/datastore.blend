@@ -1,0 +1,46 @@
+<!-- Website teaching layer for android/data-and-di/datastore.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (DataStore guide; SharedPreferences guide) on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">An app's ANR dashboard shows a cluster it can't explain: the main thread is stuck inside the activity's stop handling, waiting on disk. No one wrote disk code there. The cause turns out to be a dozen <code>SharedPreferences.apply()</code> calls made earlier: the framework waits for pending writes like these when an activity stops.</p>
+
+`SharedPreferences` looks like reading and writing memory, but every value lives in a file, and the waits for that file happen on threads you did not choose. DataStore makes the asynchronous part visible: reads are a `Flow`, writes are `suspend` functions, and updates are applied one at a time. This chapter shows how the two flavours work, where they still go wrong, and how to migrate without losing settings.
+
+<!-- @after First Principles :: visual -->
+### Two flavours, one contract
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Preferences DataStore</span><div class="node"><strong>Key-value pairs</strong><small><code>booleanPreferencesKey("dark_mode")</code></small></div><div class="node"><strong>No schema</strong><small>defaults live at each read site (<code>?: false</code>)</small></div><div class="node" data-state="done"><strong>Best for</strong><small>simple settings and migrating <code>SharedPreferences</code></small></div></div><div class="col"><span class="col-title">Proto DataStore</span><div class="node"><strong>One typed object</strong><small>generated from a <code>.proto</code> schema</small></div><div class="node"><strong>Schema with field numbers</strong><small>defaults and evolution rules are defined once</small></div><div class="node" data-state="done"><strong>Best for</strong><small>structured settings that evolve across releases</small></div></div></div><figcaption>Both read through <code>data: Flow</code>, write through a suspend transform, and keep the whole store in one file.</figcaption></figure>
+
+<!-- @after Internal Mechanics :: animation -->
+### Two writes at the same moment
+
+<figure class="stepper"><span class="stepper-title">Updates are applied one at a time</span><div class="stage viz-stack"><div class="viz-grid" style="--cols:2"><div class="node" data-el="a"><strong>Coroutine A</strong><small>toggle dark mode</small></div><div class="node" data-el="b"><strong>Coroutine B</strong><small>set notification level</small></div></div><div class="node is-key" data-el="store"><strong>DataStore</strong><small data-text="storeV">—</small></div><div class="node" data-el="file"><strong>File on disk</strong><small data-text="fileV">dark=false, level=ALL</small></div><div class="node" data-el="flow"><strong><code>data</code> Flow</strong><small data-text="flowV">emits dark=false, level=ALL</small></div></div><script type="application/json" class="steps">[
+{"label":"Both call edit()","caption":"Two coroutines call edit() at almost the same time. Each passes a transform that reads current values and changes one key.","add":["a","b","store","file","flow"],"state":{"a":"active","b":"active"},"text":{"storeV":"two updates queued"}},
+{"label":"A runs first","caption":"DataStore runs A's transform against the current data, writes the result to a temporary file, then replaces the old file, so a crash mid-write leaves the old file intact.","state":{"a":"done","store":"active","file":"active"},"text":{"storeV":"applying A on dark=false, level=ALL","fileV":"dark=true, level=ALL"}},
+{"label":"Then B, on A's result","caption":"B's transform receives the data after A, not the stale snapshot from when B started. Neither update overwrites the other.","state":{"b":"done","file":"active"},"text":{"storeV":"applying B on dark=true, level=ALL","fileV":"dark=true, level=MENTIONS"}},
+{"label":"Collectors see the result","caption":"The data Flow emits the new value. Every screen observing the setting updates without polling.","state":{"store":"done","file":"done","flow":"active"},"text":{"storeV":"idle","flowV":"emits dark=true, level=MENTIONS"}}
+]</script><figcaption>Read-modify-write runs as one step per update, which is what two racing <code>SharedPreferences</code> editors could not guarantee.</figcaption></figure>
+
+<!-- @diagram 7b83f402a7d01d38 -->
+### Reads flow up, writes go down
+
+<figure class="viz"><div class="viz-stack"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Compose UI</strong><small>collects state · sends intents</small></div><div class="node"><strong>ViewModel</strong><small><code>stateIn</code> for reads · <code>viewModelScope.launch</code> for writes</small></div></div><div class="down"></div><div class="node is-key"><strong><code>PreferencesRepository</code></strong><small>hides DataStore; exposes <code>Flow</code> reads and <code>suspend</code> writes</small></div><div class="down"></div><div class="node" data-state="done"><strong>DataStore file</strong><small>one instance per file, provided as a singleton</small></div></div><figcaption>The ViewModel never touches the DataStore type, so tests can swap the repository.</figcaption></figure>
+
+<!-- @after Failure Modes :: check -->
+**Find the problem.** Decide before opening each answer.
+
+<details><summary><code>val isPro = runBlocking { prefs.data.first()[IS_PRO] }</code> in <code>Activity.onCreate()</code>.</summary>
+
+It blocks the main thread on disk I/O, recreating the problem DataStore was adopted to remove. Observe the value as a `Flow` and render a loading state until it arrives.
+</details>
+
+<details><summary>Two classes each create <code>PreferenceDataStoreFactory.create { context.preferencesDataStoreFile("settings") }</code>.</summary>
+
+Two DataStore instances for one file. Create it once and inject the same instance everywhere.
+</details>
+
+<details><summary>Caching the last 2,000 search results in Proto DataStore.</summary>
+
+The whole object is read into memory and rewritten on every change. Store the list in Room; keep only small settings in DataStore.
+</details>
