@@ -22,3 +22,13 @@ Separate the decision to sync from the opportunity each OS provides to run it.
 <details><summary>Does cancelling collection always cancel an independent producer?</summary><p>Only the documented ownership relationship decides that; do not infer it from Flow syntax.</p></details>
 <details><summary>Which tests belong on the platform?</summary><p>The actual scheduler, vault, permission, engine and native consumer integration contracts.</p></details>
 
+<!-- @after Error Boundaries :: animation -->
+### One failure crossing the platform seam
+
+<figure class="stepper"><span class="stepper-title">An offline checkout, from platform exception to domain error</span><div class="stage viz-grid" style="--cols:4"><div class="node" data-el="io"><strong>Platform call</strong><small data-text="ioV">—</small></div><div class="node" data-el="adapter"><strong>Adapter</strong><small data-text="adV">—</small></div><div class="node" data-el="domain"><strong>Shared domain</strong><small data-text="domV">—</small></div><div class="node is-key" data-el="ui"><strong>iOS screen</strong><small data-text="uiV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"It fails","caption":"The network request fails with a library or platform exception: an IOException on Android, an engine error or NSError on iOS.","add":["io","adapter","domain","ui"],"state":{"io":"error"},"text":{"ioV":"engine exception"}},
+{"label":"Leaked","caption":"If shared code lets that exception escape a non-suspending function, Swift callers on the Objective-C export path see only exceptions declared with @Throws; anything else terminates the program, as the chapter explains.","state":{"ui":"error"},"text":{"uiV":"app terminates"}},
+{"label":"Mapped","caption":"Instead, the adapter catches the platform failure where it happens and maps it to CheckoutError.Offline.","state":{"ui":"ghost","adapter":"active"},"text":{"adV":"maps to CheckoutError.Offline","uiV":"—"}},
+{"label":"Domain result","caption":"Shared code returns a domain result that both platforms understand, with no platform type in its signature.","state":{"adapter":"done","domain":"done"},"text":{"domV":"Result: Offline"}},
+{"label":"Handled","caption":"The iOS screen shows an offline message. Its switch still needs a fallback case on the Objective-C export path, as the chapter notes.","state":{"ui":"done"},"text":{"uiV":"offline message + fallback case"}}
+]</script><figcaption>Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>

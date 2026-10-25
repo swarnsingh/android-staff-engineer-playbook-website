@@ -24,4 +24,4 @@ Compare those boundaries by following one feature through its owners, rather tha
 
 
 <!-- @before Multi-Module KMP Project Structure :: review -->
-The unconditional incremental recompilation claims in the next section is under technical review (KA1). A correction is pending the owner's approval.
+The unconditional incremental-recompilation claims in this section (KAR1) are under technical review. A correction is pending the owner's approval.

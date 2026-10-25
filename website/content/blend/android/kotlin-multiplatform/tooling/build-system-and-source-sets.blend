@@ -22,3 +22,7 @@ Trace the build inputs to the consumer artifact before changing source folders o
 <details><summary>Does api automatically export all dependency declarations to Swift?</summary><p>Kotlin dependency visibility and native framework export are distinct decisions.</p></details>
 <details><summary>What proves a dependency supports every target?</summary><p>Inspect the exact published variants and compile/test the required consumer matrix.</p></details>
 
+<!-- @diagram f30234d48041765e -->
+### Who can see whose code
+
+<figure class="viz"><div class="node is-key" style="max-width:24rem;margin:0 auto .6rem"><strong><code>commonMain</code></strong><small>APIs available to every target</small></div><div class="viz-cols" style="--cols:2"><div class="node"><strong><code>androidMain</code></strong><small>Android/JVM APIs</small></div><div class="col"><div class="node"><strong><code>iosMain</code></strong><small>APIs common to the selected iOS targets</small></div><div class="viz-cols" style="--cols:2"><div class="node" data-state="ghost"><strong><code>iosArm64Main</code></strong><small>device-specific escape hatch</small></div><div class="node" data-state="ghost"><strong><code>iosSimulatorArm64Main</code></strong><small>simulator-specific escape hatch</small></div></div></div></div><figcaption>Redrawn from the original diagram. A source set sees declarations from the sets above it, never from below: <code>iosMain</code> can call <code>commonMain</code>, but <code>commonMain</code> cannot call <code>iosMain</code>.</figcaption></figure>

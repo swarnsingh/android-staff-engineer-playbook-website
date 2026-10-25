@@ -1,4 +1,4 @@
-<!-- Phase 9 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase9-runtime-findings.md. -->
+<!-- Phase 9 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase9-findings.md. -->
 
 <!-- @opening -->
 <p class="story-lead">The framework builds on the author’s Mac, but another iOS app cannot resolve the package. A second consumer resolves it and then links the wrong platform slice. Distribution begins where local compilation ends: the consumer needs an exact artifact, a usable API and a reproducible way to obtain both.</p>

@@ -1,13 +1,10 @@
-<!-- Phase 9 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase9-runtime-findings.md. -->
+<!-- Phase 9 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase9-findings.md. -->
 
 <!-- @opening -->
 <p class="story-lead">A crash report contains an address, an app version and no shared-module revision. The teams cannot tell whether the fixed Kotlin binary was shipped or whether the symbols belong to this build. Diagnosis starts with identity: connect the event to the artifact before interpreting its stack.</p>
 
 <!-- @before 4. The Android Crash Path (R8 and Retrace) :: review -->
 The blanket serialization keep-rule instruction in the next section (KO1) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before 5. The iOS Crash Path (dSYMs and Kotlin/Native) :: review -->
-The universal framework dSYM and crash-reporter-hook descriptions in the next section (KO2) are under technical review. A correction is pending the owner's approval.
 
 <!-- @before 6. Flow, Cancellation, and Swift-Facing Errors :: review -->
 The universal Swift cancellation type and exhaustive shared-error handling claims in the next section (KO3–KO4) are under technical review. A correction is pending the owner's approval.
@@ -78,12 +75,6 @@ The universal Swift cancellation type and exhaustive shared-error handling claim
 }
 }
 ]</script><figcaption>Android mapping files and Apple symbols are separate paths. This probe verifies the configured release, not every possible optimized stack frame.</figcaption></figure>
-
-<!-- @before Review Checklist :: review -->
-The mandatory shared-framework dSYM and bridge premises in items 2–3 (KO2) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-Answer 1 repeats the blanket symbol/bridge diagnosis (KO2); it remains under technical review. A correction is pending the owner's approval.
 
 <!-- @after 7. Synthetic-Crash Verification :: check -->
 ### Try the decision

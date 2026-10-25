@@ -1,4 +1,4 @@
-<!-- Phase 9 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase9-runtime-findings.md. -->
+<!-- Phase 9 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase9-findings.md. -->
 
 <!-- @opening -->
 <p class="story-lead">A new optional parameter looks harmless because every source call still compiles. An older compiled consumer fails at runtime. “Compatible” needs an object: source, binary, generated Swift API, serialized data or behaviour. Each promise needs its own evidence.</p>
@@ -82,3 +82,6 @@ Recompiling uses the new API and can hide missing old entry points. The old arti
 
 No. It is also a wire/rollout and safe-behaviour decision. Test old/new readers and consumers under the declared compatibility window.
 </details>
+
+<!-- @before Answer Key :: review -->
+Answer 4's statement that Apple klibs require a macOS-capable target build (BC1) is under technical review. A correction is pending the owner's approval.

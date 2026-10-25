@@ -1,4 +1,4 @@
-<!-- Phase 9 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase9-runtime-findings.md. -->
+<!-- Phase 9 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase9-findings.md. -->
 
 <!-- @opening -->
 <p class="story-lead">commonTest is green on the Android host, while the Apple consumer fails to import the framework. The test source was shared; the runtime and consumer were not exercised. Name the public contract, then name the target and host that can supply its evidence.</p>

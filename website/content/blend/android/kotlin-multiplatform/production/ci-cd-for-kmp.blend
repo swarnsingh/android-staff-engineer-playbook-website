@@ -1,16 +1,16 @@
-<!-- Phase 9 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase9-runtime-findings.md. -->
+<!-- Phase 9 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase9-findings.md. -->
 
 <!-- @opening -->
 <p class="story-lead">Linux checks pass and the shared code merges. The Apple framework then fails to link, leaving main unusable for iOS consumers. Split CI by what each host can prove, then decide which evidence must exist before a change crosses the merge boundary.</p>
 
 <!-- @before Overview :: review -->
-The introductory fixed runner-cost and merge-only architecture claims (KC1) are under technical review. A correction is pending the owner's approval.
+The opening summary's merge-only macOS recommendation (KC1) and the statement that Kotlin/Native iOS targets cannot be compiled on Linux (KC6) are under technical review. A correction is pending the owner's approval.
 
 <!-- @before 1. The Split Pipeline Architecture :: review -->
 The path-selection condition, runner identity and remote-package release metadata in the next section (KC2–KC3) are under technical review. A correction is pending the owner's approval.
 
 <!-- @before 2. Cost Analysis :: review -->
-The historical rates and forecast are being reviewed for their date, assumptions and present-day applicability (KC1). A correction is pending the owner's approval.
+The “mandatory” split recommendation and the savings forecast in this section (KC1) are under technical review. The dated 2024 prices themselves are not disputed. A correction is pending the owner's approval.
 
 <!-- @before 3. Caching the Kotlin/Native Compiler (.konan) :: review -->
 The fixed toolchain-download estimates and cache-invalidation promises in the next section (KC4) are under technical review. A correction is pending the owner's approval.
@@ -77,10 +77,10 @@ The claim that an unavailable simulator fails silently, and the universal memory
 ]</script><figcaption>This is a decision trace. Job names, runner architecture, cache hit rates and costs come from the actual project and current provider contract.</figcaption></figure>
 
 <!-- @before Probing Questions :: review -->
-The fixed cost-reduction and download-time premises in questions 2–3 (KC1, KC4) are under technical review. A correction is pending the owner's approval.
+The fixed cost-reduction and download-time premises of questions 2–3 (KC1, KC4) are under technical review. A correction is pending the owner's approval.
 
 <!-- @before Answer Key :: review -->
-Answers 2–3 promise bounded cost reductions and a particular cache/download outcome (KC1, KC4); these claims are under technical review. A correction is pending the owner's approval.
+Answer 1's statement that Apple targets cannot be cross-compiled (KC6) and answers 2–3, which promise bounded cost reductions and a particular cache outcome (KC1, KC4), are under technical review. A correction is pending the owner's approval.
 
 <!-- @after Common Pitfalls :: check -->
 ### Try the decision
@@ -99,3 +99,6 @@ No. Record the actual hit/miss and rebuild/download behaviour; fallback lookup i
 
 No. Verify its immutable version/URL/checksum and resolve and exercise a clean consumer.
 </details>
+
+<!-- @before 5. KMMBridge (Automating the Entire Pipeline) :: review -->
+The KMMBridge version and version-manager configuration in this section (KC7) are under technical review. A correction is pending the owner's approval.

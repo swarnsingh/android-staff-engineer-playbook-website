@@ -19,15 +19,20 @@ Follow that boundary through one request, then inspect errors, cancellation and 
 ### Try the decision yourself
 
 <details><summary>Does MockEngine prove TLS behaviour?</summary><p>No. It replaces the transport and supplies responses under test control.</p></details>
-<details><summary>Is Darwin automatically lower energy than OkHttp?</summary><p>Engine names do not measure a workload; compare representative traffic and device conditions.</p></details>
+<details><summary>A shared logging plugin works on Android. Does it see the same events on iOS?</summary><p>It sees the same pipeline events, because plugins run in the shared client above the engine. Transport-level behaviour such as connection reuse, proxies or ATS rejections happens inside each engine and can differ, so verify it per platform.</p></details>
 <details><summary>Can a retry create a duplicate order?</summary><p>Yes if replay is unsafe. The API needs a suitable idempotency/reconciliation policy before automatic retry.</p></details>
 
 
 <!-- @before 1. Setting Up the HttpClient :: review -->
-The custom ApiException conversion and its interaction with the later result wrapper in the next section is under technical review (KN1). A correction is pending the owner's approval.
+The custom ApiException conversion and its interaction with the later result wrapper (KN1), and the coerceInputValues comment, engine return types, retry-block label and retry scope in the setup code (KN2), in this section are under technical review. A correction is pending the owner's approval.
 
 <!-- @before 3. Error Handling Architecture :: review -->
-The exception handling contract relative to the client validator in the next section is under technical review (KN1). A correction is pending the owner's approval.
+The exception-handling contract relative to the client validator in this section (KN1) is under technical review. A correction is pending the owner's approval.
 
 <!-- @before 4. Testing Ktor in commonTest :: review -->
-The 401 test’s expected result relative to the client validator in the next section is under technical review (KN1). A correction is pending the owner's approval.
+The 401 test's expected result relative to the client validator (KN1) and the statement that MockEngine runs identically on JVM and Native (KN3) in this section are under technical review. A correction is pending the owner's approval.
+
+<!-- @diagram 15a5cf00e6920c6c -->
+### One client API, one engine per platform
+
+<figure class="viz"><div class="node is-key" style="margin-bottom:.6rem"><strong><code>commonMain</code>: ktor-client-core</strong><small><code>HttpClient</code> and the request/response pipeline; plugins for serialization, logging, auth and defaults; does not open a TCP socket</small></div><div class="node" style="max-width:20rem;margin:0 auto .6rem"><strong><code>HttpClientEngine</code> interface</strong></div><div class="viz-cols" style="--cols:2"><div class="node" data-state="done"><strong><code>androidMain</code>: ktor-client-okhttp</strong><small>OkHttp networking and interceptor compatibility</small></div><div class="node" data-state="done"><strong><code>iosMain</code>: ktor-client-darwin</strong><small>NSURLSession, ATS, proxy and background-download support</small></div></div><figcaption>Redrawn from the original diagram. Shared code owns request policy; each platform's engine owns the socket, TLS and OS networking rules.</figcaption></figure>

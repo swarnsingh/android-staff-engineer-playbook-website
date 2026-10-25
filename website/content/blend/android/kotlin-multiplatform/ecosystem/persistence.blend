@@ -22,3 +22,13 @@ Compare relational data, preferences, migrations and platform access as separate
 <details><summary>Must an existing Room database be rewritten for KMP?</summary><p>Evaluate supported Room KMP APIs and migration evidence before deciding on a rewrite.</p></details>
 <details><summary>Where should an auth token live?</summary><p>Behind the platform vault boundary appropriate to the threat and recovery policy, not an ordinary preferences wrapper.</p></details>
 
+<!-- @after 1. Room KMP or SQLDelight :: animation -->
+### A schema change meets a database already on the phone
+
+<figure class="stepper"><span class="stepper-title">From version 1 on the device to version 3 in the release</span><div class="stage viz-grid" style="--cols:4"><div class="node" data-el="db"><strong>Device database</strong><small data-text="dbV">version 1, user data inside</small></div><div class="node" data-el="app"><strong>New app build</strong><small data-text="appV">—</small></div><div class="node" data-el="mig"><strong>Migrations</strong><small data-text="migV">—</small></div><div class="node is-key" data-el="test"><strong>Evidence</strong><small data-text="testV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Old data stays","caption":"Users who skipped a release still have a version 1 database. The new build cannot assume every device holds the latest schema.","add":["db","app","mig","test"],"state":{"db":"active"},"text":{"appV":"expects version 3"}},
+{"label":"Open","caption":"Opening the database compares the stored version with the schema the build expects, on Android and on iOS alike.","state":{"app":"active"}},
+{"label":"Migrate in order","caption":"Each step runs in order: 1→2, then 2→3. With SQLDelight these are the numbered .sqm files shown below; with Room, its declared migrations.","state":{"mig":"active"},"text":{"migV":"1→2, then 2→3"}},
+{"label":"Data intact","caption":"The rows the user already had are now in the version 3 shape. A missing step would leave the app unable to open their data.","state":{"db":"done","mig":"done"},"text":{"dbV":"version 3, same user data"}},
+{"label":"Prove it","caption":"Test the upgrade from every version you still support, on each target you ship, before release, not only a fresh install.","state":{"app":"done","test":"done"},"text":{"testV":"upgrade tests from v1 and v2"}}
+]</script><figcaption>Illustrative versions. Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>
