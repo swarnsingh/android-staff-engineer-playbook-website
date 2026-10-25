@@ -105,11 +105,14 @@
   const images = [...panel.querySelectorAll('img[data-original-diagram]')];
   const diagramResources = [];
   for (const image of images) {
-    // decode also checks off-screen lazy images in a full browser. Restricted read-only runners
-    // may omit it; they must report incomplete images as unverified, never count them as loaded.
+    // decode() can stay pending forever for an off-screen lazy image (Chrome 152), so the wait is
+    // bounded. Restricted read-only runners may omit decode; either way an image that is still
+    // incomplete is reported as unverified, never counted as loaded.
     let failed = false;
     if (typeof image.decode === 'function') {
-      try { await image.decode(); } catch { failed = true; }
+      const decoded = image.decode().then(() => 'decoded', () => 'failed');
+      const timeout = new Promise(resolve => setTimeout(resolve, 5000, 'pending'));
+      failed = await Promise.race([decoded, timeout]) === 'failed';
     }
     const status = failed || (image.complete && !image.naturalWidth) ? 'failed' : image.complete && image.naturalWidth ? 'loaded' : 'not-ready';
     diagramResources.push({source: image.getAttribute('src'), status});

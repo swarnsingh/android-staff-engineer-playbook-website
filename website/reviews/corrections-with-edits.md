@@ -476,10 +476,10 @@ so it allows up to 64 threads. If you run 10 blocking calls on `Default`, they o
 
 - **Chapter:** Channels and Select (`kotlin/coroutines-and-flow/channels-and-select.md`)
 - **Section:** Actor-Style State Ownership
-- **Reason:** The worker must release active and undelivered checkout replies and reject submissions after shutdown, including cancellation before startup. An active caller receives CartStoppedException on actor shutdown, while its own cancellation remains CancellationException. A service-local timeout or cancellation fails only that request with CheckoutRequestCancelledException when the worker remains active; unexpected failures still stop the worker and follow the owner's reporting policy.
+- **Reason:** The worker must release active and undelivered checkout replies and reject submissions after shutdown, including cancellation before startup. An active caller receives CartStoppedException on actor shutdown, while its own cancellation remains CancellationException. A service-local timeout or cancellation fails only that request with CheckoutRequestCancelledException when the worker remains active; unexpected failures still stop the worker and follow the owner's reporting policy. A checkout that finishes returns its result even if shutdown begins during the call, so callers are never told to retry work that already happened.
 - **Sources:** <https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-start/-d-e-f-a-u-l-t/>, <https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/invoke-on-completion.html>, <https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/>, <https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/ensure-active.html>, <https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/send.html>
 - **Scope:** Replace the complete `CartActor` class. The command types and public method signatures remain the same; shutdown is now a normal `CartStoppedException` for active callers. The replacement also declares two exception types. The enclosing file needs `java.io.IOException` and the coroutine/channel imports.
-- **Regression checks:** `website/scripts/check_kotlin_examples.py` compiles this exact proposal with the chapter's command types. It checks expected failure/recovery, shutdown while processing, buffered and suspended senders, cancellation before startup, and construction with an already-cancelled owner. It also checks a service-local timeout followed by recovery, active callers displaying shutdown errors, and caller-owned cancellation. Unexpected worker failures retain the owner's uncaught-error policy.
+- **Regression checks:** `website/scripts/check_kotlin_examples.py` compiles this exact proposal with the chapter's command types. It checks expected failure/recovery, shutdown while processing, buffered and suspended senders, cancellation before startup, and construction with an already-cancelled owner. It also checks a service-local timeout followed by recovery, active callers displaying shutdown errors, caller-owned cancellation, and a checkout that commits while its owner shuts down. Unexpected worker failures retain the owner's uncaught-error policy.
 - **Ownership:** Accepted commands belong to the actor's owner. Cancelling a caller waiting for a reply does not roll back a command that was already accepted. This in-memory example provides no durability promise.
 
 **Original** (Actor-Style State Ownership):
@@ -551,7 +551,7 @@ class CartActor(
                         try {
                             currentCoroutineContext().ensureActive()
                             val result = checkout.submit(items)
-                            currentCoroutineContext().ensureActive()
+                            // A finished checkout keeps its result, even if shutdown began meanwhile.
                             command.replyTo.complete(result)
                         } catch (error: CancellationException) {
                             try {

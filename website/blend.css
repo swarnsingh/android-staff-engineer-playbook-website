@@ -17,6 +17,7 @@
 .blend[data-kind=story] .story-lead{font-size:1.08em;line-height:1.65}
 .blend[data-kind=bridge]{background:none;border:0;border-left:2px solid var(--accent);border-radius:0;padding:.2rem 0 .2rem 1rem;font-style:italic;color:var(--accent)}
 .blend[data-kind=bridge] .blend-label{display:none}
+.blend[data-kind=review]>.blend-label{color:var(--warning)}
 .blend[data-kind=check] details{margin-top:.6rem}
 .blend[data-kind=check] summary{font-weight:600}
 .blend .original-note{font-size:.85em;color:var(--muted)}

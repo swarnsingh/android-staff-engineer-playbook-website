@@ -441,7 +441,7 @@ Most rejections here are hedges on statements that are correct as taught: "light
 
 **Amended text**
 
-- **CH4:** The exact complete-class replacement is in [the CH4 proposal](corrections-with-edits.md#ch4). A Job completion handler cancels the channel even if startup is prevented. Undelivered and executing requests fail with `CartStoppedException` for active callers; their own cancellation remains cancellation. A service-local timeout fails one request with `CheckoutRequestCancelledException` and leaves an active worker serving. Expected `IOException` also affects one request; unexpected failures stop the worker and retain the owner’s reporting policy. Regression cases exercise these boundaries. No correction has been approved or applied.
+- **CH4:** The exact complete-class replacement is in [the CH4 proposal](corrections-with-edits.md#ch4). A Job completion handler cancels the channel even if startup is prevented. Undelivered and executing requests fail with `CartStoppedException` for active callers; their own cancellation remains cancellation. A service-local timeout fails one request with `CheckoutRequestCancelledException` and leaves an active worker serving. Expected `IOException` also affects one request; unexpected failures stop the worker and retain the owner’s reporting policy. A checkout that finishes during shutdown still returns its result. Regression cases exercise these boundaries. No correction has been approved or applied.
 
 **Summary:** 2 approve, 1 approve with edit, 5 reject.
 

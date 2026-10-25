@@ -5,6 +5,9 @@
 
 A Kotlin release is two things at once: **new tools for your code** (here: stable context parameters, explicit backing fields, a stable `Uuid`, Swift export in Alpha) and **a change to your build's foundations** that every compiler plugin must support. This chapter covers what changed and why it matters for Android and KMP teams, then the checklist that decides *when* upgrading is safe.
 
+<!-- @before Language Features :: review -->
+The example under **Explicit backing fields are Stable** in the section below (`var token: String?` with `field = null` and `private set`) is under technical review. Its replacement is pending approval; do not use that example as runnable code yet.
+
 <!-- @after Language Features :: visual -->
 ### Where does `tracer` come from?
 
@@ -15,10 +18,6 @@ A Kotlin release is two things at once: **new tools for your code** (here: stabl
 {"label":"It flows down","caption":"Inside submit, tracer is itself in context, so calls to other context functions receive it without being mentioned again.","add":["inner"],"state":{"inner":"done"},"text":{"innerNote":"prints: [app] span validate 1 — same Tracer, never passed by hand"}},
 {"label":"Not in 2.4: explicit arguments","caption":"Kotlin 2.4 rejects naming a context argument at the call. The value always comes from an enclosing scope, so a reader finds it by reading outward. That is the readability cost to weigh before using context parameters.","add":["explicit"],"state":{"explicit":"warn"},"text":{"explicitNote":"error: the feature \"explicit context arguments\" is only available since language version 2.5"}}
 ]</script><figcaption>Each result above comes from compiling and running the example with Kotlin 2.4.21.</figcaption></figure>
-
-### Example under review
-
-The explicit-backing-field example in the original chapter is under technical review. Its replacement is pending approval; do not use that example as runnable code yet.
 
 <!-- @after Kotlin/Native and Swift Export :: visual -->
 ### Shared `Flow` as Swift sees it

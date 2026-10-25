@@ -153,6 +153,21 @@ fun main() = runTest {
     val afterCaller = async { outcome(callerActor) };advanceUntilIdle();check(afterCaller.await() == "ok")
     callerOwner.cancel();runCurrent();passed++
 
+    // A checkout that finishes while its owner shuts down keeps its result; reporting
+    // CartStoppedException would invite a retry of work that already happened.
+    val commitOwner = SupervisorJob()
+    val commitStarted = CompletableDeferred<Unit>()
+    var committed = false
+    val commitActor = CartActor(ownerScope(commitOwner), CheckoutService {
+        withContext(NonCancellable) {
+            commitStarted.complete(Unit);delay(10);committed = true;CheckoutResult("committed")
+        }
+    })
+    val commitCaller = async { outcome(commitActor) };runCurrent();check(commitStarted.isCompleted)
+    commitOwner.cancel();advanceUntilIdle()
+    check(committed && commitCaller.await() == "committed") { "Committed checkout returned ${commitCaller.await()}" }
+    stopped(commitActor);passed++
+
     // Regression for the teaching claim: two slots may share one boxed value.
     val boxed: List<*> = twice(Meters(1.0))
     check(boxed[0] === boxed[1])

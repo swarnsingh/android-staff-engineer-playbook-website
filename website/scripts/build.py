@@ -148,7 +148,7 @@ def classify_part(heading):
 
 
 BLEND_LABELS = {'story': 'Start here', 'guide': 'In plain words', 'visual': 'See it', 'animation': 'Step through it',
-                'check': 'Check yourself', 'deeper': 'Under the hood', 'staff': 'Staff lens', 'try': 'Try it', 'bridge': ''}
+                'check': 'Check yourself', 'deeper': 'Under the hood', 'staff': 'Staff lens', 'try': 'Try it', 'review': 'Under review', 'bridge': ''}
 
 
 def load_blend(path):
