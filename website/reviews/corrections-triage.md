@@ -12,6 +12,28 @@ Codex proposed 292 corrections to the original chapters, stored in `website/cont
 
 To approve, mark the row. Approved rows get `"status": "approved"` in the JSON; "with edit" rows also get the amended text.
 
+## Overview
+
+All 292 proposals are reviewed, plus 3 new errors found while checking (F17, BY8, K1). This table replaces Codex's earlier audit notes, which remain in git history.
+
+| | Rows |
+|---|---|
+| Approve | 191 |
+| Approve with edit | 22 (3 of them new findings) |
+| Reject | 82 |
+| **Total** | **295** |
+
+The language, type-system and compiler chapters are mostly real errors. Coroutines and Flow have the most rejections: there, many proposals hedge statements that are correct as taught.
+
+Some rows show that an example in the original does not compile or fails when run:
+- **Do not compile:** GE1, DE2, DE9, K1.
+- **Tests that fail:** CH7, CA6, TE4, CO6, C40.
+- **Hang forever:** CH4, C24.
+
+Two proposals were themselves wrong, so they are rejected or replaced:
+- **E4:** the API 33 `Bundle.getParcelable` overload is unbounded.
+- **JV12:** `toString()` on a platform-typed null crashes; it does not return "null".
+
 ## Variables — 16 proposed
 
 | # | Original says | Problem | Verdict | Evidence |
@@ -456,3 +478,104 @@ Most rejections here are hedges on statements that are correct as taught: "light
 | TE7 | Pass the scheduler explicitly when schedulers differ | Correct advice | Reject | — |
 
 **Summary:** 2 approve, 0 approve with edit, 5 reject.
+
+## Memory Model — 16 proposed
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| ME1 | All object references live on the stack or in registers | References in fields and arrays live on the heap | Approve | JVM specification, run-time data areas |
+| ME2 | A `List<Int>` of 100k items is 100k+1 heap objects | An approximation that makes the right point | Reject | — |
+| ME3 | Phantom references are cleared "even before finalize" | Phantom reachability comes after finalization; `get()` always returns null | Approve | `PhantomReference` API docs |
+| ME4 | Concurrent generational GC from Android 8 | Concurrent Copying from Android 8; generational from Android 10 | Approve | AOSP: "CC extends to be a generational GC in Android 10 and higher" |
+| ME5 | Dalvik had no Large Object Space; ART has one for bitmaps | Simplified comparison table; not clearly wrong | Reject | — |
+| ME6 | ART introduced generational GC; bitmaps go to the LOS | Same chronology as ME4; bitmap pixels are native from Android 8 | Approve | AOSP GC docs; Android bitmap memory docs |
+| ME7 | Bitmaps go to native memory with `Bitmap.Config.HARDWARE` | From Android 8 all bitmap pixels are native; hardware bitmaps use graphics memory | Approve | Android bitmap memory docs |
+| ME8 | Fix the Activity's delayed callback with `viewModelScope` | Moves the Activity capture into a longer-lived owner, causing the leak it fixes | Approve | Android lifecycle-aware coroutines docs |
+| ME9 | 5+ instances after a forced GC means a leak | Profiling heuristic | Reject | — |
+| ME10 | "800 MB RSS but only 80 MB heap" | Illustration | Reject | — |
+| ME11 | Bitmaps were in the Java heap before Oreo | True for every API level still relevant | Reject | — |
+| ME12 | Boxing `5` allocates an `Integer` on the heap | The cached `Integer` is still a heap object | Reject | — |
+| ME13 | Answer Key: 100,001 objects | Same as ME2 | Reject | — |
+| ME14 | Answer Key: four reference strengths, but only three answered; weak refs "cleared immediately" | The phantom answer is missing | Approve | `WeakReference` / `PhantomReference` API docs |
+| ME15 | `viewModelScope` cancels on clear and breaks the reference chain | Correct | Reject | — |
+| ME16 | JEP 197 cited as generational GC background | JEP 197 is the segmented code cache | Approve | JEP 197 |
+
+**Summary:** 8 approve, 0 approve with edit, 8 reject.
+
+## JVM Interop — 21 proposed
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| JV1 | Java sees only `connect(String, int, boolean)` | Correct; `connect$default` is synthetic | Reject | — |
+| JV2 | `@JvmOverloads` only covers trailing parameters | Correct for the chapter's example | Reject | — |
+| JV3 | Java can extend a Kotlin sealed class in the same package | The constructor is private; Java cannot | Approve | `javac`: "Shape() has private access in Shape" |
+| JV4 | `internal fun greet()` gets a mangled name | Only `internal` members are mangled; top-level functions are not | Approve | `javap`, as in E10 |
+| JV5 | Bytecode `greet$mymodule_debug` for the top-level example | Same | Approve | Same |
+| JV6 | The failure is "more precisely, an `IllegalStateException`" | It is a `NullPointerException` | Approve | Run: `NullPointerException: findById(...) must not be null` |
+| JV7 | Java sees `List<? extends Box<? extends Number>>` for a return type | Return types get no wildcards | Approve | `javap`: return `List<Animal>`, parameter `List<? extends Animal>` |
+| JV8 | With `@file:JvmName("Telemetry")`, Java calls `Telemetry.event(…)` | The functions are members of `object TelemetryClient`, so Java calls `TelemetryClient.event(…)` | Approve | Kotlin "Calling Kotlin from Java" docs |
+| JV9 | Without annotations: `TelemetryKt.TelemetryClient.INSTANCE` | The object is not nested in the file class | Approve | Same |
+| JV10 | `view.tag` is `Any!` | Correct | Reject | Compiled against `android.jar` (API 36): `val t: Any = view.tag` compiles, so it is a platform type |
+| JV11 | `getTag()` has no nullability annotation | Correct | Reject | Same |
+| JV12 | Comment: "`.toString()` on `Any!` is fine … CRASHES if tag is null" | Calling `toString()` on a platform-typed null crashes. Codex's text says it safely returns "null", which is also wrong | Approve with edit | `javap`: `invokevirtual Object.toString`; run: `NullPointerException` |
+| JV13 | Java lambda `result -> { … }` for a Kotlin `(Result) -> Unit` | Must `return Unit.INSTANCE` | Approve | Kotlin "Calling Java from Kotlin" docs |
+| JV14 | Java SAM conversion handles function types automatically | Same as JV13 | Approve | Same |
+| JV15 | Adding a default parameter doesn't break Java, but it becomes mandatory | Contradicts itself: it does break Java callers | Approve | Kotlin "Calling Kotlin from Java" docs |
+| JV16 | Java can extend a sealed class in the same package | Same as JV3 | Approve | Same as JV3 |
+| JV17 | Same, in the Staff Lens | Same as JV3 | Approve | Same as JV3 |
+| JV18 | Value classes "box back to their underlying type" in Java | Reversed: they appear unboxed, as the underlying type | Approve | Kotlin inline value classes docs |
+| JV19 | Companion factories holding sensitive resources keep them for the process | Conditional ("if they hold"), so correct | Reject | — |
+| JV20 | A record's canonical constructor is final | Constructors cannot be final; record classes and their fields are | Approve | Java records docs |
+| JV21 | Answer Key: `internal` names are mangled | Same as JV4 | Approve | Same as JV4 |
+
+**Amended text**
+
+- **JV12:**
+  ```kotlin
+  // CRASHES at runtime if tag is null: on a platform type, toString() calls Object.toString() directly
+  val tagStr: String = view.tag.toString()
+  ```
+
+**Summary:** 15 approve, 1 approve with edit, 5 reject.
+
+## Bytecode — 7 proposed, 1 new
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| BY1 | `javap -c -p Foo.jar FooKt` | The jar must go in `-classpath` | Approve | `javap` manual |
+| BY2 | A data class "generates 4 free methods" | It generates accessors, `componentN`, `copy`, `equals`, `hashCode`, `toString` | Approve | Kotlin data classes docs |
+| BY3 | Every `val` in a data class is compared in `equals` | Only primary-constructor properties | Approve | Same |
+| BY4 | Without `inline`, `calc()` constructs a `Function2` | A non-capturing lambda uses `invokedynamic` and is reused | Approve | Same as F1/F3 |
+| BY5 | DEX is the same bytecode in a different encoding | A different instruction set | Approve | AOSP Dalvik bytecode docs |
+| BY6 | The optimizations you care about happen before D8/R8 | R8 and ART do major optimization | Approve | Android app optimization docs |
+| BY7 | `map.filter.firstOrNull` shows three calls and three lists | `map` and `filter` are inlined loops making two lists; `firstOrNull` makes none | Approve | Kotlin `firstOrNull` docs; same as F6 |
+| BY8 (new) | Listing shows `greeting()` reading `name` through `invokevirtual getName()` | Inside the class, Kotlin reads the field directly | Approve with text below | `javap`: `greeting()` uses `getfield name` |
+
+**Amended text**
+
+- **BY8:** In the listing, replace `13: invokevirtual #7 // Method getName:()Ljava/lang/String;` with `13: getfield #2 // Field name:Ljava/lang/String;`. Replace observation 1 with: "`val name` becomes a **field** plus a getter method. Code inside `User` reads the field directly (`getfield`); code in other classes calls `getName()`."
+
+**Summary:** 7 approve, 1 approve with edit (new), 0 reject.
+
+## Kotlin 2.4 Update — 0 proposed, 1 new
+
+| # | Original says | Problem | Verdict | Evidence |
+|---|---|---|---|---|
+| K1 (new) | `var token: String?` with `field = null` and `private set` | Does not compile: explicit backing fields are `val`-only | Approve with text below | Compiler: "only 'val' properties with explicit backing fields are supported" |
+
+**Amended text**
+
+- **K1:**
+  ```kotlin
+  class Session {
+      val token: StateFlow<String?>
+          field = MutableStateFlow<String?>(null)
+
+      fun authenticate(newToken: String) {
+          token.value = newToken   // inside the class, token is the MutableStateFlow
+      }
+  }
+  ```
+  Compiled and run with Kotlin 2.4.21: `token=abc`.
+
+**Summary:** 1 approve with edit (new).
