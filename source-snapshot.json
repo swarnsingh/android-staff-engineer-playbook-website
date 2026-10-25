@@ -1,0 +1,34 @@
+{
+  "repository": "https://github.com/swarnsingh/android-staff-engineer-playbook",
+  "reference_commit": "60b8c2a",
+  "read_only": true,
+  "kotlin_sha256": {
+    "kotlin/compiler-features/inline-functions.md": "12d92db3a62dc8a3df34a3cb577ca8f52506553e6275d87a6167ce7b42f33923",
+    "kotlin/compiler-features/reified-types.md": "437db2cffa56120a4e28c1c054c9699c69375e20c46a7bd547c9ad3216b62d9f",
+    "kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks.md": "e2cb574a04732ec090060c04657b6d904b80c7eb90380b7b6c4b0a65db8bfe99",
+    "kotlin/coroutines-and-flow/channels-and-select.md": "89ecdec3076182a14d001353191cc5d1a13b9ba0b4f050487018f46a94f19a56",
+    "kotlin/coroutines-and-flow/coroutines-debugging-and-profiling.md": "002fbb488c020a11f01a15ba398afd62238a8f96d4ac673c1ffa989c1fba7085",
+    "kotlin/coroutines-and-flow/coroutines.md": "f7d91b786f6cf251aa7e3e06da51ab0a375c70a0b225934bc7cc88b81eab009c",
+    "kotlin/coroutines-and-flow/flow-operators-and-backpressure.md": "bd393c9985afad397f40ea7b4189e12eab864bdcf5c6d4227707d50bb839c47f",
+    "kotlin/coroutines-and-flow/test-dispatchers-virtual-time.md": "af1b13f575a12a7face5f3a694ec4f64574044465e13e65614edf376ec714af1",
+    "kotlin/language-core/data-classes.md": "20100e6db918da9ebcb2bede757f73e3b8e53249c6bcd2eea85ec9bae09430a6",
+    "kotlin/language-core/delegation.md": "3f9aa9766222a9a93b7cb23cb6d88d9bab5bb7a7392959d6791ba7527d034521",
+    "kotlin/language-core/extensions.md": "d3174448432e32917330d03869b33e1d5ac267686407a0ae79e53a1138aa96ba",
+    "kotlin/language-core/functions.md": "a6251fa71317accf519bd923e6d08e3ffafaf4beb873f22261a2662008d36f0f",
+    "kotlin/language-core/null-safety.md": "3564785d89db722d311786f84e4edb726556bb6817279471eeabae0cbc30eb7a",
+    "kotlin/language-core/sealed-classes.md": "c2de3bd4d0c8828e9a7d4207c12f8ee356933e51aeb7e619d7be4590f17d3b14",
+    "kotlin/language-core/value-classes.md": "62436bb04d5b53355434789f33ebe9ad85896884ac66fd443ac49abc43df580f",
+    "kotlin/language-core/variables.md": "8766f974416fef843b63b08568d313fb857a7dbfaa3407d005405bf02658990e",
+    "kotlin/runtime-and-jvm/bytecode.md": "2945c489ea37e44494660928a429ef5e0033587dfebc9383c14e8ee730772a8a",
+    "kotlin/runtime-and-jvm/jvm-interop.md": "4479e674b4f7b8d8fe4ee4e9cbedda5cc52f2fffab5ff3df29f086bcf8df5313",
+    "kotlin/runtime-and-jvm/memory-model.md": "fe1813045e25c8aaf7a82cdc92011e1676c590d8302f86c891b48ffd1bfda6a0",
+    "kotlin/type-system/generics.md": "4dfecccabe59bd875bb0c8c28080d0bab698149b99d4a76eac19b41c4c492423",
+    "kotlin/type-system/variance.md": "87fef8deb0473a3a2e7af88d0e736966c9dda957781a12e3ddda300ddc220318",
+    "kotlin/version-updates/kotlin-2-4-update.md": "5318cdcffdd3b10e7c20f0dad6c072f177f2dacfbcdd35c99c40fed95049355c",
+    "kotlin.md": "eab980e4561ecc7fe35dfba50935ef70ef7fd13d4c5e1f2b7751cd384ecc63ef"
+  },
+  "preserved_website_branches": {
+    "codex/reader-website": "60b8c2ad83bc2ab9b476560de29adc2dc99e5318",
+    "claude/reader-website-kotlin": "8a77e2254170260eb94a06a7ec72299fe846256e"
+  }
+}

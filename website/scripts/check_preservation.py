@@ -9,11 +9,12 @@ headers, part bands), and the check reads around it. It then requires that:
 
 - every original unit appears, in the original order, as often as it does in the Markdown;
 - no original unit is hidden (`hidden`, `aria-hidden`, `display:none`, `.sr-only`) or folded
-  into a `<details>`, except the build's own diagram disclosures;
+  into a `<details>`, except actual Mermaid source inside the build's diagram disclosures;
 - no other text appears in the original areas, apart from a few fixed interface strings.
 
-Text changed by an approved correction is checked in its corrected form, so a correction can
-never remove content silently.
+Text changed by an approved correction is checked in its corrected form. These are static
+HTML checks: CSS visibility is checked independently by browser_preservation.js in a rendered
+browser. The static gate does not claim to evaluate a browser CSS cascade.
 """
 from pathlib import Path
 from html import unescape
@@ -59,7 +60,7 @@ def units(source):
                 kind = 'heading' if tokens[i - 1].type == 'heading_open' else 'text'
                 yield kind, text
         elif token.type in ('fence', 'code_block'):
-            yield 'code', token.content.rstrip('\n')
+            yield ('diagram' if token.type == 'fence' and token.info.strip() == 'mermaid' else 'code'), token.content.rstrip('\n')
         elif token.type == 'html_block' and normalise(token.content):
             yield 'html', normalise(token.content)
 
@@ -73,9 +74,10 @@ class Page(HTMLParser):
         self.concealed = []          # (start, end) spans of original-area text a reader cannot see
         self.codes = []              # (text, concealed) for every <pre><code> in the original areas
         self.stack, self.code = [], None
+        self.headings, self.heading = [], None
 
     def top(self):
-        return self.stack[-1] if self.stack else {'tag': '', 'zone': False, 'added': False, 'concealed': False}
+        return self.stack[-1] if self.stack else {'tag': '', 'zone': False, 'added': False, 'concealed': False, 'hidden': False, 'details': []}
 
     def emit(self, text, concealed=False):
         if concealed and text.strip(BOUNDARY + ' '):
@@ -86,7 +88,7 @@ class Page(HTMLParser):
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
         classes = set((a.get('class') or '').split())
-        style = (a.get('style') or '').replace(' ', '').lower()
+        style = re.sub(r'\s+', '', a.get('style') or '').lower()
         parent = self.top()
         if tag in BLOCK:
             self.emit(BOUNDARY)
@@ -94,17 +96,22 @@ class Page(HTMLParser):
             self.emit(' ')
         if tag in VOID:
             return
-        outer = parent['concealed']
+        details = list(parent['details'])
         if tag == 'summary' and parent['tag'] == 'details':
-            outer = parent['outer']  # a summary stays visible while its details are closed
-        concealed = (outer or 'hidden' in a or a.get('aria-hidden') == 'true' or 'sr-only' in classes
-                     or 'display:none' in style or 'visibility:hidden' in style
-                     or (tag == 'details' and not classes & DISCLOSURES))
+            details = details[:-1]  # the summary is outside its own disclosure's folded body
+        hidden = (parent['hidden'] or 'hidden' in a or a.get('aria-hidden') == 'true'
+                  or 'sr-only' in classes or 'display:none' in style or 'visibility:hidden' in style
+                  or bool(re.search(r'(?:^|;)opacity:0(?:\.0+)?%?(?:!important)?(?:;|$)', style)))
+        if tag == 'details':
+            details.append(classes)
         self.stack.append({
-            'tag': tag, 'outer': outer, 'concealed': concealed,
+            'tag': tag, 'hidden': hidden, 'details': details,
+            'concealed': hidden or bool(details),
             'zone': parent['zone'] or 'original-opening' in classes or (tag == 'section' and (a.get('id') or '').startswith('section-')),
             'added': parent['added'] or bool(classes & ADDED),
         })
+        if re.fullmatch(r'h[1-6]', tag) and self.top()['zone'] and not self.top()['added']:
+            self.heading = (self.size, tag)
         if tag == 'code' and parent['tag'] == 'pre' and self.top()['zone'] and not self.top()['added']:
             self.code = []
 
@@ -114,9 +121,13 @@ class Page(HTMLParser):
         while self.stack:
             element = self.stack.pop()
             if element['tag'] == 'code' and self.code is not None:
-                self.codes.append((''.join(self.code), element['concealed']))
+                self.codes.append((''.join(self.code), element['hidden'], element['details']))
                 self.code = None
             if element['tag'] == tag:
+                if re.fullmatch(r'h[1-6]', tag) and self.heading is not None:
+                    start, level = self.heading
+                    self.headings.append((start, self.size, level))
+                    self.heading = None
                 break
         if tag in BLOCK:
             self.emit(BOUNDARY)
@@ -156,22 +167,27 @@ def verify(path, panel):
     covered = bytearray(len(text))
     problems, position, code_index, checked = [], 0, 0, 0
     page_title = build.title(build.ROOT / path)
+    heading_levels = iter(token.tag for token in MD.parse(source) if token.type == 'heading_open')
 
     def is_concealed(start, end):
         return any(start < c_end and c_start < end for c_start, c_end in page.concealed)
 
     for kind, unit in units(source):
         checked += 1
+        if kind == 'heading':
+            level = next(heading_levels)
         if kind == 'heading' and build.clean(unit) == page_title and checked == 1:
             continue  # the H1 is shown as the page title
-        if kind == 'code':
+        if kind in ('code', 'diagram'):
             found = next((i for i in range(code_index, len(page.codes)) if page.codes[i][0].rstrip('\n') == unit), None)
             label = unit.splitlines()[0][:80] if unit else '(empty)'
             if found is None:
-                moved = any(code.rstrip('\n') == unit for code, _ in page.codes)
+                moved = any(block[0].rstrip('\n') == unit for block in page.codes)
                 problems.append(('out of order' if moved else 'missing', kind, label))
                 continue
-            if page.codes[found][1]:
+            _, hidden, disclosures = page.codes[found]
+            permitted_diagram = kind == 'diagram' and all(classes & DISCLOSURES for classes in disclosures)
+            if hidden or (disclosures and not permitted_diagram):
                 problems.append(('hidden', kind, label))
             code_index = found + 1
             # The code's text is also in the flat text; claim it there so it is not reported as extra.
@@ -185,6 +201,8 @@ def verify(path, panel):
         if not match:
             problems.append(('out of order' if regex.search(text) else 'missing', kind, unit))
             continue
+        if kind == 'heading' and not any(start <= match.start() and match.end() <= end and tag == level for start, end, tag in page.headings):
+            problems.append(('structure', kind, unit))
         if is_concealed(match.start(), match.end()):
             problems.append(('hidden', kind, unit))
         covered[match.start():match.end()] = b'\x01' * (match.end() - match.start())
@@ -201,7 +219,12 @@ def verify(path, panel):
 
 def check(path):
     page_file = build.OUT / build.route(path)[len(build.BASE):].strip('/') / 'index.html'
-    return verify(path, content_panel(page_file.read_text()))
+    html = page_file.read_text()
+    problems, checked = verify(path, content_panel(html))
+    titles = re.findall(r'<h1\b[^>]*>(.*?)</h1>', html, re.S)
+    if len(titles) != 1 or normalise(titles[0]) != build.title(build.ROOT / path):
+        problems.append(('structure', 'heading', 'The original H1 must appear once as the page title'))
+    return problems, checked
 
 
 def self_test():
@@ -220,6 +243,10 @@ def self_test():
         'paragraph relabelled as added': panel.replace(first, f'<div class="blend">{first}</div>', 1),
         'unlabelled addition': panel.replace(first, first + '<p>An added claim with no label.</p>', 1),
         'removed paragraph': panel.replace(first, '', 1),
+        'prose folded with diagram class': panel.replace(first, f'<details class="original-diagram"><summary>Original diagram from the chapter</summary>{first}</details>', 1),
+        'transparent paragraph': panel.replace(first, f'<div style="opacity: 0">{first}</div>', 1),
+        'heading demoted to paragraph': panel.replace('<h2 id="overview">Overview</h2>', '<p id="overview">Overview</p>', 1),
+        'heading level changed': panel.replace('<h2 id="overview">Overview</h2>', '<h3 id="overview">Overview</h3>', 1),
     }
     # "Staff-level guidance:" appears twice in this chapter; dropping the second must be caught.
     repeated_path = 'kotlin/version-updates/kotlin-2-4-update.md'
@@ -228,6 +255,8 @@ def self_test():
     checks = [(path, name, broken) for name, broken in cases.items()]
     checks.append((repeated_path, 'second of two equal paragraphs removed', repeated[:last.start()] + repeated[last.end():]))
     for page_path, name, broken in checks:
+        if broken == panel_of(page_path):
+            raise AssertionError(f'preservation self-test: {name} did not alter the fixture')
         problems, _ = verify(page_path, broken)
         if not problems:
             raise AssertionError(f'preservation self-test: {name} was not detected')

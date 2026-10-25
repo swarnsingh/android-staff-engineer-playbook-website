@@ -1,12 +1,12 @@
 # Reader Website: Build Guide and Handover
 
-This folder builds the reader website for the playbook. Read [`../content-rulebook.md`](../content-rulebook.md) first, especially sections 16–18: the original chapters are read-only, every page must contain its original chapter in full, and the website adds a clearly labelled teaching layer on top. This guide explains how the build works and where the work stands, so another model or person can continue it.
+This folder builds the reader website for the playbook. Read [`../content-rulebook.md`](../content-rulebook.md) first, especially sections 16–19: the original chapters are read-only, every page must contain its original chapter in full, and the website adds a clearly labelled teaching layer on top. This guide explains how the build works and where the work stands, so another model or person can continue it.
 
 ## Current state
 
-- **Branch:** `claude/reader-website-kotlin` (built on Codex's snapshot `60b8c2a` on `codex/reader-website`). Nothing is pushed or merged without the owner's approval.
+- **Repository:** private `swarnsingh/android-staff-engineer-playbook-website`. Current work: `codex/reader-website-fixes`, published from `main`. Historical branches `codex/reader-website` (`60b8c2a`) and `claude/reader-website-kotlin` (`8a77e22`) are preserved unchanged. The original playbook repository receives no pushes or merges.
 - **Scope:** the Kotlin tree — `kotlin.md` plus all 22 Kotlin chapters render as pages.
-- **Originals:** byte-identical to `main`. Do not edit them.
+- **Originals:** read-only snapshot from `60b8c2a`; provenance and file hashes are recorded in `../source-snapshot.json`. Do not edit them.
 - **Corrections:** 292 proposals from Codex's audits sit in `content/corrections-*.json`, plus 3 new findings. All are triaged in `reviews/corrections-triage.md` (revised after Codex's review). None is approved yet, so none is applied.
 
 ### Progress by chapter
@@ -53,7 +53,7 @@ Run from the repository root. The build writes `website/dist/` (ignored by git),
 
 `scripts/build.py` parses each original chapter with markdown-it and renders it into `templates/reader.html`. Sections are grouped into six parts (`PARTS` in the script) by their headings; parts only move forward. Then it adds, in order: the chapter's blend fragments, the Codex coroutine fragments for the coroutines page (each wrapped in a labelled `.blend` container), and approved corrections. An approved correction highlights the changed words (`mark.correction-mark`, when the change is one line outside code) and adds a `.correction-note` to its section with the reason, the original wording and the sources.
 
-`scripts/check_preservation.py` reads only the original areas of each page (`.original-opening` and `section#section-…`), skipping labelled additions. Every original heading, paragraph, list item, table row, code block, HTML block and diagram source must appear there in order, as many times as in the Markdown, and visible; any other text there fails the build. It first runs a self-test that swaps, hides, folds, relabels, removes and duplicates content and must catch each case.
+`scripts/check_preservation.py` reads only the original areas of each page (`.original-opening` and `section#section-…`), skipping labelled additions. Every original heading, paragraph, list item, table row, code block, HTML block and diagram source must appear there in order, as many times as in the Markdown, and statically accessible; any other text there fails the build. Heading levels and the single page title are checked. Only actual Mermaid source may use the diagram-disclosure exemption. It first runs eleven adversarial fixtures, including disguised diagram disclosures, transparent prose and demoted headings. These static checks do not evaluate a browser CSS cascade. Invoke the separate read-only `scripts/browser_preservation.js` function in a rendered Content page, passing the parsed `dist/coverage/diagram-sources.json` map to check stylesheet-driven visibility, including inherited opacity and hidden ancestors.
 
 ## Writing a blend file
 
@@ -94,5 +94,17 @@ A `<figure class="stepper">` contains a `.stage` with elements marked `data-el="
 
 ## Next steps
 
-1. Codex re-reviews `b0499b6` together with the exact texts in `reviews/corrections-with-edits.md` (and `.json`) for the 23 "approve with edit" rows. Then the owner approves `reviews/corrections-triage.md` (all 292 + 3 new reviewed: 199 approve, 23 approve with edit, 73 reject). Then set `"status": "approved"` (and amended text) in `content/corrections-*.json` and add the three new findings. The markers are already built; check each approved page after the build.
+1. The owner reviews the exact texts in `reviews/corrections-with-edits.md` (and `.json`) for the 23 "approve with edit" rows, including the revised CH4 actor proposal. Then the owner approves `reviews/corrections-triage.md` (all 292 + 3 new reviewed: 199 approve, 23 approve with edit, 73 reject). Then set `"status": "approved"` (and amended text) in `content/corrections-*.json` and add the three new findings. The markers are already built; check each approved page after the build.
 2. Repeat the blend for the next tree.
+
+## Regression checks for the final review fixes
+
+Run the static build and repository documentation checker as above. The build itself runs the preservation fixtures and checks all 23 pages; it does not claim to execute CSS. `scripts/browser_preservation.js` is a read-only async function for browser QA: evaluate the function and invoke it after the Content view has loaded. It returns the source path, checked text-node count, diagram count and a problem list. It neither changes the page nor opens disclosures. Run it on each generated Kotlin page and on disposable fixtures with hidden stylesheets, inherited zero opacity and falsely labelled diagram disclosures. Do not use a static membership count as evidence that browser visibility passed.
+
+For Kotlin, run `python3 website/scripts/check_kotlin_examples.py`. This compiles the exact CH4 proposal from the JSON with the chapter’s command types and the fixture in `tests/CartActorRegression.kt`. It uses existing Kotlin 2.4.21 and kotlinx.coroutines/core-test 1.11.0 artifacts from local Gradle or Maven caches; it does not execute Gradle or download dependencies. `KOTLIN_COMPILER_CP` and `KOTLIN_TEST_CP` can point at explicitly installed compiler and test classpaths on another machine. A missing dependency is reported as a prerequisite, not a passing test.
+
+The actor regression checks expected failure followed by recovery, shutdown while processing with 256 additional queued or suspended submissions, enqueue before startup followed by cancellation, cancellation before the first dispatch, construction after owner cancellation, fast rejection after shutdown, and unexpected-error reporting. The channel is cancelled from the worker Job’s completion handler, so shutdown does not depend on entering a coroutine body. Undelivered checkout replies are released by the channel callback; the executing request completes its own reply before propagating cancellation or unexpected failure. Expected I/O failure is the only locally recovered error in this teaching example. The owner remains responsible for the uncaught-error policy.
+
+The same executable fixture verifies the value-class animation’s reuse example: a generic helper can place one boxed value in two list positions. Allocation counts must not be inferred from list length. The revised animation distinguishes boxed representation from fresh allocation and illustrates the shared reference explicitly.
+
+CH4 is still a proposal. Tests compile it only in a temporary directory; they do not add approval statuses, edit original chapters or apply corrections to the active website. Keep the Markdown and JSON proposals in sync and re-run the checks when the wording changes. A successful check records the contracts exercised by those cases; it is not a blanket guarantee for every callback API, dispatcher, browser engine or physical device.

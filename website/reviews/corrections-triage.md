@@ -441,42 +441,7 @@ Most rejections here are hedges on statements that are correct as taught: "light
 
 **Amended text**
 
-- **CH4:** Keep the class; replace the `init` block:
-  ```kotlin
-  init {
-      scope.launch {
-          var items = emptyList<Item>()
-          var inFlight: CompletableDeferred<CheckoutResult>? = null
-          try {
-              for (command in commands) {
-                  when (command) {
-                      is CartCommand.Add -> items = items + command.item
-                      is CartCommand.Remove -> items = items.filterNot { it.id == command.id }
-                      is CartCommand.Checkout -> {
-                          inFlight = command.replyTo
-                          try {
-                              command.replyTo.complete(checkout.submit(items))
-                          } catch (e: Exception) {
-                              if (e is CancellationException) throw e   // the owner stopped the actor: handled below
-                              command.replyTo.completeExceptionally(e)  // only this checkout fails; the actor keeps serving
-                          }
-                      }
-                  }
-              }
-          } finally {
-              // The actor is stopping: refuse new commands and fail every checkout still waiting.
-              val stopped = IllegalStateException("CartActor stopped")
-              commands.close(stopped)
-              inFlight?.completeExceptionally(stopped)   // no effect if it already completed
-              while (true) {
-                  val left = commands.tryReceive().getOrNull() ?: break
-                  if (left is CartCommand.Checkout) left.replyTo.completeExceptionally(stopped)
-              }
-          }
-      }
-  }
-  ```
-  After this, `checkout()` called on a stopped actor throws `CartActor stopped` from `send`.
+- **CH4:** The exact complete-class replacement is in [the CH4 proposal](corrections-with-edits.md#ch4). A Job completion handler cancels the channel even if the worker body never starts; `onUndeliveredElement` releases queued replies and cancelled senders, while the executing request's catch releases its own reply. Expected `IOException` failures affect one request. Cancellation and unexpected failures stop the worker. Regression cases cover both pre-start cancellation paths, active shutdown, buffered and suspended senders, and failure/recovery. No correction has been approved or applied.
 
 **Summary:** 2 approve, 1 approve with edit, 5 reject.
 

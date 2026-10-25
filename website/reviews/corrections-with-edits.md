@@ -31,7 +31,7 @@ Exact proposed wording for the 23 rows of [`corrections-triage.md`](corrections-
 | [C24](#c24) | Coroutines | Scope = lifetime owner | 179 |
 | [C40](#c40) | Coroutines | `runTest` — virtual time for unit tests | 472 |
 | [C56](#c56) | Coroutines | Answer Key | 580 |
-| [CH4](#ch4) | Channels and Select | Actor-Style State Ownership | 191 |
+| [CH4](#ch4) | Channels and Select | Actor-Style State Ownership | 185 |
 | [JV12](#jv12) | JVM Interop | Calling Android SDK Java from Kotlin: platform types in action | 452 |
 | [BY8](#by8) | Kotlin: Bytecode and Decompilation | Property access | 123 |
 | [K1](#k1) | Kotlin 2.4 Update for Android and KMP | Explicit backing fields are Stable | 50 |
@@ -475,16 +475,22 @@ so it allows up to 64 threads. If you run 10 blocking calls on `Default`, they o
 ## CH4
 
 - **Chapter:** Channels and Select (`kotlin/coroutines-and-flow/channels-and-select.md`)
-- **Original says:** `CartActor` completes `replyTo` with `checkout.submit(items)`
-- **Reason:** If `submit` throws, the actor's loop dies and every `checkout()` caller waits forever. The same happens to queued callers when the owner's scope is cancelled, and the channel keeps accepting commands nobody will read
-- **Evidence:** Run: after one `IOException`, both calls still waiting after 500 ms. With the edit: the failed call fails, the next succeeds; after the owner is cancelled, the active and the queued checkout both fail with `CartActor stopped`, and a new `checkout()` fails at once
-- **Sources:** <https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/>, <https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-completable-deferred.html>
-- **Note:** Only the `init` block changes; `add` and `checkout` stay as they are.
-- **Replacement checked:** The chapter's `CartCommand` and `CartActor` with this `init` block, compiled and run (Kotlin 2.4.21, kotlinx.coroutines 1.11.0): a failed `submit` fails only that call (`IOException`), the next returns `ok:1`; after the owner is cancelled, the active and the queued checkout both fail with `CartActor stopped`, and a new `checkout()` fails at once with the same error.
+- **Section:** Actor-Style State Ownership
+- **Reason:** The worker must release active and undelivered checkout replies and reject submissions after shutdown, including cancellation before its first dispatch. Expected IOException failures affect only the current request; cancellation and unexpected failures stop the worker.
+- **Sources:** <https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-start/-d-e-f-a-u-l-t/>, <https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/invoke-on-completion.html>, <https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/>
+- **Scope:** Replace the complete `CartActor` class. The command types and its public `add`/`checkout` API remain the same. The enclosing file needs `java.io.IOException` and the coroutine/channel imports.
+- **Regression checks:** `website/scripts/check_kotlin_examples.py` compiles this exact proposal with the chapter's command types. It checks expected failure/recovery, shutdown while processing, buffered and suspended senders, cancellation before startup, and construction with an already-cancelled owner. Unexpected worker failures retain the owner's uncaught-error policy.
+- **Ownership:** Accepted commands belong to the actor's owner. Cancelling a caller waiting for a reply does not roll back a command that was already accepted. This in-memory example provides no durability promise.
 
-**Original** (section "Actor-Style State Ownership", line 191):
+**Original** (Actor-Style State Ownership):
 
-````markdown
+````kotlin
+class CartActor(
+    scope: CoroutineScope,
+    private val checkout: CheckoutService
+) {
+    private val commands = Channel<CartCommand>(capacity = Channel.BUFFERED)
+
     init {
         scope.launch {
             var items = emptyList<Item>()
@@ -499,43 +505,78 @@ so it allows up to 64 threads. If you run 10 blocking calls on `Default`, they o
             }
         }
     }
+
+    suspend fun add(item: Item) {
+        commands.send(CartCommand.Add(item))
+    }
+
+    suspend fun checkout(): CheckoutResult {
+        val reply = CompletableDeferred<CheckoutResult>()
+        commands.send(CartCommand.Checkout(reply))
+        return reply.await()
+    }
+}
 ````
 
 **Replacement:**
 
-````markdown
+````kotlin
+class CartActor(
+    scope: CoroutineScope,
+    private val checkout: CheckoutService
+) {
+    private val commands = Channel<CartCommand>(
+        capacity = Channel.BUFFERED,
+        onUndeliveredElement = { command ->
+            if (command is CartCommand.Checkout) {
+                command.replyTo.completeExceptionally(
+                    CancellationException("Cart command was not delivered")
+                )
+            }
+        }
+    )
+
     init {
-        scope.launch {
+        val worker = scope.launch {
             var items = emptyList<Item>()
-            var inFlight: CompletableDeferred<CheckoutResult>? = null
-            try {
-                for (command in commands) {
-                    when (command) {
-                        is CartCommand.Add -> items = items + command.item
-                        is CartCommand.Remove -> items = items.filterNot { it.id == command.id }
-                        is CartCommand.Checkout -> {
-                            inFlight = command.replyTo
-                            try {
-                                command.replyTo.complete(checkout.submit(items))
-                            } catch (e: Exception) {
-                                if (e is CancellationException) throw e   // the owner stopped the actor: handled below
-                                command.replyTo.completeExceptionally(e)  // only this checkout fails; the actor keeps serving
-                            }
+            for (command in commands) {
+                when (command) {
+                    is CartCommand.Add -> items = items + command.item
+                    is CartCommand.Remove -> items = items.filterNot { it.id == command.id }
+                    is CartCommand.Checkout -> {
+                        try {
+                            command.replyTo.complete(checkout.submit(items))
+                        } catch (error: IOException) {
+                            // Expected request failure: fail this reply and keep serving.
+                            command.replyTo.completeExceptionally(error)
+                        } catch (error: Throwable) {
+                            // Include cancellation: release this caller, then stop the worker.
+                            command.replyTo.completeExceptionally(error)
+                            throw error
                         }
                     }
                 }
-            } finally {
-                // The actor is stopping: refuse new commands and fail every checkout still waiting.
-                val stopped = IllegalStateException("CartActor stopped")
-                commands.close(stopped)
-                inFlight?.completeExceptionally(stopped)   // no effect if it already completed
-                while (true) {
-                    val left = commands.tryReceive().getOrNull() ?: break
-                    if (left is CartCommand.Checkout) left.replyTo.completeExceptionally(stopped)
-                }
             }
         }
+        worker.invokeOnCompletion { cause ->
+            // Runs even when cancellation prevented the worker body from starting.
+            val stopped = CancellationException("CartActor stopped")
+            if (cause != null) stopped.initCause(cause)
+            // Reject new commands, wake suspended senders, and release buffered replies.
+            commands.cancel(stopped)
+        }
     }
+
+    suspend fun add(item: Item) {
+        commands.send(CartCommand.Add(item))
+    }
+
+    suspend fun checkout(): CheckoutResult {
+        val reply = CompletableDeferred<CheckoutResult>()
+        commands.send(CartCommand.Checkout(reply))
+        return reply.await()
+    }
+}
 ````
 
 ## JV12

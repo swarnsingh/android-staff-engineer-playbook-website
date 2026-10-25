@@ -1,0 +1,188 @@
+{
+  "pages": [
+    {
+      "checked": 99,
+      "diagrams": 1,
+      "problems": [],
+      "source": "kotlin.md"
+    },
+    {
+      "checked": 1061,
+      "diagrams": 1,
+      "problems": [],
+      "source": "kotlin/language-core/variables.md"
+    },
+    {
+      "checked": 929,
+      "diagrams": 0,
+      "problems": [],
+      "source": "kotlin/language-core/null-safety.md"
+    },
+    {
+      "checked": 1043,
+      "diagrams": 1,
+      "problems": [],
+      "source": "kotlin/language-core/functions.md"
+    },
+    {
+      "checked": 796,
+      "diagrams": 1,
+      "problems": [],
+      "source": "kotlin/language-core/extensions.md"
+    },
+    {
+      "checked": 1021,
+      "diagrams": 0,
+      "problems": [],
+      "source": "kotlin/language-core/data-classes.md"
+    },
+    {
+      "checked": 163,
+      "diagrams": 0,
+      "problems": [],
+      "source": "kotlin/language-core/value-classes.md"
+    },
+    {
+      "checked": 856,
+      "diagrams": 0,
+      "problems": [],
+      "source": "kotlin/language-core/sealed-classes.md"
+    },
+    {
+      "checked": 885,
+      "diagrams": 0,
+      "problems": [],
+      "source": "kotlin/language-core/delegation.md"
+    },
+    {
+      "checked": 915,
+      "diagrams": 0,
+      "problems": [],
+      "source": "kotlin/type-system/generics.md"
+    },
+    {
+      "checked": 882,
+      "diagrams": 0,
+      "problems": [],
+      "source": "kotlin/type-system/variance.md"
+    },
+    {
+      "checked": 398,
+      "diagrams": 1,
+      "problems": [],
+      "source": "kotlin/compiler-features/inline-functions.md"
+    },
+    {
+      "checked": 380,
+      "diagrams": 0,
+      "problems": [],
+      "source": "kotlin/compiler-features/reified-types.md"
+    },
+    {
+      "checked": 971,
+      "diagrams": 1,
+      "problems": [],
+      "source": "kotlin/coroutines-and-flow/coroutines.md"
+    },
+    {
+      "checked": 397,
+      "diagrams": 0,
+      "problems": [],
+      "source": "kotlin/coroutines-and-flow/channels-and-select.md"
+    },
+    {
+      "checked": 508,
+      "diagrams": 0,
+      "problems": [],
+      "source": "kotlin/coroutines-and-flow/flow-operators-and-backpressure.md"
+    },
+    {
+      "checked": 392,
+      "diagrams": 0,
+      "problems": [],
+      "source": "kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks.md"
+    },
+    {
+      "checked": 307,
+      "diagrams": 0,
+      "problems": [],
+      "source": "kotlin/coroutines-and-flow/coroutines-debugging-and-profiling.md"
+    },
+    {
+      "checked": 408,
+      "diagrams": 0,
+      "problems": [],
+      "source": "kotlin/coroutines-and-flow/test-dispatchers-virtual-time.md"
+    },
+    {
+      "checked": 849,
+      "diagrams": 1,
+      "problems": [],
+      "source": "kotlin/runtime-and-jvm/memory-model.md"
+    },
+    {
+      "checked": 1045,
+      "diagrams": 1,
+      "problems": [],
+      "source": "kotlin/runtime-and-jvm/jvm-interop.md"
+    },
+    {
+      "checked": 544,
+      "diagrams": 1,
+      "problems": [],
+      "source": "kotlin/runtime-and-jvm/bytecode.md"
+    },
+    {
+      "checked": 213,
+      "diagrams": 0,
+      "problems": [],
+      "source": "kotlin/version-updates/kotlin-2-4-update.md"
+    }
+  ],
+  "fixtures": [
+    {
+      "name": "visible",
+      "checked": 3,
+      "diagrams": 0,
+      "problems": [],
+      "source": "fixture"
+    },
+    {
+      "name": "opacity",
+      "checked": 3,
+      "diagrams": 0,
+      "problems": [
+        "section-fixture: original content is hidden by CSS or an accessibility attribute"
+      ],
+      "source": "fixture"
+    },
+    {
+      "name": "stylesheet",
+      "checked": 3,
+      "diagrams": 0,
+      "problems": [
+        "section-fixture: original content is hidden by CSS or an accessibility attribute"
+      ],
+      "source": "fixture"
+    },
+    {
+      "name": "inherited-opacity",
+      "checked": 3,
+      "diagrams": 0,
+      "problems": [
+        "page-title: original content is hidden by CSS or an accessibility attribute",
+        "section-fixture: original content is hidden by CSS or an accessibility attribute"
+      ],
+      "source": "fixture"
+    },
+    {
+      "name": "disguised-disclosure",
+      "checked": 4,
+      "diagrams": 0,
+      "problems": [
+        "section-fixture: original prose or code is folded into a disclosure"
+      ],
+      "source": "fixture"
+    }
+  ]
+}

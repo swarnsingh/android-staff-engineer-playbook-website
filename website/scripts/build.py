@@ -238,8 +238,8 @@ def render_chapter(path, raw, is_course=False):
             key=hashlib.sha256(token.content.encode()).hexdigest()[:16]
             diagram_count[0]+=1
             (OUT/'diagram-sources'/f'{key}.mmd').write_text(token.content)
-            original=f'<img src="{BASE}diagrams/{key}.svg" alt="{escape(env.get("heading","Concept relationships"))}" loading="lazy">'
-            source=f'<details class="diagram-source"><summary>Read diagram source</summary><pre tabindex="0"><code>{escape(token.content)}</code></pre></details>'
+            original=f'<img data-original-diagram="{key}" src="{BASE}diagrams/{key}.svg" alt="{escape(env.get("heading","Concept relationships"))}" loading="lazy">'
+            source=f'<details class="diagram-source"><summary>Read diagram source</summary><pre tabindex="0"><code data-original-diagram-source="{key}">{escape(token.content)}</code></pre></details>'
             if ('diagram', key) in blend:
                 # A designed redraw leads; the chapter's own diagram stays one tap away.
                 used.add(('diagram', key))
@@ -430,6 +430,7 @@ def build(skip_diagrams=False):
         shutil.copy2(WEB/name,OUT/name)
     if not skip_diagrams: render_diagrams()
     (OUT/'coverage/kotlin.json').write_text(json.dumps(reports,ensure_ascii=False,indent=2)+'\n')
+    (OUT/'coverage/diagram-sources.json').write_text(json.dumps({p.stem:p.read_text() for p in sorted((OUT/'diagram-sources').glob('*.mmd'))},ensure_ascii=False,indent=2)+'\n')
     (OUT/'coverage/corrections.json').write_text(json.dumps(APPROVED_CORRECTIONS,ensure_ascii=False,indent=2)+'\n')
     print(f'Rendered {len(order)} Kotlin chapters + learning path; {sum(r["original_sections"] for r in reports)} source sections; {sum(r["code_blocks"] for r in reports)} code/diagram blocks; {len(APPROVED_CORRECTIONS)} of {len(ALL_CORRECTIONS)} proposed corrections approved and applied.')
 
