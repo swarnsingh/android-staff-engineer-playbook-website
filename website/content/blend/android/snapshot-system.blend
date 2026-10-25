@@ -47,3 +47,9 @@ No. A plain field is not snapshot state, so the read registers nothing and the w
 
 Readers recompose only when the Boolean flips, not on every scroll position, which is exactly what `derivedStateOf` is for.
 </details>
+
+<!-- @before Real Android Patterns :: review -->
+The hand-rolled CounterState example’s readable(record, this) and writable(record, this) calls is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Failure Modes :: review -->
+The quoted snapshot exception message and its stated cause is under technical review. A correction is pending the owner's approval.

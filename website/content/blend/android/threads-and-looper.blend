@@ -6,7 +6,7 @@
 <!-- @opening -->
 <p class="story-lead">A screen shows "Saved!" ten minutes after a save, then crashes because the activity it belonged to was destroyed long ago. The code posted a delayed update with a <code>Handler</code>. Nobody remembered that the message was sitting in the main thread's queue all that time, holding the old activity.</p>
 
-Everything on Android's main thread, including clicks, frames, lifecycle callbacks and coroutine resumptions on `Dispatchers.Main`, is a message taken from one queue by one loop. `Looper`, `MessageQueue` and `Handler` are that loop, that queue and the way to put work into it. This chapter shows how they fit, why blocking the loop freezes the app, and how queued work can outlive the code that queued it.
+Android's main event loop serialises queued input, frame and lifecycle work, and dispatched `Dispatchers.Main` resumptions. Work can also run inline when already on that thread, including through `Dispatchers.Main.immediate`. `Looper`, `MessageQueue` and `Handler` are that loop, that queue and the way to put work into it. This chapter shows how they fit, why blocking the loop freezes the app, and how queued work can outlive the code that queued it.
 
 <!-- @after First Principles :: visual -->
 ### One thread, one loop, one queue
@@ -27,7 +27,7 @@ Everything on Android's main thread, including clicks, frames, lifecycle callbac
 <!-- @diagram ecb7e8b069453bfd -->
 ### Background work, main-thread update
 
-<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Background thread</span><div class="node"><strong>Worker logic</strong><small>download, parse</small></div><div class="node"><strong><code>mainHandler.post { … }</code></strong><small>enqueue the UI update</small></div></div><div class="col"><span class="col-title">Main thread</span><div class="node"><strong>Message queue</strong></div><div class="node is-key"><strong>Looper pulls the task</strong></div><div class="node" data-state="done"><strong>Update UI</strong><small>then the loop repeats</small></div></div></div><figcaption>The main Handler is the only way across: the background thread never touches views itself.</figcaption></figure>
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Background thread</span><div class="node"><strong>Worker logic</strong><small>download, parse</small></div><div class="node"><strong><code>mainHandler.post { … }</code></strong><small>enqueue the UI update</small></div></div><div class="col"><span class="col-title">Main thread</span><div class="node"><strong>Message queue</strong></div><div class="node is-key"><strong>Looper pulls the task</strong></div><div class="node" data-state="done"><strong>Update UI</strong><small>then the loop repeats</small></div></div></div><figcaption>A main Handler is one way across; main-dispatcher coroutines and other UI scheduling APIs also marshal work to the UI thread. A background thread should not mutate views directly.</figcaption></figure>
 
 <!-- @before Answer Key :: review -->
 Answer 9 in the next section is under technical review. A correction is pending the owner's approval.
@@ -47,5 +47,5 @@ That one thread: and while it parses, no camera frame is handled. Run CPU-heavy 
 
 <details><summary>A coroutine resumes on <code>Dispatchers.Main</code>.</summary>
 
-The main thread, through the main Looper: the resumption is posted to its queue like any other message.
+The main thread. The regular Main dispatcher posts through its Handler; `Dispatchers.Main.immediate` can avoid an extra dispatch when already on the matching Looper.
 </details>

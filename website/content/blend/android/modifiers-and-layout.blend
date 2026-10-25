@@ -49,3 +49,9 @@ A square. The background is outside the clip, so it paints its full rectangle; t
 
 The scrolling parent gives the lazy list an unbounded height, so it has no viewport. Flatten into one `LazyColumn`, or give the inner list a finite height.
 </details>
+
+<!-- @before First Principles :: review -->
+The modifier-wrapping order described in this section and its gift-wrapping analogy is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Mental Model :: review -->
+The modifier-wrapping order described in this section and its gift-wrapping analogy is under technical review. A correction is pending the owner's approval.

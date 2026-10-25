@@ -1,4 +1,4 @@
-# Phase 3 review: fixes to apply
+# Phase 3 review: findings and disposition
 
 From the review subagent, 2026-10-25. Findings ST1, ST2, ML1 and SE1 are all correct. ST1's note is in the wrong place and covers too little.
 
@@ -54,3 +54,11 @@ From the review subagent, 2026-10-25. Findings ST1, ST2, ML1 and SE1 are all cor
 - `view-interop.blend:6`: the opening's causal claim is too strong.
 - Concision: `compose-accessibility` is at 25.4%; trim it slightly.
 - Checker: add self-tests for a demoted inner H1 (compose-navigation) and a missing or duplicated hero H1.
+
+## Coordinator implementation status
+
+The listed teaching fixes, neutral note coverage and new original findings have been implemented on `codex/android-completion`; the independent follow-up review returned the two findings recorded below. A further verification attempt was interrupted by the review-agent usage limit. The ST2 checkpoint is held in `pending-android-phase3-teaching.blend`. Original chapters and correction approvals remain unchanged. Source-unit preservation passed on all 65 rendered pages with 22 adversarial cases, including original inner H1 demotion and missing/duplicated/hidden hero titles.
+
+The integrated 65-page browser sweep now passes; `android-completion-validation.json` records it. Further independent verification remains subject to the usage limit.
+
+Follow-up review: the Kotlin Topics catalog now derives order from canonical phase lists and checks emitted group contiguity. The Stability Failure Modes note covers both ST1 and ST2. FF1’s replacement clause and the ST3-dependent immutable-collection comparison are withheld; the live-update checkpoint and identity-reuse comparison remain.

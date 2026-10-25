@@ -4,7 +4,7 @@
      "Allows Room to destructively recreate database tables"; DataStore guide) on 2026-10-25. -->
 
 <!-- @opening -->
-<p class="story-lead">A settings screen has a "last opened" timestamp that updates every time the user visits. Someone stored it in the same Proto DataStore document as a cached list of 3,000 contacts. Every visit now rewrites several megabytes to flash storage. A battery complaint leads, three weeks later, to a one-line write.</p>
+<p class="story-lead">A settings screen has a "last opened" timestamp that updates every time the user visits. Someone stored it in the same Proto DataStore document as a cached list of 3,000 contacts. Every visit now rewrites several megabytes to flash storage. Investigating the battery complaint reveals that one timestamp assignment rewrites the entire document.</p>
 
 Room and DataStore both keep data on the device, both expose `Flow` reads and `suspend` writes, and both survive process death. They differ in what one write costs and what you can ask of the data. This chapter turns that difference into a decision you can make in code review, then covers what follows from it: migrations, encryption, backup and tests.
 
@@ -19,11 +19,11 @@ The builder example in the next section calls `.fallbackToDestructiveMigration(f
 <!-- @after The Update-Pattern Difference (Why It Matters) :: animation -->
 ### What one small change writes to disk
 
-<figure class="stepper"><span class="stepper-title">One field changes in each store</span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">Room</span><div class="node" data-el="rRead"><strong>Find the row</strong><small>index seek on the primary key</small></div><div class="node" data-el="rWrite"><strong>Update one page</strong><small>only the changed row's page and the journal</small></div><div class="node" data-el="rNotify"><strong>Notify</strong><small>queries reading <code>users</code> re-run</small></div></div><div class="col"><span class="col-title">Proto DataStore</span><div class="node" data-el="dRead"><strong>Read the whole document</strong><small>the current document, read under the write lock</small></div><div class="node" data-el="dBuild"><strong>Build a new object</strong><small><code>toBuilder().setX(…).build()</code></small></div><div class="node" data-el="dWrite"><strong>Write every byte</strong><small>to a temporary file, then replace the old one</small></div><div class="node" data-el="dNotify"><strong>Emit</strong><small><code>data</code> emits the new document</small></div></div></div><script type="application/json" class="steps">[
+<figure class="stepper"><span class="stepper-title">One field changes in each store</span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">Room</span><div class="node" data-el="rRead"><strong>Find the row</strong><small>index seek on the primary key</small></div><div class="node" data-el="rWrite"><strong>Update affected pages</strong><small>table/index pages and journal work depend on the update</small></div><div class="node" data-el="rNotify"><strong>Notify</strong><small>queries reading <code>users</code> re-run</small></div></div><div class="col"><span class="col-title">Proto DataStore</span><div class="node" data-el="dRead"><strong>Read the whole document</strong><small>the current document, read under the write lock</small></div><div class="node" data-el="dBuild"><strong>Build a new object</strong><small><code>toBuilder().setX(…).build()</code></small></div><div class="node" data-el="dWrite"><strong>Write every byte</strong><small>to a temporary file, then replace the old one</small></div><div class="node" data-el="dNotify"><strong>Emit</strong><small><code>data</code> emits the new document</small></div></div></div><script type="application/json" class="steps">[
 {"label":"Locate","caption":"Room seeks to the one row by its key. DataStore reads the complete current document.","add":["rRead","dRead"],"state":{"rRead":"active","dRead":"active"}},
 {"label":"Change","caption":"Room changes one column of one row inside a transaction. DataStore builds a whole new immutable object with one field changed.","add":["rWrite","dBuild"],"state":{"rRead":"done","dRead":"done","rWrite":"active","dBuild":"active"}},
-{"label":"Persist","caption":"Room writes the affected page. DataStore serializes and writes the entire document, however large it has become. That is the difference that matters as data grows.","add":["dWrite"],"state":{"rWrite":"done","dBuild":"done","dWrite":"warn"}},
-{"label":"Observers update","caption":"Both notify observers. The cost of the write was the difference: proportional to the change in Room, to the document size in DataStore.","add":["rNotify","dNotify"],"state":{"dWrite":"done","rNotify":"done","dNotify":"done"}}
+{"label":"Persist","caption":"Room persists the affected table and index pages. DataStore serializes and writes the entire changed document, however large it has become. That is the difference that matters as data grows.","add":["dWrite"],"state":{"rWrite":"done","dBuild":"done","dWrite":"warn"}},
+{"label":"Observers update","caption":"For these changed values, observers receive the new data. Room's work depends on affected pages and indexes; DataStore rewrites the document.","add":["rNotify","dNotify"],"state":{"dWrite":"done","rNotify":"done","dNotify":"done"}}
 ]</script><figcaption>Keep DataStore documents small enough that rewriting them on every change does not matter.</figcaption></figure>
 
 <!-- @after Backup Behavior :: visual -->
@@ -48,3 +48,12 @@ Proto DataStore (or Preferences DataStore for a few flags): one small document, 
 
 Neither for the bytes: write them to app storage and keep the path and metadata in Room.
 </details>
+
+<!-- @before Reactive Reads — Both Are Flow-First :: review -->
+The claim that DataStore emits on every updateData call is under technical review (RD3). A correction is pending the owner's approval.
+
+<!-- @before Failure Modes :: review -->
+The attribution of DataStore corruption to a process killed during a partial write is under technical review (RD2). A correction is pending the owner's approval.
+
+<!-- @before Answer Key :: review -->
+Answer 11's process-death explanation for DataStore corruption is under technical review (RD2). A correction is pending the owner's approval.

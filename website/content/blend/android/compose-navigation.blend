@@ -4,7 +4,7 @@
      chapter; checked 2026-10-25. -->
 
 <!-- @opening -->
-<p class="story-lead">A team adds a tablet layout: email list on the left, message on the right. In their Navigation 2 app, every screen is one destination that fills the host, so "show two destinations at once" fights the framework. Meanwhile the iOS team asks to share the navigation logic, and the controller that owns the back stack is Android-only.</p>
+<p class="story-lead">A team adds a tablet layout: email list on the left, message on the right. In their Navigation 2 app, every screen is one destination that fills the host, so "show two destinations at once" fights the framework. The team must decide which state represents the user’s journey and how one-pane and two-pane presentations share it.</p>
 
 Both requests are about **who owns the back stack**. In Navigation Compose 2.x the `NavController` owns it and you send it commands. In Navigation 3 the back stack is ordinary app state, a list you add to and remove from, and `NavDisplay` renders it, possibly several entries at once. This chapter covers both lines, when each fits, and how to migrate without breaking deep links or ViewModel lifetimes.
 
@@ -46,3 +46,12 @@ Navigation 3 is a strong default: scene strategies map back-stack entries to ada
 
 The entry decorator for ViewModel stores is missing, so `viewModel()` resolves against a wider owner. Add `rememberViewModelStoreNavEntryDecorator()`.
 </details>
+
+<!-- @before Why This Rewrite :: review -->
+The Android-only/platform-support comparison for Navigation 2 in this section is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Nav 2 vs Nav 3 — Side by Side :: review -->
+The Android-only/platform-support comparison for Navigation 2 in this section is under technical review. A correction is pending the owner's approval.
+
+<!-- @before When To Pick Each :: review -->
+The Android-only/platform-support comparison for Navigation 2 in this section is under technical review. A correction is pending the owner's approval.

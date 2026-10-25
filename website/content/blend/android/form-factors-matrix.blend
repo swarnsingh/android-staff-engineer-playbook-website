@@ -31,12 +31,18 @@ Each Android surface beyond phones and tablets has its **own UI toolkit, interac
 No. Wear has its own Material implementation, and the documentation warns that mixing in the mobile artifacts can cause unexpected behaviour.
 </details>
 
-<details><summary>A widget with a scrolling, live-updating chat list.</summary>
+<details><summary>A widget expected to behave like a continuously live chat screen.</summary>
 
-Not as designed. Glance renders to RemoteViews with explicit, periodic updates: treat a widget as a tap-through projection, not a mini-app.
+Updates need an explicit producer and must respect widget scheduling constraints. Design a snapshot with a tap-through action rather than promise an always-live chat session.
 </details>
 
 <details><summary>A shopping app's custom browsing UI on Android Auto while driving.</summary>
 
 No. Driving experiences are limited to approved categories and templates; free-form UI is reserved for supported parked categories.
 </details>
+
+<!-- @before 1. The Matrix :: review -->
+The statements that widgets cannot scroll is under technical review. A correction is pending the owner's approval.
+
+<!-- @before 2. What Each Surface Really Demands :: review -->
+The statements that widgets cannot scroll is under technical review. A correction is pending the owner's approval.

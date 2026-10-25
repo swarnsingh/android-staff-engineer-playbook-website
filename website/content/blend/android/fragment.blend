@@ -33,7 +33,7 @@ Compare two observers registered in `onViewCreated()`: one with `this`, one with
 <!-- @after Production Example :: visual -->
 ### How a result travels between Fragments
 
-<figure class="viz"><div class="viz-flow"><div class="node"><strong>B: <code>setFragmentResult("requestKey", bundle)</code></strong><small>sender knows only the key</small></div><div class="node is-key"><strong><code>FragmentManager</code> stores it</strong><small>one pending result per key; a newer one replaces it</small></div><div class="node"><strong>A is popped and reaches <code>STARTED</code></strong><small>back-stack Fragments wait until then</small></div><div class="node" data-state="done"><strong>A's listener runs once</strong><small>then the result is cleared</small></div></div><figcaption>Neither Fragment holds a reference to the other, so either one can be recreated independently.</figcaption></figure>
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>B: <code>setFragmentResult("requestKey", bundle)</code></strong><small>sender knows only the key</small></div><div class="node is-key"><strong><code>FragmentManager</code> stores it</strong><small>one pending result per key; a newer one replaces it</small></div><div class="node"><strong>B is popped; A reaches <code>STARTED</code></strong><small>back-stack Fragments wait until then</small></div><div class="node" data-state="done"><strong>A's listener runs once</strong><small>then the result is cleared</small></div></div><figcaption>Neither Fragment holds a reference to the other, so either one can be recreated independently.</figcaption></figure>
 
 <!-- @after Failure Modes :: check -->
 **Find the bug.** Decide before opening each answer.

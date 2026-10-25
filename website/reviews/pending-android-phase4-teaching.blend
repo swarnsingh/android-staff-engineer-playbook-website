@@ -1,0 +1,3 @@
+<!-- Held MX2 teaching text. Not rendered. Restore only after owner approval of the associated original correction. -->
+
+Kotlin rejects suspension points inside `synchronized` at compile time.

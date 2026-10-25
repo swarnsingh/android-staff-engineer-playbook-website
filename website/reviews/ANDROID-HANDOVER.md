@@ -14,7 +14,7 @@ Never push or merge without the owner's approval.
 
 ## Where things are
 
-**Repository:** `/Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook-website`, branch `claude/android-phase1`. Nothing is pushed. `main` and origin are at `d9cae81`.
+**Repository:** `/Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook-website`. Current checkpoint branch: `codex/android-completion`, based on `claude/android-phase1` at `ce58ead`. The Claude branch is preserved. Nothing from the Android work is pushed or published; `main`, origin/main and the hosted Kotlin preview remain at `d9cae81`.
 
 **Commits on the branch:**
 
@@ -28,15 +28,15 @@ Never push or merge without the owner's approval.
 | `4a70592` | Phase 1 review fixes; Under review notes no longer state replacements |
 | `3e8aba3` | Phase 2 review P2 fixes (Paging triggers, DataStore read, Koin and Dagger errors) |
 
-**Last verified build:** 65 pages, 8,555 original units, 0 preservation problems. The browser audit passed for every Phase 1–4 page: diagrams load, steppers initialise, no overflow or clipped cards at 320 px.
+**Last verified build:** 65 pages, 8,555 original units, 0 preservation problems. The integrated browser audit now passes all 65 pages: 41 original diagram images load, 74 steppers initialise, and 260 geometry checks pass at 320/390/768/1280px with 22px handwritten text. See `android-completion-validation.json`.
 
 ## Status by phase
 
 | Phase | Chapters | Blends | Review | Review fixes |
 |---|---|---|---|---|
-| 1 Lifecycle, state, architecture | 9 | done | done | P1/P2 applied; P3 and new findings open (`android-review-todos/review-phase1-todo.md`) |
-| 2 Data and DI | 10 | done | done | P2 applied; rest open (`review-phase2-todo.md`) |
-| 3 Compose | 13 | done | done | **none applied yet**; 2 P1s (`review-phase3-todo.md`) |
+| 1 Lifecycle, state, architecture | 9 | done | original review done; follow-up attempt hit usage limit | Listed teaching fixes, note coverage and new findings applied locally; see disposition |
+| 2 Data and DI | 10 | done | independent follow-up done | Listed fixes applied, including the two follow-up P3 wording fixes |
+| 3 Compose | 13 | done | independent follow-up done | P1/P2/P3 teaching fixes applied; follow-up ST1 note and Topics-order findings addressed |
 | 4 Concurrency | 9 | done | done | **none applied yet**; 2 P1s (`review-phase4-todo.md`) |
 | 5 Network, security, device APIs, media | 10 | todo | — | — |
 | 6 Testing | 3 | todo | — | — |
@@ -77,12 +77,11 @@ The rule, following the Kotlin K1 precedent: the note **identifies the passage**
    - Add the phase number to `TREES['android']['phases']`.
 6. **Build** with `venv/bin/python website/scripts/build.py`. It must show 0 preservation problems.
 7. **Audit in a browser.**
-   - Serve `website/dist` together with a folder containing `browser_preservation.js` (as `fx/audit.js`) and `website/tools/browser_audit_runner.js` (as `fx/run.js`), on one localhost origin.
-   - On any page run:
-     - `eval(await (await fetch('/fx/run.js')).text())`
-     - `__runAudit(['/android/…/'])`
-     - wait about 20 s, then read `__R`.
-   - Every page must report ok.
+   - Build first, then run `python3 website/tools/prepare_browser_audit.py website/.cache/browser-qa`.
+   - Serve that disposable directory on an available localhost port, open `/audit.html`, and press **Start audit**.
+   - The page displays a JSON report. Require `done: true`, no overall error and `ok: true` on every page.
+   - The harness checks original rendered units/images first, then initialised steppers and added-card geometry at 320/390/768/1280px with enlarged handwritten text.
+   - This copy is instrumented for QA only; never deploy it. No console eval is needed.
 8. **Write** `website/reviews/android-phaseN-findings.md`, then run `venv/bin/python website/tools/update_readme.py` to refresh the README progress table.
 9. **Commit.** No AI attribution in messages.
 10. **Review.** Start an independent reviewer with a self-contained brief. Previous briefs asked for:
@@ -92,9 +91,18 @@ The rule, following the Kotlin K1 precedent: the note **identifies the passage**
 
 ## Before declaring the Android section complete
 
-- Apply the open review items, Phase 3 first because it has the P1s.
+- [x] Apply the existing Phase 1–4 teaching/review fixes, including Phase 3 P1s. Further follow-up review attempts hit the account usage limit; do not claim those interrupted passes completed.
 - Apply the Phase 4 review items (`review-phase4-todo.md`).
 - Uncommitted Phase 3 review edits exist in the working tree (13 blends plus `reviews/pending-android-phase3-teaching.blend`, made after ce58ead, author unconfirmed). Review them before committing.
-- Update the counts in `website/README.md` (Verification scope, figures and steppers) and in the root `README.md`.
-- Optionally add preservation self-tests for an original's inner H1 and a missing hero H1, as Phase 3 review suggested.
-- Report to the owner: what is rendered, every findings file awaiting approval, what was and wasn't verified, and that nothing is pushed.
+- [x] Update the README counts for the current 65-page checkpoint; refresh them again as future phases are added.
+- [x] Add original inner-H1 and missing/duplicated/hidden hero-H1 self-tests.
+- [ ] Convert and independently review Phases 5–9 (60 remaining chapters).
+- Report rendered scope, pending original findings, verification limits and publication state; the full Android section is not complete yet.
+
+## Codex takeover checkpoint
+
+The existing Phase 1–4 review lists have dispositions in `android-review-todos/`. Technical corrections in the original sources remain unapproved. Conflicting teaching fragments are retained outside active content in the phase-specific pending files. The generic footer now links to the current tree and no longer implies corrections are already applied. Both reading order and emitted Topics catalog use canonical unanchored phase lists, with contiguity checks. Hero-title and original inner-H1 regressions are covered. Long timeline labels remain readable through full-text numbered legends.
+
+Verified checkpoint: 65 pages, 8,555 original units, 22 static adversarial fixtures, 41 loaded diagram images, 74 steppers, and 260 layout checks at four widths with 22px handwritten text. Build, documentation and source-hash checks pass; `android-completion-validation.json` contains actual browser results. Physical devices and other browser engines were not tested.
+
+**Current blocker:** independent review agents reached the account usage limit. Do not mark phases 5–9 complete or bypass their review gate. Resume with Phase 5’s ten chapters after review capacity is available, follow the recipe, and update this status after each phase. No automatic future run has been scheduled. This checkpoint remains local and must not be pushed/merged/published without the owner's approval.

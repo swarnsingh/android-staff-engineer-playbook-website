@@ -1,0 +1,16 @@
+<!-- Held until the owner approves the relevant original-chapter corrections. Not rendered. -->
+
+<!-- stability: ST2 checkpoint -->
+<details><summary><code>@Immutable data class Session(var token: String)</code></summary>
+
+Treated as stable because of the annotation, but the promise is false: changing `token` in place can leave UI stale. Make it a `val` and copy on change.
+</details>
+
+<!-- stability: ST3-dependent immutable-collection comparison, held pending approval -->
+<figure class="stepper"><span class="stepper-title">The parent recomposes; does <code>Rows(items)</code> skip?</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="old"><strong>No strong skipping · <code>List&lt;Item&gt;</code></strong><small data-text="oldV">—</small></div><div class="node" data-el="same"><strong>Strong skipping · same list instance</strong><small data-text="sameV">—</small></div><div class="node" data-el="mapped"><strong>Strong skipping · <code>items.map { … }</code> each time</strong><small data-text="mappedV">—</small></div><div class="node" data-el="imm"><strong><code>ImmutableList</code> · new but equal list</strong><small data-text="immV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Parent recomposes","caption":"Something unrelated changed in the parent, so it runs again and reaches the Rows call with arguments that look the same.","add":["old","same","mapped","imm"],"state":{},"text":{"oldV":"List is unstable","sameV":"List is unstable","mappedV":"List is unstable","immV":"ImmutableList<Item> is stable if Item is stable"}},
+{"label":"Older compilers","caption":"Without strong skipping, a composable with an unstable parameter is not skippable at all. Rows runs every time its parent does.","state":{"old":"error"},"text":{"oldV":"not skippable → runs"}},
+{"label":"Same instance","caption":"With strong skipping, unstable parameters are compared by identity. The parent passed the same list object, so === holds and Rows is skipped.","state":{"same":"done"},"text":{"sameV":"items === previous → skips"}},
+{"label":"Rebuilt list","caption":"The parent maps the list again on every run. The contents are equal, but it is a new object, so the identity check fails and Rows runs. This is the slow screen in the opening.","state":{"mapped":"error"},"text":{"mappedV":"new instance → runs"}},
+{"label":"Stable collection","caption":"If Item is stable, ImmutableList<Item> is a stable parameter and an equal new list can pass the equality comparison. Comparing a large collection has a cost: measure before changing representation merely to increase skipping. Instance reuse is another option.","state":{"imm":"done"},"text":{"immV":"equals(previous) → skips"}}
+]</script><figcaption>Under strong skipping, unstable parameters are rewarded for instance reuse; stable ones for equality.</figcaption></figure>

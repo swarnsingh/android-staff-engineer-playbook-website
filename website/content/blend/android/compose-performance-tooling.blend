@@ -10,7 +10,7 @@ Compose performance work starts with a measurement, not a technique. Reproduce t
 <!-- @after Measurement Stack :: visual -->
 ### Where a frame's time can go
 
-<figure class="viz"><div class="viz-flow"><div class="node"><strong>Composition</strong><small>which UI exists: run composables</small></div><div class="node"><strong>Layout</strong><small>measure and place</small></div><div class="node"><strong>Drawing</strong><small>render to the canvas</small></div><div class="node" data-state="warn"><strong>Outside Compose</strong><small>image decode, Binder, I/O, GC, GPU upload</small></div></div><figcaption>A state read invalidates the phase it happens in. Reading scroll state inside an <code>offset { }</code> lambda moves the work from composition to layout.</figcaption></figure>
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Composition</strong><small>which UI exists: run composables</small></div><div class="node"><strong>Layout</strong><small>measure and place</small></div><div class="node"><strong>Drawing</strong><small>render to the canvas</small></div><div class="node" data-state="warn"><strong>Outside Compose</strong><small>image decode, Binder, I/O, GC, GPU upload</small></div></div><figcaption>A state read invalidates the phase it happens in. Reading scroll state inside an <code>offset { }</code> lambda moves that read from composition to layout; a changed placement still needs drawing.</figcaption></figure>
 
 <!-- @after Trace the User Journey :: animation -->
 ### Run the loop on the stuttering feed
@@ -26,9 +26,9 @@ Compose performance work starts with a measurement, not a technique. Reproduce t
 <!-- @after Staff Engineer Review Checklist :: check -->
 **Which tool answers it?** Decide before opening each answer.
 
-<details><summary>"Is this composable skippable, and which parameter prevents it?"</summary>
+<details><summary>"Is this composable skippable, and how are its parameters compared in this compiler mode?"</summary>
 
-Compose compiler reports. They show stability and skippability, but not whether users feel it.
+Compose compiler reports. They show stability and skippability. Under strong skipping an unstable parameter can still skip by identity; compare the report with actual arguments and traces before blaming a type.
 </details>
 
 <details><summary>"Did last week's change make startup slower on low-end devices?"</summary>

@@ -6,7 +6,7 @@
 <!-- @opening -->
 <p class="story-lead">A shopper browses Home → Shoes → Running shoes, switches to the Cart tab to check a price, then taps Home again. They land on the Home start screen: their three-screen-deep browsing position is gone. Later, a notification deep link opens an order screen, and Back closes the app instead of showing the order list.</p>
 
-Both bugs are back-stack bugs. A screen flow is a stack of destinations, and each destination owns more than its UI: a lifecycle, saved state and a ViewModel store. Navigation decides which entries exist, in what order, and when they are destroyed. This chapter shows how Jetpack Navigation models that stack, how ViewModels attach to it, and what may travel between screens.
+Both bugs concern the back stack; Answer Key 7 explains how deep-link launch context changes the hierarchy to test. A screen flow is a stack of destinations, and each destination owns more than its UI: a lifecycle, saved state and a ViewModel store. Navigation decides which entries exist, in what order, and when they are destroyed. This chapter shows how Jetpack Navigation models that stack, how ViewModels attach to it, and what may travel between screens.
 
 <!-- @after First Principles :: visual -->
 ### Graph, host and controller
@@ -16,24 +16,108 @@ Both bugs are back-stack bugs. A screen flow is a stack of destinations, and eac
 <!-- @after Internal Mechanics :: animation -->
 ### Watch entries and their ViewModels come and go
 
-<figure class="stepper"><span class="stepper-title">The back stack and the ViewModels scoped to it</span><div class="stage viz-stack"><div class="viz-flow"><div class="node" data-el="home"><strong>Home</strong><small data-text="homeNote">HomeViewModel</small></div><div class="node" data-el="list"><strong>List</strong><small>ListViewModel</small></div><div class="node" data-el="detail"><strong>Detail</strong><small>DetailViewModel</small></div><div class="node" data-el="graph"><strong><code>checkout_graph</code></strong><small>CheckoutViewModel, shared</small></div><div class="node" data-el="cart"><strong>Cart</strong><small>uses CheckoutViewModel</small></div><div class="node" data-el="pay"><strong>Payment</strong><small>uses CheckoutViewModel</small></div></div><div class="node is-key" data-el="event"><strong>What happens</strong><small data-text="eventNote">—</small></div></div><script type="application/json" class="steps">[
-{"label":"Start","caption":"The NavHost shows the start destination. Its NavBackStackEntry is created with its own lifecycle, saved state and ViewModelStore.","add":["home","event"],"state":{"home":"active"},"text":{"eventNote":"stack: [Home]"}},
-{"label":"Open a list, then an item","caption":"Each navigate() pushes a new entry. Entries below the top are no longer visible, but they keep their ViewModels.","add":["list","detail"],"state":{"home":"done","list":"done","detail":"active"},"text":{"eventNote":"stack: [Home, List, Detail]"}},
-{"label":"Back","caption":"Back pops Detail. Its entry is destroyed, so DetailViewModel's onCleared() runs. List is shown again with its ViewModel intact.","remove":["detail"],"state":{"list":"active"},"text":{"eventNote":"pop Detail → DetailViewModel cleared"}},
-{"label":"Enter checkout","caption":"Navigating into a nested graph adds an entry for the graph itself, then one for its start screen. Screens in the graph can scope a ViewModel to the graph's entry.","add":["graph","cart"],"state":{"list":"done","graph":"warn","cart":"active"},"text":{"eventNote":"stack: [Home, List, checkout_graph, Cart]"}},
-{"label":"Next checkout screen","caption":"Payment resolves CheckoutViewModel from the same graph entry, so it gets the same instance as Cart, without passing objects between them.","add":["pay"],"state":{"cart":"done","pay":"active"},"text":{"eventNote":"Cart and Payment share one CheckoutViewModel"}},
-{"label":"Finish checkout","caption":"Popping up to and including the graph removes Payment, Cart and the graph entry together. The shared CheckoutViewModel is cleared with its owner.","remove":["graph","cart","pay"],"state":{"list":"active"},"text":{"eventNote":"popUpTo(checkout_graph) { inclusive = true } → CheckoutViewModel cleared"}}
-]</script><figcaption>A ViewModel lives exactly as long as the entry it is scoped to: a screen, a nested graph, or the activity.</figcaption></figure>
+<figure class="stepper"><span class="stepper-title">The back stack and the ViewModels scoped to it</span><div class="stage viz-stack"><div class="viz-flow"><div class="node" data-el="root"><strong>Root graph</strong><small>NavBackStackEntry</small></div><div class="node" data-el="home"><strong>Home</strong><small data-text="homeNote">HomeViewModel</small></div><div class="node" data-el="list"><strong>List</strong><small>ListViewModel</small></div><div class="node" data-el="detail"><strong>Detail</strong><small>DetailViewModel</small></div><div class="node" data-el="graph"><strong><code>checkout_graph</code></strong><small>CheckoutViewModel, shared</small></div><div class="node" data-el="cart"><strong>Cart</strong><small>uses CheckoutViewModel</small></div><div class="node" data-el="pay"><strong>Payment</strong><small>uses CheckoutViewModel</small></div></div><div class="node is-key" data-el="event"><strong>What happens</strong><small data-text="eventNote">—</small></div></div><script type="application/json" class="steps">[
+{
+"label": "Start",
+"caption": "The NavHost shows the start destination. Its NavBackStackEntry is created with its own lifecycle, saved state and ViewModelStore.",
+"add": [
+"root",
+"home",
+"event"
+],
+"state": {
+"home": "active",
+"root": "done"
+},
+"text": {
+"eventNote": "stack: [root_graph, Home]"
+}
+},
+{
+"label": "Open a list, then an item",
+"caption": "Each navigate() pushes a new entry. Entries below the top are no longer visible, but they keep their ViewModels.",
+"add": [
+"list",
+"detail"
+],
+"state": {
+"home": "done",
+"list": "done",
+"detail": "active"
+},
+"text": {
+"eventNote": "stack: [root_graph, Home, List, Detail]"
+}
+},
+{
+"label": "Back",
+"caption": "Back pops Detail. Its entry is destroyed, so DetailViewModel's onCleared() runs. List is shown again with its ViewModel intact.",
+"remove": [
+"detail"
+],
+"state": {
+"list": "active"
+},
+"text": {
+"eventNote": "pop Detail → DetailViewModel cleared"
+}
+},
+{
+"label": "Enter checkout",
+"caption": "Navigating into a nested graph adds an entry for the graph itself, then one for its start screen. Screens in the graph can scope a ViewModel to the graph's entry.",
+"add": [
+"graph",
+"cart"
+],
+"state": {
+"list": "done",
+"graph": "warn",
+"cart": "active"
+},
+"text": {
+"eventNote": "stack: [root_graph, Home, List, checkout_graph, Cart]"
+}
+},
+{
+"label": "Next checkout screen",
+"caption": "Payment resolves CheckoutViewModel from the same graph entry, so it gets the same instance as Cart, without passing objects between them.",
+"add": [
+"pay"
+],
+"state": {
+"cart": "done",
+"pay": "active"
+},
+"text": {
+"eventNote": "Cart and Payment share one CheckoutViewModel"
+}
+},
+{
+"label": "Finish checkout",
+"caption": "Popping up to and including the graph removes Payment, Cart and the graph entry together. The shared CheckoutViewModel is cleared with its owner.",
+"remove": [
+"graph",
+"cart",
+"pay"
+],
+"state": {
+"list": "active"
+},
+"text": {
+"eventNote": "popUpTo(checkout_graph) { inclusive = true } → CheckoutViewModel cleared"
+}
+}
+]</script><figcaption>A destination or nested graph has a back-stack entry that can own a ViewModel. The host activity is a separate ViewModelStoreOwner, not a navigation entry.</figcaption></figure>
 
 <!-- @diagram ff2ef9c55224ff49 -->
 ### The stack the host is showing
 
-<figure class="viz"><div class="viz-stack"><div class="node"><strong>Single activity</strong><small>contains the <code>NavHost</code></small></div><div class="down"></div><div class="viz-flow"><div class="node" data-state="ghost"><strong>Entry: Home</strong><small>bottom of the stack</small></div><div class="node" data-state="ghost"><strong>Entry: List</strong></div><div class="node is-key"><strong>Entry: Detail</strong><small>top, displayed by the NavHost</small></div></div><div class="down"></div><div class="node" data-state="done"><strong>Detail entry's <code>ViewModelStore</code></strong><small>creates and holds <code>DetailViewModel</code></small></div></div><figcaption>Every entry, not only the top one, owns a ViewModelStore. Entries below the top keep theirs until they are popped.</figcaption></figure>
+<figure class="viz"><div class="viz-stack"><div class="node"><strong>Single activity</strong><small>contains the <code>NavHost</code>; it is not a back-stack entry</small></div><div class="down"></div><div class="node"><strong>Entry: root graph</strong><small>parent of the destinations below</small></div><div class="down"></div><div class="viz-flow"><div class="node" data-state="ghost"><strong>Entry: Home</strong><small>bottom of the stack</small></div><div class="node" data-state="ghost"><strong>Entry: List</strong></div><div class="node is-key"><strong>Entry: Detail</strong><small>top, displayed by the NavHost</small></div></div><div class="down"></div><div class="node" data-state="done"><strong>Detail entry's <code>ViewModelStore</code></strong><small>creates and holds <code>DetailViewModel</code></small></div></div><figcaption>Every entry, not only the top one, owns a ViewModelStore. Entries below the top keep theirs until they are popped.</figcaption></figure>
 
 <!-- @after Failure Modes :: visual -->
 ### One stack per tab
 
-<figure class="viz"><div class="viz-cols" style="--cols:3"><div class="col"><span class="col-title">Home tab</span><div class="node"><small>Home</small></div><div class="node"><small>Shoes</small></div><div class="node is-key"><small>Running shoes</small></div></div><div class="col"><span class="col-title">Cart tab (selected)</span><div class="node is-key"><small>Cart</small></div></div><div class="col"><span class="col-title">Profile tab</span><div class="node"><small>Profile</small></div></div></div><figcaption>When switching tabs, pop up to the graph's start destination with <code>saveState = true</code> and navigate with <code>restoreState = true</code>. The Home stack is saved, not discarded, and comes back when Home is selected: the opening bug fixed.</figcaption></figure>
+<figure class="viz"><div class="viz-cols" style="--cols:3"><div class="col"><span class="col-title">Home tab</span><div class="node"><small>Home</small></div><div class="node"><small>Shoes</small></div><div class="node is-key"><small>Running shoes</small></div></div><div class="col"><span class="col-title">Cart tab (selected)</span><div class="node is-key"><small>Cart</small></div></div><div class="col"><span class="col-title">Profile tab</span><div class="node"><small>Profile</small></div></div></div><figcaption>When switching tabs, pop up to the graph's start destination with <code>saveState = true</code> and navigate with <code>restoreState = true</code>. The Home stack is saved, not discarded, and comes back when Home is selected. For the opening deep-link problem, follow Answer Key 7 and test both explicit and implicit launch contexts.</figcaption></figure>
 
 <!-- @after Common Misconceptions :: check -->
 **What should the route carry?** Decide before opening each answer.

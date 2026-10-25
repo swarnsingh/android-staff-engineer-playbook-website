@@ -18,7 +18,7 @@ Some work must happen **eventually**, under the right conditions, even if the ap
 {"label":"Constraints met","caption":"At home, the phone joins Wi-Fi. The system starts the app process and WorkManager runs doWork() on a background dispatcher.","state":{"sched":"done","worker":"active","device":"done"},"text":{"deviceV":"on Wi-Fi, battery fine","workerV":"doWork() running","dbV":"RUNNING"}},
 {"label":"Retry","caption":"The server returns an error. doWork() returns Result.retry(), and WorkManager schedules another attempt with exponential backoff.","state":{"worker":"warn","db":"warn"},"text":{"workerV":"Result.retry()","dbV":"ENQUEUED (backoff)"}},
 {"label":"Success","caption":"The next attempt syncs the notes. Result.success() marks the work SUCCEEDED in the database; nothing more is scheduled.","state":{"worker":"done","db":"done"},"text":{"workerV":"Result.success()","dbV":"SUCCEEDED"}}
-]</script><figcaption>The database is what makes the guarantee: the request outlives the process, the reboot, and the failed attempt.</figcaption></figure>
+]</script><figcaption>The persisted request can outlive the process, reboot and failed attempt. Execution timing still depends on constraints, quota and system scheduling; persistence is not a deadline guarantee.</figcaption></figure>
 
 <!-- @diagram 6b7c18c9f8073fff -->
 ### Who does what
@@ -42,3 +42,12 @@ The new request is dropped and the queued one stays, so taps do not stack up dup
 
 WorkManager creates workers with its default factory, which cannot supply those dependencies, so creating the worker fails. Use `HiltWorkerFactory` and on-demand initialization.
 </details>
+
+<!-- @before Tradeoffs :: review -->
+The expedited-work history, timing guarantee and setExpedited(true) API spelling are under technical review (WM1). A correction is pending the owner's approval.
+
+<!-- @before Answer Key :: review -->
+Answer 5's expedited-work history and timing explanation is under technical review (WM1). A correction is pending the owner's approval.
+
+<!-- @before Production Example :: review -->
+The worker's broad exception handler and its handling of cancellation are under technical review (WM2). A correction is pending the owner's approval.

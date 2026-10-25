@@ -3,9 +3,9 @@
      Room's withTransaction is an extension on RoomDatabase (androidx.room room-ktx); checked 2026-10-25. -->
 
 <!-- @opening -->
-<p class="story-lead">A field technician renames an inspection note in a basement with no signal. The app shows the new name, so they move on. That evening the office still sees the old name. The next morning, after a failed refresh, the technician's app shows an empty list and an error banner instead of yesterday's notes.</p>
+<p class="story-lead">A technician renames a note offline. The office never receives it, and a failed refresh later empties the technician's screen. One missing decision caused both bugs: which copy is the truth?</p>
 
-Neither bug is a networking bug. The app never decided **which copy of the data is the truth**: the rename lived only in memory until a request succeeded, and the list was replaced by the latest network result, even when that result was a failure. This chapter makes that decision explicit for each kind of data, then shows the read path, the durable write path and the tests that prove both.
+Follow the read path, a durable outbox write, and the merge policy. Decide which data the client owns and which decisions still belong to the server.
 
 <!-- @after Offline-First Read Pattern :: visual -->
 ### The UI reads one place; the network only writes to it
@@ -34,19 +34,19 @@ The example in the next section calls `dao.withTransaction { … }` on a DAO. Th
 ]</script><figcaption>Durability comes from the transaction and the persisted work; safety on retry comes from the idempotency key. Both are needed.</figcaption></figure>
 
 <!-- @after Merge Semantics :: check -->
-**Pick the source of truth.** Decide before opening each answer.
+**Pick the source of truth.**
 
 <details><summary>A shopping list the user edits on a plane.</summary>
 
-The local database until each change is uploaded, with an outbox for pending edits. Losing user-created work is unacceptable.
+Local database, with an outbox for pending edits.
 </details>
 
 <details><summary>The price shown on a product page.</summary>
 
-The server. Cache it locally for display, mark its freshness, and re-check it before anything that charges money.
+Server. Cache for display; re-check before charging.
 </details>
 
 <details><summary>Whether a beta feature is enabled.</summary>
 
-Remote config, cached in memory with a sensible default. It reflects current server policy, not a user's work.
+Remote config, cached with a safe default.
 </details>

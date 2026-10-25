@@ -1,7 +1,7 @@
 <!-- Website teaching layer for android/data-and-di/hilt-vs-koin-vs-manual-di.md.
      The original chapter is rendered in full; everything here is added around it.
      Dagger 2.48 release notes: "includes the alpha release of the Dagger and Hilt KSP processors" (github.com/google/dagger
-     releases); Hilt component docs as in components.blend. Checked 2026-10-25. Koin compiler-plugin claims not verified here. -->
+     releases); Hilt component docs as in components.blend. Checked 2026-10-25. Koin's current verification docs distinguish the Compiler Plugin from the Classic DSL without that plugin. -->
 
 <!-- @opening -->
 <p class="story-lead">Two teams ship the same feature. Team A's app crashes for 2% of users the first time they open Settings: a dependency was never registered, and nothing noticed until runtime. Team B never sees that crash, but its incremental build takes forty seconds longer, and the team argues about whether that is worth it.</p>
@@ -19,11 +19,11 @@ Three passages are under technical review: the ViewModel row of the Hilt scope t
 <!-- @after Manual DI vs Hilt vs Koin: Side-by-Side :: animation -->
 ### When does a missing dependency get caught?
 
-<figure class="stepper"><span class="stepper-title">The same mistake under three approaches</span><div class="stage viz-grid" style="--cols:3"><div class="node" data-el="manual"><strong>Manual DI</strong><small data-text="manualV">—</small></div><div class="node" data-el="hilt"><strong>Hilt</strong><small data-text="hiltV">—</small></div><div class="node" data-el="koin"><strong>Koin DSL</strong><small data-text="koinV">—</small></div></div><script type="application/json" class="steps">[
+<figure class="stepper"><span class="stepper-title">The same mistake under three approaches</span><div class="stage viz-grid" style="--cols:3"><div class="node" data-el="manual"><strong>Manual DI</strong><small data-text="manualV">—</small></div><div class="node" data-el="hilt"><strong>Hilt</strong><small data-text="hiltV">—</small></div><div class="node" data-el="koin"><strong>Koin DSL without compiler checks</strong><small data-text="koinV">—</small></div></div><script type="application/json" class="steps">[
 {"label":"The mistake","caption":"A new SettingsViewModel needs a PrivacyRepository. The developer forgets to wire it.","add":["manual","hilt","koin"],"state":{},"text":{"manualV":"AppContainer has no privacyRepository","hiltV":"no @Inject constructor, @Provides or @Binds","koinV":"no single { PrivacyRepository(…) }"}},
-{"label":"Compile","caption":"Manual DI fails to compile, because the factory must pass a real object to the constructor. Hilt fails too: Dagger checks the whole graph and reports a missing binding. The Koin DSL compiles; the graph is only a set of lambdas.","state":{"manual":"done","hilt":"done","koin":"warn"},"text":{"manualV":"✗ build fails: no value to pass","hiltV":"✗ build fails: [Dagger/MissingBinding]","koinV":"✓ compiles"}},
-{"label":"Ship","caption":"Only the Koin build reaches users, and only users who open Settings hit the missing definition.","state":{"koin":"error"},"text":{"koinV":"runtime missing-definition exception when Settings opens"}},
-{"label":"Mitigate","caption":"Koin teams can check the graph in a unit test or use Koin Annotations' compile-time checks; Hilt and manual DI teams pay for the safety in build time or boilerplate instead.","state":{"koin":"warn","manual":"","hilt":""},"text":{"manualV":"cost: wiring by hand","hiltV":"cost: annotation processing time","koinV":"cost: a verification step you must remember"}}
+{"label":"Compile","caption":"Manual DI fails to compile, because the factory must pass a real object to the constructor. Hilt fails too: Dagger checks the whole graph and reports a missing binding. In this example the Koin DSL is used without compiler-plugin validation, so the missing definition survives compilation.","state":{"manual":"done","hilt":"done","koin":"warn"},"text":{"manualV":"✗ build fails: no value to pass","hiltV":"✗ build fails: [Dagger/MissingBinding]","koinV":"✓ compiles"}},
+{"label":"Ship","caption":"Without a verification step, this Koin build reaches users; opening Settings then requests the missing definition.","state":{"koin":"error"},"text":{"koinV":"runtime missing-definition exception when Settings opens"}},
+{"label":"Mitigate","caption":"Add verification for a Classic DSL graph, or enable the Koin Compiler Plugin's supported graph checks. The annotations processor also has a KOIN_CONFIG_CHECK option. Validation coverage depends on the configuration.","state":{"koin":"warn","manual":"","hilt":""},"text":{"manualV":"cost: wiring by hand","hiltV":"cost: annotation processing time","koinV":"cost: a verification step you must remember"}}
 ]</script><figcaption>Every approach catches the mistake somewhere. The question is whether that place is your build or your user's device.</figcaption></figure>
 
 <!-- @after When Each Wins :: check -->
@@ -43,3 +43,12 @@ Hilt. Build-time graph validation and lifecycle-matched components pay for their
 
 Koin, or manual DI, in the shared code. Hilt is Android-only and cannot run in shared iOS code.
 </details>
+
+<!-- @before Failure Modes :: review -->
+The Koin exception name and the Hilt 2.48 processor-status wording are under technical review (KO1, HK2). A correction is pending the owner's approval.
+
+<!-- @before Common Pitfalls :: review -->
+The eager-singleton wiring statement is under technical review (HK3). A correction is pending the owner's approval.
+
+<!-- @before Option 3: Koin (Now With Compiler Plugin) :: review -->
+The runtime missing-definition exception name is under technical review (KO1). A correction is pending the owner's approval.

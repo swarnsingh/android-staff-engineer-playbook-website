@@ -5,7 +5,7 @@
 <!-- @opening -->
 <p class="story-lead">A row of overlapping avatars looks perfect in the design review. In Arabic, the overlap goes the wrong way; on a narrow phone, the last avatar is cut in half; and at the largest font size, the "+3" badge collides with the text beside it. All three bugs live in about twenty lines of measurement code.</p>
 
-A custom layout is a contract with the layout system: **receive constraints, measure each child once, choose your own size within the constraints, then place children**. Each bug above breaks one clause of it. This chapter shows when to write your own layout, and how to keep each clause, including direction, accessibility and performance.
+A custom layout is a contract with the layout system: **receive constraints, measure each child once, choose your own size within the constraints, then place children**. Those clauses help locate constraint and placement bugs; large text also requires testing content fit and overflow. This chapter shows when to write your own layout, and how to keep each clause, including direction, accessibility and performance.
 
 <!-- @after Layout Pipeline :: visual -->
 ### Pick the smallest tool that fits
@@ -36,7 +36,7 @@ Sizing. The layout can report a size outside its constraints, so a narrow parent
 Measure once. Compose throws when a child is measured twice in one pass. Use intrinsics, or redesign the measurement so one pass suffices.
 </details>
 
-<details><summary>A chip layout looks right in English and wrong in Hebrew.</summary>
+<details><summary>A chip layout uses place(x, y), looks right in English and reverses incorrectly in Hebrew.</summary>
 
 Placement. It uses `place` with computed x positions. Switch to `placeRelative` so placement follows the layout direction.
 </details>

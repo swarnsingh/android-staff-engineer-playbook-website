@@ -1,4 +1,30 @@
-# Phase 1 review: fixes to apply
+# Phase 1 review: findings and disposition
+
+## Follow-up status — teaching fixes completed locally
+
+The Phase 1 teaching edits and findings/note coverage below were addressed on `codex/android-completion`. Original chapters and approval data are unchanged. “Completed” here means the added teaching was fixed, or a disputed passage was flagged and competing teaching held; it does not mean the proposed original correction was approved.
+
+| Review concern | Resolution |
+|---|---|
+| Anchored phase membership | Already corrected in `a828c58`; the coordinator owns the remaining contiguity assertion. |
+| Notes printing fixes | Removed the remaining SM3 replacement from its note; constructor notes identify the declarations without presenting a replacement. The UDF redraw and detailed ViewModel retention/order teaching are held in `pending-android-phase1-teaching.blend`. |
+| State ownership opening | `rememberSaveable` already fixed at handover; retained. |
+| Module-path count | Added MO3 and its note. The active redraw preserves the graph without publishing a competing numeric summary. |
+| ViewModel clearing and Back | Added VM2/VM3 before Internal Mechanics and VM2 before Production Example. The animation now uses the explicit “Activity finishes” case; its ordering detail is held for approval. A new ViewModel is no longer universally called empty. |
+| Activity save timing and dialog | Changed the teaching deadline to state capture, made persistence guidance responsive, and added A2 notes before Mental Model and Architecture. Existing A1 notes remain before Internal Mechanics and Answer Key. |
+| MVVM animation | Loading flags remain visible consistently. The illustrated intermediate state is a possible observation by another collector, not a claim of a measured UI frame; the original's stronger frame claim is flagged as MV5. |
+| Event-policy attribution | Android state-first guidance is distinguished from the chapter's discretionary best-effort Channel policy. MV2 is recorded as a misdiagnosis rather than a blanket claim that state causes repetition. |
+| Navigation story and stack | The root graph entry is present in animation and redraw. The Activity is explicitly a separate owner. Answer Key 7 closes the deep-link question. |
+| Sources and later repeats | VM1 now links ComponentActivity source. SM2 links the HiltViewModel javadoc and allows Inject or AssistedInject. Added MV3, MV4, SM4 and their affected-section notes. A1 records the generic lifecycle-page/multi-window-page conflict. |
+| Text input concern | The SavedStateHandle animation describes persistence rather than prescribing an asynchronous IME feedback loop. Added a short synchronous-editing caveat linked to the official state-based TextField migration guide. |
+| Further teaching errors found | The Fragment result diagram now pops B before returning A to STARTED. The process-death visual no longer equates removing a task with necessarily killing every process-local object. |
+| Shared presentation files | Footer/tree label and part-band wording are owned by the coordinator, not this Phase 1 file-scoped edit. |
+
+**Targeted validation:** all nine Phase 1 chapters render in an isolated temporary output directory. All 1,067 original units pass the current preservation verifier; all stepper JSON parses and marker targets resolve. Whitespace checks pass for the Phase 1 edits. No Android framework compilation, physical-device lifecycle run, UI-frame timing experiment or keyboard test was performed. The coordinator runs the final integrated build and browser sweep.
+
+The original review list is retained below for traceability. Its items are historical requests, with current dispositions in the table above.
+
+## Original review list
 
 From the independent review subagent, 2026-10-25. All items are verified claims from the reviewer.
 

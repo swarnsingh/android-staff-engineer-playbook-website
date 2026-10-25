@@ -23,7 +23,8 @@ Run from this new website checkout, choose an available port, and open the local
 
 ## Branch history
 
-- `main`: current website development and verified preview source.
+- `main`: last published Kotlin preview source (`d9cae81`).
+- `codex/android-completion`: local reviewed-fix checkpoint for Android phases 1–4; awaiting remaining phase work and publication approval.
 - `codex/reader-website-fixes`: the current fix and repository-separation snapshot.
 - `codex/reader-website`: preserved original website draft history.
 - `claude/reader-website-kotlin`: preserved teaching-layer and review history through `8a77e22`.

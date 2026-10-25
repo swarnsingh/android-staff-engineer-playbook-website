@@ -23,11 +23,6 @@ The bug is not in either copy. It is in having two owners for one value. This ch
 {"label":"State down, events up","caption":"Counter receives count as a parameter and reports taps through onIncrement. Screen changes the value; both children re-render from it. Counter is now stateless, reusable and previewable.","state":{"screen":"done","counter":"done","warning":"done"},"text":{"flowNote":"count ↓ to both children · onIncrement ↑ to Screen"}}
 ]</script><figcaption>Hoisting further than the readers (into a ViewModel for a purely visual counter) only widens the owner's lifetime without adding a reader.</figcaption></figure>
 
-<!-- @diagram 0295bf26b88c3e04 -->
-### One loop across the whole screen
-
-<figure class="viz"><div class="viz-stack"><div class="node"><strong>Repository</strong><small>source of truth; exposes <code>Flow</code> and suspend functions</small></div><div class="viz-grid" style="--cols:2"><div class="node"><strong>data ↑</strong><small>a <code>Flow</code> from the repository</small></div><div class="node"><strong>commands ↓</strong><small>suspend calls such as <code>repo.refresh()</code></small></div></div><div class="node is-key"><strong>ViewModel</strong><small>screen state holder; exposes <code>StateFlow&lt;UiState&gt;</code></small></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>state ↓</strong><small>UI collects with <code>collectAsStateWithLifecycle()</code></small></div><div class="node"><strong>events ↑</strong><small>callbacks such as <code>onRefresh()</code></small></div></div><div class="node"><strong>Composable</strong><small>renders state; holds only UI element state</small></div></div><figcaption>Each value has one owner on this loop. A value held both in the ViewModel and in a composable's <code>remember</code> is the opening bug.</figcaption></figure>
-
 <!-- @after Screen vs UI State — Concrete Examples :: check -->
 **Who owns it?** Decide before opening each answer.
 
@@ -55,7 +50,10 @@ The next section lists Doze among the reasons the OS kills an app for memory. Th
 <figure class="viz"><div class="viz-stack"><div class="node is-key"><strong>Must it survive process death?</strong></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>Small, restorable UI input</strong><small><code>SavedStateHandle</code> or <code>rememberSaveable</code></small></div><div class="node" data-state="done"><strong>Durable user or business data</strong><small>repository + persistent store</small></div></div><div class="down"></div><div class="node is-key"><strong>No. Must it survive a configuration change?</strong></div><div class="viz-grid" style="--cols:3"><div class="node"><strong>Business or async state</strong><small><code>ViewModel</code></small></div><div class="node"><strong>Shared UI coordination</strong><small>remembered plain state holder</small></div><div class="node"><strong>Transient presentation</strong><small>local <code>remember</code></small></div></div></div><figcaption>Answer the durability question first; it rules out most owners.</figcaption></figure>
 
 <!-- @before Real Android Patterns :: review -->
-Three examples in the next section (`FeedViewModel`, `CheckoutViewModel`, `CheckoutWizardViewModel`) are annotated `@HiltViewModel` without an `@Inject` constructor. They are under technical review. A correction is pending the owner's approval.
+The constructor declarations in the `FeedViewModel`, `CheckoutViewModel` and `CheckoutWizardViewModel` examples in the next section (SM2) are under technical review. A correction is pending the owner's approval.
 
 <!-- @before Failure Modes :: review -->
-One row in the next table suggests `MutableSharedFlow.update`. It is under technical review: `update { }` is defined for `MutableStateFlow`, not `MutableSharedFlow`.
+The `MutableSharedFlow.update` expression and the saved-state cutoff described as “after `onStop`” in the next table (SM3, SM4) are under technical review. Corrections are pending the owner's approval.
+
+<!-- @before The UDF Blueprint :: review -->
+The repository-to-ViewModel edge label in the next diagram (SM5) is under technical review. A correction is pending the owner's approval.

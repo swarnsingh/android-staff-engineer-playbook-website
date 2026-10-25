@@ -47,3 +47,6 @@ Not `viewModelScope`, which would cancel it. Use an application-scoped component
 
 A custom Hilt component for the session, plus a coroutine scope created at login and cancelled at logout, so the instances and their work end together.
 </details>
+
+<!-- @before Custom Hilt Scope + Custom Coroutine Scope Together :: review -->
+The SessionManager example's instance-sharing and component ownership are under technical review (SS1). A correction is pending the owner's approval.

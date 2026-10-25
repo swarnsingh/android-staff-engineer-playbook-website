@@ -4,7 +4,7 @@
      on 2026-10-25. -->
 
 <!-- @opening -->
-<p class="story-lead">Version 4.2 of a notes app adds a "colour" column. Users who update from 4.1 are fine. Users who skipped from 3.9 open the app and see it crash at launch; the ones who don't crash find their notes gone, because a teammate added <code>fallbackToDestructiveMigration()</code> "just in case".</p>
+<p class="story-lead">Version 4.2 adds a colour column. The 4.1 migration works, but there is no path from 3.9. Without destructive fallback, those users cannot open the database. Enabling the fallback makes the app open again by deleting their notes. Neither outcome is an acceptable release.</p>
 
 A database outlives every version of the code that writes to it. Room's job is to keep the Kotlin side and the SQLite schema in agreement: it checks your SQL against your entities at build time, keeps query results live as tables change, and runs migrations when the schema moves on. This chapter follows each of those mechanisms and the review discipline that keeps users' data intact across releases they skipped.
 
@@ -57,3 +57,6 @@ Acceptable if the fallback is limited to those start versions (`fallbackToDestru
 
 It runs on the main thread, which Room rejects by default. Make it `suspend` and call it from a coroutine, or the app crashes at the first click.
 </details>
+
+<!-- @before Answer Key :: review -->
+Answers 6 and 7 repeat the projection/invalidation and relation-query claims flagged earlier. They are under technical review. A correction is pending the owner's approval.

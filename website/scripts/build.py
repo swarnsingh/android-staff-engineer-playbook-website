@@ -40,6 +40,11 @@ for _slug, _tree in TREES.items():
         if _tree['phases'] is None or int(re.match(r'Phase (\d+)', _heading)[1]) in _tree['phases']:
             ORDER[_slug] += [p for p in _chapters if p not in ORDER[_slug]]
             for p in _chapters: SECTION.setdefault(p, _heading)  # the first phase listing a chapter owns it
+    # A chapter's first phase owns it; the rendered reading sequence must not return to an earlier group.
+    _phase_positions = {heading: index for index, (heading, _) in enumerate(phases(_slug))}
+    _group_numbers = [_phase_positions[SECTION[p]] for p in ORDER[_slug]]
+    if _group_numbers != sorted(_group_numbers):
+        raise ValueError(f'{_slug} reading phases are not contiguous')
     if _tree['phases'] is None and set(ORDER[_slug]) != {p.relative_to(ROOT).as_posix() for p in (ROOT/_slug).rglob('*.md')}:
         raise ValueError(f'{_slug} reading sequence does not cover every chapter')
 PAGES = [p for slug in TREES for p in [f'{slug}.md'] + ORDER[slug]]
@@ -153,7 +158,7 @@ def link_rules(path):
 # a blend file can override the mapping with `<!-- @part Heading :: KEY -->`.
 PARTS = [
     ('BEGINNING', 'The problem and the idea', 'Why this exists, and the picture to keep in mind.'),
-    ('MECHANISM', 'How it really works', 'What the compiler and runtime actually do.'),
+    ('MECHANISM', 'How it really works', 'How the mechanism works, step by step.'),
     ('PRODUCTION', 'In real apps', 'Patterns, trade-offs and the ways it fails.'),
     ('STAFF', 'Staff-level judgement', 'Decisions, reviews and the misconceptions to correct.'),
     ('PRACTICE', 'Practise', 'Questions with worked answers.'),
@@ -224,6 +229,23 @@ def load_blend(path):
     return blend
 
 
+def timeline_labels(html):
+    """Keep long teaching-timeline labels readable without changing proportional bars."""
+    def track(match):
+        labels = re.findall(r'<span\b[^>]*class="mark(?:\s[^"]*)?"[^>]*>(.*?)</span>', match.group(2), re.S)
+        if not labels or all(len(clean(unescape(label))) <= 2 for label in labels):
+            return match.group(0)
+        index = 0
+        def mark(item):
+            nonlocal index
+            index += 1
+            return item.group(1)[:-1] + f' data-label-index="{index}" aria-hidden="true">' + item.group(2) + '</span>'
+        bars = re.sub(r'(<span\b[^>]*class="mark(?:\s[^"]*)?"[^>]*>)(.*?)</span>', mark, match.group(2), flags=re.S)
+        legend = '<ol class="timeline-legend">' + ''.join('<li>'+label+'</li>' for label in labels) + '</ol>'
+        return '<div class="timeline-lane-body">' + match.group(1) + bars + '</div>' + legend + '</div>'
+    return re.sub(r'(<div\b[^>]*class="track"[^>]*>)(.*?)</div>', track, html, flags=re.S)
+
+
 def steps_as_text(html):
     """Print every animation step as a numbered list, so no step depends on motion or JavaScript."""
     def add(match):
@@ -247,7 +269,7 @@ def wrap(kind, markdown, env):
         html = MD.render(markdown, env)
     finally:
         env['blend'] = False
-    return added(kind, steps_as_text(html))
+    return added(kind, steps_as_text(timeline_labels(html)))
 
 
 def render_chapter(path, raw, is_course=False):
@@ -477,11 +499,21 @@ def build(skip_diagrams=False):
         tree_index=ROOT/(tree['slug']+'.md')
         if not tree_index.exists():continue
         tree_order=[]
-        for target in re.findall(r'\]\(([^)#]+\.md)(?:#[^)]*)?\)',tree_index.read_text()):
+        section={}
+        phase_groups=phases(tree['slug'])
+        for heading,paths in phase_groups:
+            for p in paths:
+                if p not in tree_order: tree_order.append(p)
+                section.setdefault(p,heading)
+        # Section cross-references do not claim a chapter's place in the Topics menu either.
+        for target in re.findall(r'\]\(([^)#]+\.md)\)',tree_index.read_text()):
             if target.startswith(tree['slug']+'/') and target not in tree_order:tree_order.append(target)
         actual=sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/tree['slug']).rglob('*.md'))
         tree_order += [p for p in actual if p not in tree_order]
-        section={p:heading for heading,paths in phases(tree['slug']) for p in paths}
+        phase_positions={heading:index for index,(heading,_) in enumerate(phase_groups)}
+        catalog_positions=[phase_positions[section[p]] for p in tree_order if p in section]
+        if catalog_positions != sorted(catalog_positions):
+            raise ValueError(f'{tree["slug"]} Topics phases are not contiguous')
         tree['chapters']=[{'title':title(ROOT/p),'path':p,'section':section.get(p,'More chapters'),'rendered':p in PATHS} for p in tree_order]
     (OUT/'nav-data.js').write_text('window.PLAYBOOK_CATALOG = '+json.dumps(catalog,ensure_ascii=False)+';\n')
     reports=[]

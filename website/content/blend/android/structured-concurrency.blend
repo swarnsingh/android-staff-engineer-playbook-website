@@ -7,7 +7,7 @@
 <!-- @opening -->
 <p class="story-lead">A user opens a profile, starts a 50 MB video download, and presses Back after two seconds. The screen is gone, but the download keeps running on a thread nobody holds. Ninety seconds later it finishes and tries to update a view that no longer exists. The crash report points at a line nobody would suspect.</p>
 
-The download had no **owner**: nothing that ended when the screen ended. Structured concurrency gives every coroutine a parent and every parent a lifetime, so cancelling the owner cancels its whole tree, and a failure travels up the tree instead of disappearing. This chapter shows how the tree is built, how cancellation and failure move through it, and when supervision changes the rules.
+The download had no **owner**: nothing that ended when the screen ended. Structured concurrency gives every coroutine a parent and every parent a lifetime, so cancellation is requested down the owner's tree, and failures follow its parent/supervisor policy. Code still has to cooperate with cancellation. This chapter shows how the tree is built, how cancellation and failure move through it, and when supervision changes the rules.
 
 <!-- @before Historical Context :: review -->
 The next section says structured concurrency is "implemented in languages like Go". That sentence is under technical review. A correction is pending the owner's approval.
@@ -20,8 +20,8 @@ The next section says structured concurrency is "implemented in languages like G
 {"label":"Failure goes up","caption":"The network call throws. In a regular (non-supervisor) hierarchy the failure cancels its parent: the scope in fetch posts that started both asyncs…","state":{"net":"error","posts":"warn"},"text":{"netV":"IOException","postsV":"failing"}},
 {"label":"…and sideways","caption":"…which cancels its other child, the database read, so no result from a failed operation is half-delivered.","state":{"db":"ghost"},"text":{"dbV":"cancelled"}},
 {"label":"Caught at a boundary","caption":"Here fetch posts started its asyncs inside coroutineScope, wrapped in try/catch for IOException. The scope rethrows the failure, the catch handles it, and it goes no further: the user fetch keeps running and the ViewModel job survives.","state":{"posts":"done","vm":"done","user":"active"},"text":{"postsV":"caught: shows an error state","userV":"still running"}},
-{"label":"Owner cancelled","caption":"The user leaves; the ViewModel is cleared and viewModelScope is cancelled. Cancellation flows down to every remaining child at its next suspension point. Nothing outlives the screen.","state":{"vm":"ghost","user":"ghost","posts":"ghost"},"text":{"vmV":"cancelled","userV":"cancelled","postsV":"done"}}
-]</script><figcaption>Cancellation always flows down. Failure flows up until something catches it, or until a supervisor stops it.</figcaption></figure>
+{"label":"Owner cancelled","caption":"The user leaves; the ViewModel is cleared and viewModelScope is cancelled. Cancellation is requested for every remaining child. Cooperative suspension points or explicit checks let them stop; a blocking call or CPU loop that ignores cancellation can keep running.","state":{"vm":"ghost","user":"ghost","posts":"ghost"},"text":{"vmV":"cancelled","userV":"cancelled","postsV":"done"}}
+]</script><figcaption>Cancellation is propagated down the job tree; the work must cooperate to finish. Unhandled child failures follow the parent/supervisor rules.</figcaption></figure>
 
 <!-- @diagram 129074e829ea6904 -->
 ### The tree in the Architecture section

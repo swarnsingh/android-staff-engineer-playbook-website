@@ -1,4 +1,4 @@
-# Phase 2 review: fixes to apply
+# Phase 2 review: findings and disposition
 
 From the review subagent, 2026-10-25. All nine findings rows were confirmed.
 
@@ -53,3 +53,20 @@ From the review subagent, 2026-10-25. All nine findings rows were confirmed.
   - `hilt-vs-koin` header comment: Koin compile checks exist (`KOIN_CONFIG_CHECK`).
   - `room-vs-datastore` opening: "three weeks later, to a one-line write" is unclear.
   - The `dependency-injection` intro wording.
+
+## Follow-up status (2026-10-25)
+
+All actionable items above are addressed in the teaching/review layer. Original corrections remain pending owner approval.
+
+- P2 mediator triggers, locked DataStore read, Koin runtime name and incompatible-scope wording were already fixed in `3e8aba3`; confirmed and retained.
+- C2 now has a numbered finding and notes at both affected sections. Its corrected redraw is held outside active content until approval.
+- The Repository ownership discrepancy is logged as DI2; its redraw is likewise held, with notes at Architecture and Production Example.
+- The Room opening, manual PagingData wording, app-stop URI story, later-section note coverage and findings sources/scoping qualifications are addressed.
+- Added pending original findings RD2/RD3/DS1/PG1/SS1 and KO1, with evidence and passage-specific notes.
+- Concision: repository-source-of-truth 17.5%, storage-and-content-sharing 19.8% added prose by a whitespace-word approximation excluding figures.
+- Optional animation/Koin/intro items are addressed. The DataStore sequence exposes both updated states without promising every intermediate state to a slow collector.
+- Original smaller notes explicitly marked as unverified remain review leads; they are not silently promoted to factual corrections.
+
+Validation: all ten Phase 2 blend files parse, each marker resolves to an original H2 or diagram, all stepper JSON parses, and source hashes remain unchanged. Integrated build/browser checks are owned by the coordinating agent after shared edits settle.
+
+Independent follow-up review found no new P1/P2 defect. Its two P3 wording fixes are applied: the URI animation explicitly names Photo Picker/PickVisualMedia and process termination rather than Activity.onStop, and the DI teardown step says “Activity finishes”. The follow-up review also independently rendered all 10 chapters with 1,292 original units and 0 problems.

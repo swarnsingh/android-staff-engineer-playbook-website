@@ -11,11 +11,6 @@ Both fixes chose a scope by trial and error. In Hilt, a scope is a promise about
 <!-- @before The Seven Standard Components :: review -->
 Several passages in the next sections say `@HiltViewModel` ViewModels live in, or are scoped to, `ActivityRetainedComponent` (the table's "Default for" column, the `ActivityRetainedComponent` drill-down, one Failure Modes row and answer 5). They are under technical review. A correction is pending the owner's approval.
 
-<!-- @diagram e53267b523603f05 -->
-### The hierarchy, with each lifetime
-
-<figure class="viz"><div class="viz-stack"><div class="node is-key"><strong><code>SingletonComponent</code></strong><small>Application created → Application destroyed (the process)</small></div><div class="viz-grid" style="--cols:2"><div class="node"><strong><code>ActivityRetainedComponent</code></strong><small>first <code>Activity#onCreate()</code> → last <code>Activity#onDestroy()</code>: survives rotation</small></div><div class="node"><strong><code>ServiceComponent</code></strong><small><code>Service#onCreate()</code> → <code>Service#onDestroy()</code></small></div></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong><code>ViewModelComponent</code></strong><small>one per ViewModel: created with it, destroyed when it is cleared</small></div><div class="node" data-state="warn"><strong><code>ActivityComponent</code></strong><small>one per activity instance: recreated on rotation</small></div></div><div class="viz-grid" style="--cols:2"><div class="node"><strong><code>FragmentComponent</code></strong><small>child of the activity component</small></div><div class="node"><strong><code>ViewComponent</code></strong><small>child of the activity component (or of the fragment component, as <code>ViewWithFragmentComponent</code>)</small></div></div></div><figcaption>A child can use everything its ancestors provide. Nothing flows downward: an ancestor cannot see a child's bindings.</figcaption></figure>
-
 <!-- @after The Hierarchy (Visualized) :: animation -->
 ### Resolving a request walks up, never down
 
@@ -49,3 +44,21 @@ A custom component (`@DefineComponent(parent = SingletonComponent::class)` with 
 
 `ActivityComponent` with `@ActivityContext`. It is recreated with the activity, which is exactly what its context requires.
 </details>
+
+<!-- @before What's a "Component"? :: review -->
+The introductory ViewComponent parent description is under technical review (C2). A correction is pending the owner's approval.
+
+<!-- @before The Hierarchy (Visualized) :: review -->
+The Fragment-to-ViewComponent edge in the original diagram is under technical review (C2). A correction is pending the owner's approval.
+
+<!-- @before Drill-Down on Each Component :: review -->
+The ActivityRetainedComponent description of ViewModel placement is under technical review (C1). A correction is pending the owner's approval.
+
+<!-- @before Failure Modes :: review -->
+The row associating a ViewModel's lifetime with ActivityRetainedComponent is under technical review (C1). A correction is pending the owner's approval.
+
+<!-- @before Answer Key :: review -->
+Answer 5's ViewModel-component description is under technical review (C1). A correction is pending the owner's approval.
+
+<!-- @before Custom Components with @DefineComponent :: review -->
+The SessionManager example's instance-sharing and component ownership are under technical review (SS1). A correction is pending the owner's approval.

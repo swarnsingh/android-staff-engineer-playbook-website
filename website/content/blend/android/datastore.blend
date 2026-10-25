@@ -17,9 +17,9 @@
 
 <figure class="stepper"><span class="stepper-title">Updates are applied one at a time</span><div class="stage viz-stack"><div class="viz-grid" style="--cols:2"><div class="node" data-el="a"><strong>Coroutine A</strong><small>toggle dark mode</small></div><div class="node" data-el="b"><strong>Coroutine B</strong><small>set notification level</small></div></div><div class="node is-key" data-el="store"><strong>DataStore</strong><small data-text="storeV">—</small></div><div class="node" data-el="file"><strong>File on disk</strong><small data-text="fileV">dark=false, level=ALL</small></div><div class="node" data-el="flow"><strong><code>data</code> Flow</strong><small data-text="flowV">emits dark=false, level=ALL</small></div></div><script type="application/json" class="steps">[
 {"label":"Both call edit()","caption":"Two coroutines call edit() at almost the same time. Each passes a transform that reads current values and changes one key.","add":["a","b","store","file","flow"],"state":{"a":"active","b":"active"},"text":{"storeV":"two updates queued"}},
-{"label":"A runs first","caption":"DataStore runs A's transform against the current data, writes the result to a temporary file, then replaces the old file, so a crash mid-write leaves the old file intact.","state":{"a":"done","store":"active","file":"active"},"text":{"storeV":"applying A on dark=false, level=ALL","fileV":"dark=true, level=ALL"}},
+{"label":"A runs first","caption":"DataStore runs A's transform against the current data, writes the result to a temporary file, then replaces the old file, so a crash mid-write leaves the old file intact.","state":{"a":"done","store":"active","file":"active"},"text":{"storeV":"applying A on dark=false, level=ALL","fileV":"dark=true, level=ALL","flowV":"new state: dark=true, level=ALL"}},
 {"label":"Then B, on A's result","caption":"B's transform receives the data after A, not the stale snapshot from when B started. Neither update overwrites the other.","state":{"b":"done","file":"active"},"text":{"storeV":"applying B on dark=true, level=ALL","fileV":"dark=true, level=MENTIONS"}},
-{"label":"Collectors see the result","caption":"The data Flow emits the new value. Every screen observing the setting updates without polling.","state":{"store":"done","file":"done","flow":"active"},"text":{"storeV":"idle","flowV":"emits dark=true, level=MENTIONS"}}
+{"label":"Collectors see the result","caption":"The data Flow exposes each new persisted state. A slow collector may skip an intermediate state and receive the latest value; screens do not need to poll.","state":{"store":"done","file":"done","flow":"active"},"text":{"storeV":"idle","flowV":"emits dark=true, level=MENTIONS"}}
 ]</script><figcaption>Read-modify-write runs as one step per update, which is what two racing <code>SharedPreferences</code> editors could not guarantee.</figcaption></figure>
 
 <!-- @diagram 7b83f402a7d01d38 -->
@@ -44,3 +44,6 @@ Two DataStore instances for one file. Create it once and inject the same instanc
 
 The whole object is read into memory and rewritten on every change. Store the list in Room; keep only small settings in DataStore.
 </details>
+
+<!-- @before Answer Key :: review -->
+Answer 8's description of a missing DataStore file as an IOException is under technical review (DS1). A correction is pending the owner's approval.

@@ -39,5 +39,5 @@ All 500 are concurrent, interleaving on one thread at their suspension points. N
 
 <details><summary>A callback API wrapped with <code>suspendCoroutine</code>, and the screen closes while waiting.</summary>
 
-The coroutine is not cancelled while it waits, and the registered listener is never removed. Use `suspendCancellableCoroutine` and unregister in `invokeOnCancellation`.
+The Job can be marked cancelled, but plain `suspendCoroutine` does not complete that suspension merely because its Job was cancelled: the callback still needs to resume it. Cancellation does not automatically unregister the listener; whether it is removed depends on the wrapper/API. Use `suspendCancellableCoroutine` with cancellation cleanup when bridging a cancellable listener.
 </details>
