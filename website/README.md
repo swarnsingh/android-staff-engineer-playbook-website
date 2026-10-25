@@ -89,9 +89,10 @@ A `<figure class="stepper">` contains a `.stage` with elements marked `data-el="
 - **Devices:** 23 pages × 320/390/768/1280px pass: no horizontal scroll, no wide figures, all animations ready, no broken images. Light and dark themes checked.
 - **Animation gaps closed:** Kotlin 2.4 (context-parameter resolution), Coroutines (cancellation then cleanup), JVM interop (where a Java null fails). Each was compiled and run first.
 - **Accuracy:** claims the blends rely on were compiled and run locally. Errors found in the originals are logged in the triage, not edited.
+- **Inline correction marks:** every single-line fix outside a table or code is highlighted where it stands; list and heading syntax stays outside the mark. Table-row and code fixes rely on the section note.
 - **Codex review (2026-10-25):** all 11 findings reproduced and fixed: stricter preservation check, CH4/C24 amended code, VA2 and the cancellation/concurrency rows re-verdicted, three blend claims corrected (Flow buffering, JVM names, extension mocking), reduced motion now stops running animations, coroutine supplements labelled, correction markers built.
 
 ## Next steps
 
-1. Owner approves `reviews/corrections-triage.md` (all 292 + 3 new reviewed: 199 approve, 23 approve with edit, 73 reject). Then set `"status": "approved"` (and amended text) in `content/corrections-*.json` and add the three new findings. The markers are already built; check each approved page after the build.
+1. Codex re-reviews `b0499b6` together with the exact texts in `reviews/corrections-with-edits.md` (and `.json`) for the 23 "approve with edit" rows. Then the owner approves `reviews/corrections-triage.md` (all 292 + 3 new reviewed: 199 approve, 23 approve with edit, 73 reject). Then set `"status": "approved"` (and amended text) in `content/corrections-*.json` and add the three new findings. The markers are already built; check each approved page after the build.
 2. Repeat the blend for the next tree.

@@ -49,7 +49,7 @@ def title(path):
 def corrected(source, path, mark=False):
     """Apply approved corrections. Returns the corrected source and, per fix, the line it landed on.
 
-    With mark=True, a single-line fix outside code is wrapped in <mark class="correction-mark">, so the
+    With mark=True, a single-line fix outside code (except table rows) is wrapped in <mark class="correction-mark">, so the
     corrected words are visible where they stand; every fix is also listed in its section's correction note.
     """
     applied = []
@@ -62,8 +62,13 @@ def corrected(source, path, mark=False):
         in_fence = len(re.findall(r'^\s*(```|~~~)', source[:at], re.M)) % 2 == 1
         in_span = source[line_start:at].count('`') % 2 == 1
         new = fix['new']
-        if mark and '\n' not in fix['old'] + new and at > line_start and not in_fence and not in_span:
-            new = f'<mark class="correction-mark" title="Corrected on this website">{new}</mark>'
+        if mark and '\n' not in fix['old'] + new and not in_fence and not in_span:
+            # At the start of a line, keep the block syntax (list marker, heading, quote) outside the mark;
+            # table rows and indented lines stay unmarked and rely on the section note.
+            prefix = '' if at > line_start else re.match(r'(?:[-*+] |\d+\.\s+|> ?|#{1,6} )?', new).group(0)
+            body = new[len(prefix):]
+            if body.strip() and not (at == line_start and re.match(r'\s|\|', new)):
+                new = prefix + f'<mark class="correction-mark" title="Corrected on this website">{body}</mark>'
         source = source[:at] + new + source[at + len(fix['old']):]
         shift = len(new) - len(fix['old'])
         for earlier in applied:  # keep earlier fixes pointing at their own text

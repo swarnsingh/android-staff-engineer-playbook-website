@@ -10,7 +10,7 @@ Codex proposed 292 corrections to the original chapters, stored in `website/cont
 
 **Evidence** means the claim was compiled and run locally (Kotlin 2.4.21, kotlinx.coroutines 1.11.0, JDK 17), or checked against the current official source named.
 
-To approve, mark the row. Approved rows get `"status": "approved"` in the JSON; "with edit" rows also get the amended text.
+To approve, mark the row. Approved rows get `"status": "approved"` in the JSON; "with edit" rows also get the amended text. The exact original and replacement for every "with edit" row is in [`corrections-with-edits.md`](corrections-with-edits.md).
 
 ## Overview
 
@@ -161,7 +161,7 @@ Two proposals were themselves wrong, so they are rejected or replaced (Codex con
 
 **Amended text**
 
-- **D2** (table row): "| Implement interfaces; extend an `open`, `abstract` or `sealed` class | Be extended by another class (data classes are final) |"
+- **D2** (table row): "| Implement interfaces; extend an `open`, `abstract` or `sealed` class | Extend another data class (data classes are final) |"
 - **D9:** "**Jetpack Compose** can skip a composable whose parameters are unchanged: stable parameters are compared with `equals`, unstable ones by instance."
 
 **Summary:** 14 approve, 2 approve with edit, 0 reject.
