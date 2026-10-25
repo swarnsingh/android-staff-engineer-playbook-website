@@ -153,8 +153,9 @@ fun main() = runTest {
     val afterCaller = async { outcome(callerActor) };advanceUntilIdle();check(afterCaller.await() == "ok")
     callerOwner.cancel();runCurrent();passed++
 
-    // A checkout that finishes while its owner shuts down keeps its result; reporting
-    // CartStoppedException would invite a retry of work that already happened.
+    // A checkout whose submit() returns while its owner shuts down keeps its result. Failure
+    // before the receipt arrives can still leave the outcome unknown; that is the service's
+    // idempotency/reconciliation problem, not something the actor can rule out.
     val commitOwner = SupervisorJob()
     val commitStarted = CompletableDeferred<Unit>()
     var committed = false
