@@ -1,0 +1,61 @@
+<!-- Teaching layer: android/testing/ui-testing.md; state/callback contract first, platform evidence separately. -->
+<!-- @opening -->
+<p class="story-lead">The checkout button looks perfect in a screenshot, yet tapping it never submits the order. The pixels were correct; the connection from a user action to a callback was broken. A useful UI test first names which of those promises it must prove.</p>
+
+Start with controlled screen state and a captured callback. Move outward to navigation, dependency injection and a device only when the required behavior crosses those boundaries. Visual review remains a separate form of evidence: correct text and click semantics do not prove readable layout.
+
+<!-- @before Semantics — The Foundation :: guide -->
+Observe the promise the user depends on
+
+<!-- @after The UI-Test Landscape :: visual -->
+### Three different witnesses
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Semantics + actions</strong><small>text, enabled state, click result</small></div><div class="node"><strong>Rendered image</strong><small>clipping, spacing, theme, typography</small></div><div class="node"><strong>Platform integration</strong><small>system UI, permissions, real services</small></div></div><figcaption>Choose the cheapest sufficient witness; timings in the original tool table are examples, not benchmarks for your project.</figcaption></figure>
+
+<!-- @after Real Patterns :: animation -->
+### Trace one click through a state-driven screen
+
+<figure class="stepper"><span class="stepper-title">Trace one click through a state-driven screen</span><div class="stage viz-flow"><div class="node" data-el="state"><strong>Controlled state</strong><small data-text="stateV">can submit</small></div><div class="node" data-el="ui"><strong>Submit button</strong><small data-text="uiV">enabled</small></div><div class="node" data-el="callback"><strong>Captured callback</strong><small data-text="callbackV">not called</small></div><div class="node" data-el="assert"><strong>Assertion</strong><small data-text="assertV">pending</small></div></div><script type="application/json" class="steps">[{"label": "Render known state", "caption": "Render the plain screen with a known enabled state and a callback that records the order ID. No application graph is needed for this wiring contract.", "state": {"state": "active", "ui": "active"}}, {"label": "Find and act", "caption": "Query the semantic button and perform its click. The semantic action is the input; a screenshot alone cannot exercise it.", "state": {"ui": "done", "callback": "active"}, "text": {"callbackV": "order-42 recorded"}}, {"label": "Assert the public effect", "caption": "Check that the callback received order-42. If the screen also changes state, observe that state with the appropriate Compose synchronization.", "state": {"assert": "done"}, "text": {"assertV": "expected callback value"}}, {"label": "Choose the next boundary", "caption": "This proves screen wiring, not payment success. A server contract or device journey must earn its place with a different assertion.", "state": {"state": "done", "ui": "done", "callback": "done"}, "text": {"assertV": "scope of evidence recorded"}}]</script><figcaption>A callback test and a screenshot test can share controlled input while proving different promises.</figcaption></figure>
+
+<!-- @after Real Patterns :: check -->
+### Test the decision
+
+<details><summary>A screenshot matches. Has the click callback been proved?</summary>
+
+No. Exercise the action and observe the callback or resulting public behavior.
+</details>
+
+<details><summary>A semantic assertion passes. Can text still be clipped?</summary>
+
+Yes. Add rendered-image evidence for visual contracts and review the diff.
+</details>
+
+<details><summary>When should a state-driven component test become an integration test?</summary>
+
+When the contract depends on navigation, lifecycle, DI or a platform boundary rather than the plain UI input/output seam.
+</details>
+
+
+<!-- @before Robolectric — JVM-Hosted Android :: review -->
+**Under review — UI1.** The exclusions concerning animation, rendering and I/O are being checked against the supported test environment. Original wording is preserved; a website correction awaits owner approval.
+
+<!-- @before Paparazzi — Screenshot Testing on JVM :: review -->
+**Under review — UI2.** The distinction between running, recording and verifying snapshots in the workflow is pending review. Original wording is preserved; a website correction awaits owner approval.
+
+<!-- @before Hilt + Compose Tests :: review -->
+**Under review — UI3.** The lifecycle annotation and fake-binding types in the sample are pending review. Original wording is preserved; a website correction awaits owner approval.
+
+<!-- @before Test Robustness — Avoiding Flakiness :: review -->
+**Under review — UI4–UI6.** The animation-control snippet, test-host class names, coroutine-idleness claim and idling-resource adapter are pending review. Original wording is preserved; a website correction awaits owner approval.
+
+<!-- @before Accessibility Testing :: review -->
+**Under review — UI7.** The named rule and its setup chain are pending API verification. Original wording is preserved; a website correction awaits owner approval.
+
+<!-- @before Test Tags vs Semantic Properties :: review -->
+**Under review — UI8.** The absolute description of descendant merging is pending review. Original wording is preserved; a website correction awaits owner approval.
+
+<!-- @before Failure Modes :: review -->
+**Under review — UI4, UI8, UI9.** The input synchronization diagnosis, idling prescription and merged-descendant query advice are pending review. Original wording is preserved; a website correction awaits owner approval.
+
+<!-- @before Answer Key :: review -->
+**Under review — UI4, UI7, UI8.** Answers 4, 5, 9 and 10 repeat claims about clocks, merging, accessibility setup or idleness that are pending review. Original wording is preserved; a website correction awaits owner approval.

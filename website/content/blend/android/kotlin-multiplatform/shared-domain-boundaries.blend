@@ -1,0 +1,24 @@
+<!-- Website teaching layer for android/kotlin-multiplatform/shared-domain-boundaries.md. Original preserved in full. Structure defined in android-phase9-structure.md before drafting. Checked 2026-10-25 against https://kotlinlang.org/docs/api-guidelines-build-for-multiplatform.html. -->
+
+<!-- @opening -->
+<p class="story-lead">A shared sync module asks iOS to enqueue work with Android-style constraints. The signature looks portable, but its promise belongs to one platform. Sharing the outbox rules is useful; hiding the scheduler difference makes reliability harder to explain.</p>
+
+Separate the decision to sync from the opportunity each OS provides to run it.
+
+<!-- @after Dependency Direction :: visual -->
+### Put each promise with its owner
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Shared domain</strong><small>Batching, idempotency and state transitions</small></div><div class="node"><strong>Android adapter</strong><small>Android scheduling and permission contracts</small></div><div class="node"><strong>Apple adapter</strong><small>Apple scheduling and permission contracts</small></div><div class="node"><strong>Application owner</strong><small>Starts work, owns cancellation and handles outcomes</small></div></div><figcaption>A domain-shaped interface describes the needed outcome without requiring another platform to emulate an SDK.</figcaption></figure>
+
+<!-- @after Production Example :: animation -->
+### One outbox, different opportunities
+
+<figure class="stepper"><span class="stepper-title">One outbox, different opportunities</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="n0"><strong>Outbox</strong><small data-text="v0">—</small></div><div class="node" data-el="n1"><strong>Platform opportunity</strong><small data-text="v1">—</small></div><div class="node" data-el="n2"><strong>Bounded sync</strong><small data-text="v2">—</small></div><div class="node" data-el="n3"><strong>Stored outcome</strong><small data-text="v3">—</small></div></div><script type="application/json" class="steps">[{"label": "Queue", "caption": "The product records a durable operation with its stable identity. No background launch is promised by this shared decision.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "active", "n1": "idle", "n2": "idle", "n3": "idle"}, "text": {"v0": "Pending operation", "v1": "Not granted yet", "v2": "Not running", "v3": "Pending"}}, {"label": "Opportunity", "caption": "The platform adapter supplies an allowed execution opportunity. Its timing follows that operating system.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "active", "n2": "idle", "n3": "idle"}, "text": {"v0": "Still pending", "v1": "Platform-owned window", "v2": "Budget supplied", "v3": "Pending"}}, {"label": "Execute", "caption": "The shared engine processes a bounded batch under its owner. Retry and idempotency policy apply to the operation, not an assumed scheduler.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "idle", "n2": "active", "n3": "idle"}, "text": {"v0": "Batch selected", "v1": "Window remains bounded", "v2": "Work owned explicitly", "v3": "Success or failure"}}, {"label": "Resume later", "caption": "Commit the result and leave unfinished work durable. A later opportunity resumes the remaining operations.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "idle", "n2": "idle", "n3": "active"}, "text": {"v0": "Remaining work retained", "v1": "Another opportunity needed", "v2": "No immortal loop", "v3": "Recorded before progress"}}]</script><figcaption>Illustrative sequence, not a measured trace. <a href="https://kotlinlang.org/docs/api-guidelines-build-for-multiplatform.html" target="_blank" rel="noreferrer">Primary contract</a>.</figcaption></figure>
+
+<!-- @after Testing Boundary Contracts :: check -->
+### Try the decision yourself
+
+<details><summary>Should commonMain expose WorkManager constraints?</summary><p>A shared domain API should express its own needed outcome; the Android scheduler contract belongs in its adapter.</p></details>
+<details><summary>Does cancelling collection always cancel an independent producer?</summary><p>Only the documented ownership relationship decides that; do not infer it from Flow syntax.</p></details>
+<details><summary>Which tests belong on the platform?</summary><p>The actual scheduler, vault, permission, engine and native consumer integration contracts.</p></details>
+

@@ -202,7 +202,10 @@ def load_blend(path):
     """
     # Kotlin blends predate other trees and sit at the top level; other trees use a folder per tree.
     folder = WEB / 'content/blend' if tree_of(path) == 'kotlin' else WEB / 'content/blend' / tree_of(path)
-    file = folder / (Path(path).stem + '.blend')
+    # Full chapter paths prevent collisions such as data-and-di/dependency-injection
+    # and kotlin-multiplatform/ecosystem/dependency-injection. Retain legacy locations.
+    scoped = WEB / 'content/blend' / Path(path).with_suffix('.blend')
+    file = scoped if scoped.exists() else folder / (Path(path).stem + '.blend')
     if not file.exists():
         return {}
     pieces = re.split(r'<!--\s*@(opening|before|after|diagram|part)\b(.*?)-->', file.read_text(), flags=re.S)
@@ -270,6 +273,12 @@ def wrap(kind, markdown, env):
     finally:
         env['blend'] = False
     return added(kind, steps_as_text(timeline_labels(html)))
+
+
+def is_question_section(heading):
+    """Explicit practice sections; a mechanism heading containing 'question' stays in Content."""
+    name = re.sub(r'^\d+\.\s*', '', clean(heading)).casefold()
+    return name in {'probing questions', 'answer key', 'q&a', 'questions and answers'} or name.endswith(('review checklist', 'review questions'))
 
 
 def render_chapter(path, raw, is_course=False):
@@ -341,7 +350,7 @@ def render_chapter(path, raw, is_course=False):
         name=clean(heading)
         env['heading']=name
         rendered=MD.renderer.render(tokens[start:end],MD.options,env)
-        qa=' data-question' if any(s in heading.lower() for s in ['answer key','probing question','review checklist','review questions']) else ''
+        qa=' data-question' if is_question_section(heading) else ''
         # Parts only move forward, so the story reads as one progression.
         wanted = PART_KEYS.index(blend[('part', name)]) if ('part', name) in blend else classify_part(name)
         if ('part', name) in blend: used.add(('part', name))
@@ -355,7 +364,7 @@ def render_chapter(path, raw, is_course=False):
         used.update(k for k in blend if k[:2] in (('before', name), ('after', name)))
         section_fixes = fixes_in(section_lines[j], section_lines[j + 1])
         note = correction_note(section_fixes) if section_fixes else ''
-        body += before + f'<section class="lesson-section" id="section-{anchor}" data-part="{part}"{qa}>{rendered}{note}{after}</section>'
+        body += before + f'<section class="lesson-section" id="section-{anchor}" data-part="{part}" data-source-order="{j+1}"{qa}>{rendered}{note}{after}</section>'
         if path.endswith('/coroutines.md') and heading=='How `suspend` Works (Mental Model + Mechanism)':
             body += added('deeper', (WEB/'content/coroutine-internals.html').read_text())
         if path.endswith('/coroutines.md') and heading=='Exception Handling Patterns':

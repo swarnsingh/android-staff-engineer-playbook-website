@@ -321,7 +321,15 @@ def main():
     for path in order:
         problems, checked = check(path)
         source, _ = build.corrected((build.ROOT/path).read_text(), path)
-        manifest[path] = [{'kind': kind, 'text': text} for kind, text in units(source)]
+        # Rendering moves explicit practice sections into Q&A. Keep their expected tab
+        # in the manifest independently of the live DOM, so a misplaced block fails QA.
+        levels = iter(token.tag for token in MD.parse(source) if token.type == 'heading_open')
+        view = 'content'
+        manifest[path] = []
+        for index, (kind, text) in enumerate(units(source)):
+            if kind == 'heading' and next(levels) == 'h2':
+                view = 'qa' if build.is_question_section(text) else 'content'
+            manifest[path].append({'kind': kind, 'text': text, 'view': view, 'title': index == 0 and kind == 'heading'})
         total_checked += checked
         report[path] = [{'problem': p, 'kind': k, 'text': t} for p, k, t in problems]
         total_problems += len(problems)

@@ -1,0 +1,82 @@
+<!-- Website-only teaching for android/performance/rendering.md; original chapter remains read-only. Sources checked 2026-10-25. -->
+
+<!-- @opening -->
+
+<p class="story-lead">A trace shows the main thread finishing its work, yet the frame still appears late. Drawing commands are only one handoff. Something must execute them, provide the buffer, and present it on the display.</p>
+
+Use this chapter to follow a frame across app and system boundaries, keeping recording, GPU execution and presentation distinct.
+
+<!-- @after The Rendering Pipeline (One Frame) :: visual -->
+
+### Commands are not pixels on the display
+
+<figure class="viz"><div class="viz-flow" style="--cols:3"><div class="node"><strong>App UI work</strong><small>Updates layout and records drawing commands for the hardware-accelerated path.</small></div><div class="node"><strong>Render work</strong><small>RenderThread and GPU process the app’s drawing work.</small></div><div class="node"><strong>System presentation</strong><small>SurfaceFlinger and display composition turn available buffers into a displayed frame.</small></div></div><figcaption>A dependency map, not a serial stopwatch: stages can overlap across frames. Check the actual trace when assigning blame.</figcaption></figure>
+
+<!-- @after Vsync and Choreographer :: animation -->
+
+### Follow the buffer, then the presentation
+
+<figure class="stepper"><span class="stepper-title">Follow the buffer, then the presentation</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="ui"><strong>UI thread</strong><small>Records app draw work</small></div><div class="node" data-el="render"><strong>RenderThread / GPU</strong><small>Processes rendering</small></div><div class="node" data-el="buffer"><strong>App buffer</strong><small>Becomes available</small></div><div class="node" data-el="display"><strong>Presentation</strong><small>System composition and display</small></div></div><script type="application/json" class="steps">[{"label": "Record", "caption": "The app changes its UI and records draw work. A completed recording phase does not prove that GPU work has finished.", "state": {"ui": "active"}, "add": ["ui", "render", "buffer", "display"]}, {"label": "Execute", "caption": "Rendering proceeds downstream. The next frame’s app work can overlap; this animation shows dependencies rather than fixed timing.", "state": {"ui": "done", "render": "active"}}, {"label": "Provide a buffer", "caption": "The app’s rendering result becomes available to system composition. Follow the corresponding frame token where tracing supports it.", "state": {"render": "done", "buffer": "active"}}, {"label": "Check presentation", "caption": "Compare app and SurfaceFlinger timelines. The slow stage determines which investigation to pursue; do not infer an exact display delay from Main duration alone.", "state": {"buffer": "done", "display": "active"}}]</script><figcaption>Illustrative sequence. Use Previous, Next or Play; every step is also available as text.</figcaption></figure>
+
+<!-- @after Measuring Rendering — Tools :: staff -->
+
+Inspect the frame’s dependency path before choosing a tool or rewrite. Preserve device, refresh-rate and surface attribution when comparing traces.
+
+<!-- @before Further Reading :: check -->
+
+### Check your diagnosis
+
+<details><summary>Main is fast and the GPU is late. Where do you investigate next?</summary>
+
+**Answer:** Rendering work and its GPU/system evidence, including expensive effects and resource uploads if the trace points there.
+
+</details>
+
+<details><summary>What should remain comparable across two rendering experiments?</summary>
+
+**Answer:** The user journey, useful content, device conditions and relevant surface/frame boundaries.
+
+</details>
+
+<details><summary>Why distinguish recording from presentation?</summary>
+
+**Answer:** A recorded command list still needs rendering and composition before the user sees its result.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+
+Primary evidence for the added layer: [Frame pipeline evidence](https://perfetto.dev/docs/data-sources/frametimeline), [Hardware acceleration](https://developer.android.com/develop/ui/views/graphics/hardware-accel).
+
+<!-- @before The Three Phases the App Owns :: review -->
+The P7RD1 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Compose vs Views — Different Pipelines :: review -->
+The P7RD1 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Real Android Patterns :: review -->
+The P7RD1, P7RD5, P7RD6 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Answer Key :: review -->
+The P7RD1, P7RD2, P7RD3, P7RD4 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Vsync and Choreographer :: review -->
+The P7RD2 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before RecyclerView / LazyColumn — Where Rendering Matters Most :: review -->
+The P7RD3, P7RD4 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Failure Modes :: review -->
+The P7RD4, P7RD9 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before SurfaceFlinger and Layers :: review -->
+The P7RD7 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Vulkan vs OpenGL ES :: review -->
+The P7RD8 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Common Rendering Bottlenecks :: review -->
+The P7RD9 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Common Pitfalls :: review -->
+The P7RD9 passages in this section are under technical review. A correction is pending the owner’s approval.

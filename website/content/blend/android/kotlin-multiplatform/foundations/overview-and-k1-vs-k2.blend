@@ -1,0 +1,24 @@
+<!-- Website teaching layer for android/kotlin-multiplatform/foundations/overview-and-k1-vs-k2.md. Original preserved in full. Structure defined in android-phase9-structure.md before drafting. Checked 2026-10-25 against https://kotlinlang.org/docs/multiplatform/multiplatform-hierarchy.html. -->
+
+<!-- @opening -->
+<p class="story-lead">A shared receipt rule needs an identifier. Android has a familiar UUID API; the iOS compilation cannot use that JVM class. The rule can stay shared if its dependency has a contract that each target can satisfy.</p>
+
+Follow source visibility, platform implementations and target compilation before evaluating compiler-generation claims.
+
+<!-- @after The expect / actual Mechanism :: visual -->
+### Two questions the build must answer
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Can this source see that API?</strong><small>Determined by its source-set hierarchy and dependencies</small></div><div class="node"><strong>Which implementation applies?</strong><small>A matching actual or an injected platform collaborator</small></div><div class="node"><strong>What gets produced?</strong><small>A target-specific artifact and runtime integration</small></div><div class="node"><strong>What does K2 change?</strong><small>Compiler analysis; it does not remove target boundaries</small></div></div><figcaption>An interface supplied by a composition root is also a valid seam; expect/actual is not mandatory for every dependency.</figcaption></figure>
+
+<!-- @after Hierarchical Project Structure :: animation -->
+### One contract, two target compilations
+
+<figure class="stepper"><span class="stepper-title">One contract, two target compilations</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="n0"><strong>Common source</strong><small data-text="v0">—</small></div><div class="node" data-el="n1"><strong>Android target</strong><small data-text="v1">—</small></div><div class="node" data-el="n2"><strong>Apple target</strong><small data-text="v2">—</small></div><div class="node" data-el="n3"><strong>Consumer</strong><small data-text="v3">—</small></div></div><script type="application/json" class="steps">[{"label": "Declare", "caption": "The shared calculation calls a platform-neutral contract. It cannot import java.util.UUID merely because Android is one target.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "active", "n1": "idle", "n2": "idle", "n3": "idle"}, "text": {"v0": "Common APIs only", "v1": "JVM APIs available here", "v2": "Apple APIs available here", "v3": "No binary yet"}}, {"label": "Supply", "caption": "Each target supplies its implementation through the applicable hierarchy, or receives an ordinary interface implementation at construction.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "active", "n2": "idle", "n3": "idle"}, "text": {"v0": "Same required behaviour", "v1": "Android implementation", "v2": "Apple implementation", "v3": "Contract remains small"}}, {"label": "Compile", "caption": "The configured target compilations analyse their visible sources and dependencies and use the appropriate backends.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "idle", "n2": "active", "n3": "idle"}, "text": {"v0": "Shared sources participate", "v1": "Android artifact", "v2": "Native artifact", "v3": "Different outputs"}}, {"label": "Integrate", "caption": "The apps consume the resulting API. Check the Swift-facing form and ownership separately from Kotlin source compilation.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "idle", "n2": "idle", "n3": "active"}, "text": {"v0": "Rule is shared", "v1": "Android caller", "v2": "Apple caller", "v3": "Integration must be tested"}}]</script><figcaption>Illustrative sequence, not a measured trace. <a href="https://kotlinlang.org/docs/multiplatform/multiplatform-hierarchy.html" target="_blank" rel="noreferrer">Primary contract</a>.</figcaption></figure>
+
+<!-- @after Common Pitfalls :: check -->
+### Try the decision yourself
+
+<details><summary>Can commonMain import Foundation directly?</summary><p>Only a compatible narrower Apple source set can use that platform API; put an appropriate common contract at the seam.</p></details>
+<details><summary>Does K2 make all targets one compilation?</summary><p>Target compilations still have distinct visibility, dependencies and backend work.</p></details>
+<details><summary>Does a matching actual prove product parity?</summary><p>It proves declaration matching. Behaviour, lifecycle and native consumer tests remain necessary.</p></details>
+

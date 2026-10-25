@@ -1,0 +1,105 @@
+<!-- Phase 5 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase5-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">Checkout works on the happy path. Then a redirect reaches an unexpected page that can still talk to native code. Rendering a page and granting it a capability are different decisions. Follow the loaded content, the exposed bridge and the native side effect as separate trust questions.</p>
+
+<!-- @before Why It Matters :: review -->
+The process-location description in the first bullet (WV1) is under technical review. A correction is pending the owner's approval.
+
+<!-- @before First Principles :: review -->
+The “one process” trust-domain description (WV1) is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Internal Mechanics :: review -->
+The host-only navigation allowlist branch in the next section (WV2) is under technical review. A correction is pending the owner's approval.
+
+<!-- @after Mental Model :: visual -->
+### Audit a capability at both ends
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Web content</strong><small>Which origins and frames can send messages?</small></div><div class="node"><strong>Bridge contract</strong><small>Which messages, payloads and versions are accepted?</small></div><div class="node"><strong>Native handler</strong><small>What authorization and validation precede a side effect?</small></div><div class="node"><strong>Lifecycle</strong><small>When is the bridge attached, removed and unavailable?</small></div></div><figcaption>Review the complete capability path; a familiar hostname alone does not answer every trust question.</figcaption></figure>
+
+<!-- @before Production Example :: review -->
+The onPageFinished iframe explanation and cookie-configuration wording in the next section (WV3–WV4) are under technical review. A correction is pending the owner's approval.
+
+<!-- @before Tradeoffs :: review -->
+The per-flow state-isolation claim in the next section (WV4) is under technical review. A correction is pending the owner's approval.
+
+<!-- @after Staff Engineer Thinking :: animation -->
+### A bridge message is a request
+
+<figure class="stepper"><span class="stepper-title">An origin-scoped message reaches native code</span><div class="stage viz-stack"><div class="node" data-el="source"><strong>Content source</strong><small data-text="sourceV">—</small></div><div class="node" data-el="bridge"><strong>Message listener</strong><small data-text="bridgeV">—</small></div><div class="node" data-el="native"><strong>Native operation</strong><small data-text="nativeV">—</small></div></div><script type="application/json" class="steps">[
+{
+"label": "Configure",
+"caption": "Configure the explicit origin allowlist and supported listener feature before relying on the bridge.",
+"state": {
+"bridge": "active"
+},
+"text": {
+"sourceV": "origin A",
+"bridgeV": "allowlist configured",
+"nativeV": "not invoked"
+},
+"add": [
+"source",
+"bridge",
+"native"
+]
+},
+{
+"label": "Message arrives",
+"caption": "The native callback receives source and frame information plus an untrusted payload.",
+"state": {
+"source": "active",
+"bridge": "active"
+},
+"text": {
+"bridgeV": "message + source context"
+}
+},
+{
+"label": "Validate",
+"caption": "Apply the application’s frame, payload, authorization and duplicate-handling policy.",
+"state": {
+"native": "active"
+},
+"text": {
+"nativeV": "validate before side effect"
+}
+},
+{
+"label": "Perform or reject",
+"caption": "Only an accepted request reaches the capability. Return a controlled result; do not expose arbitrary native execution.",
+"state": {
+"native": "done"
+},
+"text": {
+"nativeV": "bounded operation or rejection"
+}
+}
+]</script><figcaption>Origin scoping narrows exposure. It does not replace validation or authorization in the native handler.</figcaption></figure>
+
+<!-- @before Answer Key :: review -->
+Answers 3 and 5 repeat state-isolation and renderer-recovery claims (WV4–WV5) under technical review. A correction is pending the owner's approval.
+
+<!-- @after Common Misconceptions :: check -->
+### Try the decision
+
+<details><summary>An origin is allowed. Trust every message body?</summary>
+
+#### Answer
+
+No. Validate its structure and authorize the requested operation. Origin control does not make a payload safe by itself.
+</details>
+
+<details><summary>The initial URL passed review. Stop watching later navigation?</summary>
+
+#### Answer
+
+No. Redirects and later content changes are part of the trust lifecycle. Review the whole flow and the callback limits stated in the chapter.
+</details>
+
+<details><summary>OAuth wants a native JavaScript bridge?</summary>
+
+#### Answer
+
+Native OAuth authorization belongs in an external user agent such as a browser or Custom Tab; do not design it around a credential-capturing WebView bridge.
+</details>

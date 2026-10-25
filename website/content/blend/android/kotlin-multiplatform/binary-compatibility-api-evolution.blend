@@ -1,0 +1,90 @@
+<!-- Phase 9 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase9-runtime-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">A new optional parameter looks harmless because every source call still compiles. An older compiled consumer fails at runtime. “Compatible” needs an object: source, binary, generated Swift API, serialized data or behaviour. Each promise needs its own evidence.</p>
+
+<!-- @after Compatibility Is Multidimensional :: visual -->
+### One change, different witnesses
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Source consumer</strong><small>Recompile the existing call site.</small></div><div class="node"><strong>Compiled consumer</strong><small>Exercise the old caller with the candidate library where binary replacement is promised.</small></div><div class="node"><strong>Data contract</strong><small>Read golden and mixed-version payloads.</small></div><div class="node"><strong>Behaviour and export</strong><small>Check lifecycle/error semantics and the generated Swift API.</small></div></div><figcaption>An ABI dump is one witness. It cannot prove every promise listed in the original compatibility table.</figcaption></figure>
+
+<!-- @after High-Risk Kotlin Changes :: animation -->
+### Why recompilation can hide a binary break
+
+<figure class="stepper"><span class="stepper-title">An existing caller asks for the old entry point</span><div class="stage viz-stack"><div class="node" data-el="old"><strong>Previously compiled caller</strong><small data-text="oldV">—</small></div><div class="node" data-el="candidate"><strong>Candidate library</strong><small data-text="candidateV">—</small></div><div class="node" data-el="source"><strong>Recompiled source fixture</strong><small data-text="sourceV">—</small></div><div class="node" data-el="gate"><strong>Compatibility gate</strong><small data-text="gateV">—</small></div></div><script type="application/json" class="steps">[
+{
+"label": "Before change",
+"caption": "The compiled caller references the original JVM method descriptor.",
+"state": {
+"old": "active"
+},
+"text": {
+"oldV": "fetchUser(String)",
+"candidateV": "original entry point",
+"sourceV": "existing source call",
+"gateV": "baseline"
+},
+"add": [
+"old",
+"candidate",
+"source",
+"gate"
+]
+},
+{
+"label": "Replace signature",
+"caption": "Suppose the library replaces it with a signature that adds a Boolean parameter.",
+"state": {
+"candidate": "warn"
+},
+"text": {
+"candidateV": "fetchUser(String, Boolean)"
+}
+},
+{
+"label": "Recompile source",
+"caption": "A default value can satisfy the source call during recompilation. That does not rewrite the old compiled caller.",
+"state": {
+"source": "done",
+"old": "warn"
+},
+"text": {
+"sourceV": "source fixture can compile",
+"oldV": "still references old descriptor"
+}
+},
+{
+"label": "Exercise the promise",
+"caption": "ABI review and an old-consumer test expose the missing entry point. Preserve a deliberate compatible path or version the break.",
+"state": {
+"gate": "active"
+},
+"text": {
+"gateV": "review + old consumer/new library"
+}
+}
+]</script><figcaption>This traces the JVM example. Native, Swift, serialization and behaviour need their own gates rather than an assumed identical repair.</figcaption></figure>
+
+<!-- @after Release Policy and Evidence :: check -->
+### Try the decision
+
+<details><summary>checkKotlinAbi is green. Can retry semantics change silently?</summary>
+
+#### Answer
+
+The dump does not establish behavioural compatibility. Test the timeout, replay, ordering and cancellation contract promised to callers.
+</details>
+
+<details><summary>Why retain an old compiled consumer fixture?</summary>
+
+#### Answer
+
+Recompiling uses the new API and can hide missing old entry points. The old artifact exercises the binary promise directly.
+</details>
+
+<details><summary>A new server enum value is absent from old clients. Is this only an API-dump concern?</summary>
+
+#### Answer
+
+No. It is also a wire/rollout and safe-behaviour decision. Test old/new readers and consumers under the declared compatibility window.
+</details>

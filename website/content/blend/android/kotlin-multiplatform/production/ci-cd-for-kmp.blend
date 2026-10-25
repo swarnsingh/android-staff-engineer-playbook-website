@@ -1,0 +1,107 @@
+<!-- Phase 9 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase9-runtime-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">Linux checks pass and the shared code merges. The Apple framework then fails to link, leaving main unusable for iOS consumers. Split CI by what each host can prove, then decide which evidence must exist before a change crosses the merge boundary.</p>
+
+<!-- @before Overview :: review -->
+The introductory fixed runner-cost and merge-only architecture claims (KC1) are under technical review. A correction is pending the owner's approval.
+
+<!-- @before 1. The Split Pipeline Architecture :: review -->
+The path-selection condition, runner identity and remote-package release metadata in the next section (KC2–KC3) are under technical review. A correction is pending the owner's approval.
+
+<!-- @before 2. Cost Analysis :: review -->
+The historical rates and forecast are being reviewed for their date, assumptions and present-day applicability (KC1). A correction is pending the owner's approval.
+
+<!-- @before 3. Caching the Kotlin/Native Compiler (.konan) :: review -->
+The fixed toolchain-download estimates and cache-invalidation promises in the next section (KC4) are under technical review. A correction is pending the owner's approval.
+
+<!-- @before Common Pitfalls :: review -->
+The claim that an unavailable simulator fails silently, and the universal memory diagnosis in the next section (KC5), are under technical review. A correction is pending the owner's approval.
+
+<!-- @after 6. Advanced: Conditional iOS CI :: animation -->
+### Select work without losing a promised gate
+
+<figure class="stepper"><span class="stepper-title">Changes become required evidence, then a release</span><div class="stage viz-stack"><div class="node" data-el="change"><strong>Change scope</strong><small data-text="changeV">—</small></div><div class="node" data-el="linux"><strong>JVM/common checks</strong><small data-text="linuxV">—</small></div><div class="node" data-el="apple"><strong>Apple-capable checks</strong><small data-text="appleV">—</small></div><div class="node" data-el="release"><strong>Artifact release</strong><small data-text="releaseV">—</small></div></div><script type="application/json" class="steps">[
+{
+"label": "Classify impact",
+"caption": "Map the change to affected consumers, including shared tooling and generated API—not just edited source files.",
+"state": {
+"change": "active"
+},
+"text": {
+"changeV": "affected contracts recorded",
+"linuxV": "planned",
+"appleV": "planned if required",
+"releaseV": "not eligible"
+},
+"add": [
+"change",
+"linux",
+"apple",
+"release"
+]
+},
+{
+"label": "Run sufficient checks",
+"caption": "Run target-capable jobs for the required pre-merge promises. Keep their results visible independently.",
+"state": {
+"linux": "active",
+"apple": "active"
+},
+"text": {
+"linuxV": "result + reports",
+"appleV": "result + reports"
+}
+},
+{
+"label": "Decide merge",
+"caption": "A selection rule must preserve the declared compatibility gate. Missing required target evidence is not success.",
+"state": {
+"change": "done",
+"release": "warn"
+},
+"text": {
+"releaseV": "gate decision"
+}
+},
+{
+"label": "Release artifact",
+"caption": "Release packaging adds immutable metadata, consumer resolution/link checks and diagnostics.",
+"state": {
+"release": "active"
+},
+"text": {
+"releaseV": "tested artifact + identity + consumer evidence"
+}
+}
+]</script><figcaption>This is a decision trace. Job names, runner architecture, cache hit rates and costs come from the actual project and current provider contract.</figcaption></figure>
+
+<!-- @before Probing Questions :: review -->
+The fixed cost-reduction and download-time premises in questions 2–3 (KC1, KC4) are under technical review. A correction is pending the owner's approval.
+
+<!-- @before Answer Key :: review -->
+Answers 2–3 promise bounded cost reductions and a particular cache/download outcome (KC1, KC4); these claims are under technical review. A correction is pending the owner's approval.
+
+<!-- @after Common Pitfalls :: check -->
+### Try the decision
+
+<details><summary>Linux job is green. Is Apple framework linkage covered?</summary>
+
+#### Answer
+
+No. Require a compatible Apple host and consumer evidence for that promise.
+</details>
+
+<details><summary>A restore-key prefix exists. Is a cache hit certain?</summary>
+
+#### Answer
+
+No. Record the actual hit/miss and rebuild/download behaviour; fallback lookup is conditional.
+</details>
+
+<details><summary>A package manifest changed. Can release evidence stop at uploading a ZIP?</summary>
+
+#### Answer
+
+No. Verify its immutable version/URL/checksum and resolve and exercise a clean consumer.
+</details>

@@ -1,0 +1,33 @@
+<!-- Website teaching layer for android/kotlin-multiplatform/ecosystem/networking-with-ktor.md. Original preserved in full. Structure defined in android-phase9-structure.md before drafting. Checked 2026-10-25 against https://ktor.io/docs/client-engines.html. -->
+
+<!-- @opening -->
+<p class="story-lead">Both apps must attach the same request identity and decode the same response. They still use different transport integrations. Ktor lets shared request policy sit above a target engine; it does not make every engine or operating system behave identically.</p>
+
+Follow that boundary through one request, then inspect errors, cancellation and integration evidence.
+
+<!-- @after Overview :: visual -->
+### Keep policy and transport visible
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Shared client</strong><small>Request construction, configured plugins and decoding policy</small></div><div class="node"><strong>Android engine</strong><small>Selected Android transport implementation</small></div><div class="node"><strong>Apple engine</strong><small>Selected Apple transport implementation</small></div><div class="node"><strong>Test engine</strong><small>Controlled responses without real socket evidence</small></div></div><figcaption>A MockEngine test can exercise client policy. It cannot prove real DNS, TLS, radio or background-transfer behaviour.</figcaption></figure>
+
+<!-- @after 5. Choosing the Apple Engine with Evidence :: animation -->
+### One request through two target engines
+
+<figure class="stepper"><span class="stepper-title">One request through two target engines</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="n0"><strong>Shared operation</strong><small data-text="v0">—</small></div><div class="node" data-el="n1"><strong>Client policy</strong><small data-text="v1">—</small></div><div class="node" data-el="n2"><strong>Target engine</strong><small data-text="v2">—</small></div><div class="node" data-el="n3"><strong>Result boundary</strong><small data-text="v3">—</small></div></div><script type="application/json" class="steps">[{"label": "Call", "caption": "The repository asks for one product page using a stable API. The owning coroutine determines how long the request should matter.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "active", "n1": "idle", "n2": "idle", "n3": "idle"}, "text": {"v0": "Product query", "v1": "Configuration ready", "v2": "Not executed", "v3": "No result"}}, {"label": "Prepare", "caption": "The shared client builds the request and runs its configured policy. The exact behaviour belongs to the selected plugin/version configuration.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "active", "n2": "idle", "n3": "idle"}, "text": {"v0": "Parameters supplied", "v1": "Headers and body policy", "v2": "Request prepared", "v3": "Still pending"}}, {"label": "Transport", "caption": "The engine performs target networking. The Android and Apple adapters need their own proxy, TLS, timeout and cancellation validation.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "idle", "n2": "active", "n3": "idle"}, "text": {"v0": "Owner remains explicit", "v1": "Shared intent", "v2": "Platform execution", "v3": "Response or failure"}}, {"label": "Interpret", "caption": "The repository maps the response/failure into its domain contract. Test real engines separately from deterministic client-policy fixtures.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "idle", "n2": "idle", "n3": "active"}, "text": {"v0": "Caller receives outcome", "v1": "Policy tested", "v2": "Integration tested separately", "v3": "Domain outcome"}}]</script><figcaption>Illustrative sequence, not a measured trace. <a href="https://ktor.io/docs/client-engines.html" target="_blank" rel="noreferrer">Primary contract</a>.</figcaption></figure>
+
+<!-- @after 5. Choosing the Apple Engine with Evidence :: check -->
+### Try the decision yourself
+
+<details><summary>Does MockEngine prove TLS behaviour?</summary><p>No. It replaces the transport and supplies responses under test control.</p></details>
+<details><summary>Is Darwin automatically lower energy than OkHttp?</summary><p>Engine names do not measure a workload; compare representative traffic and device conditions.</p></details>
+<details><summary>Can a retry create a duplicate order?</summary><p>Yes if replay is unsafe. The API needs a suitable idempotency/reconciliation policy before automatic retry.</p></details>
+
+
+<!-- @before 1. Setting Up the HttpClient :: review -->
+The custom ApiException conversion and its interaction with the later result wrapper in the next section is under technical review (KN1). A correction is pending the owner's approval.
+
+<!-- @before 3. Error Handling Architecture :: review -->
+The exception handling contract relative to the client validator in the next section is under technical review (KN1). A correction is pending the owner's approval.
+
+<!-- @before 4. Testing Ktor in commonTest :: review -->
+The 401 test’s expected result relative to the client validator in the next section is under technical review (KN1). A correction is pending the owner's approval.

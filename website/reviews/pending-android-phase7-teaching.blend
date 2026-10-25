@@ -1,0 +1,201 @@
+# Held Phase 7 teaching: not loaded by the site
+
+These are proposed explanation directions only, not exact approved replacements. They deliberately stay outside content/blend until owner approval. Nothing below changes the originals.
+
+## P7SU1 — android/performance/startup.md
+
+After approval, distinguish automatic provider initialisation from explicitly disabled discovery plus manual lazy initialisation. Explain that lazy dependencies can still be reached through an eager initializer.
+
+Evidence: https://developer.android.com/topic/libraries/app-startup
+
+## P7SU2 — android/performance/startup.md
+
+After approval, use a genuinely deferred, lifecycle-correct boundary and appropriate dispatcher for the specific work. Keep first-frame timing explicit.
+
+Evidence: https://developer.android.com/reference/androidx/lifecycle/LifecycleKt
+
+## P7SU3 — android/performance/startup.md
+
+After approval, remove the after-draw/background promise and show a verified completion boundary appropriate to the intended work.
+
+Evidence: https://developer.android.com/reference/android/view/Choreographer#postFrameCallback(android.view.Choreographer.FrameCallback)
+
+## P7SU4 — android/performance/startup.md
+
+After approval, use current documented Vitals definitions with a date and separate illustrative product budgets from platform reporting thresholds.
+
+Evidence: https://support.google.com/googleplay/android-developer/answer/9844486?hl=en
+
+## P7SU5 — android/performance/startup.md
+
+After approval, reuse the conditional explanation in the canonical Baseline Profiles chapter: verify packaged rules, installation and compilation, then measure the journey. Label observed sample results with their setup.
+
+Evidence: https://developer.android.com/topic/performance/baselineprofiles/overview
+
+## P7SU6 — android/performance/startup.md
+
+After approval, make the flow-producing accessor non-suspending or obtain it in an appropriate coroutine/state owner. Compile the exact corrected snippet with its actual declarations.
+
+Evidence: https://kotlinlang.org/docs/composing-suspending-functions.html
+
+## P7SU7 — android/performance/startup.md
+
+After approval, use the supported profile installation/verification or Macrobenchmark workflow for the Android version and installer path.
+
+Evidence: https://developer.android.com/topic/performance/baselineprofiles/overview
+
+## P7SU8 — android/performance/startup.md
+
+After approval, describe the state that defines each start and treat user actions as conditional examples, not deterministic process-kill mechanisms.
+
+Evidence: https://developer.android.com/topic/performance/issues/launch-time
+
+## P7SU9 — android/performance/startup.md
+
+After approval, identify the concrete API and whether code awaits/blocks its result; separate launch dependency from synchronous execution.
+
+Evidence: https://firebase.google.com/docs/remote-config/get-started?platform=android
+
+## P7SU10 — android/performance/startup.md
+
+After approval, label these as illustrative only or replace them with actual reproducible measurements. Remove universal “single biggest” or “free perf” conclusions unsupported by the setup.
+
+Evidence: https://developer.android.com/topic/performance/issues/launch-time
+
+## P7JK1 — android/performance/jank.md
+
+After approval, scope arithmetic as a simplified refresh interval and diagnose expected versus actual frame/presentation evidence, preserving pipeline overlap.
+
+Evidence: https://perfetto.dev/docs/data-sources/frametimeline
+
+## P7JK2 — android/performance/jank.md
+
+After approval, state the compiler/configuration assumptions, distinguish invalidation from actual child execution and honour observable/immutable data contracts before annotations.
+
+Evidence: https://developer.android.com/develop/ui/compose/performance/stability/strongskipping
+
+## P7JK3 — android/performance/jank.md
+
+After approval, convert pixel offset using density in the composition variant, then compare with the pixel-based IntOffset variant.
+
+Evidence: https://developer.android.com/develop/ui/compose/performance/bestpractices
+
+## P7JK4 — android/performance/jank.md
+
+After approval, describe allocation pressure as a measured risk and remove unsupported fixed rates, pause lengths and guarantees.
+
+Evidence: https://developer.android.com/topic/performance/memory-overview
+
+## P7JK5 — android/performance/jank.md
+
+After approval, use the supported non-debuggable profileable release-equivalent target and document deviations from the shipped artifact.
+
+Evidence: https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview
+
+## P7JK6 — android/performance/jank.md
+
+After approval, qualify input dispatch versus component ANRs and remove claims that arbitrary five-second blocks always produce the same dialog/crash behavior.
+
+Evidence: https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs
+
+## P7RD1 — android/performance/rendering.md
+
+After approval, explain independent phase reads/invalidation and the Android rendering host path. Remove unmeasured universal speed comparisons and describe draw cache invalidation accurately.
+
+Evidence: https://developer.android.com/develop/ui/compose/phases
+
+## P7RD2 — android/performance/rendering.md
+
+After approval, use expected/actual frame evidence and label any fixed-vsync timeline as an explicitly scoped illustrative model.
+
+Evidence: https://perfetto.dev/docs/data-sources/frametimeline
+
+## P7RD3 — android/performance/rendering.md
+
+After approval, describe holder creation/reuse and the overall-size contract accurately; measure rather than guarantee a skipped entire pass.
+
+Evidence: https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView.Adapter
+
+## P7RD4 — android/performance/rendering.md
+
+After approval, describe explicit contentType as separating compatible structures; distinguish keys, state movement and skipping.
+
+Evidence: https://developer.android.com/develop/ui/compose/performance/bestpractices
+
+## P7RD5 — android/performance/rendering.md
+
+After approval, remove the original-size override or provide the intended pixel constraints, with density/crop and library version stated.
+
+Evidence: https://coil-kt.github.io/coil/compose/
+
+## P7RD6 — android/performance/rendering.md
+
+After approval, add a common id property or a defined exhaustive extension and adjust the key call consistently; compile the corrected declarations together.
+
+Evidence: https://kotlinlang.org/docs/interfaces.html
+
+## P7RD7 — android/performance/rendering.md
+
+After approval, explain buffer queues and device/workload-specific composition cost without a universal cheaper/bypass claim.
+
+Evidence: https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager
+
+## P7RD8 — android/performance/rendering.md
+
+After approval, record backend and device/build assumptions and remove unsupported fixed improvements. Validate target-device traces rather than infer a fleet default.
+
+Evidence: https://developer.android.com/develop/ui/views/graphics/hardware-accel
+
+## P7RD9 — android/performance/rendering.md
+
+After approval, distinguish blocking I/O from CPU work and make the main-safe work boundary explicit. Avoid universal hardware-bitmap and clip-to-outline fixes without checking their contracts.
+
+Evidence: https://developer.android.com/kotlin/coroutines/coroutines-best-practices
+
+## P7AN1 — android/performance/anrs.md
+
+After approval, qualify each monitored operation, use current documented AOSP defaults and separate observed user impact, process state and platform reporting.
+
+Evidence: https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs
+
+## P7AN2 — android/performance/anrs.md
+
+After approval, distinguish recommendation and tradeoff from formal API deprecation or mandate.
+
+Evidence: https://developer.android.com/reference/android/content/SharedPreferences
+
+## P7AN3 — android/performance/anrs.md
+
+After approval, show a specific policy and describe exactly which violations/penalties it enables; remove the invented catch percentage.
+
+Evidence: https://developer.android.com/reference/android/os/StrictMode.ThreadPolicy.Builder
+
+## P7AN4 — android/performance/anrs.md
+
+After approval, use an actual blocking primitive for the Main-thread example, or explain the separate responsiveness/deadlock dependency of a suspended coroutine.
+
+Evidence: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/lock.html
+
+## P7MM1 — android/performance/memory-management-and-leaks.md
+
+After approval, distinguish strong reachability and actual roots, concurrent work with pause phases, managed heap versus total pressure, and conditional resource exhaustion.
+
+Evidence: https://developer.android.com/topic/performance/memory-overview
+
+## P7MM2 — android/performance/memory-management-and-leaks.md
+
+After approval, show valid lifecycle signatures/super calls and explain cancellation plus cleanup and reference release, without a guaranteed instant memory-recovery claim.
+
+Evidence: https://kotlinlang.org/docs/cancellation-and-timeouts.html
+
+## P7MB1 — android/performance/macrobenchmark-and-perfetto.md
+
+After approval, name the chosen tracing dependency/import and use its documented coroutine-aware tracing or a correctly paired async section. Do not claim a framework build verified this snippet.
+
+Evidence: https://developer.android.com/jetpack/androidx/releases/tracing
+
+## P7TH1 — android/performance/thermal-low-end-device-strategy.md
+
+After approval, isolate and guard the whole API-29 implementation or require API29 for the class/instantiation boundary, with a declared fallback for older OS versions.
+
+Evidence: https://developer.android.com/reference/android/os/PowerManager.OnThermalStatusChangedListener

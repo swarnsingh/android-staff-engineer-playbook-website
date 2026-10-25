@@ -1,0 +1,76 @@
+<!-- Website-only teaching for android/performance/anrs.md; original chapter remains read-only. Sources checked 2026-10-25. -->
+
+<!-- @opening -->
+
+<p class="story-lead">The Save button stops responding. Main is waiting on a lock, but the lock’s owner is waiting for disk. Moving the button handler alone would miss the chain that made the interaction unresponsive.</p>
+
+Read the system’s ANR reason first, then follow the waiting thread to the owner or work that prevented progress.
+
+<!-- @after Internal Mechanics :: visual -->
+
+### Read the wait-for chain
+
+<figure class="viz"><div class="viz-cols" style="--cols:3"><div class="node"><strong>Input operation</strong><small>A monitored operation cannot finish within its applicable deadline.</small></div><div class="node"><strong>Main waits</strong><small>The stack identifies a lock or call that blocks progress.</small></div><div class="node"><strong>Owner waits on disk</strong><small>The holder’s stack and surrounding trace explain why the lock is not released.</small></div></div><figcaption>Illustrative lock case. Other ANR classes and system-pressure cases require their own evidence; the reporting stack can be captured after the original stall.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: animation -->
+
+### From symptom to lock owner
+
+<figure class="stepper"><span class="stepper-title">From symptom to lock owner</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="reason"><strong>ANR reason</strong><small>Operation and affected process</small></div><div class="node" data-el="main"><strong>Main</strong><small>Waiting for lock L</small></div><div class="node" data-el="holder"><strong>Worker</strong><small>Owns L during a disk operation</small></div><div class="node" data-el="repair"><strong>Repair boundary</strong><small>Lock scope and I/O ownership</small></div></div><script type="application/json" class="steps">[{"label": "Classify", "caption": "Identify the ANR category, process and relevant time window. Do not choose the repair from the word ANR alone.", "state": {"reason": "active"}, "add": ["reason", "main", "holder", "repair"]}, {"label": "Inspect the waiter", "caption": "In this example Main is blocked acquiring L. Its last stack frame names the wait, not the complete cause.", "state": {"reason": "done", "main": "warn"}}, {"label": "Find the holder", "caption": "Locate the thread holding L and inspect its disk call. Scheduler evidence helps distinguish running work from a thread starved of CPU.", "state": {"holder": "active"}}, {"label": "Repair and verify", "caption": "Avoid holding shared UI-facing locks across slow work. Retest the contested path and watch the affected release cohort.", "state": {"holder": "done", "repair": "active"}}]</script><figcaption>Illustrative sequence. Use Previous, Next or Play; every step is also available as text.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+
+Pair a user-impact signal with an owner and a mitigation. A trace diagnosis and a release halt answer different questions, and both need a defined scope.
+
+<!-- @before Further Reading :: check -->
+
+### Check your diagnosis
+
+<details><summary>Main waits on a lock. Is its top frame enough to assign blame?</summary>
+
+**Answer:** No. Find the holder and inspect why it retains the lock in the relevant interval.
+
+</details>
+
+<details><summary>Can an idle stack in a report prove there was no earlier stall?</summary>
+
+**Answer:** No. Capture timing and surrounding evidence matter; the dump can arrive after the problem.
+
+</details>
+
+<details><summary>Why segment an ANR cluster by app version and device?</summary>
+
+**Answer:** To find the harmed cohort and decide whether a rollout change or targeted mitigation is warranted.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+
+Primary evidence for the added layer: [ANR diagnosis](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs).
+
+<!-- @before Overview :: review -->
+The P7AN1 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Historical Context :: review -->
+The P7AN1, P7AN2 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Mental Model :: review -->
+The P7AN1 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Failure Modes :: review -->
+The P7AN1 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Common Misconceptions :: review -->
+The P7AN1 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Answer Key :: review -->
+The P7AN1, P7AN3 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Further Reading :: review -->
+The P7AN1, P7AN2 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Staff Engineer Thinking :: review -->
+The P7AN3 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Internal Mechanics :: review -->
+The P7AN4 passages in this section are under technical review. A correction is pending the owner’s approval.

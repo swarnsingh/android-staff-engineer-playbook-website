@@ -1,0 +1,49 @@
+<!-- Website-only teaching for android/observability/mobile-apm-and-rum.md; original chapter remains read-only. Sources checked 2026-10-25. -->
+
+<!-- @opening -->
+
+<p class="story-lead">The backend reports a quick response, but the user waits for checkout to update. The two clocks may measure different work. Start by naming the client interaction boundary before comparing dashboards.</p>
+
+Treat instrumentation coverage, sampling and timing boundaries as part of the measurement, then connect evidence across the request path.
+
+<!-- @after Why It Matters :: visual -->
+
+### A request lives inside a larger interaction
+
+<figure class="viz"><div class="viz-cols" style="--cols:3"><div class="node"><strong>Client interaction</strong><small>Tap → ready state visibly presented.</small></div><div class="node"><strong>Client request</strong><small>A documented network boundary inside that interaction.</small></div><div class="node"><strong>Server span</strong><small>Server-side handling inside a separate instrumentation boundary.</small></div></div><figcaption>Nested conceptual boundaries, not quantities to subtract blindly. Connection setup, scheduling, parsing and rendering may lie outside server timing.</figcaption></figure>
+
+<!-- @after Production Example :: animation -->
+
+### Correlate a slow interaction without inventing missing spans
+
+<figure class="stepper"><span class="stepper-title">Correlate a slow interaction without inventing missing spans</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="tap"><strong>Interaction</strong><small>User taps Checkout</small></div><div class="node" data-el="client"><strong>Client request</strong><small>Approved destination</small></div><div class="node" data-el="server"><strong>Server spans</strong><small>Propagated trace context</small></div><div class="node" data-el="ready"><strong>Ready UI</strong><small>Chosen visual completion</small></div></div><script type="application/json" class="steps">[{"label": "Start", "caption": "Begin a named user interaction at a defined event. Attach only approved low-cardinality context.", "state": {"tap": "active"}, "add": ["tap", "client", "server", "ready"]}, {"label": "Propagate", "caption": "Compatible instrumentation can propagate W3C trace context to an approved backend. SDK coverage, gateways and sampling determine what is retained.", "state": {"tap": "done", "client": "active"}}, {"label": "Correlate", "caption": "Inspect participating server spans and the client boundary. Missing spans are missing evidence, not proof that no work occurred.", "state": {"client": "done", "server": "active"}}, {"label": "Finish", "caption": "End at the same useful visual condition in each implementation. Compare representative distributions and account for sampling and cohort differences.", "state": {"server": "done", "ready": "active"}}]</script><figcaption>Illustrative sequence. Use Previous, Next or Play; every step is also available as text.</figcaption></figure>
+
+<!-- @after Tradeoffs :: staff -->
+
+Require each SDK to fill a demonstrated signal gap. Measure its own build/runtime/data cost and retain an exit path through owned schemas.
+
+<!-- @before Further Reading :: check -->
+
+### Check your diagnosis
+
+<details><summary>Can client latency minus server latency reliably equal network time?</summary>
+
+**Answer:** Not without compatible boundaries and context. Other client work and instrumentation differences can contribute.
+
+</details>
+
+<details><summary>What does a missing backend span prove?</summary>
+
+**Answer:** Only that the span is unavailable in this evidence; propagation, sampling or coverage may be responsible.
+
+</details>
+
+<details><summary>How would you compare a migrated checkout fairly?</summary>
+
+**Answer:** Use equivalent interaction boundaries and content, comparable cohorts or randomised buckets, and report coverage and uncertainty.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+
+Primary evidence for the added layer: [W3C Trace Context](https://www.w3.org/TR/trace-context/), [Firebase network coverage](https://firebase.google.com/docs/perf-mon/network-traces?platform=android).

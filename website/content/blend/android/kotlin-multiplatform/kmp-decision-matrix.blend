@@ -1,0 +1,24 @@
+<!-- Website teaching layer for android/kotlin-multiplatform/kmp-decision-matrix.md. Original preserved in full. Structure defined in android-phase9-structure.md before drafting. Checked 2026-10-25 against https://kotlinlang.org/docs/api-guidelines-build-for-multiplatform.html. -->
+
+<!-- @opening -->
+<p class="story-lead">A discount is accepted on Android and rejected on iOS. The apps copied the same rule months ago, then changed separately. Sharing that rule may help. Sharing the camera screen simply because it sits next to checkout may add a different problem.</p>
+
+Use this chapter to choose a bounded sharing hypothesis, then decide what evidence would justify expanding it.
+
+<!-- @after Shareability Matrix :: visual -->
+### Share a promise before choosing a framework
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Shared rule</strong><small>Same inputs, deliberately equivalent outcome</small></div><div class="node"><strong>Platform edge</strong><small>Permissions, UI and lifecycle still need owners</small></div><div class="node"><strong>Consumer contract</strong><small>Both Kotlin and Swift callers must be usable</small></div><div class="node"><strong>Exit seam</strong><small>Retain a replaceable implementation boundary</small></div></div><figcaption>A useful boundary follows product semantics; the amount of common code is a consequence.</figcaption></figure>
+
+<!-- @after Rollout Strategy :: animation -->
+### One pricing-rule pilot
+
+<figure class="stepper"><span class="stepper-title">One pricing-rule pilot</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="n0"><strong>Problem</strong><small data-text="v0">—</small></div><div class="node" data-el="n1"><strong>Shared module</strong><small data-text="v1">—</small></div><div class="node" data-el="n2"><strong>Platform consumers</strong><small data-text="v2">—</small></div><div class="node" data-el="n3"><strong>Decision</strong><small data-text="v3">—</small></div></div><script type="application/json" class="steps">[{"label": "Find drift", "caption": "Both apps receive the same basket but return different discounts. Capture the intended rule and edge cases before replacing either implementation.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "active", "n1": "idle", "n2": "idle", "n3": "idle"}, "text": {"v0": "Mismatch is reproducible", "v1": "Not selected yet", "v2": "Two existing paths", "v3": "No adoption conclusion"}}, {"label": "Choose a seam", "caption": "Put the pure pricing rule behind a small contract. Keep payment UI and device services in each app.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "active", "n2": "idle", "n3": "idle"}, "text": {"v0": "One invariant", "v1": "Narrow calculation API", "v2": "Native presentation retained", "v3": "Pilot only"}}, {"label": "Exercise both callers", "caption": "Run the rule tests on required targets and compile a Swift consumer. A JVM pass alone does not prove the Apple boundary.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "idle", "n2": "active", "n3": "idle"}, "text": {"v0": "Expected outputs recorded", "v1": "Target tests", "v2": "Kotlin + Swift call sites", "v3": "Integration evidence"}}, {"label": "Measure the cost", "caption": "Compare rule divergence, delivery time, build friction and operational evidence with the baseline. These are proposed measures, not reported results.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "idle", "n2": "idle", "n3": "active"}, "text": {"v0": "Baseline retained", "v1": "Owned implementation", "v2": "Both teams review", "v3": "Expand, repair or stop"}}]</script><figcaption>Illustrative sequence, not a measured trace. <a href="https://kotlinlang.org/docs/api-guidelines-build-for-multiplatform.html" target="_blank" rel="noreferrer">Primary contract</a>.</figcaption></figure>
+
+<!-- @after Ownership Model :: check -->
+### Try the decision yourself
+
+<details><summary>Would you start with the whole checkout screen?</summary><p>Only if a UI-sharing pilot justifies that wider boundary. A pricing-rule mismatch alone motivates a smaller experiment.</p></details>
+<details><summary>Is a high sharing percentage success?</summary><p>It does not establish business value, correctness or lower delivery cost.</p></details>
+<details><summary>What makes rollback practical?</summary><p>A stable seam, compatible data and a retained implementation path with a clear release owner.</p></details>
+

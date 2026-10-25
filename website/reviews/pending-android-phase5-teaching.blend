@@ -1,0 +1,36 @@
+<!-- REVIEW MATERIAL ONLY. Not loaded by the site. No corrections approved. -->
+
+# Phase 5 held teaching proposals
+
+These fragments need owner-approved original corrections before they can become live teaching. Keep the original diagrams and text visible until then. Findings and evidence are in android-phase5-findings.md.
+
+## RT1 — architecture redraw held
+
+A faithful redraw of the existing diagram would repeat its converter/GZIP boundary errors. Proposed conceptual pipeline for review:
+
+- Retrofit's interface/annotation mapping builds request metadata.
+- The configured body converter serializes or deserializes representations as appropriate.
+- OkHttp application middleware and built-in retry/bridge/cache/connect processing precede any configured network middleware and the server exchange.
+- Response processing returns through the relevant chain; the owner closes each response body it consumes.
+
+This is an outline for a corrected diagram, not an exhaustive version-independent listing of every interceptor and branch. Approve the original diagram correction and select supported versions before implementing it.
+
+## KT1–KT5 — disputed comparison teaching held
+
+Do not redraw Retrofit as a code-generated service implementation or label OkHttp as a native HTTP/3 transport. A corrected decision map should ask for the supported targets, real engine capabilities and measured release artifact; it must not promise a free KMP migration. Keep serialization unknown-property tolerance separate from coercion of selected invalid values and domain validation.
+
+## GQ1–GQ2 — corrected Apollo sample held
+
+The operation-file comment needs GraphQL syntax. The watcher example needs a response-wrapper Flow type or explicit mapping with partial-data/error policy. A runnable replacement must pin Apollo dependencies and generated operations rather than silently turning the unapproved source sample into a different active example.
+
+## NC1 — callback implementation held
+
+A replacement monitor should derive subsequent properties from callback arguments, track which Network the status describes, model initial/unknown capability state and unregister reliably. API-level behaviour and initial snapshot/callback races need explicit tests. Do not silently provide a drop-in implementation without that review.
+
+## WV1–WV5 — process, URL, cookies and recovery diagrams held
+
+Any process diagram must distinguish renderer execution from host-side capabilities on the supported WebView configuration. A URL policy needs approved scheme+host handling and callback limits. Per-WebView third-party-cookie acceptance is not a per-domain cookie store. Renderer-exit recovery must discard the unusable instance. These details stay in review material until the corresponding source correction is approved; the live teaching only audits the independent native-capability boundary.
+
+## MP1–MP2 — DRM and resource budget matrix held
+
+A DRM visual requires the actual license, output protection, device and rendition policy; L1/L3 labels alone do not justify universal resolution or fallback instructions. Resource planning must distinguish constructed, idle/prepared and playing player state and explicit retention configuration. Avoid depicting one allocated hardware codec for every live player object.

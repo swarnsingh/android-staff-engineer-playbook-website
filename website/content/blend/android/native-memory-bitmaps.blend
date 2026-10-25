@@ -1,0 +1,49 @@
+<!-- Website-only teaching for android/performance/native-memory-bitmaps.md; original chapter remains read-only. Sources checked 2026-10-25. -->
+
+<!-- @opening -->
+
+<p class="story-lead">The image feed disappears on a small device, while the Kotlin heap chart looks ordinary. Pixel storage, native allocations and graphics buffers also consume memory. One heap chart cannot account for the whole process.</p>
+
+Begin with decoded dimensions, then follow ownership and process-memory evidence.
+
+<!-- @after Bitmaps :: visual -->
+
+### Compression size is not decoded size
+
+<figure class="viz"><div class="viz-cols" style="--cols:3"><div class="node"><strong>Encoded file</strong><small>A small JPEG still describes a large pixel grid.</small></div><div class="node"><strong>Decoded pixels</strong><small>4,000 × 3,000 × 4 = 48,000,000 bytes for ARGB_8888, before overhead.</small></div><div class="node"><strong>Display requirement</strong><small>Choose target pixels and quality for the actual UI slot; account for density and cropping.</small></div></div><figcaption>An illustrative calculation, not a measured allocation. Additional copies, decoder storage and graphics resources can change the total.</figcaption></figure>
+
+<!-- @after Caching Strategy :: animation -->
+
+### Choose image work before allocating it
+
+<figure class="stepper"><span class="stepper-title">Choose image work before allocating it</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="slot"><strong>UI slot</strong><small>Target dimensions in pixels</small></div><div class="node" data-el="decode"><strong>Decode request</strong><small>Size and transformations</small></div><div class="node" data-el="cache"><strong>Memory cache</strong><small>Bounded ownership</small></div><div class="node" data-el="pressure"><strong>Process pressure</strong><small>Native / graphics / managed evidence</small></div></div><script type="application/json" class="steps">[{"label": "Identify the slot", "caption": "Determine the pixel size and crop the UI actually needs. A device-independent dimension is not automatically a pixel count.", "state": {"slot": "active"}, "add": ["slot", "decode", "cache", "pressure"]}, {"label": "Request appropriate work", "caption": "Give the image pipeline that target rather than loading the camera original for a thumbnail. Confirm the library’s sizing behavior.", "state": {"slot": "done", "decode": "active"}}, {"label": "Bound retention", "caption": "Size cache and prefetch policies for supported devices. A correctly sized individual image can still be multiplied by too many retained requests.", "state": {"decode": "done", "cache": "active"}}, {"label": "Check the whole process", "caption": "Compare memory buckets and navigation behavior on representative devices. A healthy managed heap does not establish healthy graphics or native memory.", "state": {"cache": "done", "pressure": "active"}}]</script><figcaption>Illustrative sequence. Use Previous, Next or Play; every step is also available as text.</figcaption></figure>
+
+<!-- @after Native Memory Debugging :: staff -->
+
+Use process-memory evidence alongside heap retention. A cache budget is a product/device policy, not a fixed fraction that is safe everywhere.
+
+<!-- @before Further Reading :: check -->
+
+### Check your diagnosis
+
+<details><summary>Why can a small JPEG allocate much more memory?</summary>
+
+**Answer:** Compression describes file storage; decoding creates pixel data and associated resources.
+
+</details>
+
+<details><summary>Does a healthy Kotlin heap exclude memory-pressure termination?</summary>
+
+**Answer:** No. Native, graphics and other process/system pressure also matter.
+
+</details>
+
+<details><summary>Is smaller prefetch always free?</summary>
+
+**Answer:** No. Even right-sized requests consume resources; bound count, lifetime and cache ownership.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+
+Primary evidence for the added layer: [Bitmap optimisation](https://developer.android.com/develop/ui/compose/graphics/images/optimization), [Memory buckets](https://developer.android.com/topic/performance/memory-overview).

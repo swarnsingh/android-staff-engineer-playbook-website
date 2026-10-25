@@ -1,0 +1,84 @@
+<!-- Phase 5 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase5-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">A thermometer appears in discovery, connects, then stops sending readings. “Connected” was only one step. A reliable device feature must know which operation is pending, how it ends, and whether the user still wants the session.</p>
+
+<!-- @after BLE Architecture :: animation -->
+### Discovery is not readiness
+
+<figure class="stepper"><span class="stepper-title">One bounded connection attempt</span><div class="stage viz-stack"><div class="node" data-el="radio"><strong>BLE state</strong><small data-text="radioV">—</small></div><div class="node" data-el="intent"><strong>User intent</strong><small data-text="intentV">—</small></div><div class="node" data-el="data"><strong>Measurement</strong><small data-text="dataV">—</small></div></div><script type="application/json" class="steps">[
+{
+"label": "Find",
+"caption": "With the required permission, scan with a deadline.",
+"state": {
+"radio": "active"
+},
+"text": {
+"radioV": "scanning",
+"intentV": "connect requested",
+"dataV": "none"
+},
+"add": [
+"radio",
+"intent",
+"data"
+]
+},
+{
+"label": "Connect",
+"caption": "Finding a candidate ends discovery; connection and service discovery still remain.",
+"state": {
+"radio": "active"
+},
+"text": {
+"radioV": "connecting → discovering"
+}
+},
+{
+"label": "Ready",
+"caption": "A configured subscription can now deliver data.",
+"state": {
+"data": "active"
+},
+"text": {
+"radioV": "ready",
+"dataV": "reading received"
+}
+},
+{
+"label": "Leave",
+"caption": "If the user ends the feature, stop owned work rather than reconnecting indefinitely.",
+"state": {
+"intent": "done",
+"radio": "ghost"
+},
+"text": {
+"intentV": "session ended",
+"radioV": "stopped"
+}
+}
+]</script><figcaption>Every active state also needs a failure, cancellation and timeout path.</figcaption></figure>
+
+<!-- @after Reliability and Observability :: check -->
+### Try the decision
+
+<details><summary>Persist a live GATT object?</summary>
+
+#### Answer
+
+Persist intent/configuration; rebuild runtime connections.
+</details>
+
+<details><summary>Permission granted once: finished?</summary>
+
+#### Answer
+
+Handle later denial or revocation.
+</details>
+
+<details><summary>A location is accurate but old. Use it?</summary>
+
+#### Answer
+
+Check both age and accuracy against the feature’s needs.
+</details>

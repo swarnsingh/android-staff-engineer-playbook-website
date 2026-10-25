@@ -1,0 +1,95 @@
+<!-- Phase 5 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase5-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">The first import looks correct. A retry duplicates a workout, and a deleted record comes back from your app’s cache. Health synchronization needs a repeatable local transaction: which records changed, which disappeared, and how far has the import safely committed?</p>
+
+<!-- @after Incremental Synchronization :: animation -->
+### Commit data before advancing progress
+
+<figure class="stepper"><span class="stepper-title">One incremental page, with a crash in the middle</span><div class="stage viz-stack"><div class="node" data-el="token"><strong>Saved progress</strong><small data-text="tokenV">—</small></div><div class="node" data-el="page"><strong>Changes page</strong><small data-text="pageV">—</small></div><div class="node" data-el="db"><strong>App-owned store</strong><small data-text="dbV">—</small></div></div><script type="application/json" class="steps">[
+{
+"label": "Fetch",
+"caption": "Read the next changes page using saved progress T1.",
+"state": {
+"page": "active"
+},
+"text": {
+"tokenV": "T1",
+"pageV": "upsert A; delete B; next T2",
+"dbV": "previous state"
+},
+"add": [
+"token",
+"page",
+"db"
+]
+},
+{
+"label": "Apply",
+"caption": "Apply upserts and deletions to local storage.",
+"state": {
+"db": "active"
+},
+"text": {
+"dbV": "A updated; B removed"
+}
+},
+{
+"label": "Crash before commit",
+"caption": "If the local transaction fails before committing data and progress, replay from T1.",
+"state": {
+"db": "warn",
+"token": "done"
+},
+"text": {
+"dbV": "transaction rolled back",
+"tokenV": "still T1"
+}
+},
+{
+"label": "Replay and commit",
+"caption": "An idempotent transaction can apply the page again and commit its matching progress.",
+"state": {
+"db": "done",
+"token": "active"
+},
+"text": {
+"dbV": "A updated; B removed",
+"tokenV": "T2 after success"
+}
+},
+{
+"label": "Token no longer usable",
+"caption": "Use the chapter’s bounded reconciliation path when progress expires or is invalid.",
+"state": {
+"token": "warn"
+},
+"text": {
+"tokenV": "reconcile; do not invent missing history"
+}
+}
+]</script><figcaption>The transaction pattern is application design. Feature availability, permission scope and historical coverage still bound what can be read.</figcaption></figure>
+
+<!-- @after Testing Strategy :: check -->
+### Try the decision
+
+<details><summary>No steps returned. User inactive?</summary>
+
+#### Answer
+
+Not necessarily: missing access, data, availability or synchronization can also explain it.
+</details>
+
+<details><summary>Token saved before local writes?</summary>
+
+#### Answer
+
+A crash could skip changes. Save matching progress only with successful local application.
+</details>
+
+<details><summary>A worker always reads Health Connect?</summary>
+
+#### Answer
+
+Only with the required background-read feature and separate grant; otherwise ingest in the foreground.
+</details>

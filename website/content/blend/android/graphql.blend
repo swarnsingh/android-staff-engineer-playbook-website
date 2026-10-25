@@ -1,0 +1,104 @@
+<!-- Phase 5 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase5-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">You rename a user on the detail screen. The mutation succeeds, but the list still shows the old name. Fetching fewer fields did not solve consistency. GraphQL’s next idea is identity: if two operations describe the same entity, can the client update one shared record and notify the readers that depend on it?</p>
+
+<!-- @before Internal Mechanics :: review -->
+The comment syntax in the GetUserProfile.graphql block (GQ1) is under technical review. A correction is pending the owner's approval.
+
+<!-- @diagram f99fb81083ab1479 -->
+### Build inputs and runtime data are different paths
+
+<figure class="viz"><div class="viz-stack"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Schema input</strong><small>reviewed build artifact</small></div><div class="node"><strong>Operation document</strong><small>selected fields</small></div></div><div class="down"></div><div class="node is-key"><strong>Apollo compiler</strong><small>validates operations → generates operation models</small></div><div class="viz-grid" style="--cols:2"><div class="node"><strong>ApolloClient ↔ server</strong><small>runtime operation and response</small></div><div class="node"><strong>Generated models</strong><small>used to parse that response</small></div></div><div class="node"><strong>Optional normalized cache</strong><small>client writes response records</small></div></div><figcaption>The runtime server is separate from the pinned schema used during the build. The original diagram remains available below.</figcaption></figure>
+
+<!-- @before Production Example :: review -->
+The declared Flow element type in observeUser (GQ2) is under technical review. A correction is pending the owner's approval.
+
+<!-- @after Production Example :: animation -->
+### The same user through two selections
+
+<figure class="stepper"><span class="stepper-title">A cache write reaches an affected watcher</span><div class="stage viz-stack"><div class="node" data-el="list"><strong>List operation watcher</strong><small data-text="listV">—</small></div><div class="node" data-el="detail"><strong>Rename mutation</strong><small data-text="detailV">—</small></div><div class="node" data-el="record"><strong>Normalized record User:7</strong><small data-text="recordV">—</small></div></div><script type="application/json" class="steps">[
+{
+"label": "Read",
+"caption": "Assume the cache-key policy identifies this user as User:7, and the list selects its name.",
+"state": {
+"list": "active",
+"record": "done"
+},
+"text": {
+"listV": "observing name",
+"detailV": "idle",
+"recordV": "name = Ana"
+},
+"add": [
+"list",
+"detail",
+"record"
+]
+},
+{
+"label": "Rename",
+"caption": "The mutation returns the same entity identity and the updated selected field.",
+"state": {
+"detail": "active"
+},
+"text": {
+"detailV": "User:7, name = Anika"
+}
+},
+{
+"label": "Write",
+"caption": "Writing that response changes the shared record rather than an unrelated copy.",
+"state": {
+"record": "active"
+},
+"text": {
+"recordV": "name = Anika"
+}
+},
+{
+"label": "Notify",
+"caption": "An affected watcher can re-emit after the cache write. The UI decides how to display the result.",
+"state": {
+"list": "active",
+"detail": "done"
+},
+"text": {
+"listV": "new result with Anika"
+}
+},
+{
+"label": "Missing identity",
+"caption": "If identity or the relevant field is absent, do not expect this update path automatically; plan an explicit update or refetch.",
+"state": {
+"record": "warn"
+},
+"text": {
+"recordV": "identity and selected fields matter"
+}
+}
+]</script><figcaption>This is a cache-dependency example, not a guarantee that every mutation updates every screen. HTTP caching is a separate mechanism.</figcaption></figure>
+
+<!-- @after Common Misconceptions :: check -->
+### Try the decision
+
+<details><summary>HTTP 200 contains a user and a field error. Must the screen discard the user?</summary>
+
+#### Answer
+
+That depends on the operation’s product contract. GraphQL can return partial data with errors; explicitly map usable content and stable failures rather than deciding from HTTP status alone.
+</details>
+
+<details><summary>The build validated yesterday’s schema. Can today’s server still break a shipped app?</summary>
+
+#### Answer
+
+Yes. Build validation checks the artifact supplied to that build. Server compatibility and supported-client operation checks must protect already-shipped binaries.
+</details>
+
+<details><summary>Two objects both have a field named id. Is shared cache identity automatic?</summary>
+
+#### Answer
+
+Do not assume it. Check the configured cache-key policy and the returned entity/field selection. A cache integration test should demonstrate the cross-operation update the product depends on.
+</details>

@@ -1,0 +1,97 @@
+<!-- Phase 5 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase5-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">A video tile expands to full screen and starts again from the beginning. Background audio then stops when the Activity disappears. These are ownership decisions: the player, its visible surface and its controller do not need the same lifetime.</p>
+
+<!-- @after 2. Session Layer: Background Playback and External Control :: visual -->
+### Objects with different jobs
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Player</strong><small>Playback state and media operations.</small></div><div class="node"><strong>Surface</strong><small>Where video is displayed.</small></div><div class="node"><strong>MediaSession</strong><small>Exposes playback to permitted controllers.</small></div><div class="node"><strong>UI controller</strong><small>Connects the screen to session commands and state.</small></div></div><figcaption>For service-owned playback, the UI can disconnect while the service continues to own playback.</figcaption></figure>
+
+<!-- @before 4. DRM :: review -->
+The universal resolution and fallback recommendations in the next section (MP1) are under technical review. A correction is pending the owner's approval.
+
+<!-- @before 6. Player-as-Platform: the Single-Instance Question :: review -->
+The claim that every live ExoPlayer holds decoders (MP2) is under technical review. A correction is pending the owner's approval.
+
+<!-- @after 6. Player-as-Platform: the Single-Instance Question :: animation -->
+### Transfer presentation without losing the owner
+
+<figure class="stepper"><span class="stepper-title">A chosen player moves from tile to full screen</span><div class="stage viz-stack"><div class="node" data-el="player"><strong>Playback module</strong><small data-text="playerV">—</small></div><div class="node" data-el="tile"><strong>Feed tile</strong><small data-text="tileV">—</small></div><div class="node" data-el="full"><strong>Full-screen UI</strong><small data-text="fullV">—</small></div></div><script type="application/json" class="steps">[
+{
+"label": "Tile visible",
+"caption": "The playback module has selected the player for this item.",
+"state": {
+"player": "active",
+"tile": "active"
+},
+"text": {
+"playerV": "item X; position P",
+"tileV": "attached video surface",
+"fullV": "not visible"
+},
+"add": [
+"player",
+"tile",
+"full"
+]
+},
+{
+"label": "Open full screen",
+"caption": "Detach the old presentation before attaching the intended new surface.",
+"state": {
+"tile": "ghost",
+"full": "active"
+},
+"text": {
+"tileV": "detached",
+"fullV": "surface attached"
+}
+},
+{
+"label": "Same playback",
+"caption": "The same chosen player retains its media state; avoid creating a second independent playback operation.",
+"state": {
+"player": "done"
+},
+"text": {
+"playerV": "same item and evolving position"
+}
+},
+{
+"label": "End ownership",
+"caption": "When the owning playback operation ends, release its resources deliberately.",
+"state": {
+"player": "ghost",
+"full": "ghost"
+},
+"text": {
+"playerV": "released when no longer needed",
+"fullV": "detached"
+}
+}
+]</script><figcaption>This illustrates one transfer policy. A product may need multiple players; measure its resource budget and verify lifecycle behaviour.</figcaption></figure>
+
+<!-- @after 7. Observability :: check -->
+### Try the decision
+
+<details><summary>Cache bytes equal a durable download?</summary>
+
+#### Answer
+
+No. Offline state also needs managed download progress and, for protected content, license lifecycle.
+</details>
+
+<details><summary>Rotation should recreate service playback?</summary>
+
+#### Answer
+
+A service-owned session can retain playback while the screen reconnects its controller.
+</details>
+
+<details><summary>Only measure app crashes?</summary>
+
+#### Answer
+
+Measure first-frame time, stalls, rendition choices, DRM and download failures too.
+</details>

@@ -1,0 +1,24 @@
+<!-- Website teaching layer for android/kotlin-multiplatform/ecosystem/persistence.md. Original preserved in full. Structure defined in android-phase9-structure.md before drafting. Checked 2026-10-25 against https://developer.android.com/kotlin/multiplatform/room. -->
+
+<!-- @opening -->
+<p class="story-lead">A widget and an app both need a preference. They can call the same Kotlin function and still disagree because sharing an API does not establish cross-process coordination. Start with the data and ownership promise before choosing a storage wrapper.</p>
+
+Compare relational data, preferences, migrations and platform access as separate requirements.
+
+<!-- @after Overview :: visual -->
+### Choose from the data contract
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Relational data</strong><small>Queries, constraints, transactions and versioned migrations</small></div><div class="node"><strong>Preferences</strong><small>Small values with an explicit backing store</small></div><div class="node"><strong>Secrets</strong><small>Platform vault policy; ordinary preference access is insufficient</small></div><div class="node"><strong>Other processes</strong><small>A documented coordination or snapshot contract</small></div></div><figcaption>Shared schema/API code does not remove file, driver, backup or multi-process ownership.</figcaption></figure>
+
+<!-- @after 3. Preferences DataStore KMP :: animation -->
+### Publish a widget snapshot deliberately
+
+<figure class="stepper"><span class="stepper-title">Publish a widget snapshot deliberately</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="n0"><strong>App writer</strong><small data-text="v0">—</small></div><div class="node" data-el="n1"><strong>Versioned snapshot</strong><small data-text="v1">—</small></div><div class="node" data-el="n2"><strong>Widget reader</strong><small data-text="v2">—</small></div><div class="node" data-el="n3"><strong>Recovery</strong><small data-text="v3">—</small></div></div><script type="application/json" class="steps">[{"label": "Own", "caption": "This illustrative design chooses one writer for a small product-approved snapshot. It is an architecture option, not a claim that every store coordinates processes.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "active", "n1": "idle", "n2": "idle", "n3": "idle"}, "text": {"v0": "Single writer", "v1": "Not published", "v2": "No new snapshot", "v3": "Retain last valid"}}, {"label": "Prepare", "caption": "Construct a complete snapshot with an explicit format version and no unnecessary secrets. A reader must know how to reject unsupported versions.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "active", "n2": "idle", "n3": "idle"}, "text": {"v0": "Builds complete value", "v1": "Version and payload", "v2": "Still reads old value", "v3": "Compatibility policy"}}, {"label": "Publish", "caption": "Use the platform-supported atomic publication mechanism selected for this design. Test separate-process access and crash interruption.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "active", "n2": "idle", "n3": "idle"}, "text": {"v0": "Commits publication", "v1": "Complete old or new snapshot", "v2": "Reads supported version", "v3": "Interruption tested"}}, {"label": "Recover", "caption": "If the snapshot is absent or invalid, the widget uses its defined fallback. Shared Kotlin alone supplies none of these storage guarantees.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "idle", "n2": "idle", "n3": "active"}, "text": {"v0": "Can republish", "v1": "Validated before use", "v2": "Explicit fallback", "v3": "No invented consistency"}}]</script><figcaption>Illustrative sequence, not a measured trace. <a href="https://developer.android.com/kotlin/multiplatform/room" target="_blank" rel="noreferrer">Primary contract</a>.</figcaption></figure>
+
+<!-- @after 3. Preferences DataStore KMP :: check -->
+### Try the decision yourself
+
+<details><summary>Does one App Group path make DataStore multi-process safe?</summary><p>Access permission and cross-process coordination are distinct contracts.</p></details>
+<details><summary>Must an existing Room database be rewritten for KMP?</summary><p>Evaluate supported Room KMP APIs and migration evidence before deciding on a rewrite.</p></details>
+<details><summary>Where should an auth token live?</summary><p>Behind the platform vault boundary appropriate to the threat and recovery policy, not an ordinary preferences wrapper.</p></details>
+

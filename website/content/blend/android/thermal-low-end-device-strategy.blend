@@ -1,0 +1,52 @@
+<!-- Website-only teaching for android/performance/thermal-low-end-device-strategy.md; original chapter remains read-only. Sources checked 2026-10-25. -->
+
+<!-- @opening -->
+
+<p class="story-lead">The demo is smooth for a minute, then video previews compete with scrolling as the device warms. A fixed “high quality” setting cannot express the smaller work budget available later in the session.</p>
+
+Make expensive features respond to a shared, reversible policy and verify long-session behavior on the devices the product supports.
+
+<!-- @after Graceful Degradation Matrix :: visual -->
+
+### Reduce optional work, preserve the task
+
+<figure class="viz"><div class="viz-cols" style="--cols:3"><div class="node"><strong>Observe pressure</strong><small>Thermal/device signals and measured journey behavior.</small></div><div class="node"><strong>Choose capability policy</strong><small>Reduce speculative work or quality where the product allows it.</small></div><div class="node"><strong>Protect continuity</strong><small>Keep interaction and required state safe; recover quality deliberately.</small></div></div><figcaption>Policy examples, not platform-prescribed thresholds. Thermal status reports thermal pressure; it does not promise an exact CPU frequency or safe workload.</figcaption></figure>
+
+<!-- @after Thermal-Aware Work Scheduling :: animation -->
+
+### A long session changes the available budget
+
+<figure class="stepper"><span class="stepper-title">A long session changes the available budget</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="normal"><strong>Normal policy</strong><small>Full approved experience</small></div><div class="node" data-el="pressure"><strong>Pressure observed</strong><small>Thermal signal or degraded evidence</small></div><div class="node" data-el="reduced"><strong>Reduced policy</strong><small>Pause optional prefetch</small></div><div class="node" data-el="recover"><strong>Recovery policy</strong><small>Restore after stable conditions</small></div></div><script type="application/json" class="steps">[{"label": "Begin", "caption": "Run the real journey long enough to exercise sustained load. The animation is illustrative and contains no measured device temperatures.", "state": {"normal": "active"}, "add": ["normal", "pressure", "reduced", "recover"]}, {"label": "Observe", "caption": "Pressure changes while the session continues. A shared capability layer receives the signal rather than each feature inventing its own rule.", "state": {"normal": "warn", "pressure": "active"}}, {"label": "Degrade", "caption": "Pause optional prefetch or reduce visual quality within approved product limits. Required state and critical operations keep their correctness guarantees.", "state": {"pressure": "done", "reduced": "active"}}, {"label": "Recover", "caption": "Restore optional work under a deliberate policy. A stability interval or hysteresis can prevent rapid toggling; that is an app policy, not an Android guarantee.", "state": {"reduced": "done", "recover": "active"}}]</script><figcaption>Illustrative sequence. Use Previous, Next or Play; every step is also available as text.</figcaption></figure>
+
+<!-- @after Observability :: staff -->
+
+Segment by device tier and session conditions. Preserve the cohort that struggles in the data instead of hiding it in a fleet average.
+
+<!-- @before Further Reading :: check -->
+
+### Check your diagnosis
+
+<details><summary>Does moving heavy CPU work off Main remove thermal cost?</summary>
+
+**Answer:** No. It can protect interaction while the CPU still performs the same work.
+
+</details>
+
+<details><summary>Why test longer than the happy-path demo?</summary>
+
+**Answer:** Heat, cache growth and sustained contention may emerge only during extended use.
+
+</details>
+
+<details><summary>Who decides acceptable degraded quality?</summary>
+
+**Answer:** The product and feature owners, using measured device behavior and correctness requirements.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+
+Primary evidence for the added layer: [Thermal status API](https://developer.android.com/reference/android/os/PowerManager), [Device performance adaptation](https://developer.android.com/games/optimize/adpf/thermal).
+
+<!-- @before Thermal Status :: review -->
+The P7TH1 passages in this section are under technical review. A correction is pending the owner’s approval.

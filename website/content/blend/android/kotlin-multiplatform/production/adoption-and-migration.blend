@@ -1,0 +1,103 @@
+<!-- Phase 9 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase9-runtime-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">The team proposes sharing half the app, but nobody can name which duplicated defect or delivery delay this will solve. Begin with one measurable problem and one reversible seam. A pilot earns expansion by improving that outcome while both platform teams can still ship and debug.</p>
+
+<!-- @before 2. The Incremental Migration Path (Strangler Fig) :: review -->
+The Instant migration instruction and “DTOs for free” consumer claim in the next section (KA1–KA2) are under technical review. A correction is pending the owner's approval.
+
+<!-- @after 1. When NOT to Use KMP :: visual -->
+### A pilot has three owners
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Product outcome</strong><small>The defect, consistency or lead-time change to measure.</small></div><div class="node"><strong>Shared contract</strong><small>Inputs, results, errors, data and lifecycle.</small></div><div class="node"><strong>Platform consumption</strong><small>Android and iOS integration, debugging and release.</small></div><div class="node"><strong>Stop condition</strong><small>Evidence for expanding, repairing, holding or rolling back.</small></div></div><figcaption>Reuse percentage alone does not establish value. Include the new tooling and ownership cost in the comparison.</figcaption></figure>
+
+<!-- @after 2. The Incremental Migration Path (Strangler Fig) :: animation -->
+### Replace one dependency through a seam
+
+<figure class="stepper"><span class="stepper-title">A pilot remains reversible until it earns expansion</span><div class="stage viz-stack"><div class="node" data-el="contract"><strong>Existing product contract</strong><small data-text="contractV">—</small></div><div class="node" data-el="old"><strong>Current implementation</strong><small data-text="oldV">—</small></div><div class="node" data-el="shared"><strong>Shared candidate</strong><small data-text="sharedV">—</small></div><div class="node" data-el="evidence"><strong>Pilot evidence</strong><small data-text="evidenceV">—</small></div></div><script type="application/json" class="steps">[
+{
+"label": "Freeze behaviour",
+"caption": "Capture the current public contract and baseline before replacing its implementation.",
+"state": {
+"contract": "active",
+"old": "done"
+},
+"text": {
+"contractV": "behaviour and data contracts",
+"oldV": "serves production",
+"sharedV": "not selected",
+"evidenceV": "baseline recorded"
+},
+"add": [
+"contract",
+"old",
+"shared",
+"evidence"
+]
+},
+{
+"label": "Build beside it",
+"caption": "Introduce a candidate behind the seam and exercise both through appropriate contract tests.",
+"state": {
+"shared": "active"
+},
+"text": {
+"sharedV": "candidate implementation"
+}
+},
+{
+"label": "Select safely",
+"caption": "Switch a bounded path or cohort with a deliberate rollback mechanism. Avoid unowned dual writes.",
+"state": {
+"evidence": "active"
+},
+"text": {
+"evidenceV": "correctness + performance + team cost"
+}
+},
+{
+"label": "Decide from results",
+"caption": "Expand, repair or reverse against the agreed thresholds; do not equate moved files with success.",
+"state": {
+"evidence": "done"
+},
+"text": {
+"evidenceV": "explicit continue / hold / reverse decision"
+}
+},
+{
+"label": "Retire after proof",
+"caption": "Remove the old path only when both platform consumers and release operations meet the exit criteria.",
+"state": {
+"old": "ghost",
+"shared": "done"
+},
+"text": {
+"oldV": "retired after exit criteria"
+}
+}
+]</script><figcaption>The dependency graph and product risk determine the next slice. The chapter’s phase order is a heuristic, not a required rewrite sequence.</figcaption></figure>
+
+<!-- @after 5. Organizational Buy-In Strategies :: check -->
+### Try the decision
+
+<details><summary>Only a quarter of code is shared. Failed migration?</summary>
+
+#### Answer
+
+That number is insufficient. Inspect whether the selected high-value boundaries improve the agreed outcomes after build, release and maintenance costs.
+</details>
+
+<details><summary>iOS cannot reproduce a framework build. Expand the pilot?</summary>
+
+#### Answer
+
+Repair ownership and reproducible integration first. An unowned dependency makes production adoption harder to support.
+</details>
+
+<details><summary>Two implementations write the same store during rollout. Safe by default?</summary>
+
+#### Answer
+
+No. Define consistency, ownership and rollback before dual writes. Prefer reversible selection and contract comparisons where they can establish the required behaviour.
+</details>

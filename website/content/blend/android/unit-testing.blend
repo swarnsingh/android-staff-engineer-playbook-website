@@ -1,0 +1,55 @@
+<!-- Teaching layer: android/testing/unit-testing.md; pending original claims are listed in android-phase6-findings.md. -->
+<!-- @opening -->
+<p class="story-lead">A cart applies a discount twice after the same action is submitted again. Reproducing it by tapping through the app is slow. First isolate the rule: given an existing cart and this input, what result should the public API produce?</p>
+
+A unit test makes the cause small enough to inspect. Supply controlled dependencies, perform one meaningful action, and assert its observable result. A mock can check a required interaction; a fake can model state over several calls. Neither choice proves Android or server integration.
+
+<!-- @before What "Unit" Means :: guide -->
+Find the contract before choosing the double
+
+<!-- @after Mocks, Fakes, and Spies :: visual -->
+### What the test controls and observes
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Arrange</strong><small>known cart + fake inventory</small></div><div class="node"><strong>Subject</strong><small>public add-item operation</small></div><div class="node"><strong>Observe</strong><small>resulting cart or domain failure</small></div><div class="node"><strong>Separate integration</strong><small>real database / server / lifecycle</small></div></div><figcaption>Keep a fake honest with focused contract tests; its convenient behavior can diverge from the real dependency.</figcaption></figure>
+
+<!-- @after Testing Repositories :: animation -->
+### A fake makes one failure reproducible
+
+<figure class="stepper"><span class="stepper-title">A fake makes one failure reproducible</span><div class="stage viz-flow"><div class="node" data-el="input"><strong>Input</strong><small data-text="inputV">item A, one unit</small></div><div class="node" data-el="repo"><strong>Fake inventory</strong><small data-text="repoV">A in stock</small></div><div class="node" data-el="subject"><strong>Cart operation</strong><small data-text="subjectV">not invoked</small></div><div class="node" data-el="result"><strong>Observable result</strong><small data-text="resultV">none</small></div></div><script type="application/json" class="steps">[{"label": "Known starting point", "caption": "Create a fresh fake and cart for this case. Shared mutable fixtures would make another test part of the hidden input.", "state": {"input": "active", "repo": "active"}}, {"label": "Exercise the contract", "caption": "Call the public operation with item A. The fake answers from the state configured by the test; no live service decides the outcome.", "state": {"subject": "active"}, "text": {"subjectV": "add A requested", "repoV": "returns available"}}, {"label": "Observe success", "caption": "Assert the resulting cart quantity and price. Avoid asserting an internal helper call unless that interaction itself is the required contract.", "state": {"result": "done"}, "text": {"resultV": "one item; expected total"}}, {"label": "Change one cause", "caption": "In a separate case, configure A as unavailable. The same public operation must expose the domain failure and leave the cart unchanged.", "state": {"repo": "warn", "result": "warn"}, "text": {"repoV": "returns unavailable", "resultV": "failure; cart unchanged"}}]</script><figcaption>This schematic fake is an input/output model, not executable repository code or evidence about scheduler ordering.</figcaption></figure>
+
+<!-- @after Test Naming and Structure :: check -->
+### Test the decision
+
+<details><summary>Why create a fresh fake for each case?</summary>
+
+It keeps prior calls and mutations from becoming hidden inputs.
+</details>
+
+<details><summary>Must every test verify every dependency call?</summary>
+
+No. Verify an interaction when it is the behavior promised by the contract; otherwise prefer the observable result.
+</details>
+
+<details><summary>A fake accepts data the real server rejects. What confidence does this test provide?</summary>
+
+Only confidence against the fake model. Add contract/integration evidence for the real boundary and improve the fake.
+</details>
+
+
+<!-- @before Coroutines Testing :: review -->
+**Under review — UT1–UT3.** The polling assertions, virtual-delay scope and eager-dispatch completion claims are pending review. Original wording is preserved; a website correction awaits owner approval.
+
+<!-- @before Flow Testing with Turbine :: review -->
+**Under review — UT4.** The statements about collect always hanging and Turbine being mandatory are pending review. Original wording is preserved; a website correction awaits owner approval.
+
+<!-- @before Failure Modes :: review -->
+**Under review — UT4, UT5.** The Flow collection prescription and the explanation of nested-test setup are pending review. Original wording is preserved; a website correction awaits owner approval.
+
+<!-- @before Common Pitfalls :: review -->
+**Under review — UT2.** The blanket description of virtual-time behavior is pending review. Original wording is preserved; a website correction awaits owner approval.
+
+<!-- @before Probing Questions :: review -->
+**Under review — UT4.** Question 5 presumes a particular collection lifetime; that premise is pending review. Original wording is preserved; a website correction awaits owner approval.
+
+<!-- @before Answer Key :: review -->
+**Under review — UT2–UT5.** Answers about eager execution, delay skipping, Flow collection and lifecycle setup are pending review. Original wording is preserved; a website correction awaits owner approval.

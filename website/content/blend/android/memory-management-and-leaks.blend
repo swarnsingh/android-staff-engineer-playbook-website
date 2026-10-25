@@ -1,0 +1,70 @@
+<!-- Website-only teaching for android/performance/memory-management-and-leaks.md; original chapter remains read-only. Sources checked 2026-10-25. -->
+
+<!-- @opening -->
+
+<p class="story-lead">Open a profile, go back, repeat. The old screens should be irrelevant, yet a listener registry still points to each one. Memory growth is now an ownership problem: who promised to remove those references?</p>
+
+Follow a strong reference path from a live owner to an object whose useful lifetime ended, then repair that registration boundary.
+
+<!-- @after Internal Mechanics :: visual -->
+
+### One retained edge keeps a larger graph alive
+
+<figure class="viz"><div class="viz-flow" style="--cols:3"><div class="node"><strong>Long-lived registry</strong><small>Still reachable during this app session.</small></div><div class="node"><strong>Registered listener</strong><small>Captures the old screen or its view.</small></div><div class="node"><strong>Destroyed screen graph</strong><small>No longer useful, but retained through that path.</small></div></div><figcaption>Object count and retained size answer different questions: one small listener can retain a much larger object graph.</figcaption></figure>
+
+<!-- @after Production Example :: animation -->
+
+### A registration outlives its screen
+
+<figure class="stepper"><span class="stepper-title">A registration outlives its screen</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="registry"><strong>Registry</strong><small>Long-lived owner</small></div><div class="node" data-el="listener"><strong>Listener</strong><small>Captures screen</small></div><div class="node" data-el="screen"><strong>Screen</strong><small>Useful while visible</small></div><div class="node" data-el="heap"><strong>Heap evidence</strong><small>Retaining reference path</small></div></div><script type="application/json" class="steps">[{"label": "Register", "caption": "The screen registers a callback. A strong path from the registry to the screen is legitimate while that ownership relationship is needed.", "state": {"registry": "active", "listener": "active", "screen": "active"}, "add": ["registry", "listener", "screen", "heap"]}, {"label": "Leave", "caption": "The screen’s useful lifetime ends, but the registration remains. The old object is still strongly reachable through the listener.", "state": {"screen": "warn"}}, {"label": "Investigate", "caption": "Repeat navigation and inspect retained objects and the reference path. A rising heap alone does not identify which edge is wrong.", "state": {"heap": "active"}}, {"label": "Remove the stale edge", "caption": "Match deregistration to the owner’s actual lifecycle, then repeat the scenario and inspect whether the old path remains.", "state": {"listener": "ghost", "heap": "done"}}]</script><figcaption>Illustrative sequence. Use Previous, Next or Play; every step is also available as text.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+
+Compare repeated journeys, not one heap snapshot in isolation. Keep managed retention, allocation rate and native/graphics pressure as separate hypotheses.
+
+<!-- @before Further Reading :: check -->
+
+### Check your diagnosis
+
+<details><summary>Can one listener retain more memory than its own shallow size?</summary>
+
+**Answer:** Yes. Objects reachable through that listener contribute to the retained graph.
+
+</details>
+
+<details><summary>Does memory growth alone prove an Activity leak?</summary>
+
+**Answer:** No. Check retention paths, allocation churn, caches and other process-memory buckets.
+
+</details>
+
+<details><summary>What validates the registration fix?</summary>
+
+**Answer:** Repeat the same lifecycle transitions and inspect whether the stale path and retained instances remain.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+
+Primary evidence for the added layer: [Memory overview](https://developer.android.com/topic/performance/memory-overview), [Leak investigation](https://square.github.io/leakcanary/fundamentals-fixing-a-memory-leak/).
+
+<!-- @before Why It Matters :: review -->
+The P7MM1 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Historical Context :: review -->
+The P7MM1 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before First Principles :: review -->
+The P7MM1 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Staff Engineer Thinking :: review -->
+The P7MM1 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Answer Key :: review -->
+The P7MM1, P7MM2 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Internal Mechanics :: review -->
+The P7MM2 passages in this section are under technical review. A correction is pending the owner’s approval.
+
+<!-- @before Production Example :: review -->
+The P7MM2 passages in this section are under technical review. A correction is pending the owner’s approval.

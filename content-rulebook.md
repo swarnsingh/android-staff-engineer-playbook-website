@@ -48,6 +48,16 @@ Use that need-driven sequencing, not the video's wording, artwork, exact script,
 
 ## 3. Choose the narrative for the topic
 
+### Define the structure before conversion
+
+Before starting a new section/phase, write its topic-by-topic structure in `website/reviews/android-phaseN-structure.md` (or the corresponding tree's review directory). Do this before drafting the teaching layer. Record the opening problem, chosen narrative route, original coverage to retain, important mechanism/internals, planned visuals or animations, production/staff decisions, prerequisites and sources. Explain differences between topics instead of mechanically reusing a template. The owner's instruction is to complete the remaining Android phases and publish a private preview for review; it does not approve pending technical corrections.
+
+For Android, consult relevant sections of the owner's *Manifest Android Interview* by Jaewoong Eum where they address the topic. Record the edition and actual pages read; use it to identify missing teaching questions and internals, then verify changing technical claims against primary sources. Do not claim the whole book was reviewed or copy its prose, examples or figures into lessons.
+
+### Content and Q&A have separate jobs
+
+For **both Kotlin and Android**, the Content tab carries the explanation, code and visual walkthroughs. Dedicated probing questions, answers, review checklists and added question checkpoints belong in the Q&A tab only in the interactive reader. Each answer starts below a clear **Answer** heading on a new line. Preserve every original question and answer; move the existing blocks rather than duplicating them. A rhetorical question that develops the lesson is still part of Content. The complete static chapter remains a readable fallback when JavaScript is unavailable. Test both activated tabs and deep links, not just the default Content view.
+
 These are authoring routes, not new repository file kinds. Select the route that fits the existing canonical/application/decision/blueprint owner. State a short rationale during review when choosing an unusual structure; do not add boilerplate justification to every reader-facing page.
 
 | Topic family | Suitable route | What must not be forced |

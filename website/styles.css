@@ -20,7 +20,8 @@ html{scroll-padding-top:9rem}
 /* View restoration owns scroll positioning when panels change. */
 body{overflow-anchor:none}
 /* Long chapters retain a comfortable measure and a scrollable section outline. */
-.reading-content{max-width:58ch;margin-inline:auto}
+.reading-content{max-width:none;width:100%;margin-inline:0}
+@media(min-width:1181px){.layout{max-width:1920px;grid-template-columns:244px minmax(0,1fr) 210px}main{padding-inline:clamp(1.25rem,2vw,2.5rem)}.focus-mode .layout{max-width:1500px;grid-template-columns:minmax(0,1fr) 210px}}
 .page-outline{max-height:calc(100dvh - 7rem);overflow:auto;overscroll-behavior:contain;padding-right:.5rem}
 .lesson-start .original-opening{margin-top:1.5rem;border-top:1px solid var(--line);padding-top:1rem}
 .lesson-section h3{margin-top:2em;line-height:1.4;font-size:1.12em}
@@ -40,3 +41,7 @@ body{overflow-anchor:none}
 .lesson-hero h1{overflow-wrap:anywhere}
 @media(max-height:500px){.topbar{position:static;height:3.5rem}.lesson-tabs{position:static}.mobile-outline{position:sticky;top:0}.sidebar,.reader-rail{top:0}.page-outline{max-height:90dvh}html{scroll-padding-top:4rem}}
 @media print{.source-diagram{break-inside:avoid}.chapter-navigation{display:none}}
+/* Practice lives in Q&A; answer labels are interface headings above unchanged answers. */
+#practice-questions .qa-answer-label{display:block;margin:1rem 0 .5rem;font-size:1em;line-height:1.5;color:var(--accent)}
+#practice-questions .qa-answer-body{margin:.5rem 0 1rem}
+#practice-questions>section>ol>li{margin-bottom:1.5rem}

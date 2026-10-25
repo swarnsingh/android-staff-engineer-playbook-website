@@ -108,11 +108,51 @@ document.addEventListener('keydown',e => {
   }
 });
 
-// Supplemental views derive from the same in-lesson answers and source links.
-$$('[data-question]').forEach(question => { const clone=question.cloneNode(true); [clone,...clone.querySelectorAll('[id]')].forEach(node=>node.removeAttribute('id')); clone.removeAttribute('data-question'); $('#practice-questions').append(clone); });
+// Move each practice block once: Content teaches; Q&A holds questions and answers.
+// Static HTML preserves the complete chapter as a no-JS fallback. The build gate checks
+// that stream; the browser gate independently checks both activated tabs against it.
+const practice = $('#practice-questions');
+const practiceBlocks = $$('[data-question], #panel-content .blend[data-kind="check"]');
+practiceBlocks.forEach(block => {
+  if (block.closest('[data-question]') !== null && !block.hasAttribute('data-question')) return;
+  const previous = block.previousElementSibling;
+  if (previous?.matches('.blend[data-kind="review"]')) practice.append(previous);
+  practice.append(block);
+});
+// Answer labels are interface text, not edits to the original answer wording.
+practice.querySelectorAll('[id="section-answer-key"] > ol > li').forEach((item, index) => {
+  const label = document.createElement('h3');
+  label.className = 'qa-answer-label';
+  label.textContent = `Answer ${index + 1}`;
+  const first = item.firstElementChild;
+  const paragraph = first?.tagName === 'P' ? first : item;
+  const question = paragraph.firstElementChild;
+  if (question?.tagName === 'STRONG' && /\?\s*$/.test(question.textContent)) {
+    // Some chapters repeat the question before the answer. Keep that question first,
+    // then place the Answer heading and the remaining nodes on their own lines.
+    const response = document.createElement('div');
+    response.className = 'qa-answer-body';
+    while (question.nextSibling) response.append(question.nextSibling);
+    if (paragraph === item) question.after(label, response);
+    else paragraph.after(label, response);
+  } else item.prepend(label);
+});
+practice.querySelectorAll('.blend[data-kind="check"] details > summary').forEach(summary => {
+  const label = document.createElement('h4');
+  label.className = 'qa-answer-label'; label.textContent = 'Answer'; summary.after(label);
+});
+// Hide empty story bands and remove practice links from the Content outline.
+$$('.part-band').forEach(band => {
+  let next = band.nextElementSibling;
+  while (next?.classList.contains('blend')) next = next.nextElementSibling;
+  if (!next || next.classList.contains('part-band')) band.hidden = true;
+});
+$$('.page-outline a,.mobile-outline a').forEach(link => {
+  if (document.getElementById(link.hash.slice(1))?.closest('#panel-qa')) link.remove();
+});
 $('#qa-empty').hidden=!!$('#practice-questions').children.length;
 const seenSources = new Set();
-$$('article a[target=_blank]').forEach(link => {
+$$('#panel-content a[target=_blank],#panel-qa a[target=_blank]').forEach(link => {
   if(seenSources.has(link.href)) return;
   seenSources.add(link.href); const copy=link.cloneNode(true); copy.className='resource-row'; $('#resource-links').append(copy);
 });
@@ -133,12 +173,13 @@ window.addEventListener('scroll',()=>{
   clearTimeout(readingScrollTimer);
   readingScrollTimer=setTimeout(()=>{if(activeView==='content')lastReadingY=window.scrollY;},180);
 },{passive:true});
-let contentHash=location.hash;
+let contentHash=document.getElementById(location.hash.slice(1))?.closest('#panel-qa') ? '' : location.hash;
 function setView(view,{focus=false,anchor=null,writeHistory=true,restore=true}={}) {
   if(!['content','qa','playground','resources'].includes(view)) view='content';
+  if (anchor) view = document.getElementById(anchor)?.closest('#panel-qa') ? 'qa' : 'content';
   clearTimeout(readingScrollTimer);
   positions[activeView]=activeView==='content'?lastReadingY:window.scrollY;
-  if(activeView==='content' && location.hash) contentHash=location.hash;
+  if(activeView==='content' && location.hash && !document.getElementById(location.hash.slice(1))?.closest('#panel-qa')) contentHash=location.hash;
   activeView=view;
   tabs.forEach(tab=>{
     const selected=tab.id===`tab-${view}`;
@@ -146,11 +187,11 @@ function setView(view,{focus=false,anchor=null,writeHistory=true,restore=true}={
     $(`#${tab.getAttribute('aria-controls')}`).hidden=!selected;
   });
   $('.page-outline').hidden=view!=='content'; $('.mobile-outline').hidden=view!=='content';
-  if(anchor) contentHash=`#${anchor}`;
+  if(anchor && view==='content') contentHash=`#${anchor}`;
   if(writeHistory) {
     const url=new URL(location.href);
     if(view==='content') url.searchParams.delete('view'); else url.searchParams.set('view',view);
-    url.hash=view==='content'?contentHash:'';
+    url.hash=anchor ? `#${anchor}` : view==='content'?contentHash:'';
     history.pushState({view},'',url);
   }
   if(focus) $(`#tab-${view}`).focus({preventScroll:true});
@@ -178,7 +219,7 @@ $$('.page-outline a,.mobile-outline a,.brand').forEach(link=>link.addEventListen
 window.addEventListener('popstate',()=>setView(new URL(location.href).searchParams.get('view')||'content',{writeHistory:false,anchor:location.hash?location.hash.slice(1):null}));
 window.addEventListener('hashchange',()=>{ if(location.hash && document.getElementById(location.hash.slice(1))) setView('content',{writeHistory:false,anchor:location.hash.slice(1)}); });
 const initialView=new URL(location.href).searchParams.get('view');
-if(initialView) setView(initialView,{writeHistory:false,restore:false});
+if(initialView || location.hash) setView(initialView || 'content',{writeHistory:false,restore:false,anchor:location.hash.slice(1) || null});
 const outlineLinks=$$('.page-outline a,.mobile-outline a');
 // Observe each section with one shared observer.
 const sectionObserver=new IntersectionObserver(entries=>{

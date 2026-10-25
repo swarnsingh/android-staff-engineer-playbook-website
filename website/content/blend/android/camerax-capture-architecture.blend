@@ -1,0 +1,85 @@
+<!-- Phase 5 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase5-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">The scanner preview is smooth, but results describe where the barcode was a second ago. Throughput alone is misleading: the feature needs a recent frame and must return every borrowed image buffer.</p>
+
+<!-- @after Analysis Pipeline :: animation -->
+### Prefer a fresh answer over a growing queue
+
+<figure class="stepper"><span class="stepper-title">KEEP_ONLY_LATEST while one frame is being analyzed</span><div class="stage viz-stack"><div class="node" data-el="analysis"><strong>Analyzer</strong><small data-text="analysisV">—</small></div><div class="node" data-el="latest"><strong>Waiting image</strong><small data-text="latestV">—</small></div><div class="node" data-el="result"><strong>Result</strong><small data-text="resultV">—</small></div></div><script type="application/json" class="steps">[
+{
+"label": "Analyze A",
+"caption": "The analyzer owns frame A until it closes the ImageProxy.",
+"state": {
+"analysis": "active"
+},
+"text": {
+"analysisV": "A in progress",
+"latestV": "none",
+"resultV": "pending"
+},
+"add": [
+"analysis",
+"latest",
+"result"
+]
+},
+{
+"label": "New frames",
+"caption": "B arrives, then C. The latest waiting image replaces older pending work.",
+"state": {
+"latest": "active"
+},
+"text": {
+"latestV": "C replaces B"
+}
+},
+{
+"label": "Finish A",
+"caption": "Finish using A, close its ImageProxy, then the next delivered image can be analyzed.",
+"state": {
+"analysis": "done",
+"result": "active"
+},
+"text": {
+"analysisV": "A closed",
+"resultV": "A result"
+}
+},
+{
+"label": "Analyze latest",
+"caption": "Continue with the latest waiting image rather than processing every stale intermediate frame.",
+"state": {
+"analysis": "active",
+"latest": "done"
+},
+"text": {
+"analysisV": "C in progress",
+"latestV": "consumed"
+}
+}
+]</script><figcaption>Close each ImageProxy on every completion path. For asynchronous inference, close after that work finishes using the image.</figcaption></figure>
+
+<!-- @after Production Architecture :: check -->
+### Try the decision
+
+<details><summary>Preview works: analysis healthy?</summary>
+
+#### Answer
+
+Check frame age, analyzer duration and drops.
+</details>
+
+<details><summary>Close the wrapped Media.Image?</summary>
+
+#### Answer
+
+Close the ImageProxy supplied by CameraX.
+</details>
+
+<details><summary>All four use cases always bind together?</summary>
+
+#### Answer
+
+No; supported combinations vary by device and configuration.
+</details>

@@ -1,0 +1,118 @@
+<!-- Phase 5 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase5-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">The Android app already works with Retrofit. Now the team wants to share business logic with iOS. Replacing annotations with client calls is the visible part; the harder part is keeping authentication, serialization, cancellation and failure behaviour consistent across platforms. Start by deciding which code needs to be shared.</p>
+
+<!-- @before Architecture at a Glance :: review -->
+The Retrofit implementation and OkHttp protocol descriptions in the next section (KT1–KT2) are under technical review. A correction is pending the owner's approval.
+
+<!-- @before Declarative vs Imperative :: review -->
+The Retrofit implementation-generation description in the next section (KT1) is under technical review. A correction is pending the owner's approval.
+
+<!-- @after KMP — The Decisive Factor :: visual -->
+### Choose the boundary before the library
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Shared API</strong><small>Domain-facing operations and models used by the product.</small></div><div class="node"><strong>Per-platform configuration</strong><small>Engine, TLS/proxy behaviour and platform lifecycle.</small></div><div class="node"><strong>Compatibility suite</strong><small>Missing/null fields, error contracts, cancellation and streaming.</small></div><div class="node"><strong>Rollout evidence</strong><small>A representative endpoint, telemetry and rollback path.</small></div></div><figcaption>Sharing request code does not remove the need to verify each supported engine and platform.</figcaption></figure>
+
+<!-- @before When Each Wins (Concrete Scenarios) :: review -->
+The strict-size and free-migration rows in the next table (KT3–KT4) are under technical review. A correction is pending the owner's approval.
+
+<!-- @after Migration Patterns :: animation -->
+### Migrate one contract, then widen
+
+<figure class="stepper"><span class="stepper-title">One repository, two implementations during a staged migration</span><div class="stage viz-stack"><div class="node" data-el="contract"><strong>Domain-facing API</strong><small data-text="contractV">—</small></div><div class="node" data-el="old"><strong>Existing adapter</strong><small data-text="oldV">—</small></div><div class="node" data-el="new"><strong>Candidate adapter</strong><small data-text="newV">—</small></div><div class="node" data-el="gate"><strong>Release decision</strong><small data-text="gateV">—</small></div></div><script type="application/json" class="steps">[
+{
+"label": "Pin behaviour",
+"caption": "Choose one representative operation and write down its data, auth, error and cancellation contract.",
+"state": {
+"contract": "active"
+},
+"text": {
+"contractV": "getUser(id) → domain result",
+"oldV": "currently selected",
+"newV": "not selected",
+"gateV": "baseline recorded"
+},
+"add": [
+"contract",
+"old",
+"new",
+"gate"
+]
+},
+{
+"label": "Add an adapter",
+"caption": "Implement that contract using the candidate stack behind the existing application boundary.",
+"state": {
+"new": "active",
+"old": "done"
+},
+"text": {
+"newV": "candidate implementation"
+}
+},
+{
+"label": "Exercise parity",
+"caption": "Run equivalent fixtures on the engines and targets the product actually ships.",
+"state": {
+"gate": "active"
+},
+"text": {
+"gateV": "contract + transport tests"
+}
+},
+{
+"label": "Roll out selectively",
+"caption": "Select one implementation per call path. Observe failures and performance; keep rollback available.",
+"state": {
+"new": "done",
+"gate": "active"
+},
+"text": {
+"gateV": "measured rollout"
+}
+},
+{
+"label": "Retire deliberately",
+"caption": "Remove old dependencies only after their final owned call path and configuration are retired.",
+"state": {
+"old": "ghost",
+"contract": "done",
+"gate": "done"
+},
+"text": {
+"oldV": "removed when unused",
+"gateV": "migration complete"
+}
+}
+]</script><figcaption>This sequence is an application migration plan; its outcome depends on measured parity, not on endpoint count alone.</figcaption></figure>
+
+<!-- @before Failure Modes :: review -->
+The ignoreUnknownKeys and coerceInputValues diagnosis in the next table (KT5) is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Common Pitfalls :: review -->
+The ignoreUnknownKeys warning in the next section (KT5) is under technical review. A correction is pending the owner's approval.
+
+<!-- @after Common Pitfalls :: check -->
+### Try the decision
+
+<details><summary>Ktor uses the OkHttp engine. Has every transport behaviour changed?</summary>
+
+#### Answer
+
+No. The client API changed while OkHttp remains the engine. Inventory configuration, plugin interactions and defaults instead of treating the library name as the transport contract.
+</details>
+
+<details><summary>MockEngine passes. What remains untested?</summary>
+
+#### Answer
+
+The selected real engine’s sockets, TLS, proxies, connection reuse and integration with platform networking. Use appropriate transport integration tests as well as portable contract tests.
+</details>
+
+<details><summary>What result would justify keeping Retrofit?</summary>
+
+#### Answer
+
+If its supported platform scope and operational behaviour meet the product’s needs, a migration must show enough value to outweigh compatibility, training and rollout costs. There is no requirement to replace a working boundary.
+</details>

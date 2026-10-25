@@ -1,0 +1,24 @@
+<!-- Website teaching layer for android/kotlin-multiplatform/ui-sharing/compose-multiplatform.md. Original preserved in full. Structure defined in android-phase9-structure.md before drafting. Checked 2026-10-25 against https://kotlinlang.org/docs/multiplatform/compose-swiftui-integration.html. -->
+
+<!-- @opening -->
+<p class="story-lead">A shared checkout screen renders correctly on both phones. On iOS, a native map inside it captures the wrong gesture and the keyboard obscures a field. Sharing composables reduced duplicate UI code; it did not settle the host’s interaction contract.</p>
+
+Follow one shared surface through its native host, navigation and acceptance evidence.
+
+<!-- @after 1. Choose the UI-Sharing Boundary Deliberately :: visual -->
+### One surface, explicit owners
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Shared screen</strong><small>State rendering, supported composables and semantics</small></div><div class="node"><strong>Native host</strong><small>Entry point, platform configuration and integrations</small></div><div class="node"><strong>Navigation owner</strong><small>One canonical stack for this surface</small></div><div class="node"><strong>Acceptance evidence</strong><small>Input, accessibility, performance and restoration on each target</small></div></div><figcaption>Common API availability is the starting point for validation, not a substitute for the platform user journey.</figcaption></figure>
+
+<!-- @after 3. Navigation: One Stack Owner per Surface :: animation -->
+### Leave a shared flow through its owner
+
+<figure class="stepper"><span class="stepper-title">Leave a shared flow through its owner</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="n0"><strong>Native host</strong><small data-text="v0">—</small></div><div class="node" data-el="n1"><strong>Shared flow</strong><small data-text="v1">—</small></div><div class="node" data-el="n2"><strong>Semantic event</strong><small data-text="v2">—</small></div><div class="node" data-el="n3"><strong>Navigation owner</strong><small data-text="v3">—</small></div></div><script type="application/json" class="steps">[{"label": "Enter", "caption": "The platform coordinator opens a bounded shared checkout flow with an order ID. It owns top-level navigation in this illustrative design.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "active", "n1": "idle", "n2": "idle", "n3": "idle"}, "text": {"v0": "Opens surface", "v1": "Receives identifier", "v2": "None yet", "v3": "Native coordinator"}}, {"label": "Interact", "caption": "The flow owns only its internal steps. Platform capabilities stay behind explicit seams.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "active", "n2": "idle", "n3": "idle"}, "text": {"v0": "Hosts the flow", "v1": "Internal state/stack", "v2": "None yet", "v3": "No mirrored top-level stack"}}, {"label": "Complete", "caption": "The shared screen reports a semantic completion event. It does not also push an independent top-level native destination.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "idle", "n2": "active", "n3": "idle"}, "text": {"v0": "Receives completion", "v1": "Reports outcome", "v2": "Checkout finished", "v3": "One event path"}}, {"label": "Navigate", "caption": "The coordinator applies navigation once and tests back/restoration. Other products can choose a shared stack if that ownership is equally explicit.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "idle", "n2": "idle", "n3": "active"}, "text": {"v0": "Updates product flow", "v1": "Surface can end", "v2": "Consumed by owner", "v3": "Single canonical decision"}}]</script><figcaption>Illustrative sequence, not a measured trace. <a href="https://kotlinlang.org/docs/multiplatform/compose-swiftui-integration.html" target="_blank" rel="noreferrer">Primary contract</a>.</figcaption></figure>
+
+<!-- @after Common Failure Modes :: check -->
+### Try the decision yourself
+
+<details><summary>Does shared Compose mean UIKit widgets everywhere?</summary><p>No. Shared programming APIs and native host/accessibility integration do not imply identical native widget implementations.</p></details>
+<details><summary>Should native and shared stacks mirror every push?</summary><p>Give each visible stack segment one owner and translate semantic events at the seam.</p></details>
+<details><summary>What proves the screen is ready?</summary><p>Representative target-device evidence for required input, accessibility, restoration, performance and integrations.</p></details>
+

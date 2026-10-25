@@ -1,0 +1,49 @@
+<!-- Website-only teaching for android/performance/baseline-profiles.md; original chapter remains read-only. Sources checked 2026-10-25. -->
+
+<!-- @opening -->
+
+<p class="story-lead">A newly installed app feels slower on its first useful journey than after repeated use. If runtime compilation contributes to that difference, a profile can tell ART which paths deserve preparation. It still needs to match the shipped code.</p>
+
+Follow the profile from an exercised journey to the release artifact, the device’s compilation state and a measured result.
+
+<!-- @after First Principles :: visual -->
+
+### Two profiles act at different boundaries
+
+<figure class="viz"><div class="viz-flow" style="--cols:3"><div class="node"><strong>Baseline Profile</strong><small>Guides ART optimisation of matching classes and methods on the device.</small></div><div class="node"><strong>Startup Profile</strong><small>Guides build-time DEX layout for startup paths.</small></div><div class="node"><strong>Benchmark evidence</strong><small>Checks the actual result for a chosen journey and compilation state.</small></div></div><figcaption>Neither profile is a new algorithm or an I/O cache. Their value depends on the work the journey actually performs.</figcaption></figure>
+
+<!-- @after Architecture :: animation -->
+
+### A generated profile is only the first link
+
+<figure class="stepper"><span class="stepper-title">A generated profile is only the first link</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="journey"><strong>Journey</strong><small>Exercise useful app paths</small></div><div class="node" data-el="artifact"><strong>Artifact</strong><small>Rules match final code</small></div><div class="node" data-el="device"><strong>Device</strong><small>Verify install / compilation</small></div><div class="node" data-el="measure"><strong>Measurement</strong><small>Compare identical scenarios</small></div></div><script type="application/json" class="steps">[{"label": "Exercise", "caption": "Generate rules from representative startup and interaction paths. The animation is a dependency checklist, not an install-time trace.", "state": {"journey": "active"}, "add": ["journey", "artifact", "device", "measure"]}, {"label": "Package", "caption": "Build tooling merges and rewrites matching rules for the release artifact. Keep the generated rules and build identity associated.", "state": {"journey": "done", "artifact": "active"}}, {"label": "Verify", "caption": "Confirm the intended profile and compilation state on the test device rather than inferring success from a file’s existence.", "state": {"artifact": "done", "device": "active"}}, {"label": "Compare", "caption": "Measure with and without the intended profile configuration. If another dependency dominates, the journey may show little improvement.", "state": {"device": "done", "measure": "active"}}]</script><figcaption>Illustrative sequence. Use Previous, Next or Play; every step is also available as text.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+
+Choose journeys from user value and traces. Keep profile generation reproducible and compare release-equivalent artifacts before treating a percentage as a release benefit.
+
+<!-- @before Further Reading :: check -->
+
+### Check your diagnosis
+
+<details><summary>A profile file is packaged. Is the speedup established?</summary>
+
+**Answer:** No. Verify installation and compilation, then measure the relevant journey.
+
+</details>
+
+<details><summary>Which profile changes DEX layout during the build?</summary>
+
+**Answer:** The Startup Profile. Baseline Profiles guide ART optimisation on-device.
+
+</details>
+
+<details><summary>What if the trace shows disk waiting dominates?</summary>
+
+**Answer:** Investigate that boundary. A profile does not remove the disk dependency.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+
+Primary evidence for the added layer: [Profiles overview](https://developer.android.com/topic/performance/baselineprofiles/overview), [Validate profiles](https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile).
