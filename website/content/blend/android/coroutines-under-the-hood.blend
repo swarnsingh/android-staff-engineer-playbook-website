@@ -1,0 +1,43 @@
+<!-- Website teaching layer for android/concurrency/coroutines-under-the-hood.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Follows the chapter's conceptual CPS model and kotlinlang.org coroutine docs; checked 2026-10-25. The Kotlin tree's
+     Coroutines chapter covers the same mechanism with compiled examples. -->
+
+<!-- @opening -->
+<p class="story-lead">A logging library tags every line with the current user ID, stored in a <code>ThreadLocal</code>. After a migration to coroutines, about a third of the log lines lose their tag, always after a network call. Nothing cleared the value. The code simply continued on a different thread, one that had never been given a user ID.</p>
+
+A `suspend` function looks sequential, but it does not hold a thread while it waits. The compiler turns it into a **state machine**: a label for where to continue, and fields for the local variables that must survive the wait. When the awaited result arrives, the machine resumes, possibly on another thread from the dispatcher. This chapter shows that transformation, and the bugs that come from forgetting it.
+
+<!-- @after Internal Mechanics :: animation -->
+### Run <code>fetchAndShowUser()</code> through its state machine
+
+<figure class="stepper"><span class="stepper-title">One coroutine, two threads, three labels</span><div class="stage viz-stack"><div class="viz-grid" style="--cols:2"><div class="node" data-el="t1"><strong>Thread 1</strong><small data-text="t1V">—</small></div><div class="node" data-el="t2"><strong>Thread 2</strong><small data-text="t2V">—</small></div></div><div class="node is-key" data-el="sm"><strong>Continuation (heap object)</strong><small data-text="smV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Label 0","caption":"Thread 1 enters the function with label 0, prints \"Start\", sets label = 1 and calls fetchUser, passing the continuation as its callback.","add":["t1","t2","sm"],"state":{"t1":"active","t2":"ghost","sm":"done"},"text":{"t1V":"running label 0","t2V":"idle in the pool","smV":"label = 1"}},
+{"label":"Suspend","caption":"The request is not finished, so fetchUser returns COROUTINE_SUSPENDED. The function returns it too, and Thread 1 is free to run other work. Nothing is blocked.","state":{"t1":"done"},"text":{"t1V":"returned: free for other work","smV":"label = 1 · waiting for User"}},
+{"label":"Resume","caption":"The response arrives. The continuation is resumed with the User, and its dispatcher runs it on whichever pool thread is free: here Thread 2.","state":{"t2":"active","sm":"active"},"text":{"t2V":"resumes the function","smV":"result = User(\"Asha\")"}},
+{"label":"Label 1","caption":"Re-entering with label 1 jumps past the first call. The user comes from the continuation's fields, not from any thread's stack. Then label = 2 and fetchAvatar suspends in the same way.","state":{"sm":"done"},"text":{"t2V":"prints \"Asha\", calls fetchAvatar","smV":"label = 2 · waiting for avatar"}},
+{"label":"The lost tag","caption":"A ThreadLocal set on Thread 1 before the call is not on Thread 2. That is the opening bug: the state machine carried the locals, not the thread's context. Carry such values in the CoroutineContext with asContextElement().","state":{"t1":"warn","t2":"warn"},"text":{"t1V":"ThreadLocal userId = 42","t2V":"ThreadLocal userId = null"}}
+]</script><figcaption>Local variables live in the continuation; thread-confined state does not travel unless the coroutine context carries it.</figcaption></figure>
+
+<!-- @diagram 8a0f8b7b256c3ca5 -->
+### Labels, suspensions and threads
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Label 0: Start</strong><small>run by Thread 1</small></div><div class="node" data-state="warn"><strong>Return <code>COROUTINE_SUSPENDED</code></strong><small>Thread 1 is freed</small></div><div class="node"><strong>Resume with User</strong><small>a network callback calls <code>resume()</code>; Thread 2 runs it</small></div><div class="node"><strong>Label 1: print user</strong></div><div class="node" data-state="warn"><strong>Return <code>COROUTINE_SUSPENDED</code></strong><small>Thread 2 is freed</small></div><div class="node" data-state="done"><strong>Resume with avatar → Label 2: Done</strong></div></div><figcaption>Each suspension point splits the function; each resume enters it again at the next label.</figcaption></figure>
+
+<!-- @after Common Misconceptions :: check -->
+**Blocked or suspended?** Decide before opening each answer.
+
+<details><summary><code>Thread.sleep(2000)</code> inside <code>launch</code> on the main dispatcher.</summary>
+
+Blocked. `sleep` holds the main thread, so nothing else runs there: the UI freezes. `delay(2000)` suspends and frees it.
+</details>
+
+<details><summary>500 coroutines launched on <code>Dispatchers.Main</code>, each doing a suspending network call.</summary>
+
+All 500 are concurrent, interleaving on one thread at their suspension points. None runs in parallel, and none blocks the others while waiting.
+</details>
+
+<details><summary>A callback API wrapped with <code>suspendCoroutine</code>, and the screen closes while waiting.</summary>
+
+The coroutine is not cancelled while it waits, and the registered listener is never removed. Use `suspendCancellableCoroutine` and unregister in `invokeOnCancellation`.
+</details>
