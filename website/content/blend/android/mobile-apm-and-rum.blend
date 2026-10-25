@@ -28,19 +28,19 @@ Require each SDK to fill a demonstrated signal gap. Measure its own build/runtim
 
 <details><summary>Can client latency minus server latency reliably equal network time?</summary>
 
-**Answer:** Not without compatible boundaries and context. Other client work and instrumentation differences can contribute.
+Not without compatible boundaries and context. Other client work and instrumentation differences can contribute.
 
 </details>
 
 <details><summary>What does a missing backend span prove?</summary>
 
-**Answer:** Only that the span is unavailable in this evidence; propagation, sampling or coverage may be responsible.
+Only that the span is unavailable in this evidence; propagation, sampling or coverage may be responsible.
 
 </details>
 
 <details><summary>How would you compare a migrated checkout fairly?</summary>
 
-**Answer:** Use equivalent interaction boundaries and content, comparable cohorts or randomised buckets, and report coverage and uncertainty.
+Use equivalent interaction boundaries and content, comparable cohorts or randomised buckets, and report coverage and uncertainty.
 
 </details>
 

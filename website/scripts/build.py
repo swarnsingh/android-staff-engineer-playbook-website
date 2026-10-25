@@ -16,7 +16,7 @@ MD = MarkdownIt('commonmark', {'html': True}).enable(['table', 'strikethrough'])
 # renders (None renders the whole tree); chapters outside them keep linking to GitHub.
 TREES = {
     'kotlin': {'title': 'Kotlin', 'phases': None},
-    'android': {'title': 'Android', 'phases': [1, 2, 3, 4, 5, 6, 7, 9]},
+    'android': {'title': 'Android', 'phases': [1, 2, 3, 4, 5, 6, 7, 8, 9]},
 }
 
 
@@ -521,7 +521,20 @@ INTRO = {
 'android/kotlin-multiplatform/production/testing-and-mocking.md':'Shared code can pass on the JVM and fail on iOS, because runtimes, schedulers and platform adapters differ. Decide which tests run on which targets and how to replace platform dependencies in them.',
 'android/kotlin-multiplatform/kmp-observability-crash-symbolication.md':'A crash inside shared Kotlin code on iOS can arrive as an unreadable native stack. Make shared failures traceable across platforms, with symbols, logs and metrics tied to each release.',
 'android/kotlin-multiplatform/production/ci-cd-for-kmp.md':'iOS targets can only be built on macOS, which makes every multiplatform pipeline slower and more expensive. Decide what runs on each change, what is cached, and how releases stay reproducible.',
-'android/kotlin-multiplatform/production/adoption-and-migration.md':'Rewriting two apps at once is rarely an option. Introduce shared code behind existing boundaries one slice at a time, keep each step reversible, and define when the old path can be removed.'}
+'android/kotlin-multiplatform/production/adoption-and-migration.md':'Rewriting two apps at once is rarely an option. Introduce shared code behind existing boundaries one slice at a time, keep each step reversible, and define when the old path can be removed.',
+'android/build-tooling/gradle-and-build-systems.md':'You change one line and wait a minute before anything compiles. Learn how Gradle configures a task graph from plugins, decides what to run, and where an incremental build actually spends its time.',
+'android/build-tooling/multi-module.md':"A private change in one feature turns other teams' builds red when module boundaries are wrong. Learn a standard module taxonomy and how API, implementation and test modules limit how far an edit spreads.",
+'android/build-tooling/convention-plugins.md':'Fifty copied build files drift apart until no two modules are configured alike. Move shared build logic into small, tested convention plugins that every module applies by ID.',
+'android/build-tooling/ksp.md':'Much of the code your app runs is generated at build time by annotation processors. Learn how KSP reads Kotlin symbols directly, why it replaces kapt, and how incremental processing decides what to regenerate.',
+'android/os-internals/intent-resolution-and-manifest.md':'Every intent that reaches your app is input from outside, and every manifest entry is part of your public surface. Learn how Android matches intents to components and what your code must still check.',
+'android/os-internals/broadcast-receivers.md':'A broadcast receiver can start your process for one short callback, then let it be killed. Learn how receivers are delivered, how long they live, and how to hand lasting work to an owner that survives.',
+'android/os-internals/content-providers-and-contentresolver.md':'Another app cannot read a path into your private storage. Learn how content providers, URIs and temporary grants share exactly one piece of data, and why providers run before Application.onCreate().',
+'android/os-internals/permissions-and-app-ops.md':'Holding a permission and being allowed to use a sensor right now are different questions. Learn the permission categories, the runtime flow, and how to design features that handle denial and degraded access.',
+'android/os-internals/activitymanager-process-lifecycle.md':"Your app's task can stay in Recents after the process holding its memory has been killed. Learn how Android ranks and kills processes, and which owners restore state when the user returns.",
+'android/os-internals/package-manager-installation-classloading.md':'An install can succeed while a class the app needs is missing until a user reaches it. Learn what PackageManager records at install, how classes load lazily, and how splits and R8 change that.',
+'android/os-internals/the-binder.md':"A method call that looks local can wait on another process's busy thread. Learn how Binder carries calls between processes, what limits apply, and how to design cross-process contracts.",
+'android/os-internals/the-zygote.md':'Every app needs the same framework, so Android prepares it once and copies the process. Learn how the Zygote preloads, forks and shares memory, and why a fast fork does not mean a ready app.',
+'android/os-internals/art-and-dalvik.md':'The same build can run faster days after install with no code change. Learn how ART mixes interpretation, JIT and profile-guided AOT compilation, and how to measure performance fairly.'}
 
 
 def intro(path):

@@ -28,19 +28,19 @@ Attribute size growth to its owner and artifact bucket. Keep release diagnostics
 
 <details><summary>Does the AAB file size equal every user’s download?</summary>
 
-**Answer:** No. Delivery varies by configuration and selected modules; inspect the relevant delivered APK set.
+No. Delivery varies by configuration and selected modules; inspect the relevant delivered APK set.
 
 </details>
 
 <details><summary>Why retain mapping per build?</summary>
 
-**Answer:** Retracing must match the code transformation that produced those managed frames.
+Retracing must match the code transformation that produced those managed frames.
 
 </details>
 
 <details><summary>Which test catches a release-only dynamic lookup failure?</summary>
 
-**Answer:** A release-equivalent test that exercises that lookup, with the same relevant shrinking and optimisation configuration.
+A release-equivalent test that exercises that lookup, with the same relevant shrinking and optimisation configuration.
 
 </details>
 

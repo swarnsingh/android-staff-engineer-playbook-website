@@ -70,21 +70,15 @@
 
 <details><summary>checkKotlinAbi is green. Can retry semantics change silently?</summary>
 
-#### Answer
-
 The dump does not establish behavioural compatibility. Test the timeout, replay, ordering and cancellation contract promised to callers.
 </details>
 
 <details><summary>Why retain an old compiled consumer fixture?</summary>
 
-#### Answer
-
 Recompiling uses the new API and can hide missing old entry points. The old artifact exercises the binary promise directly.
 </details>
 
 <details><summary>A new server enum value is absent from old clients. Is this only an API-dump concern?</summary>
-
-#### Answer
 
 No. It is also a wire/rollout and safe-behaviour decision. Test old/new readers and consumers under the declared compatibility window.
 </details>

@@ -28,19 +28,19 @@ Inspect the frame’s dependency path before choosing a tool or rewrite. Preserv
 
 <details><summary>Main is fast and the GPU is late. Where do you investigate next?</summary>
 
-**Answer:** Rendering work and its GPU/system evidence, including expensive effects and resource uploads if the trace points there.
+Rendering work and its GPU/system evidence, including expensive effects and resource uploads if the trace points there.
 
 </details>
 
 <details><summary>What should remain comparable across two rendering experiments?</summary>
 
-**Answer:** The user journey, useful content, device conditions and relevant surface/frame boundaries.
+The user journey, useful content, device conditions and relevant surface/frame boundaries.
 
 </details>
 
 <details><summary>Why distinguish recording from presentation?</summary>
 
-**Answer:** A recorded command list still needs rendering and composition before the user sees its result.
+A recorded command list still needs rendering and composition before the user sees its result.
 
 </details>
 

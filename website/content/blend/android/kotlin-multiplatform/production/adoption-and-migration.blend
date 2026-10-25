@@ -83,21 +83,15 @@ The Instant migration instruction and “DTOs for free” consumer claim in the 
 
 <details><summary>Only a quarter of code is shared. Failed migration?</summary>
 
-#### Answer
-
 That number is insufficient. Inspect whether the selected high-value boundaries improve the agreed outcomes after build, release and maintenance costs.
 </details>
 
 <details><summary>iOS cannot reproduce a framework build. Expand the pilot?</summary>
 
-#### Answer
-
 Repair ownership and reproducible integration first. An unowned dependency makes production adoption harder to support.
 </details>
 
 <details><summary>Two implementations write the same store during rollout. Safe by default?</summary>
-
-#### Answer
 
 No. Define consistency, ownership and rollback before dual writes. Prefer reversible selection and contract comparisons where they can establish the required behaviour.
 </details>

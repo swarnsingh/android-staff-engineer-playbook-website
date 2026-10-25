@@ -1,0 +1,56 @@
+<!-- Website teaching layer for android/os-internals/the-binder.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Sources checked 2026-10-25: AOSP "AIDL overview" and Binder IPC docs, IBinder / DeadObjectException
+     reference, Diagnose and fix ANRs; AOSP system/core commit on zygote restart after system_server death. -->
+
+<!-- @opening -->
+<p class="story-lead">A music app's play button freezes for two seconds, and the code behind it is one line: <code>if (service.isPlaying())</code>. It reads like a getter. It is actually a request to another process, which has to wait for a free thread there. The method looked local. The cost was not.</p>
+
+Binder is how one Android process calls into another: your app into system services, and your UI into its own background processes. Every call is packed into a parcel, carried by the kernel driver and run on a thread in the receiving process. This chapter covers proxies, stubs, transaction limits and process boundaries. The additions here follow one synchronous call into a busy service, so you can see what a caller is actually waiting for.
+
+<!-- @diagram a26ae8538ace976e -->
+### One call across the boundary
+
+<figure class="viz"><div class="viz-cols" style="--cols:3"><div class="col"><span class="col-title">Your app</span><div class="node"><strong>Kotlin code</strong></div><div class="node"><strong>Proxy</strong><small>marshals the parcel</small></div><div class="node"><strong>Binder client API</strong></div></div><div class="col"><span class="col-title">Linux kernel</span><div class="node is-key"><strong><code>/dev/binder</code> driver</strong><small>carries the transaction</small></div></div><div class="col"><span class="col-title">System server</span><div class="node"><strong>Binder thread pool</strong></div><div class="node"><strong>Stub</strong><small>unmarshals the parcel</small></div><div class="node" data-state="done"><strong>Service implementation</strong></div></div></div><figcaption>Redrawn from the original diagram. The same shape applies to your own AIDL service in a separate process.</figcaption></figure>
+
+<!-- @after Internal Mechanics :: animation -->
+### What the caller waits for
+
+<figure class="stepper"><span class="stepper-title">A synchronous <code>isPlaying()</code> into a busy service</span><div class="stage viz-grid" style="--cols:4"><div class="node" data-el="main"><strong>UI main thread</strong><small data-text="mainV">—</small></div><div class="node" data-el="proxy"><strong>Proxy</strong><small>parcel: code + arguments</small></div><div class="node" data-el="pool"><strong>Service Binder threads</strong><small data-text="poolV">—</small></div><div class="node is-key" data-el="impl"><strong><code>isPlaying()</code></strong><small>one line in the service</small></div></div><script type="application/json" class="steps">[
+{"label":"A local-looking call","caption":"The click handler calls service.isPlaying() on the main thread. Nothing in the syntax says another process is involved.","add":["main","proxy","pool","impl"],"state":{"main":"active"},"text":{"mainV":"calls isPlaying()","poolV":"busy decoding and on disk"}},
+{"label":"Marshal and send","caption":"The proxy writes the transaction code into a parcel and hands it to the driver. The calling thread now waits for the reply.","state":{"proxy":"active","main":"warn"},"text":{"mainV":"blocked, waiting for reply"}},
+{"label":"No free thread","caption":"Every Binder thread in the service is running long work, so the transaction waits for one to become free. The method body has not even started.","state":{"proxy":"done","pool":"error"}},
+{"label":"The screen stalls","caption":"While the main thread waits, it cannot draw frames or handle input. If the wait crosses the applicable timeout, this becomes an ANR.","state":{"main":"error"},"text":{"mainV":"frames and input stall"}},
+{"label":"Reply","caption":"A thread frees up, the one-line method runs in microseconds, and the reply returns. Nearly all of the two seconds was queueing.","state":{"pool":"done","impl":"done","main":"done"},"text":{"mainV":"resumes","poolV":"one thread freed"}},
+{"label":"Fix the contract","caption":"The service keeps Binder entry points short and offloads long work. The client calls off the main thread, or observes playback state pushed through a oneway callback, and handles a dead service.","state":{}}
+]</script><figcaption>Illustrative timing. Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+Give every cross-process interface a written contract: which calls may block and for how long, which are `oneway`, how large a parcel may be, and what clients do after a `DeadObjectException`. Review AIDL changes as API changes, because old clients keep calling the old transaction codes.
+
+<!-- @after Common Misconceptions :: check -->
+### Check your IPC reasoning
+
+<details><summary><code>isPlaying()</code> is a one-line getter inside the service. Is it safe to call on the main thread?</summary>
+
+Not reliably. The caller also waits for marshalling, scheduling and a free Binder thread in the other process. Call it off the main thread, or keep a local copy of state the service pushes to you.
+
+</details>
+
+<details><summary>Version 2 of your SDK needs an extra argument on <code>pauseMusic()</code>. Can you change the existing method?</summary>
+
+No. Old clients call the existing transaction code with the old arguments. Add a new method at the end, and keep the old one working.
+
+</details>
+
+<details><summary>Your <code>:music_process</code> crashes while the UI holds its proxy. What happens to the next call?</summary>
+
+It fails, typically with <code>DeadObjectException</code>. Register a <code>DeathRecipient</code> or watch the binding, then rebind and rebuild any state the UI relied on.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+Primary sources for the added layer: [AIDL overview (AOSP)](https://source.android.com/docs/core/architecture/aidl), [`IBinder.DeathRecipient`](https://developer.android.com/reference/android/os/IBinder.DeathRecipient), [`DeadObjectException`](https://developer.android.com/reference/android/os/DeadObjectException), [Diagnose and fix ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs).
+
+<!-- @before Answer Key :: review -->
+Answer 10, on what an app's proxies do when the system server crashes (BD1), is under technical review. A correction is pending the owner's approval.

@@ -83,21 +83,15 @@ The atomic-use restriction in answer 1 and default-collector statement in answer
 
 <details><summary>The new memory manager allows sharing. Does that serialize concurrent mutation?</summary>
 
-#### Answer
-
 No. You still need a concurrency contract for shared mutable state: a single owner, synchronization, or a suitable thread-safe primitive.
 </details>
 
 <details><summary>Can a Swift task’s cancelled flag prove a Kotlin request stopped?</summary>
 
-#### Answer
-
 No. Observe the underlying Kotlin job/request and reference release through the actual bridge selected by the application.
 </details>
 
 <details><summary>Memory rises after repeatedly opening a screen. Tune GC first?</summary>
-
-#### Answer
 
 First distinguish retained owners, unfinished jobs, transient allocations and collection behaviour. Profile a repeatable workload before changing runtime options.
 </details>

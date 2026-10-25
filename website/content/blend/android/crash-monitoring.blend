@@ -28,19 +28,19 @@ A dashboard is useful when its evidence changes an owned decision. Keep report c
 
 <details><summary>Does no SDK report prove no process failure?</summary>
 
-**Answer:** No. Capture and delivery have gaps; compare relevant platform and client signals.
+No. Capture and delivery have gaps; compare relevant platform and client signals.
 
 </details>
 
 <details><summary>Why compare crash-free users and sessions?</summary>
 
-**Answer:** They describe reach and recurrence differently; repeated failures can concentrate in a small user group.
+They describe reach and recurrence differently; repeated failures can concentrate in a small user group.
 
 </details>
 
 <details><summary>What turns a new cluster into an operational action?</summary>
 
-**Answer:** Defined impact evidence, an owner and a mitigation or investigation path.
+Defined impact evidence, an owner and a mitigation or investigation path.
 
 </details>
 

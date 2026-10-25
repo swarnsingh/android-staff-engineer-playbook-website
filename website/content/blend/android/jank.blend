@@ -28,19 +28,19 @@ Pair a reproducible journey with field cohorts. A benchmark can catch a repeatab
 
 <details><summary>Main is runnable but rarely scheduled. Is a faster layout the established fix?</summary>
 
-**Answer:** No. Investigate CPU contention and scheduling in the same interval before attributing the delay to layout.
+No. Investigate CPU contention and scheduling in the same interval before attributing the delay to layout.
 
 </details>
 
 <details><summary>How do lab and field measurements complement one another?</summary>
 
-**Answer:** A repeatable lab journey helps test causes; field cohorts show which users and devices experience the issue.
+A repeatable lab journey helps test causes; field cohorts show which users and devices experience the issue.
 
 </details>
 
 <details><summary>Why keep a low-tier device in the release gate?</summary>
 
-**Answer:** Its headroom and scheduling conditions can expose regressions hidden by a fast developer device.
+Its headroom and scheduling conditions can expose regressions hidden by a fast developer device.
 
 </details>
 

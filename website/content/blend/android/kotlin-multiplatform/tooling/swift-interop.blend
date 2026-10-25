@@ -71,21 +71,15 @@
 
 <details><summary>A Kotlin facade compiles. Is Swift compatibility proven?</summary>
 
-#### Answer
-
 No. Inspect generated names and types, then compile a representative Swift consumer. Kotlin source alone cannot reveal every exported mapping.
 </details>
 
 <details><summary>Should every implementation class become public to Swift?</summary>
 
-#### Answer
-
 Prefer a small deliberate facade and immutable boundary models. Export only what the consumer needs and govern its error and lifecycle contract.
 </details>
 
 <details><summary>SKIE produces typed state sequences. Does the Kotlin model become ObservableObject?</summary>
-
-#### Answer
 
 No. The Swift adapter still owns presentation adaptation and MainActor mutation. The bridge handles its documented cross-language behaviour, not every UI responsibility.
 </details>

@@ -28,19 +28,19 @@ Compare repeated journeys, not one heap snapshot in isolation. Keep managed rete
 
 <details><summary>Can one listener retain more memory than its own shallow size?</summary>
 
-**Answer:** Yes. Objects reachable through that listener contribute to the retained graph.
+Yes. Objects reachable through that listener contribute to the retained graph.
 
 </details>
 
 <details><summary>Does memory growth alone prove an Activity leak?</summary>
 
-**Answer:** No. Check retention paths, allocation churn, caches and other process-memory buckets.
+No. Check retention paths, allocation churn, caches and other process-memory buckets.
 
 </details>
 
 <details><summary>What validates the registration fix?</summary>
 
-**Answer:** Repeat the same lifecycle transitions and inspect whether the stale path and retained instances remain.
+Repeat the same lifecycle transitions and inspect whether the stale path and retained instances remain.
 
 </details>
 

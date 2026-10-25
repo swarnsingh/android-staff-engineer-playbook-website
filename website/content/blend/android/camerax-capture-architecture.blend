@@ -65,21 +65,15 @@
 
 <details><summary>Preview works: analysis healthy?</summary>
 
-#### Answer
-
 Check frame age, analyzer duration and drops.
 </details>
 
 <details><summary>Close the wrapped Media.Image?</summary>
 
-#### Answer
-
 Close the ImageProxy supplied by CameraX.
 </details>
 
 <details><summary>All four use cases always bind together?</summary>
-
-#### Answer
 
 No; supported combinations vary by device and configuration.
 </details>

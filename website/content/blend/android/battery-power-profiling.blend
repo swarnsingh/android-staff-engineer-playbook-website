@@ -28,19 +28,19 @@ Tie the budget to delivered user value, including freshness and reliability. Avo
 
 <details><summary>Does Dispatchers.IO itself prove lower energy?</summary>
 
-**Answer:** No. It changes execution placement; work amount and hardware activity still need measurement.
+No. It changes execution placement; work amount and hardware activity still need measurement.
 
 </details>
 
 <details><summary>Why check tool support before collecting?</summary>
 
-**Answer:** Power rails and related signals vary by device and platform. An absent signal is not a measured zero.
+Power rails and related signals vary by device and platform. An absent signal is not a measured zero.
 
 </details>
 
 <details><summary>What should stay equal in a power comparison?</summary>
 
-**Answer:** The useful outcome, duration and relevant device/network/app conditions.
+The useful outcome, duration and relevant device/network/app conditions.
 
 </details>
 

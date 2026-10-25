@@ -90,21 +90,15 @@ Answer 1 repeats the blanket symbol/bridge diagnosis (KO2); it remains under tec
 
 <details><summary>Symbol upload passed. Is a readable report proven?</summary>
 
-#### Answer
-
 No. Inspect a controlled report from the corresponding release-type artifact and verify its identity and expected stack information.
 </details>
 
 <details><summary>App version is known. Why also shared revision?</summary>
 
-#### Answer
-
 Binary consumers can bundle different shared artifacts under their own app release. Shared build identity makes that dependency explicit.
 </details>
 
 <details><summary>Every cancellation appears as a crash. What boundary needs inspection?</summary>
-
-#### Answer
 
 Check broad catch/report paths and the chosen interop integration. Preserve normal cancellation instead of reporting it as an unexpected product failure.
 </details>

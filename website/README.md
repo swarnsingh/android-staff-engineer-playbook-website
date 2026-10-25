@@ -5,7 +5,7 @@ This folder builds the reader website for the playbook. Read [`../content-rulebo
 ## Current state
 
 - **Repository:** private `swarnsingh/android-staff-engineer-playbook-website`. Current local work: `codex/android-completion`, based on the unpublished `claude/android-phase1` handover at `ce58ead`. The hosted preview and `main` remain at `d9cae81`; Android changes are not pushed or published. Historical branches `codex/reader-website` (`60b8c2a`) and `claude/reader-website-kotlin` (`8a77e22`) are preserved unchanged. Since repository separation, website work makes no pushes or merges to the original repository. Its earlier remote `codex/reader-website` branch remains at `390f8f8`; its `main` and canonical chapters are unchanged. Do not delete or rewrite that historical branch.
-- **Scope:** the Kotlin tree (`kotlin.md` plus all 22 chapters) and the Android tree (`android.md` plus 41 chapters, phases 1, 2, 3, 4) render as pages. `TREES` in `scripts/build.py` lists the rendered trees and, for a pilot, which guided-reading phases render; other chapters link to GitHub.
+- **Scope:** the Kotlin tree (`kotlin.md` plus all 22 chapters) and the Android tree (`android.md` plus 101 chapters, phases 1, 2, 3, 4, 5, 6, 7, 8, 9) render as pages. `TREES` in `scripts/build.py` lists the rendered trees and, for a pilot, which guided-reading phases render; other chapters link to GitHub.
 - **Sub-sections:** each tree's chapters are grouped by the `### Phase …` lists in its index (`kotlin.md`, `android.md`). The Topics menu shows one group per phase, and each chapter's breadcrumb shows its phase.
 - **Originals:** read-only snapshot from `60b8c2a`; provenance and file hashes for the Kotlin and Android trees are recorded in `../source-snapshot.json` and checked on every build. Do not edit them.
 - **Corrections:** 292 Kotlin proposals from Codex's audits sit in `content/corrections-*.json`, plus 3 new findings. All are triaged in `reviews/corrections-triage.md` (revised after Codex's review). None is approved yet, so none is applied.
@@ -80,7 +80,66 @@ This folder builds the reader website for the playbook. Read [`../content-rulebo
 | concurrency/services | `android/services.blend` | Blended |
 | concurrency/workmanager | `android/workmanager.blend` | Blended |
 | concurrency/battery-optimizations | `android/battery-optimizations.blend` | Blended |
-| Android phases 5, 6, 7, 8, 9 | — | Not rendered yet; links open GitHub |
+| networking-and-security/retrofit-and-okhttp | `android/retrofit-and-okhttp.blend` | Blended |
+| networking-and-security/ktor-vs-retrofit | `android/ktor-vs-retrofit.blend` | Blended |
+| networking-and-security/graphql | `android/graphql.blend` | Blended |
+| networking-and-security/networkcallback-metered-vpn-captive-portal | `android/networkcallback-metered-vpn-captive-portal.blend` | Blended |
+| networking-and-security/security-and-keystore | `android/security-and-keystore.blend` | Blended |
+| networking-and-security/device-connectivity-and-location | `android/device-connectivity-and-location.blend` | Blended |
+| data-and-di/health-connect | `android/health-connect.blend` | Blended |
+| networking-and-security/webview-and-hybrid | `android/webview-and-hybrid.blend` | Blended |
+| media/media3-player-architecture | `android/media3-player-architecture.blend` | Blended |
+| media/camerax-capture-architecture | `android/camerax-capture-architecture.blend` | Blended |
+| testing/testing-strategy | `android/testing-strategy.blend` | Blended |
+| testing/unit-testing | `android/unit-testing.blend` | Blended |
+| testing/ui-testing | `android/ui-testing.blend` | Blended |
+| performance/startup | `android/startup.blend` | Blended |
+| performance/jank | `android/jank.blend` | Blended |
+| performance/rendering | `android/rendering.blend` | Blended |
+| performance/anrs | `android/anrs.blend` | Blended |
+| performance/memory-management-and-leaks | `android/memory-management-and-leaks.blend` | Blended |
+| performance/native-memory-bitmaps | `android/native-memory-bitmaps.blend` | Blended |
+| performance/app-size-and-r8 | `android/app-size-and-r8.blend` | Blended |
+| performance/baseline-profiles | `android/baseline-profiles.blend` | Blended |
+| performance/macrobenchmark-and-perfetto | `android/macrobenchmark-and-perfetto.blend` | Blended |
+| performance/battery-power-profiling | `android/battery-power-profiling.blend` | Blended |
+| performance/network-radio-wakeups | `android/network-radio-wakeups.blend` | Blended |
+| performance/thermal-low-end-device-strategy | `android/thermal-low-end-device-strategy.blend` | Blended |
+| observability/logging | `android/logging.blend` | Blended |
+| observability/crash-monitoring | `android/crash-monitoring.blend` | Blended |
+| observability/mobile-apm-and-rum | `android/mobile-apm-and-rum.blend` | Blended |
+| build-tooling/gradle-and-build-systems | `android/gradle-and-build-systems.blend` | Blended |
+| build-tooling/multi-module | `android/multi-module.blend` | Blended |
+| build-tooling/convention-plugins | `android/convention-plugins.blend` | Blended |
+| build-tooling/ksp | `android/ksp.blend` | Blended |
+| os-internals/intent-resolution-and-manifest | `android/intent-resolution-and-manifest.blend` | Blended |
+| os-internals/broadcast-receivers | `android/broadcast-receivers.blend` | Blended |
+| os-internals/content-providers-and-contentresolver | `android/content-providers-and-contentresolver.blend` | Blended |
+| os-internals/permissions-and-app-ops | `android/permissions-and-app-ops.blend` | Blended |
+| os-internals/activitymanager-process-lifecycle | `android/activitymanager-process-lifecycle.blend` | Blended |
+| os-internals/package-manager-installation-classloading | `android/package-manager-installation-classloading.blend` | Blended |
+| os-internals/the-binder | `android/the-binder.blend` | Blended |
+| os-internals/the-zygote | `android/the-zygote.blend` | Blended |
+| os-internals/art-and-dalvik | `android/art-and-dalvik.blend` | Blended |
+| kotlin-multiplatform/kmp-decision-matrix | `android/kmp-decision-matrix.blend` | Blended |
+| kotlin-multiplatform/foundations/overview-and-k1-vs-k2 | `android/overview-and-k1-vs-k2.blend` | Blended |
+| kotlin-multiplatform/shared-domain-boundaries | `android/shared-domain-boundaries.blend` | Blended |
+| kotlin-multiplatform/foundations/architecture-and-module-boundaries | `android/architecture-and-module-boundaries.blend` | Blended |
+| kotlin-multiplatform/tooling/build-system-and-source-sets | `android/build-system-and-source-sets.blend` | Blended |
+| kotlin-multiplatform/ecosystem/libraries-ecosystem | `android/libraries-ecosystem.blend` | Blended |
+| kotlin-multiplatform/ecosystem/networking-with-ktor | `android/networking-with-ktor.blend` | Blended |
+| kotlin-multiplatform/ecosystem/persistence | `android/persistence.blend` | Blended |
+| kotlin-multiplatform/ecosystem/dependency-injection | `android/dependency-injection.blend` | Blended |
+| kotlin-multiplatform/ui-sharing/compose-multiplatform | `android/compose-multiplatform.blend` | Blended |
+| kotlin-multiplatform/ui-sharing/resource-sharing | `android/resource-sharing.blend` | Blended |
+| kotlin-multiplatform/production/concurrency-and-memory | `android/concurrency-and-memory.blend` | Blended |
+| kotlin-multiplatform/tooling/swift-interop | `android/swift-interop.blend` | Blended |
+| kotlin-multiplatform/tooling/ios-distribution | `android/ios-distribution.blend` | Blended |
+| kotlin-multiplatform/binary-compatibility-api-evolution | `android/binary-compatibility-api-evolution.blend` | Blended |
+| kotlin-multiplatform/production/testing-and-mocking | `android/testing-and-mocking.blend` | Blended |
+| kotlin-multiplatform/kmp-observability-crash-symbolication | `android/kmp-observability-crash-symbolication.blend` | Blended |
+| kotlin-multiplatform/production/ci-cd-for-kmp | `android/ci-cd-for-kmp.blend` | Blended |
+| kotlin-multiplatform/production/adoption-and-migration | `android/adoption-and-migration.blend` | Blended |
 
 Update this table whenever a chapter changes state.
 

@@ -1,0 +1,79 @@
+<!-- Website teaching layer for android/build-tooling/gradle-and-build-systems.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Sources checked 2026-10-25: Gradle build lifecycle, build cache, java-library (api vs implementation),
+     version catalogs; Kotlin incremental compilation; Android "Migrate to built-in Kotlin". -->
+
+<!-- @opening -->
+<p class="story-lead">You change one string in a feature screen and press Run. Forty seconds pass before anything compiles, and then the build compiles modules you never touched. Your teammate says "just run clean". That might make the next build pass. It won't tell you where the forty seconds went.</p>
+
+Gradle does three things for every build: it finds the projects, configures them into a graph of tasks, and runs the tasks that graph needs. Each can be slow for different reasons. This chapter covers the graph, the plugins that fill it, and the boundaries that decide how far one edit spreads. The additions here help you find which part of a slow build to fix first.
+
+<!-- @after First Principles :: visual -->
+### Three phases, three different costs
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Initialization</strong><small><code>settings.gradle.kts</code> decides which projects take part</small></div><div class="node"><strong>Configuration</strong><small>build scripts and plugins run; tasks are registered and wired</small></div><div class="node is-key"><strong>Task graph</strong><small>only the tasks the requested goal needs</small></div><div class="node" data-state="done"><strong>Execution</strong><small>tasks run in dependency order; independent ones may overlap</small></div></div><figcaption>Gradle's documented build lifecycle. A slow build can be slow before the first task starts: time spent in the first two boxes is not compilation.</figcaption></figure>
+
+<!-- @after Mental Model :: animation -->
+### Where did the forty seconds go?
+
+<figure class="stepper"><span class="stepper-title">Reading one slow incremental build</span><div class="stage viz-grid" style="--cols:3"><div class="node" data-el="cfg"><strong>Configuration</strong><small data-text="cfgV">—</small></div><div class="node" data-el="core"><strong><code>:core:model</code></strong><small>compile</small></div><div class="node" data-el="cart"><strong><code>:feature:cart</code></strong><small>compile (edited)</small></div><div class="node" data-el="feed"><strong><code>:feature:feed</code></strong><small>compile</small></div><div class="node" data-el="app"><strong><code>:app</code></strong><small>compile and dex</small></div><div class="node is-key" data-el="pkg"><strong>Package</strong><small>the APK you run</small></div></div><script type="application/json" class="steps">[
+{"label":"Profile first","caption":"Run the same build with a build scan or --profile. Guessing which part is slow is how teams end up tuning the wrong thing.","add":["cfg","core","cart","feed","app","pkg"],"state":{"cfg":"active"},"text":{"cfgV":"measure before changing anything"}},
+{"label":"Before any task","caption":"In this illustrative trace, configuration takes most of the wait. A script that reads a file or calls a server during configuration costs time on every invocation, including IDE syncs.","state":{"cfg":"warn"},"text":{"cfgV":"most of the wait: script work, not compiling"}},
+{"label":"Unchanged work","caption":"The shared model did not change, so its compile task has nothing new to do. Only tasks whose inputs changed need real work.","state":{"cfg":"done","core":"done"}},
+{"label":"Parallel branches","caption":"Cart was edited. Feed does not depend on cart, so with parallel execution enabled the two branches do not wait for each other.","state":{"cart":"active","feed":"active"}},
+{"label":"The join","caption":"The app module needs both branches. Its work, and packaging after it, cannot start until the slower branch finishes: that chain is the critical path.","state":{"cart":"done","feed":"done","app":"active"}},
+{"label":"Fix the chain","caption":"Shorten the longest chain or the configuration time. Speeding up a task that is not on the critical path makes this build no faster.","state":{"app":"done","pkg":"done"}}
+]</script><figcaption>Illustrative build; real timings come from your own scans. Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>
+
+<!-- @after Internal Mechanics :: visual -->
+### Who can see a dependency
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title"><code>implementation</code></span><div class="node"><strong>B uses A internally</strong><small>A is on B's compile classpath</small></div><div class="node" data-state="done"><strong>C depends on B</strong><small>A is not on C's compile classpath, so C cannot reference A's types</small></div></div><div class="col"><span class="col-title"><code>api</code></span><div class="node"><strong>B exposes A</strong><small>A becomes part of what B's consumers compile against</small></div><div class="node" data-state="warn"><strong>C depends on B</strong><small>A is on C's compile classpath too; changes to A can now affect C's compilation</small></div></div></div><figcaption>Gradle's <code>java-library</code> guidance: <code>implementation</code> dependencies do not leak into consumers' compile classpath, which reduces classpath size and recompilation. Use <code>api</code> only when a type from the dependency appears in your module's public signatures.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+Treat the build as a product with a budget. Track configuration time, the critical path and the share of work avoided on CI and on laptops, and review a plugin or script change that moves those numbers like any other performance regression.
+
+<!-- @after Common Misconceptions :: check -->
+### Check your build reasoning
+
+<details><summary>The build takes 40 seconds before the first task starts. Will splitting modules help?</summary>
+
+Probably not first. That time is spent configuring the build, so look for script work, plugin cost and I/O during configuration in a build scan or profile.
+
+</details>
+
+<details><summary><code>:feature:cart</code> and <code>:feature:feed</code> both depend only on <code>:core:model</code>. Must one wait for the other?</summary>
+
+No. Neither depends on the other, so with parallel execution enabled their tasks can run at the same time. Only a module that needs both, such as <code>:app</code>, waits for both.
+
+</details>
+
+<details><summary>You halve the time of a task that is not on the critical path. How much faster is the build?</summary>
+
+Usually not at all, because another chain still finishes later. Shorten the longest dependent chain first.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+Primary sources for the added layer: [Gradle build lifecycle](https://docs.gradle.org/current/userguide/build_lifecycle.html), [api and implementation](https://docs.gradle.org/current/userguide/java_library_plugin.html), [Gradle build cache](https://docs.gradle.org/current/userguide/build_cache.html), [Kotlin incremental compilation](https://kotlinlang.org/docs/gradle-compilation-and-caches.html), [Migrate to built-in Kotlin](https://developer.android.com/build/migrate-to-built-in-kotlin).
+
+<!-- @before Why It Matters :: review -->
+The task list in this section (GB1) is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Internal Mechanics :: review -->
+The passages on recompiling downstream modules (GB2), configuration on every invocation (GB7) and the remote cache key (GB3) in this section are under technical review. A correction is pending the owner's approval.
+
+<!-- @before Architecture :: review -->
+The cache-hit label in this diagram (GB3) is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Production Example :: review -->
+The passages on recompiling a single large module and on unchanged modules (GB3, GB4) in this section are under technical review. A correction is pending the owner's approval.
+
+<!-- @before Failure Modes :: review -->
+The fix proposed for transitive dependency conflicts (GB5) is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Common Misconceptions :: review -->
+The passage on what <code>clean</code> deletes (GB6) is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Answer Key :: review -->
+Answers 3, 4, 5 and 9 in this section (GB7, GB2, GB3, GB6) are under technical review. A correction is pending the owner's approval.

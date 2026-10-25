@@ -28,19 +28,19 @@ Report batch age, retry count and useful acknowledgements beside bytes. Do not r
 
 <details><summary>A tiny request timed out. Is it safe to create a new write?</summary>
 
-**Answer:** Not necessarily. The server may have committed it; use idempotency or reconcile before duplicating business work.
+Not necessarily. The server may have committed it; use idempotency or reconcile before duplicating business work.
 
 </details>
 
 <details><summary>Why cap event age as well as batch size?</summary>
 
-**Answer:** A quiet app may never fill a batch, leaving required events waiting indefinitely.
+A quiet app may never fill a batch, leaving required events waiting indefinitely.
 
 </details>
 
 <details><summary>Does validated connectivity guarantee endpoint success?</summary>
 
-**Answer:** No. Capabilities describe observed network state, which can change; individual requests still fail.
+No. Capabilities describe observed network state, which can change; individual requests still fail.
 
 </details>
 

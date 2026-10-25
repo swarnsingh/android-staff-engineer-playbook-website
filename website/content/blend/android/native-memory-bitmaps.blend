@@ -28,19 +28,19 @@ Use process-memory evidence alongside heap retention. A cache budget is a produc
 
 <details><summary>Why can a small JPEG allocate much more memory?</summary>
 
-**Answer:** Compression describes file storage; decoding creates pixel data and associated resources.
+Compression describes file storage; decoding creates pixel data and associated resources.
 
 </details>
 
 <details><summary>Does a healthy Kotlin heap exclude memory-pressure termination?</summary>
 
-**Answer:** No. Native, graphics and other process/system pressure also matter.
+No. Native, graphics and other process/system pressure also matter.
 
 </details>
 
 <details><summary>Is smaller prefetch always free?</summary>
 
-**Answer:** No. Even right-sized requests consume resources; bound count, lifetime and cache ownership.
+No. Even right-sized requests consume resources; bound count, lifetime and cache ownership.
 
 </details>
 

@@ -98,21 +98,15 @@ The ignoreUnknownKeys warning in the next section (KT5) is under technical revie
 
 <details><summary>Ktor uses the OkHttp engine. Has every transport behaviour changed?</summary>
 
-#### Answer
-
 No. The client API changed while OkHttp remains the engine. Inventory configuration, plugin interactions and defaults instead of treating the library name as the transport contract.
 </details>
 
 <details><summary>MockEngine passes. What remains untested?</summary>
 
-#### Answer
-
 The selected real engine’s sockets, TLS, proxies, connection reuse and integration with platform networking. Use appropriate transport integration tests as well as portable contract tests.
 </details>
 
 <details><summary>What result would justify keeping Retrofit?</summary>
-
-#### Answer
 
 If its supported platform scope and operational behaviour meet the product’s needs, a migration must show enough value to outweigh compatibility, training and rollout costs. There is no requirement to replace a working boundary.
 </details>

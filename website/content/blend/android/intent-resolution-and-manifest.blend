@@ -1,0 +1,57 @@
+<!-- Website teaching layer for android/os-internals/intent-resolution-and-manifest.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Sources checked 2026-10-25: Intents and intent filters, <activity> android:exported, Android App Links
+     verification, Package visibility, PendingIntent mutability guidance (developer.android.com). -->
+
+<!-- @opening -->
+<p class="story-lead">A customer taps <code>https://example.com/orders/43</code> in an email. Your verified App Link opens the order screen at once, with no chooser and no question. But order 43 belongs to someone else. The link reached exactly the right app, and the app still had to decide whether to show it.</p>
+
+Every manifest entry is a promise about how other apps and the system may reach you. Every intent that arrives is input from outside. This chapter explains how Android matches an intent to a component and which manifest settings form your security boundary. The additions here separate what the system decides from what your code must still check.
+
+<!-- @diagram b3a61092347dc92b -->
+### How an implicit intent finds its target
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Caller app</strong><small><code>startActivity(intent)</code></small></div><div class="node"><strong>ActivityManagerService</strong><small>asks PackageManager to resolve</small></div><div class="node is-key"><strong>PackageManagerService</strong><small>matches action, data and category against filters</small></div><div class="node"><strong>ResolveInfo</strong><small>or chooser candidates</small></div><div class="node" data-state="done"><strong>Target app</strong><small>component launched via Binder</small></div></div><figcaption>Redrawn from the original sequence diagram. Matching happens in system services, outside both apps.</figcaption></figure>
+
+<!-- @after Manifest as Security Boundary :: visual -->
+### Four gates, two owners
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">The system decides</span><div class="node"><strong>1. Does a filter match?</strong><small>action, data, category, package visibility</small></div><div class="node"><strong>2. Which app gets the link?</strong><small>App Link verification ties a domain to your app</small></div></div><div class="col"><span class="col-title">Your code decides</span><div class="node is-key"><strong>3. Is it a known route?</strong><small>scheme, host, path and parameters parsed and validated</small></div><div class="node is-key"><strong>4. May this user see it?</strong><small>sign-in and server-side authorization</small></div></div></div><figcaption>Passing gates 1 and 2 means the intent reached you, not that it is safe or permitted. Gates 3 and 4 belong to the router.</figcaption></figure>
+
+<!-- @after Production Patterns :: animation -->
+### A verified link meets the router
+
+<figure class="stepper"><span class="stepper-title">Routing <code>/orders/43</code> safely</span><div class="stage viz-grid" style="--cols:4"><div class="node" data-el="os"><strong>System</strong><small>verified link → <code>LinkRouterActivity</code></small></div><div class="node" data-el="parse"><strong>Parse</strong><small data-text="parseV">—</small></div><div class="node" data-el="auth"><strong>Authorize</strong><small data-text="authV">—</small></div><div class="node is-key" data-el="nav"><strong>Navigate</strong><small data-text="navV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Delivered","caption":"The domain is verified for your app, so the system opens the router without a chooser. That is all verification promises.","add":["os","parse","auth","nav"],"state":{"os":"done"}},
+{"label":"Parse","caption":"The router checks scheme, host and path against the routes it knows and extracts an order ID. Unknown paths finish the router without opening anything.","state":{"parse":"active"},"text":{"parseV":"OrderRoute(id = 43)"}},
+{"label":"A hostile input","caption":"The ID came from a link anyone can write, or from extras another app sent to the exported router. Treat it as untrusted input.","state":{"parse":"done","auth":"warn"},"text":{"authV":"order 43: owner unknown"}},
+{"label":"Authorize","caption":"Is the user signed in, and does the server allow this user to read order 43? Here the server says no, so the router shows a safe fallback instead of the order.","state":{"auth":"error"},"text":{"authV":"not this user's order"}},
+{"label":"Navigate with an ID","caption":"For order 42, which the user does own, the router passes only the ID inward and builds the expected back stack. The order screen loads its own data.","state":{"auth":"done","nav":"done"},"text":{"authV":"order 42: allowed","navV":"ID only, proper back stack"}}
+]</script><figcaption>Illustrative routes. Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+Put the merged manifest in code review. A new exported component, intent filter, permission or `<queries>` entry changes your app's public surface, even when the Kotlin diff looks unrelated, because library manifests merge into yours.
+
+<!-- @after Failure Modes :: check -->
+### Check the boundary
+
+<details><summary>Your App Link is verified. Does the router still need to validate the path and the user?</summary>
+
+Yes. Verification decides which app opens the domain's links. It says nothing about whether this path is a known route or whether this user may see the content.
+
+</details>
+
+<details><summary>An internal debug activity has no intent filter. Should you still write <code>android:exported="false"</code>?</summary>
+
+Without intent filters it is not exported by default, but writing it explicitly makes the intent visible in manifest review and protects you if someone adds a filter later.
+
+</details>
+
+<details><summary>A screen receives a full order with 500 line items as an extra. What fails, and what should you pass?</summary>
+
+Extras cross Binder, so a large payload can fail with <code>TransactionTooLargeException</code>. Pass the order ID and let the destination load the data.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+Primary sources for the added layer: [Intents and intent filters](https://developer.android.com/guide/components/intents-filters), [`<activity>` and `android:exported`](https://developer.android.com/guide/topics/manifest/activity-element#exported), [Verify Android App Links](https://developer.android.com/training/app-links/verify-android-applinks), [Package visibility](https://developer.android.com/training/package-visibility).

@@ -28,19 +28,19 @@ Keep the diagnostic schema small and owned. Test sink routing, redaction and run
 
 <details><summary>Can a release tree stop an already-evaluated argument?</summary>
 
-**Answer:** No. Put the policy before material evaluation or use a lazy boundary; verify the actual release artifact.
+No. Put the policy before material evaluation or use a lazy boundary; verify the actual release artifact.
 
 </details>
 
 <details><summary>Does an error priority make a message safe to upload?</summary>
 
-**Answer:** No. Classify and minimise its content before any sink receives it.
+No. Classify and minimise its content before any sink receives it.
 
 </details>
 
 <details><summary>What proves a logging optimisation worked?</summary>
 
-**Answer:** Release-artifact/runtime evidence on the relevant call path, including argument work and retained output.
+Release-artifact/runtime evidence on the relevant call path, including argument work and retained output.
 
 </details>
 

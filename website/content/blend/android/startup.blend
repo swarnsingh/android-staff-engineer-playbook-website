@@ -28,19 +28,19 @@ Keep launch mode, entry point, device tier and content state beside the metric. 
 
 <details><summary>The spinner appears sooner, but the feed is ready at the same time. What improved?</summary>
 
-**Answer:** TTID may have improved. The useful-content boundary did not; report both rather than calling the whole launch faster.
+TTID may have improved. The useful-content boundary did not; report both rather than calling the whole launch faster.
 
 </details>
 
 <details><summary>Why record compilation state with a cold-start result?</summary>
 
-**Answer:** Cold describes process state. Already compiled code, installed profiles and app data can still differ between runs.
+Cold describes process state. Already compiled code, installed profiles and app data can still differ between runs.
 
 </details>
 
 <details><summary>Which first screen should define readiness for a deep link?</summary>
 
-**Answer:** The destination the user requested. A launcher feed benchmark alone does not validate every entry point.
+The destination the user requested. A launcher feed benchmark alone does not validate every entry point.
 
 </details>
 

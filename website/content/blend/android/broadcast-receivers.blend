@@ -1,0 +1,61 @@
+<!-- Website teaching layer for android/os-internals/broadcast-receivers.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Sources checked 2026-10-25: Broadcasts overview (effects on process state, goAsync, receiver export flags),
+     Diagnose and fix ANRs (broadcast receiver timeouts), WorkManager unique work. -->
+
+<!-- @opening -->
+<p class="story-lead">A user taps "Mark as read" on a notification, and the message stays unread. The receiver started a coroutine to call the server and returned at once. A few seconds later the system reclaimed the idle process, and the request went with it. No error was logged, because nothing ever failed. The work simply stopped existing.</p>
+
+A broadcast receiver is a doorway, not a workplace. The system can start your process just to call `onReceive()`, and once it returns the receiver is finished and the process may be killed. This chapter covers receiver types, delivery, time limits and security. The additions here follow one notification action from the doorway to an owner that outlives it.
+
+<!-- @diagram 258254336f135e0e -->
+### Delivering one broadcast
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Sender</strong><small><code>sendBroadcast(intent)</code></small></div><div class="node is-key"><strong>ActivityManagerService</strong><small>resolves receivers</small></div><div class="node"><strong>Receiver process</strong><small>started if needed</small></div><div class="node"><strong><code>onReceive(context, intent)</code></strong></div><div class="node" data-state="done"><strong>Return quickly</strong><small>back to the system</small></div></div><figcaption>Redrawn from the original sequence diagram. Delivery travels over Binder and may start a process that had no visible UI.</figcaption></figure>
+
+<!-- @after Time Limits and goAsync() :: visual -->
+### How long each piece lives
+
+<figure class="viz"><div class="viz-lanes"><div class="lane"><span class="lane-label"><code>onReceive()</code></span><div class="track"><span class="mark" style="--at:0%;--len:14%">receiver</span></div></div><div class="lane"><span class="lane-label">Unowned coroutine</span><div class="track"><span class="mark" data-tone="warn" style="--at:4%;--len:30%">killed with process</span></div></div><div class="lane"><span class="lane-label">Idle process</span><div class="track"><span class="mark" data-tone="ghost" style="--at:14%;--len:20%">may be reclaimed</span></div></div><div class="lane"><span class="lane-label">WorkManager request</span><div class="track"><span class="mark" data-tone="soft" style="--at:10%;--len:88%">persisted until it succeeds</span></div></div></div><figcaption>Illustrative timeline. The broadcasts guide: the system can stop the process at any moment after <code>onReceive()</code> returns, ending threads it started. A WorkManager request is stored and rescheduled after process death and reboot.</figcaption></figure>
+
+<!-- @after Production Patterns :: animation -->
+### "Mark as read", from tap to server
+
+<figure class="stepper"><span class="stepper-title">A notification action that survives the receiver</span><div class="stage viz-grid" style="--cols:4"><div class="node" data-el="tap"><strong>Tap</strong><small><code>PendingIntent.getBroadcast</code></small></div><div class="node" data-el="recv"><strong><code>MarkReadReceiver</code></strong><small data-text="recvV">—</small></div><div class="node" data-el="work"><strong>Unique work</strong><small data-text="workV">—</small></div><div class="node is-key" data-el="truth"><strong>Source of truth</strong><small data-text="truthV">message unread</small></div></div><script type="application/json" class="steps">[
+{"label":"Tap","caption":"The system starts the process if needed, creates the receiver and calls onReceive on the main thread.","add":["tap","recv","work","truth"],"state":{"tap":"done","recv":"active"},"text":{"recvV":"onReceive running"}},
+{"label":"The fragile version","caption":"The opening's receiver launches a coroutine on a process-wide scope and returns. The receiver is now finished; nothing tells the system that work is still in flight.","state":{"recv":"warn","work":"ghost"},"text":{"recvV":"returned; coroutine unowned"}},
+{"label":"Process reclaimed","caption":"With no active component, the idle process can be killed to free memory. The coroutine dies mid-request and the message stays unread.","state":{"recv":"error"},"text":{"recvV":"process gone, request lost"}},
+{"label":"The robust version","caption":"Validate the message ID, enqueue unique work keyed by that ID, and return. The request is persisted before onReceive ends.","state":{"recv":"done","work":"active"},"text":{"recvV":"validated, enqueued, returned","workV":"mark-read-42 (KEEP)"}},
+{"label":"A duplicate tap","caption":"A second broadcast for the same message finds the unique work already queued and adds nothing. The worker itself is idempotent, so a retry is safe too.","state":{"work":"done"},"text":{"workV":"duplicate ignored"}},
+{"label":"Reconciled","caption":"The worker updates local storage and the server. Even if a broadcast is missed, the next sync reads the real state, because broadcasts are hints, not data.","state":{"truth":"done"},"text":{"truthV":"message read, locally and on the server"}}
+]</script><figcaption>Illustrative flow. Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+Review every exported receiver as an endpoint other apps can call: what can a forged intent trigger, which permission stops it, and what state does the handler re-read before acting?
+
+<!-- @after Failure Modes :: check -->
+### Check your receivers
+
+<details><summary>A receiver must upload a 2 MB diagnostics file. Is <code>goAsync()</code> enough?</summary>
+
+No. The chapter limits <code>goAsync()</code> to small, bounded work, and a network upload is neither. Enqueue a WorkManager request with a network constraint and return.
+
+</details>
+
+<details><summary>An exported receiver reads a <code>user_id</code> extra and deletes that user's data. What should protect it?</summary>
+
+Keep it unexported if possible. Otherwise require a signature permission, treat the extra as a hint, and re-check authorization against trusted state before doing anything destructive.
+
+</details>
+
+<details><summary>Two broadcasts for the same state change arrive within a second. How do you avoid running the sync twice?</summary>
+
+Enqueue unique work under a stable name, and make the work itself idempotent, so duplicates and retries change nothing extra.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+Primary sources for the added layer: [Broadcasts overview](https://developer.android.com/develop/background-work/background-tasks/broadcasts), [Diagnose and fix ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs), [Managing unique work](https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/manage-work#unique-work).
+
+<!-- @before Answer Key :: review -->
+Answer 8, on the receiver timeout and the effect of <code>goAsync()</code> (BR1), is under technical review. A correction is pending the owner's approval.

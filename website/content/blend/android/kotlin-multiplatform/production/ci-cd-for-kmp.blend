@@ -87,21 +87,15 @@ Answers 2–3 promise bounded cost reductions and a particular cache/download ou
 
 <details><summary>Linux job is green. Is Apple framework linkage covered?</summary>
 
-#### Answer
-
 No. Require a compatible Apple host and consumer evidence for that promise.
 </details>
 
 <details><summary>A restore-key prefix exists. Is a cache hit certain?</summary>
 
-#### Answer
-
 No. Record the actual hit/miss and rebuild/download behaviour; fallback lookup is conditional.
 </details>
 
 <details><summary>A package manifest changed. Can release evidence stop at uploading a ZIP?</summary>
-
-#### Answer
 
 No. Verify its immutable version/URL/checksum and resolve and exercise a clean consumer.
 </details>

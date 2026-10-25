@@ -84,21 +84,15 @@ The declared Flow element type in observeUser (GQ2) is under technical review. A
 
 <details><summary>HTTP 200 contains a user and a field error. Must the screen discard the user?</summary>
 
-#### Answer
-
 That depends on the operation’s product contract. GraphQL can return partial data with errors; explicitly map usable content and stable failures rather than deciding from HTTP status alone.
 </details>
 
 <details><summary>The build validated yesterday’s schema. Can today’s server still break a shipped app?</summary>
 
-#### Answer
-
 Yes. Build validation checks the artifact supplied to that build. Server compatibility and supported-client operation checks must protect already-shipped binaries.
 </details>
 
 <details><summary>Two objects both have a field named id. Is shared cache identity automatic?</summary>
-
-#### Answer
 
 Do not assume it. Check the configured cache-key policy and the returned entity/field selection. A cache integration test should demonstrate the cross-operation update the product depends on.
 </details>

@@ -1,0 +1,60 @@
+<!-- Website teaching layer for android/build-tooling/ksp.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Sources checked 2026-10-25: kotlinlang.org KSP overview, incremental processing, multiple-round processing;
+     KSP Resolver.kt KDoc (google/ksp main); Android "Migrate from kapt to KSP". -->
+
+<!-- @opening -->
+<p class="story-lead">After a migration from kapt, the build fails with <code>Unresolved reference: UserJsonAdapter</code>. Yesterday that class existed. Nobody wrote it by hand: a processor generated it. Now somebody has to work out which step stopped producing it.</p>
+
+KSP lets a processor read your Kotlin declarations at build time and write new source files. Those files are then compiled with the rest of the module. This chapter covers why that beats kapt's Java stubs, how to write a processor, and how incremental processing decides what to rerun. The additions here split code generation into steps you can check one at a time, so a missing class has a clear place to look.
+
+<!-- @diagram 983b8acc34b1133f -->
+### From annotation to compiled class
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Your <code>.kt</code> sources</strong></div><div class="node"><strong>Kotlin compiler</strong><small>parses the module</small></div><div class="node"><strong>KSP Resolver</strong><small>the symbol graph</small></div><div class="node is-key"><strong>Your processor</strong></div><div class="node"><strong>Generated <code>.kt</code> files</strong></div><div class="node" data-state="done"><strong>Final compilation</strong></div></div><figcaption>Redrawn from the original diagram. Generated code is ordinary Kotlin source: it is compiled, packaged and shrunk like code you wrote.</figcaption></figure>
+
+<!-- @after How KSP Sees Your Code :: animation -->
+### Where did the generated class go?
+
+<figure class="stepper"><span class="stepper-title">Checking a missing generated adapter, one boundary at a time</span><div class="stage viz-grid" style="--cols:4"><div class="node" data-el="apply"><strong>Applied?</strong><small>plugin and <code>ksp(…)</code> dependency</small></div><div class="node" data-el="see"><strong>Seen?</strong><small>symbol returned by the Resolver</small></div><div class="node" data-el="write"><strong>Written?</strong><small>file under <code>build/generated/ksp</code></small></div><div class="node" data-el="use"><strong>Compiled and kept?</strong><small>part of the module's output</small></div></div><script type="application/json" class="steps">[
+{"label":"Was it applied?","caption":"A module that still declares kapt(...) or lacks the KSP plugin never runs the processor. The chapter's first failure mode: check the module's plugins and its ksp(...) line.","add":["apply","see","write","use"],"state":{"apply":"active"}},
+{"label":"Did it see User?","caption":"The processor asks the Resolver for symbols with an annotation's fully qualified name. A misspelled or wrong annotation name returns nothing, and nothing is generated.","state":{"apply":"done","see":"active"}},
+{"label":"Did it write a file?","caption":"Look in build/generated/ksp/<variant>/kotlin/ and in the Gradle output for errors the processor logged. Generated source is plain Kotlin you can read and diff.","state":{"see":"done","write":"active"}},
+{"label":"Was it compiled and kept?","caption":"Generated files are compiled with the module. If a library later finds the class by reflection, release shrinking must keep it; check the library's consumer rules.","state":{"write":"done","use":"active"}},
+{"label":"Fixed at one boundary","caption":"In this story the module still had kapt for Moshi. Applying KSP and switching to ksp(...) restored the file. Each boundary is a yes-or-no check, not a guess.","state":{"use":"done"}}
+]</script><figcaption>Illustrative migration bug. Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>
+
+<!-- @after Incremental Compilation :: visual -->
+### What a generated file depends on
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Isolating</span><div class="node"><strong><code>UserBuilder.kt</code></strong><small>declared to depend on <code>User.kt</code> only</small></div><div class="node" data-state="done"><strong>Edit <code>Order.kt</code></strong><small>this output does not need regenerating</small></div></div><div class="col"><span class="col-title">Aggregating</span><div class="node"><strong><code>PluginRegistry.kt</code></strong><small>lists every annotated class</small></div><div class="node" data-state="warn"><strong>Edit <code>Order.kt</code></strong><small>may add or remove an entry, so the output is reprocessed</small></div></div></div><figcaption>The <code>Dependencies</code> passed to <code>CodeGenerator</code> is a promise about inputs. Declare too little and builds go stale; declare aggregating when isolating would do and incremental builds slow down.</figcaption></figure>
+
+<!-- @after Common Pitfalls :: check -->
+### Check your processor reasoning
+
+<details><summary>Your processor writes one builder per annotated class. Isolating or aggregating?</summary>
+
+Isolating, with the annotated class's file as the dependency. Each output depends on one input, so an edit elsewhere does not need to regenerate it.
+
+</details>
+
+<details><summary>A processor generates a registry of every annotated class in the module. Why does editing an unrelated file rerun it?</summary>
+
+Its output is aggregating: any changed or new file might add or remove an annotated class, so KSP reprocesses it. That cost is the price of a correct registry.
+
+</details>
+
+<details><summary>You move Room to KSP but leave one processor on kapt. Is the stub step gone?</summary>
+
+No. While any kapt processor remains in the module, kapt still generates stubs, which is why the chapter warns that mixed builds can erase much of the speed benefit.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+Primary sources for the added layer: [KSP overview](https://kotlinlang.org/docs/ksp-overview.html), [KSP incremental processing](https://kotlinlang.org/docs/ksp-incremental.html), [KSP multiple-round processing](https://kotlinlang.org/docs/ksp-multi-round.html), [Migrate from kapt to KSP](https://developer.android.com/build/migrate-to-ksp).
+
+<!-- @before Real Patterns (Library Authors) :: review -->
+Pattern 1's description of scanning annotated classes across modules (KS2) is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Common Pitfalls :: review -->
+The pitfall describing what happens when invalid symbols are returned every round (KS1) is under technical review. A correction is pending the owner's approval.

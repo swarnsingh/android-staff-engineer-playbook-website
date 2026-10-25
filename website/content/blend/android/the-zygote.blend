@@ -1,0 +1,63 @@
+<!-- Website teaching layer for android/os-internals/the-zygote.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Sources checked 2026-10-25: AOSP "About the Zygote processes", AOSP ZygoteInit.java (main, forkSystemServer),
+     Linux fork(2) copy-on-write, Android "App startup time". No fixed timings are claimed. -->
+
+<!-- @opening -->
+<p class="story-lead">Every app on a phone needs the same framework: <code>View</code>, <code>Activity</code>, resources and the runtime itself. If each launch loaded all of that from storage, every tap would pay the same cost, and every running app would hold its own copy in RAM. Android prepares that work once, in a process it can copy.</p>
+
+The Zygote starts early in boot, sets up the runtime, preloads framework classes and resources, then waits on a socket. Each new app process is a fork of it, and memory pages are shared until somebody writes to one. This chapter explains the boot sequence, the fork and the trade-offs of preloading. The additions here show which pages stay shared and which become private, and why a quick fork still doesn't mean your app is ready.
+
+<!-- @diagram 98d4760f61cc9074 -->
+### One preloaded parent, many children
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Linux kernel</strong></div><div class="node"><strong><code>init</code></strong><small>reads <code>init.rc</code></small></div><div class="node is-key"><strong>Zygote</strong><small>preloads ART and core classes into shared RAM</small></div></div><div class="viz-cols" style="--cols:3"><div class="node" data-state="done"><strong>System server</strong><small>fork 1</small></div><div class="node" data-state="done"><strong>WhatsApp</strong><small>fork 2</small></div><div class="node" data-state="done"><strong>Spotify</strong><small>fork 3</small></div></div><figcaption>Redrawn from the original diagram. Every fork reads the same physical pages for the preloaded framework until it writes to one.</figcaption></figure>
+
+<!-- @after First Principles :: animation -->
+### Copy-on-write, one page at a time
+
+<figure class="stepper"><span class="stepper-title">Shared until written</span><div class="stage viz-grid" style="--cols:3"><div class="node" data-el="zy"><strong>Zygote pages</strong><small>preloaded framework data</small></div><div class="node" data-el="a"><strong>App A</strong><small data-text="aV">—</small></div><div class="node" data-el="b"><strong>App B</strong><small data-text="bV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Preload","caption":"During boot the Zygote loads framework classes and resources into its own memory once.","add":["zy","a","b"],"state":{"zy":"done","a":"ghost","b":"ghost"}},
+{"label":"Fork","caption":"fork() gives each child the same page mappings, marked copy-on-write. No framework data is copied yet.","state":{"a":"active","b":"active"},"text":{"aV":"maps the shared pages","bV":"maps the shared pages"}},
+{"label":"Read","caption":"Both apps read framework classes from the same physical pages. Reading costs them no new memory.","state":{"a":"done","b":"done"},"text":{"aV":"reads: shared","bV":"reads: shared"}},
+{"label":"Write","caption":"App A writes to data on one shared page. The kernel copies that page for App A alone; App B keeps reading the original.","state":{"a":"warn"},"text":{"aV":"writes: one private page copy"}},
+{"label":"Ready is later","caption":"Each child still loads its own APK and runs Application.onCreate(), its first activity and its first frame. That per-app work is the part of cold start you control.","state":{"a":"done"},"text":{"aV":"own APK + startup work","bV":"own APK + startup work"}}
+]</script><figcaption>Schematic, with no timings. Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>
+
+<!-- @after Mental Model :: visual -->
+### Shared and private memory in one app
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Shared with other forks</span><div class="node" data-state="done"><strong>Preloaded framework pages</strong><small>still unmodified</small></div><div class="node" data-state="done"><strong>Runtime and libraries</strong><small>mapped, read-only</small></div></div><div class="col"><span class="col-title">Private to this app</span><div class="node" data-state="warn"><strong>Pages it wrote to</strong><small>copied on first write</small></div><div class="node" data-state="warn"><strong>Its own code, heap and state</strong><small>APK classes, objects, <code>Application</code></small></div></div></div><figcaption>Sharing is per page. The more your app modifies, the more of its memory becomes private.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+Separate "process created" from "app usable" in every startup investigation. The fork is the platform's job. Everything from `Application.onCreate()` to the first useful frame is yours, so that is where a trace should start.
+
+<!-- @after Common Misconceptions :: check -->
+### Check your model
+
+<details><summary>App A changes a static field in a preloaded framework class. Does App B see the new value?</summary>
+
+No. The write lands on a page copied privately for App A. App B keeps reading the original shared page.
+
+</details>
+
+<details><summary>Process creation is fast, yet the app takes three seconds to become usable. Where do you look?</summary>
+
+At the app's own startup work: content-provider initializers, <code>Application.onCreate()</code>, the first activity and the first frame. The fork is rarely the slow part.
+
+</details>
+
+<details><summary>A "task killer" closes every background app. Does the phone get faster?</summary>
+
+Usually not. Those cached processes must be forked and initialized again when reopened, which costs more CPU and battery than resuming them.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+Primary sources for the added layer: [About the Zygote processes (AOSP)](https://source.android.com/docs/core/runtime/zygote), [ZygoteInit.java](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/com/android/internal/os/ZygoteInit.java), [fork(2)](https://man7.org/linux/man-pages/man2/fork.2.html), [App startup time](https://developer.android.com/topic/performance/vitals/launch-time).
+
+<!-- @before Historical Context :: review -->
+The stated purpose of the WebView zygote in this section (ZY2) is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Internal Mechanics :: review -->
+Step 8 of the boot sequence in this section (ZY1) is under technical review. A correction is pending the owner's approval.

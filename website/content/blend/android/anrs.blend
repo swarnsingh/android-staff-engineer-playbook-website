@@ -28,19 +28,19 @@ Pair a user-impact signal with an owner and a mitigation. A trace diagnosis and 
 
 <details><summary>Main waits on a lock. Is its top frame enough to assign blame?</summary>
 
-**Answer:** No. Find the holder and inspect why it retains the lock in the relevant interval.
+No. Find the holder and inspect why it retains the lock in the relevant interval.
 
 </details>
 
 <details><summary>Can an idle stack in a report prove there was no earlier stall?</summary>
 
-**Answer:** No. Capture timing and surrounding evidence matter; the dump can arrive after the problem.
+No. Capture timing and surrounding evidence matter; the dump can arrive after the problem.
 
 </details>
 
 <details><summary>Why segment an ANR cluster by app version and device?</summary>
 
-**Answer:** To find the harmed cohort and decide whether a rollout change or targeted mitigation is warranted.
+To find the harmed cohort and decide whether a rollout change or targeted mitigation is warranted.
 
 </details>
 

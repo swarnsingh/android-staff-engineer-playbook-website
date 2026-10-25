@@ -80,21 +80,15 @@
 
 <details><summary>Device and simulator both use ARM64. Merge them into one indistinguishable slice?</summary>
 
-#### Answer
-
 No. CPU architecture and Apple platform variant are different dimensions. Preserve the supported variants and test the consumer destination.
 </details>
 
 <details><summary>Three framework blocks exist. Is an XCFramework task guaranteed?</summary>
 
-#### Answer
-
 Not merely from those blocks. Configure the XCFramework assembly relationship as shown in the original and inspect the actual registered task and artifact.
 </details>
 
 <details><summary>Published ZIP was rebuilt with the same version. Keep the old checksum?</summary>
-
-#### Answer
 
 That breaks the identity contract when bytes differ. Publish a new immutable release and verify clean resolution from its real location.
 </details>

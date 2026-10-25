@@ -66,21 +66,15 @@ The synchronous status lookup inside the network callbacks (NC1) is under techni
 
 <details><summary>Wi-Fi means unmetered?</summary>
 
-#### Answer
-
 No. Use capabilities and user policy.
 </details>
 
 <details><summary>Validated means the API is up?</summary>
 
-#### Answer
-
 No. Handle the request outcome independently.
 </details>
 
 <details><summary>Large upload can wait. Keep a polling loop?</summary>
-
-#### Answer
 
 Persist the work and use suitable WorkManager constraints.
 </details>

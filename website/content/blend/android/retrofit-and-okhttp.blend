@@ -93,21 +93,15 @@ The global NoInternetException recommendation in point 3 (RT2) is under technica
 
 <details><summary>The refresh endpoint also returns 401. Which client configuration matters?</summary>
 
-#### Answer
-
 The refresh client must not use the same token authenticator. Otherwise refresh can recursively trigger itself. A separate client still needs its own deadline and failure handling.
 </details>
 
 <details><summary>A logger calls <code>response.body.string()</code>, then returns the response. Who still needs those bytes?</summary>
 
-#### Answer
-
 The converter does. Reading and closing the body consumes its stream. Test logging without stealing the downstream reader’s body; close bodies you own, including streaming downloads.
 </details>
 
 <details><summary>Should a failed checkout POST always be replayed after a timeout?</summary>
-
-#### Answer
 
 No. The server may have committed it. Establish replay safety, such as a server-supported idempotency key or reconciliation, before a retry policy can make the operation reliable.
 </details>

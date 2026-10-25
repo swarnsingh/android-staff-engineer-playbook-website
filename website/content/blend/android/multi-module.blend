@@ -1,0 +1,69 @@
+<!-- Website teaching layer for android/build-tooling/multi-module.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Sources checked 2026-10-25: Android "Guide to app modularization", Gradle java-library (api vs implementation),
+     Gradle build cache, Gradle type-safe project dependencies, Google Play Instant deprecation notice. -->
+
+<!-- @opening -->
+<p class="story-lead">A developer renames a private helper in the cart feature. The pull request turns red in checkout, wishlist and search, and three teams get review requests for a change they never asked for. The folders looked separate. The dependency graph said otherwise.</p>
+
+Modules make boundaries the compiler enforces: what each module may see, who owns it, and how far an edit spreads. This chapter gives a standard set of module types and the Gradle details behind them. The additions here follow one edit through the graph, so you can check any proposed boundary against the changes your team actually makes.
+
+<!-- @diagram 83a0b47bda85196d -->
+### The canonical module graph
+
+<figure class="viz"><div class="viz-stack"><div class="node is-key"><strong><code>:app</code></strong><small>composition and DI root</small></div><div class="node"><strong><code>:feature:*:impl</code></strong><small>depends on feature APIs, data and core</small></div><div class="viz-cols" style="--cols:3"><div class="node"><strong><code>:feature:*:api</code></strong></div><div class="node"><strong><code>:data:*</code></strong><small>repositories and persistence; depends on core</small></div><div class="node"><strong><code>:core:*</code></strong><small>model, network, UI, observability</small></div></div><div class="viz-cols" style="--cols:3"><div class="node" data-state="ghost"><strong><code>:test:*</code> fixtures</strong><small>used by features in tests only</small></div><div class="node" data-state="ghost"><strong><code>:benchmark</code></strong><small>measures <code>:app</code></small></div><div class="node" data-state="ghost"><strong><code>build-logic</code></strong><small>configures app, features and core</small></div></div></div><figcaption>Arrows in the original point downwards: each layer depends on the layers below it. The dimmed row sits outside the runtime graph.</figcaption></figure>
+
+<!-- @after The Canonical Taxonomy :: animation -->
+### Follow one cart edit through the graph
+
+<figure class="stepper"><span class="stepper-title">How far does a change spread?</span><div class="stage viz-grid" style="--cols:3"><div class="node" data-el="capi"><strong><code>:feature:cart:api</code></strong><small><code>CartRoute</code>, <code>CartRepository</code></small></div><div class="node" data-el="cimpl"><strong><code>:feature:cart:impl</code></strong><small>internal helper and screens</small></div><div class="node" data-el="chk"><strong><code>:feature:checkout:impl</code></strong><small data-text="chkV">depends on <code>:feature:cart:api</code></small></div><div class="node is-key" data-el="app"><strong><code>:app</code></strong><small>depends on every <code>:impl</code></small></div></div><script type="application/json" class="steps">[
+{"label":"An internal edit","caption":"The private helper lives in :feature:cart:impl. Checkout depends only on cart's API, so the helper is not on checkout's compile classpath at all.","add":["capi","cimpl","chk","app"],"state":{"cimpl":"active"}},
+{"label":"Who rebuilds","caption":"Only cart's implementation and the app that composes it can be affected. Checkout cannot be: it could not reference the helper even if it tried.","state":{"cimpl":"done","app":"warn","chk":"done"}},
+{"label":"A contract edit","caption":"Now someone changes CartRoute in :feature:cart:api. Checkout navigates to that route, so it is affected. That is expected: the API is the contract other teams agreed to use.","state":{"capi":"warn","chk":"warn","cimpl":"done","app":"done"}},
+{"label":"The shortcut","caption":"To reuse one helper, checkout adds a dependency on :feature:cart:impl. From now on every internal cart change can reach checkout: the opening's red pull request.","state":{"capi":"done","chk":"error"},"text":{"chkV":"now also depends on :feature:cart:impl"}},
+{"label":"Repair","caption":"Move what checkout genuinely needs into an API or core module, remove the impl-to-impl edge, and add a CI check so it cannot come back.","state":{"chk":"done"},"text":{"chkV":"depends on :feature:cart:api only"}}
+]</script><figcaption>Illustrative project. Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>
+
+<!-- @after Module Type Quick Reference :: staff -->
+Test a proposed boundary against history, not diagrams. Take the last few weeks of merged pull requests and count how many modules each would have touched and rebuilt under the new layout. A boundary that most real edits cross is in the wrong place.
+
+<!-- @after Cross-Module Navigation — Type-Safe Routes :: visual -->
+### Routes cross modules; screens do not
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Visible to other features</span><div class="node"><strong><code>CartRoute</code></strong><small>in <code>:feature:cart:api</code></small></div><div class="node"><strong><code>CartRepository</code> interface</strong><small>in an API or data module</small></div></div><div class="col"><span class="col-title">Private to <code>:feature:cart:impl</code></span><div class="node" data-state="done"><strong><code>cartGraph(…)</code> and <code>CartScreen</code></strong><small>wired in by <code>:app</code></small></div><div class="node" data-state="done"><strong><code>internal class CartRepositoryImpl</code></strong><small>bound by Hilt, constructed by nobody else</small></div></div></div><figcaption>Checkout can navigate to the cart and read its contract without ever compiling against the cart's screens or implementation.</figcaption></figure>
+
+<!-- @after Common Pitfalls :: check -->
+### Check your boundaries
+
+<details><summary>Checkout needs a button that opens the cart. Which module does <code>:feature:checkout:impl</code> depend on?</summary>
+
+<code>:feature:cart:api</code>, which holds <code>CartRoute</code>. <code>:app</code> wires <code>cartGraph</code> into the navigation host, so checkout never needs the cart's implementation.
+
+</details>
+
+<details><summary>Three features need a fake <code>CartRepository</code> in their tests. Where does it live?</summary>
+
+In a shared test-fixtures module that depends on the API that declares <code>CartRepository</code>, not on <code>:impl</code>, so tests reuse the fake without inheriting the implementation.
+
+</details>
+
+<details><summary>A teammate wants a new module "so the folders are cleaner". What do you ask?</summary>
+
+What compile-time boundary it enforces and who owns it. If the goal is only tidier folders, packages are enough; a module is worth its cost when it enforces ownership or visibility.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+Primary sources for the added layer: [Guide to Android app modularization](https://developer.android.com/topic/modularization), [api and implementation](https://docs.gradle.org/current/userguide/java_library_plugin.html), [Gradle build cache](https://docs.gradle.org/current/userguide/build_cache.html), [Type-safe project dependencies](https://docs.gradle.org/current/userguide/declaring_dependencies_basics.html).
+
+<!-- @before Gradle Settings — Project Inclusion :: review -->
+The statement in this section about the stability of type-safe project accessors (MM1) is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Dynamic Feature Modules — When and When Not :: review -->
+The instant-app rows and references in this section (MM2) are under technical review. A correction is pending the owner's approval.
+
+<!-- @before Failure Modes :: review -->
+The cause given for dropping build-cache hits after a refactor (MM3) is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Answer Key :: review -->
+The instant-app example in Answer 4 (MM2) is under technical review. A correction is pending the owner's approval.

@@ -28,19 +28,19 @@ Set a noise-aware gate with a named journey and device cohort. A fixed threshold
 
 <details><summary>Why keep raw traces with the regression?</summary>
 
-**Answer:** They let a reviewer inspect the measured interval and test the proposed cause.
+They let a reviewer inspect the measured interval and test the proposed cause.
 
 </details>
 
 <details><summary>A new build is faster because the feed selector never found content. Accept it?</summary>
 
-**Answer:** No. The experiment no longer measures the intended successful journey.
+No. The experiment no longer measures the intended successful journey.
 
 </details>
 
 <details><summary>Can one trace prove p99 improved for users?</summary>
 
-**Answer:** No. A trace explains one interval; distributions and representative cohorts require broader measurements.
+No. A trace explains one interval; distributions and representative cohorts require broader measurements.
 
 </details>
 

@@ -85,21 +85,15 @@ Answers 3 and 5 repeat state-isolation and renderer-recovery claims (WV4–WV5) 
 
 <details><summary>An origin is allowed. Trust every message body?</summary>
 
-#### Answer
-
 No. Validate its structure and authorize the requested operation. Origin control does not make a payload safe by itself.
 </details>
 
 <details><summary>The initial URL passed review. Stop watching later navigation?</summary>
 
-#### Answer
-
 No. Redirects and later content changes are part of the trust lifecycle. Review the whole flow and the callback limits stated in the chapter.
 </details>
 
 <details><summary>OAuth wants a native JavaScript bridge?</summary>
-
-#### Answer
 
 Native OAuth authorization belongs in an external user agent such as a browser or Custom Tab; do not design it around a credential-capturing WebView bridge.
 </details>

@@ -75,21 +75,15 @@
 
 <details><summary>No steps returned. User inactive?</summary>
 
-#### Answer
-
 Not necessarily: missing access, data, availability or synchronization can also explain it.
 </details>
 
 <details><summary>Token saved before local writes?</summary>
 
-#### Answer
-
 A crash could skip changes. Save matching progress only with successful local application.
 </details>
 
 <details><summary>A worker always reads Health Connect?</summary>
-
-#### Answer
 
 Only with the required background-read feature and separate grant; otherwise ingest in the foreground.
 </details>

@@ -69,21 +69,15 @@
 
 <details><summary>commonTest exists. Has iOS run it?</summary>
 
-#### Answer
-
 Only the invoked target task and its report establish that. Require the Apple-capable job and platform-specific checks your support promise needs.
 </details>
 
 <details><summary>MockEngine decodes the payload. Has TLS been verified?</summary>
 
-#### Answer
-
 No. It uses no socket. Exercise the selected transport and real contract at an appropriate separate boundary.
 </details>
 
 <details><summary>Virtual time controls one dispatcher. Can another real dispatcher still wait?</summary>
-
-#### Answer
 
 Yes. Share the test scheduler among injected test dispatchers and identify work that intentionally runs outside it.
 </details>

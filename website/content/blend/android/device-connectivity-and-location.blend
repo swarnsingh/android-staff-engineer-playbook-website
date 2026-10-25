@@ -64,21 +64,15 @@
 
 <details><summary>Persist a live GATT object?</summary>
 
-#### Answer
-
 Persist intent/configuration; rebuild runtime connections.
 </details>
 
 <details><summary>Permission granted once: finished?</summary>
 
-#### Answer
-
 Handle later denial or revocation.
 </details>
 
 <details><summary>A location is accurate but old. Use it?</summary>
-
-#### Answer
 
 Check both age and accuracy against the feature’s needs.
 </details>

@@ -1,0 +1,57 @@
+<!-- Website teaching layer for android/os-internals/activitymanager-process-lifecycle.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Sources checked 2026-10-25: Processes and app lifecycle, Save UI states, Test process death
+     (developer.android.com). -->
+
+<!-- @opening -->
+<p class="story-lead">A user writes half a message, switches to the camera to take a photo, and comes back through Recents a few minutes later. The app is still in Recents and the screen comes back. The half-written message, though, is gone. The task survived. The process holding the text did not.</p>
+
+Android keeps three things apart: the task the user sees in Recents, the components the system can recreate, and the Linux process that held your memory. `ActivityManagerService` decides when that process can be killed, and it does not ask you first. This chapter explains process creation, importance and the background-work rules. The additions here follow one draft through a process kill and show which owner brings each piece back.
+
+<!-- @diagram 9ec3c02757c2507a -->
+### Starting a process from a tap
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>User taps the icon</strong></div><div class="node"><strong>Launcher</strong><small><code>startActivity</code></small></div><div class="node is-key"><strong>ActivityManagerService</strong><small>asks Zygote to fork</small></div><div class="node"><strong>New app process</strong><small>loads the APK, creates <code>Application</code></small></div><div class="node" data-state="done"><strong>Activity launched</strong><small>by AMS in that process</small></div></div><figcaption>Redrawn from the original sequence diagram. The same path runs when the user returns to a task whose process was killed.</figcaption></figure>
+
+<!-- @after Process Death vs Configuration Change :: visual -->
+### Where each piece of state lives
+
+<figure class="viz"><div class="viz-cols" style="--cols:3"><div class="col"><span class="col-title">Held by the system</span><div class="node" data-state="done"><strong>Task in Recents</strong></div><div class="node" data-state="done"><strong>Saved instance state</strong><small><code>SavedStateHandle</code>, <code>rememberSaveable</code>: small and bounded</small></div></div><div class="col"><span class="col-title">On disk</span><div class="node" data-state="done"><strong>Room, DataStore, files</strong></div><div class="node" data-state="done"><strong>WorkManager queue</strong><small>pending durable work</small></div></div><div class="col"><span class="col-title">RAM only</span><div class="node" data-state="error"><strong>ViewModels, singletons</strong></div><div class="node" data-state="error"><strong>Coroutines, caches</strong><small>gone with the process</small></div></div></div><figcaption>A process kill empties the third column. The first two are what restoration rebuilds from.</figcaption></figure>
+
+<!-- @after Durable State Rule :: animation -->
+### One draft through a process kill
+
+<figure class="stepper"><span class="stepper-title">Leave, killed, return</span><div class="stage viz-grid" style="--cols:4"><div class="node" data-el="screen"><strong>Compose screen</strong><small data-text="screenV">—</small></div><div class="node" data-el="proc"><strong>App process</strong><small data-text="procV">—</small></div><div class="node" data-el="saved"><strong>Saved state</strong><small data-text="savedV">—</small></div><div class="node is-key" data-el="disk"><strong>Room + WorkManager</strong><small data-text="diskV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Writing","caption":"The route says which thread is open; the unsent text sits in saved state; the thread's messages live in Room.","add":["screen","proc","saved","disk"],"state":{"screen":"active","proc":"done"},"text":{"screenV":"thread 7, typing","procV":"foreground","savedV":"route + unsent text","diskV":"thread 7 messages"}},
+{"label":"Backgrounded","caption":"The user opens the camera app. The activity is stopped and the process drops to cached importance. onStop is not process death: nothing is lost yet.","state":{"screen":"ghost","proc":"warn"},"text":{"procV":"cached"}},
+{"label":"Killed","caption":"Memory runs low and the cached process is killed. No onDestroy runs. The ViewModel and every in-memory singleton vanish; the task stays in Recents.","state":{"proc":"error"},"text":{"procV":"killed: RAM state gone"}},
+{"label":"Return","caption":"The user taps the task in Recents. AMS starts a new process through Zygote, creates the Application and recreates the activity with its saved state.","state":{"proc":"done","saved":"active"},"text":{"procV":"new process","savedV":"route + text restored"}},
+{"label":"Rehydrate","caption":"A new ViewModel reads the thread ID from saved state and reloads messages from Room. A send that was queued in the outbox resumes through WorkManager. The user sees the same screen.","state":{"saved":"done","disk":"done","screen":"done"},"text":{"screenV":"thread 7, text intact","diskV":"messages reloaded; queued send resumes"}}
+]</script><figcaption>Illustrative flow. Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+Make process death part of the definition of done. For each critical flow, write down what survives, who restores it, and the test that kills the process mid-flow. A rotation test does not prove any of it.
+
+<!-- @after Failure Modes :: check -->
+### Check your restoration
+
+<details><summary>Every screen survives rotation. Is the app safe from process death?</summary>
+
+No. Rotation keeps the process and its ViewModels alive. Process death removes both; test it separately by backgrounding the app and killing the process.
+
+</details>
+
+<details><summary>An upload runs in <code>viewModelScope</code> and the process is killed. What happens, and what should own the upload?</summary>
+
+The coroutine dies with the process and the upload is lost. Persist it to an outbox and let WorkManager schedule it.
+
+</details>
+
+<details><summary>Which goes in saved state: the open thread's ID, the unsent text, or the downloaded messages?</summary>
+
+The ID and the unsent text, which are small. The messages belong in Room, reloaded using the ID, because saved state is small and bounded.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+Primary sources for the added layer: [Processes and app lifecycle](https://developer.android.com/guide/components/activities/process-lifecycle), [Save UI states](https://developer.android.com/topic/libraries/architecture/saving-states), [Test process death](https://developer.android.com/guide/components/activities/activity-lifecycle#asem).

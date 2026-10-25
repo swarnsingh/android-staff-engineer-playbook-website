@@ -28,19 +28,19 @@ Segment by device tier and session conditions. Preserve the cohort that struggle
 
 <details><summary>Does moving heavy CPU work off Main remove thermal cost?</summary>
 
-**Answer:** No. It can protect interaction while the CPU still performs the same work.
+No. It can protect interaction while the CPU still performs the same work.
 
 </details>
 
 <details><summary>Why test longer than the happy-path demo?</summary>
 
-**Answer:** Heat, cache growth and sustained contention may emerge only during extended use.
+Heat, cache growth and sustained contention may emerge only during extended use.
 
 </details>
 
 <details><summary>Who decides acceptable degraded quality?</summary>
 
-**Answer:** The product and feature owners, using measured device behavior and correctness requirements.
+The product and feature owners, using measured device behavior and correctness requirements.
 
 </details>
 

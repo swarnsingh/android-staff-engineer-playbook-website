@@ -1,0 +1,52 @@
+<!-- Website teaching layer for android/os-internals/content-providers-and-contentresolver.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Sources checked 2026-10-25: Content provider basics, FileProvider (androidx.core), Android 7.0 behavior
+     changes (sharing files between apps), App Startup (developer.android.com). -->
+
+<!-- @opening -->
+<p class="story-lead">Your app exports an invoice PDF and hands the email app a path to it: <code>/data/user/0/com.example/files/invoice.pdf</code>. The email opens with no attachment. The path was correct, but it pointed into your private storage, which no other app may read. To share one file, you need a way to hand over that file alone.</p>
+
+A content provider puts a narrow, permission-checked doorway in front of data that would otherwise be private. A `content://` URI names what is behind the door, and the `ContentResolver` carries each request through it. This chapter covers the contract, the startup trap and cursor discipline. The additions here follow one shared file from your storage to another app and back out again.
+
+<!-- @after First Principles :: visual -->
+### Reading a <code>content://</code> URI
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong><code>content://</code></strong><small>route through a provider, not the filesystem</small></div><div class="node is-key"><strong><code>com.example.notes.provider</code></strong><small>authority: picks exactly one provider on the device</small></div><div class="node"><strong><code>/notes/42</code></strong><small>path: meaning defined by that provider</small></div><div class="node" data-state="done"><strong>Provider checks</strong><small>export, permissions, URI grants, then <code>query</code> or <code>openFile</code></small></div></div><figcaption>The caller never sees where the data lives. The provider decides what each path means and who may use it.</figcaption></figure>
+
+<!-- @after URI Permissions :: animation -->
+### Sharing one invoice, and nothing else
+
+<figure class="stepper"><span class="stepper-title">From private file to a granted <code>content://</code> URI</span><div class="stage viz-grid" style="--cols:4"><div class="node" data-el="file"><strong>Your private file</strong><small><code>files/invoices/invoice.pdf</code></small></div><div class="node" data-el="uri"><strong>FileProvider URI</strong><small data-text="uriV">—</small></div><div class="node" data-el="grant"><strong>Grant</strong><small data-text="grantV">—</small></div><div class="node is-key" data-el="reader"><strong>Email app</strong><small data-text="readerV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"A raw path","caption":"Handing over the file path fails: the file sits in your app's sandbox. Apps targeting Android 7.0 or later also get FileUriExposedException for passing file:// URIs to other apps.","add":["file","uri","grant","reader"],"state":{"file":"warn","reader":"error"},"text":{"readerV":"cannot open the path"}},
+{"label":"Map to a URI","caption":"FileProvider.getUriForFile turns a file under a directory you configured in file_paths.xml into a content:// URI under your authority.","state":{"file":"done","uri":"active","reader":"ghost"},"text":{"uriV":"content://…fileprovider/invoices/invoice.pdf","readerV":"—"}},
+{"label":"Grant one URI","caption":"The share intent carries the URI with FLAG_GRANT_READ_URI_PERMISSION. The system records a temporary read grant for the receiving app, for this URI only.","state":{"uri":"done","grant":"active"},"text":{"grantV":"read: this URI only"}},
+{"label":"Open and read","caption":"The email app calls contentResolver.openInputStream(uri). The resolver finds your provider by authority, the call crosses Binder, and the provider returns a file descriptor. It streams the bytes and closes the stream.","state":{"grant":"done","reader":"active"},"text":{"readerV":"streams the PDF, closes it"}},
+{"label":"Nothing more","caption":"Every other file stays private: the grant never covered them. The provider is not exported, so no app can reach it without a grant.","state":{"reader":"done"},"text":{"readerV":"invoice attached; no other access"}}
+]</script><figcaption>Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>
+
+<!-- @after Startup Order Trap :: staff -->
+Read the merged manifest's `<provider>` list before you look at startup traces. Each SDK provider is code that runs before your `Application.onCreate()`, and removing or deferring them is often the cheapest cold-start win available.
+
+<!-- @after Failure Modes :: check -->
+### Check the doorway
+
+<details><summary>A library's provider runs at process start and calls into your DI graph. What can go wrong?</summary>
+
+The provider's <code>onCreate()</code> runs before <code>Application.onCreate()</code>, so a graph built there may not exist yet. Keep provider initialization minimal, or move it to explicit or App Startup initialization.
+
+</details>
+
+<details><summary>One partner app needs one photo. Storage permission or URI grant?</summary>
+
+A URI grant through FileProvider. It shares exactly that file, temporarily, without exposing the rest of your storage.
+
+</details>
+
+<details><summary>An exported provider builds SQL from a caller's <code>selection</code> string. What is the risk?</summary>
+
+SQL injection from a hostile caller. Use selection arguments, validate paths and projections, and enforce row-level access inside the provider.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+Primary sources for the added layer: [Content provider basics](https://developer.android.com/guide/topics/providers/content-provider-basics), [FileProvider](https://developer.android.com/reference/androidx/core/content/FileProvider), [Android 7.0: sharing files between apps](https://developer.android.com/about/versions/nougat/android-7.0-changes#sharing-files), [App Startup](https://developer.android.com/topic/libraries/app-startup).

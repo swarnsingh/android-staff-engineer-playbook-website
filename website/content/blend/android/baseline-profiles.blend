@@ -28,19 +28,19 @@ Choose journeys from user value and traces. Keep profile generation reproducible
 
 <details><summary>A profile file is packaged. Is the speedup established?</summary>
 
-**Answer:** No. Verify installation and compilation, then measure the relevant journey.
+No. Verify installation and compilation, then measure the relevant journey.
 
 </details>
 
 <details><summary>Which profile changes DEX layout during the build?</summary>
 
-**Answer:** The Startup Profile. Baseline Profiles guide ART optimisation on-device.
+The Startup Profile. Baseline Profiles guide ART optimisation on-device.
 
 </details>
 
 <details><summary>What if the trace shows disk waiting dominates?</summary>
 
-**Answer:** Investigate that boundary. A profile does not remove the disk dependency.
+Investigate that boundary. A profile does not remove the disk dependency.
 
 </details>
 

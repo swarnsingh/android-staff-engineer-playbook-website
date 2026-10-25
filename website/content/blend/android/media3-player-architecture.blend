@@ -77,21 +77,15 @@ The claim that every live ExoPlayer holds decoders (MP2) is under technical revi
 
 <details><summary>Cache bytes equal a durable download?</summary>
 
-#### Answer
-
 No. Offline state also needs managed download progress and, for protected content, license lifecycle.
 </details>
 
 <details><summary>Rotation should recreate service playback?</summary>
 
-#### Answer
-
 A service-owned session can retain playback while the screen reconnects its controller.
 </details>
 
 <details><summary>Only measure app crashes?</summary>
-
-#### Answer
 
 Measure first-frame time, stalls, rendition choices, DRM and download failures too.
 </details>
