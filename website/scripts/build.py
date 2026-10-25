@@ -428,6 +428,7 @@ def build(skip_diagrams=False):
         if path=='kotlin.md':(OUT/'index.html').write_text(html)
     for name in ['styles.css','blend.css','app.js','blend.js','coroutines.js','lesson-model.js']:
         shutil.copy2(WEB/name,OUT/name)
+    shutil.copytree(WEB/'fonts',OUT/'fonts')
     if not skip_diagrams: render_diagrams()
     (OUT/'coverage/kotlin.json').write_text(json.dumps(reports,ensure_ascii=False,indent=2)+'\n')
     (OUT/'coverage/diagram-sources.json').write_text(json.dumps({p.stem:p.read_text() for p in sorted((OUT/'diagram-sources').glob('*.mmd'))},ensure_ascii=False,indent=2)+'\n')

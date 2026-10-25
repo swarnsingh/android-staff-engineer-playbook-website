@@ -1,0 +1,11 @@
+# Handwritten reading font
+
+Patrick Hand Regular by Patrick Wagesreiter, bundled under the SIL Open Font License (see `OFL.txt`). It is an upright handwritten alternative to the original platform-dependent Chalkboard SE stack. It is not an exact copy of Chalkboard SE.
+
+Source: https://github.com/google/fonts/tree/aeb9574d3cb4ab2ac5de70a8c730b11662281803/ofl/patrickhand
+
+File: `patrick-hand-0f173b3e6cb6.ttf`
+
+SHA-256: `0f173b3e6cb6d1af25babf7f0057c5ac4ee11f9992b0469bb817e967ef4ad0fc`
+
+Serve this asset locally; do not use a remote font API or a generic cursive fallback.

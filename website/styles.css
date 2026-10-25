@@ -1,3 +1,4 @@
+@font-face{font-family:"Playbook Hand";src:url("fonts/patrick-hand-0f173b3e6cb6.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
 *{box-sizing:border-box}
 :root{color-scheme:light;--bg:#fff;--surface:#f5f7f2;--hero:#ecf1e6;--text:#253e32;--muted:#526257;--line:#d9e2d5;--accent:#356248;--on-accent:#fff;--accent-soft:#e4eedf;--warning:#973c29;--code:#1a2921;--code-text:#eef3ec;--reader-size:1.125rem;--reader-font:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 html[data-theme=dark]{color-scheme:dark;--bg:#17201b;--surface:#202c24;--hero:#24372a;--text:#e5eee2;--muted:#bed0bc;--line:#465647;--accent:#b3d6a9;--on-accent:#152218;--accent-soft:#30452f;--warning:#ffc0a7;--code:#0f1812}

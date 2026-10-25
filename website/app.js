@@ -26,7 +26,7 @@ $$('[data-copy]').forEach(button => button.addEventListener('click', async () =>
   } catch { toast('Clipboard unavailable. Select the code to copy it.'); }
 }));
 
-const fonts = {sans:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',serif:'Georgia,"Palatino Linotype",serif',times:'"Times New Roman",Times,serif',hand:'"Chalkboard SE","Segoe Print","Comic Sans MS",cursive'};
+const fonts = {sans:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',serif:'Georgia,"Palatino Linotype",serif',times:'"Times New Roman",Times,serif',hand:'"Playbook Hand",sans-serif'};
 let preferences = {};
 try { preferences = JSON.parse(localStorage.getItem('playbook-reader-v1')) || {}; } catch {}
 if (typeof preferences !== 'object' || Array.isArray(preferences)) preferences = {};
