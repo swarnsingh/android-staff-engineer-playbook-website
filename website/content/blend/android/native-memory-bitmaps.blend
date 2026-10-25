@@ -38,7 +38,7 @@ No. Native, graphics and other process/system pressure also matter.
 
 </details>
 
-<details><summary>Is smaller prefetch always free?</summary>
+<details><summary>Are right-sized images free to prefetch?</summary>
 
 No. Even right-sized requests consume resources; bound count, lifetime and cache ownership.
 

@@ -232,7 +232,7 @@ Manifest Android Interview, Jaewoong Eum, user-supplied 2025-06-16 edition, 459 
 
 **Affected H2 sections:** RecyclerView / LazyColumn — Where Rendering Matters Most; Answer Key.
 
-**Original anchor:** `onCreateViewHolder` runs once per item type`.
+**Original anchor:** “onCreateViewHolder runs once per item type”.
 
 **Finding:** A holder is created whenever a new instance is needed, including multiple holders of the same type. setHasFixedSize concerns the RecyclerView’s overall size, not fixed item sizes or eliminating every measure pass.
 
@@ -362,9 +362,11 @@ Manifest Android Interview, Jaewoong Eum, user-supplied 2025-06-16 edition, 459 
 
 ### P7MM1 · P2 · android/performance/memory-management-and-leaks.md:22
 
-**Affected H2 sections:** Why It Matters; Historical Context; First Principles; Staff Engineer Thinking; Answer Key.
+**Affected H2 sections:** Overview; Why It Matters; Historical Context; First Principles; Staff Engineer Thinking; Answer Key.
 
 **Original anchor:** `It cleans up memory in the background without freezing the UI.`.
+
+**Added after review:** the Staff Engineer Thinking bitmap passage places pixel data in the managed heap budget (“can instantly exhaust the strict heap budget”), but since Android 8.0 (API 26) “the bitmap pixel data is stored in the native heap” ([Manage bitmap memory](https://developer.android.com/topic/performance/graphics/manage-memory)). `OutOfMemoryError` is thrown by the runtime in the process, not by the OS (Overview).
 
 **Finding:** Concurrent GC still has pauses. The next sentence says ART cannot clean up what it cannot reach, reversing the earlier reachability explanation. Active coroutines are not intrinsically separate GC roots; a managed heap cap is not a total-process-memory cap. Fixed 95% leak capture/instant OOM claims are not measured guarantees.
 
@@ -415,3 +417,23 @@ Baseline Profiles, Native Memory & Bitmaps, Battery & Power Profiling, Network R
 ## Authoring checks and limits
 
 Marker, stepper, question-count, prose-budget and read-only snapshot results are recorded after the authoring validation below. Parent owns final integrated preservation, resource readiness, enlarged-text/browser checks, independent review, and private publication. Those results must be reported separately.
+
+## Added after independent review (2026-10-26)
+
+Each new finding has an **Under review** note before every listed H2. Coverage extensions to existing findings are noted in the affected blends: P7JK1 also covers jank Common Misconceptions and Probing Questions; P7AN1 also covers ANR Why It Matters and Tradeoffs; P7RD2 also covers The Rendering Pipeline (One Frame). Notes now identify each passage by its opening words rather than by ID alone.
+
+| ID | Chapter, sections | Original says | Problem | Evidence |
+|---|---|---|---|---|
+| P7AS1 | App Size and R8: Tradeoffs; Probing Questions; Answer Key (9) | `android.enableR8.fullMode=true` turns R8 “up to maximum”; unmeasured 3-day, 10% size and 5% speed figures | Full mode has been the default since AGP 8.0 (opt out with `android.enableR8.fullMode=false`); it was opt-in only from AGP 7.0. The effect figures are unmeasured | [Enable app optimization](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization) (“8.0: Full mode by default”) |
+| P7AS2 | App Size and R8: Internal Mechanics; Failure Modes; Answer Key (5) | `getIdentifier` is reflection; the shrinker “cannot see” the dynamic name, deletes the resource or replaces it with a 1×1 dummy | `getIdentifier` is a resource lookup, not reflection. In the default (non-strict) mode the shrinker keeps resources whose names match string constants in code; strict mode is needed before such resources are removed. The 1×1 replacement describes older behaviour | [Customize which resources to keep](https://developer.android.com/topic/performance/app-optimization/customize-which-resources-to-keep) (“Unless you're using strict checking…”) |
+| P7AS3 | App Size and R8: Staff Engineer Thinking; Answer Key (8) | Reject PRs with large PNG/JPG illustrations that can be recreated as vectors | Android recommends limiting vector images to about 200 × 200 dp, because larger ones “can take too long to draw”, and first load can cost more CPU than a raster image | [Vector Asset Studio](https://developer.android.com/studio/write/vector-asset-studio) |
+| P7SU11 | Startup: Macrobenchmark — Measuring Startup Properly | “Macrobenchmark + Play Vitals + your dashboard all pick this up” (`reportFullyDrawn`) | Android vitals measures start-up to the first frame (time to initial display); its documentation does not use `reportFullyDrawn` | [Android vitals: start-up time](https://support.google.com/googleplay/android-developer/answer/9844486) |
+| P7SU12 | Startup: Diagnosing Slow Startup | `adb shell perfetto … -c - <<EOF` with a text config and bare `linux.ftrace` | A text config needs `--txt`; without ftrace events or atrace categories the trace cannot show the “ActivityStart” and “Choreographer#doFrame” slices the section tells readers to find | [Perfetto CLI](https://perfetto.dev/docs/reference/perfetto-cli) (`--txt` “parse the config file as pbtxt”) |
+| P7RD10 | Rendering: Measuring Rendering — Tools | `perfetto -t 10s -c -` with a text config; “use `adb shell systrace`” | The text config needs `--txt`, and simple-mode `-t` is mixed with a config file; systrace is a deprecated host-side script, not a device shell command | [Perfetto CLI](https://perfetto.dev/docs/reference/perfetto-cli) |
+| P7RD11 | Rendering: Measuring Rendering — Tools; Common Rendering Bottlenecks | “Red horizontal line = 16ms target”; overdraw “red = 3x+” | The documentation's horizontal line for 16.67 ms is green; overdraw shows pink for 3× and red for 4× or more | [Inspect GPU rendering](https://developer.android.com/topic/performance/rendering/inspect-gpu-rendering) |
+| P7AN5 | ANRs: Internal Mechanics; Answer Key (2) | The kernel routes the tap to InputDispatcher, which “queues the event in your app's Main Thread MessageQueue”; InputDispatcher is “an internal watchdog system” | InputReader and InputDispatcher run in system_server and deliver events to the app window over an input channel; the dispatcher does not insert messages into the app's MessageQueue. An input-dispatch ANR is the window not responding to a dispatched event within the timeout | [Input (AOSP)](https://source.android.com/docs/core/interaction/input); [Diagnose and fix ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs) |
+| P7JK7 | Jank: Tradeoffs; Answer Key (9) | Without `key`, deleting item 2 makes Compose “recompose items #3 through #1000”; keys let items move “without recomposing” | LazyColumn composes only visible items, so items far off-screen are not recomposed; keys preserve item identity and state across moves. Same claim as P7RD4 in the rendering chapter | [Compose performance best practices](https://developer.android.com/develop/ui/compose/performance/bestpractices) |
+
+**Candidate, not filed:** Memory Failure Modes says an unregistered receiver lets a system service hold a hard reference that leaks the Activity. The framework reports a leaked registration at context teardown and unregisters it ([StrictMode `detectLeakedRegistrationObjects`](https://developer.android.com/reference/android/os/StrictMode.VmPolicy.Builder#detectLeakedRegistrationObjects())). Verify against current frameworks/base before filing.
+
+**Evidence quality:** the original 33 findings each cite one primary page with a shared boilerplate line. Several bundle multiple claims under that one source (notably P7AN1, P7RD1 and P7MM1). Before approval, the owner should ask for each sub-claim to be split, or quoted from its own source; the ANR guide's documented timeouts are a concrete starting point for P7AN1.

@@ -10,7 +10,7 @@ Use this chapter to follow a frame across app and system boundaries, keeping rec
 
 ### Commands are not pixels on the display
 
-<figure class="viz"><div class="viz-flow" style="--cols:3"><div class="node"><strong>App UI work</strong><small>Updates layout and records drawing commands for the hardware-accelerated path.</small></div><div class="node"><strong>Render work</strong><small>RenderThread and GPU process the app’s drawing work.</small></div><div class="node"><strong>System presentation</strong><small>SurfaceFlinger and display composition turn available buffers into a displayed frame.</small></div></div><figcaption>A dependency map, not a serial stopwatch: stages can overlap across frames. Check the actual trace when assigning blame.</figcaption></figure>
+<figure class="viz"><div class="viz-lanes"><div class="lane"><span class="lane-label">UI thread</span><div class="track"><span class="mark" style="--at:0%;--len:30%">frame N</span><span class="mark" data-tone="soft" style="--at:34%;--len:30%">frame N+1</span></div></div><div class="lane"><span class="lane-label">RenderThread + GPU</span><div class="track"><span class="mark" style="--at:30%;--len:32%">frame N</span><span class="mark" data-tone="soft" style="--at:64%;--len:30%">frame N+1</span></div></div><div class="lane"><span class="lane-label">SurfaceFlinger + display</span><div class="track"><span class="mark" style="--at:66%;--len:22%">present N</span></div></div></div><figcaption>Illustrative, not to scale. While the RenderThread and GPU finish frame N, the UI thread already works on frame N+1, so a stage can be late without the UI thread being slow. Check FrameTimeline's expected and actual frames before assigning blame.</figcaption></figure>
 
 <!-- @after Vsync and Choreographer :: animation -->
 
@@ -49,34 +49,40 @@ A recorded command list still needs rendering and composition before the user se
 Primary evidence for the added layer: [Frame pipeline evidence](https://perfetto.dev/docs/data-sources/frametimeline), [Hardware acceleration](https://developer.android.com/develop/ui/views/graphics/hardware-accel).
 
 <!-- @before The Three Phases the App Owns :: review -->
-The P7RD1 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “For Compose: a single layout pass per recomposition” (P7RD1) in this section is under technical review. A correction is pending the owner's approval.
 
 <!-- @before Compose vs Views — Different Pipelines :: review -->
-The P7RD1 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “For Compose: a single layout pass per recomposition” (P7RD1) in this section is under technical review. A correction is pending the owner's approval.
 
 <!-- @before Real Android Patterns :: review -->
-The P7RD1, P7RD5, P7RD6 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “For Compose: a single layout pass per recomposition” (P7RD1), the passage beginning “size(Size.ORIGINAL)” (P7RD5) and the passage beginning “key = { it.id() }” (P7RD6) in this section are under technical review. A correction is pending the owner's approval.
 
 <!-- @before Answer Key :: review -->
-The P7RD1, P7RD2, P7RD3, P7RD4 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “For Compose: a single layout pass per recomposition” (P7RD1), the passage beginning “vsync N+2” (P7RD2), the passage beginning “onCreateViewHolder runs once per item type” (P7RD3) and the passage beginning “Without it, Compose treats every row as a different type” (P7RD4) in this section are under technical review. A correction is pending the owner's approval.
 
 <!-- @before Vsync and Choreographer :: review -->
-The P7RD2 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “vsync N+2” (P7RD2) in this section is under technical review. A correction is pending the owner's approval.
 
 <!-- @before RecyclerView / LazyColumn — Where Rendering Matters Most :: review -->
-The P7RD3, P7RD4 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “onCreateViewHolder runs once per item type” (P7RD3) and the passage beginning “Without it, Compose treats every row as a different type” (P7RD4) in this section are under technical review. A correction is pending the owner's approval.
 
 <!-- @before Failure Modes :: review -->
-The P7RD4, P7RD9 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “Without it, Compose treats every row as a different type” (P7RD4) and the passage beginning “long-running work needs Dispatchers.IO” (P7RD9) in this section are under technical review. A correction is pending the owner's approval.
 
 <!-- @before SurfaceFlinger and Layers :: review -->
-The P7RD7 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “TextureView paints to a regular layer (cheaper than SurfaceView” (P7RD7) in this section is under technical review. A correction is pending the owner's approval.
 
 <!-- @before Vulkan vs OpenGL ES :: review -->
-The P7RD8 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “Vulkan reduces per-frame CPU cost by ~5–15%” (P7RD8) in this section is under technical review. A correction is pending the owner's approval.
 
 <!-- @before Common Rendering Bottlenecks :: review -->
-The P7RD9 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “long-running work needs Dispatchers.IO” (P7RD9) in this section is under technical review. Also under technical review: the overdraw colour scale in this section (P7RD11). A correction is pending the owner's approval.
 
 <!-- @before Common Pitfalls :: review -->
-The P7RD9 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “long-running work needs Dispatchers.IO” (P7RD9) in this section is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Measuring Rendering — Tools :: review -->
+The Perfetto and systrace commands and the Profile GPU Rendering colour legend in this section (P7RD10, P7RD11) in this section is under technical review. A correction is pending the owner's approval.
+
+<!-- @before The Rendering Pipeline (One Frame) :: review -->
+The passage beginning “If any single phase blows past 16ms, the frame is dropped” (P7RD2) in this section is under technical review. A correction is pending the owner's approval.

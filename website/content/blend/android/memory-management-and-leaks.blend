@@ -49,22 +49,25 @@ Repeat the same lifecycle transitions and inspect whether the stale path and ret
 Primary evidence for the added layer: [Memory overview](https://developer.android.com/topic/performance/memory-overview), [Leak investigation](https://square.github.io/leakcanary/fundamentals-fixing-a-memory-leak/).
 
 <!-- @before Why It Matters :: review -->
-The P7MM1 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “It cleans up memory in the background without freezing the UI” (P7MM1) in this section is under technical review. A correction is pending the owner's approval.
 
 <!-- @before Historical Context :: review -->
-The P7MM1 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “It cleans up memory in the background without freezing the UI” (P7MM1) in this section is under technical review. A correction is pending the owner's approval.
 
 <!-- @before First Principles :: review -->
-The P7MM1 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “It cleans up memory in the background without freezing the UI” (P7MM1) in this section is under technical review. A correction is pending the owner's approval.
 
 <!-- @before Staff Engineer Thinking :: review -->
-The P7MM1 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “It cleans up memory in the background without freezing the UI” (P7MM1) in this section is under technical review. A correction is pending the owner's approval.
 
 <!-- @before Answer Key :: review -->
-The P7MM1, P7MM2 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “It cleans up memory in the background without freezing the UI” (P7MM1) and the passage beginning “This safely kills any running coroutines” (P7MM2) in this section are under technical review. A correction is pending the owner's approval.
 
 <!-- @before Internal Mechanics :: review -->
-The P7MM2 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “This safely kills any running coroutines” (P7MM2) in this section is under technical review. A correction is pending the owner's approval.
 
 <!-- @before Production Example :: review -->
-The P7MM2 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “This safely kills any running coroutines” (P7MM2) in this section is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Overview :: review -->
+The passage describing the OS crashing the app with an OutOfMemoryError (P7MM1) in this section is under technical review. A correction is pending the owner's approval.

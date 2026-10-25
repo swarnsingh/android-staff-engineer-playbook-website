@@ -49,4 +49,4 @@ The product and feature owners, using measured device behavior and correctness r
 Primary evidence for the added layer: [Thermal status API](https://developer.android.com/reference/android/os/PowerManager), [Device performance adaptation](https://developer.android.com/games/optimize/adpf/thermal).
 
 <!-- @before Thermal Status :: review -->
-The P7TH1 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “private val listener = PowerManager.OnThermalStatusChangedListener” (P7TH1) in this section is under technical review. A correction is pending the owner's approval.

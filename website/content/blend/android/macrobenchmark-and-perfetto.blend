@@ -49,4 +49,4 @@ No. A trace explains one interval; distributions and representative cohorts requ
 Primary evidence for the added layer: [Macrobenchmark setup](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview), [Metrics](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics).
 
 <!-- @before Custom Trace Sections :: review -->
-The P7MB1 passages in this section are under technical review. A correction is pending the owner’s approval.
+The passage beginning “suspend fun loadFeed() = trace” (P7MB1) in this section is under technical review. A correction is pending the owner's approval.
