@@ -9,7 +9,7 @@
 Whether Compose can skip a child depends on how it compares that child's arguments with the previous ones, and that depends on each parameter's **stability**. Strong skipping, on by default since Kotlin 2.0.20, changed the rule for unstable parameters from "never skip" to "skip if it is the same instance". This chapter explains what is inferred stable, what the annotations promise, and why instance reuse now matters as much as types.
 
 <!-- @before Why Stability Matters :: review -->
-The decision rule in the next section, that any unstable parameter means a composable always re-runs and is never skippable, describes compilers without strong skipping. It is under technical review: since Kotlin 2.0.20 strong skipping is on by default, as this chapter's Strong Skipping Mode section explains.
+The decision rule in the next section, that any unstable parameter means a composable always re-runs and is never skippable, is under technical review. A correction is pending the owner's approval.
 
 <!-- @diagram 05a1b2ae40d0f9a1 -->
 ### Does this call run or skip?
@@ -33,7 +33,7 @@ The decision rule in the next section, that any unstable parameter means a compo
 <figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title"><code>@Immutable</code></span><div class="node"><strong>Promise</strong><small>no observable property ever changes after construction</small></div><div class="node" data-state="warn"><strong>If broken</strong><small>Compose skips a call whose data changed in place: stale UI</small></div></div><div class="col"><span class="col-title"><code>@Stable</code></span><div class="node"><strong>Promise</strong><small><code>equals</code> is consistent, and any change to public state is observable through snapshot state</small></div><div class="node" data-state="warn"><strong>If broken</strong><small>the same: skipped updates you expected to see</small></div></div></div><figcaption>Annotations override inference, much like <code>!!</code> overrides null checks: the compiler trusts them, and does not verify them.</figcaption></figure>
 
 <!-- @before Failure Modes :: review -->
-One row in the next table says `@Immutable` "has no effect" on a class with a `var`. That row is under technical review: Android's documentation says annotating a class overrides what the compiler would otherwise infer, so the annotation takes effect and the class is treated as stable even though it is not.
+One row in the next table says `@Immutable` "has no effect" on a class with a `var`. That row is under technical review. A correction is pending the owner's approval.
 
 <!-- @after Common Pitfalls :: check -->
 **Stable or not?** Decide before opening each answer.

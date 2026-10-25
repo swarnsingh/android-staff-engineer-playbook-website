@@ -9,7 +9,7 @@
 Both fixes chose a scope by trial and error. In Hilt, a scope is a promise about **which container holds the instance**, and each container is created and destroyed with a specific Android lifetime. This chapter maps every standard component to that lifetime, shows how a request finds its binding, and covers the escape hatches for code Hilt does not create.
 
 <!-- @before The Seven Standard Components :: review -->
-Several passages in the next sections say `@HiltViewModel` ViewModels live in, or are scoped to, `ActivityRetainedComponent` (the table's "Default for" column, the `ActivityRetainedComponent` drill-down, one Failure Modes row and answer 5). They are under technical review: Hilt documents `ViewModelComponent` as the component that injects `ViewModel`, a child of `ActivityRetainedComponent`, as the hierarchy diagram in this chapter shows.
+Several passages in the next sections say `@HiltViewModel` ViewModels live in, or are scoped to, `ActivityRetainedComponent` (the table's "Default for" column, the `ActivityRetainedComponent` drill-down, one Failure Modes row and answer 5). They are under technical review. A correction is pending the owner's approval.
 
 <!-- @diagram e53267b523603f05 -->
 ### The hierarchy, with each lifetime

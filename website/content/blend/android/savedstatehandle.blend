@@ -26,12 +26,7 @@ The previous chapter's ViewModel did its job: it survived rotation. But this tim
 <figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">App process: dies and restarts</span><div class="node"><strong>Activity / Fragment</strong><small>observes the ViewModel</small></div><div class="node"><strong>ViewModel</strong><small>reads and writes the handle</small></div><div class="node is-key"><strong><code>SavedStateHandle</code></strong><small>a provider in the owner's <code>SavedStateRegistry</code></small></div></div><div class="col"><span class="col-title">System process: survives</span><div class="node" data-state="done"><strong>Saved-state Bundle</strong><small>serialized when the activity stops; handed back when it is recreated</small></div></div></div><figcaption>The Bundle crosses the process boundary through Binder, which is why its size is limited.</figcaption></figure>
 
 <!-- @before Tradeoffs :: review -->
-The size limit sentence in the next section ("1MB across the entire OS IPC system") is under technical review. Android documents the 1MB Binder transaction buffer as shared by all transactions in progress for the process, and recommends keeping saved state below 50KB.
-
-<!-- @after Tradeoffs :: visual -->
-### A size budget, not a storage system
-
-<figure class="viz"><div class="viz-lanes"><div class="lane"><span class="lane-label">IDs, query, tab, draft text</span><div class="track"><span class="mark" style="--at:0%;--len:4%">bytes</span></div></div><div class="lane"><span class="lane-label">Recommended saved-state ceiling</span><div class="track"><span class="mark" style="--at:0%;--len:5%">&lt; 50KB</span></div></div><div class="lane"><span class="lane-label">Binder buffer, whole process</span><div class="track"><span class="mark" style="--at:0%;--len:100%">1MB, shared with every in-flight transaction</span></div></div></div><figcaption>Saved state shares the process's Binder buffer with every other in-flight transaction, and the system keeps it in memory for as long as the user can return. Save what reconstructs the screen; store the data itself in Room, DataStore or a cache.</figcaption></figure>
+The size limit sentence in the next section ("1MB across the entire OS IPC system") is under technical review. A correction is pending the owner's approval.
 
 <!-- @after Common Misconceptions :: check -->
 **Handle, ViewModel field, or database?** Decide before opening each answer.

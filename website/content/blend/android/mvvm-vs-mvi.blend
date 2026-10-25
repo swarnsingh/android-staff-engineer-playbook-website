@@ -29,10 +29,10 @@ The app never computed a wrong price. It exposed the promo code and the total as
 <figure class="viz"><div class="viz-stack"><div class="node is-key"><strong>Did the action start in the UI and stay there?</strong><small>e.g. a tap that opens help</small></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>Yes → handle it in the UI</strong><small>no ViewModel round trip</small></div><div class="node"><strong>No → the ViewModel produced it</strong><small>e.g. "payment confirmed, leave this screen"</small></div></div><div class="down"></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>Losing it would be wrong → state</strong><small>put it in UI state; the UI acts on it, then reports it consumed</small></div><div class="node" data-state="warn"><strong>Losing it is acceptable → best-effort effect</strong><small>a <code>Channel</code> for process-local effects, accepting that one can be dropped</small></div></div></div><figcaption>This follows the chapter's state-first rule and Android's UI events guidance.</figcaption></figure>
 
 <!-- @before Compose Integration :: review -->
-Point 2 in the next section ("Avoid <code>{ vm.processIntent(it) }</code>, which allocates a new lambda each composition") is under technical review. Since Kotlin 2.0.20, Compose strong skipping is on by default and remembers lambdas inside composables automatically.
+Point 2 in the next section ("Avoid <code>{ vm.processIntent(it) }</code>, which allocates a new lambda each composition") is under technical review. A correction is pending the owner's approval.
 
 <!-- @before Failure Modes :: review -->
-The first row of the next table ("Toast re-fires after rotation → Move to <code>Channel&lt;Effect&gt;</code>") is under technical review: it conflicts with this chapter's state-first rule for actions whose loss matters.
+The first row of the next table ("Toast re-fires after rotation → Move to <code>Channel&lt;Effect&gt;</code>") is under technical review. A correction is pending the owner's approval.
 
 <!-- @after Decision: When to Use What :: check -->
 **MVVM or MVI?** Decide before opening each answer.

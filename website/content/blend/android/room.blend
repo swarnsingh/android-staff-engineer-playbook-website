@@ -30,7 +30,7 @@ A database outlives every version of the code that writes to it. Room's job is t
 <figure class="viz"><div class="viz-stack"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Compose UI</strong><small>observes <code>StateFlow</code></small></div><div class="node"><strong>ViewModel</strong><small>observes the repository's <code>Flow</code></small></div></div><div class="down"></div><div class="node is-key"><strong>Repository</strong><small>queries Room as a <code>Flow</code>; inserts what the network returns</small></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>Room database</strong><small>source of truth; its InvalidationTracker re-triggers queries</small></div><div class="node"><strong>Retrofit network</strong><small>syncs into the repository, never straight to the UI</small></div></div></div><figcaption>The network writes; Room notifies; the UI reads. Each arrow has one direction.</figcaption></figure>
 
 <!-- @before Failure Modes :: review -->
-The N+1 item in the next section, and answer 7 of the Answer Key, say `@Relation` loads related rows with one query per parent. That is under technical review: Android's documentation says a `@Relation` method "requires Room to run two queries", one for the parents and one for their related rows.
+The N+1 item in the next section, and answer 7 of the Answer Key, say `@Relation` loads related rows with one query per parent. That is under technical review. A correction is pending the owner's approval.
 
 <!-- @after Schema Evolution Discipline :: visual -->
 ### A user who skipped nine releases
@@ -38,7 +38,7 @@ The N+1 item in the next section, and answer 7 of the Answer Key, say `@Relation
 <figure class="viz"><div class="viz-flow"><div class="node"><strong>Installed: v3</strong></div><div class="node" data-state="done"><strong>3→4 … 6→7</strong><small>registered</small></div><div class="node" data-state="error"><strong>7→8</strong><small>missing</small></div><div class="node" data-state="ghost"><strong>8→9 … 11→12</strong><small>never reached</small></div><div class="node is-key"><strong>Shipping: v12</strong></div></div><figcaption>Room needs a path of migrations from the installed version to the current one. One missing hop fails the first database open; a destructive fallback silently deletes the user's data instead.</figcaption></figure>
 
 <!-- @before Staff Engineer Thinking :: review -->
-Point 2 of the next section (and answer 6 of the Answer Key) says that projecting fewer columns stops a `Flow` from re-emitting when another column changes. That is under technical review: Room invalidates observable queries per table, as the Internal Mechanics section describes.
+Point 2 of the next section (and answer 6 of the Answer Key) says that projecting fewer columns stops a `Flow` from re-emitting when another column changes. That is under technical review. A correction is pending the owner's approval.
 
 <!-- @after Common Misconceptions :: check -->
 **Will it ship safely?** Decide before opening each answer.

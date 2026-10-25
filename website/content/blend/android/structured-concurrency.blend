@@ -10,7 +10,7 @@
 The download had no **owner**: nothing that ended when the screen ended. Structured concurrency gives every coroutine a parent and every parent a lifetime, so cancelling the owner cancels its whole tree, and a failure travels up the tree instead of disappearing. This chapter shows how the tree is built, how cancellation and failure move through it, and when supervision changes the rules.
 
 <!-- @before Historical Context :: review -->
-The next section says structured concurrency is "implemented in languages like Go". That sentence is under technical review: Go's `go` statement starts unstructured goroutines, and the essay that popularised the term is titled "Notes on structured concurrency, or: Go statement considered harmful".
+The next section says structured concurrency is "implemented in languages like Go". That sentence is under technical review. A correction is pending the owner's approval.
 
 <!-- @after Internal Mechanics :: animation -->
 ### Cancellation down, failure up
@@ -29,7 +29,7 @@ The next section says structured concurrency is "implemented in languages like G
 <figure class="viz"><div class="viz-stack"><div class="node is-key"><strong>ViewModel job</strong><small>cancelled when the ViewModel is cleared</small></div><div class="viz-grid" style="--cols:2"><div class="node"><strong><code>launch</code>: fetch user</strong></div><div class="node"><strong><code>launch</code>: fetch posts</strong><small>parent of the two asyncs below</small></div></div><div class="viz-grid" style="--cols:2"><div class="node"><strong><code>async</code>: network</strong></div><div class="node"><strong><code>async</code>: database</strong></div></div></div><figcaption>If the ViewModel dies, its job is cancelled, and the cancellation cascades to every descendant.</figcaption></figure>
 
 <!-- @before Tradeoffs :: review -->
-The `supervisorScope` example in the next section shows a child that "Fails!" with no handling. That example is under technical review: Kotlin's documentation says children launched directly in `supervisorScope` must handle their own exceptions, and otherwise use the scope's `CoroutineExceptionHandler` like root coroutines; with no handler, Android's default uncaught-exception handler crashes the app.
+The `supervisorScope` example in the next section shows a child that "Fails!" with no handling. That example is under technical review. A correction is pending the owner's approval.
 
 <!-- @after Common Misconceptions :: check -->
 **What happens next?** Decide before opening each answer.

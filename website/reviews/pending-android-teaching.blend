@@ -1,0 +1,9 @@
+<!-- Held Android teaching fragments that state a correction still awaiting the owner's approval.
+     Not rendered. Restore each one only after its finding is approved. -->
+
+<!-- savedstatehandle.blend, held for finding SSH1 -->
+<!-- @after Tradeoffs :: visual -->
+### A size budget, not a storage system
+
+<figure class="viz"><div class="viz-lanes"><div class="lane"><span class="lane-label">IDs, query, tab, draft text</span><div class="track"><span class="mark" style="--at:0%;--len:4%">bytes</span></div></div><div class="lane"><span class="lane-label">Recommended saved-state ceiling</span><div class="track"><span class="mark" style="--at:0%;--len:5%">&lt; 50KB</span></div></div><div class="lane"><span class="lane-label">Binder buffer, whole process</span><div class="track"><span class="mark" style="--at:0%;--len:100%">1MB, shared with every in-flight transaction</span></div></div></div><figcaption>Saved state shares the process's Binder buffer with every other in-flight transaction, and the system keeps it in memory for as long as the user can return. Save what reconstructs the screen; store the data itself in Room, DataStore or a cache.</figcaption></figure>
+

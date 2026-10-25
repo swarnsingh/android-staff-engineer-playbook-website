@@ -29,7 +29,7 @@ A composable body may run many times, be skipped, or be abandoned, so anything t
 <figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Composition-driven</span><div class="node"><strong>Screen enters</strong></div><div class="node is-key"><strong><code>LaunchedEffect</code> launches a job</strong></div><div class="node" data-state="warn"><strong>Screen leaves → job cancelled</strong></div></div><div class="col"><span class="col-title">Event-driven</span><div class="node"><strong>Button <code>onClick</code></strong></div><div class="node is-key"><strong><code>rememberCoroutineScope().launch { }</code></strong></div><div class="node" data-state="warn"><strong>Scope's call leaves → its jobs cancelled</strong></div></div></div><figcaption>Both scopes end with the composition; they differ in what starts the work.</figcaption></figure>
 
 <!-- @before Production Example :: review -->
-The Snackbar example in the next section is under technical review: it calls `showSnackbar(message = errorMessage)` after `if (errorMessage != null)`, but `errorMessage` is a delegated local (`by collectAsStateWithLifecycle()`), and Kotlin does not smart-cast delegated properties. Compiled with Kotlin 2.4.21: "smart cast to 'String' is impossible, because 'errorMessage' is a delegated property".
+The Snackbar example in the next section is under technical review. A correction is pending the owner's approval.
 
 <!-- @after Failure Modes :: check -->
 **Which effect?** Decide before opening each answer.

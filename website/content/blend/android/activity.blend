@@ -27,7 +27,7 @@ Nothing runs. The system kills the process, not the activity, so no `onDestroy()
 </details>
 
 <!-- @before Internal Mechanics: The Lifecycle :: review -->
-The split-screen example of `onPause()` in the next section (and in answer 1 of the Answer Key) describes Android 9 and earlier. It is under technical review; a correction is pending approval.
+The split-screen example of `onPause()` in the next section (and in answer 1 of the Answer Key) is under technical review. A correction is pending the owner's approval.
 
 <!-- @after Internal Mechanics: The Lifecycle :: animation -->
 ### A day in the life of one screen
@@ -62,3 +62,6 @@ Follow one activity through the events a real user produces. Watch which callbac
 
 <!-- @after Common Misconceptions :: staff -->
 **Review question to ask:** "If the process dies right after this screen stops, what does the user lose?" If the answer is anything they typed or chose, it must already be in saved state or the data layer before `onStop()` returns. The next chapters show where each kind of state belongs: [ViewModel](viewmodel.md), [SavedStateHandle](savedstatehandle.md) and [Process Death & State Restoration](process-death-and-state-restoration.md).
+
+<!-- @before Answer Key :: review -->
+Answer 1 in the next section is under technical review. A correction is pending the owner's approval.
