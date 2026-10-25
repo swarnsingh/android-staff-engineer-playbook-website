@@ -7,7 +7,7 @@
 The Retrofit implementation and OkHttp protocol descriptions in the next section (KT1–KT2) are under technical review. A correction is pending the owner's approval.
 
 <!-- @before Declarative vs Imperative :: review -->
-The Retrofit implementation-generation description in the next section (KT1) is under technical review. A correction is pending the owner's approval.
+The description of how Retrofit creates its implementation in the next section (KT1) is under technical review. A correction is pending the owner's approval.
 
 <!-- @after KMP — The Decisive Factor :: visual -->
 ### Choose the boundary before the library
@@ -88,17 +88,15 @@ The strict-size and free-migration rows in the next table (KT3–KT4) are under 
 ]</script><figcaption>This sequence is an application migration plan; its outcome depends on measured parity, not on endpoint count alone.</figcaption></figure>
 
 <!-- @before Failure Modes :: review -->
-The ignoreUnknownKeys and coerceInputValues diagnosis in the next table (KT5) is under technical review. A correction is pending the owner's approval.
+The fix given for the ignoreUnknownKeys row (KT5) and the retry predicate in the HttpRequestRetry row (KT6) in the next table are under technical review. A correction is pending the owner's approval.
 
-<!-- @before Common Pitfalls :: review -->
-The ignoreUnknownKeys warning in the next section (KT5) is under technical review. A correction is pending the owner's approval.
 
 <!-- @after Common Pitfalls :: check -->
 ### Try the decision
 
-<details><summary>Ktor uses the OkHttp engine. Has every transport behaviour changed?</summary>
+<details><summary>Ktor uses the OkHttp engine. Has any transport behaviour changed?</summary>
 
-No. The client API changed while OkHttp remains the engine. Inventory configuration, plugin interactions and defaults instead of treating the library name as the transport contract.
+Some defaults do. OkHttp still carries the bytes, but Ktor's OkHttp engine turns off OkHttp's own redirect following (Ktor handles redirects), creates its own dispatcher unless you pass a preconfigured client, and maps HttpTimeout onto OkHttp's timeouts. Inventory these alongside plugin interactions.
 </details>
 
 <details><summary>MockEngine passes. What remains untested?</summary>
@@ -110,3 +108,9 @@ The selected real engine’s sockets, TLS, proxies, connection reuse and integra
 
 If its supported platform scope and operational behaviour meet the product’s needs, a migration must show enough value to outweigh compatibility, training and rollout costs. There is no requirement to replace a working boundary.
 </details>
+
+<!-- @before Serialization :: review -->
+The Retrofit converter snippet and the statement that both clients work with Moshi in this section (KT7–KT8) are under technical review. A correction is pending the owner's approval.
+
+<!-- @before Error Handling :: review -->
+The exception types listed in the <code>expectSuccess</code> comment in this section (KT9) are under technical review. A correction is pending the owner's approval.

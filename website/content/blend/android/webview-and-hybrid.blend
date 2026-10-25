@@ -93,7 +93,7 @@ No. Validate its structure and authorize the requested operation. Origin control
 No. Redirects and later content changes are part of the trust lifecycle. Review the whole flow and the callback limits stated in the chapter.
 </details>
 
-<details><summary>OAuth wants a native JavaScript bridge?</summary>
+<details><summary>Can a WebView with a native bridge host the OAuth sign-in?</summary>
 
 Native OAuth authorization belongs in an external user agent such as a browser or Custom Tab; do not design it around a credential-capturing WebView bridge.
 </details>

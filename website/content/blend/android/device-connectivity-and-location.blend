@@ -64,15 +64,25 @@
 
 <details><summary>Persist a live GATT object?</summary>
 
-Persist intent/configuration; rebuild runtime connections.
+No. A GATT connection belongs to one process and one radio session. Persist the device identity and what the user wanted, then rebuild the connection when the app needs it again.
 </details>
 
 <details><summary>Permission granted once: finished?</summary>
 
-Handle later denial or revocation.
+No. The user or the system can revoke it later, so check at each use and keep a path for denial or revocation.
 </details>
 
 <details><summary>A location is accurate but old. Use it?</summary>
 
-Check both age and accuracy against the feature’s needs.
+Only if it is fresh enough. Check both the fix's age and its accuracy against what the feature needs; an accurate position from an hour ago can be wrong for this decision.
 </details>
+
+<!-- @after Reliability and Observability :: animation -->
+### Losing the device and getting it back
+
+<figure class="stepper"><span class="stepper-title">Reconnect only while the product still needs it</span><div class="stage viz-grid" style="--cols:3"><div class="node" data-el="link"><strong>BLE link</strong><small data-text="linkV">connected</small></div><div class="node" data-el="intent"><strong>Durable intent</strong><small>device ID + "keep syncing"</small></div><div class="node is-key" data-el="retry"><strong>Reconnect policy</strong><small data-text="retryV">idle</small></div></div><script type="application/json" class="steps">[
+{"label":"Lost","caption":"The peripheral walks out of range and the callback reports a disconnect. The live GATT object is now useless.","add":["link","intent","retry"],"state":{"link":"error"},"text":{"linkV":"disconnected"}},
+{"label":"Still wanted?","caption":"Check the durable intent first. If the user has left the feature, stop here; a reconnect loop nobody needs drains the battery.","state":{"intent":"active"}},
+{"label":"Bounded retry","caption":"The user still wants syncing, so retry with exponential backoff and jitter, with a limit, as the chapter's Reliability section describes.","state":{"intent":"done","retry":"active"},"text":{"retryV":"backoff with jitter, capped"}},
+{"label":"Rebuilt","caption":"The device returns. A new connection is built from the stored device ID, not from the old object, and syncing resumes.","state":{"link":"done","retry":"done"},"text":{"linkV":"new connection","retryV":"reset"}}
+]</script><figcaption>Illustrative flow. Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>

@@ -38,7 +38,7 @@ The claim that every live ExoPlayer holds decoders (MP2) is under technical revi
 },
 {
 "label": "Open full screen",
-"caption": "Detach the old presentation before attaching the intended new surface.",
+"caption": "Attach the full-screen surface first, then detach the tile, so the player never runs without a surface. Media3's PlayerView.switchTargetView uses this order for a smoother switch.",
 "state": {
 "tile": "ghost",
 "full": "active"

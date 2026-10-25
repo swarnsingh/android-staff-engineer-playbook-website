@@ -66,15 +66,20 @@ The synchronous status lookup inside the network callbacks (NC1) is under techni
 
 <details><summary>Wi-Fi means unmetered?</summary>
 
-No. Use capabilities and user policy.
+No. A hotspot or a user setting can make Wi-Fi metered. Read NET_CAPABILITY_NOT_METERED and respect the user's data policy instead of inferring cost from the transport.
 </details>
 
 <details><summary>Validated means the API is up?</summary>
 
-No. Handle the request outcome independently.
+No. Validation is the system's own reachability probe. DNS, TLS, a proxy or your backend can still fail this request, so handle each request's outcome on its own.
 </details>
 
 <details><summary>Large upload can wait. Keep a polling loop?</summary>
 
-Persist the work and use suitable WorkManager constraints.
+No. Persist the upload and enqueue WorkManager work with a network constraint (unmetered if the user expects that), so the system runs it when conditions fit instead of the app polling.
 </details>
+
+<!-- @after Capabilities to Check :: visual -->
+### What each signal can and cannot tell you
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">The system reports</span><div class="node"><strong><code>NET_CAPABILITY_NOT_METERED</code></strong><small>cost policy for this network</small></div><div class="node"><strong><code>NET_CAPABILITY_VALIDATED</code></strong><small>the system's own reachability probe succeeded</small></div><div class="node"><strong><code>NET_CAPABILITY_CAPTIVE_PORTAL</code></strong><small>sign-in is needed before traffic flows</small></div><div class="node"><strong>VPN transport</strong><small>traffic is routed through a VPN</small></div></div><div class="col"><span class="col-title">Only your request can tell you</span><div class="node is-key"><strong>Does this API answer?</strong><small>DNS, TLS, proxy and backend can each still fail</small></div><div class="node is-key"><strong>Is it fast enough now?</strong><small>timeouts belong to the request, not the callback</small></div><div class="node is-key"><strong>Should it run now?</strong><small>product policy combines cost, urgency and user settings</small></div></div></div><figcaption>Capabilities are inputs to a decision. The request outcome is the evidence.</figcaption></figure>
