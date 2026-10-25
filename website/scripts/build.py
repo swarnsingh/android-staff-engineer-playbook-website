@@ -26,7 +26,8 @@ def phases(slug):
     for block in re.split(r'^### ', (ROOT/f'{slug}.md').read_text(), flags=re.M)[1:]:
         heading, _, body = block.partition('\n')
         chapters = []
-        for target in re.findall(r'\]\(([^)#]+\.md)(?:#[^)]*)?\)', body.split('\n## ')[0]):
+        # Links with an #anchor point into another chapter's section; they do not list that chapter here.
+        for target in re.findall(r'\]\(([^)#]+\.md)\)', body.split('\n## ')[0]):
             if target.startswith(slug + '/') and target not in chapters: chapters.append(target)
         if chapters and heading.startswith('Phase'): result.append((heading.strip(), chapters))
     return result
@@ -38,7 +39,7 @@ for _slug, _tree in TREES.items():
     for _heading, _chapters in phases(_slug):
         if _tree['phases'] is None or int(re.match(r'Phase (\d+)', _heading)[1]) in _tree['phases']:
             ORDER[_slug] += [p for p in _chapters if p not in ORDER[_slug]]
-            SECTION.update({p: _heading for p in _chapters})
+            for p in _chapters: SECTION.setdefault(p, _heading)  # the first phase listing a chapter owns it
     if _tree['phases'] is None and set(ORDER[_slug]) != {p.relative_to(ROOT).as_posix() for p in (ROOT/_slug).rglob('*.md')}:
         raise ValueError(f'{_slug} reading sequence does not cover every chapter')
 PAGES = [p for slug in TREES for p in [f'{slug}.md'] + ORDER[slug]]
