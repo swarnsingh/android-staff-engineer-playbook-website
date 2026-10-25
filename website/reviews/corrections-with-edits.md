@@ -6,7 +6,7 @@ Exact proposed wording for the 23 rows of [`corrections-triage.md`](corrections-
 
 **Checked:**
 - Each original text below occurs exactly once in its chapter at the line shown, and no two replacements overlap, so all 23 can be applied together.
-- With all 23 applied in a temporary build, every page renders and the preservation check passes (3,521 units, 0 problems). 17 replacements get an inline highlight; the other 7 (a table row and code) are shown by their section's correction note. The temporary file was removed afterwards.
+- With all 24 replacements across 23 IDs applied in a temporary build, every page renders and the preservation check passes (3,521 units, 0 problems). 17 replacements get an inline highlight; the other 7 (a table row and code) are shown by their section's correction note. The temporary file was removed afterwards.
 - CH4, C24 and K1 were compiled and run exactly as they would read in the chapter; see each entry.
 - The machine-readable copy is [`corrections-with-edits.json`](corrections-with-edits.json), with the same `path`/`old`/`new` fields as the corrections files.
 
@@ -476,10 +476,10 @@ so it allows up to 64 threads. If you run 10 blocking calls on `Default`, they o
 
 - **Chapter:** Channels and Select (`kotlin/coroutines-and-flow/channels-and-select.md`)
 - **Section:** Actor-Style State Ownership
-- **Reason:** The worker must release active and undelivered checkout replies and reject submissions after shutdown, including cancellation before its first dispatch. Expected IOException failures affect only the current request; cancellation and unexpected failures stop the worker.
-- **Sources:** <https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-start/-d-e-f-a-u-l-t/>, <https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/invoke-on-completion.html>, <https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/>
-- **Scope:** Replace the complete `CartActor` class. The command types and its public `add`/`checkout` API remain the same. The enclosing file needs `java.io.IOException` and the coroutine/channel imports.
-- **Regression checks:** `website/scripts/check_kotlin_examples.py` compiles this exact proposal with the chapter's command types. It checks expected failure/recovery, shutdown while processing, buffered and suspended senders, cancellation before startup, and construction with an already-cancelled owner. Unexpected worker failures retain the owner's uncaught-error policy.
+- **Reason:** The worker must release active and undelivered checkout replies and reject submissions after shutdown, including cancellation before startup. An active caller receives CartStoppedException on actor shutdown, while its own cancellation remains CancellationException. A service-local timeout or cancellation fails only that request with CheckoutRequestCancelledException when the worker remains active; unexpected failures still stop the worker and follow the owner's reporting policy.
+- **Sources:** <https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-start/-d-e-f-a-u-l-t/>, <https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/invoke-on-completion.html>, <https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/>, <https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/ensure-active.html>, <https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/send.html>
+- **Scope:** Replace the complete `CartActor` class. The command types and public method signatures remain the same; shutdown is now a normal `CartStoppedException` for active callers. The replacement also declares two exception types. The enclosing file needs `java.io.IOException` and the coroutine/channel imports.
+- **Regression checks:** `website/scripts/check_kotlin_examples.py` compiles this exact proposal with the chapter's command types. It checks expected failure/recovery, shutdown while processing, buffered and suspended senders, cancellation before startup, and construction with an already-cancelled owner. It also checks a service-local timeout followed by recovery, active callers displaying shutdown errors, and caller-owned cancellation. Unexpected worker failures retain the owner's uncaught-error policy.
 - **Ownership:** Accepted commands belong to the actor's owner. Cancelling a caller waiting for a reply does not roll back a command that was already accepted. This in-memory example provides no durability promise.
 
 **Original** (Actor-Style State Ownership):
@@ -521,6 +521,12 @@ class CartActor(
 **Replacement:**
 
 ````kotlin
+class CartStoppedException(cause: Throwable? = null) :
+    IllegalStateException("CartActor stopped", cause)
+
+class CheckoutRequestCancelledException(cause: CancellationException) :
+    IllegalStateException("Checkout was cancelled while its actor remained active", cause)
+
 class CartActor(
     scope: CoroutineScope,
     private val checkout: CheckoutService
@@ -529,9 +535,7 @@ class CartActor(
         capacity = Channel.BUFFERED,
         onUndeliveredElement = { command ->
             if (command is CartCommand.Checkout) {
-                command.replyTo.completeExceptionally(
-                    CancellationException("Cart command was not delivered")
-                )
+                command.replyTo.completeExceptionally(CartStoppedException())
             }
         }
     )
@@ -545,14 +549,25 @@ class CartActor(
                     is CartCommand.Remove -> items = items.filterNot { it.id == command.id }
                     is CartCommand.Checkout -> {
                         try {
-                            command.replyTo.complete(checkout.submit(items))
+                            currentCoroutineContext().ensureActive()
+                            val result = checkout.submit(items)
+                            currentCoroutineContext().ensureActive()
+                            command.replyTo.complete(result)
+                        } catch (error: CancellationException) {
+                            try {
+                                currentCoroutineContext().ensureActive()
+                            } catch (stopped: CancellationException) {
+                                // Owner/worker shutdown is an ordinary error to an active caller.
+                                command.replyTo.completeExceptionally(CartStoppedException(stopped))
+                                throw stopped
+                            }
+                            // A service-local timeout did not cancel the worker. Fail one request.
+                            command.replyTo.completeExceptionally(CheckoutRequestCancelledException(error))
                         } catch (error: IOException) {
-                            // Expected request failure: fail this reply and keep serving.
                             command.replyTo.completeExceptionally(error)
                         } catch (error: Throwable) {
-                            // Include cancellation: release this caller, then stop the worker.
                             command.replyTo.completeExceptionally(error)
-                            throw error
+                            throw error // Preserve the owner's unexpected-failure policy.
                         }
                     }
                 }
@@ -562,18 +577,28 @@ class CartActor(
             // Runs even when cancellation prevented the worker body from starting.
             val stopped = CancellationException("CartActor stopped")
             if (cause != null) stopped.initCause(cause)
-            // Reject new commands, wake suspended senders, and release buffered replies.
             commands.cancel(stopped)
         }
     }
 
+    private suspend fun send(command: CartCommand) {
+        currentCoroutineContext().ensureActive()
+        try {
+            commands.send(command)
+        } catch (error: CancellationException) {
+            // Preserve this caller's own cancellation; translate cancellation of the channel.
+            currentCoroutineContext().ensureActive()
+            throw CartStoppedException(error)
+        }
+    }
+
     suspend fun add(item: Item) {
-        commands.send(CartCommand.Add(item))
+        send(CartCommand.Add(item))
     }
 
     suspend fun checkout(): CheckoutResult {
         val reply = CompletableDeferred<CheckoutResult>()
-        commands.send(CartCommand.Checkout(reply))
+        send(CartCommand.Checkout(reply))
         return reply.await()
     }
 }

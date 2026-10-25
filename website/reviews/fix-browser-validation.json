@@ -1,188 +1,522 @@
 {
+  "reviewBase": "9e0f568",
+  "browser": "ChatGPT in-app browser on macOS; desktop viewport",
+  "scope": "Rendered source units and selected visibility/resource failures. Physical devices, other engines, arbitrary occlusion and general contrast were not certified.",
   "pages": [
     {
       "checked": 99,
+      "diagramResources": [
+        {
+          "source": "/diagrams/4b9b13a8f264b658.svg",
+          "status": "loaded"
+        }
+      ],
       "diagrams": 1,
+      "loadedDiagrams": 1,
       "problems": [],
-      "source": "kotlin.md"
+      "source": "kotlin.md",
+      "units": 51
     },
     {
       "checked": 1061,
+      "diagramResources": [
+        {
+          "source": "/diagrams/2570aeb49af05293.svg",
+          "status": "loaded"
+        }
+      ],
       "diagrams": 1,
+      "loadedDiagrams": 1,
       "problems": [],
-      "source": "kotlin/language-core/variables.md"
+      "source": "kotlin/language-core/variables.md",
+      "units": 234
     },
     {
       "checked": 929,
+      "diagramResources": [],
       "diagrams": 0,
+      "loadedDiagrams": 0,
       "problems": [],
-      "source": "kotlin/language-core/null-safety.md"
+      "source": "kotlin/language-core/null-safety.md",
+      "units": 192
     },
     {
       "checked": 1043,
+      "diagramResources": [
+        {
+          "source": "/diagrams/1a4416e0a5786e86.svg",
+          "status": "loaded"
+        }
+      ],
       "diagrams": 1,
+      "loadedDiagrams": 1,
       "problems": [],
-      "source": "kotlin/language-core/functions.md"
+      "source": "kotlin/language-core/functions.md",
+      "units": 229
     },
     {
       "checked": 796,
+      "diagramResources": [
+        {
+          "source": "/diagrams/f551760c2d3cc682.svg",
+          "status": "loaded"
+        }
+      ],
       "diagrams": 1,
+      "loadedDiagrams": 1,
       "problems": [],
-      "source": "kotlin/language-core/extensions.md"
+      "source": "kotlin/language-core/extensions.md",
+      "units": 200
     },
     {
       "checked": 1021,
+      "diagramResources": [],
       "diagrams": 0,
+      "loadedDiagrams": 0,
       "problems": [],
-      "source": "kotlin/language-core/data-classes.md"
+      "source": "kotlin/language-core/data-classes.md",
+      "units": 195
     },
     {
       "checked": 163,
+      "diagramResources": [],
       "diagrams": 0,
+      "loadedDiagrams": 0,
       "problems": [],
-      "source": "kotlin/language-core/value-classes.md"
+      "source": "kotlin/language-core/value-classes.md",
+      "units": 37
     },
     {
       "checked": 856,
+      "diagramResources": [],
       "diagrams": 0,
+      "loadedDiagrams": 0,
       "problems": [],
-      "source": "kotlin/language-core/sealed-classes.md"
+      "source": "kotlin/language-core/sealed-classes.md",
+      "units": 169
     },
     {
       "checked": 885,
+      "diagramResources": [],
       "diagrams": 0,
+      "loadedDiagrams": 0,
       "problems": [],
-      "source": "kotlin/language-core/delegation.md"
+      "source": "kotlin/language-core/delegation.md",
+      "units": 187
     },
     {
       "checked": 915,
+      "diagramResources": [],
       "diagrams": 0,
+      "loadedDiagrams": 0,
       "problems": [],
-      "source": "kotlin/type-system/generics.md"
+      "source": "kotlin/type-system/generics.md",
+      "units": 187
     },
     {
       "checked": 882,
+      "diagramResources": [],
       "diagrams": 0,
+      "loadedDiagrams": 0,
       "problems": [],
-      "source": "kotlin/type-system/variance.md"
+      "source": "kotlin/type-system/variance.md",
+      "units": 185
     },
     {
       "checked": 398,
+      "diagramResources": [
+        {
+          "source": "/diagrams/867177bb2f66113e.svg",
+          "status": "loaded"
+        }
+      ],
       "diagrams": 1,
+      "loadedDiagrams": 1,
       "problems": [],
-      "source": "kotlin/compiler-features/inline-functions.md"
+      "source": "kotlin/compiler-features/inline-functions.md",
+      "units": 93
     },
     {
       "checked": 380,
+      "diagramResources": [],
       "diagrams": 0,
+      "loadedDiagrams": 0,
       "problems": [],
-      "source": "kotlin/compiler-features/reified-types.md"
+      "source": "kotlin/compiler-features/reified-types.md",
+      "units": 90
     },
     {
       "checked": 971,
+      "diagramResources": [
+        {
+          "source": "/diagrams/4b00da8fd97c81d4.svg",
+          "status": "loaded"
+        }
+      ],
       "diagrams": 1,
+      "loadedDiagrams": 1,
       "problems": [],
-      "source": "kotlin/coroutines-and-flow/coroutines.md"
+      "source": "kotlin/coroutines-and-flow/coroutines.md",
+      "units": 213
     },
     {
       "checked": 397,
+      "diagramResources": [],
       "diagrams": 0,
+      "loadedDiagrams": 0,
       "problems": [],
-      "source": "kotlin/coroutines-and-flow/channels-and-select.md"
+      "source": "kotlin/coroutines-and-flow/channels-and-select.md",
+      "units": 108
     },
     {
       "checked": 508,
+      "diagramResources": [],
       "diagrams": 0,
+      "loadedDiagrams": 0,
       "problems": [],
-      "source": "kotlin/coroutines-and-flow/flow-operators-and-backpressure.md"
+      "source": "kotlin/coroutines-and-flow/flow-operators-and-backpressure.md",
+      "units": 140
     },
     {
       "checked": 392,
+      "diagramResources": [],
       "diagrams": 0,
+      "loadedDiagrams": 0,
       "problems": [],
-      "source": "kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks.md"
+      "source": "kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks.md",
+      "units": 101
     },
     {
       "checked": 307,
+      "diagramResources": [],
       "diagrams": 0,
+      "loadedDiagrams": 0,
       "problems": [],
-      "source": "kotlin/coroutines-and-flow/coroutines-debugging-and-profiling.md"
+      "source": "kotlin/coroutines-and-flow/coroutines-debugging-and-profiling.md",
+      "units": 130
     },
     {
       "checked": 408,
+      "diagramResources": [],
       "diagrams": 0,
+      "loadedDiagrams": 0,
       "problems": [],
-      "source": "kotlin/coroutines-and-flow/test-dispatchers-virtual-time.md"
+      "source": "kotlin/coroutines-and-flow/test-dispatchers-virtual-time.md",
+      "units": 109
     },
     {
       "checked": 849,
+      "diagramResources": [
+        {
+          "source": "/diagrams/d0cfb3da8da17ff0.svg",
+          "status": "loaded"
+        }
+      ],
       "diagrams": 1,
+      "loadedDiagrams": 1,
       "problems": [],
-      "source": "kotlin/runtime-and-jvm/memory-model.md"
+      "source": "kotlin/runtime-and-jvm/memory-model.md",
+      "units": 228
     },
     {
       "checked": 1045,
+      "diagramResources": [
+        {
+          "source": "/diagrams/f79ef8185c1b2d3d.svg",
+          "status": "loaded"
+        }
+      ],
       "diagrams": 1,
+      "loadedDiagrams": 1,
       "problems": [],
-      "source": "kotlin/runtime-and-jvm/jvm-interop.md"
+      "source": "kotlin/runtime-and-jvm/jvm-interop.md",
+      "units": 239
     },
     {
       "checked": 544,
+      "diagramResources": [
+        {
+          "source": "/diagrams/2e6c2f4790beb102.svg",
+          "status": "loaded"
+        }
+      ],
       "diagrams": 1,
+      "loadedDiagrams": 1,
       "problems": [],
-      "source": "kotlin/runtime-and-jvm/bytecode.md"
+      "source": "kotlin/runtime-and-jvm/bytecode.md",
+      "units": 108
     },
     {
       "checked": 213,
+      "diagramResources": [],
       "diagrams": 0,
+      "loadedDiagrams": 0,
       "problems": [],
-      "source": "kotlin/version-updates/kotlin-2-4-update.md"
+      "source": "kotlin/version-updates/kotlin-2-4-update.md",
+      "units": 96
     }
   ],
   "fixtures": [
     {
       "name": "visible",
-      "checked": 3,
+      "expected": "pass",
+      "checked": 4,
+      "diagramResources": [],
       "diagrams": 0,
+      "loadedDiagrams": 0,
       "problems": [],
-      "source": "fixture"
+      "source": "fixture",
+      "units": 4
     },
     {
-      "name": "opacity",
+      "name": "template",
+      "expected": "fail",
       "checked": 3,
+      "diagramResources": [],
       "diagrams": 0,
+      "loadedDiagrams": 0,
       "problems": [
-        "section-fixture: original content is hidden by CSS or an accessibility attribute"
+        "Original text is not rendered in order: First original paragraph."
       ],
-      "source": "fixture"
+      "source": "fixture",
+      "units": 4
+    },
+    {
+      "name": "noscript",
+      "expected": "fail",
+      "checked": 4,
+      "diagramResources": [],
+      "diagrams": 0,
+      "loadedDiagrams": 0,
+      "problems": [
+        "section-fixture: original content is hidden or nearly transparent",
+        "Original text is not rendered in order: First original paragraph."
+      ],
+      "source": "fixture",
+      "units": 4
+    },
+    {
+      "name": "removed",
+      "expected": "fail",
+      "checked": 3,
+      "diagramResources": [],
+      "diagrams": 0,
+      "loadedDiagrams": 0,
+      "problems": [
+        "Original text is not rendered in order: First original paragraph."
+      ],
+      "source": "fixture",
+      "units": 4
+    },
+    {
+      "name": "reordered",
+      "expected": "fail",
+      "checked": 4,
+      "diagramResources": [],
+      "diagrams": 0,
+      "loadedDiagrams": 0,
+      "problems": [
+        "Original text is not rendered in order: Repeated original paragraph."
+      ],
+      "source": "fixture",
+      "units": 4
+    },
+    {
+      "name": "repeat-removed",
+      "expected": "fail",
+      "checked": 3,
+      "diagramResources": [],
+      "diagrams": 0,
+      "loadedDiagrams": 0,
+      "problems": [
+        "Original text is not rendered in order: Repeated original paragraph."
+      ],
+      "source": "fixture",
+      "units": 4
     },
     {
       "name": "stylesheet",
-      "checked": 3,
+      "expected": "fail",
+      "checked": 4,
+      "diagramResources": [],
       "diagrams": 0,
+      "loadedDiagrams": 0,
       "problems": [
-        "section-fixture: original content is hidden by CSS or an accessibility attribute"
+        "section-fixture: original content is hidden or nearly transparent",
+        "Original text is not rendered in order: First original paragraph."
       ],
-      "source": "fixture"
+      "source": "fixture",
+      "units": 4
+    },
+    {
+      "name": "opacity-dot-zero",
+      "expected": "fail",
+      "checked": 5,
+      "diagramResources": [],
+      "diagrams": 0,
+      "loadedDiagrams": 0,
+      "problems": [
+        "section-fixture: original content is hidden or nearly transparent",
+        "Original text is not rendered in order: First original paragraph."
+      ],
+      "source": "fixture",
+      "units": 4
     },
     {
       "name": "inherited-opacity",
-      "checked": 3,
+      "expected": "fail",
+      "checked": 5,
+      "diagramResources": [],
       "diagrams": 0,
+      "loadedDiagrams": 0,
       "problems": [
-        "page-title: original content is hidden by CSS or an accessibility attribute",
-        "section-fixture: original content is hidden by CSS or an accessibility attribute"
+        "section-fixture: original content is hidden or nearly transparent",
+        "Original text is not rendered in order: First original paragraph.",
+        "Original text is not rendered in order: Repeated original paragraph.",
+        "Original text is not rendered in order: Repeated original paragraph."
       ],
-      "source": "fixture"
+      "source": "fixture",
+      "units": 4
+    },
+    {
+      "name": "nearly-transparent",
+      "expected": "fail",
+      "checked": 5,
+      "diagramResources": [],
+      "diagrams": 0,
+      "loadedDiagrams": 0,
+      "problems": [
+        "section-fixture: original content is hidden or nearly transparent",
+        "Original text is not rendered in order: First original paragraph."
+      ],
+      "source": "fixture",
+      "units": 4
+    },
+    {
+      "name": "transparent-color",
+      "expected": "fail",
+      "checked": 4,
+      "diagramResources": [],
+      "diagrams": 0,
+      "loadedDiagrams": 0,
+      "problems": [
+        "section-fixture: original text has a transparent fill",
+        "Original text is not rendered in order: First original paragraph."
+      ],
+      "source": "fixture",
+      "units": 4
+    },
+    {
+      "name": "filter-opacity",
+      "expected": "fail",
+      "checked": 5,
+      "diagramResources": [],
+      "diagrams": 0,
+      "loadedDiagrams": 0,
+      "problems": [
+        "section-fixture: original content is hidden by a filter",
+        "Original text is not rendered in order: First original paragraph."
+      ],
+      "source": "fixture",
+      "units": 4
+    },
+    {
+      "name": "clip-path",
+      "expected": "fail",
+      "checked": 5,
+      "diagramResources": [],
+      "diagrams": 0,
+      "loadedDiagrams": 0,
+      "problems": [
+        "section-fixture: original content is clipped out of view",
+        "Original text is not rendered in order: First original paragraph."
+      ],
+      "source": "fixture",
+      "units": 4
+    },
+    {
+      "name": "offscreen",
+      "expected": "fail",
+      "checked": 5,
+      "diagramResources": [],
+      "diagrams": 0,
+      "loadedDiagrams": 0,
+      "problems": [
+        "section-fixture: original content is positioned outside the reading viewport",
+        "Original text is not rendered in order: First original paragraph."
+      ],
+      "source": "fixture",
+      "units": 4
+    },
+    {
+      "name": "text-indent",
+      "expected": "fail",
+      "checked": 5,
+      "diagramResources": [],
+      "diagrams": 0,
+      "loadedDiagrams": 0,
+      "problems": [
+        "section-fixture: original content is indented outside a clipped box",
+        "Original text is not rendered in order: First original paragraph."
+      ],
+      "source": "fixture",
+      "units": 4
     },
     {
       "name": "disguised-disclosure",
-      "checked": 4,
+      "expected": "fail",
+      "checked": 5,
+      "diagramResources": [],
       "diagrams": 0,
+      "loadedDiagrams": 0,
       "problems": [
-        "section-fixture: original prose or code is folded into a disclosure"
+        "section-fixture: original prose or code is folded into a disclosure",
+        "Original text is not rendered in order: First original paragraph."
       ],
-      "source": "fixture"
+      "source": "fixture",
+      "units": 4
+    },
+    {
+      "name": "labelled-copy-cannot-replace-original",
+      "expected": "fail",
+      "checked": 3,
+      "diagramResources": [],
+      "diagrams": 0,
+      "loadedDiagrams": 0,
+      "problems": [
+        "Original text is not rendered in order: First original paragraph."
+      ],
+      "source": "fixture",
+      "units": 4
+    },
+    {
+      "name": "overlay-limitation",
+      "expected": "limitation",
+      "checked": 4,
+      "diagramResources": [],
+      "diagrams": 0,
+      "loadedDiagrams": 0,
+      "problems": [],
+      "source": "fixture",
+      "units": 4
+    },
+    {
+      "name": "broken-lazy-diagram",
+      "expected": "fail",
+      "checked": 8,
+      "diagramResources": [
+        {
+          "source": "missing-diagram.svg",
+          "status": "not-ready"
+        }
+      ],
+      "diagrams": 1,
+      "loadedDiagrams": 0,
+      "problems": [
+        "section-fixture: original diagram image has not loaded; resource validation is incomplete"
+      ],
+      "source": "fixture",
+      "units": 5
     }
   ]
 }

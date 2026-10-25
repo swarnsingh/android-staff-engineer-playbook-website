@@ -19,6 +19,24 @@ fun <T> twice(value: T) = listOf(value, value)
 @OptIn(ExperimentalCoroutinesApi::class)
 fun main() = runTest {
     var passed = 0
+    // Service-local timeout must not kill an otherwise active actor.
+    run {
+        val owner = SupervisorJob()
+        var calls = 0
+        val actor = CartActor(CoroutineScope(owner + StandardTestDispatcher(testScheduler)), CheckoutService {
+            if (calls++ == 0) withTimeout(1) { delay(10) }
+            CheckoutResult("recovered")
+        })
+        val first = async { runCatching { actor.checkout() }.exceptionOrNull() }
+        advanceUntilIdle()
+        val second = async { runCatching { actor.checkout() }.getOrNull()?.value }
+        advanceUntilIdle()
+        println("Timeout probe: first=${first.await()?.javaClass?.simpleName}, second=${second.await()}, ownerActive=${owner.isActive}")
+        check(second.await() == "recovered") { "Service-local timeout killed the actor" }
+        check(first.await() is CheckoutRequestCancelledException)
+        check(first.await()?.cause is TimeoutCancellationException)
+        owner.cancel();runCurrent();passed++
+    }
     suspend fun outcome(actor: CartActor): String = try {
         actor.checkout().value
     } catch (error: Exception) {
@@ -26,7 +44,7 @@ fun main() = runTest {
     }
     suspend fun stopped(actor: CartActor) {
         val result = withTimeout(1_000) { outcome(actor) }
-        check(result.endsWith("CancellationException")) { "Stopped actor returned $result" }
+        check(result == "CartStoppedException") { "Stopped actor returned $result" }
     }
     fun ownerScope(owner: Job) = CoroutineScope(owner + StandardTestDispatcher(testScheduler))
 
@@ -47,7 +65,7 @@ fun main() = runTest {
     val earlyOwner = SupervisorJob()
     val early = CartActor(ownerScope(earlyOwner), CheckoutService { error("must not run") })
     earlyOwner.cancel();runCurrent();stopped(early)
-    check(runCatching { early.add(Item(1)) }.exceptionOrNull() is CancellationException)
+    check(runCatching { early.add(Item(1)) }.exceptionOrNull() is CartStoppedException)
     passed++
 
     // A caller can construct the actor after its owner was already cancelled.
@@ -60,7 +78,7 @@ fun main() = runTest {
     val queuedActor = CartActor(ownerScope(queuedOwner), CheckoutService { error("must not run") })
     val beforeStartup = async(start = CoroutineStart.UNDISPATCHED) { outcome(queuedActor) }
     queuedOwner.cancel();runCurrent()
-    check(withTimeout(1_000) { beforeStartup.await() }.endsWith("CancellationException"));passed++
+    check(withTimeout(1_000) { beforeStartup.await() }.equals("CartStoppedException"));passed++
 
     // Stop one active request plus enough submissions to fill the buffer and suspend senders.
     val liveOwner = SupervisorJob()
@@ -73,7 +91,7 @@ fun main() = runTest {
     check(pending.none { it.isCompleted })
     liveOwner.cancel();runCurrent()
     val results = withTimeout(1_000) { (listOf(active) + pending).awaitAll() }
-    check(results.all { it.endsWith("CancellationException") }) { results.toString() }
+    check(results.all { it.equals("CartStoppedException") }) { results.toString() }
     stopped(live);passed++
 
     // Unexpected errors retain their reporting path and still release all waiters.
@@ -86,8 +104,61 @@ fun main() = runTest {
     check(errors.single().message == "unexpected")
     stopped(unexpected);unexpectedOwner.cancel();passed++
 
+    // A cancellation thrown by a service while the worker stays active is a request error.
+    val localOwner = SupervisorJob()
+    var localCalls = 0
+    val local = CartActor(ownerScope(localOwner), CheckoutService {
+        if (localCalls++ == 0) throw CancellationException("service cancelled its work")
+        CheckoutResult("ok")
+    })
+    val localFailure = async { outcome(local) };runCurrent()
+    check(localFailure.await() == "CheckoutRequestCancelledException")
+    val localRecovery = async { outcome(local) };runCurrent();check(localRecovery.await() == "ok")
+    localOwner.cancel();runCurrent();passed++
+
+    // An independent UI caller must display actor shutdown, not silently cancel itself.
+    val uiOwner = SupervisorJob()
+    val uiScope = ownerScope(uiOwner)
+    val serviceOwner = SupervisorJob()
+    val uiEntered = CompletableDeferred<Unit>()
+    val uiActor = CartActor(ownerScope(serviceOwner), CheckoutService { uiEntered.complete(Unit);awaitCancellation() })
+    var shownError: Throwable? = null
+    val uiCaller = uiScope.launch {
+        try { uiActor.checkout() }
+        catch (error: Exception) {
+            if (error is CancellationException) throw error
+            shownError = error
+        }
+    }
+    runCurrent();check(uiEntered.isCompleted)
+    serviceOwner.cancel();runCurrent();uiCaller.join()
+    check(!uiCaller.isCancelled && uiOwner.isActive && shownError is CartStoppedException)
+    // Already-stopped sends from active callers also use an ordinary failure.
+    val newCall = uiScope.launch {
+        try { uiActor.add(Item(2));error("must fail") }
+        catch (error: Exception) {
+            if (error is CancellationException) throw error
+            check(error is CartStoppedException)
+        }
+    }
+    runCurrent();newCall.join();check(!newCall.isCancelled)
+    uiOwner.cancel();passed++
+
+    // Cancelling the caller itself remains cancellation, without cancelling the actor owner.
+    val callerOwner = SupervisorJob()
+    val callerActor = CartActor(ownerScope(callerOwner), CheckoutService { delay(100);CheckoutResult("ok") })
+    val caller = launch { callerActor.checkout() };runCurrent()
+    caller.cancel();runCurrent();check(caller.isCancelled && callerOwner.isActive)
+    advanceUntilIdle()
+    val afterCaller = async { outcome(callerActor) };advanceUntilIdle();check(afterCaller.await() == "ok")
+    callerOwner.cancel();runCurrent();passed++
+
     // Regression for the teaching claim: two slots may share one boxed value.
     val boxed: List<*> = twice(Meters(1.0))
-    check(boxed[0] === boxed[1]);passed++
+    check(boxed[0] === boxed[1])
+    check(Meters(1.0) == Meters(1.0))
+    val firstBox: Any = Meters(1.0)
+    val secondBox: Any = Meters(1.0)
+    check(firstBox == secondBox && firstBox !== secondBox);passed++
     println("Kotlin regressions: $passed cases passed (including 257 active/queued/suspended requests).")
 }

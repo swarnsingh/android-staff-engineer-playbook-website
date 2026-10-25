@@ -1,0 +1,21 @@
+<!-- Held teaching fragments for K1. Not rendered. Restore only after the owner approves K1 and its marked website correction. -->
+
+<!-- @after Language Features :: visual -->
+### Explicit backing fields replace the `_state` pattern
+
+<figure class="viz"><div class="viz-pair"><div class="pane"><span class="pane-title">Before: a backing property (see Variables)</span><pre>private val _state = MutableStateFlow(0)
+val state: StateFlow&lt;Int&gt; = _state.asStateFlow()
+
+fun increment() { <mark>_state</mark>.value++ }</pre></div><div class="pane"><span class="pane-title">Kotlin 2.4: an explicit backing field</span><pre>val state: StateFlow&lt;Int&gt;
+    <mark>field = MutableStateFlow(0)</mark>
+
+fun increment() { <mark>state</mark>.value++ }
+// inside the class: smart-cast to MutableStateFlow
+// outside: only StateFlow&lt;Int&gt;</pre></div></div><figcaption>One property instead of two, with the same guarantee: only the class can write. Compiled and run with Kotlin 2.4.21. Explicit backing fields work only on read-only <code>val</code> properties without custom getters, and the field itself is private — a <code>var</code> with an explicit <code>field</code> is rejected with "only 'val' properties with explicit backing fields are supported".</figcaption></figure>
+
+
+<!-- @after Staff Engineer Guidance :: check -->
+<details><summary>Can <code>var token: String?</code> use an explicit <code>field = null</code> with a <code>private set</code>?</summary>
+
+No — explicit backing fields are only for `val` properties. Keep the classic `var token: String? = null` with `private set`, or expose a `val` with an explicit field of a more specific type.
+</details>

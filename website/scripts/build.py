@@ -238,7 +238,7 @@ def render_chapter(path, raw, is_course=False):
             key=hashlib.sha256(token.content.encode()).hexdigest()[:16]
             diagram_count[0]+=1
             (OUT/'diagram-sources'/f'{key}.mmd').write_text(token.content)
-            original=f'<img data-original-diagram="{key}" src="{BASE}diagrams/{key}.svg" alt="{escape(env.get("heading","Concept relationships"))}" loading="lazy">'
+            original=f'<img data-original-diagram="{key}" src="{BASE}diagrams/{key}.svg" alt="{escape(env.get("heading","Concept relationships"))}" loading="eager">'
             source=f'<details class="diagram-source"><summary>Read diagram source</summary><pre tabindex="0"><code data-original-diagram-source="{key}">{escape(token.content)}</code></pre></details>'
             if ('diagram', key) in blend:
                 # A designed redraw leads; the chapter's own diagram stays one tap away.
@@ -439,6 +439,8 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--skip-diagrams',action='store_true',help='do not render Mermaid diagrams to SVG')
     args=parser.parse_args()
+    import check_review_data
+    check_review_data.check()
     build(args.skip_diagrams)
     # Never publish a build that dropped original content.
     import check_preservation

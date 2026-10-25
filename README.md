@@ -1,10 +1,14 @@
 # Android Engineering Playbook — Reader Website
 
-This private repository develops the reader website separately from the [original playbook](https://github.com/swarnsingh/android-staff-engineer-playbook). The original repository is not modified by website work.
+This private repository develops the reader website separately from the [original playbook](https://github.com/swarnsingh/android-staff-engineer-playbook). Since repository separation, website work makes no further changes to the original repository. Its earlier website branch remains as historical work; its main branch and original chapters are unchanged.
 
 The current website renders the Kotlin learning path and all 22 Kotlin chapters. Original chapter Markdown is a read-only snapshot; explanations, examples, tables and questions remain in order. The website adds labelled stories, visuals, step-through animations, reading preferences and responsive navigation. Technical corrections are separate proposals and require owner approval before application.
 
 Read the [content rulebook](content-rulebook.md), especially sections 16–19, and the [website build/handover guide](website/README.md). Source provenance and Kotlin checksums are recorded in `source-snapshot.json`.
+
+[Open the private website](https://android-playbook-kotlin-reader-20261025.sagepond9.chatgpt.site) · [Browse the HTML/CSS/JavaScript website source](website/)
+
+GitHub shows the source files, including the preserved Markdown chapters. The hosted link shows the rendered reader. `website/dist/` is generated during the build and is intentionally not committed.
 
 ## Local preview
 
@@ -12,10 +16,10 @@ Read the [content rulebook](content-rulebook.md), especially sections 16–19, a
 python3 -m venv .venv
 .venv/bin/pip install -r website/requirements.txt
 .venv/bin/python website/scripts/build.py
-python3 -m http.server 4174 --bind 127.0.0.1 --directory website/dist
+python3 -m http.server 4177 --bind 127.0.0.1 --directory website/dist
 ```
 
-Open the printed localhost address on that computer. Remote phone access uses the separately deployed owner-private preview.
+Run from this new website checkout, choose an available port, and open the localhost address on that computer. Confirm the server serves this checkout’s `website/dist`. Remote phone access uses the separately deployed owner-private preview.
 
 ## Branch history
 

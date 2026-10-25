@@ -99,9 +99,11 @@ class Page(HTMLParser):
         details = list(parent['details'])
         if tag == 'summary' and parent['tag'] == 'details':
             details = details[:-1]  # the summary is outside its own disclosure's folded body
-        hidden = (parent['hidden'] or 'hidden' in a or a.get('aria-hidden') == 'true'
+        opacity = re.search(r'(?:^|;)opacity:([+-]?(?:[0-9]*\.)?[0-9]+(?:e[+-]?[0-9]+)?)(%?)(?:!important)?(?:;|$)', style)
+        transparent = bool(opacity and float(opacity[1]) == 0)
+        hidden = (parent['hidden'] or tag in {'template', 'noscript', 'script', 'style'} or 'hidden' in a or a.get('aria-hidden') == 'true'
                   or 'sr-only' in classes or 'display:none' in style or 'visibility:hidden' in style
-                  or bool(re.search(r'(?:^|;)opacity:0(?:\.0+)?%?(?:!important)?(?:;|$)', style)))
+                  or transparent)
         if tag == 'details':
             details.append(classes)
         self.stack.append({
@@ -245,6 +247,13 @@ def self_test():
         'removed paragraph': panel.replace(first, '', 1),
         'prose folded with diagram class': panel.replace(first, f'<details class="original-diagram"><summary>Original diagram from the chapter</summary>{first}</details>', 1),
         'transparent paragraph': panel.replace(first, f'<div style="opacity: 0">{first}</div>', 1),
+        'template content': panel.replace(first, f'<template>{first}</template>', 1),
+        'noscript content': panel.replace(first, f'<noscript>{first}</noscript>', 1),
+        'script content': panel.replace(first, f'<script type="text/plain">{first}</script>', 1),
+        'style content': panel.replace(first, f'<style>{first}</style>', 1),
+        'decimal opacity': panel.replace(first, f'<div style="opacity:.0">{first}</div>', 1),
+        'percent opacity': panel.replace(first, f'<div style="opacity:0%">{first}</div>', 1),
+        'scientific opacity': panel.replace(first, f'<div style="opacity:0e0">{first}</div>', 1),
         'heading demoted to paragraph': panel.replace('<h2 id="overview">Overview</h2>', '<p id="overview">Overview</p>', 1),
         'heading level changed': panel.replace('<h2 id="overview">Overview</h2>', '<h3 id="overview">Overview</h3>', 1),
     }
@@ -260,15 +269,19 @@ def self_test():
         problems, _ = verify(page_path, broken)
         if not problems:
             raise AssertionError(f'preservation self-test: {name} was not detected')
+    return len(checks)
 
 
 def main():
-    self_test()
+    fixture_count = self_test()
+    print(f'Preservation self-tests: {fixture_count} tampering cases detected.')
     order = ['kotlin.md'] + sorted(p for p in build.PATHS if p != 'kotlin.md')
     total_problems = total_checked = 0
-    report = {}
+    report, manifest = {}, {}
     for path in order:
         problems, checked = check(path)
+        source, _ = build.corrected((build.ROOT/path).read_text(), path)
+        manifest[path] = [{'kind': kind, 'text': text} for kind, text in units(source)]
         total_checked += checked
         report[path] = [{'problem': p, 'kind': k, 'text': t} for p, k, t in problems]
         total_problems += len(problems)
@@ -277,6 +290,7 @@ def main():
         for problem, kind, unit in problems[:5]:
             print(f'              - {problem} {kind}: {unit[:110]}')
     (build.OUT / 'coverage').mkdir(parents=True, exist_ok=True)
+    (build.OUT / 'coverage/original-units.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
     (build.OUT / 'coverage/preservation.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
     print(f'Preservation: {len(order)} pages, {total_checked} original units checked in order, {total_problems} problems.')
     return 1 if total_problems else 0

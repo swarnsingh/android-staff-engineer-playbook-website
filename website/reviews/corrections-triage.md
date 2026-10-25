@@ -111,14 +111,14 @@ Two proposals were themselves wrong, so they are rejected or replaced (Codex con
 | F14 | Lambdas with mutable captures defeat skipping; CI should fail on unstable lambdas | Strong skipping remembers lambdas with unstable captures too | Approve | Same |
 | F15 | An unstable `viewModel` capture makes a new lambda every recomposition | Not with strong skipping, which compares unstable captures by identity | Approve | Same |
 | F16 | `obj::method` allocates a new object each time it is evaluated | The original is right at the bytecode level | Reject | Run: bound reference is a new object each time |
-| F17 (new) | `::isEven` compiles to one cached class when passed to `filter` | `filter` is `inline`, so no class or object is created | Approve with text below | `javap`, as in F6 |
+| F17 (new) | `::isEven` compiles to one cached class when passed to `filter` | `filter` is `inline`, so no class or object is created | Approve with edit | `javap`, as in F6 |
 
 **Amended text**
 
 - **F5:** "3. **Captured values are stored in the function object.** `prefix` is a `val`, so its value is copied in. Because the lambda captures, each evaluation creates a new function object. A non-capturing lambda is created once and reused."
 - **F17** (replaces "The function reference compiles to a *single* generated class … the same singleton."): "`filter` is `inline`, so neither form creates a function object: both compile into a loop that calls `isEven` directly. The difference matters only for non-inline parameters, where a non-capturing reference or lambda is created once and reused."
 
-**Summary:** 12 approve, 2 approve with edit (one of them new), 2 reject.
+**Summary:** 13 approve, 2 approve with edit (one of them new), 2 reject.
 
 ## Extensions — 11 proposed
 
@@ -441,7 +441,7 @@ Most rejections here are hedges on statements that are correct as taught: "light
 
 **Amended text**
 
-- **CH4:** The exact complete-class replacement is in [the CH4 proposal](corrections-with-edits.md#ch4). A Job completion handler cancels the channel even if the worker body never starts; `onUndeliveredElement` releases queued replies and cancelled senders, while the executing request's catch releases its own reply. Expected `IOException` failures affect one request. Cancellation and unexpected failures stop the worker. Regression cases cover both pre-start cancellation paths, active shutdown, buffered and suspended senders, and failure/recovery. No correction has been approved or applied.
+- **CH4:** The exact complete-class replacement is in [the CH4 proposal](corrections-with-edits.md#ch4). A Job completion handler cancels the channel even if startup is prevented. Undelivered and executing requests fail with `CartStoppedException` for active callers; their own cancellation remains cancellation. A service-local timeout fails one request with `CheckoutRequestCancelledException` and leaves an active worker serving. Expected `IOException` also affects one request; unexpected failures stop the worker and retain the owner’s reporting policy. Regression cases exercise these boundaries. No correction has been approved or applied.
 
 **Summary:** 2 approve, 1 approve with edit, 5 reject.
 
@@ -573,7 +573,7 @@ Most rejections here are hedges on statements that are correct as taught: "light
 | BY5 | DEX is the same bytecode in a different encoding | A different instruction set | Approve | AOSP Dalvik bytecode docs |
 | BY6 | The optimizations you care about happen before D8/R8 | R8 and ART do major optimization | Approve | Android app optimization docs |
 | BY7 | `map.filter.firstOrNull` shows three calls and three lists | `map` and `filter` are inlined loops making two lists; `firstOrNull` makes none | Approve | Kotlin `firstOrNull` docs; same as F6 |
-| BY8 (new) | Listing shows `greeting()` reading `name` through `invokevirtual getName()` | Inside the class, Kotlin reads the field directly | Approve with text below | `javap`: `greeting()` uses `getfield name` |
+| BY8 (new) | Listing shows `greeting()` reading `name` through `invokevirtual getName()` | Inside the class, Kotlin reads the field directly | Approve with edit | `javap`: `greeting()` uses `getfield name` |
 
 **Amended text**
 
@@ -585,7 +585,7 @@ Most rejections here are hedges on statements that are correct as taught: "light
 
 | # | Original says | Problem | Verdict | Evidence |
 |---|---|---|---|---|
-| K1 (new) | `var token: String?` with `field = null` and `private set` | Does not compile: explicit backing fields are `val`-only | Approve with text below | Compiler: "only 'val' properties with explicit backing fields are supported" |
+| K1 (new) | `var token: String?` with `field = null` and `private set` | Does not compile: explicit backing fields are `val`-only | Approve with edit | Compiler: "only 'val' properties with explicit backing fields are supported" |
 
 **Amended text**
 
