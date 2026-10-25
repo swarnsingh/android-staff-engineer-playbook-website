@@ -37,7 +37,7 @@ Never push or merge without the owner's approval.
 | 1 Lifecycle, state, architecture | 9 | done | done | P1/P2 applied; P3 and new findings open (`android-review-todos/review-phase1-todo.md`) |
 | 2 Data and DI | 10 | done | done | P2 applied; rest open (`review-phase2-todo.md`) |
 | 3 Compose | 13 | done | done | **none applied yet**; 2 P1s (`review-phase3-todo.md`) |
-| 4 Concurrency | 9 | done | started but not received; **re-run it** | — |
+| 4 Concurrency | 9 | done | done | **none applied yet**; 2 P1s (`review-phase4-todo.md`) |
 | 5 Network, security, device APIs, media | 10 | todo | — | — |
 | 6 Testing | 3 | todo | — | — |
 | 7 Performance and observability | 15 | todo | — | — |
@@ -93,7 +93,8 @@ The rule, following the Kotlin K1 precedent: the note **identifies the passage**
 ## Before declaring the Android section complete
 
 - Apply the open review items, Phase 3 first because it has the P1s.
-- Re-run the Phase 4 review.
+- Apply the Phase 4 review items (`review-phase4-todo.md`).
+- Uncommitted Phase 3 review edits exist in the working tree (13 blends plus `reviews/pending-android-phase3-teaching.blend`, made after ce58ead, author unconfirmed). Review them before committing.
 - Update the counts in `website/README.md` (Verification scope, figures and steppers) and in the root `README.md`.
 - Optionally add preservation self-tests for an original's inner H1 and a missing hero H1, as Phase 3 review suggested.
 - Report to the owner: what is rendered, every findings file awaiting approval, what was and wasn't verified, and that nothing is pushed.
