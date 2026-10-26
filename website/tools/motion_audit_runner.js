@@ -17,6 +17,17 @@ window.runMotionAudit = async () => {
   }
   await document.fonts.ready;
   await delay(100);
+  await test('Numbered navigation compares states without starting motion', async () => {
+    const scene=scenes[0],buttons=scene.querySelectorAll('[data-step]');
+    assert(buttons.length===6,'Missing authored step navigation');
+    buttons[5].click();
+    assert(scene.querySelector('.pb-count').textContent==='Step 6 of 6','Jump did not reach final state');
+    assert(buttons[5].getAttribute('aria-current')==='step','Current step not exposed');
+    assert(packets(scene)===0,'Jump started motion');
+    buttons[0].click();
+    assert(scene.querySelector('.pb-count').textContent==='Step 1 of 6','Backward jump did not restore initial state');
+    assert(!buttons[5].hasAttribute('aria-current'),'Stale current step');
+  });
   await test('State changes do not infer transfers', async () => {
     click(inferred,'next'); await delay(80);
     assert(packets(inferred)===0,'Inferred packet appeared');

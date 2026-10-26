@@ -29,11 +29,11 @@ window.runBinderAudit = async () => {
               const css=w.getComputedStyle(t),m=t.getScreenCTM(),floor=css.fontFamily.includes('Hand')?15:12;
               const actual=parseFloat(css.fontSize)*Math.hypot(m.a,m.b);
               if(actual+.05<floor)problems.push('small label: '+t.textContent+' = '+actual);
-              const box=t.getBBox(),svg=scene.querySelector('svg').viewBox.baseVal;
-              if(box.x<-.5||box.y<-.5||box.x+box.width>svg.width+.5||box.y+box.height>svg.height+.5)problems.push('label outside SVG: '+t.textContent);
+              const box=t.getBoundingClientRect(),svg=scene.querySelector('svg').getBoundingClientRect();
+              if(box.left<svg.left-.5||box.top<svg.top-.5||box.right>svg.right+.5||box.bottom>svg.bottom+.5)problems.push('label outside SVG: '+t.textContent);
               const node=t.closest('.pb-node'),chip=t.closest('.pb-chip');
-              const rect=(chip||node)?.querySelector('rect');
-              if(rect&&(box.x<Number(rect.getAttribute('x'))||box.x+box.width>Number(rect.getAttribute('x'))+Number(rect.getAttribute('width'))))problems.push('label outside node: '+t.textContent);
+              const rect=(chip||node)?.querySelector('rect')?.getBoundingClientRect();
+              if(rect&&(box.left<rect.left-.5||box.right>rect.right+.5||box.top<rect.top-.5||box.bottom>rect.bottom+.5))problems.push('label outside node: '+t.textContent);
             }
           }
         }

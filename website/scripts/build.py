@@ -584,12 +584,29 @@ def design_tokens_css():
     for theme in themes:
         props=[f'--{c["name"]}:{value(c["value"],theme)}' for c in tokens['color']['tokens']]
         props+=[f'--{x["name"]}:{value(x["value"],theme)}' for x in tokens['shadow']['tokens']]
-        props+=[f'--{old}:var(--{new})' for old,new in TOKEN_ALIASES.items()]
+        # A token alias to itself creates a CSS variable cycle and invalidates the real colour.
+        props+=[f'--{old}:var(--{new})' for old,new in TOKEN_ALIASES.items() if old != new]
         if theme==themes[0]:
             for family in ('spacing','radius','layout'): props+=[f'--{x["name"]}:{x["value"]}' for x in tokens[family]['tokens']]
             props+=[f'--font-{k}:{v}' for k,v in tokens['type']['families'].items()]
         out.append(THEME_SELECTORS[theme]+'{'+';'.join(props)+'}')
     return '\n'.join(out)+'\n'
+
+def design_gallery():
+    """Use real lesson sections and shared assets; do not maintain a second scene demo."""
+    tokens=json.loads((DESIGN/'tokens.json').read_text())
+    names=['canvas','sheet','ink','accent','scene-client','scene-runtime','scene-storage','scene-queue']
+    swatches=''.join('<div class="swatch" style="--colour:var(--'+escape(name)+')"><i aria-hidden="true"></i><code>'+escape(name)+'</code></div>' for name in names)
+    samples=[]
+    for name,label in [('room','Data changes become a new screen state'),('the-binder','Compare blocking and one-way calls'),('the-zygote','A child writes its own memory page'),('flow','A value survives its collector')]:
+        source=(WEB/'content/blend/android'/f'{name}.blend').read_text()
+        scene=re.search(r'<section class="pb-figure" data-pb-flow="scene".*?</section>',source,re.S)
+        if not scene: raise ValueError('Gallery scene missing: '+name)
+        samples.append('<section class="demo"><h3>'+label+'</h3>'+scene[0]+'</section>')
+    page=(DESIGN/'gallery.html').read_text().replace('{{swatches}}',swatches).replace('{{scenes}}',''.join(samples))
+    for asset in ('tokens.css','flow.css','flow.js'):page=page.replace('"/'+asset+'"','"'+BASE+asset+'"')
+    destination=OUT/'design-system';destination.mkdir(exist_ok=True)
+    (destination/'index.html').write_text(page)
 
 def build(skip_diagrams=False):
     if OUT.exists(): shutil.rmtree(OUT)
@@ -656,6 +673,7 @@ def build(skip_diagrams=False):
     shutil.copy2(DESIGN/'components/bundle.js',OUT/'flow.js')
     shutil.copytree(WEB/'fonts',OUT/'fonts')
     for font in (DESIGN/'fonts').glob('*.woff2'): shutil.copy2(font,OUT/'fonts'/font.name)
+    design_gallery()
     if not skip_diagrams: render_diagrams()
     (OUT/'coverage/pages.json').write_text(json.dumps(reports,ensure_ascii=False,indent=2)+'\n')
     (OUT/'coverage/diagram-sources.json').write_text(json.dumps({p.stem:p.read_text() for p in sorted((OUT/'diagram-sources').glob('*.mmd'))},ensure_ascii=False,indent=2)+'\n')

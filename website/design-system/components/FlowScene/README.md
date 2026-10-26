@@ -9,13 +9,13 @@ Use it for the lesson's main mechanism, when the reader needs to watch one syste
 ## Anatomy
 
 - **Regions:** dashed rounded outlines with a `labelSmall` name (APP PROCESS, KERNEL, SERVICE PROCESS). They mark boundaries the reader must notice.
-- **Nodes:** hand-drawn `sheet` boxes with a `handNode` label and a live status line, for example "blocked · 1.4 s". The state classes are:
+- **Nodes:** illustrated, role-coloured `sheet` actors with a `handNode` label and a live status line, for example "blocked · 1.4 s". The state classes are:
   - `is-active` (accent outline);
   - `is-warn` (warn outline and tint);
   - `is-done` (accent tint).
-- **Slots and queues inside nodes:** chips for workers (thread T1: busy, your call, idle) and dots for queued items. These are the "consequence" layer.
+- **Slots and queues inside nodes:** chips for workers (thread T1: busy, your call, idle) and counted document trays for queued items. These are the "consequence" layer.
 - **Edges:** faint dotted paths at rest. A step lights its edges in `accent` (forward), `event` (back) or `warn` (stuck), with marching dashes and a matching arrowhead.
-- **Packets:** a dot with a `handNote` label riding along the edge. A packet takes about 950ms per hop, and hops within a step run one after another. The node it reaches pulses once and updates.
+- **Packets:** a named envelope, row list, command, file or frame with a `handNote` label riding along the edge. A packet takes about 950ms per hop, and hops within a step run one after another. The node it reaches pulses once and updates.
 - **Caption bar:** step counter, progress line, a one-to-two-sentence caption, and Previous / Play (Pause) / Next / Reset.
 - **Compare toggle (optional):** two tracks over the same drawing. In the pilot these are the Synchronous call and the `oneway` call.
 - **Text version:** "Read every step as text" lists every caption, so the scene is complete without the drawing.
@@ -48,3 +48,9 @@ If a diagram's data cannot be drawn (for example, a generated row of six nodes),
 ## Reader integration after round 4
 
 The reader shares playback ownership across loops, scenes and legacy state steppers. Next exposes Pause while a packet is in flight. The reader pause hook stops all three, and reduced motion stops scene autoplay while leaving manual steps available. The site build emits caption lists before JavaScript runs. Packet labels stay within drawing bounds along edge lanes. The applied reader has its own nested-padding checks; a passing standalone component preview does not establish phone label sizes inside a lesson.
+
+## Illustrated scene data
+
+Set `illustrated: true` and give each node `art: {kind, role}`. The renderer supports device, server, worker, queue, database, clock, parcel, memory, document, cloud, flow, code, player and gate objects. Choose each explicitly for the mechanism. `initial.visuals` and `steps[].set.visuals` hold per-actor changes such as `visible`, `count`, `rows`, `value`, `copied`, `built` and `playing`; patches accumulate and reconstruct when the reader jumps backwards. Queue actors may opt into the authored `state.queue`. Packet `kind` chooses its object symbol.
+
+Numbered navigation compares final states without animation; `aria-current="step"` identifies the selected state. It uses the same stop/settle logic as Previous and Reset. All motion ownership, visibility and reduced-motion rules still apply.

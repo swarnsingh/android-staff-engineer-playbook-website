@@ -25,6 +25,45 @@
 .pb-chip.idle rect { fill: var(--sheet); stroke: var(--line-strong); } .pb-chip.idle text { fill: var(--ink-muted); }
 .pb-q { fill: var(--warn); }
 
+/* Illustrated actors retain their role colour across steps. Status also uses a badge and text. */
+.actor-client { --actor: var(--scene-client); }
+.actor-runtime { --actor: var(--scene-runtime); }
+.actor-storage { --actor: var(--scene-storage); }
+.actor-queue { --actor: var(--scene-queue); }
+.pb-node.has-art > rect { fill: color-mix(in srgb, var(--actor) 7%, var(--sheet)); stroke: color-mix(in srgb, var(--actor) 55%, var(--line)); }
+.pb-node.has-art.is-active > rect { stroke: var(--actor); stroke-width: 3; }
+.pb-node.has-art.is-warn > rect { stroke: var(--warn); }
+.pb-node.has-art.is-done > rect { stroke: var(--actor); }
+.pb-node.has-art.is-done .s { fill: var(--ink-muted); font-weight: 500; }
+.pb-art { color: var(--actor); }
+.pb-art .art-outline { fill: none; stroke: var(--actor); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pb-art .art-solid { fill: var(--actor); stroke: var(--actor); stroke-width: 1.5; }
+.pb-art .art-soft-fill { fill: color-mix(in srgb, var(--actor) 18%, var(--sheet)); stroke: var(--actor); stroke-width: 2; stroke-linejoin: round; }
+.pb-art .art-paper { fill: var(--sheet); stroke: var(--actor); stroke-width: 1.5; }
+.pb-art .art-light { fill: none; stroke: var(--sheet); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pb-art .art-light-fill { fill: var(--sheet); }
+.pb-art .art-warn { fill: var(--warn); }
+.pb-art .art-success { fill: var(--accent); }
+.pb-art .art-success-line { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.pb-art .art-count { fill: var(--sheet); font: 700 15px var(--font-sans); }
+.pb-pk.is-object { --payload: var(--accent); }
+.pb-pk.is-object.back { --payload: var(--event); }
+.pb-pk.is-object.stuck { --payload: var(--warn); }
+.pb-pk.is-object .payload-body { fill: var(--sheet); stroke: var(--payload); stroke-width: 2.5; }
+.pb-pk.is-object .payload-mark { fill: none; stroke: var(--payload); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.pb-pk.is-object .payload-fill, .pb-pk.is-object .return-cue { fill: var(--payload); stroke: var(--sheet); stroke-width: 1; }
+.pb-pk.is-object text { transform: translateY(-8px); }
+.pb-step-nav { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0 4px; }
+.pb-step-nav button { width: 36px; height: 36px; border: 1px solid var(--line-strong); border-radius: 50%; background: var(--sheet); color: var(--ink-muted); font: 650 13px var(--font-sans); cursor: pointer; }
+.pb-step-nav button[aria-current] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.pb-step-nav button:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+.pb-guide { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 12px; font: 13px/21px var(--font-sans); color: var(--ink-muted); }
+.pb-guide summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+.pb-guide p { margin: 8px 0; }
+.pb-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.pb-legend span::before { content: ''; display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 3px; background: var(--actor); }
+[data-theme="contrast"] .pb-node.has-art > rect { fill: var(--sheet); stroke: var(--actor); }
+
 /* Direction is told apart by line pattern and packet shape as well as hue:
    forward = long dashes + round packets, back = dots + diamond packets, stuck = dash-dot. */
 .pb-edge { fill: none; stroke: var(--line-strong); stroke-width: 1.8; stroke-dasharray: 2 6; stroke-linecap: round; }

@@ -79,14 +79,14 @@ window.__runAudit = async (pages, widths = [320, 390, 768, 1181, 1280, 1439, 144
                   if(i)scene.querySelector('[data-act=next]').click();
                   const problems=[];
                   if(scene.querySelector('.pb-count').textContent!=='Step '+(i+1)+' of '+track.steps.length)problems.push('wrong step counter');
-                  const svg=scene.querySelector('svg'),viewBox=svg.viewBox.baseVal;
+                  const svg=scene.querySelector('svg'),svgBox=svg.getBoundingClientRect();
                   for(const text of svg.querySelectorAll('text')) {
                     if(!text.textContent)continue;
                     const css=w.getComputedStyle(text),ctm=text.getScreenCTM(),floor=css.fontFamily.includes('Hand')?15:12;
                     if(parseFloat(css.fontSize)*Math.hypot(ctm.a,ctm.b)+.05<floor)problems.push('small label: '+text.textContent);
-                    const box=text.getBBox(),rect=text.closest('.pb-chip,.pb-node')?.querySelector('rect');
-                    if(box.x<-.5||box.y<-.5||box.x+box.width>viewBox.width+.5||box.y+box.height>viewBox.height+.5)problems.push('outside SVG: '+text.textContent);
-                    if(rect&&(box.x<Number(rect.getAttribute('x'))||box.x+box.width>Number(rect.getAttribute('x'))+Number(rect.getAttribute('width'))))problems.push('outside node: '+text.textContent);
+                    const box=text.getBoundingClientRect(),rect=text.closest('.pb-chip,.pb-node')?.querySelector('rect')?.getBoundingClientRect();
+                    if(box.left<svgBox.left-.5||box.top<svgBox.top-.5||box.right>svgBox.right+.5||box.bottom>svgBox.bottom+.5)problems.push('outside SVG: '+text.textContent);
+                    if(rect&&(box.left<rect.left-.5||box.right>rect.right+.5||box.top<rect.top-.5||box.bottom>rect.bottom+.5))problems.push('outside node: '+text.textContent);
                   }
                   sceneChecks.push({width,theme,mode,step:i+1,problems,ok:!problems.length});
                 }
