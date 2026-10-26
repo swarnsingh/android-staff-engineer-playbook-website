@@ -1,5 +1,13 @@
 # Website experience and illustrated scenes — 27 October 2026
 
+## Subsequent reference preference: AirBridge
+
+The owner identified the [AirBridge technical architecture blog](https://swarnsingh.github.io/swaran-technical-blogs/blogs/airbridge-technical-architecture.html) as the preferred general article experience. It was inspected in desktop Chrome, including the opening illustration, heading hierarchy, problem/failure sections, large architecture figure, decision callouts and article contents. The preference concerns the whole reading experience; it is not a request to reuse the transfer-system content in unrelated lessons.
+
+Rulebook section 20 and the design-system guide now record AirBridge as the primary article reference. The intended qualities are readable spacing and hierarchy, diagrams integrated with their explanations, concrete engineering decisions, focused code and evidence-bounded status. Static diagrams remain complete solutions where they teach clearly. ByteByteGo and Cloudmash remain supporting references for diagrams and interaction. This update records the direction; it does not claim that the reader's implemented layout has already been restyled to match AirBridge.
+
+## Earlier implementation pass
+
 The owner asked for more beautiful, colourful and understandable animations, then clarified that the reference websites should inform the whole learning experience. This pass changes the shared design system and all 17 authored scenes. It preserves the source chapters and the existing one-repository publication contract.
 
 ## Reference review

@@ -317,6 +317,19 @@ For actor-style examples, test service-local timeouts separately from cancellati
 
 ## 20. Website-wide learning experience
 
+### Primary article reference: AirBridge
+
+Owner preference, 2026-10-27: the [AirBridge technical architecture blog](https://swarnsingh.github.io/swaran-technical-blogs/blogs/airbridge-technical-architecture.html) is the primary reference for the overall technical article experience. Use its readable visual hierarchy and connected explanation to guide new articles and reader refinements.
+
+- **Give the article a clear opening.** Use a strong title, a concrete engineering problem and a concise statement of the idea. An opening illustration is useful when it establishes the system or mental model; it is optional.
+- **Create a calm reading rhythm.** Use generous spacing, clear heading levels, restrained colour and readable paragraphs. Let substantial figures have enough room for their labels and relationships to be understood together.
+- **Integrate diagrams with the argument.** Introduce what a figure explains, place it beside the relevant mechanism and add a useful caption. A beautiful static architecture, relationship or state diagram can be the finished visual.
+- **Explain the decisions.** Connect requirements and failure cases to boundaries, ownership, mechanisms, alternatives and trade-offs. Callouts should identify a specific invariant, decision or caveat. Metrics and status badges require evidence; do not invent them to fill a layout.
+- **Use code and tables with a purpose.** A focused code example should explain a contract or mechanism. A comparison table should help the reader choose or understand a consequence. Explain unfamiliar terms where the audience needs them.
+- **Keep claims bounded.** Distinguish verified behaviour, illustrative examples, open findings and unfinished work. Treat the blog as a presentation reference; verify each lesson's technical claims against its own sources.
+
+Adapt these principles to each topic and to the playbook's agreed reading measures, themes, accessibility and navigation. Do not force the AirBridge section list, hero layout or project-specific content onto every Kotlin or Android lesson. ByteByteGo and Cloudmash remain supporting references for diagrams and interactive teaching. The following earlier direction remains relevant within that priority.
+
 Owner direction, 2026-10-27: learn from the whole experience of [ByteByteGo](https://bytebytego.com/courses/system-design-interview/design-a-chat-system) and [Cloudmash Learn](https://cloudmash.dev/learn/hld/load-balancing-and-traffic-management/what-a-load-balancer-does/). Apply the principles across the website, rather than treating a linked lesson as the sole chapter to improve. Use original artwork, wording and implementation.
 
 - **Give the reader a route.** Keep phase navigation, topic search, the current section, previous/next lessons and a clear route to practice available. Introduce the problem, build a mental model, explain the mechanism, expose a failure or trade-off, then ask the reader to reason about it. Preserve the original chapter as required by section 17.
