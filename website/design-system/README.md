@@ -93,6 +93,8 @@ FlowDiagram, FlowScene and WideDiagram share one runtime, `components/bundle.js`
 
 ## Website-wide learning standard
 
+Choose static diagrams, manual steps or animation according to what teaches the mechanism. The owner clarified on 27 October 2026 that beautiful static diagrams are sufficient where motion adds no explanation. There is no requirement to animate every topic or turn all existing state figures into full scenes. Use the [representation guide](motion.md#choose-the-representation-before-the-component) when refining a lesson.
+
 Rulebook section 20 applies the reference review across the website: consistent navigation and reading comfort, problem-first lessons, progressive detail, meaningful alternatives, and one shared visual language. Reusable behaviour lives in the components rather than individual preview copies. The 17 illustrated scenes use numbered step navigation, adaptive layouts, optional visual-key instructions and complete captions. All 122 additional state steppers now have explicitly chosen SVG actors, visible status changes, numbered navigation and a progress bar. These cover 545 objects across 107 lesson files. They retain their authored structure and are described as illustrated state sequences, separately from the 17 full scenes. See the [coverage report](../reviews/illustrated-coverage-2026-10-27.md).
 
 The gallery is generated from the actual lesson sections in the same build, so changing a lesson or shared renderer changes its gallery sample too. Previous component preview HTML files are historical standalone samples; use the generated gallery to review the current design.

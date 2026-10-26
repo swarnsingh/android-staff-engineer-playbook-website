@@ -40,3 +40,9 @@ The completed browser, motion and GitHub run results are recorded below after th
 - Motion: 13 of 13 regressions passed, including queue contents after numbered jumps and manual stepping with reduced motion.
 - Documentation quality gates and 15 unit tests passed. JavaScript syntax and sampled scene routes passed. The route gate verifies the final WorkManager/Binder path corrections separately from the earlier browser geometry sweep.
 - The expanded gallery was visually inspected in Chrome with actual queue contents and working navigation. The browser matrix covers the phone layouts; this is not a claim of physical-device testing.
+
+### Subsequent clarification: select motion only where it helps
+
+The owner clarified on 27 October 2026 that every topic does not need animation; a beautiful static diagram is sufficient where it explains the idea clearly. Rulebook sections 8, 18 and 20 and the design-system motion guide now state this explicitly. The coverage counts above remain a record of the implemented first pass, not a target for adding more animation.
+
+A representative review of the authored sequences distinguishes decision gates and comparisons (form-factor selection and KMP adoption) from temporal mechanisms (Looper dispatch, WorkManager retries and DI lifetime changes). Module boundaries can use a static graph with before/after views where needed. This documentation update records the selection criteria; it does not claim that existing figures have already been converted or that all 122 have received an individual suitability review. Future refinements should preserve each explanation while choosing its clearest representation.

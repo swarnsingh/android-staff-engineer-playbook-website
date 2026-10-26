@@ -24,6 +24,21 @@ Animate a connector only when **direction, rate or order is the point of the sec
 
 Keep it static when the diagram shows structure: a module graph, a class hierarchy, a layer list. Moving dots on a dependency graph suggest data flows that do not exist.
 
+### Choose the representation before the component
+
+Owner clarification, 27 October 2026: no topic is required to have an animation. A beautiful, readable static diagram can fully satisfy the lesson's visual needs.
+
+| What the reader needs to understand | Preferred representation |
+|---|---|
+| Parts, boundaries, relationships or hierarchy | A labelled static diagram |
+| Options, constraints, trade-offs or decision gates | A static comparison, matrix or decision tree |
+| A small sequence whose states need close inspection | Numbered still panels or a manual step-through |
+| Timing, movement, contention, cancellation or changing state that is easier to follow in motion | A controlled animation with captions and an equivalent still/text explanation |
+
+These are choices within a topic, not labels for an entire chapter. A DI hierarchy can stay static while a separate lifetime sequence shows which owner survives recreation. Keep a module dependency graph still; use distinct before/after views if a contract edit changes which modules are affected. Looper queue dispatch and WorkManager waiting/retry sequences have meaningful temporal changes. Form-factor decision gates and the KMP adoption decision can be presented as a decision diagram or comparison without playback.
+
+During refinement, identify what motion adds. If the explanation is equally clear as a still, consolidate its states into a static diagram or comparison, preserving the useful captions and caveats. Do not discard an explanation when removing its playback controls. Update the coverage manifest and checks when changing a figure's representation. Animation counts describe the implementation; they are not a quality target or a requirement to turn the existing state figures into full scenes.
+
 ## How it moves (FlowDiagram)
 
 1. **Connectors** are drawn paths, with an arrowhead, coloured by direction: `accent` forward, `event` back.
