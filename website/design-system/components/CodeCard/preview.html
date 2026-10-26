@@ -1,0 +1,28 @@
+<!-- @dsCard group="Content" height=300 subtitle="Dark in every theme, ligatures off" -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  body { margin: 0; background: var(--sheet); font-family: var(--font-sans); }
+  .wrap { padding: 24px; max-width: var(--measure-wide); }
+  .code { background: var(--code-bg); color: var(--code-ink); border-radius: var(--radius-md); overflow: hidden; }
+  .head { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 10px 18px;
+    border-bottom: 1px solid var(--line-strong); font: 600 13px/18px var(--font-sans); }
+  .head small { display: block; font-weight: 400; color: var(--code-comment); }
+  .head button { font: 600 13px/18px var(--font-sans); color: var(--code-ink); background: none; border: 1px solid var(--code-comment);
+    border-radius: var(--radius-pill); padding: 5px 12px; cursor: pointer; }
+  .head button:focus-visible { outline: 2px solid var(--code-call); outline-offset: 2px; }
+  pre { margin: 0; padding: 18px; overflow-x: auto; font: 15px/26px var(--font-mono); font-variant-ligatures: none; tab-size: 4; }
+  .k { color: var(--code-key); } .f { color: var(--code-call); } .s { color: var(--code-string); } .c { color: var(--code-comment); }
+</style>
+<div class="wrap">
+  <div class="code">
+    <div class="head"><span>ProductRoute.kt<small>Collect state at the screen boundary</small></span><button type="button">Copy</button></div>
+<pre><span class="k">@Composable</span>
+<span class="k">fun</span> <span class="f">ProductRoute</span>(viewModel: <span class="f">ProductViewModel</span>) {
+    <span class="k">val</span> uiState <span class="k">by</span> viewModel.uiState.<span class="f">collectAsStateWithLifecycle</span>()
+    <span class="c">// Children get plain values and lambdas, not the ViewModel</span>
+    <span class="f">ProductScreen</span>(products = uiState.products, onProductClick = viewModel::openProduct)
+    <span class="f">LazyColumn</span> { <span class="f">items</span>(uiState.products, key = { product -> product.id }) { <span class="c">/* … */</span> } }
+}</pre>
+  </div>
+</div>

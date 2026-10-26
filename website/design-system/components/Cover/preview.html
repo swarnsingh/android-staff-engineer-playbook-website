@@ -1,0 +1,40 @@
+<!-- @dsCard height=288 -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
+<style>
+  body { margin: 0; background: var(--canvas); }
+  .cover { position: relative; width: 960px; height: 288px; background: var(--canvas); overflow: hidden; }
+  .cover svg { position: absolute; left: 0; top: 0; }
+  .b-accent { fill: var(--accent); } .b-event { fill: var(--event); } .b-ink { fill: var(--ink); }
+  .b-tint { fill: var(--line-strong); } .b-warn { fill: var(--warn); } .dot { fill: var(--sheet); }
+  .r-lg { rx: var(--radius-lg); } .r-md { rx: var(--radius-md); }
+  .text { position: absolute; left: 32px; bottom: 26px; max-width: 900px; }
+  .name { margin: 0; font: 600 64px/.95 var(--font-serif); letter-spacing: -.01em; color: var(--ink); white-space: nowrap; }
+  .tag { margin: 12px 0 0; font: 14px/20px var(--font-sans); color: var(--ink-muted); }
+</style>
+<div class="cover">
+  <!--
+    blocks: accent 360x112 (radius-lg), event 160x112 (radius-md), ink 248x112 (radius-md), line-strong 112x64 and warn 48x40 (radius-md); space-4 multiples throughout
+    arrangement: top-band skeleton (the name is too wide for the 440px zone), a strip of unequal bands from x=32 to 936, a step clear of the name
+    pattern: dot grid at space-4 pitch cut from the accent block, because the README draws diagrams on dot-grid paper
+    steps and radii: space-4 (16) pitch, space-2 (8) gaps between blocks; radius-lg 18, radius-md 10
+  -->
+  <svg width="960" height="288" viewBox="0 0 960 288" aria-hidden="true">
+    <rect class="b-accent r-lg" x="32" y="24" width="360" height="112"/>
+    <rect class="b-event r-md" x="400" y="24" width="160" height="112"/>
+    <rect class="b-ink r-md" x="568" y="24" width="248" height="112"/>
+    <rect class="b-tint r-md" x="824" y="24" width="112" height="64"/>
+    <rect class="b-warn r-md" x="824" y="96" width="48" height="40"/>
+    <g>
+      <circle class="dot" cx="216" cy="48" r="1.8"/><circle class="dot" cx="232" cy="48" r="1.8"/><circle class="dot" cx="248" cy="48" r="1.8"/><circle class="dot" cx="264" cy="48" r="1.8"/><circle class="dot" cx="280" cy="48" r="1.8"/><circle class="dot" cx="296" cy="48" r="1.8"/><circle class="dot" cx="312" cy="48" r="1.8"/><circle class="dot" cx="328" cy="48" r="1.8"/><circle class="dot" cx="344" cy="48" r="1.8"/><circle class="dot" cx="360" cy="48" r="1.8"/>
+      <circle class="dot" cx="216" cy="64" r="1.8"/><circle class="dot" cx="232" cy="64" r="1.8"/><circle class="dot" cx="248" cy="64" r="1.8"/><circle class="dot" cx="264" cy="64" r="1.8"/><circle class="dot" cx="280" cy="64" r="1.8"/><circle class="dot" cx="296" cy="64" r="1.8"/><circle class="dot" cx="312" cy="64" r="1.8"/><circle class="dot" cx="328" cy="64" r="1.8"/><circle class="dot" cx="344" cy="64" r="1.8"/><circle class="dot" cx="360" cy="64" r="1.8"/>
+      <circle class="dot" cx="216" cy="80" r="1.8"/><circle class="dot" cx="232" cy="80" r="1.8"/><circle class="dot" cx="248" cy="80" r="1.8"/><circle class="dot" cx="264" cy="80" r="1.8"/><circle class="dot" cx="280" cy="80" r="1.8"/><circle class="dot" cx="296" cy="80" r="1.8"/><circle class="dot" cx="312" cy="80" r="1.8"/><circle class="dot" cx="328" cy="80" r="1.8"/><circle class="dot" cx="344" cy="80" r="1.8"/><circle class="dot" cx="360" cy="80" r="1.8"/>
+      <circle class="dot" cx="216" cy="96" r="1.8"/><circle class="dot" cx="232" cy="96" r="1.8"/><circle class="dot" cx="248" cy="96" r="1.8"/><circle class="dot" cx="264" cy="96" r="1.8"/><circle class="dot" cx="280" cy="96" r="1.8"/><circle class="dot" cx="296" cy="96" r="1.8"/><circle class="dot" cx="312" cy="96" r="1.8"/><circle class="dot" cx="328" cy="96" r="1.8"/><circle class="dot" cx="344" cy="96" r="1.8"/><circle class="dot" cx="360" cy="96" r="1.8"/>
+      <circle class="dot" cx="216" cy="112" r="1.8"/><circle class="dot" cx="232" cy="112" r="1.8"/><circle class="dot" cx="248" cy="112" r="1.8"/><circle class="dot" cx="264" cy="112" r="1.8"/><circle class="dot" cx="280" cy="112" r="1.8"/><circle class="dot" cx="296" cy="112" r="1.8"/><circle class="dot" cx="312" cy="112" r="1.8"/><circle class="dot" cx="328" cy="112" r="1.8"/><circle class="dot" cx="344" cy="112" r="1.8"/><circle class="dot" cx="360" cy="112" r="1.8"/>
+    </g>
+  </svg>
+  <div class="text">
+    <p class="name">Playbook Design System</p>
+    <p class="tag">Calm reading sheets, hand-drawn diagrams, and data you can watch move.</p>
+  </div>
+</div>

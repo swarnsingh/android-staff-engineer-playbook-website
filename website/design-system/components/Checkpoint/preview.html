@@ -1,0 +1,28 @@
+<!-- @dsCard group="Content" height=380 subtitle="Question, then an Answer heading on its own line" -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;650&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+  body { margin: 0; background: var(--sheet); color: var(--ink); font-family: var(--font-sans); }
+  .stack { display: grid; gap: 14px; padding: 24px; max-width: var(--measure-text); }
+  details { background: var(--sheet-sunken); border-radius: var(--radius-md); }
+  summary { cursor: pointer; padding: 16px 20px; font: 600 17px/27px var(--font-sans); color: var(--ink); list-style: none; display: flex; gap: 12px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "+"; flex: 0 0 22px; height: 22px; border-radius: var(--radius-pill); background: var(--accent); color: var(--on-accent);
+    font: 650 16px/22px var(--font-sans); text-align: center; margin-top: 2px; }
+  details[open] summary::before { content: "−"; }
+  summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--radius-md); }
+  .answer { padding: 0 20px 18px 54px; }
+  .answer h4 { margin: 0 0 6px; font: 650 12px/16px var(--font-sans); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+  .answer p { margin: 0; font: 16px/26px var(--font-sans); color: var(--ink); }
+  code { font: 500 .88em var(--font-mono); font-variant-ligatures: none; background: var(--sheet); border-radius: var(--radius-sm); padding: 1px 5px; overflow-wrap: anywhere; }
+</style>
+<div class="stack">
+  <details open>
+    <summary>A click handler calls <code>service.isPlaying()</code> on the main thread and the screen freezes. Where is the time going?</summary>
+    <div class="answer"><h4>Answer</h4><p>In the other process. The proxy marshals the call and the main thread waits until a Binder thread in the service runs it and replies. A busy or deadlocked service turns a one-line getter into a long main-thread wait.</p></div>
+  </details>
+  <details>
+    <summary>What does <code>oneway</code> remove from the caller's wait?</summary>
+    <div class="answer"><h4>Answer</h4><p>Waiting for the service to finish the work. The transaction still has to be marshalled and delivered.</p></div>
+  </details>
+</div>

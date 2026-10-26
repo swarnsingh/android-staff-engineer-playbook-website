@@ -1,0 +1,253 @@
+<!-- @dsCard group="Diagrams" height=760 subtitle="One system, stepped: packets land and change what they reach" -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;650&family=Patrick+Hand&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+  body { margin: 0; background: var(--sheet); color: var(--ink); font-family: var(--font-sans); }
+  .scene { margin: 24px; border-radius: var(--radius-md); background: var(--sheet-sunken); padding: 16px 18px 18px; }
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .top h3 { margin: 0; font: 650 16px/22px var(--font-sans); }
+  .modes { display: inline-flex; background: var(--sheet); border: 1.5px solid var(--line-strong); border-radius: var(--radius-pill); padding: 2px; }
+  .modes button { font: 600 13px/18px var(--font-sans); color: var(--ink-muted); background: none; border: 0; border-radius: var(--radius-pill); padding: 5px 12px; cursor: pointer; }
+  .modes button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+  .paper { margin-top: 12px; border-radius: var(--radius-md); background-color: var(--sheet-sunken);
+    background-image: radial-gradient(var(--grid-dot) 1.2px, transparent 1.4px); background-size: var(--space-4) var(--space-4); }
+  svg { display: block; width: 100%; height: auto; }
+  .region rect { fill: none; stroke: var(--line-strong); stroke-width: 1.5; stroke-dasharray: 5 6; }
+  .region text { font: 650 11px var(--font-sans); letter-spacing: .08em; fill: var(--ink-muted); }
+  .node > rect { fill: var(--sheet); stroke: var(--line-strong); stroke-width: 2; transition: stroke .3s, fill .3s; }
+  .node .t { font: 19px var(--font-hand); fill: var(--ink); }
+  .node .s { font: 12px var(--font-sans); fill: var(--ink-muted); transition: fill .3s; }
+  .node.is-active > rect { stroke: var(--accent); }
+  .node.is-warn > rect { stroke: var(--warn); fill: var(--warn-soft); }
+  .node.is-warn .s { fill: var(--warn); font-weight: 600; }
+  .node.is-done > rect { stroke: var(--accent); fill: var(--accent-soft); }
+  .node.is-done .s { fill: var(--accent); font-weight: 600; }
+  .node.pulse > rect { animation: pulse .5s ease-out; }
+  @keyframes pulse { 0% { stroke-width: 5; } 100% { stroke-width: 2; } }
+  .chip rect { stroke-width: 1.5; transition: fill .3s, stroke .3s; }
+  .chip text { font: 600 11px var(--font-sans); text-anchor: middle; }
+  .chip.busy rect { fill: var(--warn-soft); stroke: var(--warn); } .chip.busy text { fill: var(--warn); }
+  .chip.yours rect { fill: var(--accent-soft); stroke: var(--accent); } .chip.yours text { fill: var(--accent); }
+  .chip.idle rect { fill: var(--sheet); stroke: var(--line-strong); } .chip.idle text { fill: var(--ink-muted); }
+  .qdot { fill: var(--warn); transition: opacity .3s; }
+  .edge { fill: none; stroke: var(--line-strong); stroke-width: 1.8; stroke-dasharray: 2 6; stroke-linecap: round; opacity: .7; }
+  .edge.live { opacity: 1; stroke-width: 2.4; stroke-dasharray: 7 7; animation: march 1.4s linear infinite; }
+  .edge.live.fwd { stroke: var(--accent); } .edge.live.back { stroke: var(--event); } .edge.live.stuck { stroke: var(--warn); }
+  @keyframes march { from { stroke-dashoffset: 14; } to { stroke-dashoffset: 0; } }
+  .head { fill: var(--line-strong); } .head.fwd { fill: var(--accent); } .head.back { fill: var(--event); } .head.stuck { fill: var(--warn); }
+  .src { font: 16px var(--font-hand); fill: var(--ink-muted); text-anchor: middle; }
+  .pk circle { stroke: var(--sheet); stroke-width: 2; }
+  .pk.fwd circle { fill: var(--accent); } .pk.back circle { fill: var(--event); } .pk.stuck circle { fill: var(--warn); }
+  .pk text { font: 15px var(--font-hand); text-anchor: middle; paint-order: stroke; stroke: var(--sheet-sunken); stroke-width: 4px; }
+  .pk.fwd text { fill: var(--accent); } .pk.back text { fill: var(--event); } .pk.stuck text { fill: var(--warn); }
+  .caption { min-height: 78px; margin: 12px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: start; }
+  .count { font: 650 12px/20px var(--font-sans); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
+  .caption p { margin: 0; font: 16px/26px var(--font-sans); color: var(--ink); min-width: 0; }
+  .caption code, .steps code { font: 500 .88em var(--font-mono); font-variant-ligatures: none; background: var(--sheet); border-radius: var(--radius-sm); padding: 1px 5px; }
+  .progress { height: 4px; border-radius: var(--radius-pill); background: var(--line); margin-top: 12px; overflow: hidden; }
+  .progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s cubic-bezier(.2,0,0,1); }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  .controls button { font: 600 13px/18px var(--font-sans); color: var(--ink); background: var(--sheet); border: 1.5px solid var(--line-strong);
+    border-radius: var(--radius-pill); padding: 6px 14px; cursor: pointer; }
+  .controls button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .controls button:disabled { opacity: .45; cursor: default; }
+  .controls .spacer { flex: 1; }
+  button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  details.steps { margin-top: 12px; font: 14px/22px var(--font-sans); color: var(--ink-muted); }
+  details.steps summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+  details.steps ol { margin: 8px 0 0; padding-left: 22px; }
+  @media (prefers-reduced-motion: reduce) { .edge.live { animation: none; } .node.pulse > rect { animation: none; } }
+</style>
+
+<section class="scene" aria-label="Binder call, step by step">
+  <div class="top">
+    <h3>One call across the boundary</h3>
+    <div class="modes" role="group" aria-label="Call type">
+      <button type="button" data-mode="sync" aria-pressed="true">Synchronous call</button>
+      <button type="button" data-mode="oneway" aria-pressed="false"><code style="font:inherit">oneway</code> call</button>
+    </div>
+  </div>
+  <div class="paper">
+    <svg viewBox="0 0 760 300" role="img" aria-label="App process with UI thread and proxy, the Binder driver in the kernel, and the service process with two Binder threads and the Stub. Steps are listed below as text.">
+      <defs>
+        <filter id="fsRough" x="-4%" y="-12%" width="108%" height="124%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="5"/><feDisplacementMap in="SourceGraphic" scale="2.2"/></filter>
+        <marker id="fsHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="head" d="M0 1 L9 5 L0 9 z"/></marker>
+        <marker id="fsHeadF" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="head fwd" d="M0 1 L9 5 L0 9 z"/></marker>
+        <marker id="fsHeadB" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="head back" d="M0 1 L9 5 L0 9 z"/></marker>
+        <marker id="fsHeadS" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="head stuck" d="M0 1 L9 5 L0 9 z"/></marker>
+      </defs>
+      <g class="region"><rect x="12" y="38" width="250" height="248" rx="14"/><text x="26" y="58">APP PROCESS</text></g>
+      <g class="region"><rect x="498" y="38" width="250" height="248" rx="14"/><text x="512" y="58">SERVICE PROCESS</text></g>
+      <text class="src" x="380" y="20">other apps</text>
+      <g id="fsEdges"></g>
+      <g id="fsNodes"></g>
+      <g id="fsPackets"></g>
+    </svg>
+  </div>
+  <div class="progress" aria-hidden="true"><i></i></div>
+  <div class="caption" aria-live="polite"><span class="count"></span><p></p></div>
+  <div class="controls">
+    <button type="button" data-act="prev">Previous</button>
+    <button type="button" class="primary" data-act="play">Play</button>
+    <button type="button" data-act="next">Next</button>
+    <span class="spacer"></span>
+    <button type="button" data-act="reset">Reset</button>
+  </div>
+  <details class="steps"><summary>Read every step as text</summary><ol></ol></details>
+</section>
+
+<script type="application/json" id="fsData">
+{
+  "edges": {
+    "e1": {"d": "M118 132 L118 182"},
+    "e6": {"d": "M156 182 L156 132"},
+    "e2": {"d": "M242 212 C272 212 274 168 300 168"},
+    "e5": {"d": "M300 200 C272 200 270 236 242 236"},
+    "e0": {"d": "M380 28 L380 116"},
+    "e3": {"d": "M460 152 C490 152 492 112 520 112"},
+    "e4": {"d": "M520 140 C494 146 490 192 460 192"},
+    "e7": {"d": "M626 162 L626 192"}
+  },
+  "nodes": [
+    {"id": "ui", "x": 30, "y": 72, "w": 214, "h": 60, "label": "UI thread"},
+    {"id": "proxy", "x": 30, "y": 182, "w": 214, "h": 60, "label": "Proxy"},
+    {"id": "driver", "x": 300, "y": 118, "w": 160, "h": 100, "label": "Binder driver", "queue": true},
+    {"id": "pool", "x": 520, "y": 72, "w": 212, "h": 90, "label": "Binder threads", "chips": ["T1", "T2"]},
+    {"id": "stub", "x": 520, "y": 192, "w": 212, "h": 60, "label": "Stub"}
+  ],
+  "modes": {
+    "sync": {
+      "initial": {"nodes": {"ui": ["", "running"], "proxy": ["", "isPlaying(): Boolean"], "driver": ["", "kernel"], "pool": ["", ""], "stub": ["", "real isPlaying()"]}, "chips": {"T1": "busy", "T2": "busy"}, "queue": 0},
+      "steps": [
+        {"caption": "The UI thread is about to call <code>service.isPlaying()</code>. The music service lives in another process, and both of its Binder threads are busy with other callers.", "packets": []},
+        {"caption": "The click handler calls <code>isPlaying()</code> on the proxy. In the code it looks like a cheap local getter.", "packets": [{"edge": "e1", "label": "isPlaying()", "tone": "fwd"}], "set": {"nodes": {"proxy": ["is-active", "marshalling"]}}},
+        {"caption": "The proxy writes the method code and arguments into a <code>Parcel</code> and calls <code>transact()</code>. The UI thread now blocks until a reply comes back.", "packets": [{"edge": "e2", "label": "Parcel", "tone": "fwd"}], "set": {"nodes": {"ui": ["is-warn", "blocked · waiting"], "proxy": ["", "waiting for reply"], "driver": ["is-active", "transaction in"]}}},
+        {"caption": "No Binder thread in the service is free, so the driver queues the transaction.", "packets": [], "set": {"queue": 1, "nodes": {"driver": ["is-warn", "queued: 1"], "ui": ["is-warn", "blocked · 0.5 s"]}}},
+        {"caption": "Calls from other apps queue behind it. How long you wait depends on the service's load, not on what <code>isPlaying()</code> costs.", "packets": [{"edge": "e0", "label": "another call", "tone": "stuck"}], "set": {"queue": 2, "nodes": {"driver": ["is-warn", "queued: 2"], "ui": ["is-warn", "blocked · 1.4 s"]}}},
+        {"caption": "T1 finishes its previous call and takes the oldest queued transaction: yours.", "packets": [{"edge": "e3", "label": "Parcel", "tone": "fwd"}], "set": {"queue": 1, "chips": {"T1": "yours"}, "nodes": {"driver": ["is-warn", "queued: 1"], "pool": ["is-active", ""]}}},
+        {"caption": "T1 unmarshals the <code>Parcel</code> and runs the Stub's real <code>isPlaying()</code>. The method itself takes well under a millisecond.", "packets": [{"edge": "e7", "label": "isPlaying()", "tone": "fwd"}], "set": {"nodes": {"stub": ["is-done", "returns true"]}}},
+        {"caption": "The reply <code>Parcel</code> travels back through the driver to the proxy.", "packets": [{"edge": "e4", "label": "reply", "tone": "back"}, {"edge": "e5", "label": "reply", "tone": "back"}], "set": {"chips": {"T1": "idle"}, "nodes": {"pool": ["", ""], "stub": ["", "real isPlaying()"], "proxy": ["is-active", "unmarshalling"]}}},
+        {"caption": "The proxy returns <code>true</code> and the UI thread resumes about two seconds after the click. The fix: keep blocking calls off the main thread, or cache state the service pushes to you.", "packets": [{"edge": "e6", "label": "true", "tone": "back"}], "set": {"nodes": {"ui": ["is-done", "running · 2.0 s late"], "proxy": ["", "isPlaying(): Boolean"]}}}
+      ]
+    },
+    "oneway": {
+      "initial": {"nodes": {"ui": ["", "running"], "proxy": ["", "oneway onPlayClicked()"], "driver": ["", "kernel"], "pool": ["", ""], "stub": ["", "real onPlayClicked()"]}, "chips": {"T1": "busy", "T2": "busy"}, "queue": 0},
+      "steps": [
+        {"caption": "This time the app calls <code>onPlayClicked()</code>, declared <code>oneway</code> in the AIDL. A <code>oneway</code> method cannot return a result. Both service threads are still busy.", "packets": []},
+        {"caption": "The click handler calls <code>onPlayClicked()</code> on the proxy.", "packets": [{"edge": "e1", "label": "onPlayClicked()", "tone": "fwd"}], "set": {"nodes": {"proxy": ["is-active", "marshalling"]}}},
+        {"caption": "The proxy sends the transaction and returns at once. The UI thread keeps running: it does not wait for the service.", "packets": [{"edge": "e2", "label": "Parcel", "tone": "fwd"}], "set": {"queue": 1, "nodes": {"ui": ["is-done", "running · not waiting"], "proxy": ["", "returned"], "driver": ["is-warn", "queued: 1"]}}},
+        {"caption": "The transaction still waits for a free service thread, but now only the service side waits, not your UI thread.", "packets": [{"edge": "e0", "label": "another call", "tone": "stuck"}], "set": {"queue": 2, "nodes": {"driver": ["is-warn", "queued: 2"]}}},
+        {"caption": "When T1 frees up, it runs <code>onPlayClicked()</code>. One-way calls from the same thread to the same binder run one after another, in order.", "packets": [{"edge": "e3", "label": "Parcel", "tone": "fwd"}, {"edge": "e7", "label": "onPlayClicked()", "tone": "fwd"}], "set": {"queue": 1, "chips": {"T1": "yours"}, "nodes": {"driver": ["is-warn", "queued: 1"], "stub": ["is-done", "ran"]}}},
+        {"caption": "No reply travels back. If the app needs a result, the service has to call it back through a callback interface the app passed in.", "packets": [], "set": {"chips": {"T1": "idle"}, "nodes": {"stub": ["", "real onPlayClicked()"]}}}
+      ]
+    }
+  }
+}
+</script>
+
+<script>
+(function () {
+  var NS = 'http://www.w3.org/2000/svg';
+  var root = document.querySelector('.scene');
+  var data = JSON.parse(document.getElementById('fsData').textContent);
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var gE = document.getElementById('fsEdges'), gN = document.getElementById('fsNodes'), gP = document.getElementById('fsPackets');
+  var countEl = root.querySelector('.count'), capEl = root.querySelector('.caption p'), bar = root.querySelector('.progress i');
+  var btn = {}; root.querySelectorAll('[data-act]').forEach(function (b) { btn[b.dataset.act] = b; });
+  var mode = 'sync', idx = 0, token = 0, playing = false, timer = null;
+  function el(tag, attrs, parent) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+
+  var edges = {};
+  Object.keys(data.edges).forEach(function (id) { edges[id] = el('path', { 'class': 'edge', d: data.edges[id].d, 'marker-end': 'url(#fsHead)' }, gE); });
+  var nodes = {};
+  data.nodes.forEach(function (n) {
+    var g = el('g', { 'class': 'node' }, gN);
+    el('rect', { x: n.x, y: n.y, width: n.w, height: n.h, rx: 10, filter: 'url(#fsRough)' }, g);
+    el('text', { 'class': 't', x: n.x + 14, y: n.y + 26 }, g).textContent = n.label;
+    var sub = el('text', { 'class': 's', x: n.x + 14, y: n.y + 46 }, g);
+    var rec = { g: g, sub: sub, chips: {}, dots: [] };
+    if (n.chips) n.chips.forEach(function (c, i) {
+      var cg = el('g', { 'class': 'chip' }, g), cx = n.x + 14 + i * 96;
+      el('rect', { x: cx, y: n.y + 52, width: 88, height: 24, rx: 12 }, cg);
+      rec.chips[c] = { g: cg, t: el('text', { x: cx + 44, y: n.y + 68 }, cg), name: c };
+    });
+    if (n.queue) for (var i = 0; i < 3; i++) rec.dots.push(el('circle', { 'class': 'qdot', cx: n.x + 22 + i * 16, cy: n.y + 74, r: 6, opacity: 0 }, g));
+    nodes[n.id] = rec;
+  });
+
+  function track() { return data.modes[mode]; }
+  function stateAt(k) {
+    var t = track(), s = JSON.parse(JSON.stringify(t.initial));
+    for (var i = 0; i <= k; i++) { var set = t.steps[i].set || {};
+      if (set.nodes) for (var id in set.nodes) s.nodes[id] = set.nodes[id];
+      if (set.chips) for (var c in set.chips) s.chips[c] = set.chips[c];
+      if (set.queue != null) s.queue = set.queue; }
+    return s;
+  }
+  function paint(s, changed) {
+    for (var id in nodes) { var n = nodes[id], v = s.nodes[id] || ['', ''];
+      n.g.setAttribute('class', 'node ' + v[0]); n.sub.textContent = v[1];
+      for (var c in n.chips) { var st = s.chips[c] || 'idle'; n.chips[c].g.setAttribute('class', 'chip ' + st); n.chips[c].t.textContent = c + ' · ' + (st === 'yours' ? 'your call' : st); }
+      n.dots.forEach(function (d, i) { d.setAttribute('opacity', i < s.queue ? 1 : 0); }); }
+    (changed || []).forEach(function (id) { var g = nodes[id] && nodes[id].g; if (g && !reduce) { g.classList.remove('pulse'); void g.getBoundingClientRect(); g.classList.add('pulse'); } });
+  }
+  function liveEdges(step) {
+    for (var id in edges) { edges[id].setAttribute('class', 'edge'); edges[id].setAttribute('marker-end', 'url(#fsHead)'); }
+    (step.packets || []).forEach(function (p) { var e = edges[p.edge]; e.setAttribute('class', 'edge live ' + p.tone);
+      e.setAttribute('marker-end', 'url(#fsHead' + (p.tone === 'fwd' ? 'F' : p.tone === 'back' ? 'B' : 'S') + ')'); });
+  }
+  function fly(p, my) {
+    return new Promise(function (done) {
+      var path = edges[p.edge], len = path.getTotalLength(), g = el('g', { 'class': 'pk ' + p.tone }, gP);
+      el('circle', { r: 7 }, g); var tx = el('text', { y: -12 }, g); tx.textContent = p.label;
+      var t0 = null, dur = 950;
+      function frame(ts) {
+        if (my !== token) { g.remove(); return done(); }
+        if (t0 === null) t0 = ts; var k = Math.min(1, (ts - t0) / dur), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+        var pt = path.getPointAtLength(e * len); g.setAttribute('transform', 'translate(' + pt.x + ' ' + pt.y + ')');
+        g.setAttribute('opacity', k < .1 ? k * 10 : k > .9 ? (1 - k) * 10 : 1);
+        if (k < 1) requestAnimationFrame(frame); else { g.remove(); done(); }
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+  function ui() {
+    var n = track().steps.length;
+    countEl.textContent = 'Step ' + (idx + 1) + ' of ' + n;
+    capEl.innerHTML = track().steps[idx].caption;
+    bar.style.width = ((idx + 1) / n * 100) + '%';
+    btn.prev.disabled = idx === 0; btn.next.disabled = idx === n - 1;
+    btn.play.textContent = playing ? 'Pause' : (idx === n - 1 ? 'Replay' : 'Play');
+  }
+  function go(i, animate) {
+    var my = ++token, step = track().steps[i]; idx = i; ui(); liveEdges(step);
+    var changed = Object.keys((step.set || {}).nodes || {});
+    if (!animate || reduce || !(step.packets || []).length) { paint(stateAt(i), animate ? changed : []); return Promise.resolve(); }
+    paint(stateAt(i - 1));
+    return (step.packets || []).reduce(function (pr, p) { return pr.then(function () { return my === token ? fly(p, my) : null; }); }, Promise.resolve())
+      .then(function () { if (my === token) paint(stateAt(i), changed); });
+  }
+  function stop() { playing = false; clearTimeout(timer); ui(); }
+  function loop() {
+    if (!playing) return;
+    if (idx >= track().steps.length - 1) { stop(); return; }
+    go(idx + 1, true).then(function () { if (playing) timer = setTimeout(loop, 2600); });
+  }
+  btn.next.onclick = function () { stop(); if (idx < track().steps.length - 1) go(idx + 1, true); };
+  btn.prev.onclick = function () { stop(); if (idx > 0) go(idx - 1, false); };
+  btn.reset.onclick = function () { stop(); go(0, false); };
+  btn.play.onclick = function () {
+    if (playing) { stop(); return; }
+    playing = true; if (idx >= track().steps.length - 1) { go(0, false); } ui(); timer = setTimeout(loop, 400);
+  };
+  root.querySelectorAll('[data-mode]').forEach(function (b) {
+    b.onclick = function () { stop(); mode = b.dataset.mode;
+      root.querySelectorAll('[data-mode]').forEach(function (o) { o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
+      list(); go(0, false); };
+  });
+  function list() { var ol = root.querySelector('details.steps ol'); ol.innerHTML = '';
+    track().steps.forEach(function (s) { var li = document.createElement('li'); li.innerHTML = s.caption; ol.appendChild(li); }); }
+  if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { es.forEach(function (e) { if (!e.isIntersecting && playing) stop(); }); }).observe(root);
+  list(); go(0, false);
+})();
+</script>

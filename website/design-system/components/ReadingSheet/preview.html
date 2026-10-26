@@ -1,0 +1,37 @@
+<!-- @dsCard group="Layout" height=600 subtitle="Canvas, one sheet, a capped text column" -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;650&family=Source+Serif+4:opsz,wght@8..60,600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+  body { margin: 0; background: var(--canvas); color: var(--ink); font-family: var(--font-sans); }
+  .page { padding: 32px 16px; }
+  .sheet { max-width: var(--measure-wide); margin: 0 auto; background: var(--sheet); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sheet); padding: 40px clamp(20px, 5vw, 48px) 32px; }
+  .crumbs { font: 13px/18px var(--font-sans); color: var(--ink-muted); margin: 0 0 18px; }
+  .eyebrow { font: 650 12px/16px var(--font-sans); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 0; }
+  h1 { font: 600 clamp(32px, 4.6vw, 44px)/1.14 var(--font-serif); letter-spacing: -.01em; margin: 10px 0 12px; text-wrap: balance; color: var(--ink); }
+  .lead { font: 18px/30px var(--font-sans); color: var(--ink); margin: 0; max-width: var(--measure-text); }
+  .meta { display: flex; gap: 8px 18px; flex-wrap: wrap; font: 600 12px/16px var(--font-sans); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); margin: 18px 0 0; }
+  .tabs { display: flex; gap: 24px; border-bottom: 1px solid var(--line); margin: 26px 0 0; }
+  .tabs span { font: 600 14px/20px var(--font-sans); color: var(--ink-muted); padding: 10px 0; border-bottom: 2px solid transparent; }
+  .tabs span[aria-current] { color: var(--accent); border-color: var(--accent); }
+  .text { max-width: var(--measure-text); margin: 0 auto; padding-top: 28px; }
+  h2 { font: 650 24px/32px var(--font-sans); letter-spacing: -.01em; margin: 0 0 12px; color: var(--ink); }
+  p.body { font: 18px/31px var(--font-sans); margin: 0 0 18px; color: var(--ink); }
+  code { font: 500 .88em var(--font-mono); font-variant-ligatures: none; background: var(--accent-soft); color: var(--accent);
+    border-radius: var(--radius-sm); padding: 1px 5px; overflow-wrap: anywhere; }
+</style>
+<div class="page">
+  <article class="sheet">
+    <p class="crumbs">Android / Phase 8: Build tooling and OS internals</p>
+    <p class="eyebrow">Android · Beginner to staff</p>
+    <h1>The Binder</h1>
+    <p class="lead">A method call that looks local can wait on another process's busy thread. Learn how Binder carries calls between processes and how to design contracts that cross them.</p>
+    <div class="meta"><span>10 min read</span><span>Lesson 11 of 13 in Phase 8</span></div>
+    <div class="tabs"><span aria-current="page">Content</span><span>Q&amp;A</span><span>Resources</span></div>
+    <div class="text">
+      <h2>Start here</h2>
+      <p class="body">A music app's play button freezes for two seconds, and the code behind it is one line: <code>if (service.isPlaying())</code>. It reads like a getter. It is a request to another process, which has to wait for a free thread there.</p>
+      <p class="body">Binder is how one Android process calls into another: your app into system services, and apps into each other. The cost of a call depends on the other side, not on how the call looks.</p>
+    </div>
+  </article>
+</div>
