@@ -121,3 +121,14 @@ All 101 Android chapters across the 9 phases render as blended lessons, and each
 - Physical devices and other browser engines were not tested.
 
 Nothing is pushed or merged. A private preview was published for the owner as a claude.ai artifact with relative links (`website/tools/make_artifact_preview.py dist <out>`); it is not a deployment.
+
+## Design system (applied 2026-10-26)
+
+The owner approved the Playbook Design System after three Codex review rounds; see `reviews/design-system-review-disposition.md`. It lives in `website/design-system/`, which is the single source:
+- **Tokens:** `build.py` compiles `tokens.json` into `dist/tokens.css`. The old variable names (`--bg`, `--text`, `--accent`…) are aliases of the design-system roles in all four themes.
+- **Diagram runtime and fonts:** `components/bundle.js` and `bundle.css` ship as `dist/flow.js` and `dist/flow.css`, and `fonts/*.woff2` are copied to `dist/fonts/`.
+- **Site layer:** `website/theme.css` applies the reading sheet (880px sheet, 760px text column, canvas), the callout tints, JetBrains Mono, the rail breakpoints (curriculum rail from 1440px, outline from 1181px; `app.js` opens the curriculum drawer below 1440px) and high contrast.
+- **Static Mermaid figures:** `blend.js` sizes each figure to at least 0.75 of its drawn width, so its text stays at 12px or more, and the figure scrolls sideways when narrower. Diagram figures may use the sheet's full inner width.
+- **Moving diagrams:** a lesson adds `<section class="pb-figure" data-pb-flow="scene|diagram">` with its JSON (see the FlowScene and FlowDiagram READMEs). `blend.js` mounts them.
+
+**Rolled out so far:** the Binder lesson's stepper is replaced by the FlowScene pilot (synchronous and `oneway` tracks). The ANR consequence moved into the waiting step and the contract fix stayed in the last step. Other lessons still use their steppers; converting the 15–20 lessons where movement is the lesson is a follow-up.

@@ -98,3 +98,35 @@
 
   document.querySelectorAll('figure.stepper').forEach(setup);
 })();
+
+// Design-system diagrams (website/design-system): moving diagrams, and static Mermaid figures that keep a readable size.
+(() => {
+  // Mermaid draws text at 16px. Rendering a figure at no less than 0.75 of its drawn width keeps that text at 12px or more;
+  // narrower screens scroll the figure sideways instead of shrinking it.
+  document.querySelectorAll('.source-diagram img[data-original-diagram], .original-diagram img[data-original-diagram]').forEach(img => {
+    const box = img.closest('.source-diagram, .original-diagram');
+    fetch(img.src).then(r => r.ok ? r.text() : '').then(svg => {
+      const m = /viewBox="[-\d.]+ [-\d.]+ ([\d.]+)/.exec(svg);
+      if (!m) return;
+      img.style.minWidth = Math.round(parseFloat(m[1]) * 0.75) + 'px';
+      img.classList.add('is-sized');
+      box.setAttribute('data-pb-wide', '');
+      box.dataset.label = img.alt || 'Diagram';
+      if (window.Playbook) window.Playbook.mountAll(box.parentNode);
+    }).catch(() => {});
+  });
+  // Code cards: mark cards whose lines run past the edge, so theme.css can fade the hidden edge and show a hint.
+  document.querySelectorAll('.code-card pre').forEach(pre => {
+    const card = pre.closest('.code-card');
+    const sync = () => {
+      const more = pre.scrollWidth > pre.clientWidth + 1;
+      card.classList.toggle('is-scrollable', more);
+      card.classList.toggle('at-end', pre.scrollLeft + pre.clientWidth >= pre.scrollWidth - 1);
+    };
+    pre.addEventListener('scroll', sync, { passive: true });
+    if (window.ResizeObserver) new ResizeObserver(sync).observe(pre);
+    new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] }); // the reader's wrap setting
+    sync();
+  });
+  if (window.Playbook) window.Playbook.mountAll(document);
+})();

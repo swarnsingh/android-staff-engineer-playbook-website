@@ -1,0 +1,77 @@
+/* Playbook Design System applied to the reader (see website/design-system/README.md).
+   Tokens come from tokens.css, which build.py compiles from website/design-system/tokens.json;
+   the older names (--bg, --text, --accent…) are aliases of the design-system roles. */
+
+/* Reading sheet: the page is a tinted canvas and the lesson sits on one sheet. */
+body { background: var(--canvas); color: var(--ink); }
+.topbar { background: var(--sheet); }
+main {
+  --sheet-pad: clamp(20px, 4vw, 48px);
+  box-sizing: border-box; width: 100%; max-width: var(--measure-wide);
+  margin: 24px auto 48px; padding: 0 var(--sheet-pad) 32px;
+  background: var(--sheet); border-radius: var(--radius-lg); box-shadow: var(--shadow-sheet);
+}
+.reading-content { max-width: var(--measure-text); margin-inline: auto; }
+/* Diagrams may use the sheet's full inner width, wider than the text column (ReadingSheet rule).
+   main is a size container, so 100cqw is the sheet's inner width; on phones the two widths match and nothing moves. */
+main { container-type: inline-size; }
+.blend:has(.pb-figure), .source-diagram { margin-inline: min(0px, calc((100% - 100cqw) / 2)); }
+.lesson-hero { background: none; border: 0; border-radius: 0; padding: 28px 0 8px; }
+h1, .lesson-hero h1 { font-family: var(--font-serif); font-weight: 600; letter-spacing: -.01em; text-wrap: balance; }
+.mobile-outline { margin-inline: calc(-1 * var(--sheet-pad)); padding-inline: var(--sheet-pad); background: var(--sheet); }
+
+/* Rails take space only when the sheet still fits: both from 1440px, the chapter outline alone from 1181px. */
+@media (min-width: 1181px) and (max-width: 1439px) {
+  .layout { grid-template-columns: minmax(0, 1fr) 210px; }
+  #sidebar-slot { display: none; }
+  #menu-toggle { display: inline-flex; }
+}
+@media (min-width: 641px) and (max-width: 1180px) {
+  main { width: auto; margin: 16px 16px 40px; }
+}
+@media (max-width: 640px) {
+  main { --sheet-pad: 16px; width: auto; margin: 8px 8px 24px; border-radius: 14px; }
+}
+
+/* Code: JetBrains Mono with ligatures off, so -> and != look exactly as typed. */
+code, pre, kbd, .code-card pre, .model-code pre { font-family: var(--font-mono); font-variant-ligatures: none; }
+
+/* Callouts: a tint and a capital label; no side bar, no shadow. */
+.blend { border: 0; border-radius: var(--radius-md); background: var(--sheet-sunken); }
+.blend > .blend-label { padding: 3px 10px; border-radius: var(--radius-pill); background: var(--accent); color: var(--on-accent);
+  font: 650 .7rem/1.4 var(--font-sans); letter-spacing: .08em; }
+.blend[data-kind=story] { background: var(--accent-soft); }
+.blend[data-kind=staff] > .blend-label { background: var(--ink); color: var(--sheet); }
+.blend[data-kind=review] { background: var(--warn-soft); }
+.blend[data-kind=review] > .blend-label { background: var(--warn); color: var(--sheet); }
+.blend[data-kind=bridge] { background: none; border: 0; padding: .2rem 0; }
+.question, .deep-dive, .static-model { border: 0; background: var(--sheet-sunken); border-radius: var(--radius-md); }
+
+/* Static Mermaid diagrams keep a readable size (blend.js sets min-width from each drawing's width)
+   and scroll sideways inside their own box instead of shrinking. */
+.source-diagram, .original-diagram { overflow-x: auto; overscroll-behavior-x: contain; }
+.source-diagram img.is-sized, .original-diagram img.is-sized { max-height: none; }
+.source-diagram.is-scrollable::before, .original-diagram.is-scrollable::before {
+  content: "Scroll sideways to see the whole diagram →"; content: "Scroll sideways to see the whole diagram →" / "";
+  display: block; margin-bottom: .6rem; font: 600 13px/18px var(--font-sans); color: var(--ink-muted);
+}
+.source-diagram:focus-visible, .original-diagram:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* Code cards: when a line runs past the edge, fade the hidden edge and say how to see it (blend.js toggles the classes). */
+.code-card.is-scrollable:not(.at-end) pre { -webkit-mask-image: linear-gradient(to left, transparent, #000 36px); mask-image: linear-gradient(to left, transparent, #000 36px); }
+.code-card.is-scrollable::after {
+  content: "Some lines continue past the edge: scroll sideways, or turn on line wrapping in Reading settings.";
+  content: "Some lines continue past the edge: scroll sideways, or turn on line wrapping in Reading settings." / "";
+  display: block; padding: 0 1.1rem .8rem; font: 600 12px/16px var(--font-sans); color: var(--code-comment);
+}
+
+/* High contrast: no tints or shadows; 1px borders mark the sheet and blocks. */
+html[data-theme=contrast] main { box-shadow: none; border: 1px solid var(--line); }
+html[data-theme=contrast] .blend, html[data-theme=contrast] .question, html[data-theme=contrast] .deep-dive { background: transparent; border: 1px solid var(--line); }
+html[data-theme=contrast] .blend > .blend-label { border: 1px solid var(--ink); }
+
+@media print {
+  body { background: #fff; }
+  main { box-shadow: none; border-radius: 0; max-width: none; margin: 0; padding: 0; }
+  .source-diagram.is-scrollable::before, .original-diagram.is-scrollable::before { display: none; }
+}

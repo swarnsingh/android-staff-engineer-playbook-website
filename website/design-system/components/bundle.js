@@ -328,7 +328,7 @@
   }
 
   function WideDiagram(root) {
-    var box = root.querySelector('.pb-wide');
+    var box = root.querySelector('.pb-wide') || root; // the root may be its own scroll box (the reader's Mermaid figures)
     function sync() {
       var more = box.scrollWidth > box.clientWidth + 1;
       root.classList.toggle('is-scrollable', more);

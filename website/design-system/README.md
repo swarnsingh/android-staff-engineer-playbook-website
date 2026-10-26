@@ -22,7 +22,7 @@ The look and behaviour of the Android Engineering Playbook reader: a calm, profe
 
 Code cards are the one dark object on the sheet (`code-bg`) in every theme. High contrast drops the tints and uses a 1px `line` border instead, because tinted grounds lower contrast there; `components/bundle.css` applies this to callouts, checkpoints and diagrams.
 
-**Widths.** The sheet is `measure-wide` (880px) including its padding. Both rails show from 1440px; from 1200px only the chapter outline shows; below 1200px the outline moves to the top of the sheet and the curriculum lives in the menu.
+**Widths.** The sheet is `measure-wide` (880px) including its padding. Both rails show from 1440px; from 1181px only the chapter outline shows; below 1181px the outline moves to the top of the sheet and the curriculum lives in the menu.
 
 ## Colour roles (Compose mapping)
 
