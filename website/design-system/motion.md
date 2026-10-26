@@ -34,7 +34,15 @@ Keep it static when the diagram shows structure: a module graph, a class hierarc
 
 ## Stepped scenes (FlowScene)
 
-A FlowScene does not loop. Each step plays its packets once, about 950ms per hop with an ease-in-out curve, then applies the step's state change with one 500ms pulse on each node it changed. Play waits 2.6s on each step so the caption can be read. Previous and Reset jump without motion.
+A FlowScene does not loop. Edges march only while a packet is travelling. Each step plays its packets once, about 950ms per hop with an ease-in-out curve, then applies the step's state change with one 500ms pulse on each node it changed. Play waits 2.6s on each step so the caption can be read. Previous and Reset jump without motion.
+
+## One motion state
+
+`Playbook.motion` combines the OS preference (`prefers-reduced-motion`) with the reader's own setting (the reader puts `reduce-motion` on `<html>`). It is read live: a change takes effect immediately in CSS and in scripted packets, with no reload.
+
+## Phones
+
+Every moving diagram has two authored layouts. Below 520px of container width it switches to a stacked layout: nodes in a column, forward edges on the left lane, return edges on the right. Labels stay at 15px or more on a 320px screen. Desktop drawings are never shrunk to fit a phone.
 
 ## When it stops
 
@@ -42,7 +50,7 @@ Motion must stop in all of these cases, and the diagram must still teach:
 
 - **The OS asks for reduced motion** (`prefers-reduced-motion: reduce`), or the reader turns on the site's own motion toggle. The packets are hidden, the arrowheads and labels stay, and each connector shows its order number.
 - **The diagram is off screen.** An `IntersectionObserver` pauses it, which also saves battery on long pages.
-- **The reader presses Pause.** Every moving diagram has a visible Pause/Play button. Anything that moves for more than five seconds needs one (WCAG 2.2.2).
+- **The reader presses Pause.** In a FlowScene, a packet already travelling is cancelled and the step jumps to its final state, and the marching dashes stop. In a FlowDiagram the loop stops and the still version shows. Every moving diagram has a visible Pause/Play button. Anything that moves for more than five seconds needs one (WCAG 2.2.2).
 
 ## Budget
 

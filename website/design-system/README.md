@@ -20,7 +20,9 @@ The look and behaviour of the Android Engineering Playbook reader: a calm, profe
 | 1 | `sheet` + `shadow-sheet` + `radius-lg` | The reading sheet: hero, tabs and lesson text. Width `measure-wide`; text inside it is capped at `measure-text`. |
 | 2 | `sheet-sunken` or a `*-soft` tint + `radius-md` | Callouts, checkpoints, diagram paper. No border, no shadow. |
 
-Code cards are the one dark object on the sheet (`code-bg`) in every theme. High contrast drops the tints and uses a 1px `line` border instead, because tinted grounds lower contrast there.
+Code cards are the one dark object on the sheet (`code-bg`) in every theme. High contrast drops the tints and uses a 1px `line` border instead, because tinted grounds lower contrast there; `components/bundle.css` applies this to callouts, checkpoints and diagrams.
+
+**Widths.** The sheet is `measure-wide` (880px) including its padding. Both rails show from 1440px; from 1200px only the chapter outline shows; below 1200px the outline moves to the top of the sheet and the curriculum lives in the menu.
 
 ## Colour roles (Compose mapping)
 
@@ -36,7 +38,7 @@ Code cards are the one dark object on the sheet (`code-bg`) in every theme. High
 | `event`, `event-soft` | `secondary`, `secondaryContainer` | The other direction in a diagram: events, requests, replies. |
 | `warn`, `warn-soft` | `error`, `errorContainer` | Blocked and failing states; Under review notes. |
 
-Diagram rule: **green moves forward, blue comes back, orange is stuck.** The two directions differ in lightness as well as hue, so they stay distinct for colour-blind readers and in high contrast.
+Diagram rule: **green moves forward, blue comes back, orange is stuck.** Green and blue are close in lightness (about 1.08:1), so hue is never the only cue. Forward edges use long dashes and round packets, back edges use dots and diamond packets, and stuck edges use dash-dot. Every edge also carries an arrowhead and a text label.
 
 ## Typography (Compose mapping)
 
@@ -49,7 +51,7 @@ Diagram rule: **green moves forward, blue comes back, orange is stuck.** The two
 | `codeBlock`, `codeInline` | (none) | JetBrains Mono, ligatures off |
 | `handNode`, `handNote` | (none) | Patrick Hand: diagrams and one annotation per diagram |
 
-Four families, self-hosted on the site, only the weights listed. Handwriting never carries an answer, a finding, an Under review note or code.
+Four families, self-hosted from `fonts/` (Latin subsets, SIL Open Font License): Inter variable 400–700 (48KB), Source Serif 4 SemiBold (21KB), JetBrains Mono variable 400–500 (31KB) and Patrick Hand (63KB). Nothing loads from a font CDN. Handwriting never carries an answer, a finding, an Under review note or code.
 
 ## Shapes and spacing
 
@@ -57,7 +59,7 @@ Four families, self-hosted on the site, only the weights listed. Handwriting nev
 
 ## Motion
 
-See the **Motion and diagrams** section for the full rules. In short: interface feedback takes 150ms; state changes take 300ms with a standard ease; diagram packets take 2.4s per edge and loop; everything stops for reduced motion, the reader's motion toggle, an off-screen diagram, or the diagram's own pause button.
+See the **Motion and diagrams** section for the full rules. In short: interface feedback takes 150ms; state changes take 300ms with a standard ease; diagram packets take 2.4s per edge and loop; everything stops for reduced motion (from the OS or the reader's setting, read live), an off-screen diagram, or the diagram's own pause button.
 
 ## Components
 
@@ -69,6 +71,8 @@ See the **Motion and diagrams** section for the full rules. In short: interface 
 | Checkpoint | Q&A tab questions with an Answer heading. |
 | FlowDiagram | A short looping diagram that shows direction and blockage. |
 | FlowScene | One system stepped through, where packets land and change state. Pilot: the Binder lesson. |
+
+FlowDiagram and FlowScene share one runtime, `components/bundle.js` (`window.Playbook`, no dependencies), and one stylesheet, `components/bundle.css`.
 
 ## What changes from today's site
 

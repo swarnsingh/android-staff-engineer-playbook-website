@@ -4,7 +4,7 @@ The published design system compiles tokens.json into CSS variables for each pre
 This script does the same locally: one page per component per theme, plus an index.
 Usage: python3 website/tools/build_design_system_preview.py  (writes website/.cache/design-system-preview/)
 """
-import json, pathlib
+import json, pathlib, shutil
 
 ROOT = pathlib.Path(__file__).resolve().parents[1] / 'design-system'
 OUT = pathlib.Path(__file__).resolve().parents[1] / '.cache' / 'design-system-preview'
@@ -21,16 +21,30 @@ def css(theme):
     out += [f"--font-{k}:{v};" for k, v in tokens['type']['families'].items()]
     return ':root{' + ''.join(out) + '}'
 
+def font_faces():
+    faces = []
+    for f in tokens['type'].get('fonts', []):
+        faces.append(f"@font-face{{font-family:\"{f['family']}\";src:url(\"{f['file']}\") format(\"woff2\");"
+                     f"font-weight:{f.get('weight', '400')};font-style:{f.get('style', 'normal')};font-display:swap}}")
+    return ''.join(faces)
+
+def shared(name):
+    path = ROOT / 'components' / name
+    return path.read_text() if path.exists() else ''
+
 OUT.mkdir(parents=True, exist_ok=True)
+if (ROOT / 'fonts').exists():
+    shutil.copytree(ROOT / 'fonts', OUT / 'fonts', dirs_exist_ok=True)
 links = []
-for comp in sorted(p.name for p in (ROOT / 'components').iterdir() if (p / 'preview.html').exists()):
+for comp in sorted(p.name for p in (ROOT / 'components').iterdir() if p.is_dir() and (p / 'preview.html').exists()):
     body = (ROOT / 'components' / comp / 'preview.html').read_text()
     row = []
     for theme in themes:
         name = f'{comp}-{theme}.html'
         (OUT / name).write_text(f'<!doctype html><html lang="en" data-theme="{theme}"><head><meta charset="utf-8">'
                                 f'<meta name="viewport" content="width=device-width,initial-scale=1"><title>{comp} · {theme}</title>'
-                                f'<style>{css(theme)}body{{margin:0}}</style></head><body>{body}</body></html>')
+                                f'<style>{font_faces()}{css(theme)}body{{margin:0}}{shared("bundle.css")}</style>'
+                                f'<script>{shared("bundle.js")}</script></head><body>{body}</body></html>')
         row.append(f'<a href="{name}">{theme}</a>')
     links.append(f'<li><strong>{comp}</strong>: ' + ' · '.join(row) + '</li>')
 (OUT / 'index.html').write_text('<!doctype html><meta charset="utf-8"><title>Playbook Design System previews</title>'

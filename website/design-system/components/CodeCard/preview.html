@@ -1,6 +1,4 @@
 <!-- @dsCard group="Content" height=300 subtitle="Dark in every theme, ligatures off" -->
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
   body { margin: 0; background: var(--sheet); font-family: var(--font-sans); }
   .wrap { padding: 24px; max-width: var(--measure-wide); }
@@ -16,7 +14,7 @@
 </style>
 <div class="wrap">
   <div class="code">
-    <div class="head"><span>ProductRoute.kt<small>Collect state at the screen boundary</small></span><button type="button">Copy</button></div>
+    <div class="head"><span>ProductRoute.kt<small>Collect state at the screen boundary</small></span><button type="button" data-copy>Copy</button></div>
 <pre><span class="k">@Composable</span>
 <span class="k">fun</span> <span class="f">ProductRoute</span>(viewModel: <span class="f">ProductViewModel</span>) {
     <span class="k">val</span> uiState <span class="k">by</span> viewModel.uiState.<span class="f">collectAsStateWithLifecycle</span>()
@@ -26,3 +24,13 @@
 }</pre>
   </div>
 </div>
+<script>
+  document.querySelectorAll('[data-copy]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var pre = b.closest('.code').querySelector('pre'), text = pre.innerText;
+      function done(msg) { b.textContent = msg; setTimeout(function () { b.textContent = 'Copy'; }, 1600); }
+      function select() { var r = document.createRange(); r.selectNodeContents(pre); var s = getSelection(); s.removeAllRanges(); s.addRange(r); done('Selected: press Ctrl/Cmd+C'); }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { done('Copied'); }, select); else select();
+    });
+  });
+</script>

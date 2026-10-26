@@ -23,17 +23,18 @@ Use it for the lesson's main mechanism, when the reader needs to watch one syste
 ## Behaviour
 
 - **Next** animates the step's packets, then applies its state. **Previous** and **Reset** jump instantly.
-- **Play** advances on its own: packets, then 2.6s to read, then the next step. It stops at the last step, when the scene scrolls out of view, or when the reader presses Pause.
-- **Reduced motion:** steps still advance, but state changes instantly and no packets travel.
+- **Play** advances on its own: packets, then 2.6s to read, then the next step. It stops at the last step, when the scene scrolls out of view, or when the reader presses Pause. Stopping cancels any packet in flight and shows the step's final state; edges march only while a packet travels.
+- **Layouts:** `wide` above 520px of container width, `narrow` (stacked, 320 units wide) below it. Changing layout keeps the current step.
+- **Reduced motion (OS or reader setting, read live):** steps still advance, but state changes instantly and no packets travel. Turning it on mid-flight finishes the step at once.
 - **State is computed from the step list,** so jumping backwards always shows exactly the state at that step.
 
 ## What the page provides
 
-The scene is data in the lesson's blend file: edges (SVG path data), nodes (position, label, optional chips or queue), and per track an `initial` state and `steps`. Each step lists `packets` (edge, label, tone) and `set` (node state and status text, chip states, queue length). Captions must be accurate to the platform docs; illustrative timings are labelled as such.
+The scene is data in the lesson's blend file: edges (SVG path data), nodes (position, label, optional chips or queue), and per track an `initial` state and `steps`. Each step lists `packets` (edge, label, tone) and `set` (node state and status text, chip states, queue length). Captions must be accurate to the platform docs. A scene with example timings or queue lengths says "an illustrative run" in its subtitle, and the captions say "in this run" instead of stating times as guarantees.
 
 ## Pilot
 
-The preview is the Binder lesson's scene. The synchronous track has 9 steps: the call blocks the UI thread, queues behind busy service threads, runs, and the reply unblocks the caller. The `oneway` track has 6 steps: the caller returns at once, the service side still queues, and no reply comes back. The ordering claim follows AOSP: "One-way methods from the same thread to the same binder also execute serially".
+The preview is the Binder lesson's scene. The synchronous track has 9 steps: the call blocks the UI thread, queues behind busy service threads, runs, and the reply unblocks the caller. The `oneway` track has 6 steps: the caller returns after handing the transaction to the kernel, the service side still queues, and no reply comes back. The ordering claim follows AOSP: "One-way methods from the same thread to the same binder also execute serially".
 
 ## Tokens
 

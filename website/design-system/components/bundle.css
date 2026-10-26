@@ -1,0 +1,84 @@
+/* Playbook components: shared diagram styles and high-contrast overrides. Loaded after tokens.css. */
+.pb-figure { margin: 0; border-radius: var(--radius-md); background: var(--sheet-sunken); padding: 14px 16px 16px; box-sizing: border-box; }
+.pb-figure h3 { margin: 0; font: 650 16px/22px var(--font-sans); color: var(--ink); }
+.pb-figure .pb-sub { margin: 2px 0 0; font: 13px/19px var(--font-sans); color: var(--ink-muted); }
+.pb-paper { margin-top: 12px; border-radius: var(--radius-md); background-color: var(--sheet-sunken);
+  background-image: radial-gradient(var(--grid-dot) 1.2px, transparent 1.4px); background-size: var(--space-4) var(--space-4); }
+.pb-svg { display: block; width: 100%; height: auto; }
+
+.pb-region rect { fill: none; stroke: var(--line-strong); stroke-width: 1.5; stroke-dasharray: 5 6; }
+.pb-region text { font: 650 11px var(--font-sans); letter-spacing: .08em; fill: var(--ink-muted); }
+.pb-node > rect { fill: var(--sheet); stroke: var(--line-strong); stroke-width: 2; transition: stroke .3s, fill .3s; }
+.pb-node .t { font: 19px var(--font-hand); fill: var(--ink); }
+.pb-node .s { font: 13px var(--font-sans); fill: var(--ink-muted); }
+.pb-node.is-active > rect { stroke: var(--accent); }
+.pb-node.is-warn > rect { stroke: var(--warn); fill: var(--warn-soft); }
+.pb-node.is-warn .s { fill: var(--warn); font-weight: 600; }
+.pb-node.is-done > rect { stroke: var(--accent); fill: var(--accent-soft); }
+.pb-node.is-done .s { fill: var(--accent); font-weight: 600; }
+.pb-node.pulse > rect { animation: pb-pulse .5s ease-out; }
+@keyframes pb-pulse { from { stroke-width: 5; } to { stroke-width: 2; } }
+.pb-chip rect { stroke-width: 1.5; }
+.pb-chip text { font: 600 11px var(--font-sans); text-anchor: middle; }
+.pb-chip.busy rect { fill: var(--warn-soft); stroke: var(--warn); } .pb-chip.busy text { fill: var(--warn); }
+.pb-chip.yours rect { fill: var(--accent-soft); stroke: var(--accent); } .pb-chip.yours text { fill: var(--accent); }
+.pb-chip.idle rect { fill: var(--sheet); stroke: var(--line-strong); } .pb-chip.idle text { fill: var(--ink-muted); }
+.pb-q { fill: var(--warn); }
+
+/* Direction is told apart by line pattern and packet shape as well as hue:
+   forward = long dashes + round packets, back = dots + diamond packets, stuck = dash-dot. */
+.pb-edge { fill: none; stroke: var(--line-strong); stroke-width: 1.8; stroke-dasharray: 2 6; stroke-linecap: round; }
+.pb-edge.fwd { stroke: var(--accent); stroke-width: 2.4; stroke-dasharray: 9 6; }
+.pb-edge.back { stroke: var(--event); stroke-width: 2.6; stroke-dasharray: .5 6; }
+.pb-edge.stuck { stroke: var(--warn); stroke-width: 2.4; stroke-dasharray: 10 4 2 4; }
+.pb-edge.fwd.moving { animation: pb-m15 1.4s linear infinite; }
+.pb-edge.back.moving { animation: pb-m65 1.2s linear infinite; }
+.pb-edge.stuck.moving { animation: pb-m20 2.8s linear infinite; }
+@keyframes pb-m15 { from { stroke-dashoffset: 15; } to { stroke-dashoffset: 0; } }
+@keyframes pb-m65 { from { stroke-dashoffset: 6.5; } to { stroke-dashoffset: 0; } }
+@keyframes pb-m20 { from { stroke-dashoffset: 20; } to { stroke-dashoffset: 0; } }
+.pb-head { fill: var(--line-strong); } .pb-head.fwd { fill: var(--accent); } .pb-head.back { fill: var(--event); } .pb-head.stuck { fill: var(--warn); }
+.pb-pk circle, .pb-pk path { stroke: var(--sheet); stroke-width: 2; }
+.pb-pk.fwd circle { fill: var(--accent); } .pb-pk.back path { fill: var(--event); } .pb-pk.stuck circle { fill: var(--warn); }
+.pb-pk text { font: 15px var(--font-hand); paint-order: stroke; stroke: var(--sheet-sunken); stroke-width: 4px; }
+.pb-pk.fwd text { fill: var(--accent); } .pb-pk.back text { fill: var(--event); } .pb-pk.stuck text { fill: var(--warn); }
+.pb-label { font: 17px var(--font-hand); fill: var(--ink-muted); }
+.pb-label.fwd { fill: var(--accent); } .pb-label.back { fill: var(--event); } .pb-label.stuck { fill: var(--warn); }
+.pb-order { display: none; }
+.pb-order circle { fill: var(--sheet); stroke: var(--line-strong); stroke-width: 1.5; }
+.pb-order text { font: 650 11px var(--font-sans); fill: var(--ink); text-anchor: middle; }
+.is-still .pb-order { display: inline; }
+
+.pb-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px 12px; flex-wrap: wrap; margin-top: 10px; }
+.pb-bar p { margin: 0; flex: 1 1 240px; min-width: 0; font: 14px/21px var(--font-sans); color: var(--ink-muted); }
+.pb-btn { font: 600 13px/18px var(--font-sans); color: var(--ink); background: var(--sheet); border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-pill); padding: 7px 14px; min-height: 36px; cursor: pointer; }
+.pb-btn:hover { border-color: var(--accent); }
+.pb-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.pb-btn:disabled { opacity: .45; cursor: default; }
+.pb-btn:focus-visible, .pb-seg button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.pb-seg { display: inline-flex; background: var(--sheet); border: 1.5px solid var(--line-strong); border-radius: var(--radius-pill); padding: 2px; }
+.pb-seg button { font: 600 13px/18px var(--font-sans); color: var(--ink-muted); background: none; border: 0; border-radius: var(--radius-pill); padding: 6px 12px; cursor: pointer; }
+.pb-seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.pb-head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px 12px; flex-wrap: wrap; }
+.pb-progress { height: 4px; border-radius: var(--radius-pill); background: var(--line); margin-top: 12px; overflow: hidden; }
+.pb-progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s cubic-bezier(.2, 0, 0, 1); }
+.pb-caption { min-height: 78px; margin-top: 12px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; align-items: start; }
+.pb-count { font: 650 12px/26px var(--font-sans); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
+.pb-caption p { margin: 0; font: 16px/26px var(--font-sans); color: var(--ink); }
+.pb-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+.pb-controls .spacer { flex: 1; }
+.pb-steps { margin-top: 12px; font: 14px/22px var(--font-sans); color: var(--ink-muted); }
+.pb-steps summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+.pb-steps ol { margin: 8px 0 0; padding-left: 22px; }
+.pb-figure code, .pb-steps code { font: 500 .88em var(--font-mono); font-variant-ligatures: none; background: var(--sheet); border-radius: var(--radius-sm); padding: 1px 5px; overflow-wrap: anywhere; }
+@media (max-width: 520px) { .pb-caption { grid-template-columns: minmax(0, 1fr); } .pb-figure { padding: 12px; } }
+
+/* Reduced motion, from the OS or the reader's setting: no CSS motion at all. Scripted packets are stopped by the runtime. */
+@media (prefers-reduced-motion: reduce) { .pb-edge.moving, .pb-node.pulse > rect { animation: none; } }
+html.reduce-motion .pb-edge.moving, html.reduce-motion .pb-node.pulse > rect { animation: none; }
+
+/* High contrast: tints become 1px borders; no dot grid. */
+[data-theme="contrast"] .pb-figure, [data-theme="contrast"] .pb-paper { border: 1px solid var(--line); background-image: none; }
+[data-theme="contrast"] .sheet, [data-theme="contrast"] .callout, [data-theme="contrast"] .pb-check { background: transparent; border: 1px solid var(--line); }
+[data-theme="contrast"] .pb-node.is-warn > rect, [data-theme="contrast"] .pb-node.is-done > rect { fill: var(--sheet); stroke-width: 3; }
