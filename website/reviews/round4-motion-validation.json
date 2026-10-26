@@ -46,5 +46,6 @@
       "name": "Leaving the rendered area cancels a scene",
       "ok": true
     }
-  ]
+  ],
+  "verified_source_commit": "7120f9a"
 }

@@ -38,3 +38,7 @@ The owner still needs to review Binder on phone/tablet/desktop and approve exact
 ## Final audit and publication result
 
 Final browser and GitHub Actions outcomes are appended here after verification. This report is deliberately explicit about source completion, measured checks and hosting limits so the next LLM does not treat a local build, old preview or pending CI job as a completed live deployment.
+
+- Final sweep: **125/125 passed**, **1,750 layout checks**, **1,808 scene-state checks**, **122/122 legacy steppers**, **17/17 scenes**, **93/93 original diagrams**, zero runtime errors. Raw evidence: [round4-browser-validation.json](round4-browser-validation.json), covering the source at `7120f9a`.
+- ResizeObserver feedback warnings found by the expanded sweep were fixed by coalescing observer-driven DOM updates onto the next animation frame. No such errors remain in the passing sweep.
+- Final targeted reruns: Binder **448/448 passed**, including actual mode/step assertions and runtime-error collection; motion regressions **11/11 passed** after the final resize fixes.

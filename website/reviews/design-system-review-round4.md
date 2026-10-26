@@ -44,3 +44,7 @@ The browser evidence is desktop Chromium at emulated layout widths. It does not 
 The owner clarified that all LLMs must use one website repository and one repository-controlled publication path, then confirmed both source and preview must remain private. Rulebook section 19 records that decision. The workflow packages an identified source commit as a private GitHub Actions build artifact; it has no public Pages deployment job or public-publishing switch. A live private hosting runtime is not configured. Old Claude artifacts and the ChatGPT Kotlin reader are historical snapshots.
 
 Remaining owner/external work: the owner's Binder review on physical devices; exact owner approval of original-chapter replacements; reproductions for the unresolved KS4 and KO2 candidate details; and selecting an access-controlled live hosting runtime. Full-scene authoring, the seven KMP reworks and fifteen Phase 7 staff-note improvements are implemented. Final verification and publication outcomes are stated in the current continuation report.
+
+## Final integrated sweep
+
+All **125 pages** pass on the final build: **1,750 layout checks**, **1,808 scene-state checks**, **122 steppers**, **17 scenes**, **93 loaded original diagrams**, zero runtime errors or preservation failures. Evidence is [round4-browser-validation.json](round4-browser-validation.json). The sweep also exposed ResizeObserver feedback notifications; resize-driven DOM updates now run in a coalesced animation frame.
