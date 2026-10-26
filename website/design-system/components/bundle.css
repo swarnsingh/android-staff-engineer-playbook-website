@@ -79,6 +79,11 @@
 .pb-figure code, .pb-steps code { font: 500 .88em var(--font-mono); font-variant-ligatures: none; background: var(--sheet); border-radius: var(--radius-sm); padding: 1px 5px; overflow-wrap: anywhere; }
 @media (max-width: 520px) { .pb-caption { grid-template-columns: minmax(0, 1fr); } .pb-figure { padding: 12px; } }
 
+/* A diagram that failed to draw: hide the empty drawing and its controls, show its description. */
+.pb-error .pb-paper, .pb-error [data-toggle], .pb-error .pb-controls, .pb-error .pb-progress, .pb-error .pb-seg { display: none; }
+.pb-fallback { margin: 12px 0 0; padding: 12px 14px; border-radius: var(--radius-md); background: var(--warn-soft); color: var(--ink); font: 14px/21px var(--font-sans); }
+[data-theme="contrast"] .pb-fallback { background: transparent; border: 1px solid var(--warn); }
+
 /* WideDiagram: a static drawing keeps a readable size and scrolls sideways inside its own box. */
 .pb-wide { overflow-x: auto; overscroll-behavior-x: contain; border-radius: var(--radius-md); -webkit-overflow-scrolling: touch; }
 .pb-wide:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }

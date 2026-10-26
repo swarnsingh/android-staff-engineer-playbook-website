@@ -37,6 +37,10 @@ The scene is data in the lesson's blend file: edges (SVG path data), nodes (posi
 
 The preview is the Binder lesson's scene. The synchronous track has 9 steps: the call blocks the UI thread, queues behind busy service threads, runs, and the reply unblocks the caller. The `oneway` track has 6 steps: the caller returns after handing the transaction to the kernel, the service side still queues, and no reply comes back. The ordering claim follows AOSP: "One-way methods from the same thread to the same binder also execute serially".
 
+## When the data is invalid
+
+If a diagram's data cannot be drawn (for example, a generated row of six nodes), the runtime hides the empty drawing and its controls and shows a short notice with the diagram's text description. A failed diagram never joins turn-taking, so the next valid diagram still plays.
+
 ## Tokens
 
 `sheet-sunken`, `grid-dot`, `sheet`, `line`, `line-strong`, `ink`, `ink-muted`, `accent`, `accent-soft`, `on-accent`, `event`, `warn`, `warn-soft`, `focus`, `radius-md`, `radius-pill`, `radius-sm`, `space-4`.

@@ -189,7 +189,6 @@
     var svg = root.querySelector('svg'), btn = root.querySelector('[data-toggle]');
     var ref, key, raf = 0, live = [];
     var me = { visible: true, userPaused: false, userPlayed: false, sync: function () { if (ref) sync(); } };
-    loops.push(me);
     function running() { return allowed(me); }
     function sync() {
       var run = running();
@@ -213,6 +212,8 @@
       raf = requestAnimationFrame(tick);
     }
     function build() { key = pickLayout(root, data); ref = draw(svg, data, key); paint(ref, data.state, [], true); sync(); }
+    build(); // throws on invalid data, before this diagram joins the turn-taking or gets any listeners
+    loops.push(me);
     btn.addEventListener('click', function () {
       if (running()) { me.userPaused = true; me.userPlayed = false; } else { me.userPaused = false; me.userPlayed = true; }
       owner = me; syncLoops(); // pausing keeps the turn, so pausing one diagram never starts another
@@ -223,7 +224,7 @@
       if (!v && owner === me) owner = null;
       syncLoops();
     }, function () { if (pickLayout(root, data) !== key) build(); });
-    build();
+    syncLoops();
   }
 
   // FlowScene: one system stepped through; packets land and change state. Pause or leaving the screen finishes the step at once.
@@ -350,8 +351,14 @@
       try {
         var data = JSON.parse(root.querySelector('script[type="application/json"]').textContent);
         (root.dataset.pbFlow === 'scene' ? FlowScene : FlowDiagram)(root, data);
-      } catch (e) { // one broken diagram must not stop the others; its caption and text alternative still read
+      } catch (e) { // one broken diagram must not stop or block the others; show its description instead
         root.classList.add('pb-error');
+        root.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+        var svg = root.querySelector('svg'), note = document.createElement('p');
+        note.className = 'pb-fallback';
+        note.textContent = 'This diagram could not be drawn. ' + ((svg && svg.getAttribute('aria-label')) || '');
+        var paper = root.querySelector('.pb-paper');
+        if (paper && paper.parentNode) paper.parentNode.insertBefore(note, paper.nextSibling); else root.appendChild(note);
         if (window.console) console.error('Playbook diagram failed to mount:', e.message, root);
       }
     });

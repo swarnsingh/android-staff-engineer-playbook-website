@@ -31,3 +31,9 @@ All five findings were accepted and fixed. Every check below was measured in the
 | P3 | Scroll-region name exposed when nothing scrolls | `role="region"`, the "…, scrolls sideways" name and `tabindex` are now added only while the box overflows, using the box's `data-label`. | 320px: region, label and tabindex present. 1280px: all three absent. |
 
 **Still unverified:** Safari's swipe behaviour on a physical iPhone, and other browser engines.
+
+## Round 3 (review of `39ce991`)
+
+| # | Finding | Fix | How it was checked |
+|---|---|---|---|
+| P2 | A failed diagram still blocks later diagrams from auto-playing | FlowDiagram builds first and joins turn-taking only after a successful build, so a diagram whose data throws is never registered. Its listeners are also attached only after the build. On failure, `mountAll` adds `pb-error`: the empty drawing and its controls are hidden and buttons disabled, and a notice shows "This diagram could not be drawn." plus the diagram's text description. | Codex's case reproduced: a 6-node row placed first, a valid 3-node row second. The failed figure showed the notice with no drawing or controls. The valid figure rendered 3 nodes, 2 packets and Pause, so it auto-played. On the normal FlowDiagram preview, turn-taking was unchanged: the first played, the second waited, and Play on the second moved the turn. |

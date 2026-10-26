@@ -30,6 +30,10 @@ Use a static diagram, not this one, for structure: module graphs, class hierarch
 - **Several in view:** only the first plays on its own; the others wait as still diagrams with Play.
 - **Pause:** shows the same still version. This is needed for WCAG 2.2.2, because the motion runs longer than five seconds.
 
+## When the data is invalid
+
+If a diagram's data cannot be drawn (for example, a generated row of six nodes), the runtime hides the empty drawing and its controls and shows a short notice with the diagram's text description. A failed diagram never joins turn-taking, so the next valid diagram still plays.
+
 ## Tokens
 
 `sheet-sunken`, `grid-dot`, `sheet`, `line-strong`, `ink`, `ink-muted`, `accent`, `event`, `warn`, `warn-soft`, `focus`, `radius-md`, `radius-pill`, `space-4`.
