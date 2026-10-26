@@ -61,3 +61,18 @@ The stated purpose of the WebView zygote in this section (ZY2) is under technica
 
 <!-- @before Internal Mechanics :: review -->
 Step 8 of the boot sequence in this section (ZY1) is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Production Example :: review -->
+The description of how the WebView zygote isolates web content in this section (ZY2) is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Probing Questions :: review -->
+Question 4's premise about why the WebView zygote exists (ZY2) is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Answer Key :: review -->
+Answer 4's account of the WebView zygote (ZY2) is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Staff Engineer Thinking :: review -->
+Point 2's description of when multidex extraction happened (ZY3) is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Further Reading :: review -->
+The baseline-profiles entry's description of what the Zygote compiles (ZY3) is under technical review. A correction is pending the owner's approval.

@@ -4,7 +4,7 @@
      Gradle build cache, Gradle type-safe project dependencies, Google Play Instant deprecation notice. -->
 
 <!-- @opening -->
-<p class="story-lead">A developer renames a private helper in the cart feature. The pull request turns red in checkout, wishlist and search, and three teams get review requests for a change they never asked for. The folders looked separate. The dependency graph said otherwise.</p>
+<p class="story-lead">A developer renames a public helper inside the cart implementation module. The pull request turns red in checkout, wishlist and search, and three teams get review requests for a change they never asked for. The folders looked separate. The dependency graph said otherwise.</p>
 
 Modules make boundaries the compiler enforces: what each module may see, who owns it, and how far an edit spreads. This chapter gives a standard set of module types and the Gradle details behind them. The additions here follow one edit through the graph, so you can check any proposed boundary against the changes your team actually makes.
 
@@ -17,7 +17,7 @@ Modules make boundaries the compiler enforces: what each module may see, who own
 ### Follow one cart edit through the graph
 
 <figure class="stepper"><span class="stepper-title">How far does a change spread?</span><div class="stage viz-grid" style="--cols:3"><div class="node" data-el="capi"><strong><code>:feature:cart:api</code></strong><small><code>CartRoute</code>, <code>CartRepository</code></small></div><div class="node" data-el="cimpl"><strong><code>:feature:cart:impl</code></strong><small>internal helper and screens</small></div><div class="node" data-el="chk"><strong><code>:feature:checkout:impl</code></strong><small data-text="chkV">depends on <code>:feature:cart:api</code></small></div><div class="node is-key" data-el="app"><strong><code>:app</code></strong><small>depends on every <code>:impl</code></small></div></div><script type="application/json" class="steps">[
-{"label":"An internal edit","caption":"The private helper lives in :feature:cart:impl. Checkout depends only on cart's API, so the helper is not on checkout's compile classpath at all.","add":["capi","cimpl","chk","app"],"state":{"cimpl":"active"}},
+{"label":"An internal edit","caption":"The helper lives in :feature:cart:impl. Checkout depends only on cart's API, so the helper is not on checkout's compile classpath at all.","add":["capi","cimpl","chk","app"],"state":{"cimpl":"active"}},
 {"label":"Who rebuilds","caption":"Only cart's implementation and the app that composes it can be affected. Checkout cannot be: it could not reference the helper even if it tried.","state":{"cimpl":"done","app":"warn","chk":"done"}},
 {"label":"A contract edit","caption":"Now someone changes CartRoute in :feature:cart:api. Checkout navigates to that route, so it is affected. That is expected: the API is the contract other teams agreed to use.","state":{"capi":"warn","chk":"warn","cimpl":"done","app":"done"}},
 {"label":"The shortcut","caption":"To reuse one helper, checkout adds a dependency on :feature:cart:impl. From now on every internal cart change can reach checkout: the opening's red pull request.","state":{"capi":"done","chk":"error"},"text":{"chkV":"now also depends on :feature:cart:impl"}},
@@ -63,7 +63,10 @@ The statement in this section about the stability of type-safe project accessors
 The instant-app rows and references in this section (MM2) are under technical review. A correction is pending the owner's approval.
 
 <!-- @before Failure Modes :: review -->
-The cause given for dropping build-cache hits after a refactor (MM3) is under technical review. A correction is pending the owner's approval.
+The cause given for dropping build-cache hits after a refactor (MM3) and the plugin named for the dependency-graph task (MM4) are under technical review. A correction is pending the owner's approval.
 
 <!-- @before Answer Key :: review -->
-The instant-app example in Answer 4 (MM2) is under technical review. A correction is pending the owner's approval.
+The graph task named in Answer 3 (MM4) and the instant-app example in Answer 4 (MM2) are under technical review. A correction is pending the owner's approval.
+
+<!-- @before Build Performance at Module Scale :: review -->
+The plugin named for the <code>projectDependencyGraph</code> task in this section (MM4) is under technical review. A correction is pending the owner's approval.

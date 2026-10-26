@@ -54,3 +54,6 @@ Primary sources for the added layer: [AIDL overview (AOSP)](https://source.andro
 
 <!-- @before Answer Key :: review -->
 Answer 10, on what an app's proxies do when the system server crashes (BD1), is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Probing Questions :: review -->
+Question 10's premise, that an app keeps running after the system server crashes (BD1), is under technical review. A correction is pending the owner's approval.

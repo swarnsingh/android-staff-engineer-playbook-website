@@ -55,3 +55,9 @@ The ID and the unsent text, which are small. The messages belong in Room, reload
 
 <!-- @before Further Reading :: deeper -->
 Primary sources for the added layer: [Processes and app lifecycle](https://developer.android.com/guide/components/activities/process-lifecycle), [Save UI states](https://developer.android.com/topic/libraries/architecture/saving-states), [Test process death](https://developer.android.com/guide/components/activities/activity-lifecycle#asem).
+
+<!-- @before Process Importance :: review -->
+The importance level given to a foreground service in this table (AM1) is under technical review. A correction is pending the owner's approval.
+
+<!-- @before Answer Key :: review -->
+Answer 2's importance level for a process with a foreground service (AM1) is under technical review. A correction is pending the owner's approval.

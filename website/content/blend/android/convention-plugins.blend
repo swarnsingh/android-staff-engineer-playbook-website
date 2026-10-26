@@ -19,7 +19,7 @@ A convention plugin is ordinary Kotlin that configures a module the moment the m
 
 <figure class="stepper"><span class="stepper-title">From <code>id("yourorg.android.feature")</code> to a configured module</span><div class="stage viz-grid" style="--cols:3"><div class="node" data-el="settings"><strong>Root settings</strong><small><code>includeBuild("build-logic")</code></small></div><div class="node" data-el="id"><strong>Plugin ID</strong><small>registered in <code>gradlePlugin { }</code></small></div><div class="node" data-el="lib"><strong>Library convention</strong><small>Android library, SDK, Java target</small></div><div class="node" data-el="caps"><strong>Hilt + Compose</strong><small>composed capabilities</small></div><div class="node" data-el="module"><strong>Module script</strong><small data-text="modV">namespace and its own dependencies</small></div><div class="node is-key" data-el="proof"><strong>Evidence</strong><small>a representative module still builds</small></div></div><script type="application/json" class="steps">[
 {"label":"Find the plugin","caption":"pluginManagement includes the build-logic build, so Gradle can build it and use the plugins it publishes when a module asks for one.","add":["settings","id","lib","caps","module","proof"],"state":{"settings":"active"}},
-{"label":"Resolve the ID","caption":"The ID maps to the implementation class registered in build-logic's gradlePlugin block. A typo or missing registration fails here, before any module is configured.","state":{"settings":"done","id":"active"}},
+{"label":"Resolve the ID","caption":"The ID maps to the implementation class registered in build-logic's gradlePlugin block. A typo or missing registration fails here, before the rest of that module's script runs.","state":{"settings":"done","id":"active"}},
 {"label":"Apply the base","caption":"The feature plugin first applies the library convention: the Android library plugin, compile SDK, minimum SDK and Java target, all in one place.","state":{"id":"done","lib":"active"}},
 {"label":"Compose capabilities","caption":"Then it applies the Hilt and Compose conventions. A module that needs neither applies only the library convention instead of inheriting both.","state":{"lib":"done","caps":"active"}},
 {"label":"The module's own lines","caption":"Only now does the rest of the module's script run. A line that overrides a shared setting here silently diverges from every other module: the opening's drift, reintroduced.","state":{"caps":"done","module":"warn"},"text":{"modV":"an override here diverges quietly"}},
@@ -65,7 +65,7 @@ The extension type imported in this example (CP3) is under technical review. A c
 The automatic hook installation shown in this section (CP1) is under technical review. A correction is pending the owner's approval.
 
 <!-- @before Real Patterns :: review -->
-Pattern 4, which configures the build cache from a project plugin (CP2), is under technical review. A correction is pending the owner's approval.
+Pattern 3's instrumented-test processor dependency (CP4) and Pattern 4's build-cache configuration from a project plugin (CP2) are under technical review. A correction is pending the owner's approval.
 
 <!-- @before Answer Key :: review -->
 Answer 12, which relies on the hook-installation pattern (CP1), is under technical review. A correction is pending the owner's approval.

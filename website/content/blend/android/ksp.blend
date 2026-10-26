@@ -17,11 +17,11 @@ KSP lets a processor read your Kotlin declarations at build time and write new s
 ### Where did the generated class go?
 
 <figure class="stepper"><span class="stepper-title">Checking a missing generated adapter, one boundary at a time</span><div class="stage viz-grid" style="--cols:4"><div class="node" data-el="apply"><strong>Applied?</strong><small>plugin and <code>ksp(…)</code> dependency</small></div><div class="node" data-el="see"><strong>Seen?</strong><small>symbol returned by the Resolver</small></div><div class="node" data-el="write"><strong>Written?</strong><small>file under <code>build/generated/ksp</code></small></div><div class="node" data-el="use"><strong>Compiled and kept?</strong><small>part of the module's output</small></div></div><script type="application/json" class="steps">[
-{"label":"Was it applied?","caption":"A module that still declares kapt(...) or lacks the KSP plugin never runs the processor. The chapter's first failure mode: check the module's plugins and its ksp(...) line.","add":["apply","see","write","use"],"state":{"apply":"active"}},
+{"label":"Was it applied?","caption":"If the module lacks the KSP plugin, or the processor never made it into a ksp(...) line, the processor never runs. The chapter's first failure mode: check the module's plugins and dependencies.","add":["apply","see","write","use"],"state":{"apply":"active"}},
 {"label":"Did it see User?","caption":"The processor asks the Resolver for symbols with an annotation's fully qualified name. A misspelled or wrong annotation name returns nothing, and nothing is generated.","state":{"apply":"done","see":"active"}},
 {"label":"Did it write a file?","caption":"Look in build/generated/ksp/<variant>/kotlin/ and in the Gradle output for errors the processor logged. Generated source is plain Kotlin you can read and diff.","state":{"see":"done","write":"active"}},
 {"label":"Was it compiled and kept?","caption":"Generated files are compiled with the module. If a library later finds the class by reflection, release shrinking must keep it; check the library's consumer rules.","state":{"write":"done","use":"active"}},
-{"label":"Fixed at one boundary","caption":"In this story the module still had kapt for Moshi. Applying KSP and switching to ksp(...) restored the file. Each boundary is a yes-or-no check, not a guess.","state":{"use":"done"}}
+{"label":"Fixed at one boundary","caption":"In this story the migration deleted kapt(moshi-kotlin-codegen) but never added it under ksp(...). Adding the ksp(...) line restored the file. Each boundary is a yes-or-no check, not a guess.","state":{"use":"done"}}
 ]</script><figcaption>Illustrative migration bug. Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>
 
 <!-- @after Incremental Compilation :: visual -->
@@ -54,7 +54,7 @@ No. While any kapt processor remains in the module, kapt still generates stubs, 
 Primary sources for the added layer: [KSP overview](https://kotlinlang.org/docs/ksp-overview.html), [KSP incremental processing](https://kotlinlang.org/docs/ksp-incremental.html), [KSP multiple-round processing](https://kotlinlang.org/docs/ksp-multi-round.html), [Migrate from kapt to KSP](https://developer.android.com/build/migrate-to-ksp).
 
 <!-- @before Real Patterns (Library Authors) :: review -->
-Pattern 1's description of scanning annotated classes across modules (KS2) is under technical review. A correction is pending the owner's approval.
+Pattern 1's description of scanning annotated classes across modules (KS2) and Pattern 4's description of Retrofit's KAPT version (KS3) are under technical review. A correction is pending the owner's approval.
 
 <!-- @before Common Pitfalls :: review -->
-The pitfall describing what happens when invalid symbols are returned every round (KS1) is under technical review. A correction is pending the owner's approval.
+The pitfall describing what happens when invalid symbols are returned every round (KS1) and the mention of Retrofit codegen (KS3) are under technical review. A correction is pending the owner's approval.

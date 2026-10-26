@@ -27,22 +27,27 @@ Never push or merge without the owner's approval.
 | `a828c58` | `phases()` ignores anchored links (this had moved Kotlin 2.4 into the middle of the Kotlin path) |
 | `4a70592` | Phase 1 review fixes; Under review notes no longer state replacements |
 | `3e8aba3` | Phase 2 review P2 fixes (Paging triggers, DataStore read, Koin and Dagger errors) |
+| `c3e190d` | Codex checkpoint: Q&A tab, wider reader, Phase 5–9 structure plans and draft lessons |
+| `32fd7fc` | Render Phases 5, 6, 7 and 9 with problem-first intros |
+| `f2317a0` | Phase 8 lessons; checkpoint answers no longer carry their own "Answer" label |
+| `437019c`, `963635a`, `d1c432a` | Review fixes for Phases 5–6, 7 and 9 |
+| (next commit) | Phase 8 review fixes; checkpoint code wraps in the Q&A tab |
 
-**Last verified build:** 65 pages, 8,555 original units, 0 preservation problems. The integrated browser audit now passes all 65 pages: 41 original diagram images load, 74 steppers initialise, and 260 geometry checks pass at 320/390/768/1280px with 22px handwritten text. See `android-completion-validation.json`.
+**Last verified build:** 125 pages (Kotlin and Android), 15,572 original units, 0 preservation problems. The browser audit covers all 125 pages; see the status note at the end for the latest run.
 
 ## Status by phase
 
 | Phase | Chapters | Blends | Review | Review fixes |
 |---|---|---|---|---|
-| 1 Lifecycle, state, architecture | 9 | done | original review done; follow-up attempt hit usage limit | Listed teaching fixes, note coverage and new findings applied locally; see disposition |
-| 2 Data and DI | 10 | done | independent follow-up done | Listed fixes applied, including the two follow-up P3 wording fixes |
-| 3 Compose | 13 | done | independent follow-up done | P1/P2/P3 teaching fixes applied; follow-up ST1 note and Topics-order findings addressed |
-| 4 Concurrency | 9 | done | done | **none applied yet**; 2 P1s (`review-phase4-todo.md`) |
-| 5 Network, security, device APIs, media | 10 | todo | — | — |
-| 6 Testing | 3 | todo | — | — |
-| 7 Performance and observability | 15 | todo | — | — |
-| 8 Build tooling and OS internals | 13 | todo | — | — |
-| 9 KMP (optional specialisation) | 19 | todo | — | — |
+| 1 Lifecycle, state, architecture | 9 | done | done (follow-up attempt hit usage limit) | applied |
+| 2 Data and DI | 10 | done | done | applied |
+| 3 Compose | 13 | done | done | applied |
+| 4 Concurrency | 9 | done | done | applied (`android-review-todos/review-phase4-todo.md`) |
+| 5 Network, security, device APIs, media | 10 | done | done | applied |
+| 6 Testing | 3 | done | done | applied |
+| 7 Performance and observability | 15 | done | done | applied |
+| 8 Build tooling and OS internals | 13 | done | done (2 P1, 10 P2, 11 P3) | applied; see the findings file's "Independent review" section |
+| 9 KMP (optional specialisation) | 19 | done | done | applied |
 
 ## Findings in the original chapters
 
@@ -92,11 +97,11 @@ The rule, following the Kotlin K1 precedent: the note **identifies the passage**
 ## Before declaring the Android section complete
 
 - [x] Apply the existing Phase 1–4 teaching/review fixes, including Phase 3 P1s. Further follow-up review attempts hit the account usage limit; do not claim those interrupted passes completed.
-- Apply the Phase 4 review items (`review-phase4-todo.md`).
+- [x] Apply the Phase 4 review items (`android-review-todos/review-phase4-todo.md`).
 - Uncommitted Phase 3 review edits exist in the working tree (13 blends plus `reviews/pending-android-phase3-teaching.blend`, made after ce58ead, author unconfirmed). Review them before committing.
 - [x] Update the README counts for the current 65-page checkpoint; refresh them again as future phases are added.
 - [x] Add original inner-H1 and missing/duplicated/hidden hero-H1 self-tests.
-- [ ] Convert and independently review Phases 5–9 (60 remaining chapters).
+- [x] Convert and independently review Phases 5–9 (60 chapters).
 - Report rendered scope, pending original findings, verification limits and publication state; the full Android section is not complete yet.
 
 ## Codex takeover checkpoint
@@ -105,4 +110,14 @@ The existing Phase 1–4 review lists have dispositions in `android-review-todos
 
 Verified checkpoint: 65 pages, 8,555 original units, 22 static adversarial fixtures, 41 loaded diagram images, 74 steppers, and 260 layout checks at four widths with 22px handwritten text. Build, documentation and source-hash checks pass; `android-completion-validation.json` contains actual browser results. Physical devices and other browser engines were not tested.
 
-**Current blocker:** independent review agents reached the account usage limit. Do not mark phases 5–9 complete or bypass their review gate. Resume with Phase 5’s ten chapters after review capacity is available, follow the recipe, and update this status after each phase. No automatic future run has been scheduled. This checkpoint remains local and must not be pushed/merged/published without the owner's approval.
+## Current state (2026-10-26)
+
+All 101 Android chapters across the 9 phases render as blended lessons, and each phase has had an independent review with its fixes applied. Original-chapter corrections remain **unapproved**; every one is flagged on its page with an Under review note and listed in `android-phaseN-findings.md`.
+
+**Follow-ups, not blocking:**
+- Seven Phase 9 KMP blends still share a templated shape and need lesson-specific visuals.
+- The Phase 7 staff notes are generic, and some Phase 7 findings cite weaker evidence than other phases.
+- Candidate findings without notes: Phase 8 KS4 and KS5, Phase 9 KO2 and KC8.
+- Physical devices and other browser engines were not tested.
+
+Nothing is pushed or merged. A private preview was published for the owner as a claude.ai artifact with relative links (`website/tools/make_artifact_preview.py dist <out>`); it is not a deployment.

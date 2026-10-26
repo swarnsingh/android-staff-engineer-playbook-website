@@ -6,7 +6,7 @@
 <!-- @opening -->
 <p class="story-lead">You change one string in a feature screen and press Run. Forty seconds pass before anything compiles, and then the build compiles modules you never touched. Your teammate says "just run clean". That might make the next build pass. It won't tell you where the forty seconds went.</p>
 
-Gradle does three things for every build: it finds the projects, configures them into a graph of tasks, and runs the tasks that graph needs. Each can be slow for different reasons. This chapter covers the graph, the plugins that fill it, and the boundaries that decide how far one edit spreads. The additions here help you find which part of a slow build to fix first.
+Gradle runs a build in three phases: it finds the projects, configures them into a graph of tasks, and runs the tasks that graph needs. Each can be slow for different reasons. This chapter covers the graph, the plugins that fill it, and the boundaries that decide how far one edit spreads. The additions here help you find which part of a slow build to fix first.
 
 <!-- @after First Principles :: visual -->
 ### Three phases, three different costs
@@ -18,7 +18,7 @@ Gradle does three things for every build: it finds the projects, configures them
 
 <figure class="stepper"><span class="stepper-title">Reading one slow incremental build</span><div class="stage viz-grid" style="--cols:3"><div class="node" data-el="cfg"><strong>Configuration</strong><small data-text="cfgV">—</small></div><div class="node" data-el="core"><strong><code>:core:model</code></strong><small>compile</small></div><div class="node" data-el="cart"><strong><code>:feature:cart</code></strong><small>compile (edited)</small></div><div class="node" data-el="feed"><strong><code>:feature:feed</code></strong><small>compile</small></div><div class="node" data-el="app"><strong><code>:app</code></strong><small>compile and dex</small></div><div class="node is-key" data-el="pkg"><strong>Package</strong><small>the APK you run</small></div></div><script type="application/json" class="steps">[
 {"label":"Profile first","caption":"Run the same build with a build scan or --profile. Guessing which part is slow is how teams end up tuning the wrong thing.","add":["cfg","core","cart","feed","app","pkg"],"state":{"cfg":"active"},"text":{"cfgV":"measure before changing anything"}},
-{"label":"Before any task","caption":"In this illustrative trace, configuration takes most of the wait. A script that reads a file or calls a server during configuration costs time on every invocation, including IDE syncs.","state":{"cfg":"warn"},"text":{"cfgV":"most of the wait: script work, not compiling"}},
+{"label":"Before any task","caption":"In this illustrative trace, configuration takes most of the wait. Script work that reads a file or calls a server runs whenever the build is configured, and IDE syncs configure the build too.","state":{"cfg":"warn"},"text":{"cfgV":"most of the wait: script work, not compiling"}},
 {"label":"Unchanged work","caption":"The shared model did not change, so its compile task has nothing new to do. Only tasks whose inputs changed need real work.","state":{"cfg":"done","core":"done"}},
 {"label":"Parallel branches","caption":"Cart was edited. Feed does not depend on cart, so with parallel execution enabled the two branches do not wait for each other.","state":{"cart":"active","feed":"active"}},
 {"label":"The join","caption":"The app module needs both branches. Its work, and packaging after it, cannot start until the slower branch finishes: that chain is the critical path.","state":{"cart":"done","feed":"done","app":"active"}},
@@ -76,4 +76,7 @@ The fix proposed for transitive dependency conflicts (GB5) is under technical re
 The passage on what <code>clean</code> deletes (GB6) is under technical review. A correction is pending the owner's approval.
 
 <!-- @before Answer Key :: review -->
-Answers 3, 4, 5 and 9 in this section (GB7, GB2, GB3, GB6) are under technical review. A correction is pending the owner's approval.
+Answers 3, 4, 5 and 6 in this section (GB7, GB2, GB3, GB4) are under technical review. A correction is pending the owner's approval.
+
+<!-- @before Staff Engineer Thinking :: review -->
+Point 3's claim about how often dynamic versions reach the network (GB8) is under technical review. A correction is pending the owner's approval.
