@@ -71,8 +71,9 @@ See the **Motion and diagrams** section for the full rules. In short: interface 
 | Checkpoint | Q&A tab questions with an Answer heading. |
 | FlowDiagram | A short looping diagram that shows direction and blockage. |
 | FlowScene | One system stepped through, where packets land and change state. Pilot: the Binder lesson. |
+| WideDiagram | A static diagram that keeps a readable size and scrolls sideways on phones. |
 
-FlowDiagram and FlowScene share one runtime, `components/bundle.js` (`window.Playbook`, no dependencies), and one stylesheet, `components/bundle.css`.
+FlowDiagram, FlowScene and WideDiagram share one runtime, `components/bundle.js` (`window.Playbook`, no dependencies), and one stylesheet, `components/bundle.css`.
 
 ## What changes from today's site
 

@@ -74,6 +74,18 @@
 .pb-figure code, .pb-steps code { font: 500 .88em var(--font-mono); font-variant-ligatures: none; background: var(--sheet); border-radius: var(--radius-sm); padding: 1px 5px; overflow-wrap: anywhere; }
 @media (max-width: 520px) { .pb-caption { grid-template-columns: minmax(0, 1fr); } .pb-figure { padding: 12px; } }
 
+/* WideDiagram: a static drawing keeps a readable size and scrolls sideways inside its own box. */
+.pb-wide { overflow-x: auto; overscroll-behavior-x: contain; border-radius: var(--radius-md); -webkit-overflow-scrolling: touch; }
+.pb-wide:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.pb-wide svg { display: block; width: 100%; height: auto; }
+.pb-widewrap { position: relative; }
+.pb-widewrap::before, .pb-widewrap::after { content: ""; position: absolute; top: 0; bottom: 0; width: 28px; pointer-events: none; opacity: 0; transition: opacity .2s; border-radius: var(--radius-md); }
+.pb-widewrap::before { left: 0; background: linear-gradient(to right, var(--sheet-sunken), transparent); }
+.pb-widewrap::after { right: 0; background: linear-gradient(to left, var(--sheet-sunken), transparent); }
+.is-scrollable:not(.at-start) .pb-widewrap::before, .is-scrollable:not(.at-end) .pb-widewrap::after { opacity: 1; }
+.pb-hint { display: none; margin: 8px 0 0; font: 600 13px/18px var(--font-sans); color: var(--ink-muted); }
+.is-scrollable .pb-hint { display: block; }
+
 /* Reduced motion, from the OS or the reader's setting: no CSS motion at all. Scripted packets are stopped by the runtime. */
 @media (prefers-reduced-motion: reduce) { .pb-edge.moving, .pb-node.pulse > rect { animation: none; } }
 html.reduce-motion .pb-edge.moving, html.reduce-motion .pb-node.pulse > rect { animation: none; }

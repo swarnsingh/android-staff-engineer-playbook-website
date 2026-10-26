@@ -1,4 +1,4 @@
-<!-- @dsCard group="Diagrams" height=700 subtitle="Packets loop along the connectors; phones get a stacked layout" -->
+<!-- @dsCard group="Diagrams" height=700 subtitle="Packets loop along the connectors; phones get a stacked layout generated from the node order" -->
 <style>
   body { margin: 0; background: var(--sheet); color: var(--ink); font-family: var(--font-sans); }
   .demo { display: grid; gap: 24px; padding: 20px max(12px, min(24px, 4vw)); }
@@ -9,22 +9,7 @@
     <div class="pb-paper"><svg class="pb-svg" role="img" aria-label="Products flow from the repository to the ViewModel to the Compose UI. Clicks flow back from the UI to the ViewModel, and refresh requests go on to the repository."></svg></div>
     <div class="pb-bar"><p>Round green packets are state moving toward the screen; blue diamonds on dotted lines are the user's events going back.</p><button type="button" class="pb-btn" data-toggle aria-pressed="false">Pause</button></div>
     <script type="application/json">
-    {"nodes": [{"id": "repo", "label": "Repository"}, {"id": "vm", "label": "ViewModel"}, {"id": "ui", "label": "Compose UI"}],
-     "state": {"nodes": {"repo": ["", "emits products"], "vm": ["", "holds UiState"], "ui": ["", "renders, sends clicks"]}},
-     "streams": [{"edge": "e1", "tone": "fwd"}, {"edge": "e2", "tone": "fwd"}, {"edge": "b1", "tone": "back", "count": 2}, {"edge": "b2", "tone": "back", "count": 1}],
-     "layouts": {
-       "wide": {"size": [720, 232],
-         "nodes": {"repo": {"x": 24, "y": 78, "w": 168, "h": 66}, "vm": {"x": 276, "y": 78, "w": 168, "h": 66}, "ui": {"x": 528, "y": 78, "w": 168, "h": 66}},
-         "edges": {"e1": "M194 96 C224 70 246 70 274 96", "e2": "M446 96 C476 70 498 70 526 96", "b1": "M526 126 C496 152 474 152 446 126", "b2": "M274 126 C244 152 222 152 194 126"},
-         "labels": [{"x": 234, "y": 60, "text": "products", "tone": "fwd"}, {"x": 486, "y": 60, "text": "uiState", "tone": "fwd"}, {"x": 486, "y": 180, "text": "onClick", "tone": "back"}, {"x": 234, "y": 180, "text": "refresh()", "tone": "back"}, {"x": 360, "y": 220, "text": "state flows right · events flow back"}],
-         "order": [{"x": 178, "y": 56, "n": 1}, {"x": 430, "y": 56, "n": 2}, {"x": 542, "y": 176, "n": 3}, {"x": 290, "y": 176, "n": 4}]},
-       "narrow": {"size": [320, 410],
-         "nodes": {"repo": {"x": 40, "y": 26, "w": 240, "h": 66}, "vm": {"x": 40, "y": 148, "w": 240, "h": 66}, "ui": {"x": 40, "y": 270, "w": 240, "h": 66}},
-         "edges": {"e1": "M118 94 C102 112 102 128 118 146", "e2": "M118 216 C102 234 102 250 118 268", "b1": "M202 268 C218 250 218 234 202 216", "b2": "M202 146 C218 128 218 112 202 94"},
-         "labels": [{"x": 92, "y": 126, "text": "products", "tone": "fwd", "anchor": "end"}, {"x": 92, "y": 248, "text": "uiState", "tone": "fwd", "anchor": "end"}, {"x": 228, "y": 248, "text": "onClick", "tone": "back", "anchor": "start"}, {"x": 228, "y": 126, "text": "refresh()", "tone": "back", "anchor": "start"}, {"x": 160, "y": 372, "text": "state flows down · events flow up"}],
-         "order": [{"x": 140, "y": 120, "n": 1}, {"x": 140, "y": 242, "n": 2}, {"x": 180, "y": 242, "n": 3}, {"x": 180, "y": 120, "n": 4}],
-         "pk": {"dx": 10, "dy": 5, "anchor": "start"}}
-     }}
+    {"nodes": [{"id": "repo", "label": "Repository"}, {"id": "vm", "label": "ViewModel"}, {"id": "ui", "label": "Compose UI"}], "state": {"nodes": {"repo": ["", "emits products"], "vm": ["", "holds UiState"], "ui": ["", "renders, sends clicks"]}}, "edges": [{"id": "e1", "from": "repo", "to": "vm", "tone": "fwd", "label": "products"}, {"id": "e2", "from": "vm", "to": "ui", "tone": "fwd", "label": "uiState"}, {"id": "b1", "from": "ui", "to": "vm", "tone": "back", "label": "onClick"}, {"id": "b2", "from": "vm", "to": "repo", "tone": "back", "label": "refresh()"}], "streams": [{"edge": "e1", "tone": "fwd"}, {"edge": "e2", "tone": "fwd"}, {"edge": "b1", "tone": "back", "count": 2}, {"edge": "b2", "tone": "back", "count": 1}], "note": {"wide": "state flows right · events flow back", "narrow": "state flows down · events flow up"}}
     </script>
   </figure>
 
@@ -33,22 +18,7 @@
     <div class="pb-paper"><svg class="pb-svg" role="img" aria-label="The UI thread sends a call to the Binder driver. Both service threads are busy, so calls queue in the driver and no reply comes back yet."></svg></div>
     <div class="pb-bar"><p>Orange dash-dot means stuck: calls slow down and wait in the driver until a service thread frees up. The faint reply path has nothing on it yet.</p><button type="button" class="pb-btn" data-toggle aria-pressed="false">Pause</button></div>
     <script type="application/json">
-    {"nodes": [{"id": "ui", "label": "UI thread"}, {"id": "driver", "label": "Binder driver", "queue": true}, {"id": "pool", "label": "Service threads", "chips": ["T1", "T2"]}],
-     "state": {"nodes": {"ui": ["is-warn", "blocked · waiting"], "driver": ["is-warn", "queued: 3"], "pool": ["is-warn", ""]}, "chips": {"T1": "busy", "T2": "busy"}, "queue": 3},
-     "streams": [{"edge": "c1", "tone": "fwd", "count": 2}, {"edge": "c2", "tone": "stuck", "count": 2, "period": 4.8}],
-     "layouts": {
-       "wide": {"size": [720, 232],
-         "nodes": {"ui": {"x": 24, "y": 74, "w": 168, "h": 84}, "driver": {"x": 276, "y": 74, "w": 168, "h": 84}, "pool": {"x": 528, "y": 74, "w": 168, "h": 84}},
-         "edges": {"c1": "M194 98 C224 72 246 72 274 98", "c2": "M446 98 C476 72 498 72 526 98", "r1": "M526 136 C496 162 474 162 446 136", "r2": "M274 136 C244 162 222 162 194 136"},
-         "labels": [{"x": 234, "y": 60, "text": "isPlaying()", "tone": "fwd"}, {"x": 486, "y": 60, "text": "no free thread", "tone": "stuck"}, {"x": 360, "y": 190, "text": "no reply yet"}, {"x": 360, "y": 222, "text": "the call looked local; the caller waits on a busy service"}],
-         "order": [{"x": 178, "y": 56, "n": 1}, {"x": 430, "y": 56, "n": 2}]},
-       "narrow": {"size": [320, 440],
-         "nodes": {"ui": {"x": 40, "y": 24, "w": 240, "h": 70}, "driver": {"x": 40, "y": 160, "w": 240, "h": 84}, "pool": {"x": 40, "y": 310, "w": 240, "h": 84}},
-         "edges": {"c1": "M118 96 C102 116 102 138 118 158", "c2": "M118 246 C102 266 102 288 118 308", "r1": "M202 308 C218 288 218 266 202 246", "r2": "M202 158 C218 138 218 116 202 96"},
-         "labels": [{"x": 92, "y": 132, "text": "isPlaying()", "tone": "fwd", "anchor": "end"}, {"x": 92, "y": 282, "text": "no free", "tone": "stuck", "anchor": "end"}, {"x": 92, "y": 300, "text": "thread", "tone": "stuck", "anchor": "end"}, {"x": 228, "y": 282, "text": "no reply", "anchor": "start"}, {"x": 228, "y": 300, "text": "yet", "anchor": "start"}, {"x": 160, "y": 426, "text": "the caller waits on a busy service"}],
-         "order": [{"x": 140, "y": 128, "n": 1}, {"x": 140, "y": 278, "n": 2}],
-         "pk": {"dx": 10, "dy": 5, "anchor": "start"}}
-     }}
+    {"nodes": [{"id": "ui", "label": "UI thread"}, {"id": "driver", "label": "Binder driver", "queue": true}, {"id": "pool", "label": "Service threads", "chips": ["T1", "T2"]}], "state": {"nodes": {"ui": ["is-warn", "blocked · waiting"], "driver": ["is-warn", "queued: 3"], "pool": ["is-warn", ""]}, "chips": {"T1": "busy", "T2": "busy"}, "queue": 3}, "edges": [{"id": "c1", "from": "ui", "to": "driver", "tone": "fwd", "label": "isPlaying()"}, {"id": "c2", "from": "driver", "to": "pool", "tone": "stuck", "label": "no free\nthread"}, {"id": "r1", "from": "pool", "to": "driver", "lane": "back", "label": "no reply\nyet"}, {"id": "r2", "from": "driver", "to": "ui", "lane": "back"}], "streams": [{"edge": "c1", "tone": "fwd", "count": 2}, {"edge": "c2", "tone": "stuck", "count": 2, "period": 4.8}], "note": {"wide": "the call looked local; the caller waits on a busy service", "narrow": "the caller waits on a busy service"}}
     </script>
   </figure>
 </div>

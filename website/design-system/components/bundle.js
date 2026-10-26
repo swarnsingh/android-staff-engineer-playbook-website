@@ -20,11 +20,55 @@
   var uid = 0;
   function pickLayout(root, data) { return root.clientWidth < (data.narrowBelow || 520) ? 'narrow' : 'wide'; }
 
+  // Row flows (nodes in order, edges only between neighbours) need no hand-drawn layouts:
+  // the wide layout is a row with forward edges above and return edges below; the narrow one is the same flow as a column.
+  function autoLayouts(data) {
+    var n = data.nodes.length, tall = data.nodes.some(function (x) { return x.chips || x.queue; }), h = tall ? 84 : 66;
+    var gap = (720 - 48 - n * 168) / Math.max(1, n - 1), y = 78, ny = function (i) { return 26 + i * (h + 56); };
+    var wide = { size: [720, y + h + 88], nodes: {}, edges: {}, labels: [], order: [] };
+    var narrow = { size: [320, ny(n - 1) + h + 64], nodes: {}, edges: {}, labels: [], order: [], pk: { dx: 10, dy: 5, anchor: 'start' } };
+    var at = {};
+    data.nodes.forEach(function (node, i) {
+      at[node.id] = i;
+      wide.nodes[node.id] = { x: 24 + i * (168 + gap), y: y, w: 168, h: h };
+      narrow.nodes[node.id] = { x: 40, y: ny(i), w: 240, h: h };
+    });
+    var count = 0;
+    (data.edges || []).forEach(function (e) {
+      var a = at[e.from], b = at[e.to], back = (e.lane || (e.tone === 'back' ? 'back' : 'fwd')) === 'back';
+      var lo = Math.min(a, b), hi = Math.max(a, b);
+      if (hi - lo !== 1) throw new Error('Auto layout needs neighbouring nodes: ' + e.id);
+      var down = b > a, W = wide.nodes, N = narrow.nodes;
+      var xl = W[data.nodes[lo].id].x + 170, xr = W[data.nodes[hi].id].x - 2, yy = back ? y + h - 18 : y + 18, cy = back ? y + h + 8 : y - 8;
+      var x1 = down ? xl : xr, x2 = down ? xr : xl, mid = (xl + xr) / 2;
+      wide.edges[e.id] = 'M' + x1 + ' ' + yy + ' C' + (x1 + (down ? 30 : -30)) + ' ' + cy + ' ' + (x2 + (down ? -30 : 30)) + ' ' + cy + ' ' + x2 + ' ' + yy;
+      var yt = N[data.nodes[lo].id].y + h + 2, yb = N[data.nodes[hi].id].y - 2, lx = back ? 202 : 118, cx = back ? 218 : 102;
+      var y1 = down ? yt : yb, y2 = down ? yb : yt, nmid = (yt + yb) / 2;
+      narrow.edges[e.id] = 'M' + lx + ' ' + y1 + ' C' + cx + ' ' + (y1 + (down ? 18 : -18)) + ' ' + cx + ' ' + (y2 + (down ? -18 : 18)) + ' ' + lx + ' ' + y2;
+      if (e.label) {
+        wide.labels.push({ x: mid, y: back ? y + h + 36 : y - 18, text: e.label, tone: e.tone });
+        narrow.labels.push({ x: back ? 228 : 92, y: nmid + 6, text: e.label, tone: e.tone, anchor: back ? 'start' : 'end' });
+      }
+      if (e.tone) {
+        count++;
+        wide.order.push({ x: down ? xl - 16 : xr + 16, y: back ? y + h + 32 : y - 22, n: count });
+        narrow.order.push({ x: back ? 180 : 140, y: nmid, n: count });
+      }
+    });
+    if (data.note) {
+      wide.labels.push({ x: 360, y: wide.size[1] - 12, text: data.note.wide || data.note });
+      narrow.labels.push({ x: 160, y: narrow.size[1] - 14, text: data.note.narrow || data.note });
+    }
+    return { wide: wide, narrow: narrow };
+  }
+
   function draw(svg, data, key) {
+    if (!data.layouts) data.layouts = autoLayouts(data);
     var L = data.layouts[key], id = 'pb' + (++uid);
     while (svg.firstChild) svg.removeChild(svg.firstChild);
     svg.setAttribute('viewBox', '0 0 ' + L.size[0] + ' ' + L.size[1]);
-    svg.style.maxWidth = key === 'narrow' ? '440px' : ''; svg.style.marginInline = 'auto'; // a stacked drawing never stretches past phone scale
+    // Never scale far past the drawn size: the stacked layout stops at phone scale, the wide one at 1.2x.
+    svg.style.maxWidth = key === 'narrow' ? '440px' : Math.round(L.size[0] * 1.2) + 'px'; svg.style.marginInline = 'auto';
     var defs = el('defs', {}, svg);
     var f = el('filter', { id: id + 'r', x: '-4%', y: '-12%', width: '108%', height: '124%' }, defs);
     el('feTurbulence', { type: 'fractalNoise', baseFrequency: '0.035', numOctaves: '2', seed: '5' }, f);
@@ -59,7 +103,10 @@
       ref.nodes[n.id] = rec;
     });
     (L.labels || []).forEach(function (t) {
-      el('text', { 'class': 'pb-label ' + (t.tone || ''), x: t.x, y: t.y, 'text-anchor': t.anchor || 'middle' }, svg).textContent = t.text;
+      var lines = String(t.text).split('\n');
+      lines.forEach(function (line, i) {
+        el('text', { 'class': 'pb-label ' + (t.tone || ''), x: t.x, y: t.y - (lines.length - 1 - i) * 18, 'text-anchor': t.anchor || 'middle' }, svg).textContent = line;
+      });
     });
     var gO = el('g', { 'class': 'pb-order' }, svg);
     (L.order || []).forEach(function (o) { el('circle', { cx: o.x, cy: o.y, r: 9 }, gO); el('text', { x: o.x, y: o.y + 4 }, gO).textContent = o.n; });
@@ -247,12 +294,27 @@
     fillList(); go(0, false);
   }
 
+  function WideDiagram(root) {
+    var box = root.querySelector('.pb-wide');
+    function sync() {
+      var more = box.scrollWidth > box.clientWidth + 1;
+      root.classList.toggle('is-scrollable', more);
+      root.classList.toggle('at-start', box.scrollLeft <= 1);
+      root.classList.toggle('at-end', box.scrollLeft + box.clientWidth >= box.scrollWidth - 1);
+      if (more) box.setAttribute('tabindex', '0'); else box.removeAttribute('tabindex');
+    }
+    box.addEventListener('scroll', sync, { passive: true });
+    if (window.ResizeObserver) new ResizeObserver(sync).observe(box); else window.addEventListener('resize', sync);
+    sync();
+  }
+
   function mountAll(scope) {
+    (scope || document).querySelectorAll('[data-pb-wide]').forEach(function (root) { if (!root.__pb) { root.__pb = true; WideDiagram(root); } });
     (scope || document).querySelectorAll('[data-pb-flow]').forEach(function (root) {
       if (root.__pb) return; root.__pb = true;
       var data = JSON.parse(root.querySelector('script[type="application/json"]').textContent);
       (root.dataset.pbFlow === 'scene' ? FlowScene : FlowDiagram)(root, data);
     });
   }
-  window.Playbook = { motion: motion, FlowDiagram: FlowDiagram, FlowScene: FlowScene, mountAll: mountAll };
+  window.Playbook = { motion: motion, FlowDiagram: FlowDiagram, FlowScene: FlowScene, WideDiagram: WideDiagram, mountAll: mountAll };
 })();

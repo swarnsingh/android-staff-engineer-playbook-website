@@ -42,7 +42,12 @@ A FlowScene does not loop. Edges march only while a packet is travelling. Each s
 
 ## Phones
 
-Every moving diagram has two authored layouts. Below 520px of container width it switches to a stacked layout: nodes in a column, forward edges on the left lane, return edges on the right. Labels stay at 15px or more on a 320px screen. Desktop drawings are never shrunk to fit a phone.
+Moving and static diagrams behave differently on phones:
+
+- **Moving diagrams (FlowDiagram, FlowScene)** switch to a stacked layout below 520px of container width. Nodes form a column, forward edges run on the left lane and return edges on the right, so the cause and the effect stay on screen together and no packet travels out of view. A row flow (nodes in order, edges only between neighbours) gets both layouts generated from its node order; anything else is authored with a `wide` and a `narrow` layout.
+- **Static diagrams (WideDiagram)** keep their drawing and scroll sideways inside their own box at a readable minimum width, with edge fades and a hint. Nothing moves, so scrolling loses nothing.
+
+Neither kind is ever shrunk to fit a phone, or stretched past 1.2× its drawn size on a wide screen. Labels stay at 15px or more.
 
 ## When it stops
 

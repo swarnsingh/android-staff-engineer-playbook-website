@@ -21,7 +21,7 @@ Use a static diagram, not this one, for structure: module graphs, class hierarch
 
 - The node and edge geometry. Each lesson's diagram is authored for its own content, starting from the original chapter's Mermaid diagram where one exists.
 - A text alternative (`aria-label` on the SVG). It must say what moves where, so a screen-reader user gets the same lesson.
-- Two layouts in the diagram's data: `wide` and `narrow`. Below 520px of container width the runtime switches to `narrow`, a stacked column with forward edges on the left and return edges on the right, so labels stay readable on a 320px phone.
+- Layouts. For a row flow, give `nodes` in order and `edges` as `{id, from, to, tone, label}` between neighbouring nodes: the runtime generates the `wide` row and the `narrow` column itself. Otherwise give `layouts.wide` and `layouts.narrow` explicitly. Below 520px of container width the runtime uses `narrow`, so labels stay readable on a 320px phone. Labels may contain a line break (`\n`).
 
 ## Behaviour
 

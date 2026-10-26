@@ -1,0 +1,42 @@
+<!-- @dsCard group="Diagrams" height=420 subtitle="Static drawings keep a readable size and scroll sideways on phones" -->
+<style>
+  body { margin: 0; background: var(--sheet); color: var(--ink); font-family: var(--font-sans); }
+  .demo { padding: 20px max(12px, min(24px, 4vw)); }
+  .module-graph { min-width: 740px; max-width: 1080px; margin-inline: auto; }
+  .module-graph .pb-node .s { font-size: 15px; }
+</style>
+<div class="demo">
+  <figure class="pb-figure" data-pb-wide>
+    <h3>Who depends on whom</h3>
+    <div class="pb-widewrap">
+      <div class="pb-wide pb-paper" role="region" aria-label="Module graph, scrolls sideways">
+        <svg class="module-graph" viewBox="0 0 900 290" role="img" aria-label="The app module depends on the cart, checkout and search feature implementations. Cart and checkout implementations depend on the cart API. Cart and checkout depend on core data; search depends on core UI.">
+          <defs>
+            <filter id="wdRough" x="-4%" y="-12%" width="108%" height="124%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="2.2"/></filter>
+            <marker id="wdHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="pb-head" d="M0 1 L9 5 L0 9 z"/></marker>
+          </defs>
+          <g class="wd-edges">
+            <path class="pb-edge" d="M440 78 L160 120" marker-end="url(#wdHead)"/>
+            <path class="pb-edge" d="M450 78 L450 120" marker-end="url(#wdHead)"/>
+            <path class="pb-edge" d="M460 78 L740 120" marker-end="url(#wdHead)"/>
+            <path class="pb-edge" d="M145 178 L145 220" marker-end="url(#wdHead)"/>
+            <path class="pb-edge" d="M420 178 L180 220" marker-end="url(#wdHead)"/>
+            <path class="pb-edge" d="M180 178 L420 220" marker-end="url(#wdHead)"/>
+            <path class="pb-edge" d="M450 178 L450 220" marker-end="url(#wdHead)"/>
+            <path class="pb-edge" d="M755 178 L755 220" marker-end="url(#wdHead)"/>
+          </g>
+          <g class="pb-node"><rect x="335" y="20" width="230" height="56" rx="10" filter="url(#wdRough)"/><text class="t" x="349" y="44">:app</text><text class="s" x="349" y="64">composes every feature</text></g>
+          <g class="pb-node"><rect x="30" y="122" width="230" height="56" rx="10" filter="url(#wdRough)"/><text class="t" x="44" y="146">:feature:cart:impl</text><text class="s" x="44" y="166">screens and logic</text></g>
+          <g class="pb-node"><rect x="335" y="122" width="230" height="56" rx="10" filter="url(#wdRough)"/><text class="t" x="349" y="146">:feature:checkout:impl</text><text class="s" x="349" y="166">screens and logic</text></g>
+          <g class="pb-node"><rect x="640" y="122" width="230" height="56" rx="10" filter="url(#wdRough)"/><text class="t" x="654" y="146">:feature:search:impl</text><text class="s" x="654" y="166">screens and logic</text></g>
+          <g class="pb-node"><rect x="30" y="222" width="230" height="56" rx="10" filter="url(#wdRough)"/><text class="t" x="44" y="246">:feature:cart:api</text><text class="s" x="44" y="266">CartRoute, CartRepository</text></g>
+          <g class="pb-node"><rect x="335" y="222" width="230" height="56" rx="10" filter="url(#wdRough)"/><text class="t" x="349" y="246">:core:data</text><text class="s" x="349" y="266">repositories, Room</text></g>
+          <g class="pb-node"><rect x="640" y="222" width="230" height="56" rx="10" filter="url(#wdRough)"/><text class="t" x="654" y="246">:core:ui</text><text class="s" x="654" y="266">design system</text></g>
+        </svg>
+      </div>
+    </div>
+    <p class="pb-hint" aria-hidden="true">Scroll sideways to see the whole graph →</p>
+    <div class="pb-bar"><p>An arrow means "depends on". Nothing moves here, so on a phone the drawing keeps its size and scrolls inside its box instead of shrinking.</p></div>
+  </figure>
+</div>
+<script>window.Playbook && window.Playbook.mountAll(document);</script>
