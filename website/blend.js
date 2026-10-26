@@ -35,7 +35,27 @@
     const all = frames(steps, Object.keys(byId));
     const texts = [...figure.querySelectorAll('[data-text]')];
     const original = Object.fromEntries(texts.map(el => [el.dataset.text, el.textContent]));
-    let position = 0, timer = null;
+    let position = 0, timer = null, shown = 0, flight = null;
+    const stage = figure.querySelector('.stage');
+
+    // Design-system motion: moving forward sends a packet from the box that was active to the box that is now active.
+    function cancelFlight() { if (flight) { flight.cancel(); flight.effect.target.remove(); flight = null; } }
+    function handoff(prev, next) {
+      if (reducedMotion() || !prev || !next || !stage.animate) return;
+      const live = (frame, el) => frame.visible.has(el.dataset.el);
+      const from = elements.find(el => prev.state[el.dataset.el] === 'active' && live(prev, el));
+      const to = elements.find(el => ['active', 'warn', 'error'].includes(next.state[el.dataset.el]) && live(next, el) && next.state[el.dataset.el] !== prev.state[el.dataset.el]);
+      if (!from || !to || from === to) return;
+      const box = stage.getBoundingClientRect(), a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+      const at = r => `translate(${r.left - box.left + r.width / 2}px, ${r.top - box.top + r.height / 2}px)`;
+      const dot = document.createElement('span');
+      dot.className = 'stepper-packet' + (next.state[to.dataset.el] === 'active' ? '' : ' is-warn');
+      dot.setAttribute('aria-hidden', 'true');
+      stage.appendChild(dot);
+      flight = dot.animate([{ transform: at(a), opacity: 0 }, { opacity: 1, offset: .15 }, { opacity: 1, offset: .85 }, { transform: at(b), opacity: 0 }],
+        { duration: 750, easing: 'cubic-bezier(.45, 0, .55, 1)' });
+      flight.onfinish = () => { dot.remove(); flight = null; };
+    }
 
     const controls = document.createElement('div');
     controls.className = 'stepper-controls';
@@ -47,8 +67,9 @@
     figure.querySelector('.stage').after(controls);
     const $ = selector => controls.querySelector(selector);
 
-    function render() {
-      const frame = all[position];
+    function render(animate) {
+      cancelFlight();
+      const frame = all[position], before = all[shown];
       elements.forEach(el => {
         const id = el.dataset.el;
         el.classList.toggle('is-off', !frame.visible.has(id));
@@ -61,12 +82,14 @@
       $('[data-act=prev]').setAttribute('aria-disabled', position === 0);
       $('[data-act=next]').setAttribute('aria-disabled', position === all.length - 1);
       $('[data-act=play]').setAttribute('aria-disabled', reducedMotion());
+      if (animate && position === shown + 1) handoff(before, frame);
+      shown = position;
     }
     function stop() {
-      clearInterval(timer); timer = null;
+      clearInterval(timer); timer = null; cancelFlight();
       $('[data-act=play]').textContent = 'Play'; $('[data-act=play]').setAttribute('aria-pressed', 'false');
     }
-    function go(delta) { stop(); position = Math.max(0, Math.min(all.length - 1, position + delta)); render(); }
+    function go(delta) { stop(); position = Math.max(0, Math.min(all.length - 1, position + delta)); render(delta > 0); }
     controls.addEventListener('click', event => {
       const act = event.target.closest('button')?.dataset.act;
       if (act === 'prev') go(-1);
@@ -80,7 +103,7 @@
         $('[data-act=play]').textContent = 'Pause'; $('[data-act=play]').setAttribute('aria-pressed', 'true');
         timer = setInterval(() => {
           if (reducedMotion()) { stop(); return; }
-          position++; render(); if (position === all.length - 1) stop();
+          position++; render(true); if (position === all.length - 1) { clearInterval(timer); timer = null; $('[data-act=play]').textContent = 'Play'; $('[data-act=play]').setAttribute('aria-pressed', 'false'); }
         }, 2600);
       }
     });

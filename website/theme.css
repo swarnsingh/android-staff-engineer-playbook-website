@@ -4,6 +4,8 @@
 
 /* Reading sheet: the page is a tinted canvas and the lesson sits on one sheet. */
 body { background: var(--canvas); color: var(--ink); }
+/* Dark theme: two faint glows on the navy canvas, behind the sheet only. */
+html[data-theme=dark] body { background-image: radial-gradient(80% 50% at 50% -20%, #6366f126, transparent), radial-gradient(60% 40% at 80% 80%, #8b5cf614, transparent); background-attachment: fixed; }
 .topbar { background: var(--sheet); }
 main {
   --sheet-pad: clamp(20px, 4vw, 48px);
@@ -64,6 +66,13 @@ code, pre, kbd, .code-card pre, .model-code pre { font-family: var(--font-mono);
   content: "Some lines continue past the edge: scroll sideways, or turn on line wrapping in Reading settings." / "";
   display: block; padding: 0 1.1rem .8rem; font: 600 12px/16px var(--font-sans); color: var(--code-comment);
 }
+
+/* Step-throughs: the handoff packet (blend.js) travels between boxes when the reader moves forward. */
+.stepper .stage { position: relative; }
+.stepper-packet { position: absolute; left: 0; top: 0; width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 2px var(--sheet); pointer-events: none; z-index: 3; }
+.stepper-packet.is-warn { background: var(--warn); }
+html.reduce-motion .stepper-packet { display: none; }
 
 /* High contrast: no tints or shadows; 1px borders mark the sheet and blocks. */
 html[data-theme=contrast] main { box-shadow: none; border: 1px solid var(--line); }

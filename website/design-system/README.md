@@ -51,7 +51,7 @@ Diagram rule: **green moves forward, blue comes back, orange is stuck.** Green a
 | `codeBlock`, `codeInline` | (none) | JetBrains Mono, ligatures off |
 | `handNode`, `handNote` | (none) | Patrick Hand: diagrams and one annotation per diagram |
 
-Four families, self-hosted from `fonts/` (Latin subsets, SIL Open Font License): Inter variable 400–700 (48KB), Source Serif 4 SemiBold (21KB), JetBrains Mono variable 400–500 (31KB) and Patrick Hand (63KB). Nothing loads from a font CDN. Handwriting never carries an answer, a finding, an Under review note or code.
+Five families, self-hosted from `fonts/` (Latin subsets, SIL Open Font License): Inter variable 400–700 (48KB), Source Serif 4 SemiBold (21KB), JetBrains Mono variable 400–500 (31KB) and Patrick Hand (63KB), plus Shantell Sans variable 400–600 for the reader's handwritten setting. Shantell Sans was designed for on-screen reading, but it is about 25% wider than Patrick Hand, so diagram labels stay in Patrick Hand to fit their boxes. Nothing loads from a font CDN. Handwriting never carries an answer, a finding, an Under review note or code.
 
 ## Shapes and spacing
 
@@ -86,4 +86,4 @@ FlowDiagram, FlowScene and WideDiagram share one runtime, `components/bundle.js`
 
 1. **Accent hue: green (default).** It keeps the playbook's identity. A blue or teal accent would need the `event` colour to change too, so the two directions stay distinct.
 2. **Title face: serif (default).** A serif title (Source Serif 4) keeps the current site's editorial feel; Inter at `displayLarge` would make it plainer and more product-like.
-3. **Default theme: light.** The reader can switch. The AlgoInsight reference is dark-first.
+3. **Default theme: light.** The reader can switch. Dark is a deep navy page (`canvas` #0a0f1e) with a slate sheet and two faint glows behind it (in the style of the AlgoInsight reference); every text and outline pair passes 4.5:1 and 3:1 on all three dark surfaces. The AlgoInsight reference is dark-first.
