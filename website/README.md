@@ -4,7 +4,7 @@ This folder builds the reader website for the playbook. Read [`../content-rulebo
 
 ## Current state
 
-The visual redesign and website-wide standard are recorded in [website-experience-2026-10-27.md](reviews/website-experience-2026-10-27.md). The preceding continuation is [CONTINUATION-2026-10-26.md](reviews/CONTINUATION-2026-10-26.md), covering all 17 authored scenes, the seven KMP reworks, Phase 7 staff notes, candidate follow-ups and measured publication status.
+The quantity-first pass across all 122 remaining step-throughs is recorded in [illustrated-coverage-2026-10-27.md](reviews/illustrated-coverage-2026-10-27.md). The visual redesign and website-wide standard are recorded in [website-experience-2026-10-27.md](reviews/website-experience-2026-10-27.md). The preceding continuation is [CONTINUATION-2026-10-26.md](reviews/CONTINUATION-2026-10-26.md), covering all 17 authored scenes, the seven KMP reworks, Phase 7 staff notes, candidate follow-ups and measured publication status.
 
 Publication follows [DEPLOYMENT.md](DEPLOYMENT.md) and rulebook section 19. All website work and deployment configuration stay in this repository; old Claude artifacts and the ChatGPT-hosted reader are historical snapshots. The round-4 review supersedes earlier audit claims where it identifies narrower coverage.
 

@@ -11,7 +11,7 @@
 <!-- @after 4. Test HTTP Contracts With Ktor MockEngine :: animation -->
 ### A fake failure proves a bounded contract
 
-<figure class="stepper" data-no-handoff><span class="stepper-title">The repository falls back only for its declared recoverable failure</span><div class="stage viz-stack"><div class="node" data-el="api"><strong>Controlled API</strong><small data-text="apiV">—</small></div><div class="node" data-el="store"><strong>Controlled store</strong><small data-text="storeV">—</small></div><div class="node" data-el="repo"><strong>Repository</strong><small data-text="repoV">—</small></div><div class="node" data-el="assert"><strong>Assertions</strong><small data-text="assertV">—</small></div></div><script type="application/json" class="steps">[
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">The repository falls back only for its declared recoverable failure</span><div class="stage viz-stack"><div class="node" data-el="api" data-art="cloud" data-art-role="runtime"><strong>Controlled API</strong><small data-text="apiV">—</small></div><div class="node" data-el="store" data-art="database" data-art-role="storage"><strong>Controlled store</strong><small data-text="storeV">—</small></div><div class="node" data-el="repo" data-art="code" data-art-role="runtime"><strong>Repository</strong><small data-text="repoV">—</small></div><div class="node" data-el="assert" data-art="inspect" data-art-role="runtime"><strong>Assertions</strong><small data-text="assertV">—</small></div></div><script type="application/json" class="steps">[
 {
 "label": "Arrange",
 "caption": "Seed a cached item and configure the API’s recoverable transport failure.",

@@ -40,3 +40,7 @@ Current verification results and the identified commit/build URL are recorded be
 - Package: includes the generated design gallery, relative links and no disposable QA harness. The previous 448-combination Binder font matrix remains historical evidence; this pass rechecked Binder through the full scene sweep rather than claiming that matrix was repeated.
 
 The privacy constraint still means the GitHub deliverable is a downloadable build. Open `design-system/index.html` inside its extracted site folder for the interactive design system. A live private GitHub website is not configured.
+
+### Subsequent owner direction: cover all 122
+
+After this design pass, the owner prioritized quantity before further refinement. All remaining 122 state figures now have an illustrated first pass. The [coverage report](illustrated-coverage-2026-10-27.md) supersedes the earlier scope limit above and records its expanded audit. The distinction between illustrated state figures and the 17 authored scenes remains explicit.

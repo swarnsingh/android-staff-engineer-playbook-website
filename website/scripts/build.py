@@ -592,7 +592,7 @@ def design_tokens_css():
         out.append(THEME_SELECTORS[theme]+'{'+';'.join(props)+'}')
     return '\n'.join(out)+'\n'
 
-def design_gallery():
+def design_gallery(asset_version):
     """Use real lesson sections and shared assets; do not maintain a second scene demo."""
     tokens=json.loads((DESIGN/'tokens.json').read_text())
     names=['canvas','sheet','ink','accent','scene-client','scene-runtime','scene-storage','scene-queue']
@@ -603,8 +603,13 @@ def design_gallery():
         scene=re.search(r'<section class="pb-figure" data-pb-flow="scene".*?</section>',source,re.S)
         if not scene: raise ValueError('Gallery scene missing: '+name)
         samples.append('<section class="demo"><h3>'+label+'</h3>'+scene[0]+'</section>')
+    for name,label in [('channels-and-select','Compare four channel capacities'),('bytecode','Watch an operand stack change'),('android/viewmodel','Follow a retained state owner')]:
+        source=(WEB/'content/blend'/f'{name}.blend').read_text()
+        scene=re.search(r'<figure class="stepper".*?</figure>',source,re.S)
+        if not scene: raise ValueError('Gallery illustrated stepper missing: '+name)
+        samples.append('<section class="demo"><h3>'+label+'</h3>'+scene[0]+'</section>')
     page=(DESIGN/'gallery.html').read_text().replace('{{swatches}}',swatches).replace('{{scenes}}',''.join(samples))
-    for asset in ('tokens.css','flow.css','flow.js'):page=page.replace('"/'+asset+'"','"'+BASE+asset+'"')
+    for asset in ('styles.css','blend.css','theme.css','tokens.css','flow.css','flow.js','blend.js'):page=page.replace('"/'+asset+'"','"'+BASE+asset+'?v='+asset_version+'"')
     destination=OUT/'design-system';destination.mkdir(exist_ok=True)
     (destination/'index.html').write_text(page)
 
@@ -673,10 +678,11 @@ def build(skip_diagrams=False):
     shutil.copy2(DESIGN/'components/bundle.js',OUT/'flow.js')
     shutil.copytree(WEB/'fonts',OUT/'fonts')
     for font in (DESIGN/'fonts').glob('*.woff2'): shutil.copy2(font,OUT/'fonts'/font.name)
-    design_gallery()
+    design_gallery(asset_version)
     if not skip_diagrams: render_diagrams()
     (OUT/'coverage/pages.json').write_text(json.dumps(reports,ensure_ascii=False,indent=2)+'\n')
     (OUT/'coverage/diagram-sources.json').write_text(json.dumps({p.stem:p.read_text() for p in sorted((OUT/'diagram-sources').glob('*.mmd'))},ensure_ascii=False,indent=2)+'\n')
+    shutil.copy2(WEB/'content/illustrated-stepper-coverage.json',OUT/'coverage/illustrated-steppers.json')
     (OUT/'coverage/corrections.json').write_text(json.dumps(APPROVED_CORRECTIONS,ensure_ascii=False,indent=2)+'\n')
     trees='; '.join(f'{TREES[s]["title"]}: {len(ORDER[s])} chapters + learning path' for s in TREES)
     print(f'Rendered {trees}; {sum(r["original_sections"] for r in reports)} source sections; {sum(r["code_blocks"] for r in reports)} code/diagram blocks; {len(APPROVED_CORRECTIONS)} of {len(ALL_CORRECTIONS)} proposed corrections approved and applied.')
@@ -687,6 +693,10 @@ if __name__=='__main__':
     args=parser.parse_args()
     import check_review_data
     check_review_data.check()
+    import check_illustrated_coverage
+    check_illustrated_coverage.check()
+    import check_scene_routes
+    check_scene_routes.check()
     build(args.skip_diagrams)
     # Never publish a build that dropped original content.
     import check_preservation

@@ -6,7 +6,7 @@
 <!-- @after BLE Architecture :: animation -->
 ### Discovery is not readiness
 
-<figure class="stepper" data-no-handoff><span class="stepper-title">One bounded connection attempt</span><div class="stage viz-stack"><div class="node" data-el="radio"><strong>BLE state</strong><small data-text="radioV">—</small></div><div class="node" data-el="intent"><strong>User intent</strong><small data-text="intentV">—</small></div><div class="node" data-el="data"><strong>Measurement</strong><small data-text="dataV">—</small></div></div><script type="application/json" class="steps">[
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">One bounded connection attempt</span><div class="stage viz-stack"><div class="node" data-el="radio" data-art="phone" data-art-role="client"><strong>BLE state</strong><small data-text="radioV">—</small></div><div class="node" data-el="intent" data-art="document" data-art-role="storage"><strong>User intent</strong><small data-text="intentV">—</small></div><div class="node" data-el="data" data-art="flow" data-art-role="storage"><strong>Measurement</strong><small data-text="dataV">—</small></div></div><script type="application/json" class="steps">[
 {
 "label": "Find",
 "caption": "With the required permission, scan with a deadline.",
@@ -80,7 +80,7 @@ Only if it is fresh enough. Check both the fix's age and its accuracy against wh
 <!-- @after Reliability and Observability :: animation -->
 ### Losing the device and getting it back
 
-<figure class="stepper" data-no-handoff><span class="stepper-title">Reconnect only while the product still needs it</span><div class="stage viz-grid" style="--cols:3"><div class="node" data-el="link"><strong>BLE link</strong><small data-text="linkV">connected</small></div><div class="node" data-el="intent"><strong>Durable intent</strong><small>device ID + "keep syncing"</small></div><div class="node is-key" data-el="retry"><strong>Reconnect policy</strong><small data-text="retryV">idle</small></div></div><script type="application/json" class="steps">[
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">Reconnect only while the product still needs it</span><div class="stage viz-grid" style="--cols:3"><div class="node" data-el="link" data-art="cloud" data-art-role="runtime"><strong>BLE link</strong><small data-text="linkV">connected</small></div><div class="node" data-el="intent" data-art="document" data-art-role="storage"><strong>Durable intent</strong><small>device ID + "keep syncing"</small></div><div class="node is-key" data-el="retry" data-art="clock" data-art-role="runtime"><strong>Reconnect policy</strong><small data-text="retryV">idle</small></div></div><script type="application/json" class="steps">[
 {"label":"Lost","caption":"The peripheral walks out of range and the callback reports a disconnect. The live GATT object is now useless.","add":["link","intent","retry"],"state":{"link":"error"},"text":{"linkV":"disconnected"}},
 {"label":"Still wanted?","caption":"Check the durable intent first. If the user has left the feature, stop here; a reconnect loop nobody needs drains the battery.","state":{"intent":"active"}},
 {"label":"Bounded retry","caption":"The user still wants syncing, so retry with exponential backoff and jitter, with a limit, as the chapter's Reliability section describes.","state":{"intent":"done","retry":"active"},"text":{"retryV":"backoff with jitter, capped"}},

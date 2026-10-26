@@ -16,7 +16,7 @@ Whether Compose can skip a child depends on how it compares that child's argumen
 <!-- @after Strong Skipping Mode :: animation -->
 ### Three ways to pass the same rows
 
-<figure class="stepper" data-no-handoff><span class="stepper-title">The parent recomposes; does <code>Rows(items)</code> skip?</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="old"><strong>No strong skipping · <code>List&lt;Item&gt;</code></strong><small data-text="oldV">—</small></div><div class="node" data-el="same"><strong>Strong skipping · same list instance</strong><small data-text="sameV">—</small></div><div class="node" data-el="mapped"><strong>Strong skipping · <code>items.map { … }</code> each time</strong><small data-text="mappedV">—</small></div></div><script type="application/json" class="steps">[
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">The parent recomposes; does <code>Rows(items)</code> skip?</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="old" data-art="memory" data-art-role="storage"><strong>No strong skipping · <code>List&lt;Item&gt;</code></strong><small data-text="oldV">—</small></div><div class="node" data-el="same" data-art="memory" data-art-role="storage"><strong>Strong skipping · same list instance</strong><small data-text="sameV">—</small></div><div class="node" data-el="mapped" data-art="memory" data-art-role="storage"><strong>Strong skipping · <code>items.map { … }</code> each time</strong><small data-text="mappedV">—</small></div></div><script type="application/json" class="steps">[
 {
 "label": "Parent recomposes",
 "caption": "Something unrelated changed in the parent, so it runs again and reaches the Rows call with arguments that look the same.",

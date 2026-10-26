@@ -15,12 +15,104 @@ Both disputes end the same way: look at what the compiler actually produced. Kot
 <!-- @after 2. The JVM Stack Machine :: animation -->
 ### Run `add(2, 3)` on the stack machine
 
-<figure class="stepper" data-no-handoff><span class="stepper-title"><code>fun add(a: Int, b: Int): Int = a + b</code></span><div class="stage viz-cols" style="--cols:3"><div class="col"><span class="col-title">Instruction</span><div class="node" data-el="pc"><strong data-text="instr">—</strong><small data-text="instrNote">ready</small></div></div><div class="col"><span class="col-title">Local variable slots</span><div class="node" data-el="l0"><strong>slot 0: <code>a</code> = 2</strong><small>parameter</small></div><div class="node" data-el="l1"><strong>slot 1: <code>b</code> = 3</strong><small>parameter</small></div></div><div class="col"><span class="col-title">Operand stack</span><div class="node" data-el="stack"><strong data-text="stackTop">empty</strong><small data-text="stackNote">top of stack shown first</small></div></div></div><script type="application/json" class="steps">[
-{"label":"Enter","caption":"The caller's arguments are already in local slots 0 and 1. The operand stack, where all computation happens, starts empty.","add":["pc","l0","l1","stack"],"text":{"instr":"(method entry)"}},
-{"label":"iload_0","caption":"Push the int in slot 0 onto the operand stack. The i prefix means int; a would mean a reference.","state":{"l0":"active","pc":"active"},"text":{"instr":"iload_0","instrNote":"push local 0","stackTop":"2"}},
-{"label":"iload_1","caption":"Push the int in slot 1. The stack now holds both operands.","state":{"l0":"","l1":"active"},"text":{"instr":"iload_1","instrNote":"push local 1","stackTop":"3 · 2"}},
-{"label":"iadd","caption":"Pop two ints, add them, push the result. There are no registers: instructions communicate only through this stack.","state":{"l1":"","stack":"active"},"text":{"instr":"iadd","instrNote":"pop 2, push sum","stackTop":"5"}},
-{"label":"ireturn","caption":"Pop the int and return it to the caller. Four instructions, two local slots, no allocation.","state":{"stack":"done","pc":"done"},"text":{"instr":"ireturn","instrNote":"return the top int","stackTop":"empty — 5 returned"}}
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title"><code>fun add(a: Int, b: Int): Int = a + b</code></span><div class="stage viz-cols" style="--cols:3"><div class="col"><span class="col-title">Instruction</span><div class="node" data-el="pc" data-art="code" data-art-role="runtime"><strong data-text="instr">—</strong><small data-text="instrNote">ready</small></div></div><div class="col"><span class="col-title">Local variable slots</span><div class="node" data-el="l0" data-art="memory" data-art-role="storage"><strong>slot 0: <code>a</code> = 2</strong><small>parameter</small></div><div class="node" data-el="l1" data-art="memory" data-art-role="storage"><strong>slot 1: <code>b</code> = 3</strong><small>parameter</small></div></div><div class="col"><span class="col-title">Operand stack</span><div class="node" data-el="stack" data-art="stack" data-art-role="storage"><strong data-text="stackTop">empty</strong><small data-text="stackNote">top of stack shown first</small></div></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Enter",
+    "caption": "The caller's arguments are already in local slots 0 and 1. The operand stack, where all computation happens, starts empty.",
+    "add": [
+      "pc",
+      "l0",
+      "l1",
+      "stack"
+    ],
+    "text": {
+      "instr": "(method entry)"
+    },
+    "visuals": {
+      "stack": {
+        "items": []
+      }
+    }
+  },
+  {
+    "label": "iload_0",
+    "caption": "Push the int in slot 0 onto the operand stack. The i prefix means int; a would mean a reference.",
+    "state": {
+      "l0": "active",
+      "pc": "active"
+    },
+    "text": {
+      "instr": "iload_0",
+      "instrNote": "push local 0",
+      "stackTop": "2"
+    },
+    "visuals": {
+      "stack": {
+        "items": [
+          2
+        ]
+      }
+    }
+  },
+  {
+    "label": "iload_1",
+    "caption": "Push the int in slot 1. The stack now holds both operands.",
+    "state": {
+      "l0": "",
+      "l1": "active"
+    },
+    "text": {
+      "instr": "iload_1",
+      "instrNote": "push local 1",
+      "stackTop": "3 · 2"
+    },
+    "visuals": {
+      "stack": {
+        "items": [
+          3,
+          2
+        ]
+      }
+    }
+  },
+  {
+    "label": "iadd",
+    "caption": "Pop two ints, add them, push the result. There are no registers: instructions communicate only through this stack.",
+    "state": {
+      "l1": "",
+      "stack": "active"
+    },
+    "text": {
+      "instr": "iadd",
+      "instrNote": "pop 2, push sum",
+      "stackTop": "5"
+    },
+    "visuals": {
+      "stack": {
+        "items": [
+          5
+        ]
+      }
+    }
+  },
+  {
+    "label": "ireturn",
+    "caption": "Pop the int and return it to the caller. Four instructions, two local slots, no allocation.",
+    "state": {
+      "stack": "done",
+      "pc": "done"
+    },
+    "text": {
+      "instr": "ireturn",
+      "instrNote": "return the top int",
+      "stackTop": "empty — 5 returned"
+    },
+    "visuals": {
+      "stack": {
+        "items": []
+      }
+    }
+  }
 ]</script><figcaption>Once this model is familiar, every listing in this chapter reads as a sequence of pushes, pops and jumps.</figcaption></figure>
 
 <!-- @after 5. Bytecode For Common Kotlin Constructs :: visual -->

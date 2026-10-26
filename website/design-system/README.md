@@ -73,6 +73,7 @@ See the **Motion and diagrams** section for the full rules. In short: interface 
 | Checkpoint | Q&A tab questions with an Answer heading. |
 | FlowDiagram | A short looping diagram that shows direction and blockage. |
 | FlowScene | One system stepped through, where packets land and change state. 17 authored lessons, including Binder, Room, Looper, Flow, build tooling and Media3. |
+| Illustrated state stepper | The 122 existing HTML sequences with explicit object choices, authored visual contents and numbered navigation. |
 | WideDiagram | A static diagram that keeps a readable size and scrolls sideways on phones. |
 
 FlowDiagram, FlowScene and WideDiagram share one runtime, `components/bundle.js` (`window.Playbook`, no dependencies), and one stylesheet, `components/bundle.css`.
@@ -92,6 +93,10 @@ FlowDiagram, FlowScene and WideDiagram share one runtime, `components/bundle.js`
 
 ## Website-wide learning standard
 
-Rulebook section 20 applies the reference review across the website: consistent navigation and reading comfort, problem-first lessons, progressive detail, meaningful alternatives, and one shared visual language. Reusable behaviour lives in the components rather than individual preview copies. The 17 illustrated scenes use numbered step navigation, adaptive layouts, optional visual-key instructions and complete captions. The remaining 122 legacy state steppers retain their authored structure; they are not represented as full scenes.
+Rulebook section 20 applies the reference review across the website: consistent navigation and reading comfort, problem-first lessons, progressive detail, meaningful alternatives, and one shared visual language. Reusable behaviour lives in the components rather than individual preview copies. The 17 illustrated scenes use numbered step navigation, adaptive layouts, optional visual-key instructions and complete captions. All 122 additional state steppers now have explicitly chosen SVG actors, visible status changes, numbered navigation and a progress bar. These cover 545 objects across 107 lesson files. They retain their authored structure and are described as illustrated state sequences, separately from the 17 full scenes. See the [coverage report](../reviews/illustrated-coverage-2026-10-27.md).
 
 The gallery is generated from the actual lesson sections in the same build, so changing a lesson or shared renderer changes its gallery sample too. Previous component preview HTML files are historical standalone samples; use the generated gallery to review the current design.
+
+## Illustrated state sequence contract
+
+The existing `.stepper` data format supports `visuals: {actorId: patch}` in each step. Patches accumulate from the beginning, so backwards jumps restore earlier queue contents and object visibility. The markup explicitly selects `data-art` and `data-art-role` per node. `window.Playbook.Actor` renders the same vector objects used by FlowScene. Only reviewed `handoff: {from, to, kind, label}` entries create moving payloads; active-state changes never infer one. The build verifies every object against `website/content/illustrated-stepper-coverage.json`.

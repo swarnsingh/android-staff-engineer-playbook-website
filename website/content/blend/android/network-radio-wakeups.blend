@@ -16,7 +16,54 @@ Separate immediate user actions from deferrable delivery, then make queue age, r
 
 ### An uncertain delivery must not become a retry storm
 
-<figure class="stepper" data-no-handoff><span class="stepper-title">An uncertain delivery must not become a retry storm</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="queue"><strong>Queue</strong><small>Required event persisted</small></div><div class="node" data-el="send"><strong>Attempt</strong><small>Response may be lost</small></div><div class="node" data-el="retry"><strong>Retry policy</strong><small>Cap, delay, idempotency</small></div><div class="node" data-el="done"><strong>Acknowledgement</strong><small>Remove reconciled work</small></div></div><script type="application/json" class="steps">[{"label": "Enqueue", "caption": "A required event enters durable storage. Its identity lets a later attempt refer to the same business operation.", "state": {"queue": "active"}, "add": ["queue", "send", "retry", "done"]}, {"label": "Lose the response", "caption": "The request may reach the server even if the client receives no acknowledgement. This illustrative failure leaves the result uncertain.", "state": {"queue": "done", "send": "warn"}}, {"label": "Bound recovery", "caption": "Use an idempotent operation or server-supported key, backoff and a retry limit. A connectivity change does not prove the endpoint will accept the request.", "state": {"retry": "active"}}, {"label": "Reconcile", "caption": "Remove confirmed work and keep unresolved work according to policy. Track oldest age as well as queue depth.", "state": {"retry": "done", "done": "active"}}]</script><figcaption>Illustrative sequence. Use Previous, Next or Play; every step is also available as text.</figcaption></figure>
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">An uncertain delivery must not become a retry storm</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="queue" data-art="queue" data-art-role="queue"><strong>Queue</strong><small>Required event persisted</small></div><div class="node" data-el="send" data-art="cloud" data-art-role="runtime"><strong>Attempt</strong><small>Response may be lost</small></div><div class="node" data-el="retry" data-art="clock" data-art-role="runtime"><strong>Retry policy</strong><small>Cap, delay, idempotency</small></div><div class="node" data-el="done" data-art="document" data-art-role="storage"><strong>Acknowledgement</strong><small>Remove reconciled work</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Enqueue",
+    "caption": "A required event enters durable storage. Its identity lets a later attempt refer to the same business operation.",
+    "state": {
+      "queue": "active"
+    },
+    "add": [
+      "queue",
+      "send",
+      "retry",
+      "done"
+    ],
+    "visuals": {
+      "queue": {
+        "count": 1
+      }
+    }
+  },
+  {
+    "label": "Lose the response",
+    "caption": "The request may reach the server even if the client receives no acknowledgement. This illustrative failure leaves the result uncertain.",
+    "state": {
+      "queue": "done",
+      "send": "warn"
+    }
+  },
+  {
+    "label": "Bound recovery",
+    "caption": "Use an idempotent operation or server-supported key, backoff and a retry limit. A connectivity change does not prove the endpoint will accept the request.",
+    "state": {
+      "retry": "active"
+    }
+  },
+  {
+    "label": "Reconcile",
+    "caption": "Remove confirmed work and keep unresolved work according to policy. Track oldest age as well as queue depth.",
+    "state": {
+      "retry": "done",
+      "done": "active"
+    },
+    "visuals": {
+      "queue": {
+        "count": 0
+      }
+    }
+  }
+]</script><figcaption>Illustrative sequence. Use Previous, Next or Play; every step is also available as text.</figcaption></figure>
 
 <!-- @after Observability :: staff -->
 

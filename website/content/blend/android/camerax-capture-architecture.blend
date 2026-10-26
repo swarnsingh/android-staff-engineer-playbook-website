@@ -6,58 +6,89 @@
 <!-- @after Analysis Pipeline :: animation -->
 ### Prefer a fresh answer over a growing queue
 
-<figure class="stepper" data-no-handoff><span class="stepper-title">KEEP_ONLY_LATEST while one frame is being analyzed</span><div class="stage viz-stack"><div class="node" data-el="analysis"><strong>Analyzer</strong><small data-text="analysisV">—</small></div><div class="node" data-el="latest"><strong>Waiting image</strong><small data-text="latestV">—</small></div><div class="node" data-el="result"><strong>Result</strong><small data-text="resultV">—</small></div></div><script type="application/json" class="steps">[
-{
-"label": "Analyze A",
-"caption": "The analyzer owns frame A until it closes the ImageProxy.",
-"state": {
-"analysis": "active"
-},
-"text": {
-"analysisV": "A in progress",
-"latestV": "none",
-"resultV": "pending"
-},
-"add": [
-"analysis",
-"latest",
-"result"
-]
-},
-{
-"label": "New frames",
-"caption": "B arrives, then C. The latest waiting image replaces older pending work.",
-"state": {
-"latest": "active"
-},
-"text": {
-"latestV": "C replaces B"
-}
-},
-{
-"label": "Finish A",
-"caption": "Finish using A, close its ImageProxy, then the next delivered image can be analyzed.",
-"state": {
-"analysis": "done",
-"result": "active"
-},
-"text": {
-"analysisV": "A closed",
-"resultV": "A result"
-}
-},
-{
-"label": "Analyze latest",
-"caption": "Continue with the latest waiting image rather than processing every stale intermediate frame.",
-"state": {
-"analysis": "active",
-"latest": "done"
-},
-"text": {
-"analysisV": "C in progress",
-"latestV": "consumed"
-}
-}
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">KEEP_ONLY_LATEST while one frame is being analyzed</span><div class="stage viz-stack"><div class="node" data-el="analysis" data-art="worker" data-art-role="runtime"><strong>Analyzer</strong><small data-text="analysisV">—</small></div><div class="node" data-el="latest" data-art="frame" data-art-role="client"><strong>Waiting image</strong><small data-text="latestV">—</small></div><div class="node" data-el="result" data-art="frame" data-art-role="client"><strong>Result</strong><small data-text="resultV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Analyze A",
+    "caption": "The analyzer owns frame A until it closes the ImageProxy.",
+    "state": {
+      "analysis": "active"
+    },
+    "text": {
+      "analysisV": "A in progress",
+      "latestV": "none",
+      "resultV": "pending"
+    },
+    "add": [
+      "analysis",
+      "latest",
+      "result"
+    ],
+    "visuals": {
+      "analysis": {
+        "badge": "A"
+      },
+      "latest": {
+        "visible": false
+      },
+      "result": {
+        "visible": false
+      }
+    }
+  },
+  {
+    "label": "New frames",
+    "caption": "B arrives, then C. The latest waiting image replaces older pending work.",
+    "state": {
+      "latest": "active"
+    },
+    "text": {
+      "latestV": "C replaces B"
+    },
+    "visuals": {
+      "latest": {
+        "visible": true,
+        "badge": "C"
+      }
+    }
+  },
+  {
+    "label": "Finish A",
+    "caption": "Finish using A, close its ImageProxy, then the next delivered image can be analyzed.",
+    "state": {
+      "analysis": "done",
+      "result": "active"
+    },
+    "text": {
+      "analysisV": "A closed",
+      "resultV": "A result"
+    },
+    "visuals": {
+      "result": {
+        "visible": true,
+        "badge": "A"
+      }
+    }
+  },
+  {
+    "label": "Analyze latest",
+    "caption": "Continue with the latest waiting image rather than processing every stale intermediate frame.",
+    "state": {
+      "analysis": "active",
+      "latest": "done"
+    },
+    "text": {
+      "analysisV": "C in progress",
+      "latestV": "consumed"
+    },
+    "visuals": {
+      "analysis": {
+        "badge": "C"
+      },
+      "latest": {
+        "visible": false
+      }
+    }
+  }
 ]</script><figcaption>Close each ImageProxy on every completion path. For asynchronous inference, close after that work finishes using the image.</figcaption></figure>
 
 <!-- @after Production Architecture :: check -->

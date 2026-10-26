@@ -8,11 +8,75 @@ Coroutine code is full of time — retries, debounce windows, timeouts — and f
 <!-- @after The Test Scheduler :: animation -->
 ### Moving the virtual clock by hand
 
-<figure class="stepper" data-no-handoff><span class="stepper-title">A retry that waits 60 seconds, tested in about a millisecond</span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">Test thread</span><div class="node" data-el="launch"><strong><code>launch(StandardTestDispatcher(testScheduler))</code></strong><small>attempt 1, <code>delay(60_000)</code>, attempt 2</small></div><div class="node" data-el="action"><strong>Last call</strong><small data-text="actionNote">—</small></div></div><div class="col"><span class="col-title">Scheduler</span><div class="node" data-el="clock"><strong>Virtual clock</strong><small data-text="clockNote">0 ms</small></div><div class="node" data-el="queue"><strong>Queue</strong><small data-text="queueNote">empty</small></div><div class="node" data-el="log"><strong><code>attempts</code></strong><small data-text="logNote">[]</small></div></div></div><script type="application/json" class="steps">[
-{"label":"Launch","caption":"With StandardTestDispatcher, launching only queues the coroutine. Nothing has run: attempts is still empty.","add":["launch","clock","queue","log"],"state":{"queue":"active"},"text":{"queueNote":"coroutine start @ 0 ms"}},
-{"label":"runCurrent()","caption":"runCurrent() runs what is due now. Attempt 1 runs, then the coroutine reaches delay(60_000) and schedules itself for 60 000 ms.","add":["action"],"state":{"log":"done","queue":"active"},"text":{"actionNote":"runCurrent()","logNote":"[attempt1@0]","queueNote":"resume @ 60 000 ms"}},
-{"label":"advanceTimeBy(60s)","caption":"The clock jumps to 60 000 ms instantly. Work scheduled at exactly the new time has not run yet — attempts still has one entry.","state":{"clock":"active","log":"warn"},"text":{"actionNote":"advanceTimeBy(60_000)","clockNote":"60 000 ms"}},
-{"label":"runCurrent() again","caption":"Now the task due at 60 000 ms runs and attempt 2 is recorded. Real time spent on the whole test: about a millisecond.","state":{"log":"done","queue":"","clock":"done"},"text":{"actionNote":"runCurrent()","logNote":"[attempt1@0, attempt2@60000]","queueNote":"empty"}}
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">A retry that waits 60 seconds, tested in about a millisecond</span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">Test thread</span><div class="node" data-el="launch" data-art="worker" data-art-role="runtime"><strong><code>launch(StandardTestDispatcher(testScheduler))</code></strong><small>attempt 1, <code>delay(60_000)</code>, attempt 2</small></div><div class="node" data-el="action" data-art="signal" data-art-role="runtime"><strong>Last call</strong><small data-text="actionNote">—</small></div></div><div class="col"><span class="col-title">Scheduler</span><div class="node" data-el="clock" data-art="clock" data-art-role="runtime"><strong>Virtual clock</strong><small data-text="clockNote">0 ms</small></div><div class="node" data-el="queue" data-art="queue" data-art-role="queue"><strong>Queue</strong><small data-text="queueNote">empty</small></div><div class="node" data-el="log" data-art="document" data-art-role="storage"><strong><code>attempts</code></strong><small data-text="logNote">[]</small></div></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Launch",
+    "caption": "With StandardTestDispatcher, launching only queues the coroutine. Nothing has run: attempts is still empty.",
+    "add": [
+      "launch",
+      "clock",
+      "queue",
+      "log"
+    ],
+    "state": {
+      "queue": "active"
+    },
+    "text": {
+      "queueNote": "coroutine start @ 0 ms"
+    },
+    "visuals": {
+      "queue": {
+        "count": 1
+      }
+    }
+  },
+  {
+    "label": "runCurrent()",
+    "caption": "runCurrent() runs what is due now. Attempt 1 runs, then the coroutine reaches delay(60_000) and schedules itself for 60 000 ms.",
+    "add": [
+      "action"
+    ],
+    "state": {
+      "log": "done",
+      "queue": "active"
+    },
+    "text": {
+      "actionNote": "runCurrent()",
+      "logNote": "[attempt1@0]",
+      "queueNote": "resume @ 60 000 ms"
+    }
+  },
+  {
+    "label": "advanceTimeBy(60s)",
+    "caption": "The clock jumps to 60 000 ms instantly. Work scheduled at exactly the new time has not run yet — attempts still has one entry.",
+    "state": {
+      "clock": "active",
+      "log": "warn"
+    },
+    "text": {
+      "actionNote": "advanceTimeBy(60_000)",
+      "clockNote": "60 000 ms"
+    }
+  },
+  {
+    "label": "runCurrent() again",
+    "caption": "Now the task due at 60 000 ms runs and attempt 2 is recorded. Real time spent on the whole test: about a millisecond.",
+    "state": {
+      "log": "done",
+      "queue": "",
+      "clock": "done"
+    },
+    "text": {
+      "actionNote": "runCurrent()",
+      "logNote": "[attempt1@0, attempt2@60000]",
+      "queueNote": "empty"
+    },
+    "visuals": {
+      "queue": {
+        "count": 0
+      }
+    }
+  }
 ]</script><figcaption>Verified with kotlinx-coroutines-test 1.11. <code>advanceUntilIdle()</code> would have done all of this in one call; the step-by-step calls are how you assert what happens <em>between</em> the moments.</figcaption></figure>
 
 <!-- @after UnconfinedTestDispatcher :: visual -->

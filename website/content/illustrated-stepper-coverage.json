@@ -1,0 +1,3463 @@
+{
+  "version": 1,
+  "scope": "First illustrated pass: object actors and authored state transitions; bespoke transfer choreography is separate.",
+  "figures": [
+    {
+      "path": "android/activity",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "created",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "started",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "resumed",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "stopped",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "log",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "instance",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "vm",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "saved",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "process",
+          "kind": "server",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/adaptive-compose-large-screens",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "state",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "list",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "detail",
+          "kind": "screen",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "android/anrs",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "reason",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "main",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "holder",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "repair",
+          "kind": "gate",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/app-size-and-r8",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "release",
+          "kind": "parcel",
+          "role": "queue"
+        },
+        {
+          "id": "stack",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "mapping",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "owner",
+          "kind": "inspect",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/art-and-dalvik",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "run",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "mode",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "prof",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "aot",
+          "kind": "code",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/baseline-profiles",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "journey",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "artifact",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "device",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "measure",
+          "kind": "inspect",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/battery-optimizations",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "phase",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "jobs",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "alarms",
+          "kind": "clock",
+          "role": "runtime"
+        },
+        {
+          "id": "net",
+          "kind": "cloud",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/battery-power-profiling",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "scenario",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "activity",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "change",
+          "kind": "gate",
+          "role": "runtime"
+        },
+        {
+          "id": "compare",
+          "kind": "inspect",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/camerax-capture-architecture",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "analysis",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "latest",
+          "kind": "frame",
+          "role": "client"
+        },
+        {
+          "id": "result",
+          "kind": "frame",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "android/components",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "single",
+          "kind": "graph",
+          "role": "runtime"
+        },
+        {
+          "id": "retained",
+          "kind": "graph",
+          "role": "runtime"
+        },
+        {
+          "id": "vm",
+          "kind": "graph",
+          "role": "runtime"
+        },
+        {
+          "id": "act",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "frag",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "result",
+          "kind": "flow",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/compose-accessibility",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "u1",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "u2",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "u3",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "u4",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "m1",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "m2",
+          "kind": "screen",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "android/compose-navigation",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "login",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "home",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "profile",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "code",
+          "kind": "code",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/compose-performance-tooling",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "s1",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "s2",
+          "kind": "inspect",
+          "role": "runtime"
+        },
+        {
+          "id": "s3",
+          "kind": "inspect",
+          "role": "runtime"
+        },
+        {
+          "id": "s4",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "s5",
+          "kind": "document",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/content-providers-and-contentresolver",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "file",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "uri",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "grant",
+          "kind": "key",
+          "role": "storage"
+        },
+        {
+          "id": "reader",
+          "kind": "phone",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "android/convention-plugins",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "settings",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "id",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "lib",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "caps",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "module",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "proof",
+          "kind": "inspect",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/crash-monitoring",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        },
+        {
+          "id": "report",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "cohort",
+          "kind": "inspect",
+          "role": "runtime"
+        },
+        {
+          "id": "action",
+          "kind": "worker",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/custom-layout-measurement",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "a1",
+          "kind": "frame",
+          "role": "client"
+        },
+        {
+          "id": "a2",
+          "kind": "frame",
+          "role": "client"
+        },
+        {
+          "id": "a3",
+          "kind": "frame",
+          "role": "client"
+        },
+        {
+          "id": "row",
+          "kind": "screen",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "android/datastore",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "a",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "b",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "store",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "file",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "flow",
+          "kind": "flow",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/dependency-injection",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "single",
+          "kind": "graph",
+          "role": "runtime"
+        },
+        {
+          "id": "retained",
+          "kind": "graph",
+          "role": "runtime"
+        },
+        {
+          "id": "vm",
+          "kind": "graph",
+          "role": "runtime"
+        },
+        {
+          "id": "act",
+          "kind": "phone",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "android/device-connectivity-and-location",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "radio",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "intent",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "data",
+          "kind": "flow",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/device-connectivity-and-location",
+      "figure": 1,
+      "nodes": [
+        {
+          "id": "link",
+          "kind": "cloud",
+          "role": "runtime"
+        },
+        {
+          "id": "intent",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "retry",
+          "kind": "clock",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/form-factors-matrix",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "q1",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "q2",
+          "kind": "inspect",
+          "role": "runtime"
+        },
+        {
+          "id": "q3",
+          "kind": "graph",
+          "role": "runtime"
+        },
+        {
+          "id": "q4",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "out",
+          "kind": "gate",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/fragment",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "object",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "view",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "calls",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "thisObs",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "viewObs",
+          "kind": "flow",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/graphql",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "list",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "detail",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "record",
+          "kind": "database",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/health-connect",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "token",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "page",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "db",
+          "kind": "database",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/hilt-vs-koin-vs-manual-di",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "manual",
+          "kind": "graph",
+          "role": "runtime"
+        },
+        {
+          "id": "hilt",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "koin",
+          "kind": "graph",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/jank",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "frame",
+          "kind": "frame",
+          "role": "client"
+        },
+        {
+          "id": "wait",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "owner",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "repeat",
+          "kind": "inspect",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/binary-compatibility-api-evolution",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "old",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "candidate",
+          "kind": "parcel",
+          "role": "queue"
+        },
+        {
+          "id": "source",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "gate",
+          "kind": "gate",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/ecosystem/dependency-injection",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "n0",
+          "kind": "graph",
+          "role": "runtime"
+        },
+        {
+          "id": "n1",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "n2",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "n3",
+          "kind": "clock",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/ecosystem/libraries-ecosystem",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "n0",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "n1",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "n2",
+          "kind": "graph",
+          "role": "runtime"
+        },
+        {
+          "id": "n3",
+          "kind": "gate",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/ecosystem/networking-with-ktor",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "n0",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "n1",
+          "kind": "gate",
+          "role": "runtime"
+        },
+        {
+          "id": "n2",
+          "kind": "cloud",
+          "role": "runtime"
+        },
+        {
+          "id": "n3",
+          "kind": "flow",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/ecosystem/persistence",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "n0",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "n1",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "n2",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "n3",
+          "kind": "database",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/ecosystem/persistence",
+      "figure": 1,
+      "nodes": [
+        {
+          "id": "db",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "app",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "mig",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "test",
+          "kind": "inspect",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/foundations/architecture-and-module-boundaries",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "n0",
+          "kind": "parcel",
+          "role": "queue"
+        },
+        {
+          "id": "n1",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "n2",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "n3",
+          "kind": "worker",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/foundations/overview-and-k1-vs-k2",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "n0",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "n1",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "n2",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "n3",
+          "kind": "parcel",
+          "role": "queue"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/kmp-decision-matrix",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "n0",
+          "kind": "inspect",
+          "role": "runtime"
+        },
+        {
+          "id": "n1",
+          "kind": "parcel",
+          "role": "queue"
+        },
+        {
+          "id": "n2",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "n3",
+          "kind": "gate",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/kmp-observability-crash-symbolication",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "release",
+          "kind": "parcel",
+          "role": "queue"
+        },
+        {
+          "id": "symbols",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        },
+        {
+          "id": "report",
+          "kind": "inspect",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/production/adoption-and-migration",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "contract",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "old",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "shared",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "evidence",
+          "kind": "inspect",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/production/ci-cd-for-kmp",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "change",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "linux",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "apple",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "release",
+          "kind": "parcel",
+          "role": "queue"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/production/concurrency-and-memory",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "swift",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "kotlin",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "callback",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/production/testing-and-mocking",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "api",
+          "kind": "cloud",
+          "role": "runtime"
+        },
+        {
+          "id": "store",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "repo",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "assert",
+          "kind": "inspect",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/shared-domain-boundaries",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "n0",
+          "kind": "queue",
+          "role": "queue"
+        },
+        {
+          "id": "n1",
+          "kind": "clock",
+          "role": "runtime"
+        },
+        {
+          "id": "n2",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "n3",
+          "kind": "database",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/shared-domain-boundaries",
+      "figure": 1,
+      "nodes": [
+        {
+          "id": "io",
+          "kind": "cloud",
+          "role": "runtime"
+        },
+        {
+          "id": "adapter",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "domain",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "ui",
+          "kind": "phone",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/tooling/build-system-and-source-sets",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "n0",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "n1",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "n2",
+          "kind": "parcel",
+          "role": "queue"
+        },
+        {
+          "id": "n3",
+          "kind": "gate",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/tooling/ios-distribution",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "build",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "archive",
+          "kind": "parcel",
+          "role": "queue"
+        },
+        {
+          "id": "manifest",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "consumer",
+          "kind": "phone",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/tooling/swift-interop",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "task",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "bridge",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "job",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "evidence",
+          "kind": "inspect",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/ui-sharing/compose-multiplatform",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "n0",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "n1",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "n2",
+          "kind": "signal",
+          "role": "runtime"
+        },
+        {
+          "id": "n3",
+          "kind": "graph",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/kotlin-multiplatform/ui-sharing/resource-sharing",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "n0",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "n1",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "n2",
+          "kind": "parcel",
+          "role": "queue"
+        },
+        {
+          "id": "n3",
+          "kind": "phone",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "android/ktor-vs-retrofit",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "contract",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "old",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "new",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "gate",
+          "kind": "gate",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/logging",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "call",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "heavy",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "tree",
+          "kind": "gate",
+          "role": "runtime"
+        },
+        {
+          "id": "sink",
+          "kind": "document",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/macrobenchmark-and-perfetto",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "control",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "metric",
+          "kind": "inspect",
+          "role": "runtime"
+        },
+        {
+          "id": "trace",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "hypothesis",
+          "kind": "inspect",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/memory-management-and-leaks",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "registry",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "listener",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "screen",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "heap",
+          "kind": "inspect",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/mobile-apm-and-rum",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "tap",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "client",
+          "kind": "cloud",
+          "role": "runtime"
+        },
+        {
+          "id": "server",
+          "kind": "server",
+          "role": "runtime"
+        },
+        {
+          "id": "ready",
+          "kind": "screen",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "android/modifiers-and-layout",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "p1",
+          "kind": "frame",
+          "role": "client"
+        },
+        {
+          "id": "bg",
+          "kind": "frame",
+          "role": "client"
+        },
+        {
+          "id": "p2",
+          "kind": "frame",
+          "role": "client"
+        },
+        {
+          "id": "text",
+          "kind": "screen",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "android/modularization-strategies",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "model",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "cartApi",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "profileApi",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "checkoutApi",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "cartImpl",
+          "kind": "parcel",
+          "role": "queue"
+        },
+        {
+          "id": "profileImpl",
+          "kind": "parcel",
+          "role": "queue"
+        },
+        {
+          "id": "checkoutImpl",
+          "kind": "parcel",
+          "role": "queue"
+        },
+        {
+          "id": "app",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "change",
+          "kind": "code",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/multi-module",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "capi",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "cimpl",
+          "kind": "parcel",
+          "role": "queue"
+        },
+        {
+          "id": "chk",
+          "kind": "parcel",
+          "role": "queue"
+        },
+        {
+          "id": "app",
+          "kind": "phone",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "android/mvvm-vs-mvi",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "mPromo",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "mTotal",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "mLoad",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "mUi",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "iState",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "iUi",
+          "kind": "phone",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "android/native-memory-bitmaps",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "slot",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "decode",
+          "kind": "frame",
+          "role": "client"
+        },
+        {
+          "id": "cache",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "pressure",
+          "kind": "inspect",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/navigation",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "root",
+          "kind": "graph",
+          "role": "runtime"
+        },
+        {
+          "id": "home",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "list",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "detail",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "graph",
+          "kind": "graph",
+          "role": "runtime"
+        },
+        {
+          "id": "cart",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "pay",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/network-radio-wakeups",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "queue",
+          "kind": "queue",
+          "role": "queue"
+        },
+        {
+          "id": "send",
+          "kind": "cloud",
+          "role": "runtime"
+        },
+        {
+          "id": "retry",
+          "kind": "clock",
+          "role": "runtime"
+        },
+        {
+          "id": "done",
+          "kind": "document",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/networkcallback-metered-vpn-captive-portal",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "path",
+          "kind": "cloud",
+          "role": "runtime"
+        },
+        {
+          "id": "policy",
+          "kind": "gate",
+          "role": "runtime"
+        },
+        {
+          "id": "call",
+          "kind": "cloud",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/package-manager-installation-classloading",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "install",
+          "kind": "parcel",
+          "role": "queue"
+        },
+        {
+          "id": "link",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "check",
+          "kind": "gate",
+          "role": "runtime"
+        },
+        {
+          "id": "screen",
+          "kind": "phone",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "android/permissions-and-app-ops",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "tap",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "perm",
+          "kind": "key",
+          "role": "storage"
+        },
+        {
+          "id": "op",
+          "kind": "frame",
+          "role": "client"
+        },
+        {
+          "id": "ui",
+          "kind": "screen",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "android/process-death-and-state-restoration",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "a1",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "a2",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "a3",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "a4",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "b1",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "b2",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "b3",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "b4",
+          "kind": "phone",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "android/recomposition-and-state",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "plain",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "rem",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "state",
+          "kind": "flow",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/rendering",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "ui",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "render",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "buffer",
+          "kind": "frame",
+          "role": "client"
+        },
+        {
+          "id": "display",
+          "kind": "screen",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "android/repository-source-of-truth",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "note",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "outbox",
+          "kind": "queue",
+          "role": "queue"
+        },
+        {
+          "id": "server",
+          "kind": "server",
+          "role": "runtime"
+        },
+        {
+          "id": "ui",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "worker",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/retrofit-and-okhttp",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "a",
+          "kind": "cloud",
+          "role": "runtime"
+        },
+        {
+          "id": "b",
+          "kind": "cloud",
+          "role": "runtime"
+        },
+        {
+          "id": "token",
+          "kind": "key",
+          "role": "storage"
+        },
+        {
+          "id": "refresh",
+          "kind": "cloud",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/room-vs-datastore",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "rRead",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "rWrite",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "rNotify",
+          "kind": "signal",
+          "role": "runtime"
+        },
+        {
+          "id": "dRead",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "dBuild",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "dWrite",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "dNotify",
+          "kind": "flow",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/savedstatehandle",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "vm",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "handle",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "bundle",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/scopes",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "engine",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "pricing",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "syncJob",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "promoJob",
+          "kind": "worker",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/security-and-keystore",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "key",
+          "kind": "key",
+          "role": "storage"
+        },
+        {
+          "id": "data",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "session",
+          "kind": "flow",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/security-and-keystore",
+      "figure": 1,
+      "nodes": [
+        {
+          "id": "change",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "key",
+          "kind": "key",
+          "role": "storage"
+        },
+        {
+          "id": "data",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "user",
+          "kind": "phone",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "android/services",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "manifest",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "perm",
+          "kind": "key",
+          "role": "storage"
+        },
+        {
+          "id": "start",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "fg",
+          "kind": "signal",
+          "role": "runtime"
+        },
+        {
+          "id": "work",
+          "kind": "worker",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/side-effects",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "screen",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "job",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "why",
+          "kind": "document",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/snapshot-system",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "inCount",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "inTotal",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "outCount",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "outTotal",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "reader",
+          "kind": "inspect",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/stability",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "old",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "same",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "mapped",
+          "kind": "memory",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/startup",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "launch",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "main",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "ready",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "proof",
+          "kind": "inspect",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/state-management",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "screen",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "counter",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "warning",
+          "kind": "signal",
+          "role": "runtime"
+        },
+        {
+          "id": "flow",
+          "kind": "flow",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/storage-and-content-sharing",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "t1",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "t2",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "t3",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "t4",
+          "kind": "key",
+          "role": "storage"
+        },
+        {
+          "id": "p1",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "p2",
+          "kind": "key",
+          "role": "storage"
+        },
+        {
+          "id": "p3",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "p4",
+          "kind": "document",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/structured-concurrency",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "vm",
+          "kind": "graph",
+          "role": "runtime"
+        },
+        {
+          "id": "user",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "posts",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "net",
+          "kind": "cloud",
+          "role": "runtime"
+        },
+        {
+          "id": "db",
+          "kind": "database",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/synchronization-and-mutex",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "lock",
+          "kind": "lock",
+          "role": "runtime"
+        },
+        {
+          "id": "c1",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "c2",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "c3",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "threads",
+          "kind": "server",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/testing-strategy",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "run",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "classify",
+          "kind": "inspect",
+          "role": "runtime"
+        },
+        {
+          "id": "owner",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "gate",
+          "kind": "gate",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/thermal-low-end-device-strategy",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "normal",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "pressure",
+          "kind": "inspect",
+          "role": "runtime"
+        },
+        {
+          "id": "reduced",
+          "kind": "gate",
+          "role": "runtime"
+        },
+        {
+          "id": "recover",
+          "kind": "clock",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/ui-testing",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "state",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "ui",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "callback",
+          "kind": "signal",
+          "role": "runtime"
+        },
+        {
+          "id": "assert",
+          "kind": "inspect",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/unit-testing",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "repo",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "act",
+          "kind": "signal",
+          "role": "runtime"
+        },
+        {
+          "id": "assert",
+          "kind": "inspect",
+          "role": "runtime"
+        },
+        {
+          "id": "keep",
+          "kind": "document",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "android/view-interop-and-migration",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "factory",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "update",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "reset",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "view",
+          "kind": "phone",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "android/viewmodel",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "activity",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "store",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "vm",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "job",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "android/webview-and-hybrid",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "source",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "bridge",
+          "kind": "gate",
+          "role": "runtime"
+        },
+        {
+          "id": "native",
+          "kind": "worker",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "bytecode",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "pc",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "l0",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "l1",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "stack",
+          "kind": "stack",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "callbackflow-and-bridging-callbacks",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "collector",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "block",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "await",
+          "kind": "clock",
+          "role": "runtime"
+        },
+        {
+          "id": "listener",
+          "kind": "signal",
+          "role": "runtime"
+        },
+        {
+          "id": "values",
+          "kind": "flow",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "channels-and-select",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "r",
+          "kind": "queue",
+          "role": "queue"
+        },
+        {
+          "id": "b",
+          "kind": "queue",
+          "role": "queue"
+        },
+        {
+          "id": "c",
+          "kind": "queue",
+          "role": "queue"
+        },
+        {
+          "id": "u",
+          "kind": "queue",
+          "role": "queue"
+        }
+      ]
+    },
+    {
+      "path": "coroutines",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "root",
+          "kind": "graph",
+          "role": "runtime"
+        },
+        {
+          "id": "j0",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "other",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "j1",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "j2",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "j3",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "j4",
+          "kind": "worker",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "coroutines",
+      "figure": 1,
+      "nodes": [
+        {
+          "id": "owner",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "job",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "fin",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "nc",
+          "kind": "lock",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "coroutines-debugging-and-profiling",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "q1",
+          "kind": "graph",
+          "role": "runtime"
+        },
+        {
+          "id": "q2",
+          "kind": "signal",
+          "role": "runtime"
+        },
+        {
+          "id": "q3",
+          "kind": "gate",
+          "role": "runtime"
+        },
+        {
+          "id": "q4",
+          "kind": "server",
+          "role": "runtime"
+        },
+        {
+          "id": "q5",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "q6",
+          "kind": "inspect",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "data-classes",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "old",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "new",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "flow",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "list",
+          "kind": "memory",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "data-classes",
+      "figure": 1,
+      "nodes": [
+        {
+          "id": "b1",
+          "kind": "queue",
+          "role": "queue"
+        },
+        {
+          "id": "b2",
+          "kind": "queue",
+          "role": "queue"
+        },
+        {
+          "id": "b3",
+          "kind": "queue",
+          "role": "queue"
+        },
+        {
+          "id": "b4",
+          "kind": "queue",
+          "role": "queue"
+        }
+      ]
+    },
+    {
+      "path": "delegation",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "prop",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "hidden",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "call",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "fb",
+          "kind": "server",
+          "role": "runtime"
+        },
+        {
+          "id": "mp",
+          "kind": "server",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "delegation",
+      "figure": 1,
+      "nodes": [
+        {
+          "id": "l1",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "l2",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "o1",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "o2",
+          "kind": "signal",
+          "role": "runtime"
+        },
+        {
+          "id": "p1",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "p2",
+          "kind": "worker",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "extensions",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "m1",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "m2",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "e1",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "e2",
+          "kind": "code",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "extensions",
+      "figure": 1,
+      "nodes": [
+        {
+          "id": "src",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "member",
+          "kind": "gate",
+          "role": "runtime"
+        },
+        {
+          "id": "ext",
+          "kind": "gate",
+          "role": "runtime"
+        },
+        {
+          "id": "out",
+          "kind": "code",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "flow-operators-and-backpressure",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "emit",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "map",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "filter",
+          "kind": "gate",
+          "role": "runtime"
+        },
+        {
+          "id": "collect",
+          "kind": "phone",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "functions",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "aCode",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "aState",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "bCode",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "bState",
+          "kind": "memory",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "functions",
+      "figure": 1,
+      "nodes": [
+        {
+          "id": "r3",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "rneg",
+          "kind": "signal",
+          "role": "runtime"
+        },
+        {
+          "id": "r5",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "rdone",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "l3",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "lneg",
+          "kind": "signal",
+          "role": "runtime"
+        },
+        {
+          "id": "l5",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "ldone",
+          "kind": "code",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "generics",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "parse",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "maps",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "assign",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "read",
+          "kind": "inspect",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "inline-functions",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "func",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "call",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "l1",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "l2",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "l3",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "none",
+          "kind": "memory",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "jvm-interop",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "obj",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "comp",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "top",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "def",
+          "kind": "code",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "jvm-interop",
+      "figure": 1,
+      "nodes": [
+        {
+          "id": "src",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "declared",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "inferred",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "arg",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "nullable",
+          "kind": "flow",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "kotlin-2-4-update",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "decl",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "bare",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "scoped",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "inner",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "explicit",
+          "kind": "code",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "memory-model",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "root",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "list",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "lambda",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "activity",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "views",
+          "kind": "screen",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "path": "memory-model",
+      "figure": 1,
+      "nodes": [
+        {
+          "id": "a1",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "a2",
+          "kind": "signal",
+          "role": "runtime"
+        },
+        {
+          "id": "a3",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "b1",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "b2",
+          "kind": "inspect",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "null-safety",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "response",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "profile",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "address",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "city",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "result",
+          "kind": "flow",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "null-safety",
+      "figure": 1,
+      "nodes": [
+        {
+          "id": "check",
+          "kind": "inspect",
+          "role": "runtime"
+        },
+        {
+          "id": "use",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "local",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "other",
+          "kind": "worker",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "null-safety",
+      "figure": 2,
+      "nodes": [
+        {
+          "id": "g1",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "g2",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "g3",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "m1",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "m2",
+          "kind": "gate",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "reified-types",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "u",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "i",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "l",
+          "kind": "code",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "sealed-classes",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "type",
+          "kind": "graph",
+          "role": "runtime"
+        },
+        {
+          "id": "w1",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "w2",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "w3",
+          "kind": "code",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "test-dispatchers-virtual-time",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "launch",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "action",
+          "kind": "signal",
+          "role": "runtime"
+        },
+        {
+          "id": "clock",
+          "kind": "clock",
+          "role": "runtime"
+        },
+        {
+          "id": "queue",
+          "kind": "queue",
+          "role": "queue"
+        },
+        {
+          "id": "log",
+          "kind": "document",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "value-classes",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "self",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "nullable",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "generic",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "reuse",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "iface",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "back",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "identity",
+          "kind": "gate",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "variables",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "tags",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "reassign",
+          "kind": "signal",
+          "role": "runtime"
+        },
+        {
+          "id": "view",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "other",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "list",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "immutable",
+          "kind": "memory",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "variables",
+      "figure": 1,
+      "nodes": [
+        {
+          "id": "frame",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "caller",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "ref",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "lambda",
+          "kind": "code",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "variance",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "base",
+          "kind": "graph",
+          "role": "runtime"
+        },
+        {
+          "id": "out",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "in",
+          "kind": "flow",
+          "role": "storage"
+        },
+        {
+          "id": "inv",
+          "kind": "memory",
+          "role": "storage"
+        }
+      ]
+    },
+    {
+      "path": "variance",
+      "figure": 1,
+      "nodes": [
+        {
+          "id": "j1",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "j2",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "j3",
+          "kind": "gate",
+          "role": "runtime"
+        },
+        {
+          "id": "k1",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "k2",
+          "kind": "code",
+          "role": "runtime"
+        }
+      ]
+    }
+  ]
+}

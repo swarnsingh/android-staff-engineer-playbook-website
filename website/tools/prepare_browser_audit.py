@@ -22,7 +22,7 @@ def main():
     (output/'.playbook-browser-qa').write_text('Disposable browser audit copy. Never deploy.\n')
     fx = output/'fx';fx.mkdir(exist_ok=True)
     audit = (ROOT/'website/scripts/browser_preservation.js').read_text()
-    version = hashlib.sha256((audit+(ROOT/'website/tools/browser_audit_runner.js').read_text()).encode()).hexdigest()[:12]
+    version = hashlib.sha256((audit+(ROOT/'website/tools/browser_audit_runner.js').read_text()+(ROOT/'website/blend.js').read_text()+(ROOT/'website/design-system/components/bundle.js').read_text()).encode()).hexdigest()[:12]
     (fx/'audit.js').write_text('window.__inspectOriginalContent = '+audit+';\n')
     shutil.copy2(ROOT/'website/tools/browser_audit_runner.js',fx/'run.js')
     pages = json.loads((output/'coverage/pages.json').read_text())
@@ -34,6 +34,7 @@ def main():
     # A self-contained real-runtime fixture keeps simultaneous controllers visible.
     import re
     scene = re.search(r'<section class="pb-figure" data-pb-flow="scene".*?</section>', (ROOT/'website/content/blend/android/retrofit-and-okhttp.blend').read_text(), re.S)[0]
+    illustrated_stepper = re.search(r'<figure class="stepper".*?</figure>', (ROOT/'website/content/blend/channels-and-select.blend').read_text(), re.S)[0]
     second_scene = re.search(r'<section class="pb-figure" data-pb-flow="scene".*?</section>', (ROOT/'website/content/blend/android/workmanager.blend').read_text(), re.S)[0]
     def legacy(extra='', transfer=True):
         data = [{'caption':'A owns the request','add':['a','b'],'state':{'a':'active'}}, {'caption':'Deliver to B','state':{'a':'done','b':'active'}}]
@@ -43,8 +44,9 @@ def main():
     loop = '<section class="pb-figure" data-pb-flow="loop"><div class="pb-paper"><svg class="pb-svg"></svg></div><button data-toggle>Play</button><script type="application/json">'+json.dumps(loop_data)+'</script></section>'
     fixture = '<!doctype html><meta charset="utf-8"><title>Reader motion regressions</title>'+''.join('<link rel="stylesheet" href="/'+f+'">' for f in ['styles.css','blend.css','tokens.css','theme.css','flow.css'])
     fixture += '<style>body{padding:12px}#cases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.pb-paper{height:65px;overflow:hidden}.pb-caption{min-height:0;height:54px;overflow:hidden}.pb-sub{display:none}.pb-figure{padding:8px}.stepper{margin:0;padding:8px}.stepper-caption{min-height:0}#motion-results{white-space:pre-wrap}</style>'
-    fixture += '<button id="motion-start">Start motion regressions</button><div id="cases">'+scene+second_scene+loop+legacy()+legacy(transfer=False)+legacy('data-no-handoff')+'</div><pre id="motion-results">Not started</pre>'
+    fixture += '<button id="motion-start">Start motion regressions</button><div id="cases">'+scene+second_scene+loop+legacy()+legacy(transfer=False)+legacy('data-no-handoff')+illustrated_stepper+'</div><pre id="motion-results">Not started</pre>'
     fixture += '<script src="/flow.js"></script><script src="/blend.js"></script><script src="/fx/motion.js"></script><script>document.getElementById("motion-start").onclick=runMotionAudit</script>'
+    fixture=re.sub(r'((?:src|href)="/[^"?]+\.(?:js|css))"',lambda m:m[1]+'?v='+version+'"',fixture)
     (output/'motion-fixture.html').write_text(fixture)
     shutil.copy2(ROOT/'website/tools/motion_audit_runner.js',fx/'motion.js')
     shutil.copy2(ROOT/'website/tools/binder_audit_runner.js',fx/'binder.js')

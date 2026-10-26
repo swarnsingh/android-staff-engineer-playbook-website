@@ -11,7 +11,7 @@
 <!-- @after Remote SwiftPM Binary Distribution :: animation -->
 ### Keep the release identity together
 
-<figure class="stepper" data-no-handoff><span class="stepper-title">From assembled framework to an immutable package</span><div class="stage viz-stack"><div class="node" data-el="build"><strong>Release build</strong><small data-text="buildV">—</small></div><div class="node" data-el="archive"><strong>XCFramework archive</strong><small data-text="archiveV">—</small></div><div class="node" data-el="manifest"><strong>Package manifest + version</strong><small data-text="manifestV">—</small></div><div class="node" data-el="consumer"><strong>Clean consumer</strong><small data-text="consumerV">—</small></div></div><script type="application/json" class="steps">[
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">From assembled framework to an immutable package</span><div class="stage viz-stack"><div class="node" data-el="build" data-art="code" data-art-role="runtime"><strong>Release build</strong><small data-text="buildV">—</small></div><div class="node" data-el="archive" data-art="parcel" data-art-role="queue"><strong>XCFramework archive</strong><small data-text="archiveV">—</small></div><div class="node" data-el="manifest" data-art="document" data-art-role="storage"><strong>Package manifest + version</strong><small data-text="manifestV">—</small></div><div class="node" data-el="consumer" data-art="phone" data-art-role="client"><strong>Clean consumer</strong><small data-text="consumerV">—</small></div></div><script type="application/json" class="steps">[
 {
 "label": "Build variants",
 "caption": "Produce and test the platform variants in the support matrix.",

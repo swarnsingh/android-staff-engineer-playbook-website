@@ -15,7 +15,7 @@ The manual collector helper, guaranteed UI-crash description and combined bridge
 <!-- @after 3. The Dual-GC Architecture (The Real Danger) :: animation -->
 ### Follow the owner through the reference graph
 
-<figure class="stepper" data-no-handoff><span class="stepper-title">Why ending a screen is more than dropping one local variable</span><div class="stage viz-stack"><div class="node" data-el="swift"><strong>Swift screen owner</strong><small data-text="swiftV">—</small></div><div class="node" data-el="kotlin"><strong>Shared state holder</strong><small data-text="kotlinV">—</small></div><div class="node" data-el="callback"><strong>Registered callback</strong><small data-text="callbackV">—</small></div></div><script type="application/json" class="steps">[
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">Why ending a screen is more than dropping one local variable</span><div class="stage viz-stack"><div class="node" data-el="swift" data-art="phone" data-art-role="client"><strong>Swift screen owner</strong><small data-text="swiftV">—</small></div><div class="node" data-el="kotlin" data-art="memory" data-art-role="storage"><strong>Shared state holder</strong><small data-text="kotlinV">—</small></div><div class="node" data-el="callback" data-art="signal" data-art-role="runtime"><strong>Registered callback</strong><small data-text="callbackV">—</small></div></div><script type="application/json" class="steps">[
 {
 "label": "Subscribe",
 "caption": "The Swift owner retains the shared holder; its registered callback captures the Swift owner in this example.",

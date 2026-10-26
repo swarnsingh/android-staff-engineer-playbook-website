@@ -95,10 +95,40 @@ window.__runAudit = async (pages, widths = [320, 390, 768, 1181, 1280, 1439, 144
           }
           d.documentElement.classList.remove('reduce-motion');
         }
+        const illustratedChecks=[];
+        const illustrated=[...d.querySelectorAll('figure.stepper[data-illustrated]')];
+        if(illustrated.length){
+          w.setView('content',{writeHistory:false,restore:false});d.documentElement.classList.add('reduce-motion');
+          for(const width of [320,768,1280,1440])for(const theme of ['light','dark','sepia','contrast']){
+            frame.style.width=width+'px';d.documentElement.dataset.theme=theme;
+            await Promise.race([new Promise(resolve=>w.requestAnimationFrame(()=>w.requestAnimationFrame(resolve))),new Promise(resolve=>setTimeout(resolve,300))]);
+            for(const [figureIndex,figure] of illustrated.entries()){
+              const steps=JSON.parse(figure.querySelector('script.steps').textContent),problems=[];
+              figure.querySelector('[data-act=reset]').click();
+              for(let i=0;i<steps.length;i++){
+                if(i)figure.querySelector('[data-act=next]').click();
+                if(Number(figure.dataset.step)!==i+1)problems.push('wrong frame '+i);
+                if(figure.querySelector('[aria-current=step]')?.dataset.index!==String(i))problems.push('wrong selected step '+i);
+                for(const node of figure.querySelectorAll('.node[data-art]')){
+                  const art=node.querySelector('svg.stepper-art');
+                  if(!art){problems.push('missing art '+node.dataset.el);continue;}
+                  const a=art.getBoundingClientRect(),b=node.getBoundingClientRect();
+                  if(a.left<b.left-.5||a.right>b.right+.5||a.top<b.top-.5||a.bottom>b.bottom+.5)problems.push('art outside node '+node.dataset.el);
+                  for(const text of art.querySelectorAll('text')){
+                    const m=text.getScreenCTM();if(parseFloat(w.getComputedStyle(text).fontSize)*Math.hypot(m.a,m.b)<11.95)problems.push('small actor label '+node.dataset.el);
+                  }
+                }
+                if(d.documentElement.scrollWidth>d.documentElement.clientWidth+1)problems.push('page overflow at step '+i);
+              }
+              illustratedChecks.push({width,theme,figure:figureIndex,states:steps.length,objects:figure.querySelectorAll('.stepper-art').length,problems:[...new Set(problems)],ok:!problems.length});
+            }
+          }
+          d.documentElement.classList.remove('reduce-motion');
+        }
         const qaSeparation = d.querySelectorAll('#panel-content [data-question],#panel-content .blend[data-kind="check"]').length === 0;
         const answers = [...d.querySelectorAll('#panel-qa #section-answer-key > ol > li')];
         const answerLabels = answers.every(item=>item.querySelector('.qa-answer-label'));
-        window.__R.pages.push({href,preservation,steppers,ready,scenes,sceneReady,runtimeErrors,sceneChecks,layouts,qaSeparation,answerLabels,ok:runtimeErrors.length===0&&sceneChecks.every(c=>c.ok)&&preservation.problems.length===0&&steppers===ready&&scenes===sceneReady&&qaSeparation&&answerLabels&&layouts.every(l=>!l.overflow&&!l.clipped&&!l.smallLabels.length)});
+        window.__R.pages.push({href,preservation,steppers,ready,scenes,sceneReady,runtimeErrors,sceneChecks,illustratedChecks,layouts,qaSeparation,answerLabels,ok:runtimeErrors.length===0&&illustratedChecks.every(c=>c.ok)&&sceneChecks.every(c=>c.ok)&&preservation.problems.length===0&&steppers===ready&&scenes===sceneReady&&qaSeparation&&answerLabels&&layouts.every(l=>!l.overflow&&!l.clipped&&!l.smallLabels.length)});
       } catch(error) {
         window.__R.pages.push({href,ok:false,error:String(error),loadState:frame.contentDocument?.readyState,title:frame.contentDocument?.title,runtimeErrors:frame.contentWindow?.__qaErrors});
       } finally {

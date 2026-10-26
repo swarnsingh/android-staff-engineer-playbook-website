@@ -46,6 +46,7 @@
 .pb-art .art-success { fill: var(--accent); }
 .pb-art .art-success-line { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .pb-art .art-count { fill: var(--sheet); font: 700 15px var(--font-sans); }
+.pb-art .art-item { fill: var(--ink); font: 700 12px var(--font-sans); }
 .pb-pk.is-object { --payload: var(--accent); }
 .pb-pk.is-object.back { --payload: var(--event); }
 .pb-pk.is-object.stuck { --payload: var(--warn); }
@@ -60,6 +61,20 @@
 .pb-guide { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 12px; font: 13px/21px var(--font-sans); color: var(--ink-muted); }
 .pb-guide summary { cursor: pointer; font-weight: 600; color: var(--ink); }
 .pb-guide p { margin: 8px 0; }
+.stepper-art { display: block; width: 80px; height: 72px; margin: 0 auto 10px; overflow: visible; }
+.stepper.is-illustrated .node[data-art] { background: color-mix(in srgb, var(--actor) 7%, var(--sheet)); border-color: color-mix(in srgb, var(--actor) 55%, var(--line)); border-radius: var(--radius-md); }
+.stepper.is-illustrated .node[data-state=active] { border-color: var(--actor); box-shadow: inset 0 3px var(--actor); }
+.stepper.is-illustrated .node[data-state=done] { border-color: var(--actor); }
+.stepper.is-illustrated .node[data-state=warn],.stepper.is-illustrated .node[data-state=error] { border-color: var(--warn); background: var(--warn-soft); }
+.stepper.is-illustrated .node[data-state=ghost] { border-style: dashed; }
+.stepper.is-illustrated .node[data-state=done]::before,.stepper.is-illustrated .node[data-state=warn]::before,.stepper.is-illustrated .node[data-state=error]::before { content: none; }
+.stepper.is-illustrated .pb-progress { margin-bottom: 12px; }
+.stepper.is-illustrated .pb-step-nav { margin-bottom: 12px; }
+.stepper-packet.has-object { width: 36px; height: 30px; margin: -15px 0 0 -18px; background: none; border: 0; box-shadow: none; border-radius: 0; }
+.stepper-packet.has-object svg { display: block; width: 36px; height: 30px; }
+.stepper-packet .transfer-label { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap; color: var(--accent); background: var(--sheet); border-radius: var(--radius-sm); padding: 1px 4px; font: 600 12px/18px var(--font-sans); }
+@media(max-width:520px){.stepper-art{max-width:100%;height:auto;}}
+[data-theme="contrast"] .stepper.is-illustrated .node[data-art] { background: var(--sheet); border-color: var(--actor); }
 .pb-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; }
 .pb-legend span::before { content: ''; display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 3px; background: var(--actor); }
 [data-theme="contrast"] .pb-node.has-art > rect { fill: var(--sheet); stroke: var(--actor); }

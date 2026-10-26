@@ -326,3 +326,5 @@ Owner direction, 2026-10-27: learn from the whole experience of [ByteByteGo](htt
 - **Improve shared components, then inspect real lessons.** Put reusable behaviour in the design system. Review representative structure, time, ownership and failure diagrams on phone, tablet and desktop. Audit the entire rendered tree after shared changes. Record implemented coverage and remaining gaps; do not claim that all state steppers are full animated scenes.
 
 The reference review and implementation evidence belong in `website/reviews/website-experience-2026-10-27.md`. Future contributors should use this standard for every new or revised lesson.
+
+Current rollout order, owner decision on 2026-10-27: complete an illustrated first pass across all existing step-throughs before spending more time polishing a small subset. Then refine the mechanisms that benefit from bespoke choreography. Correctness, readable layouts, reduced motion and source preservation remain required in both passes. See the [122-item coverage report](website/reviews/illustrated-coverage-2026-10-27.md).

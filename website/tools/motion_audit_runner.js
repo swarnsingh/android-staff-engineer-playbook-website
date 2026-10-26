@@ -103,6 +103,17 @@ window.runMotionAudit = async () => {
     assert(packets(scenes[0])===0 && moving(scenes[0])===0,'Offscreen scene kept moving');
     scenes[0].style.display='';
   });
+  await test('Illustrated state steppers restore authored queue contents on numbered jumps', async () => {
+    const figure=document.querySelector('.stepper[data-illustrated]');
+    assert(figure?.querySelectorAll('svg.stepper-art').length===4,'Channel illustrations did not mount');
+    document.documentElement.classList.add('reduce-motion');
+    figure.querySelector('[data-index="1"]').click();
+    const count=id=>figure.querySelector('[data-el="'+id+'"] .art-count')?.textContent;
+    assert(count('r')==='0'&&count('b')==='2'&&count('c')==='1'&&count('u')==='3','Authored capacities not reflected in objects');
+    figure.querySelector('[data-index="0"]').click();
+    assert(count('b')==='1'&&count('u')==='1','Backward jump retained future queue contents');
+    assert([...figure.querySelectorAll('.stepper-art')].every(e=>e.getAnimations().every(a=>a.playState!=='running')),'Reduced motion animated an actor');
+  });
   const result={done:true,ok:results.every(r=>r.ok),results};
   output.textContent=JSON.stringify(result,null,2);
 };

@@ -8,11 +8,95 @@ Flow's default is calm: one value at a time, each step waiting for the next, so 
 <!-- @after First Principles :: animation -->
 ### One value at a time, by default
 
-<figure class="stepper" data-no-handoff><span class="stepper-title"><code>flow { emit(…) }.map { … }.filter { … }.collect { render(it) }</code></span><div class="stage viz-flow"><div class="node" data-el="emit"><strong><code>emit</code></strong><small data-text="emitNote">producer</small></div><div class="arrow"></div><div class="node" data-el="map"><strong><code>map</code></strong><small data-text="mapNote">—</small></div><div class="arrow"></div><div class="node" data-el="filter"><strong><code>filter</code></strong><small data-text="filterNote">—</small></div><div class="arrow"></div><div class="node" data-el="collect"><strong><code>collect</code></strong><small data-text="collectNote">—</small></div></div><script type="application/json" class="steps">[
-{"label":"Emit value 1","caption":"emit(1) does not drop the value into a queue. It calls straight into the next operator, and returns only when the rest of the chain is done with the value.","add":["emit","map","filter","collect"],"state":{"emit":"active"},"text":{"emitNote":"emit(1) — running downstream"}},
-{"label":"Through map and filter","caption":"The same call continues: map transforms the value, filter checks it, all in one chain.","state":{"map":"active","filter":"active","emit":"warn"},"text":{"mapNote":"1 → user 1","filterNote":"active? yes"}},
-{"label":"Collector runs","caption":"render(user 1) runs. If it is slow, the producer is still inside emit(1). It suspends only if render itself suspends.","state":{"collect":"active","map":"","filter":""},"text":{"collectNote":"rendering user 1 (slow)"}},
-{"label":"Only now, value 2","caption":"When render returns, emit(1) returns, and the producer may compute and emit value 2. This waiting is Flow's built-in backpressure.","state":{"emit":"active","collect":"done"},"text":{"emitNote":"emit(2)","collectNote":"done with 1"}}
+<figure class="stepper" data-illustrated><span class="stepper-title"><code>flow { emit(…) }.map { … }.filter { … }.collect { render(it) }</code></span><div class="stage viz-flow"><div class="node" data-el="emit" data-art="worker" data-art-role="runtime"><strong><code>emit</code></strong><small data-text="emitNote">producer</small></div><div class="arrow"></div><div class="node" data-el="map" data-art="code" data-art-role="runtime"><strong><code>map</code></strong><small data-text="mapNote">—</small></div><div class="arrow"></div><div class="node" data-el="filter" data-art="gate" data-art-role="runtime"><strong><code>filter</code></strong><small data-text="filterNote">—</small></div><div class="arrow"></div><div class="node" data-el="collect" data-art="phone" data-art-role="client"><strong><code>collect</code></strong><small data-text="collectNote">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Emit value 1",
+    "caption": "emit(1) does not drop the value into a queue. It calls straight into the next operator, and returns only when the rest of the chain is done with the value.",
+    "add": [
+      "emit",
+      "map",
+      "filter",
+      "collect"
+    ],
+    "state": {
+      "emit": "active"
+    },
+    "text": {
+      "emitNote": "emit(1) — running downstream"
+    },
+    "visuals": {
+      "emit": {
+        "badge": 1
+      }
+    }
+  },
+  {
+    "label": "Through map and filter",
+    "caption": "The same call continues: map transforms the value, filter checks it, all in one chain.",
+    "state": {
+      "map": "active",
+      "filter": "active",
+      "emit": "warn"
+    },
+    "text": {
+      "mapNote": "1 → user 1",
+      "filterNote": "active? yes"
+    },
+    "visuals": {
+      "map": {
+        "badge": 1
+      },
+      "filter": {
+        "badge": 1
+      }
+    },
+    "handoff": {
+      "from": "emit",
+      "to": "map",
+      "kind": "rows",
+      "label": "value 1"
+    }
+  },
+  {
+    "label": "Collector runs",
+    "caption": "render(user 1) runs. If it is slow, the producer is still inside emit(1). It suspends only if render itself suspends.",
+    "state": {
+      "collect": "active",
+      "map": "",
+      "filter": ""
+    },
+    "text": {
+      "collectNote": "rendering user 1 (slow)"
+    },
+    "visuals": {
+      "collect": {
+        "badge": 1
+      }
+    },
+    "handoff": {
+      "from": "filter",
+      "to": "collect",
+      "kind": "rows",
+      "label": "user 1"
+    }
+  },
+  {
+    "label": "Only now, value 2",
+    "caption": "When render returns, emit(1) returns, and the producer may compute and emit value 2. This waiting is Flow's built-in backpressure.",
+    "state": {
+      "emit": "active",
+      "collect": "done"
+    },
+    "text": {
+      "emitNote": "emit(2)",
+      "collectNote": "done with 1"
+    },
+    "visuals": {
+      "emit": {
+        "badge": 2
+      }
+    }
+  }
 ]</script><figcaption>Nothing runs ahead unless an operator such as <code>buffer</code>, <code>conflate</code>, <code>flatMapMerge</code>, or a <code>flowOn</code> that changes the dispatcher, adds a boundary.</figcaption></figure>
 
 <!-- @after Context with flowOn :: visual -->

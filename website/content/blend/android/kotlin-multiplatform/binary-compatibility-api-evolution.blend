@@ -11,7 +11,7 @@
 <!-- @after High-Risk Kotlin Changes :: animation -->
 ### Why recompilation can hide a binary break
 
-<figure class="stepper" data-no-handoff><span class="stepper-title">An existing caller asks for the old entry point</span><div class="stage viz-stack"><div class="node" data-el="old"><strong>Previously compiled caller</strong><small data-text="oldV">—</small></div><div class="node" data-el="candidate"><strong>Candidate library</strong><small data-text="candidateV">—</small></div><div class="node" data-el="source"><strong>Recompiled source fixture</strong><small data-text="sourceV">—</small></div><div class="node" data-el="gate"><strong>Compatibility gate</strong><small data-text="gateV">—</small></div></div><script type="application/json" class="steps">[
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">An existing caller asks for the old entry point</span><div class="stage viz-stack"><div class="node" data-el="old" data-art="code" data-art-role="runtime"><strong>Previously compiled caller</strong><small data-text="oldV">—</small></div><div class="node" data-el="candidate" data-art="parcel" data-art-role="queue"><strong>Candidate library</strong><small data-text="candidateV">—</small></div><div class="node" data-el="source" data-art="code" data-art-role="runtime"><strong>Recompiled source fixture</strong><small data-text="sourceV">—</small></div><div class="node" data-el="gate" data-art="gate" data-art-role="runtime"><strong>Compatibility gate</strong><small data-text="gateV">—</small></div></div><script type="application/json" class="steps">[
 {
 "label": "Before change",
 "caption": "The compiled caller references the original JVM method descriptor.",

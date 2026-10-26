@@ -54,3 +54,5 @@ The reader shares playback ownership across loops, scenes and legacy state stepp
 Set `illustrated: true` and give each node `art: {kind, role}`. The renderer supports device, server, worker, queue, database, clock, parcel, memory, document, cloud, flow, code, player and gate objects. Choose each explicitly for the mechanism. `initial.visuals` and `steps[].set.visuals` hold per-actor changes such as `visible`, `count`, `rows`, `value`, `copied`, `built` and `playing`; patches accumulate and reconstruct when the reader jumps backwards. Queue actors may opt into the authored `state.queue`. Packet `kind` chooses its object symbol.
 
 Numbered navigation compares final states without animation; `aria-current="step"` identifies the selected state. It uses the same stop/settle logic as Previous and Reset. All motion ownership, visibility and reduced-motion rules still apply.
+
+The object renderer is also available as `Playbook.Actor` to HTML state figures. A shared object vocabulary does not require converting every comparison or decision into a transport scene. `Playbook.Payload` supplies the same envelope/file/row symbols for explicitly authored HTML transfers.

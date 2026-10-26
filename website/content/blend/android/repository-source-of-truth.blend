@@ -23,14 +23,129 @@ The example in the next section calls `dao.withTransaction { … }` on a DAO. Th
 <!-- @after Write Path: Outbox First :: animation -->
 ### Follow one offline rename until the server has it
 
-<figure class="stepper" data-no-handoff><span class="stepper-title">Outbox-first write path</span><div class="stage viz-stack"><div class="viz-grid" style="--cols:3"><div class="node" data-el="note"><strong>notes table</strong><small data-text="noteV">title: "Pump A"</small></div><div class="node" data-el="outbox"><strong>outbox table</strong><small data-text="outboxV">empty</small></div><div class="node" data-el="server"><strong>Server</strong><small data-text="serverV">title: "Pump A"</small></div></div><div class="viz-grid" style="--cols:2"><div class="node" data-el="ui"><strong>UI</strong><small data-text="uiV">"Pump A"</small></div><div class="node" data-el="worker"><strong>WorkManager</strong><small data-text="workerV">idle</small></div></div><div class="node is-key" data-el="event"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
-{"label":"Before","caption":"Local, outbox and server agree. The device is offline.","add":["note","outbox","server","ui","worker","event"],"state":{"note":"done","server":"done","ui":"done"},"text":{"eventV":"offline"}},
-{"label":"Rename","caption":"One database transaction updates the note and inserts an outbox operation with its own operation ID. Either both rows are committed or neither is.","state":{"note":"active","outbox":"active"},"text":{"noteV":"title: \"Pump A – leaking\"","outboxV":"op-81 RenameNote · Pending","eventV":"database.withTransaction { update + insert }"}},
-{"label":"UI updates","caption":"The UI observes Room, so it shows the new title at once. Nothing has been sent yet.","state":{"ui":"active"},"text":{"uiV":"\"Pump A – leaking\"","eventV":"Room invalidation → Flow emits"}},
-{"label":"Unique work queued","caption":"enqueueUniqueWork(\"outbox-drain\", KEEP, …) asks WorkManager to drain the outbox. WorkManager persists the request, so it survives process death.","state":{"worker":"warn"},"text":{"workerV":"enqueued, waiting for network","eventV":"process may now die safely"}},
-{"label":"Process killed","caption":"The app is killed overnight. Both tables are on disk, and the work request is too.","state":{"ui":"ghost"},"text":{"uiV":"(app not running)","eventV":"no data lost"}},
-{"label":"Network returns","caption":"WorkManager runs the worker. It sends op-81 with its operation ID as an idempotency key. The request times out after the server applied it.","state":{"worker":"active","server":"active"},"text":{"workerV":"running op-81","serverV":"title: \"Pump A – leaking\"","eventV":"timeout: outcome unknown to the client"}},
-{"label":"Retry, deduplicated","caption":"The worker retries with the same key. The server recognises op-81 and returns the earlier result instead of applying it twice. The worker marks the operation done.","state":{"outbox":"done","worker":"done","server":"done","note":"done"},"text":{"outboxV":"op-81 · Done","workerV":"succeeded","eventV":"idempotency key collapses the duplicate"}}
+<figure class="stepper" data-illustrated><span class="stepper-title">Outbox-first write path</span><div class="stage viz-stack"><div class="viz-grid" style="--cols:3"><div class="node" data-el="note" data-art="database" data-art-role="storage"><strong>notes table</strong><small data-text="noteV">title: "Pump A"</small></div><div class="node" data-el="outbox" data-art="queue" data-art-role="queue"><strong>outbox table</strong><small data-text="outboxV">empty</small></div><div class="node" data-el="server" data-art="server" data-art-role="runtime"><strong>Server</strong><small data-text="serverV">title: "Pump A"</small></div></div><div class="viz-grid" style="--cols:2"><div class="node" data-el="ui" data-art="phone" data-art-role="client"><strong>UI</strong><small data-text="uiV">"Pump A"</small></div><div class="node" data-el="worker" data-art="worker" data-art-role="runtime"><strong>WorkManager</strong><small data-text="workerV">idle</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Before",
+    "caption": "Local, outbox and server agree. The device is offline.",
+    "add": [
+      "note",
+      "outbox",
+      "server",
+      "ui",
+      "worker",
+      "event"
+    ],
+    "state": {
+      "note": "done",
+      "server": "done",
+      "ui": "done"
+    },
+    "text": {
+      "eventV": "offline"
+    },
+    "visuals": {
+      "outbox": {
+        "count": 0
+      }
+    }
+  },
+  {
+    "label": "Rename",
+    "caption": "One database transaction updates the note and inserts an outbox operation with its own operation ID. Either both rows are committed or neither is.",
+    "state": {
+      "note": "active",
+      "outbox": "active"
+    },
+    "text": {
+      "noteV": "title: \"Pump A – leaking\"",
+      "outboxV": "op-81 RenameNote · Pending",
+      "eventV": "database.withTransaction { update + insert }"
+    },
+    "visuals": {
+      "outbox": {
+        "count": 1
+      }
+    }
+  },
+  {
+    "label": "UI updates",
+    "caption": "The UI observes Room, so it shows the new title at once. Nothing has been sent yet.",
+    "state": {
+      "ui": "active"
+    },
+    "text": {
+      "uiV": "\"Pump A – leaking\"",
+      "eventV": "Room invalidation → Flow emits"
+    },
+    "handoff": {
+      "from": "note",
+      "to": "ui",
+      "kind": "rows",
+      "label": "updated note"
+    }
+  },
+  {
+    "label": "Unique work queued",
+    "caption": "enqueueUniqueWork(\"outbox-drain\", KEEP, …) asks WorkManager to drain the outbox. WorkManager persists the request, so it survives process death.",
+    "state": {
+      "worker": "warn"
+    },
+    "text": {
+      "workerV": "enqueued, waiting for network",
+      "eventV": "process may now die safely"
+    }
+  },
+  {
+    "label": "Process killed",
+    "caption": "The app is killed overnight. Both tables are on disk, and the work request is too.",
+    "state": {
+      "ui": "ghost"
+    },
+    "text": {
+      "uiV": "(app not running)",
+      "eventV": "no data lost"
+    },
+    "visuals": {
+      "ui": {
+        "visible": false
+      }
+    }
+  },
+  {
+    "label": "Network returns",
+    "caption": "WorkManager runs the worker. It sends op-81 with its operation ID as an idempotency key. The request times out after the server applied it.",
+    "state": {
+      "worker": "active",
+      "server": "active"
+    },
+    "text": {
+      "workerV": "running op-81",
+      "serverV": "title: \"Pump A – leaking\"",
+      "eventV": "timeout: outcome unknown to the client"
+    },
+    "visuals": {},
+    "handoff": {
+      "from": "worker",
+      "to": "server",
+      "kind": "page",
+      "label": "op-81"
+    }
+  },
+  {
+    "label": "Retry, deduplicated",
+    "caption": "The worker retries with the same key. The server recognises op-81 and returns the earlier result instead of applying it twice. The worker marks the operation done.",
+    "state": {
+      "outbox": "done",
+      "worker": "done",
+      "server": "done",
+      "note": "done"
+    },
+    "text": {
+      "outboxV": "op-81 · Done",
+      "workerV": "succeeded",
+      "eventV": "idempotency key collapses the duplicate"
+    }
+  }
 ]</script><figcaption>Durability comes from the transaction and the persisted work; safety on retry comes from the idempotency key. Both are needed.</figcaption></figure>
 
 <!-- @after Merge Semantics :: check -->
