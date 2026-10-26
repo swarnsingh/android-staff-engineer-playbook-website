@@ -21,12 +21,13 @@ Use a static diagram, not this one, for structure: module graphs, class hierarch
 
 - The node and edge geometry. Each lesson's diagram is authored for its own content, starting from the original chapter's Mermaid diagram where one exists.
 - A text alternative (`aria-label` on the SVG). It must say what moves where, so a screen-reader user gets the same lesson.
-- Layouts. For a row flow, give `nodes` in order and `edges` as `{id, from, to, tone, label}` between neighbouring nodes: the runtime generates the `wide` row and the `narrow` column itself. Otherwise give `layouts.wide` and `layouts.narrow` explicitly. Below 520px of container width the runtime uses `narrow`, so labels stay readable on a 320px phone. Labels may contain a line break (`\n`).
+- Layouts. For a row flow of two to five nodes, give `nodes` in order and `edges` as `{id, from, to, tone, label}` between neighbouring nodes: the runtime generates the `wide` row and the `narrow` column itself. Otherwise give `layouts.wide` and `layouts.narrow` explicitly. The runtime uses `wide` only while it renders large enough to keep handwritten labels at 15px or more and other text at 12px or more; otherwise it uses `narrow`. Labels may contain a line break (`\n`).
 
 ## Behaviour
 
 - **Reduced motion (OS or reader setting, read live):** the diagram goes still at once. Packets are hidden, the arrowheads, labels and queue stay, and numbered markers show the order. Play remains available.
-- **Off screen:** the diagram pauses itself.
+- **Off screen:** the diagram pauses itself and gives up its turn.
+- **Several in view:** only the first plays on its own; the others wait as still diagrams with Play.
 - **Pause:** shows the same still version. This is needed for WCAG 2.2.2, because the motion runs longer than five seconds.
 
 ## Tokens

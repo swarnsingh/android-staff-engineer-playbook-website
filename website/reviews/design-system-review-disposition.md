@@ -17,3 +17,17 @@ Codex reviewed `61b97a5`. All 11 findings were accepted and fixed. The fixes wer
 | P3 | Copy button inert | It now copies to the clipboard, with a select-and-prompt fallback. | — |
 
 **Not verified:** the live layout switch when a window is resized across 520px. It uses `ResizeObserver`, and the test browser pane stopped painting frames during that check, so neither `ResizeObserver` nor `requestAnimationFrame` fired. A fresh load picks the correct layout at every tested width. Physical devices and other browser engines were not tested.
+
+## Round 2 (review of `6020b03`)
+
+All five findings were accepted and fixed. Every check below was measured in the local previews.
+
+| # | Finding | Fix | How it was checked |
+|---|---|---|---|
+| P1 | Moving diagrams too small just above the breakpoint | The fixed 520px switch is gone. `pickLayout()` computes the scale the wide drawing would render at and keeps it only if handwritten text stays at 15px or more and other text at 12px or more. A `TEXT` table matches `bundle.css`: wide smallest 17/13, stacked 19/15. The stacked layout draws its secondary text, edge and packet labels, chips, region names and order markers larger. Chip text is shortened to "T1 busy". | Smallest text, handwritten / other: 320px stacked 16.1 / 12.7; 570px stacked 26.1 / 20.6; 768px FlowDiagram wide 16.2 / 12.4 and FlowScene stacked; 1280px FlowScene wide 20.4 / 15.6. No label clipped outside the drawing, and chip text fits its chip. |
+| P2 | Generated rows break at four or more nodes | Row width = 48 + n × 168 + (n − 1) × 84, so gaps are always 84 units. Rows take 2 to 5 nodes; anything else throws a clear error. `mountAll` now isolates failures, so one broken diagram does not stop the others. | 4 nodes: viewBox 972, gaps 84, connectors end inside the gaps. 5 nodes: viewBox 1224, the same. 6 nodes: rejected with the error message; the other diagrams on the page still mounted. |
+| P2 | Two looping diagrams play together | A shared turn: the first visible eligible loop plays and the others wait still with Play. Play on another diagram, or Play/Next on a FlowScene, takes the turn. Pausing keeps the turn, and leaving the screen releases it. | At 570×800 both diagrams were in view and only the first played. Play on the second stilled the first. Pausing the second left both still. |
+| P2 | Back-navigation protection overstated | The README now says `overscroll-behavior-x: contain` is containment where supported, and cites WebKit bug 240183 ("does not disable history navigation", open). It asks for a real-iPhone test before relying on it. | Bug report read; not tested on an iPhone. |
+| P3 | Scroll-region name exposed when nothing scrolls | `role="region"`, the "…, scrolls sideways" name and `tabindex` are now added only while the box overflows, using the box's `data-label`. | 320px: region, label and tabindex present. 1280px: all three absent. |
+
+**Still unverified:** Safari's swipe behaviour on a physical iPhone, and other browser engines.

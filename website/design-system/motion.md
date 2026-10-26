@@ -44,10 +44,10 @@ A FlowScene does not loop. Edges march only while a packet is travelling. Each s
 
 Moving and static diagrams behave differently on phones:
 
-- **Moving diagrams (FlowDiagram, FlowScene)** switch to a stacked layout below 520px of container width. Nodes form a column, forward edges run on the left lane and return edges on the right, so the cause and the effect stay on screen together and no packet travels out of view. A row flow (nodes in order, edges only between neighbours) gets both layouts generated from its node order; anything else is authored with a `wide` and a `narrow` layout.
+- **Moving diagrams (FlowDiagram, FlowScene)** use the wide layout only when it fits: the runtime computes the scale the wide drawing would render at and keeps it only if handwritten labels stay at 15px or more and other text at 12px or more. Otherwise they switch to the stacked layout, whose text is drawn larger so it meets the same minimums on a 320px phone. Nodes form a column, forward edges run on the left lane and return edges on the right, so the cause and the effect stay on screen together and no packet travels out of view. A row flow (two to five nodes in order, edges only between neighbours) gets both layouts generated from its node order, with the row as wide as its node count needs; anything else is authored with a `wide` and a `narrow` layout.
 - **Static diagrams (WideDiagram)** keep their drawing and scroll sideways inside their own box at a readable minimum width, with edge fades and a hint. Nothing moves, so scrolling loses nothing.
 
-Neither kind is ever shrunk to fit a phone, or stretched past 1.2× its drawn size on a wide screen. Labels stay at 15px or more.
+Neither kind is ever shrunk to fit a phone, or stretched past 1.2× its drawn size on a wide screen. Handwritten labels stay at 15px or more and other diagram text at 12px or more.
 
 ## When it stops
 
@@ -59,4 +59,4 @@ Motion must stop in all of these cases, and the diagram must still teach:
 
 ## Budget
 
-At most one moving diagram should be in view at a time. A lesson may use several, but each one pauses when it leaves the screen. No motion appears in the hero, the navigation or the body text.
+At most one diagram moves at a time, and the runtime enforces it. Among visible looping diagrams, only the first plays on its own; the others show their still version with a Play button. Pressing Play on another diagram, or stepping a FlowScene, gives it the turn and stills the rest. Pausing a diagram keeps its turn, so pausing one never starts another. A diagram gives up its turn when it leaves the screen. No motion appears in the hero, the navigation or the body text.

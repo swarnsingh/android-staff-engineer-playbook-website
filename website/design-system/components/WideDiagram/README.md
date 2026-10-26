@@ -11,9 +11,9 @@ Do not use it for FlowDiagram or FlowScene. Those need cause and effect on scree
 ## Rules
 
 - **Readable minimum width.** Give the drawing a `min-width` so that, at that width, labels render at 15px or more and sub-labels at 12px or more: minimum width = viewBox width × target size ÷ authored size, whichever is larger. The preview's graph is 900 units wide with 19-unit labels and 15-unit sub-labels, so it has `min-width: 740px` (labels 15.6px, sub-labels 12.3px). On desktop it fills the sheet without scrolling, up to `max-width` = 1.2 × the viewBox width (1080px here), so labels never grow far past their drawn size.
-- **Only the box scrolls.** The page never scrolls sideways. `overscroll-behavior-x: contain` stops a sideways swipe from turning into back navigation.
+- **Only the box scrolls.** The page never scrolls sideways. `overscroll-behavior-x: contain` asks the browser to keep a sideways swipe inside the box. Chrome and Firefox honour it; Safari may still treat the swipe as Back or Forward navigation ([WebKit bug 240183](https://bugs.webkit.org/show_bug.cgi?id=240183), open). Treat it as containment where supported, not a guarantee, and test the gesture on a real iPhone before relying on it.
 - **Show that there is more.** A soft fade appears on any edge that has hidden content, and a one-line hint ("Scroll sideways to see the whole graph →") shows only while the box actually overflows.
-- **Keyboard.** When the box overflows it becomes focusable (`tabindex="0"`, `role="region"` with a name), so arrow keys scroll it, and it shows the focus ring.
+- **Keyboard and screen readers.** Only while the box overflows does the runtime make it a focusable named region (`tabindex="0"`, `role="region"`, `aria-label` = the box's `data-label` + ", scrolls sideways"), so arrow keys scroll it. When the drawing fits, all three are removed and the box is plain content.
 - **Text alternative.** The SVG's `aria-label` describes the relationships, not the picture.
 
 ## Behaviour

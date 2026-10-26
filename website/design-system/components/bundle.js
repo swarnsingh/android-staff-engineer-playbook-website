@@ -18,14 +18,24 @@
     return e;
   }
   var uid = 0;
-  function pickLayout(root, data) { return root.clientWidth < (data.narrowBelow || 520) ? 'narrow' : 'wide'; }
+  // Smallest text in each layout, in drawing units (kept in step with bundle.css), and the smallest size it may render at.
+  // A layout is used only if, at the scale it would render, handwritten labels stay >= 15px and other text >= 12px.
+  var TEXT = { wide: { hand: 17, sans: 13 }, narrow: { hand: 19, sans: 15 } }, MIN = { hand: 15, sans: 12 };
+  function needScale(key) { return Math.max(MIN.hand / TEXT[key].hand, MIN.sans / TEXT[key].sans); }
+  function pickLayout(root, data) {
+    if (!data.layouts) data.layouts = autoLayouts(data);
+    var paper = root.querySelector('.pb-paper') || root, size = data.layouts.wide.size[0];
+    var scale = Math.min(paper.clientWidth, size * 1.2) / size;
+    return scale >= needScale('wide') ? 'wide' : 'narrow';
+  }
 
   // Row flows (nodes in order, edges only between neighbours) need no hand-drawn layouts:
   // the wide layout is a row with forward edges above and return edges below; the narrow one is the same flow as a column.
   function autoLayouts(data) {
     var n = data.nodes.length, tall = data.nodes.some(function (x) { return x.chips || x.queue; }), h = tall ? 84 : 66;
-    var gap = (720 - 48 - n * 168) / Math.max(1, n - 1), y = 78, ny = function (i) { return 26 + i * (h + 56); };
-    var wide = { size: [720, y + h + 88], nodes: {}, edges: {}, labels: [], order: [] };
+    if (n < 2 || n > 5) throw new Error('Generated row flows take 2 to 5 nodes; give layouts.wide and layouts.narrow for this diagram.');
+    var gap = 84, W = 48 + n * 168 + (n - 1) * gap, y = 78, ny = function (i) { return 26 + i * (h + 56); }; // 84 units leave room for a curve and its label
+    var wide = { size: [W, y + h + 88], nodes: {}, edges: {}, labels: [], order: [] };
     var narrow = { size: [320, ny(n - 1) + h + 64], nodes: {}, edges: {}, labels: [], order: [], pk: { dx: 10, dy: 5, anchor: 'start' } };
     var at = {};
     data.nodes.forEach(function (node, i) {
@@ -56,7 +66,7 @@
       }
     });
     if (data.note) {
-      wide.labels.push({ x: 360, y: wide.size[1] - 12, text: data.note.wide || data.note });
+      wide.labels.push({ x: W / 2, y: wide.size[1] - 12, text: data.note.wide || data.note });
       narrow.labels.push({ x: 160, y: narrow.size[1] - 14, text: data.note.narrow || data.note });
     }
     return { wide: wide, narrow: narrow };
@@ -67,6 +77,7 @@
     var L = data.layouts[key], id = 'pb' + (++uid);
     while (svg.firstChild) svg.removeChild(svg.firstChild);
     svg.setAttribute('viewBox', '0 0 ' + L.size[0] + ' ' + L.size[1]);
+    svg.setAttribute('data-layout', key);
     // Never scale far past the drawn size: the stacked layout stops at phone scale, the wide one at 1.2x.
     svg.style.maxWidth = key === 'narrow' ? '440px' : Math.round(L.size[0] * 1.2) + 'px'; svg.style.marginInline = 'auto';
     var defs = el('defs', {}, svg);
@@ -109,7 +120,7 @@
       });
     });
     var gO = el('g', { 'class': 'pb-order' }, svg);
-    (L.order || []).forEach(function (o) { el('circle', { cx: o.x, cy: o.y, r: 9 }, gO); el('text', { x: o.x, y: o.y + 4 }, gO).textContent = o.n; });
+    (L.order || []).forEach(function (o) { el('circle', { cx: o.x, cy: o.y, r: key === 'narrow' ? 11 : 9 }, gO); el('text', { x: o.x, y: o.y + 4 }, gO).textContent = o.n; });
     ref.packets = el('g', {}, svg);
     return ref;
   }
@@ -122,7 +133,7 @@
       for (var c in n.chips) {
         var st = (state.chips || {})[c] || 'idle';
         n.chips[c].g.setAttribute('class', 'pb-chip ' + st);
-        n.chips[c].t.textContent = c + ' · ' + (st === 'yours' ? 'your call' : st);
+        n.chips[c].t.textContent = c + ' ' + st;
       }
       n.dots.forEach(function (d, i) { d.setAttribute('opacity', i < (state.queue || 0) ? 1 : 0); });
     }
@@ -159,11 +170,27 @@
     if (ro) ro.observe(root); else window.addEventListener('resize', onResize);
   }
 
+  // At most one diagram moves at a time. Loops register in document order; the first visible one that may move plays on
+  // its own, the rest stay still with a Play button. Pressing Play on any diagram, or stepping a scene, takes the turn.
+  var loops = [], owner = null;
+  function eligible(c) { return c.visible && !c.userPaused && (!motion.reduced() || c.userPlayed); }
+  function allowed(c) {
+    if (owner) return owner === c && eligible(c);
+    for (var i = 0; i < loops.length; i++) if (eligible(loops[i])) return loops[i] === c;
+    return false;
+  }
+  function syncLoops() { loops.forEach(function (c) { c.sync(); }); }
+  function claim(c) { if (owner !== c) { owner = c; syncLoops(); } }
+  function release(c) { if (owner === c) { owner = null; syncLoops(); } }
+  motion.subscribe(function (r) { if (r) loops.forEach(function (c) { c.userPlayed = false; }); syncLoops(); });
+
   // FlowDiagram: streams loop on their edges while running; the still version shows order markers instead.
   function FlowDiagram(root, data) {
     var svg = root.querySelector('svg'), btn = root.querySelector('[data-toggle]');
-    var ref, key, raf = 0, visible = true, userPaused = false, userPlayed = false, live = [];
-    function running() { return visible && !userPaused && (!motion.reduced() || userPlayed); }
+    var ref, key, raf = 0, live = [];
+    var me = { visible: true, userPaused: false, userPlayed: false, sync: function () { if (ref) sync(); } };
+    loops.push(me);
+    function running() { return allowed(me); }
     function sync() {
       var run = running();
       cancelAnimationFrame(raf); raf = 0;
@@ -187,11 +214,15 @@
     }
     function build() { key = pickLayout(root, data); ref = draw(svg, data, key); paint(ref, data.state, [], true); sync(); }
     btn.addEventListener('click', function () {
-      if (running()) { userPaused = true; userPlayed = false; } else { userPaused = false; userPlayed = true; }
-      sync();
+      if (running()) { me.userPaused = true; me.userPlayed = false; } else { me.userPaused = false; me.userPlayed = true; }
+      owner = me; syncLoops(); // pausing keeps the turn, so pausing one diagram never starts another
     });
-    motion.subscribe(function (r) { if (r) userPlayed = false; sync(); });
-    watch(root, function (v) { if (v !== visible) { visible = v; sync(); } }, function () { if (pickLayout(root, data) !== key) build(); });
+    watch(root, function (v) {
+      if (v === me.visible) return;
+      me.visible = v;
+      if (!v && owner === me) owner = null;
+      syncLoops();
+    }, function () { if (pickLayout(root, data) !== key) build(); });
     build();
   }
 
@@ -201,6 +232,7 @@
       bar = root.querySelector('.pb-progress i'), list = root.querySelector('.pb-steps ol');
     var btn = {}; root.querySelectorAll('[data-act]').forEach(function (b) { btn[b.dataset.act] = b; });
     var mode = Object.keys(data.modes)[0], idx = 0, token = 0, flying = false, playing = false, timer = 0, ref, key;
+    var me = {};
     function track() { return data.modes[mode]; }
     function stateAt(k) {
       var s = JSON.parse(JSON.stringify(track().initial));
@@ -267,12 +299,12 @@
       if (idx >= track().steps.length - 1) { stop(); return; }
       go(idx + 1, true).then(function (ok) { if (ok && playing) timer = setTimeout(loop, 2600); });
     }
-    btn.next.addEventListener('click', function () { stop(); if (idx < track().steps.length - 1) go(idx + 1, true); });
+    btn.next.addEventListener('click', function () { stop(); claim(me); if (idx < track().steps.length - 1) go(idx + 1, true); });
     btn.prev.addEventListener('click', function () { stop(); if (idx > 0) go(idx - 1, false); });
     btn.reset.addEventListener('click', function () { stop(); go(0, false); });
     btn.play.addEventListener('click', function () {
       if (playing) { stop(); return; }
-      playing = true;
+      playing = true; claim(me);
       if (idx >= track().steps.length - 1) go(0, false);
       ui(); timer = setTimeout(loop, 400);
     });
@@ -289,7 +321,7 @@
     }
     function build() { key = pickLayout(root, data); ref = draw(svg, data, key); settle(); }
     motion.subscribe(function (r) { if (r && flying) settle(); });
-    watch(root, function (v) { if (!v && (playing || flying)) stop(); }, function () { if (pickLayout(root, data) !== key) { stop(); build(); } });
+    watch(root, function (v) { if (!v) { if (playing || flying) stop(); release(me); } }, function () { if (pickLayout(root, data) !== key) { stop(); build(); } });
     key = pickLayout(root, data); ref = draw(svg, data, key);
     fillList(); go(0, false);
   }
@@ -301,7 +333,10 @@
       root.classList.toggle('is-scrollable', more);
       root.classList.toggle('at-start', box.scrollLeft <= 1);
       root.classList.toggle('at-end', box.scrollLeft + box.clientWidth >= box.scrollWidth - 1);
-      if (more) box.setAttribute('tabindex', '0'); else box.removeAttribute('tabindex');
+      if (more) {
+        box.setAttribute('tabindex', '0'); box.setAttribute('role', 'region');
+        box.setAttribute('aria-label', (box.dataset.label || 'Diagram') + ', scrolls sideways');
+      } else { box.removeAttribute('tabindex'); box.removeAttribute('role'); box.removeAttribute('aria-label'); }
     }
     box.addEventListener('scroll', sync, { passive: true });
     if (window.ResizeObserver) new ResizeObserver(sync).observe(box); else window.addEventListener('resize', sync);
@@ -312,8 +347,13 @@
     (scope || document).querySelectorAll('[data-pb-wide]').forEach(function (root) { if (!root.__pb) { root.__pb = true; WideDiagram(root); } });
     (scope || document).querySelectorAll('[data-pb-flow]').forEach(function (root) {
       if (root.__pb) return; root.__pb = true;
-      var data = JSON.parse(root.querySelector('script[type="application/json"]').textContent);
-      (root.dataset.pbFlow === 'scene' ? FlowScene : FlowDiagram)(root, data);
+      try {
+        var data = JSON.parse(root.querySelector('script[type="application/json"]').textContent);
+        (root.dataset.pbFlow === 'scene' ? FlowScene : FlowDiagram)(root, data);
+      } catch (e) { // one broken diagram must not stop the others; its caption and text alternative still read
+        root.classList.add('pb-error');
+        if (window.console) console.error('Playbook diagram failed to mount:', e.message, root);
+      }
     });
   }
   window.Playbook = { motion: motion, FlowDiagram: FlowDiagram, FlowScene: FlowScene, WideDiagram: WideDiagram, mountAll: mountAll };

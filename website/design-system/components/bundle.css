@@ -7,7 +7,7 @@
 .pb-svg { display: block; width: 100%; height: auto; }
 
 .pb-region rect { fill: none; stroke: var(--line-strong); stroke-width: 1.5; stroke-dasharray: 5 6; }
-.pb-region text { font: 650 11px var(--font-sans); letter-spacing: .08em; fill: var(--ink-muted); }
+.pb-region text { font: 650 13px var(--font-sans); letter-spacing: .08em; fill: var(--ink-muted); }
 .pb-node > rect { fill: var(--sheet); stroke: var(--line-strong); stroke-width: 2; transition: stroke .3s, fill .3s; }
 .pb-node .t { font: 19px var(--font-hand); fill: var(--ink); }
 .pb-node .s { font: 13px var(--font-sans); fill: var(--ink-muted); }
@@ -19,7 +19,7 @@
 .pb-node.pulse > rect { animation: pb-pulse .5s ease-out; }
 @keyframes pb-pulse { from { stroke-width: 5; } to { stroke-width: 2; } }
 .pb-chip rect { stroke-width: 1.5; }
-.pb-chip text { font: 600 11px var(--font-sans); text-anchor: middle; }
+.pb-chip text { font: 600 13px var(--font-sans); text-anchor: middle; }
 .pb-chip.busy rect { fill: var(--warn-soft); stroke: var(--warn); } .pb-chip.busy text { fill: var(--warn); }
 .pb-chip.yours rect { fill: var(--accent-soft); stroke: var(--accent); } .pb-chip.yours text { fill: var(--accent); }
 .pb-chip.idle rect { fill: var(--sheet); stroke: var(--line-strong); } .pb-chip.idle text { fill: var(--ink-muted); }
@@ -40,14 +40,19 @@
 .pb-head { fill: var(--line-strong); } .pb-head.fwd { fill: var(--accent); } .pb-head.back { fill: var(--event); } .pb-head.stuck { fill: var(--warn); }
 .pb-pk circle, .pb-pk path { stroke: var(--sheet); stroke-width: 2; }
 .pb-pk.fwd circle { fill: var(--accent); } .pb-pk.back path { fill: var(--event); } .pb-pk.stuck circle { fill: var(--warn); }
-.pb-pk text { font: 15px var(--font-hand); paint-order: stroke; stroke: var(--sheet-sunken); stroke-width: 4px; }
+.pb-pk text { font: 17px var(--font-hand); paint-order: stroke; stroke: var(--sheet-sunken); stroke-width: 4px; }
 .pb-pk.fwd text { fill: var(--accent); } .pb-pk.back text { fill: var(--event); } .pb-pk.stuck text { fill: var(--warn); }
 .pb-label { font: 17px var(--font-hand); fill: var(--ink-muted); }
 .pb-label.fwd { fill: var(--accent); } .pb-label.back { fill: var(--event); } .pb-label.stuck { fill: var(--warn); }
 .pb-order { display: none; }
 .pb-order circle { fill: var(--sheet); stroke: var(--line-strong); stroke-width: 1.5; }
-.pb-order text { font: 650 11px var(--font-sans); fill: var(--ink); text-anchor: middle; }
+.pb-order text { font: 650 13px var(--font-sans); fill: var(--ink); text-anchor: middle; }
 .is-still .pb-order { display: inline; }
+/* Text sizes are in drawing units. The runtime's TEXT table must match: wide smallest hand 17 / other 13; narrow 19 / 15.
+   The stacked layout renders at about 0.8x on a 320px phone, so its text is drawn larger. */
+.pb-svg[data-layout="narrow"] .pb-node .s, .pb-svg[data-layout="narrow"] .pb-chip text,
+.pb-svg[data-layout="narrow"] .pb-region text, .pb-svg[data-layout="narrow"] .pb-order text { font-size: 15px; }
+.pb-svg[data-layout="narrow"] .pb-label, .pb-svg[data-layout="narrow"] .pb-pk text { font-size: 19px; }
 
 .pb-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px 12px; flex-wrap: wrap; margin-top: 10px; }
 .pb-bar p { margin: 0; flex: 1 1 240px; min-width: 0; font: 14px/21px var(--font-sans); color: var(--ink-muted); }

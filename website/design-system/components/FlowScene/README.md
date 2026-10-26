@@ -24,7 +24,8 @@ Use it for the lesson's main mechanism, when the reader needs to watch one syste
 
 - **Next** animates the step's packets, then applies its state. **Previous** and **Reset** jump instantly.
 - **Play** advances on its own: packets, then 2.6s to read, then the next step. It stops at the last step, when the scene scrolls out of view, or when the reader presses Pause. Stopping cancels any packet in flight and shows the step's final state; edges march only while a packet travels.
-- **Layouts:** `wide` above 520px of container width, `narrow` (stacked, 320 units wide) below it. Changing layout keeps the current step.
+- **Layouts:** `wide` while it renders large enough to keep handwritten labels at 15px or more and other text at 12px or more (about 700px of drawing width for this scene), `narrow` (stacked, 320 units wide, larger text) otherwise. Changing layout keeps the current step.
+- **Turn-taking:** pressing Play or Next gives the scene the turn, so any looping diagram in view goes still. It gives the turn back when it leaves the screen.
 - **Reduced motion (OS or reader setting, read live):** steps still advance, but state changes instantly and no packets travel. Turning it on mid-flight finishes the step at once.
 - **State is computed from the step list,** so jumping backwards always shows exactly the state at that step.
 
