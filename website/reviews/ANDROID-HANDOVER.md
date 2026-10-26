@@ -33,7 +33,7 @@ Never push or merge without the owner's approval.
 | `437019c`, `963635a`, `d1c432a` | Review fixes for Phases 5–6, 7 and 9 |
 | (next commit) | Phase 8 review fixes; checkpoint code wraps in the Q&A tab |
 
-**Last verified build:** 125 pages (Kotlin and Android), 15,572 original units, 0 preservation problems. The browser audit covers all 125 pages; see the status note at the end for the latest run.
+**Last verified build:** 125 pages (Kotlin and Android), 15,572 original units, 0 preservation problems. Browser audit on 2026-10-26 (after the Phase 8 fixes): all 125 pages ok, 138/138 steppers initialised, 93/93 diagram images loaded, 1,000 layout checks at 320/390/768/1280px with no overflow.
 
 ## Status by phase
 
