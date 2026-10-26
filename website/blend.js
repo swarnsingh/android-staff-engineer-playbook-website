@@ -5,14 +5,14 @@
 //   <figure class="stepper" data-title="…">
 //     <div class="stage">… elements marked data-el="id" (shown/hidden, data-state) and
 //                            data-text="id" (text replaced per step) …</div>
-//     <script type="application/json" class="steps">[{label, caption, add, remove, state, text}, …]</script>
+//     <script type="application/json" class="steps">[{label, caption, add, remove, state, text, handoff}, …]</script>
 //   </figure>
 // Each step changes the previous frame: `add`/`remove` list data-el ids to show or hide,
 // `state` sets data-state on data-el elements, `text` replaces the text of data-text elements. Frames are always
 // folded from step 1, so any step can be shown directly. The build also prints every
 // step as a numbered list, so the explanation never depends on JavaScript or motion.
 (function () {
-  const reducedMotion = () => typeof effectiveReducedMotion !== 'undefined' && effectiveReducedMotion;
+  const reducedMotion = () => window.Playbook ? window.Playbook.motion.reduced() : typeof effectiveReducedMotion !== 'undefined' && effectiveReducedMotion;
 
   function frames(steps, ids) {
     const visible = new Set(), state = {}, text = {};
@@ -38,14 +38,19 @@
     let position = 0, timer = null, shown = 0, flight = null;
     const stage = figure.querySelector('.stage');
 
-    // Design-system motion: moving forward sends a packet from the box that was active to the box that is now active.
-    function cancelFlight() { if (flight) { flight.cancel(); flight.effect.target.remove(); flight = null; } }
+    // A transfer must be authored explicitly as handoff: {from, to}. Active state alone does not mean data moved.
+    function cancelFlight() {
+      if (!flight) return;
+      flight.cancel(); flight.effect.target.remove(); flight = null;
+      if (!timer) { $('[data-act=play]').textContent = 'Play'; $('[data-act=play]').setAttribute('aria-pressed', 'false'); }
+    }
     function handoff(prev, next) {
-      if (reducedMotion() || !prev || !next || !stage.animate) return;
+      if (figure.hasAttribute('data-no-handoff') || reducedMotion() || !prev || !next || !stage.animate) return;
+      const transfer = next.step.handoff;
+      if (!transfer) return;
       const live = (frame, el) => frame.visible.has(el.dataset.el);
-      const from = elements.find(el => prev.state[el.dataset.el] === 'active' && live(prev, el));
-      const to = elements.find(el => ['active', 'warn', 'error'].includes(next.state[el.dataset.el]) && live(next, el) && next.state[el.dataset.el] !== prev.state[el.dataset.el]);
-      if (!from || !to || from === to) return;
+      const from = byId[transfer.from], to = byId[transfer.to];
+      if (!from || !to || from === to || !live(prev, from) || !live(next, from) || !live(next, to)) return;
       const box = stage.getBoundingClientRect(), a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
       const at = r => `translate(${r.left - box.left + r.width / 2}px, ${r.top - box.top + r.height / 2}px)`;
       const dot = document.createElement('span');
@@ -54,7 +59,8 @@
       stage.appendChild(dot);
       flight = dot.animate([{ transform: at(a), opacity: 0 }, { opacity: 1, offset: .15 }, { opacity: 1, offset: .85 }, { transform: at(b), opacity: 0 }],
         { duration: 750, easing: 'cubic-bezier(.45, 0, .55, 1)' });
-      flight.onfinish = () => { dot.remove(); flight = null; };
+      $('[data-act=play]').textContent = 'Pause'; $('[data-act=play]').setAttribute('aria-pressed', 'true');
+      flight.onfinish = () => { dot.remove(); flight = null; if (!timer) { $('[data-act=play]').textContent = 'Play'; $('[data-act=play]').setAttribute('aria-pressed', 'false'); } };
     }
 
     const controls = document.createElement('div');
@@ -89,7 +95,8 @@
       clearInterval(timer); timer = null; cancelFlight();
       $('[data-act=play]').textContent = 'Play'; $('[data-act=play]').setAttribute('aria-pressed', 'false');
     }
-    function go(delta) { stop(); position = Math.max(0, Math.min(all.length - 1, position + delta)); render(delta > 0); }
+    const turn = window.Playbook?.registerSteps(stop);
+    function go(delta) { stop(); if (delta > 0) turn?.claim(); position = Math.max(0, Math.min(all.length - 1, position + delta)); render(delta > 0); }
     controls.addEventListener('click', event => {
       const act = event.target.closest('button')?.dataset.act;
       if (act === 'prev') go(-1);
@@ -97,13 +104,14 @@
       if (act === 'reset') { stop(); position = 0; render(); }
       if (act === 'play') {
         if (reducedMotion()) { if (typeof toast === 'function') toast('Reduced motion is on. Use Previous and Next to see every step.'); return; }
-        if (timer) { stop(); return; }
+        if (timer || flight) { stop(); return; }
+        turn?.claim();
         if (position === all.length - 1) position = 0;
         render();
         $('[data-act=play]').textContent = 'Pause'; $('[data-act=play]').setAttribute('aria-pressed', 'true');
         timer = setInterval(() => {
           if (reducedMotion()) { stop(); return; }
-          position++; render(true); if (position === all.length - 1) { clearInterval(timer); timer = null; $('[data-act=play]').textContent = 'Play'; $('[data-act=play]').setAttribute('aria-pressed', 'false'); }
+          position++; render(true); if (position === all.length - 1) { clearInterval(timer); timer = null; if (!flight) { $('[data-act=play]').textContent = 'Play'; $('[data-act=play]').setAttribute('aria-pressed', 'false'); } }
         }, 2600);
       }
     });
@@ -113,7 +121,8 @@
       if (reducedMotion()) stop();
       $('[data-act=play]').setAttribute('aria-disabled', reducedMotion());
     });
-    new IntersectionObserver(entries => { if (!entries[0].isIntersecting) stop(); }).observe(figure);
+    new IntersectionObserver(entries => { if (!entries[0].isIntersecting) { stop(); turn?.release(); } }).observe(figure);
+    window.addEventListener('resize', cancelFlight);
     document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
     figure.classList.add('is-ready');
     render();
@@ -147,7 +156,7 @@
       card.classList.toggle('at-end', pre.scrollLeft + pre.clientWidth >= pre.scrollWidth - 1);
     };
     pre.addEventListener('scroll', sync, { passive: true });
-    if (window.ResizeObserver) new ResizeObserver(sync).observe(pre);
+    if (window.Playbook) window.Playbook.observeResize(pre, sync);
     new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] }); // the reader's wrap setting
     sync();
   });

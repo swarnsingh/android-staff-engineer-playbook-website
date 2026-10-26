@@ -1,5 +1,7 @@
 # Handover to Codex: Android reader and Playbook Design System
 
+> Continuation, 2026-10-26: publication instructions below are historical. The owner now requires all website work and publication configuration in the single website repository, with both source and preview private. See rulebook section 19, [the deployment guide](../DEPLOYMENT.md) and [round-4 review](design-system-review-round4.md) for the current fixes, validation and publication status. Do not update the Claude artifacts or create a separate hosting repository.
+
 Written 2026-10-26 by Claude, on the owner's request, so Codex can continue from exactly here.
 
 - **Repo:** `/Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook-website`

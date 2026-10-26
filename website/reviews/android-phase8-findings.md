@@ -50,3 +50,7 @@ Each finding is flagged on its page with an **Under review** note before every a
 ## Independent review
 
 Reviewed at `f2317a0` by an independent subagent (2 P1, 10 P2, 11 P3). Applied: the configuration wording in the Gradle opening and stepper, the intent-gate wording, the Binder and Zygote note coverage, the Answer Key note in Gradle, the KSP and convention-plugin stepper fixes, wording fixes in multi-module, permissions and package manager, new findings GB8, MM4, CP4, KS3, IR1, AM1, ZY3 and ART1, and an ART execution-mode visual. Not applied: a separate Binder visual, because the existing stepper already shows what a caller waits for.
+
+## Candidate follow-up, 2026-10-26
+
+KS4 now has a neutral on-page note. The [incremental-processing contract](https://kotlinlang.org/docs/ksp-incremental.html) establishes input/output dependencies, but no reproduction was run for the particular consumer-module symptom; the proposed fix remains unverified. KS5 now has a note at the unqualified opening definition: [KSP2's own design document](https://github.com/google/ksp/blob/main/docs/ksp2.md) explicitly distinguishes its implementation from the KSP1 compiler plugin. No source replacement is approved or applied.

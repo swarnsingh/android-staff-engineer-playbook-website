@@ -14,7 +14,7 @@ The Instant migration instruction and the “DTOs for free” consumer claim in 
 <!-- @after 2. The Incremental Migration Path (Strangler Fig) :: animation -->
 ### Replace one dependency through a seam
 
-<figure class="stepper"><span class="stepper-title">A pilot remains reversible until it earns expansion</span><div class="stage viz-stack"><div class="node" data-el="contract"><strong>Existing product contract</strong><small data-text="contractV">—</small></div><div class="node" data-el="old"><strong>Current implementation</strong><small data-text="oldV">—</small></div><div class="node" data-el="shared"><strong>Shared candidate</strong><small data-text="sharedV">—</small></div><div class="node" data-el="evidence"><strong>Pilot evidence</strong><small data-text="evidenceV">—</small></div></div><script type="application/json" class="steps">[
+<figure class="stepper" data-no-handoff><span class="stepper-title">A pilot remains reversible until it earns expansion</span><div class="stage viz-stack"><div class="node" data-el="contract"><strong>Existing product contract</strong><small data-text="contractV">—</small></div><div class="node" data-el="old"><strong>Current implementation</strong><small data-text="oldV">—</small></div><div class="node" data-el="shared"><strong>Shared candidate</strong><small data-text="sharedV">—</small></div><div class="node" data-el="evidence"><strong>Pilot evidence</strong><small data-text="evidenceV">—</small></div></div><script type="application/json" class="steps">[
 {
 "label": "Freeze behaviour",
 "caption": "Capture the current public contract and baseline before replacing its implementation.",

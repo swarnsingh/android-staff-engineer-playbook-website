@@ -21,7 +21,7 @@ The claim that an unavailable simulator fails silently, and the universal memory
 <!-- @after 6. Advanced: Conditional iOS CI :: animation -->
 ### Select work without losing a promised gate
 
-<figure class="stepper"><span class="stepper-title">Changes become required evidence, then a release</span><div class="stage viz-stack"><div class="node" data-el="change"><strong>Change scope</strong><small data-text="changeV">—</small></div><div class="node" data-el="linux"><strong>JVM/common checks</strong><small data-text="linuxV">—</small></div><div class="node" data-el="apple"><strong>Apple-capable checks</strong><small data-text="appleV">—</small></div><div class="node" data-el="release"><strong>Artifact release</strong><small data-text="releaseV">—</small></div></div><script type="application/json" class="steps">[
+<figure class="stepper" data-no-handoff><span class="stepper-title">Changes become required evidence, then a release</span><div class="stage viz-stack"><div class="node" data-el="change"><strong>Change scope</strong><small data-text="changeV">—</small></div><div class="node" data-el="linux"><strong>JVM/common checks</strong><small data-text="linuxV">—</small></div><div class="node" data-el="apple"><strong>Apple-capable checks</strong><small data-text="appleV">—</small></div><div class="node" data-el="release"><strong>Artifact release</strong><small data-text="releaseV">—</small></div></div><script type="application/json" class="steps">[
 {
 "label": "Classify impact",
 "caption": "Map the change to affected consumers, including shared tooling and generated API—not just edited source files.",
@@ -102,3 +102,6 @@ No. Verify its immutable version/URL/checksum and resolve and exercise a clean c
 
 <!-- @before 5. KMMBridge (Automating the Entire Pipeline) :: review -->
 The KMMBridge version and version-manager configuration in this section (KC7) are under technical review. A correction is pending the owner's approval.
+
+<!-- @before 4. Gradle Build Cache for KMP :: review -->
+The incremental-compilation property and the source-set recompilation promise in this section (KC8) are under technical review. A correction is pending the owner's approval.

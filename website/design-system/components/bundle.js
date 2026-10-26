@@ -162,27 +162,57 @@
     var e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2, pt = path.getPointAtLength(e * len);
     g.setAttribute('transform', 'translate(' + pt.x + ' ' + pt.y + ')');
     g.setAttribute('opacity', k < .1 ? k * 10 : k > .9 ? (1 - k) * 10 : 1);
+    // Edge lanes may run near the drawing's border. Keep the label readable inside the SVG as its packet moves.
+    var label = g.querySelector('text');
+    if (label) {
+      var bounds = label.getBBox(), shift = Math.max(8 - pt.x - bounds.x, Math.min(0, ref.L.size[0] - 8 - pt.x - bounds.x - bounds.width));
+      if (shift) label.setAttribute('x', Number(label.getAttribute('x')) + shift);
+    }
+  }
+  function observeResize(root, callback) {
+    var queued = false;
+    function schedule() {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(function () { queued = false; callback(); });
+    }
+    if (window.ResizeObserver) new ResizeObserver(schedule).observe(root); else window.addEventListener('resize', schedule);
   }
   function watch(root, onVisible, onResize) {
     var io = window.IntersectionObserver ? new IntersectionObserver(function (es) { es.forEach(function (e) { onVisible(e.isIntersecting); }); }) : null;
     if (io) io.observe(root);
-    var ro = window.ResizeObserver ? new ResizeObserver(onResize) : null;
-    if (ro) ro.observe(root); else window.addEventListener('resize', onResize);
+    observeResize(root, onResize);
   }
 
   // At most one diagram moves at a time. Loops register in document order; the first visible one that may move plays on
   // its own, the rest stay still with a Play button. Pressing Play on any diagram, or stepping a scene, takes the turn.
-  var loops = [], owner = null;
-  function eligible(c) { return c.visible && !c.userPaused && (!motion.reduced() || c.userPlayed); }
+  var loops = [], stepped = [], owner = null;
+  function eligible(c) { return !document.hidden && c.visible && !c.userPaused && (!motion.reduced() || c.userPlayed); }
   function allowed(c) {
     if (owner) return owner === c && eligible(c);
     for (var i = 0; i < loops.length; i++) if (eligible(loops[i])) return loops[i] === c;
     return false;
   }
   function syncLoops() { loops.forEach(function (c) { c.sync(); }); }
-  function claim(c) { if (owner !== c) { owner = c; syncLoops(); } }
+  function claim(c) {
+    if (owner === c) return;
+    owner = c;
+    stepped.forEach(function (other) { if (other !== c) other.stop(); });
+    syncLoops();
+  }
   function release(c) { if (owner === c) { owner = null; syncLoops(); } }
+  function registerSteps(stop) {
+    var controller = { stop: stop };
+    stepped.push(controller);
+    return { claim: function () { claim(controller); }, release: function () { release(controller); } };
+  }
+  function pauseAll() {
+    stepped.forEach(function (c) { c.stop(); });
+    loops.forEach(function (c) { c.userPaused = true; c.userPlayed = false; });
+    syncLoops();
+  }
   motion.subscribe(function (r) { if (r) loops.forEach(function (c) { c.userPlayed = false; }); syncLoops(); });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) pauseAll(); });
 
   // FlowDiagram: streams loop on their edges while running; the still version shows order markers instead.
   function FlowDiagram(root, data) {
@@ -216,7 +246,7 @@
     loops.push(me);
     btn.addEventListener('click', function () {
       if (running()) { me.userPaused = true; me.userPlayed = false; } else { me.userPaused = false; me.userPlayed = true; }
-      owner = me; syncLoops(); // pausing keeps the turn, so pausing one diagram never starts another
+      claim(me); syncLoops(); // pausing keeps the turn, so pausing one diagram never starts another
     });
     watch(root, function (v) {
       if (v === me.visible) return;
@@ -233,7 +263,7 @@
       bar = root.querySelector('.pb-progress i'), list = root.querySelector('.pb-steps ol');
     var btn = {}; root.querySelectorAll('[data-act]').forEach(function (b) { btn[b.dataset.act] = b; });
     var mode = Object.keys(data.modes)[0], idx = 0, token = 0, flying = false, playing = false, timer = 0, ref, key;
-    var me = {};
+    var turn;
     function track() { return data.modes[mode]; }
     function stateAt(k) {
       var s = JSON.parse(JSON.stringify(track().initial));
@@ -252,6 +282,7 @@
     function settle() { // show the current step's final state with no motion
       token++; flying = false; root.classList.remove('is-moving');
       while (ref.packets.firstChild) ref.packets.removeChild(ref.packets.firstChild);
+      Object.keys(ref.nodes).forEach(function (id) { ref.nodes[id].g.classList.remove('pulse'); });
       paint(ref, stateAt(idx), [], true); edgesFor(track().steps[idx], false);
     }
     function ui() {
@@ -260,8 +291,9 @@
       capEl.innerHTML = track().steps[idx].caption;
       bar.style.width = ((idx + 1) / n * 100) + '%';
       btn.prev.disabled = idx === 0; btn.next.disabled = idx === n - 1;
-      btn.play.textContent = playing ? 'Pause' : (idx === n - 1 ? 'Replay' : 'Play');
-      btn.play.setAttribute('aria-pressed', playing ? 'true' : 'false');
+      btn.play.textContent = playing || flying ? 'Pause' : (idx === n - 1 ? 'Replay' : 'Play');
+      btn.play.setAttribute('aria-pressed', playing || flying ? 'true' : 'false');
+      btn.play.disabled = motion.reduced();
     }
     function fly(p, my) {
       return new Promise(function (done) {
@@ -284,34 +316,35 @@
         return Promise.resolve(true);
       }
       paint(ref, stateAt(i - 1), [], true); edgesFor(step, true);
-      flying = true; root.classList.add('is-moving');
+      flying = true; root.classList.add('is-moving'); ui();
       return step.packets.reduce(function (pr, p) {
         return pr.then(function (ok) { return ok && my === token ? fly(p, my) : false; });
       }, Promise.resolve(true)).then(function (ok) {
         if (!ok || my !== token) return false;
         flying = false; root.classList.remove('is-moving');
-        paint(ref, stateAt(i), changed, false); edgesFor(step, false);
+        paint(ref, stateAt(i), changed, false); edgesFor(step, false); ui();
         return true;
       });
     }
-    function stop() { playing = false; clearTimeout(timer); timer = 0; if (flying) settle(); ui(); }
+    function stop() { playing = false; clearTimeout(timer); timer = 0; settle(); ui(); }
     function loop() {
       if (!playing) return;
       if (idx >= track().steps.length - 1) { stop(); return; }
       go(idx + 1, true).then(function (ok) { if (ok && playing) timer = setTimeout(loop, 2600); });
     }
-    btn.next.addEventListener('click', function () { stop(); claim(me); if (idx < track().steps.length - 1) go(idx + 1, true); });
+    btn.next.addEventListener('click', function () { stop(); turn.claim(); if (idx < track().steps.length - 1) go(idx + 1, true); });
     btn.prev.addEventListener('click', function () { stop(); if (idx > 0) go(idx - 1, false); });
     btn.reset.addEventListener('click', function () { stop(); go(0, false); });
     btn.play.addEventListener('click', function () {
-      if (playing) { stop(); return; }
-      playing = true; claim(me);
+      if (playing || flying) { stop(); return; }
+      if (motion.reduced()) return;
+      playing = true; turn.claim();
       if (idx >= track().steps.length - 1) go(0, false);
       ui(); timer = setTimeout(loop, 400);
     });
     root.querySelectorAll('[data-mode]').forEach(function (b) {
       b.addEventListener('click', function () {
-        stop(); mode = b.dataset.mode;
+        stop(); mode = b.dataset.mode; idx = 0;
         root.querySelectorAll('[data-mode]').forEach(function (o) { o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
         fillList(); go(0, false);
       });
@@ -321,9 +354,10 @@
       track().steps.forEach(function (s) { var li = document.createElement('li'); li.innerHTML = s.caption; list.appendChild(li); });
     }
     function build() { key = pickLayout(root, data); ref = draw(svg, data, key); settle(); }
-    motion.subscribe(function (r) { if (r && flying) settle(); });
-    watch(root, function (v) { if (!v) { if (playing || flying) stop(); release(me); } }, function () { if (pickLayout(root, data) !== key) { stop(); build(); } });
     key = pickLayout(root, data); ref = draw(svg, data, key);
+    turn = registerSteps(stop);
+    motion.subscribe(function (r) { if (r) stop(); else ui(); });
+    watch(root, function (v) { if (!v) { stop(); turn.release(); } }, function () { if (pickLayout(root, data) !== key) { stop(); build(); } });
     fillList(); go(0, false);
   }
 
@@ -340,7 +374,7 @@
       } else { box.removeAttribute('tabindex'); box.removeAttribute('role'); box.removeAttribute('aria-label'); }
     }
     box.addEventListener('scroll', sync, { passive: true });
-    if (window.ResizeObserver) new ResizeObserver(sync).observe(box); else window.addEventListener('resize', sync);
+    observeResize(box, sync);
     sync();
   }
 
@@ -363,5 +397,5 @@
       }
     });
   }
-  window.Playbook = { motion: motion, FlowDiagram: FlowDiagram, FlowScene: FlowScene, WideDiagram: WideDiagram, mountAll: mountAll };
+  window.Playbook = { motion: motion, registerSteps: registerSteps, pauseAll: pauseAll, observeResize: observeResize, FlowDiagram: FlowDiagram, FlowScene: FlowScene, WideDiagram: WideDiagram, mountAll: mountAll };
 })();

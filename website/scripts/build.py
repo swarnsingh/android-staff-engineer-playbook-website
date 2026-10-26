@@ -255,7 +255,19 @@ def steps_as_text(html):
         steps = json.loads(match.group(2))
         items = ''.join(f'<li>{"<strong>"+escape(s["label"])+".</strong> " if s.get("label") else ""}{escape(s.get("caption",""))}</li>' for s in steps)
         return match.group(1) + match.group(2) + match.group(3) + f'<details class="steps-text"><summary>Read every step as text</summary><ol>{items}</ol></details>'
-    return re.sub(r'(<script type="application/json" class="steps">)(.*?)(</script>)', add, html, flags=re.S)
+    html = re.sub(r'(<script type="application/json" class="steps">)(.*?)(</script>)', add, html, flags=re.S)
+    def scene_text(match):
+        fragment = match.group(0)
+        data = json.loads(re.search(r'<script type="application/json">(.*?)</script>', fragment, re.S)[1])
+        modes = list(data['modes'].values())
+        items = ''.join('<li>'+s['caption']+'</li>' for s in modes[0]['steps'])
+        fragment = fragment.replace('<ol></ol>', '<ol>'+items+'</ol>', 1)
+        # Alternate tracks also remain readable when JavaScript is unavailable.
+        if len(modes) > 1:
+            alternate = ''.join('<ol>'+''.join('<li>'+s['caption']+'</li>' for s in mode['steps'])+'</ol>' for mode in modes[1:])
+            fragment = fragment.replace('</section>', '<noscript><p>Alternate track:</p>'+alternate+'</noscript></section>')
+        return fragment
+    return re.sub(r'<section\b[^>]*data-pb-flow="scene"[^>]*>.*?</section>', scene_text, html, flags=re.S)
 
 
 def wrap(kind, markdown, env):

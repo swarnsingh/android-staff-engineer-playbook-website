@@ -97,8 +97,9 @@
 .is-scrollable .pb-hint { display: block; }
 
 /* Reduced motion, from the OS or the reader's setting: no CSS motion at all. Scripted packets are stopped by the runtime. */
-@media (prefers-reduced-motion: reduce) { .pb-edge.moving, .pb-node.pulse > rect { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .pb-edge.moving, .pb-node.pulse > rect { animation: none; } .pb-figure * { transition: none; } }
 html.reduce-motion .pb-edge.moving, html.reduce-motion .pb-node.pulse > rect { animation: none; }
+html.reduce-motion .pb-figure * { transition: none; }
 
 /* High contrast: tints become 1px borders; no dot grid. */
 [data-theme="contrast"] .pb-figure, [data-theme="contrast"] .pb-paper { border: 1px solid var(--line); background-image: none; }

@@ -13,7 +13,7 @@ main {
   margin: 24px auto 48px; padding: 0 var(--sheet-pad) 32px;
   background: var(--sheet); border-radius: var(--radius-lg); box-shadow: var(--shadow-sheet);
 }
-.reading-content { max-width: var(--measure-text); margin-inline: auto; }
+.reading-content { max-width: var(--measure-text); margin-inline: auto; overflow-wrap: anywhere; }
 /* Diagrams may use the sheet's full inner width, wider than the text column (ReadingSheet rule).
    main is a size container, so 100cqw is the sheet's inner width; on phones the two widths match and nothing moves. */
 main { container-type: inline-size; }
@@ -74,7 +74,17 @@ code, pre, kbd, .code-card pre, .model-code pre { font-family: var(--font-mono);
 /* Diagrams always draw in the diagram hand (Patrick Hand), whatever reading font the reader picks; their boxes are sized for it. */
 .viz, .stepper .stage { font-family: var(--font-hand); }
 
-/* Step-throughs: the handoff packet (blend.js) travels between boxes when the reader moves forward. */
+/* Preserve drawing width inside the sheet: nested callout padding must not shrink phone labels. */
+@media (max-width: 520px) {
+  .blend:has(.pb-figure) { padding-inline: 0; }
+  .blend:has(.pb-figure) > .blend-label, .blend:has(.pb-figure) > h3 { margin-inline: 12px; }
+  .blend .pb-figure { padding-inline: 4px; }
+  .stepper .viz-grid, .stepper .viz-cols { grid-template-columns: minmax(0, 1fr); }
+}
+.viz, .stepper .stage { font-size: max(18px, .92em); }
+.viz .node small, .stepper .node small { font-size: max(15px, .85em); }
+
+/* Step-throughs: only an explicitly authored transfer sends a handoff packet. */
 .stepper .stage { position: relative; }
 .stepper-packet { position: absolute; left: 0; top: 0; width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; border-radius: 50%;
   background: var(--accent); box-shadow: 0 0 0 2px var(--sheet); pointer-events: none; z-index: 3; }

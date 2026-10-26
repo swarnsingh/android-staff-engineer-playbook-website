@@ -44,3 +44,7 @@ If a diagram's data cannot be drawn (for example, a generated row of six nodes),
 ## Tokens
 
 `sheet-sunken`, `grid-dot`, `sheet`, `line`, `line-strong`, `ink`, `ink-muted`, `accent`, `accent-soft`, `on-accent`, `event`, `warn`, `warn-soft`, `focus`, `radius-md`, `radius-pill`, `radius-sm`, `space-4`.
+
+## Reader integration after round 4
+
+The reader shares playback ownership across loops, scenes and legacy state steppers. Next exposes Pause while a packet is in flight. The reader pause hook stops all three, and reduced motion stops scene autoplay while leaving manual steps available. The site build emits caption lists before JavaScript runs. Packet labels stay within drawing bounds along edge lanes. The applied reader has its own nested-padding checks; a passing standalone component preview does not establish phone label sizes inside a lesson.

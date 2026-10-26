@@ -26,7 +26,7 @@ The per-flow state-isolation claim in the next section (WV4) is under technical 
 <!-- @after Staff Engineer Thinking :: animation -->
 ### A bridge message is a request
 
-<figure class="stepper"><span class="stepper-title">An origin-scoped message reaches native code</span><div class="stage viz-stack"><div class="node" data-el="source"><strong>Content source</strong><small data-text="sourceV">—</small></div><div class="node" data-el="bridge"><strong>Message listener</strong><small data-text="bridgeV">—</small></div><div class="node" data-el="native"><strong>Native operation</strong><small data-text="nativeV">—</small></div></div><script type="application/json" class="steps">[
+<figure class="stepper" data-no-handoff><span class="stepper-title">An origin-scoped message reaches native code</span><div class="stage viz-stack"><div class="node" data-el="source"><strong>Content source</strong><small data-text="sourceV">—</small></div><div class="node" data-el="bridge"><strong>Message listener</strong><small data-text="bridgeV">—</small></div><div class="node" data-el="native"><strong>Native operation</strong><small data-text="nativeV">—</small></div></div><script type="application/json" class="steps">[
 {
 "label": "Configure",
 "caption": "Configure the explicit origin allowlist and supported listener feature before relying on the bridge.",

@@ -17,7 +17,7 @@ The declared Flow element type in observeUser (GQ2) is under technical review. A
 <!-- @after Production Example :: animation -->
 ### The same user through two selections
 
-<figure class="stepper"><span class="stepper-title">A cache write reaches an affected watcher</span><div class="stage viz-stack"><div class="node" data-el="list"><strong>List operation watcher</strong><small data-text="listV">—</small></div><div class="node" data-el="detail"><strong>Rename mutation</strong><small data-text="detailV">—</small></div><div class="node" data-el="record"><strong>Normalized record User:7</strong><small data-text="recordV">—</small></div></div><script type="application/json" class="steps">[
+<figure class="stepper" data-no-handoff><span class="stepper-title">A cache write reaches an affected watcher</span><div class="stage viz-stack"><div class="node" data-el="list"><strong>List operation watcher</strong><small data-text="listV">—</small></div><div class="node" data-el="detail"><strong>Rename mutation</strong><small data-text="detailV">—</small></div><div class="node" data-el="record"><strong>Normalized record User:7</strong><small data-text="recordV">—</small></div></div><script type="application/json" class="steps">[
 {
 "label": "Read",
 "caption": "Assume the cache-key policy identifies this user as User:7, and the list selects its name.",

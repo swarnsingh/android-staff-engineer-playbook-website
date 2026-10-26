@@ -289,6 +289,18 @@ How to build, preview and continue this work — including the blend file format
 
 ## 19. Separate website repository and private previews
 
+### One website repository and one deployment path
+
+Owner decision, 2026-10-26: [swarnsingh/android-staff-engineer-playbook-website](https://github.com/swarnsingh/android-staff-engineer-playbook-website) is the single source of truth for the website, regardless of which LLM or developer does the work.
+
+- Make all website changes in this repository: lessons, design tokens, components, assets, reviews, audit tools and deployment configuration. Continue from its current branch and handover; do not create another website repository or an agent-owned copy as the working source.
+- Publish through one deployment workflow defined in this repository. Build the deployed website from an identified commit in this repository and record that commit, the audit result and the deployed URL. Keep the workflow and commands usable by the next LLM or developer.
+- Do not push website source to a second hosting repository, publish separate Codex/Claude artifacts, create a new agent-specific hosting project, or maintain competing preview URLs. A hosting runtime may serve the build, but it must use this repository's documented deployment path; it must not become another source of truth.
+- Local build directories and localhost servers are temporary verification tools. They are not the published website. Existing external previews are historical snapshots until the repository's deployment path replaces them; do not present them as current after local changes.
+- If the repository has no suitable deployment setup, prepare the configuration here and identify the concrete hosting or access decision that remains. Do not silently publish somewhere else or make a private preview public to work around that gap.
+
+This decision supersedes earlier handovers suggesting publication as Claude artifacts or separate agent-hosted previews. It does not approve original-chapter corrections or change the required privacy of the website.
+
 Website development belongs in the separate private [website repository](https://github.com/swarnsingh/android-staff-engineer-playbook-website). Since separation, website work makes no further changes to the [original playbook repository](https://github.com/swarnsingh/android-staff-engineer-playbook). Its earlier remote website branch (`codex/reader-website` at `390f8f8`) remains historical work; its `main` and canonical chapters are unchanged. Do not push, merge, delete branches or change visibility there as part of website work. A future source import requires an explicit reviewed revision; do not silently synchronise or rewrite the collected chapters.
 
 The website repository retains the original chapter layout as a read-only source snapshot. `source-snapshot.json` records its origin, revision and Kotlin file hashes. All reading explanations are rendered in full; the labelled teaching layer lives under `website/content/blend/`. Proposed corrections remain separate, unapplied and unapproved until the owner approves exact replacements. A request to fix a website defect does not approve the entire corrections triage.

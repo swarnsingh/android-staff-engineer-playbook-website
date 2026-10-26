@@ -34,7 +34,7 @@ const systemMotion = matchMedia('(prefers-reduced-motion:reduce)');
 let effectiveReducedMotion = false;
 // Every animation registers its stop function here; dialogs and reduced motion stop them all.
 const animationStops = [];
-function pauseAnimation() { animationStops.forEach(stop => stop()); }
+function pauseAnimation() { animationStops.forEach(stop => stop()); window.Playbook?.pauseAll(); }
 function savePreferences() { try { localStorage.setItem('playbook-reader-v1',JSON.stringify(preferences)); } catch {} }
 function applyPreferences() {
   const theme = ['light','dark','sepia','contrast'].includes(preferences.theme) ? preferences.theme : 'light';

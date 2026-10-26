@@ -9,7 +9,7 @@ The synchronous status lookup inside the network callbacks (NC1) is under techni
 <!-- @after Request-Level Reality :: animation -->
 ### Three pieces of evidence
 
-<figure class="stepper"><span class="stepper-title">A network can change between observation and use</span><div class="stage viz-stack"><div class="node" data-el="path"><strong>Network path</strong><small data-text="pathV">—</small></div><div class="node" data-el="policy"><strong>Work policy</strong><small data-text="policyV">—</small></div><div class="node" data-el="call"><strong>Request result</strong><small data-text="callV">—</small></div></div><script type="application/json" class="steps">[
+<figure class="stepper" data-no-handoff><span class="stepper-title">A network can change between observation and use</span><div class="stage viz-stack"><div class="node" data-el="path"><strong>Network path</strong><small data-text="pathV">—</small></div><div class="node" data-el="policy"><strong>Work policy</strong><small data-text="policyV">—</small></div><div class="node" data-el="call"><strong>Request result</strong><small data-text="callV">—</small></div></div><script type="application/json" class="steps">[
 {
 "label": "Available",
 "caption": "A network path becomes available.",

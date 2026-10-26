@@ -1,0 +1,11 @@
+{
+  "sha256": "f1ccabfd41949407026d406dc1561bbdb04871897f70cde1d26614d3e0d13956",
+  "files": 191,
+  "excludes": [
+    "ignored build/cache files",
+    "reviews",
+    "tests",
+    "__pycache__"
+  ],
+  "note": "Website authoring/build inputs; original chapter snapshots are separately verified by the build."
+}

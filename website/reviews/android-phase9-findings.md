@@ -40,3 +40,11 @@ Findings for the owner's review, not approved corrections. The original Markdown
 ## Teaching-layer status after review
 
 Notes were renamed and narrowed as above; the KO2 notes were removed; the KC1 note no longer disputes the dated prices. Duplicate "Answer" labels were removed from all checkpoints. The chapter intro for CI/CD now says Apple frameworks are linked and tested on macOS, and the swift-interop intro says "lossy generics". The review also found that 11 of the 19 lessons share one template; four of them (Ktor, build system, persistence, shared-domain) were reworked with mechanism visuals, and the remaining seven are listed in the handover as follow-up.
+
+## Candidate follow-up, 2026-10-26
+
+KC8 now has an on-page note before the caching section containing the disputed properties. [Kotlin/Native's compilation guide](https://kotlinlang.org/docs/native-improving-compilation-time.html) documents `kotlin.incremental.native` separately from compiler and Gradle caches. No Gradle reproduction was run and no replacement is approved.
+
+KO2 now has neutral notes at the iOS crash path, checklist and repeated answer. Apple's [Symbolication: Beyond the basics](https://developer.apple.com/videos/play/wwdc2021/10211/) explains DWARF originating in linked static libraries and debug maps; this supports investigating the blanket separate-framework-symbol requirement. It does not substitute for examining a particular Kotlin/Native/Xcode archive, linkage and UUIDs. That reproduction remains pending, and no source replacement has been applied.
+
+The seven formerly shared-template lessons now have topic-specific case explanations, contract tables and differentiated state layouts. The four earlier reworked lessons remain intact.
