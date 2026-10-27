@@ -8,8 +8,9 @@
     "sources": [
       "https://developer.android.com/develop/ui/views/layout/support-multi-window-mode"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR02",
@@ -20,8 +21,9 @@
     "sources": [
       "https://raw.githubusercontent.com/androidx/androidx/androidx-main/activity/activity/src/main/java/androidx/activity/ComponentActivity.kt"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR03",
@@ -32,8 +34,9 @@
     "sources": [
       "https://developer.android.com/guide/components/activities/parcelables-and-bundles"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR04",
@@ -44,8 +47,9 @@
     "sources": [
       "https://developer.android.com/guide/components/activities/parcelables-and-bundles"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR05",
@@ -56,8 +60,9 @@
     "sources": [
       "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR06",
@@ -68,8 +73,9 @@
     "sources": [
       "https://developer.android.com/guide/navigation/design/type-safety"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR07",
@@ -80,8 +86,9 @@
     "sources": [
       "https://developer.android.com/jetpack/androidx/releases/room#2.1.0-alpha05"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR08",
@@ -92,8 +99,9 @@
     "sources": [
       "https://developer.android.com/jetpack/androidx/releases/room#2.1.0-alpha05"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR09",
@@ -104,8 +112,9 @@
     "sources": [
       "https://developer.android.com/training/data-storage/room/relationships/one-to-many"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR10",
@@ -116,8 +125,9 @@
     "sources": [
       "https://developer.android.com/training/data-storage/room/async-queries"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR11",
@@ -128,8 +138,9 @@
     "sources": [
       "https://developer.android.com/training/data-storage/room/async-queries"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR12",
@@ -140,8 +151,9 @@
     "sources": [
       "https://developer.android.com/training/data-storage/room/relationships/one-to-many"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR13",
@@ -152,8 +164,9 @@
     "sources": [
       "https://dagger.dev/hilt/components.html"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR14",
@@ -164,8 +177,9 @@
     "sources": [
       "https://dagger.dev/semantics/advanced.html#scopes"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR15",
@@ -176,8 +190,9 @@
     "sources": [
       "https://dagger.dev/semantics/advanced.html#scopes"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR16",
@@ -188,8 +203,9 @@
     "sources": [
       "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR17",
@@ -200,8 +216,9 @@
     "sources": [
       "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR18",
@@ -212,8 +229,9 @@
     "sources": [
       "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR19",
@@ -224,8 +242,9 @@
     "sources": [
       "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR20",
@@ -236,8 +255,9 @@
     "sources": [
       "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR21",
@@ -248,8 +268,9 @@
     "sources": [
       "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR22",
@@ -260,8 +281,9 @@
     "sources": [
       "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR23",
@@ -272,8 +294,9 @@
     "sources": [
       "https://developer.android.com/develop/ui/compose/phases"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR24",
@@ -284,8 +307,9 @@
     "sources": [
       "https://kotlinlang.org/docs/typecasts.html#smart-cast-prerequisites"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR25",
@@ -296,8 +320,9 @@
     "sources": [
       "https://kotlinlang.org/docs/multiplatform/compose-viewmodel.html"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR26",
@@ -308,8 +333,9 @@
     "sources": [
       "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flow.html"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR27",
@@ -320,8 +346,9 @@
     "sources": [
       "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work#expedited"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR28",
@@ -332,8 +359,9 @@
     "sources": [
       "https://developer.android.com/about/versions/14/changes/schedule-exact-alarms"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR29",
@@ -344,8 +372,9 @@
     "sources": [
       "https://developer.android.com/about/versions/14/changes/schedule-exact-alarms"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR30",
@@ -356,8 +385,9 @@
     "sources": [
       "https://developer.android.com/reference/android/os/Looper#quitSafely()"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR31",
@@ -368,8 +398,9 @@
     "sources": [
       "https://developer.android.com/kotlin/flow/stateflow-and-sharedflow"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR32",
@@ -380,8 +411,9 @@
     "sources": [
       "https://developer.android.com/kotlin/flow/stateflow-and-sharedflow"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR33",
@@ -392,8 +424,9 @@
     "sources": [
       "https://raw.githubusercontent.com/square/retrofit/trunk/retrofit/src/main/java/retrofit2/Retrofit.java"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR34",
@@ -404,8 +437,9 @@
     "sources": [
       "https://www.apollographql.com/docs/kotlin/caching/query-watchers"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR35",
@@ -416,8 +450,9 @@
     "sources": [
       "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-test-coroutine-scheduler/advance-time-by.html"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR36",
@@ -428,8 +463,9 @@
     "sources": [
       "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-test-coroutine-scheduler/advance-time-by.html"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR37",
@@ -440,8 +476,9 @@
     "sources": [
       "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-test-coroutine-scheduler/advance-time-by.html"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR38",
@@ -452,8 +489,9 @@
     "sources": [
       "https://developer.android.com/kotlin/flow/test"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR39",
@@ -464,8 +502,9 @@
     "sources": [
       "https://developer.android.com/kotlin/flow/test"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR40",
@@ -476,8 +515,9 @@
     "sources": [
       "https://developer.android.com/kotlin/flow/test"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR41",
@@ -488,8 +528,9 @@
     "sources": [
       "https://developer.android.com/kotlin/flow/test"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR42",
@@ -500,8 +541,9 @@
     "sources": [
       "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR43",
@@ -512,8 +554,9 @@
     "sources": [
       "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR44",
@@ -524,8 +567,9 @@
     "sources": [
       "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR45",
@@ -536,8 +580,9 @@
     "sources": [
       "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR46",
@@ -548,8 +593,9 @@
     "sources": [
       "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR47",
@@ -560,8 +606,9 @@
     "sources": [
       "https://docs.gradle.org/current/userguide/build_cache.html"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR48",
@@ -572,8 +619,9 @@
     "sources": [
       "https://developer.android.com/tools/d8"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR49",
@@ -584,8 +632,9 @@
     "sources": [
       "https://source.android.com/docs/core/runtime/jit-compiler"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR50",
@@ -596,8 +645,9 @@
     "sources": [
       "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.concurrent/-volatile/"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR51",
@@ -608,8 +658,9 @@
     "sources": [
       "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.concurrent/-volatile/"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR52",
@@ -620,8 +671,9 @@
     "sources": [
       "https://kotlinlang.org/docs/inline-functions.html#non-local-jump-expressions"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR53",
@@ -632,8 +684,9 @@
     "sources": [
       "https://raw.githubusercontent.com/square/retrofit/trunk/retrofit/src/main/java/retrofit2/RequestFactory.java"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR54",
@@ -644,8 +697,9 @@
     "sources": [
       "https://developer.android.com/tools/d8"
     ],
-    "status": "approved",
-    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR55",
@@ -656,8 +710,9 @@
     "sources": [
       "https://developer.android.com/develop/ui/views/layout/support-multi-window-mode"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR56",
@@ -668,8 +723,9 @@
     "sources": [
       "https://developer.android.com/guide/components/activities/activity-lifecycle"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR57",
@@ -680,8 +736,9 @@
     "sources": [
       "https://developer.android.com/guide/components/activities/activity-lifecycle"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR58",
@@ -692,8 +749,9 @@
     "sources": [
       "https://dagger.dev/hilt/components.html"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR59",
@@ -704,8 +762,9 @@
     "sources": [
       "https://dagger.dev/hilt/components.html"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR60",
@@ -716,8 +775,9 @@
     "sources": [
       "https://dagger.dev/hilt/components.html"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR61",
@@ -728,8 +788,9 @@
     "sources": [
       "https://dagger.dev/hilt/components.html"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR62",
@@ -740,8 +801,9 @@
     "sources": [
       "https://dagger.dev/hilt/components.html"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR63",
@@ -752,8 +814,9 @@
     "sources": [
       "https://dagger.dev/semantics/advanced.html#scopes"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR64",
@@ -764,8 +827,9 @@
     "sources": [
       "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work#expedited"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR65",
@@ -776,8 +840,9 @@
     "sources": [
       "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work#expedited"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR66",
@@ -788,8 +853,9 @@
     "sources": [
       "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR67",
@@ -800,8 +866,9 @@
     "sources": [
       "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR68",
@@ -812,8 +879,9 @@
     "sources": [
       "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR69",
@@ -824,8 +892,9 @@
     "sources": [
       "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR70",
@@ -836,8 +905,9 @@
     "sources": [
       "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR71",
@@ -848,8 +918,9 @@
     "sources": [
       "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR72",
@@ -860,8 +931,9 @@
     "sources": [
       "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR73",
@@ -872,8 +944,9 @@
     "sources": [
       "https://developer.android.com/develop/ui/compose/performance/stability/fix"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR74",
@@ -884,8 +957,9 @@
     "sources": [
       "https://docs.gradle.org/current/userguide/build_cache.html"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR75",
@@ -896,8 +970,9 @@
     "sources": [
       "https://developer.android.com/guide/practices/page-sizes"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   },
   {
     "id": "VR76",
@@ -908,7 +983,8 @@
     "sources": [
       "https://developer.android.com/kotlin/flow/stateflow-and-sharedflow"
     ],
-    "status": "approved",
-    "approval": "Owner requested official-source corrections and both publication and original-source PR, 2026-10-27."
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source corrections and both publication and original-source PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
   }
 ]

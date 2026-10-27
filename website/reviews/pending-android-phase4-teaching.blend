@@ -1,3 +1,5 @@
+<!-- ARCHIVED REVIEW MATERIAL: superseded by the approved corrections and current active teaching. Do not re-activate these historical fragments. See completion/REPORT.md. -->
+
 <!-- Held MX2 teaching text. Not rendered. Restore only after owner approval of the associated original correction. -->
 
 Kotlin rejects suspension points inside `synchronized` at compile time.

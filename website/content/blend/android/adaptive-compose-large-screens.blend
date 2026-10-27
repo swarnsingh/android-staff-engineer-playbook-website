@@ -39,6 +39,3 @@ A missing state, not a missing screen: render a deliberate "select a message" pl
 
 screenWidthDp follows the app window in multi-window, but is not the full window metrics or the component’s own constraints. Use window size classes for top-level policy and local constraints for the card or pane.
 </details>
-
-<!-- @before Foldables and Hinges :: review -->
-The shouldUseTwoPane condition and its relationship to the following separating-fold guidance is under technical review. A correction is pending the owner's approval.

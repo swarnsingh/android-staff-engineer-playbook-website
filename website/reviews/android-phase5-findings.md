@@ -1,6 +1,6 @@
 # Android Phase 5: teaching layer, coverage and pending findings
 
-**Subsequent verified-fix update, 27 October 2026:** Selected issues from the incoming reports are now corrected under the owner's explicit fix-and-publish instruction and proposed in [source PR #57](https://github.com/swarnsingh/android-staff-engineer-playbook/pull/57). [The exact verification inventory](OFFICIAL-CONTENT-VERIFICATION-2026-10-27.md) and approved JSON records identify the applied subset. Historical “none applied” statements below refer to the earlier review date; unrelated findings remain pending.
+**Completion update, 27 October 2026:** The owner authorized the remaining corrections. The findings below are the historical incoming review; current per-finding dispositions, primary sources and validation are in [the completion report](completion/REPORT.md) and [backlog ledger](completion/backlog.json). Website corrections are rendered through the approved overlay and the same text is proposed in source PR #57. Earlier “pending/unapproved/unchanged” statements describe the original review date.
 
 
 Status: authored for independent review, 2026-10-25. No original correction is approved or applied. All ten source Markdown files are read-only. `android-phase5-structure.md` was written before the teaching files. This review covers the source snapshot currently in the website repository; upstream source updates are a separate decision.

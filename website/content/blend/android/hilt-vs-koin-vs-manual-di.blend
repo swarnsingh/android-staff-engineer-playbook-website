@@ -13,9 +13,6 @@ Both teams are doing dependency injection; they chose different machines for it.
 
 <figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Dependency injection</span><div class="node"><strong><code>CheckoutViewModel(repo: UserRepository)</code></strong><small>needs are visible in the constructor</small></div><div class="node" data-state="done"><strong>Test</strong><small>pass a fake directly; no container involved</small></div></div><div class="col"><span class="col-title">Service locator</span><div class="node"><strong><code>val repo = container.get&lt;UserRepository&gt;()</code></strong><small>needs are hidden inside the class body</small></div><div class="node" data-state="warn"><strong>Test</strong><small>configure the global container before the class can even be built</small></div></div></div><figcaption>The difference is not the library: Koin used with <code>get()</code> inside classes is a locator; Koin with constructor injection is DI.</figcaption></figure>
 
-<!-- @before Option 2: Hilt (Dagger Wrapped) :: review -->
-Three passages are under technical review: the ViewModel row of the Hilt scope table, the KSP status in The Build-Time Cost, and the Common Pitfalls item about eagerly wired `@Singleton` graphs. A correction is pending the owner's approval.
-
 <!-- @after Manual DI vs Hilt vs Koin: Side-by-Side :: animation -->
 ### When does a missing dependency get caught?
 
@@ -43,12 +40,3 @@ Hilt. Build-time graph validation and lifecycle-matched components pay for their
 
 Koin, or manual DI, in the shared code. Hilt is Android-only and cannot run in shared iOS code.
 </details>
-
-<!-- @before Failure Modes :: review -->
-The Koin exception name and the Hilt 2.48 processor-status wording are under technical review (KO1, HK2). A correction is pending the owner's approval.
-
-<!-- @before Common Pitfalls :: review -->
-The eager-singleton wiring statement is under technical review (HK3). A correction is pending the owner's approval.
-
-<!-- @before Option 3: Koin (Now With Compiler Plugin) :: review -->
-The runtime missing-definition exception name is under technical review (KO1). A correction is pending the owner's approval.

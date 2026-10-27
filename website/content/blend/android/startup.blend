@@ -47,39 +47,3 @@ The destination the user requested. A launcher feed benchmark alone does not val
 <!-- @before Further Reading :: deeper -->
 
 Primary evidence for the added layer: [Startup boundaries](https://developer.android.com/topic/performance/issues/launch-time), [Startup measurement](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics).
-
-<!-- @before App Startup Library — Initialization Orchestration :: review -->
-The passage beginning “**Lazy by default.**” (P7SU1) and the passage beginning “Typical cost (cold)” (P7SU10) in this section are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Application.onCreate — The Silent Killer :: review -->
-The passage beginning “**Lazy by default.**” (P7SU1) in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Failure Modes :: review -->
-The passage beginning “**Lazy by default.**” (P7SU1) and the passage beginning “adb install --apex” (P7SU7) in this section are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-The passage beginning “**Lazy by default.**” (P7SU1), the passage beginning “First launches see no AOT compilation” (P7SU5) and the passage beginning “This introduces a synchronous network/disk I/O block” (P7SU9) in this section are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Activity.onCreate Optimization :: review -->
-The passage beginning “// Anything else: defer” (P7SU2) in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Patterns That Help :: review -->
-The passage beginning “// Anything else: defer” (P7SU2), the passage beginning “postFrameCallback defers to after the first frame draws” (P7SU3) and the passage beginning “suspend fun observe(): Flow&lt;Theme&gt;” (P7SU6) in this section are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Three Startup Types :: review -->
-The passage beginning “Anything above ~1500ms” (P7SU4) and the passage beginning “swiped from recents, Doze” (P7SU8) in this section are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Diagnosing Slow Startup :: review -->
-The passage beginning “Anything above ~1500ms” (P7SU4) in this section is under technical review. Also under technical review: the Perfetto command and its configuration in this section (P7SU12). A correction is pending the owner's approval.
-
-<!-- @before Baseline Profiles — AOT Compilation for Hot Paths :: review -->
-The passage beginning “First launches see no AOT compilation” (P7SU5) and the passage beginning “Typical cost (cold)” (P7SU10) in this section are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Common Pitfalls :: review -->
-The passage beginning “First launches see no AOT compilation” (P7SU5) in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before The Cold-Start Pipeline :: review -->
-The passage beginning “Typical cost (cold)” (P7SU10) in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Macrobenchmark — Measuring Startup Properly :: review -->
-The passage beginning “reportFullyDrawn() tells the framework when the screen is meaningfully rendered” (P7SU11) in this section is under technical review. A correction is pending the owner's approval.

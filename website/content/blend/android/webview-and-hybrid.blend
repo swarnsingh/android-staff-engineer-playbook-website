@@ -3,25 +3,10 @@
 <!-- @opening -->
 <p class="story-lead">Checkout works on the happy path. Then a redirect reaches an unexpected page that can still talk to native code. Rendering a page and granting it a capability are different decisions. Follow the loaded content, the exposed bridge and the native side effect as separate trust questions.</p>
 
-<!-- @before Why It Matters :: review -->
-The process-location description in the first bullet (WV1) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before First Principles :: review -->
-The “one process” trust-domain description (WV1) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Internal Mechanics :: review -->
-The host-only navigation allowlist branch in the next section (WV2) is under technical review. A correction is pending the owner's approval.
-
 <!-- @after Mental Model :: visual -->
 ### Audit a capability at both ends
 
 <figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Web content</strong><small>Which origins and frames can send messages?</small></div><div class="node"><strong>Bridge contract</strong><small>Which messages, payloads and versions are accepted?</small></div><div class="node"><strong>Native handler</strong><small>What authorization and validation precede a side effect?</small></div><div class="node"><strong>Lifecycle</strong><small>When is the bridge attached, removed and unavailable?</small></div></div><figcaption>Review the complete capability path; a familiar hostname alone does not answer every trust question.</figcaption></figure>
-
-<!-- @before Production Example :: review -->
-The onPageFinished iframe explanation and cookie-configuration wording in the next section (WV3–WV4) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Tradeoffs :: review -->
-The per-flow state-isolation claim in the next section (WV4) is under technical review. A correction is pending the owner's approval.
 
 <!-- @after Staff Engineer Thinking :: animation -->
 ### A bridge message is a request
@@ -76,9 +61,6 @@ The per-flow state-isolation claim in the next section (WV4) is under technical 
 }
 }
 ]</script><figcaption>Origin scoping narrows exposure. It does not replace validation or authorization in the native handler.</figcaption></figure>
-
-<!-- @before Answer Key :: review -->
-Answers 3 and 5 repeat state-isolation and renderer-recovery claims (WV4–WV5) under technical review. A correction is pending the owner's approval.
 
 <!-- @after Common Misconceptions :: check -->
 ### Try the decision

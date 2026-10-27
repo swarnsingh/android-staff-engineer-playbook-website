@@ -3,15 +3,6 @@
 <!-- @opening -->
 <p class="story-lead">The shared screen leaves the navigation stack, but its callback still holds the Swift owner and a Kotlin job still produces state. Sharing an object between threads, keeping it alive, and cancelling its work are three separate questions. Trace the references and the owner before reaching for a GC setting.</p>
 
-<!-- @before 1. Era 1: Thread Confinement (2017-2022) — The Dark Ages :: review -->
-The blanket AtomicReference legacy verdict and historical impossibility claims in the next section (CM1) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before 4. Coroutine Dispatchers on iOS :: review -->
-The deadlock prediction, pool-cost table and task-to-thread inference in the next section (CM2) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before 5. StateFlow Observation Across the Bridge :: review -->
-The manual collector helper, guaranteed UI-crash description and combined bridge example in the next section (CM3) are under technical review. A correction is pending the owner's approval.
-
 <!-- @after 3. The Dual-GC Architecture (The Real Danger) :: animation -->
 ### Follow the owner through the reference graph
 
@@ -69,15 +60,6 @@ The manual collector helper, guaranteed UI-crash description and combined bridge
 }
 ]</script><figcaption>This illustrates application ownership, not immediate reclamation or one mandatory Swift bridge API.</figcaption></figure>
 
-<!-- @before Common Pitfalls :: review -->
-The app-close/process-lifetime comparison and the immediate-dispatch initialization claim in this section (CM4–CM5) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Probing Questions :: review -->
-The legacy-atomic premise of question 1 (CM1) and the manual FlowCollector premise of question 4 (CM3) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-The atomic-use restriction in answer 1 and default-collector statement in answer 5 (CM1, CM6) are under technical review. A correction is pending the owner's approval.
-
 <!-- @after Common Pitfalls :: check -->
 ### Try the decision
 
@@ -95,6 +77,3 @@ No. Observe the underlying Kotlin job/request and reference release through the 
 
 First distinguish retained owners, unfinished jobs, transient allocations and collection behaviour. Profile a repeatable workload before changing runtime options.
 </details>
-
-<!-- @before 2. Era 2: The New Memory Model (Kotlin 1.7.20+) — The Fix :: review -->
-The statement that @ThreadLocal and @SharedImmutable are deprecated in this section (CM7) is under technical review. A correction is pending the owner's approval.

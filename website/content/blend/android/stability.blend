@@ -81,11 +81,3 @@ Stable without annotation: every property is a `val` of a stable type.
 
 Unstable (the `List` interface could be mutable), but still skippable under strong skipping: `Cart` is compared by identity. Reuse the instance where appropriate, and measure the actual call before changing its model solely to increase skipping.
 </details>
-
-
-
-<!-- @before What's Inferred Unstable :: review -->
-The explanation about compilation order in this section remains under technical review (ST4). A correction is pending the owner's approval.
-
-<!-- @before Collections: ImmutableList and PersistentList :: review -->
-The unconditional “fully stable” description of these collection types is under technical review. A correction is pending the owner's approval.

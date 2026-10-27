@@ -36,37 +36,3 @@ Yes. Add rendered-image evidence for visual contracts and review the diff.
 
 When the contract depends on navigation, lifecycle, DI or a platform boundary rather than the plain UI input/output seam.
 </details>
-
-
-<!-- @before Robolectric — JVM-Hosted Android :: review -->
-The exclusions concerning animation, rendering and I/O in this section (UI1) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Paparazzi — Screenshot Testing on JVM :: review -->
-The description of running, recording and verifying snapshots, and of what makes a verification fail, in this section (UI2) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Hilt + Compose Tests :: review -->
-The lifecycle annotation and fake-binding types in this section's sample (UI3) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Test Robustness — Avoiding Flakiness :: review -->
-The animation-control snippet, test-host class names, coroutine-idleness claim, idling-resource adapter and the setup annotation in this section (UI3–UI6) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Accessibility Testing :: review -->
-The named accessibility rule and its setup chain in this section (UI7) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Test Tags vs Semantic Properties :: review -->
-The absolute description of descendant merging in this section (UI8) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Failure Modes :: review -->
-The input-synchronization diagnosis, idling prescription, merged-descendant query advice and setup annotation in this section (UI3, UI4, UI8, UI9) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-Answers 4, 5, 9 and 10, which repeat claims about clocks, merging, accessibility setup or idleness (UI4, UI7, UI8), are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Real Patterns :: review -->
-The injected fake type in Pattern 2 of this section (UI3) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Multi-Device Testing — Firebase Test Lab :: review -->
-The plugins named as Firebase Test Lab CI integrations in this section (UI10) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Semantics — The Foundation :: review -->
-The gesture API used in this section's swipe sample (UI11) is under technical review. A correction is pending the owner's approval.

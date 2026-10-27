@@ -96,11 +96,6 @@ The app never computed a wrong price. It exposed the promo code and the total as
 
 <figure class="viz"><div class="viz-stack"><div class="node is-key"><strong>Did the action start in the UI and stay there?</strong><small>e.g. a tap that opens help</small></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>Yes → handle it in the UI</strong><small>no ViewModel round trip</small></div><div class="node"><strong>No → the ViewModel produced it</strong><small>e.g. "payment confirmed, leave this screen"</small></div></div><div class="down"></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>Losing it would be wrong → state</strong><small>put it in UI state; the UI acts on it, then reports it consumed</small></div><div class="node" data-state="warn"><strong>Losing it is acceptable → best-effort effect</strong><small>a <code>Channel</code> for process-local effects, accepting that one can be dropped</small></div></div></div><figcaption>The state-first branch follows Android's UI events guidance. The best-effort Channel branch is the chapter's explicit policy for effects whose loss is acceptable, not an Android recommendation.</figcaption></figure>
 
-<!-- @before Failure Modes :: review -->
-The first row of the next table ("Toast re-fires after rotation → Move to <code>Channel&lt;Effect&gt;</code>") is under technical review. A correction is pending the owner's approval.
-
-The row describing an unbounded effect channel (MV4) is also under technical review. A correction is pending the owner's approval.
-
 <!-- @after Decision: When to Use What :: check -->
 **MVVM or MVI?** Decide before opening each answer.
 
@@ -118,6 +113,3 @@ MVI. Several fields must agree while async events race, and a single state value
 
 Either works. One state data class with a derived `canSave` keeps the rule in one place; a full intent hierarchy is optional.
 </details>
-
-<!-- @before The Problem with MVVM at Scale :: review -->
-The claims about an immediately visible torn frame between adjacent writes (MV5) are under technical review. A correction is pending the owner's approval.

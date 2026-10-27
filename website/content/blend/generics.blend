@@ -35,7 +35,7 @@ context.start&lt;SettingsActivity&gt;()</pre></div><div class="pane"><span class
 startActivity(Intent(context,
   <mark>SettingsActivity::class.java</mark>))</pre></div></div><figcaption>Because the body is copied into each caller, the compiler can write the concrete class there. That is why <code>reified</code> requires <code>inline</code> — and why it still cannot recover a nested argument such as the <code>User</code> in <code>List&lt;User&gt;</code> for APIs that take a plain <code>Class</code>.</figcaption></figure>
 
-<!-- @after Variance — in, out, and Why List<Dog> Isn't List<Animal> :: visual -->
+<!-- @after Variance — in, out, and Why MutableList<Dog> Isn't MutableList<Animal> :: visual -->
 ### Why the compiler refuses `val animals: MutableList<Animal> = dogs`
 
 <figure class="viz"><div class="viz-flow"><div class="node"><strong><code>dogs: MutableList&lt;Dog&gt;</code></strong><small>holds only dogs</small></div><div class="arrow"></div><div class="node" data-state="warn"><strong>alias it as <code>MutableList&lt;Animal&gt;</code></strong><small>(if this compiled)</small></div><div class="arrow"></div><div class="node" data-state="error"><strong><code>animals.add(Cat())</code></strong><small>legal for a list of animals</small></div><div class="arrow"></div><div class="node" data-state="error"><strong><code>dogs[0].bark()</code></strong><small>the "dog" is a cat → crash</small></div></div><figcaption>Reading is safe in this direction, writing is not. <code>out</code> promises "only read", which is exactly what makes <code>List&lt;out Animal&gt;</code> accept a list of dogs. The next chapter, Variance, builds this into a full model.</figcaption></figure>

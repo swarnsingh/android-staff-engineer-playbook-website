@@ -1,6 +1,6 @@
 # Android Phase 6 — pending original findings
 
-**Subsequent verified-fix update, 27 October 2026:** Selected issues from the incoming reports are now corrected under the owner's explicit fix-and-publish instruction and proposed in [source PR #57](https://github.com/swarnsingh/android-staff-engineer-playbook/pull/57). [The exact verification inventory](OFFICIAL-CONTENT-VERIFICATION-2026-10-27.md) and approved JSON records identify the applied subset. Historical “none applied” statements below refer to the earlier review date; unrelated findings remain pending.
+**Completion update, 27 October 2026:** The owner authorized the remaining corrections. The findings below are the historical incoming review; current per-finding dispositions, primary sources and validation are in [the completion report](completion/REPORT.md) and [backlog ledger](completion/backlog.json). Website corrections are rendered through the approved overlay and the same text is proposed in source PR #57. Earlier “pending/unapproved/unchanged” statements describe the original review date.
 
 
 2026-10-25. Originals read in full and left unchanged. Every row is **unapproved**. These are website-only proposals for a later owner decision, not applied corrections. Active blends avoid teaching the disputed replacements. Neutral notices identify affected sections without publishing replacement text. Evidence below is documentation/source inspection and arithmetic; no Android build, device run or performance measurement was performed.

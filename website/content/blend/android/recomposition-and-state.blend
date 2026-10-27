@@ -39,6 +39,3 @@ It updates, but writing state during composition invalidates the composable that
 
 The child can be skipped: `String` is stable and compared with `equals`, so an equal value lets Compose keep the existing subtree.
 </details>
-
-<!-- @before Tradeoffs :: review -->
-The claim that a ViewModel depending on Compose runtime cannot be shared with KMP iOS is under technical review. A correction is pending the owner's approval.

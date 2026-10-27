@@ -19,9 +19,6 @@ Start with the risk: a wrong price, a broken screen, a failed payment integratio
 
 <figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">Follow a red test without losing the evidence</span><div class="stage viz-flow"><div class="node" data-el="run" data-art="document" data-art-role="storage"><strong>Original failure</strong><small data-text="runV">retained</small></div><div class="node" data-el="classify" data-art="inspect" data-art-role="runtime"><strong>Classification</strong><small data-text="classifyV">pending</small></div><div class="node" data-el="owner" data-art="worker" data-art-role="runtime"><strong>Owner</strong><small data-text="ownerV">unassigned</small></div><div class="node" data-el="gate" data-art="gate" data-art-role="runtime"><strong>Merge gate</strong><small data-text="gateV">policy decision</small></div></div><script type="application/json" class="steps">[{"label": "Red run", "caption": "Keep the failing seed, logs, device identity and first-attempt result. A later pass must not erase this observation.", "state": {"run": "warn"}, "text": {"runV": "failure + artifacts retained"}}, {"label": "Bounded investigation", "caption": "Use the agreed diagnostic rerun policy to distinguish repeatable product failure from timing or infrastructure symptoms. A rerun is evidence, not proof of innocence.", "state": {"classify": "active"}, "text": {"classifyV": "reproducible / intermittent / infrastructure"}}, {"label": "Accountable quarantine", "caption": "If policy permits removing an intermittent test from the blocking gate, attach an owner and expiry. Preserve an independent release decision for the affected risk.", "state": {"owner": "active", "gate": "warn"}, "text": {"ownerV": "ticket + deadline", "gateV": "risk reviewed explicitly"}}, {"label": "Repair and return", "caption": "Reproduce the cause, repair the test or product, and establish reliability before restoring the gate. Measure first-attempt reliability separately from eventual pass rate.", "state": {"run": "done", "classify": "done", "owner": "done", "gate": "done"}, "text": {"gateV": "trusted signal restored"}}]</script><figcaption>This is a governance trace, not a retry-count or probability guarantee.</figcaption></figure>
 
-<!-- @before Flakiness as a System, Not a Nuisance :: review -->
-The retry-probability example and the meaning of “3 retries” in this section (TS1) are under technical review. A correction is pending the owner's approval.
-
 <!-- @after Staff Engineer Thinking :: check -->
 ### Check your test portfolio
 
@@ -39,4 +36,3 @@ No. Keep first-attempt reliability and diagnostic artifacts; eventual green hide
 
 Evidence that the fixture still represents the provider, with an owner and a refresh/verification process.
 </details>
-

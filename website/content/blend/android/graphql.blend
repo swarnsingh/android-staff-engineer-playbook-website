@@ -3,9 +3,6 @@
 <!-- @opening -->
 <p class="story-lead">You rename a user on the detail screen. The mutation succeeds, but the list still shows the old name. Fetching fewer fields did not solve consistency. GraphQL’s next idea is identity: if two operations describe the same entity, can the client update one shared record and notify the readers that depend on it?</p>
 
-<!-- @before Internal Mechanics :: review -->
-The comment syntax in the GetUserProfile.graphql block (GQ1) is under technical review. A correction is pending the owner's approval.
-
 <!-- @diagram f99fb81083ab1479 -->
 ### Build inputs and runtime data are different paths
 

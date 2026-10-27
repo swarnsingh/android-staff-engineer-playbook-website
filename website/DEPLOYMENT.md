@@ -4,7 +4,7 @@ The website has one source repository: [swarnsingh/android-staff-engineer-playbo
 
 ## Public GitHub Pages
 
-The owner approved public source and a public website on 27 October 2026, superseding the earlier private-source/private-preview decision. The original playbook repository remains private and unchanged. Historical Claude and ChatGPT previews are no longer publication targets.
+The owner approved public source and a public website on 27 October 2026, superseding the earlier private-source/private-preview decision. The original playbook repository remains private; verified corrections were merged by the owner through its separate PR #57, without merging or changing unrelated local work. Historical Claude and ChatGPT previews are no longer publication targets.
 
 Live URL: [Engineering Playbook](https://swarnsingh.github.io/android-staff-engineer-playbook-website/). Both learning paths and the design-system gallery belong to this deployment. No login is required to read the public website. The repository and rendered content are public.
 
@@ -32,7 +32,7 @@ For the publication build:
 SITE_BASE=/android-staff-engineer-playbook-website/ .venv/bin/python website/scripts/build.py
 ```
 
-The browser-audit preparation command expects a root-path local build. Rebuild without `SITE_BASE` before preparing local browser audits. Complete the checks before pushing a publishing branch. Original-chapter corrections remain separate owner decisions.
+The browser-audit preparation command expects a root-path local build. Rebuild without `SITE_BASE` before preparing local browser audits. Complete the checks before pushing a publishing branch. The owner authorized closure of the retained correction backlog; exact approved replacements and validation are recorded in reviews/completion/. Future corrections still require a documented owner-authorized scope.
 
 ## Troubleshoot publication
 

@@ -57,15 +57,3 @@ Change it once in the convention, build one representative module of each kind, 
 
 <!-- @before Further Reading :: deeper -->
 Primary sources for the added layer: [Sharing build logic between subprojects](https://docs.gradle.org/current/userguide/sharing_build_logic_between_subprojects.html), [Composite builds](https://docs.gradle.org/current/userguide/composite_builds.html), [AGP 9.0 release notes](https://developer.android.com/build/releases/agp-9-0-0-release-notes).
-
-<!-- @before Example: Android Library Convention :: review -->
-The extension type imported in this example (CP3) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Pre-Commit Hooks via Convention :: review -->
-The automatic hook installation shown in this section (CP1) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Real Patterns :: review -->
-Pattern 3's instrumented-test processor dependency (CP4) and Pattern 4's build-cache configuration from a project plugin (CP2) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-Answer 12, which relies on the hook-installation pattern (CP1), is under technical review. A correction is pending the owner's approval.

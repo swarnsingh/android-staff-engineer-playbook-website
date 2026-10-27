@@ -3,12 +3,6 @@
 <!-- @opening -->
 <p class="story-lead">A crash report contains an address, an app version and no shared-module revision. The teams cannot tell whether the fixed Kotlin binary was shipped or whether the symbols belong to this build. Diagnosis starts with identity: connect the event to the artifact before interpreting its stack.</p>
 
-<!-- @before 4. The Android Crash Path (R8 and Retrace) :: review -->
-The blanket serialization keep-rule instruction in the next section (KO1) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before 6. Flow, Cancellation, and Swift-Facing Errors :: review -->
-The universal Swift cancellation type and exhaustive shared-error handling claims in the next section (KO3–KO4) are under technical review. A correction is pending the owner's approval.
-
 <!-- @after 7. Synthetic-Crash Verification :: animation -->
 ### Match the event to the release
 
@@ -93,12 +87,3 @@ Binary consumers can bundle different shared artifacts under their own app relea
 
 Check broad catch/report paths and the chosen interop integration. Preserve normal cancellation instead of reporting it as an unexpected product failure.
 </details>
-
-<!-- @before 5. The iOS Crash Path (dSYMs and Kotlin/Native) :: review -->
-The blanket separate-framework dSYM generation and upload requirements in this section (KO2) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Review Checklist :: review -->
-The shared-framework dSYM upload requirement in checklist item 2 (KO2) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-Answer 1's blanket diagnosis about separate shared-framework dSYMs (KO2) is under technical review. A correction is pending the owner's approval.

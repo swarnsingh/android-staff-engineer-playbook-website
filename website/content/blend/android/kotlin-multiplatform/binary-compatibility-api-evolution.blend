@@ -82,6 +82,3 @@ Recompiling uses the new API and can hide missing old entry points. The old arti
 
 No. It is also a wire/rollout and safe-behaviour decision. Test old/new readers and consumers under the declared compatibility window.
 </details>
-
-<!-- @before Answer Key :: review -->
-Answer 4's statement that Apple klibs require a macOS-capable target build (BC1) is under technical review. A correction is pending the owner's approval.

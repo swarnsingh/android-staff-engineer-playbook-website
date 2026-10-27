@@ -1,0 +1,21 @@
+{
+  "files": [
+    "android/architecture/state-management/index.html",
+    "android/concurrency/battery-optimizations/index.html",
+    "android/concurrency/services/index.html",
+    "android/concurrency/synchronization-and-mutex/index.html",
+    "android/data-and-di/paging/index.html",
+    "android/kotlin-multiplatform/production/ci-cd-for-kmp/index.html",
+    "android/kotlin-multiplatform/production/concurrency-and-memory/index.html",
+    "android/networking-and-security/webview-and-hybrid/index.html",
+    "android/performance/jank/index.html",
+    "android/performance/macrobenchmark-and-perfetto/index.html",
+    "android/performance/memory-management-and-leaks/index.html",
+    "android/performance/rendering/index.html",
+    "android/performance/startup/index.html",
+    "kotlin/coroutines-and-flow/coroutines/index.html",
+    "kotlin/language-core/null-safety/index.html",
+    "kotlin/language-core/sealed-classes/index.html"
+  ],
+  "reason": "Final repetition review and canonical merged PR 57 content/citation synchronization after the full repaired-renderer sweep; every affected route receives a focused rerun."
+}

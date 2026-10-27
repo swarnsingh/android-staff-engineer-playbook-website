@@ -55,18 +55,3 @@ What compile-time boundary it enforces and who owns it. If the goal is only tidi
 
 <!-- @before Further Reading :: deeper -->
 Primary sources for the added layer: [Guide to Android app modularization](https://developer.android.com/topic/modularization), [api and implementation](https://docs.gradle.org/current/userguide/java_library_plugin.html), [Gradle build cache](https://docs.gradle.org/current/userguide/build_cache.html), [Type-safe project dependencies](https://docs.gradle.org/current/userguide/declaring_dependencies_basics.html).
-
-<!-- @before Gradle Settings — Project Inclusion :: review -->
-The statement in this section about the stability of type-safe project accessors (MM1) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Dynamic Feature Modules — When and When Not :: review -->
-The instant-app rows and references in this section (MM2) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Failure Modes :: review -->
-The cause given for dropping build-cache hits after a refactor (MM3) and the plugin named for the dependency-graph task (MM4) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-The graph task named in Answer 3 (MM4) and the instant-app example in Answer 4 (MM2) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Build Performance at Module Scale :: review -->
-The plugin named for the <code>projectDependencyGraph</code> task in this section (MM4) is under technical review. A correction is pending the owner's approval.

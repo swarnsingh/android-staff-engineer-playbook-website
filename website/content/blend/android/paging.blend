@@ -49,6 +49,3 @@ Offset pagination shifted under the user. Use a cursor key from the server so co
 
 Clearing and inserting happened in separate transactions. Do both inside one `withTransaction` so invalidation never observes the empty table.
 </details>
-
-<!-- @before Answer Key :: review -->
-Answer 9's error-result type for RemoteMediator is under technical review (PG1). A correction is pending the owner's approval.

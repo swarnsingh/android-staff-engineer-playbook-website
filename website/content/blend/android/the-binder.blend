@@ -64,9 +64,3 @@ It fails, typically with <code>DeadObjectException</code>. Register a <code>Deat
 
 <!-- @before Further Reading :: deeper -->
 Primary sources for the added layer: [AIDL overview (AOSP)](https://source.android.com/docs/core/architecture/aidl), [`IBinder.DeathRecipient`](https://developer.android.com/reference/android/os/IBinder.DeathRecipient), [`DeadObjectException`](https://developer.android.com/reference/android/os/DeadObjectException), [Diagnose and fix ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs).
-
-<!-- @before Answer Key :: review -->
-Answer 10, on what an app's proxies do when the system server crashes (BD1), is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Probing Questions :: review -->
-Question 10's premise, that an app keeps running after the system server crashes (BD1), is under technical review. A correction is pending the owner's approval.

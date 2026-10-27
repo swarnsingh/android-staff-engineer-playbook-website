@@ -23,15 +23,6 @@ Follow that boundary through one request, then inspect errors, cancellation and 
 <details><summary>Can a retry create a duplicate order?</summary><p>Yes if replay is unsafe. The API needs a suitable idempotency/reconciliation policy before automatic retry.</p></details>
 
 
-<!-- @before 1. Setting Up the HttpClient :: review -->
-The custom ApiException conversion and its interaction with the later result wrapper (KN1), and the coerceInputValues comment, engine return types, retry-block label and retry scope in the setup code (KN2), in this section are under technical review. A correction is pending the owner's approval.
-
-<!-- @before 3. Error Handling Architecture :: review -->
-The exception-handling contract relative to the client validator in this section (KN1) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before 4. Testing Ktor in commonTest :: review -->
-The 401 test's expected result relative to the client validator (KN1) and the statement that MockEngine runs identically on JVM and Native (KN3) in this section are under technical review. A correction is pending the owner's approval.
-
 <!-- @diagram 15a5cf00e6920c6c -->
 ### One client API, one engine per platform
 

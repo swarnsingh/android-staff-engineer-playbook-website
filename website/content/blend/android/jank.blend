@@ -47,39 +47,3 @@ Its headroom and scheduling conditions can expose regressions hidden by a fast d
 <!-- @before Further Reading :: deeper -->
 
 Primary evidence for the added layer: [FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline), [Frame metrics](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics).
-
-<!-- @before Overview :: review -->
-The passage beginning “Main Thread has exactly **16.6ms**” (P7JK1) in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before First Principles :: review -->
-The passage beginning “Main Thread has exactly **16.6ms**” (P7JK1) in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Mental Model :: review -->
-The passage beginning “Main Thread has exactly **16.6ms**” (P7JK1) in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-The passage beginning “Main Thread has exactly **16.6ms**” (P7JK1), the passage beginning “Compose *always* recomposes” (P7JK2), the passage beginning “instantiating objects inside an onDraw method guarantees dropped frames” (P7JK4) and the passage beginning “A 5000ms blockage triggers an ANR” (P7JK6) in this section are under technical review. Also under technical review: answer 9 on keys and recomposition (P7JK7). A correction is pending the owner's approval.
-
-<!-- @before Historical Context :: review -->
-The passage beginning “Compose *always* recomposes” (P7JK2) in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Internal Mechanics (Jetpack Compose) :: review -->
-The passage beginning “Compose *always* recomposes” (P7JK2) and the passage beginning “Modifier.offset(y = offset.dp)” (P7JK3) in this section are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Production Example :: review -->
-The passage beginning “Compose *always* recomposes” (P7JK2) in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Probing Questions :: review -->
-The passage beginning “Compose *always* recomposes” (P7JK2) and the passage beginning “instantiating objects inside an onDraw method guarantees dropped frames” (P7JK4) in this section are under technical review. Also under technical review: question 1 on the “mathematical significance” of the 16.6 ms deadline (P7JK1). A correction is pending the owner's approval.
-
-<!-- @before Failure Modes :: review -->
-The passage beginning “instantiating objects inside an onDraw method guarantees dropped frames” (P7JK4) and the passage beginning “release { debuggable true }” (P7JK5) in this section are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Common Misconceptions :: review -->
-The passage beginning “A 5000ms blockage triggers an ANR” (P7JK6) in this section is under technical review. Also under technical review: the 120 Hz deadline passage beginning “On a 120Hz screen, the deadline is 8.3ms” (P7JK1). A correction is pending the owner's approval.
-
-<!-- @before Further Reading :: review -->
-The passage beginning “A 5000ms blockage triggers an ANR” (P7JK6) in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Tradeoffs :: review -->
-The passage beginning “In a LazyColumn, always provide a key to the items() block” (P7JK7) in this section is under technical review. A correction is pending the owner's approval.

@@ -13,9 +13,6 @@ Room and DataStore both keep data on the device, both expose `Flow` reads and `s
 
 <figure class="viz"><div class="viz-stack"><div class="node is-key"><strong>Do you query, filter or sort many items?</strong></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>Yes → Room</strong><small>tables, indexes, partial updates, observable queries</small></div><div class="node"><strong>No → one settings document?</strong><small>a handful of fields read and written together</small></div></div><div class="down"></div><div class="viz-grid" style="--cols:3"><div class="node" data-state="done"><strong>Structured, evolving</strong><small>Proto DataStore</small></div><div class="node"><strong>A few flags</strong><small>Preferences DataStore</small></div><div class="node" data-state="warn"><strong>Blobs or secrets</strong><small>files with a path in Room; secrets need a Keystore-backed design</small></div></div></div><figcaption>The shape of the data decides first; encryption and backup decisions follow from it.</figcaption></figure>
 
-<!-- @before Room — When You Need a Real Database :: review -->
-The builder example in the next section calls `.fallbackToDestructiveMigration(false)` with the comment "never silently drop user data". That line is under technical review. A correction is pending the owner's approval.
-
 <!-- @after The Update-Pattern Difference (Why It Matters) :: animation -->
 ### What one small change writes to disk
 
@@ -48,12 +45,3 @@ Proto DataStore (or Preferences DataStore for a few flags): one small document, 
 
 Neither for the bytes: write them to app storage and keep the path and metadata in Room.
 </details>
-
-<!-- @before Reactive Reads — Both Are Flow-First :: review -->
-The claim that DataStore emits on every updateData call is under technical review (RD3). A correction is pending the owner's approval.
-
-<!-- @before Failure Modes :: review -->
-The attribution of DataStore corruption to a process killed during a partial write is under technical review (RD2). A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-Answer 11's process-death explanation for DataStore corruption is under technical review (RD2). A correction is pending the owner's approval.

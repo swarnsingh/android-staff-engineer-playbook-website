@@ -8,9 +8,6 @@
 
 Shared mutable state needs a rule for who may touch it and when: otherwise reads and writes from different threads interleave in ways no single line of code shows. The JVM offers thread-level tools (`@Volatile`, atomics, `synchronized`), and coroutines add `Mutex`, which waits by suspending instead of blocking a thread. This chapter matches each tool to the problem it actually solves.
 
-<!-- @before The Toolbelt :: review -->
-The description of `@Volatile` in the next section is under technical review. A correction is pending the owner's approval.
-
 <!-- @after The Toolbelt :: visual -->
 ### Match the tool to the problem
 
@@ -26,12 +23,6 @@ The description of `@Volatile` in the next section is under technical review. A 
 {"label":"Next","caption":"Coroutine 2 releases, coroutine 3 resumes. The critical section ran three times, strictly one at a time, without ever parking a thread.","state":{"c2":"done","c3":"active"},"text":{"lockV":"owned by 3","c2V":"done","c3V":"in critical section"}},
 {"label":"Contrast: synchronized","caption":"With synchronized, coroutines 2 and 3 would each block their thread while waiting; on a small pool, that can stall unrelated coroutines.","state":{"lock":"warn","threads":"warn"},"text":{"threadsV":"synchronized: waiting threads are blocked"}}
 ]</script><figcaption>Waiting for a <code>Mutex</code> suspends instead of blocking a thread; code inside the lock can still block if it calls a blocking API. Mutex is not reentrant: do not acquire it recursively.</figcaption></figure>
-
-<!-- @before Failure Modes :: review -->
-The "Using `synchronized` in a Coroutine" item in the next section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-Answer 4 in the next section is under technical review. A correction is pending the owner's approval.
 
 <!-- @after Common Misconceptions :: check -->
 **Which tool?** Decide before opening each answer.
@@ -50,6 +41,3 @@ Answer 4 in the next section is under technical review. A correction is pending 
 
 Confine it: one single-threaded dispatcher or actor owns the cache, and callers send it requests. No lock per access.
 </details>
-
-<!-- @before Production Example :: review -->
-The analytics uploader's flag reset after failure/cancellation and the ownership of a removed batch are under technical review (MX3). A correction is pending the owner's approval.

@@ -59,24 +59,3 @@ Usually not. Those cached processes must be forked and initialized again when re
 
 <!-- @before Further Reading :: deeper -->
 Primary sources for the added layer: [About the Zygote processes (AOSP)](https://source.android.com/docs/core/runtime/zygote), [ZygoteInit.java](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/com/android/internal/os/ZygoteInit.java), [fork(2)](https://man7.org/linux/man-pages/man2/fork.2.html), [App startup time](https://developer.android.com/topic/performance/vitals/launch-time).
-
-<!-- @before Historical Context :: review -->
-The stated purpose of the WebView zygote in this section (ZY2) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Internal Mechanics :: review -->
-Step 8 of the boot sequence in this section (ZY1) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Production Example :: review -->
-The description of how the WebView zygote isolates web content in this section (ZY2) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Probing Questions :: review -->
-Question 4's premise about why the WebView zygote exists (ZY2) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-Answer 4's account of the WebView zygote (ZY2) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Staff Engineer Thinking :: review -->
-Point 2's description of when multidex extraction happened (ZY3) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Further Reading :: review -->
-The baseline-profiles entry's description of what the Zygote compiles (ZY3) is under technical review. A correction is pending the owner's approval.

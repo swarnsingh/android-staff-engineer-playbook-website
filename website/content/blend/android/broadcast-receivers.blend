@@ -59,6 +59,3 @@ Enqueue unique work under a stable name, and make the work itself idempotent, so
 
 <!-- @before Further Reading :: deeper -->
 Primary sources for the added layer: [Broadcasts overview](https://developer.android.com/develop/background-work/background-tasks/broadcasts), [Diagnose and fix ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs), [Managing unique work](https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/manage-work#unique-work).
-
-<!-- @before Answer Key :: review -->
-Answer 8, on the receiver timeout and the effect of <code>goAsync()</code> (BR1), is under technical review. A correction is pending the owner's approval.

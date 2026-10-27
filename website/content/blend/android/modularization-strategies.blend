@@ -36,12 +36,6 @@ Modules lit up are downstream of the change: their compilation may have to run a
 
 <figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title"><code>implementation(project(":data:network"))</code></span><div class="node"><strong><code>:feature:cart:impl</code></strong><small>can use network types internally</small></div><div class="node" data-state="done"><strong>Its consumers</strong><small>do not see network types on their compile classpath; a network change does not reach them</small></div></div><div class="col"><span class="col-title"><code>api(project(":core:design-system"))</code></span><div class="node"><strong><code>:feature:cart:impl</code></strong><small>re-exports design-system types</small></div><div class="node" data-state="warn"><strong>Its consumers</strong><small>compile against design-system types too; its changes now reach them</small></div></div></div><figcaption>Use <code>api</code> only when your public signatures mention the dependency's types. Otherwise the leak widens every change's blast radius.</figcaption></figure>
 
-<!-- @before Type-Safe Navigation Across Modules :: review -->
-The version in the next section ("Compose Navigation 2.7+ supports type-safe routes") is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Failure Modes :: review -->
-One row in the next table ("`internal` classes accessible from another module | Modules in same package") is under technical review. A correction is pending the owner's approval.
-
 <!-- @after Common Pitfalls :: check -->
 **Review the dependency.** Decide before opening each answer.
 
@@ -59,6 +53,3 @@ Keep it in that feature. A core module changed for one consumer still reaches ev
 
 It pulls Android into an API module that could be pure Kotlin. Pass a route or a callback type instead, so consumers' unit tests do not need an Android runtime.
 </details>
-
-<!-- @before The Module Graph — Bad vs Good Shapes :: review -->
-The numeric summary after the wide graph (“Critical path: 3 nodes” and “three nodes more”, MO3) is under technical review. A correction is pending the owner's approval.

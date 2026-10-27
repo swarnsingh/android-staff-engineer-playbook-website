@@ -3,9 +3,6 @@
 <!-- @opening -->
 <p class="story-lead">The team proposes sharing half the app, but nobody can name which duplicated defect or delivery delay this will solve. Begin with one measurable problem and one reversible seam. A pilot earns expansion by improving that outcome while both platform teams can still ship and debug.</p>
 
-<!-- @before 2. The Incremental Migration Path (Strangler Fig) :: review -->
-The Instant migration instruction and the “DTOs for free” consumer claim in this section (KAD1–KAD2) are under technical review. A correction is pending the owner's approval.
-
 <!-- @after 1. When NOT to Use KMP :: visual -->
 ### A pilot has three owners
 

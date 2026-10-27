@@ -41,19 +41,7 @@ The composable, with `rememberSaveable` if users expect it to survive rotation. 
 The repository is the source of truth; the ViewModel exposes them as screen state. Not `remember`: they would be refetched after every rotation.
 </details>
 
-<!-- @before SavedStateHandle — Process-Death Survival :: review -->
-The next section lists Doze among the reasons the OS kills an app for memory. That wording is under technical review. A correction is pending the owner's approval.
-
 <!-- @diagram f546d541ede4a6a1 -->
 ### Where does this state belong?
 
 <figure class="viz"><div class="viz-stack"><div class="node is-key"><strong>Must it survive process death?</strong></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>Small, restorable UI input</strong><small><code>SavedStateHandle</code> or <code>rememberSaveable</code></small></div><div class="node" data-state="done"><strong>Durable user or business data</strong><small>repository + persistent store</small></div></div><div class="down"></div><div class="node is-key"><strong>No. Must it survive a configuration change?</strong></div><div class="viz-grid" style="--cols:3"><div class="node"><strong>Business or async state</strong><small><code>ViewModel</code></small></div><div class="node"><strong>Shared UI coordination</strong><small>remembered plain state holder</small></div><div class="node"><strong>Transient presentation</strong><small>local <code>remember</code></small></div></div></div><figcaption>Answer the durability question first; it rules out most owners.</figcaption></figure>
-
-<!-- @before Real Android Patterns :: review -->
-The constructor declarations in the `FeedViewModel`, `CheckoutViewModel` and `CheckoutWizardViewModel` examples in the next section (SM2) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Failure Modes :: review -->
-The `MutableSharedFlow.update` expression and the saved-state cutoff described as “after `onStop`” in the next table (SM3, SM4) are under technical review. Corrections are pending the owner's approval.
-
-<!-- @before The UDF Blueprint :: review -->
-The repository-to-ViewModel edge label in the next diagram (SM5) is under technical review. A correction is pending the owner's approval.

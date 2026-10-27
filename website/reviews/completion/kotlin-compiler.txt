@@ -1,0 +1,4 @@
+PASS exact explicit backing-field Session, inline filter and field accessor behavior
+PASS javap internal top-level extension has no module-name suffix
+PASS javap inline filter has no function object; greeting reads the field directly
+PASS mutable explicit backing field is rejected by Kotlin 2.4.21

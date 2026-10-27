@@ -41,16 +41,3 @@ No. Verify an interaction when it is the behavior promised by the contract; othe
 
 Only confidence against the fake model. Add contract or integration evidence for the real boundary, and correct the fake so it rejects the same input.
 </details>
-
-
-<!-- @before Coroutines Testing :: review -->
-The scope of virtual-delay skipping and the claim that eager dispatch completes work in this section remain under technical review (UT2–UT3). A correction is pending the owner's approval.
-
-<!-- @before Flow Testing with Turbine :: review -->
-The sample's end-of-block behavior remains under technical review (UT7). A correction is pending the owner's approval.
-
-<!-- @before Failure Modes :: review -->
-The nested-test setup explanation, runTest exception row and MockK strict-mode rows remain under technical review (UT5–UT6, UT8). A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-The answers about eager execution, delay skipping and lifecycle setup remain under technical review (UT2–UT3, UT5). A correction is pending the owner's approval.

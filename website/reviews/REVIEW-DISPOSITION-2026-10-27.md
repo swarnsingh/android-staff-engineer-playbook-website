@@ -1,3 +1,5 @@
+> Historical review record. Current completion, public publication and candidate dispositions are in [completion/REPORT.md](completion/REPORT.md). Earlier pending/private-hosting statements below are superseded.
+
 # Status of the two owner-supplied reviews
 
 The verified issues from the reports are now corrected in the website, with matching changes in [source PR #57](https://github.com/swarnsingh/android-staff-engineer-playbook/pull/57). The owner explicitly requested fixes, publication and a PR in the original repository on 27 October 2026. The detailed [official-source verification report](OFFICIAL-CONTENT-VERIFICATION-2026-10-27.md) records the evidence, validation scope and exact correction inventory.

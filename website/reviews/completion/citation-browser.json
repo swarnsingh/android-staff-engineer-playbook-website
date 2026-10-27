@@ -1,0 +1,1033 @@
+{
+  "pages": [
+    {
+      "href": "/kotlin/compiler-features/inline-functions/",
+      "preservation": {
+        "views": [
+          {
+            "source": "kotlin/compiler-features/inline-functions.md",
+            "view": "content",
+            "checked": 366,
+            "units": 71,
+            "diagrams": 1,
+            "loadedDiagrams": 1,
+            "diagramResources": [
+              {
+                "source": "/diagrams/867177bb2f66113e.svg",
+                "status": "loaded"
+              }
+            ],
+            "problems": []
+          },
+          {
+            "source": "kotlin/compiler-features/inline-functions.md",
+            "view": "qa",
+            "checked": 88,
+            "units": 22,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 93,
+        "diagrams": 1,
+        "loadedDiagrams": 1
+      },
+      "steppers": 1,
+      "ready": 1,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 6,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    },
+    {
+      "href": "/kotlin/language-core/extensions/",
+      "preservation": {
+        "views": [
+          {
+            "source": "kotlin/language-core/extensions.md",
+            "view": "content",
+            "checked": 841,
+            "units": 178,
+            "diagrams": 1,
+            "loadedDiagrams": 1,
+            "diagramResources": [
+              {
+                "source": "/diagrams/f551760c2d3cc682.svg",
+                "status": "loaded"
+              }
+            ],
+            "problems": []
+          },
+          {
+            "source": "kotlin/language-core/extensions.md",
+            "view": "qa",
+            "checked": 109,
+            "units": 22,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 200,
+        "diagrams": 1,
+        "loadedDiagrams": 1
+      },
+      "steppers": 2,
+      "ready": 2,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 1,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 1,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 1,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 1,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 1,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 1,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 1,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 1,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 1,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 1,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 1,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 1,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 1,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 1,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 1,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 1,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    },
+    {
+      "href": "/kotlin/runtime-and-jvm/bytecode/",
+      "preservation": {
+        "views": [
+          {
+            "source": "kotlin/runtime-and-jvm/bytecode.md",
+            "view": "content",
+            "checked": 631,
+            "units": 108,
+            "diagrams": 1,
+            "loadedDiagrams": 1,
+            "diagramResources": [
+              {
+                "source": "/diagrams/2e6c2f4790beb102.svg",
+                "status": "loaded"
+              }
+            ],
+            "problems": []
+          },
+          {
+            "source": "kotlin/runtime-and-jvm/bytecode.md",
+            "view": "qa",
+            "checked": 0,
+            "units": 0,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 108,
+        "diagrams": 1,
+        "loadedDiagrams": 1
+      },
+      "steppers": 1,
+      "ready": 1,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    }
+  ],
+  "done": true,
+  "widths": [
+    320,
+    390,
+    768,
+    1181,
+    1280,
+    1439,
+    1440
+  ],
+  "textSize": 22,
+  "font": "Shantell Sans"
+}

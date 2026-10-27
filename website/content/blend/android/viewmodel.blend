@@ -13,9 +13,6 @@ Rotation destroys the activity, and in this app the network request lived inside
 
 <figure class="viz"><div class="viz-lanes"><div class="lane"><span class="lane-label">Activity / Fragment / UI</span><div class="track"><span class="mark" style="--at:0%;--len:30%">instance #1</span><span class="mark" style="--at:34%;--len:30%">#2 after rotation</span></div></div><div class="lane"><span class="lane-label">ViewModel</span><div class="track"><span class="mark" style="--at:0%;--len:64%">one instance until the screen is finished</span></div></div><div class="lane"><span class="lane-label">Repository / data layer</span><div class="track"><span class="mark" style="--at:0%;--len:100%">the whole process, or longer if persisted</span></div></div></div><figcaption>Put each piece of state in the shortest lifetime that is still long enough. Rotation ends only the top lane.</figcaption></figure>
 
-<!-- @before Internal Mechanics :: review -->
-The explanations of `onCleared()` ordering and Back in the next section (VM2, VM3) are also under technical review. Corrections are pending the owner's approval.
-
 <!-- @after Internal Mechanics :: animation -->
 ### Follow one ViewModel through rotation, finishing and process death
 
@@ -156,6 +153,3 @@ No. Process death removes the ViewModel without `onCleared()`. Keep the query in
 
 It is cancelled when Back actually removes its owner, as the chapter's Answer Key 5 explains. Finishing clears the store and ends its scoped work. For work that must continue after the screen, choose an owner appropriate to that work.
 </details>
-
-<!-- @before Production Example :: review -->
-The comment about where `viewModelScope` cancellation happens in the next example (VM2) is under technical review. A correction is pending the owner's approval.

@@ -1,3 +1,5 @@
+> Historical review record. Current completion, public publication and candidate dispositions are in [completion/REPORT.md](completion/REPORT.md). Earlier pending/private-hosting statements below are superseded.
+
 # Handover: AirBridge-style reader refinement
 
 **Latest completion:** The owner additionally authorized verified technical fixes and an original-source PR. [The official verification report](OFFICIAL-CONTENT-VERIFICATION-2026-10-27.md) records 86 replacements across 31 chapters and source PR #57. This supersedes the earlier read-only/no-corrections instruction for that specific verified set. Both repositories retain their established visibility; no PR is merged.

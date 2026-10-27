@@ -41,18 +41,3 @@ WorkManager with constraints such as unmetered network and charging. The request
 
 Put the app in the bucket real users are in (`adb shell am set-standby-bucket <package> rare`) and force idle to exercise Doze, instead of testing only while the screen is on and the phone is charging.
 </details>
-
-<!-- @before Internal Mechanics :: review -->
-The description of the Restricted bucket as completely dead in the background is under technical review (BO2). A correction is pending the owner's approval.
-
-<!-- @before Production Example :: review -->
-The exact 10-to-30-second FCM processing window is under technical review (BO3). A correction is pending the owner's approval.
-
-<!-- @before Failure Modes :: review -->
-The caught-exception control flow in the wake-lock leak example is under technical review (BO4). A correction is pending the owner's approval.
-
-<!-- @before Common Misconceptions :: review -->
-The claim that foreground-service use prevents process death is under technical review (BO5). A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-Answer 9's service-process survival guarantee remains under technical review (BO5). A correction is pending the owner's approval.

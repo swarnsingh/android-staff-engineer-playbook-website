@@ -4,21 +4,14 @@ This folder builds the reader website for the playbook. Read [`../content-rulebo
 
 ## Current state
 
-For the next AirBridge-style refinement pass, start with [HANDOVER-REFINEMENT-2026-10-27.md](reviews/HANDOVER-REFINEMENT-2026-10-27.md). It records completed work, the latest motion guidance and the remaining implementation scope.
+The current result is recorded in [the completion report](reviews/completion/REPORT.md), with a per-finding [ledger](reviews/completion/backlog.json), pinned Android validation project and browser evidence. It supersedes older handovers and their pending/privacy statements.
 
-The quantity-first pass across all 122 remaining step-throughs is recorded in [illustrated-coverage-2026-10-27.md](reviews/illustrated-coverage-2026-10-27.md). The visual redesign and website-wide standard are recorded in [website-experience-2026-10-27.md](reviews/website-experience-2026-10-27.md). The preceding continuation is [CONTINUATION-2026-10-26.md](reviews/CONTINUATION-2026-10-26.md), covering all 17 authored scenes, the seven KMP reworks, Phase 7 staff notes, candidate follow-ups and measured publication status.
-
-The owner subsequently approved the verified technical fixes and requested a source-repository PR. [The official-source verification report](reviews/OFFICIAL-CONTENT-VERIFICATION-2026-10-27.md) records 86 replacements across 31 chapters, applied as labelled website corrections and proposed in [original-source PR #57](https://github.com/swarnsingh/android-staff-engineer-playbook/pull/57). Older statements that no correction is approved describe the earlier handover state. Other findings remain separate.
-
-Publication follows [DEPLOYMENT.md](DEPLOYMENT.md) and rulebook section 19. All website work and deployment configuration stay in this repository; old Claude artifacts and the ChatGPT-hosted reader are historical snapshots. The round-4 review supersedes earlier audit claims where it identifies narrower coverage.
-
-
-- **Repository:** public `swarnsingh/android-staff-engineer-playbook-website`, following explicit owner approval on 27 October 2026. Current website and GitHub Pages branch: `codex/android-completion`; `main` remains at `d9cae81` and draft PR #1 remains available for review. The live website is https://swarnsingh.github.io/android-staff-engineer-playbook-website/ . The [refinement report](reviews/AIRBRIDGE-REFINEMENT-2026-10-27.md) supersedes earlier privacy and download-only delivery instructions. Historical branches `codex/reader-website` (`60b8c2a`) and `claude/reader-website-kotlin` (`8a77e22`) are preserved unchanged. Since repository separation, website work makes no pushes or merges to the original repository. Its earlier remote `codex/reader-website` branch remains at `390f8f8`; its `main` and canonical chapters are unchanged. Do not delete or rewrite that historical branch.
-- **Scope:** the Kotlin tree (`kotlin.md` plus all 22 chapters) and the Android tree (`android.md` plus 101 chapters, phases 1, 2, 3, 4, 5, 6, 7, 8, 9) render as pages. `TREES` in `scripts/build.py` lists the rendered trees and, for a pilot, which guided-reading phases render; other chapters link to GitHub.
-- **Sub-sections:** each tree's chapters are grouped by the `### Phase …` lists in its index (`kotlin.md`, `android.md`). The Topics menu shows one group per phase, and each chapter's breadcrumb shows its phase.
-- **Originals:** read-only snapshot from `60b8c2a`; provenance and file hashes for the Kotlin and Android trees are recorded in `../source-snapshot.json` and checked on every build. Do not edit them.
-- **Corrections:** 292 Kotlin proposals from Codex's audits sit in `content/corrections-*.json`, plus 3 new findings. All are triaged in `reviews/corrections-triage.md` (revised after Codex's review). None is approved yet, so none is applied.
-- **Android findings:** possible errors found while blending each Android phase are listed in `reviews/android-phaseN-findings.md` (one file per phase). None is approved or applied; each is flagged on its page with an **Under review** note.
+- **Website:** one public repository and one [GitHub Pages deployment](https://swarnsingh.github.io/android-staff-engineer-playbook-website/). All models work in this repository; publication follows [DEPLOYMENT.md](DEPLOYMENT.md) and rulebook section 19.
+- **Scope:** 22 Kotlin chapters, 101 Android chapters and both learning paths: 125 pages.
+- **Corrections:** approved exact replacements render through content/corrections-*.json with visible original-wording/source disclosures. The website Markdown remains a hash-checked source snapshot; corrected source text is merged by the owner through original-source PR #57 and mirrored from its 743-record canonical inventory.
+- **Review history:** the original 295-row Kotlin triage and nine Android phase reports remain historical evidence. Current dispositions include verified fixes and justified no-change results; superseded Reject decisions are identified in the completion ledger.
+- **Visuals:** 17 full scenes, 119 illustrated state sequences and static decision diagrams. Movement is used for a real temporal mechanism; a decision or comparison does not need an animated packet.
+- **Validation:** real Android/Hilt/Room/Compose compilation and focused runtime regressions complement the 125-page browser sweep. The report distinguishes these checks from device, Apple-runtime and benchmark evidence.
 
 ### Progress by chapter
 

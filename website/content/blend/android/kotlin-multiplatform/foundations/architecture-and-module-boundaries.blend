@@ -25,7 +25,3 @@ Construction ownership and operation ownership are different. An application roo
 <details><summary>Must sharing rules also share the UI?</summary><p>No. Logic-only sharing and shared UI are different product boundaries.</p></details>
 <details><summary>Who owns a shared ViewModel on iOS?</summary><p>The integration must supply and retain the intended owner and clear its store at that lifetime boundary.</p></details>
 <details><summary>Why avoid platform-shaped interfaces?</summary><p>They can force the other target to promise semantics its OS does not provide.</p></details>
-
-
-<!-- @before Multi-Module KMP Project Structure :: review -->
-The unconditional incremental-recompilation claims in this section (KAR1) are under technical review. A correction is pending the owner's approval.

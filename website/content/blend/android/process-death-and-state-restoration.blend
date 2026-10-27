@@ -31,9 +31,6 @@ Both apps logged the user in, kept a session, and were killed in the background.
 
 <figure class="viz"><div class="viz-flow"><div class="node"><strong>Home</strong><small>activity stops; its state is saved and handed to the system</small></div><div class="node" data-state="done"><strong>System holds the Bundle</strong><small>e.g. <code>{id: 42}</code></small></div><div class="node" data-state="error"><strong>Process 123 killed</strong><small>SIGKILL, no callback</small></div><div class="node"><strong>User taps the app in Recents</strong><small>new process 456 forked from Zygote</small></div><div class="node is-key"><strong><code>Application.onCreate()</code> → <code>Activity.onCreate(bundle)</code></strong><small>a cold start that must rebuild the screen from <code>{id: 42}</code></small></div></div><figcaption>The process ID changes; the saved Bundle is the only thing carried across.</figcaption></figure>
 
-<!-- @before Staff Engineer Thinking :: review -->
-Point 1 of the next section suggests "Don't keep activities" for process-death testing. That suggestion is under technical review. A correction is pending the owner's approval.
-
 <!-- @after Common Misconceptions :: check -->
 **Which test proves what?** Decide before opening each answer.
 

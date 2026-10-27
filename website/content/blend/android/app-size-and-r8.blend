@@ -47,21 +47,3 @@ A release-equivalent test that exercises that lookup, with the same relevant shr
 <!-- @before Further Reading :: deeper -->
 
 Primary evidence for the added layer: [R8 configuration](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization), [Keep rules](https://developer.android.com/topic/performance/app-optimization/keep-rules-overview).
-
-<!-- @before Tradeoffs :: review -->
-The passage beginning “R8 optimization can be turned up to maximum using android.enableR8.fullMode=true” (P7AS1) in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Probing Questions :: review -->
-Question 9, which presents full mode as an opt-in setting (P7AS1) in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Internal Mechanics :: review -->
-The description of how resource shrinking treats unreferenced resources (P7AS2) in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Failure Modes :: review -->
-The passage beginning “If you write code that loads an image dynamically by name using reflection” (P7AS2) in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Staff Engineer Thinking :: review -->
-The passage beginning “Vector Drawables: I actively reject PRs that contain large .png” (P7AS3) in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-Answers 5, 8 and 9 on dynamic resource loading, vector drawables and full mode (P7AS1–P7AS3) in this section is under technical review. A correction is pending the owner's approval.

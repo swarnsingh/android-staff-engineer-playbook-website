@@ -46,12 +46,3 @@ Navigation 3 is a strong default: scene strategies map back-stack entries to ada
 
 The entry decorator for ViewModel stores is missing, so `viewModel()` resolves against a wider owner. Add `rememberViewModelStoreNavEntryDecorator()`.
 </details>
-
-<!-- @before Why This Rewrite :: review -->
-The Android-only/platform-support comparison for Navigation 2 in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Nav 2 vs Nav 3 — Side by Side :: review -->
-The Android-only/platform-support comparison for Navigation 2 in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before When To Pick Each :: review -->
-The Android-only/platform-support comparison for Navigation 2 in this section is under technical review. A correction is pending the owner's approval.

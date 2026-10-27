@@ -3,9 +3,6 @@
 <!-- @opening -->
 <p class="story-lead">The Wi-Fi icon is visible, yet upload fails. A connection is a path; validation is a system observation; your API response is the outcome. Keeping those three separate lets the app explain failures without pretending it can predict the next request.</p>
 
-<!-- @before Observing Network Changes :: review -->
-The synchronous status lookup inside the network callbacks (NC1) is under technical review. A correction is pending the owner's approval.
-
 <!-- @after Request-Level Reality :: animation -->
 ### Three pieces of evidence
 

@@ -8,12 +8,6 @@
 
 <figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Player</strong><small>Playback state and media operations.</small></div><div class="node"><strong>Surface</strong><small>Where video is displayed.</small></div><div class="node"><strong>MediaSession</strong><small>Exposes playback to permitted controllers.</small></div><div class="node"><strong>UI controller</strong><small>Connects the screen to session commands and state.</small></div></div><figcaption>For service-owned playback, the UI can disconnect while the service continues to own playback.</figcaption></figure>
 
-<!-- @before 4. DRM :: review -->
-The universal resolution and fallback recommendations in the next section (MP1) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before 6. Player-as-Platform: the Single-Instance Question :: review -->
-The claim that every live ExoPlayer holds decoders (MP2) is under technical review. A correction is pending the owner's approval.
-
 <!-- @after 6. Player-as-Platform: the Single-Instance Question :: animation -->
 ### Transfer presentation without losing the owner
 

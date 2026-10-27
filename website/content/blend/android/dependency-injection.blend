@@ -41,12 +41,3 @@ Unscoped. It is cheap, holds nothing, and a new instance per request avoids keep
 
 `@ViewModelScoped`. Every class injected into that ViewModel gets the same instance, and it is released when the ViewModel is cleared.
 </details>
-
-<!-- @before Architecture :: review -->
-The Repository placement in the diagram and the scoped Repository in the production listing are inconsistent. Their agreement is under technical review (DI2). A correction is pending the owner's approval.
-
-<!-- @before Production Example :: review -->
-The Repository scope and its placement in the preceding architecture diagram are under technical review (DI2). A correction is pending the owner's approval.
-
-<!-- @before Tradeoffs :: review -->
-The Koin missing-definition exception name in this section is under technical review (KO1). A correction is pending the owner's approval.

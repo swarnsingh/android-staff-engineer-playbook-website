@@ -100,8 +100,11 @@ def corrected(source, path, mark=False):
         line_start = source.rfind('\n', 0, at) + 1
         in_fence = len(re.findall(r'^\s*(```|~~~)', source[:at], re.M)) % 2 == 1
         in_span = source[line_start:at].count('`') % 2 == 1
+        line_end = source.find('\n', at)
+        current_line = source[line_start:line_end if line_end >= 0 else len(source)]
+        in_table_row = current_line.lstrip().startswith('|')
         new = fix['new']
-        if mark and '\n' not in fix['old'] + new and not in_fence and not in_span:
+        if mark and '\n' not in fix['old'] + new and not in_fence and not in_span and not in_table_row:
             # At the start of a line, keep the block syntax (list marker, heading, quote) outside the mark;
             # table rows and indented lines stay unmarked and rely on the section note.
             prefix = '' if at > line_start else re.match(r'(?:[-*+] |\d+\.\s+|> ?|#{1,6} )?', new).group(0)
@@ -697,6 +700,8 @@ if __name__=='__main__':
     args=parser.parse_args()
     import check_review_data
     check_review_data.check()
+    import check_completion
+    check_completion.check()
     import check_illustrated_coverage
     check_illustrated_coverage.check()
     import check_scene_routes

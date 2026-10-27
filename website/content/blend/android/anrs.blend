@@ -47,24 +47,3 @@ To find the harmed cohort and decide whether a rollout change or targeted mitiga
 <!-- @before Further Reading :: deeper -->
 
 Primary evidence for the added layer: [ANR diagnosis](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs).
-
-<!-- @before Historical Context :: review -->
-The passage beginning “deprecated SharedPreferences” (P7AN2) in this section are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-The passage beginning “StrictMode instantly crashes” (P7AN3) in this section are under technical review. Also under technical review: answer 2, which repeats the input-dispatch description (P7AN5). A correction is pending the owner's approval.
-
-<!-- @before Further Reading :: review -->
-The passage beginning “deprecated SharedPreferences” (P7AN2) in this section are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Staff Engineer Thinking :: review -->
-The passage beginning “StrictMode instantly crashes” (P7AN3) in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Internal Mechanics :: review -->
-The passage beginning “blocked on a Mutex” (P7AN4) in this section is under technical review. Also under technical review: the step-by-step input-dispatch description beginning “The OS runs an internal watchdog system called the InputDispatcher” (P7AN5). A correction is pending the owner's approval.
-
-<!-- @before Why It Matters :: review -->
-The passages on the dialog and the six-second block (P7AN1) in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Tradeoffs :: review -->
-The claim that revenue lost to Play Store down-ranking always exceeds the cost (P7AN1) in this section is under technical review. A correction is pending the owner's approval.

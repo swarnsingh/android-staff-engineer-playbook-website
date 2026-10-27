@@ -40,7 +40,9 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: website/.cache/diagrams
-          key: website-diagrams-${{ runner.os }}-${{ hashFiles('website/scripts/build.py', 'android/**/*.md', 'kotlin/**/*.md') }}
+          key: website-diagrams-${{ runner.os }}-${{ hashFiles('website/scripts/build.py', 'android/**/*.md', 'kotlin/**/*.md', 'website/content/corrections-*.json') }}
+      - name: Test correction markup boundaries
+        run: python -m unittest discover -s website/scripts -p "test_*.py"
       - name: Build and verify original chapter preservation
         env:
           SITE_BASE: /android-staff-engineer-playbook-website/

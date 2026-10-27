@@ -56,15 +56,3 @@ No. While any kapt processor remains in the module, kapt still generates stubs, 
 
 <!-- @before Further Reading :: deeper -->
 Primary sources for the added layer: [KSP overview](https://kotlinlang.org/docs/ksp-overview.html), [KSP incremental processing](https://kotlinlang.org/docs/ksp-incremental.html), [KSP multiple-round processing](https://kotlinlang.org/docs/ksp-multi-round.html), [Migrate from kapt to KSP](https://developer.android.com/build/migrate-to-ksp).
-
-<!-- @before Real Patterns (Library Authors) :: review -->
-Pattern 1's description of scanning annotated classes across modules (KS2) and Pattern 4's description of Retrofit's KAPT version (KS3) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Common Pitfalls :: review -->
-The pitfall describing what happens when invalid symbols are returned every round (KS1) and the mention of Retrofit codegen (KS3) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before What KSP Is :: review -->
-The description of KSP as a compiler plugin API without distinguishing KSP1 from KSP2 (KS5) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Failure Modes :: review -->
-The proposed Dependencies fix for a generated class missing in a consumer module (KS4) is under technical review. A correction is pending the owner's approval.

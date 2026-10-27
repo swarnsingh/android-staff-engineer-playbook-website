@@ -50,15 +50,3 @@ Neither: a `suspend fun`. Flow is for values over time, not a single result.
 
 It keeps collecting while stopped and outlives the fragment's views. Use `viewLifecycleOwner.repeatOnLifecycle(STARTED)` (or `collectAsStateWithLifecycle()` in Compose).
 </details>
-
-<!-- @before Historical Context :: review -->
-The statement about LiveData operating exclusively on the main thread is under technical review (FL1). A correction is pending the owner's approval.
-
-<!-- @before Mental Model :: review -->
-The paragraph calling cancellation travelling upstream "backpressure" is under technical review (FL2). A correction is pending the owner's approval.
-
-<!-- @before Tradeoffs :: review -->
-The claim that StateFlow requires a particular Compose collection API to avoid memory leaks is under technical review (FL3). A correction is pending the owner's approval.
-
-<!-- @before Production Example :: review -->
-The map/catch UI-state types in the ViewModel pipeline are under technical review (FL4). A correction is pending the owner's approval.

@@ -293,6 +293,14 @@ How to build, preview and continue this work — including the blend file format
 
 ## 19. Separate website repository and publication
 
+### Merged-source synchronization, 2026-10-27
+
+The owner merged source PR #57 and instructed website synchronization and publication. Use merged source commit b8b56170e3b78f26ad73807b626acfb9530deb47 and its 743 correction records as the canonical content for this release. Keep the website snapshot immutable, render the canonical approved inventory once, and verify exact alignment before publication. The earlier “do not merge” instruction below is historical; do not infer permission to merge website PR #1 or future source changes.
+
+### Completion authorization, 2026-10-27
+
+The owner then instructed: “fix the remaining part as well” before the final Gemini review. This extends the earlier selected-issue approval to the retained Kotlin triage, all nine Android phase reports, candidates and handover follow-ups. Verify each issue against official documentation or the owning project's official implementation, apply only a supported correction, record justified no-change decisions, and validate framework-dependent examples with real dependencies where feasible. Keep an exact completion ledger and disclose validation limits. Update both existing PRs; publish the completed website through this repository's GitHub Pages workflow. Do not merge either PR or change the original repository's private visibility. This authorization does not approve unrelated new claims or every historical proposal verbatim.
+
 ### Verified source-correction approval, 2026-10-27
 
 The owner subsequently instructed: “fix and publish them” and requested a PR in the original repository as well, with official documentation as the source of truth. Apply the specifically verified incoming-review corrections on the website, label their changes, and propose the same corrections in an isolated branch/PR in the original repository. Do not interpret this as approval of every older correction proposal or a merge instruction. Preserve unrelated local work and the original repository's private visibility. Incorrect explanations must be replaced in active lessons; Git history and correction disclosures retain the former wording for traceability. The detailed source-verification report identifies this approved scope.

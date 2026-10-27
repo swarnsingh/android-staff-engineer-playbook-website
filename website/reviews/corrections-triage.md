@@ -1,3 +1,5 @@
+> Historical triage: the completion pass rechecked retained and rejected items against primary sources. Some Reject decisions were superseded by qualified corrections. Use [the completion ledger](completion/backlog.json) for current disposition; this original 295-row table remains the incoming review record.
+
 # Corrections Triage
 
 **Approval update, 27 October 2026:** The owner explicitly requested the official-source fixes and source PR. Ten existing proposals in `corrections-language.json` are now approved and applied, alongside 76 targeted review replacements. [The verification report](OFFICIAL-CONTENT-VERIFICATION-2026-10-27.md) defines this subset. The older verdicts below remain review recommendations for the other proposals; they are not blanket approvals.

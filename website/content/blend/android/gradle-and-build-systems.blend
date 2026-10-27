@@ -59,24 +59,3 @@ Usually not at all, because another chain still finishes later. Shorten the long
 
 <!-- @before Further Reading :: deeper -->
 Primary sources for the added layer: [Gradle build lifecycle](https://docs.gradle.org/current/userguide/build_lifecycle.html), [api and implementation](https://docs.gradle.org/current/userguide/java_library_plugin.html), [Gradle build cache](https://docs.gradle.org/current/userguide/build_cache.html), [Kotlin incremental compilation](https://kotlinlang.org/docs/gradle-compilation-and-caches.html), [Migrate to built-in Kotlin](https://developer.android.com/build/migrate-to-built-in-kotlin).
-
-<!-- @before Why It Matters :: review -->
-The task list in this section (GB1) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Internal Mechanics :: review -->
-The passages on recompiling downstream modules (GB2), configuration on every invocation (GB7) and the remote cache key (GB3) in this section are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Architecture :: review -->
-The cache-hit label in this diagram (GB3) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Production Example :: review -->
-The passages on recompiling a single large module and on unchanged modules (GB3, GB4) in this section are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Failure Modes :: review -->
-The fix proposed for transitive dependency conflicts (GB5) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-Answers 3, 4, 5 and 6 in this section (GB7, GB2, GB3, GB4) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Staff Engineer Thinking :: review -->
-Point 3's claim about how often dynamic versions reach the network (GB8) is under technical review. A correction is pending the owner's approval.

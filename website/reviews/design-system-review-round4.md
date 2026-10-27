@@ -1,3 +1,5 @@
+> Historical review record. Current completion, public publication and candidate dispositions are in [completion/REPORT.md](completion/REPORT.md). Earlier pending/private-hosting statements below are superseded.
+
 # Reader design review, round 4
 
 Reviewed from local handover `09836cf` on 2026-10-26. This review covers the applied reader, its shared animation runtime, the Binder pilot and all sixteen additional movement scenes. The owner requested fixes and an audit after review, so accepted findings were repaired in the website repository. Original chapters and correction approval statuses remain unchanged.

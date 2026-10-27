@@ -41,12 +41,3 @@ A custom component (`@DefineComponent(parent = SingletonComponent::class)` with 
 
 `ActivityComponent` with `@ActivityContext`. It is recreated with the activity, which is exactly what its context requires.
 </details>
-
-<!-- @before What's a "Component"? :: review -->
-The introductory ViewComponent parent description is under technical review (C2). A correction is pending the owner's approval.
-
-<!-- @before The Hierarchy (Visualized) :: review -->
-The Fragment-to-ViewComponent edge in the original diagram is under technical review (C2). A correction is pending the owner's approval.
-
-<!-- @before Custom Components with @DefineComponent :: review -->
-The SessionManager example's instance-sharing and component ownership are under technical review (SS1). A correction is pending the owner's approval.

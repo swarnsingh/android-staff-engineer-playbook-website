@@ -23,7 +23,7 @@ The same idea — "is this number even?" — can be written in every form this c
 {"label":"What it costs","caption":"Captured state lives as long as the function value does. Store a closure in something long-lived and everything it captured stays alive with it — the second ticket from the opening.","state":{"aState":"warn","bState":""}}
 ]</script><figcaption>This is the same mechanism behind Compose's <code>onClick = { count++ }</code> and every callback that "remembers" its context.</figcaption></figure>
 
-<!-- @diagram 1a4416e0a5786e86 -->
+<!-- @diagram 983f07ec8005711a -->
 ### What the call site becomes
 
 <figure class="viz"><div class="viz-pair"><div class="pane"><span class="pane-title">Without inline — a function value is passed</span><pre>main():

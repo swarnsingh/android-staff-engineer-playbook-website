@@ -44,6 +44,3 @@ Two DataStore instances for one file. Create it once and inject the same instanc
 
 The whole object is read into memory and rewritten on every change. Store the list in Room; keep only small settings in DataStore.
 </details>
-
-<!-- @before Answer Key :: review -->
-Answer 8's description of a missing DataStore file as an IOException is under technical review (DS1). A correction is pending the owner's approval.

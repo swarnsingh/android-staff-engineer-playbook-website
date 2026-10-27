@@ -41,15 +41,3 @@ WorkManager: persist the request and reschedule eligible work after process deat
 
 Request expedited WorkManager scheduling for short user-important work, with an explicit OutOfQuotaPolicy. It is subject to quota and system load; exhaustion may fall back to ordinary work or drop the request. It is not an immediate-start guarantee.
 </details>
-
-<!-- @before Historical Context :: review -->
-The blanket background foreground-service ban, and the scope of the Android 14 service-type requirements, are under technical review (SV2). A correction is pending the owner's approval.
-
-<!-- @before Failure Modes :: review -->
-The background FCM/foreground-service failure item is under technical review (SV2). A correction is pending the owner's approval.
-
-<!-- @before Probing Questions :: review -->
-Question 4's blanket background-start premise is under technical review (SV2). A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-Answer 4's blanket background-start ban is under technical review (SV2). A correction is pending the owner's approval.

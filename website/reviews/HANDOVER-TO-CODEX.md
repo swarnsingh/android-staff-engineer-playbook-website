@@ -1,3 +1,5 @@
+> Superseded status: the owner subsequently authorized full corrections, public GitHub Pages publishing and source PR updates. See [the completion report](completion/REPORT.md) for the current result; the original handover below is historical.
+
 # Handover to Codex: Android reader and Playbook Design System
 
 > Continuation, 2026-10-26: publication instructions below are historical. The owner now requires all website work and publication configuration in the single website repository, with both source and preview private. See rulebook section 19, [the deployment guide](../DEPLOYMENT.md) and [round-4 review](design-system-review-round4.md) for the current fixes, validation and publication status. Do not update the Claude artifacts or create a separate hosting repository.

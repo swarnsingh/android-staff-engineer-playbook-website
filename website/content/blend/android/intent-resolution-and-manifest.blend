@@ -59,12 +59,3 @@ Extras cross Binder, so a large payload can fail with <code>TransactionTooLargeE
 
 <!-- @before Further Reading :: deeper -->
 Primary sources for the added layer: [Intents and intent filters](https://developer.android.com/guide/components/intents-filters), [`<activity>` and `android:exported`](https://developer.android.com/guide/topics/manifest/activity-element#exported), [Verify Android App Links](https://developer.android.com/training/app-links/verify-android-applinks), [Package visibility](https://developer.android.com/training/package-visibility).
-
-<!-- @before Resolution Mechanics :: review -->
-The description of which filters implicit-intent resolution compares against (IR1) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Failure Modes :: review -->
-The fix proposed for <code>ActivityNotFoundException</code> (IR1) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-Answer 2's description of which apps' filters are compared (IR1) is under technical review. A correction is pending the owner's approval.

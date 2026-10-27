@@ -8,9 +8,6 @@
 
 <figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>API contract</strong><small>Retrofit maps the declared endpoint and parameters into a call.</small></div><div class="node"><strong>Representation</strong><small>A configured converter handles request or response bodies.</small></div><div class="node"><strong>HTTP exchange</strong><small>OkHttp owns transport, connection reuse and HTTP middleware.</small></div><div class="node"><strong>Application policy</strong><small>Your code owns replay safety, credential lifecycle and domain errors.</small></div></div><figcaption>A successful HTTP exchange is only one part of a successful product operation.</figcaption></figure>
 
-<!-- @before Architecture :: review -->
-The GZIP label in the next diagram remains under technical review (RT1); the converter/request-construction boundary has been corrected. A correction is pending the owner's approval.
-
 <!-- @after Production Example :: animation -->
 ### Many 401s, one refresh decision
 
@@ -85,9 +82,6 @@ The GZIP label in the next diagram remains under technical review (RT1); the con
 }
 ]</script><figcaption>This traces the authenticator example above. Use a separate refresh client and test concurrent challenges, cancellation and refresh failure.</figcaption></figure>
 
-<!-- @before Staff Engineer Thinking :: review -->
-The global NoInternetException recommendation in point 3 (RT2) is under technical review. A correction is pending the owner's approval.
-
 <!-- @after Common Misconceptions :: check -->
 ### Try the decision
 
@@ -105,13 +99,6 @@ The converter does. Reading and closing the body consumes its stream. Test loggi
 
 No. The server may have committed it. Establish replay safety, such as a server-supported idempotency key or reconciliation, before a retry policy can make the operation reliable.
 </details>
-
-<!-- @before First Principles :: review -->
-The description of CallAdapters producing suspend functions in this section (RT3) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Common Misconceptions :: review -->
-The reference to a Retrofit coroutine CallAdapter in this section (RT3) is under technical review. A correction is pending the owner's approval.
-
 
 <!-- @after Internal Mechanics :: animation -->
 ### Watch the request and response unwind

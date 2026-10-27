@@ -5,9 +5,6 @@
 
 A Kotlin release is two things at once: **new tools for your code** (here: stable context parameters, explicit backing fields, a stable `Uuid`, Swift export in Alpha) and **a change to your build's foundations** that every compiler plugin must support. This chapter covers what changed and why it matters for Android and KMP teams, then the checklist that decides *when* upgrading is safe.
 
-<!-- @before Language Features :: review -->
-The example under **Explicit backing fields are Stable** in the section below (`var token: String?` with `field = null` and `private set`) is under technical review. Its replacement is pending approval; do not use that example as runnable code yet.
-
 <!-- @after Language Features :: visual -->
 ### Where does `tracer` come from?
 

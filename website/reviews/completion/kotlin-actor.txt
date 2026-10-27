@@ -1,0 +1,4 @@
+Kotlin 2.4.21, coroutines 1.11.0; openjdk version "17.0.19" 2026-04-21
+Timeout probe: first=CheckoutRequestCancelledException, second=recovered, ownerActive=true
+Kotlin regressions: 12 cases passed (including 257 active/queued/suspended requests).
+Negative compilation: Meters === Meters rejected as expected.

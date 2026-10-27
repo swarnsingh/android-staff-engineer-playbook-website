@@ -1,0 +1,1330 @@
+[
+  {
+    "url": "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/app/SharedPreferencesImpl.java",
+    "status": 200,
+    "resolved": "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/app/SharedPreferencesImpl.java"
+  },
+  {
+    "url": "https://coil-kt.github.io/coil/compose/",
+    "status": 200,
+    "resolved": "https://coil-kt.github.io/coil/compose/"
+  },
+  {
+    "url": "https://dagger.dev/hilt/android-entry-point.html",
+    "status": 200,
+    "resolved": "https://dagger.dev/hilt/android-entry-point.html"
+  },
+  {
+    "url": "https://dagger.dev/hilt/components.html",
+    "status": 200,
+    "resolved": "https://dagger.dev/hilt/components.html"
+  },
+  {
+    "url": "https://dagger.dev/hilt/components.html#component-hierarchy",
+    "status": 200,
+    "resolved": "https://dagger.dev/hilt/components.html#component-hierarchy"
+  },
+  {
+    "url": "https://dagger.dev/hilt/components.html#scoped-vs-unscoped-bindings",
+    "status": 200,
+    "resolved": "https://dagger.dev/hilt/components.html#scoped-vs-unscoped-bindings"
+  },
+  {
+    "url": "https://dagger.dev/hilt/custom-components.html",
+    "status": 200,
+    "resolved": "https://dagger.dev/hilt/custom-components.html"
+  },
+  {
+    "url": "https://dagger.dev/hilt/view-model.html",
+    "status": 200,
+    "resolved": "https://dagger.dev/hilt/view-model.html"
+  },
+  {
+    "url": "https://dagger.dev/semantics/",
+    "status": 200,
+    "resolved": "https://dagger.dev/semantics/"
+  },
+  {
+    "url": "https://dagger.dev/semantics/advanced.html#scopes",
+    "status": 200,
+    "resolved": "https://dagger.dev/semantics/advanced.html#scopes"
+  },
+  {
+    "url": "https://developer.android.com/about/versions/12/behavior-changes-all#back-press",
+    "status": 200,
+    "resolved": "https://developer.android.com/about/versions/12/behavior-changes-all#back-press"
+  },
+  {
+    "url": "https://developer.android.com/about/versions/14/changes/fgs-types-required",
+    "status": 200,
+    "resolved": "https://developer.android.com/about/versions/14/changes/fgs-types-required"
+  },
+  {
+    "url": "https://developer.android.com/build/releases/agp-9-0-0-release-notes",
+    "status": 200,
+    "resolved": "https://developer.android.com/build/releases/agp-9-0-0-release-notes"
+  },
+  {
+    "url": "https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start",
+    "status": 200,
+    "resolved": "https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start"
+  },
+  {
+    "url": "https://developer.android.com/develop/ui/compose/accessibility/merging-clearing",
+    "status": 200,
+    "resolved": "https://developer.android.com/develop/ui/compose/accessibility/merging-clearing"
+  },
+  {
+    "url": "https://developer.android.com/develop/ui/compose/accessibility/testing",
+    "status": 200,
+    "resolved": "https://developer.android.com/develop/ui/compose/accessibility/testing"
+  },
+  {
+    "url": "https://developer.android.com/develop/ui/compose/compositionlocal",
+    "status": 200,
+    "resolved": "https://developer.android.com/develop/ui/compose/compositionlocal"
+  },
+  {
+    "url": "https://developer.android.com/develop/ui/compose/glance/build-ui",
+    "status": 200,
+    "resolved": "https://developer.android.com/develop/ui/compose/glance/build-ui"
+  },
+  {
+    "url": "https://developer.android.com/develop/ui/compose/graphics/draw/modifiers",
+    "status": 200,
+    "resolved": "https://developer.android.com/develop/ui/compose/graphics/draw/modifiers"
+  },
+  {
+    "url": "https://developer.android.com/develop/ui/compose/layouts/adaptive/foldables/make-your-app-fold-aware",
+    "status": 200,
+    "resolved": "https://developer.android.com/develop/ui/compose/layouts/adaptive/foldables/make-your-app-fold-aware"
+  },
+  {
+    "url": "https://developer.android.com/develop/ui/compose/modifiers",
+    "status": 200,
+    "resolved": "https://developer.android.com/develop/ui/compose/modifiers"
+  },
+  {
+    "url": "https://developer.android.com/develop/ui/compose/performance/bestpractices",
+    "status": 200,
+    "resolved": "https://developer.android.com/develop/ui/compose/performance/bestpractices"
+  },
+  {
+    "url": "https://developer.android.com/develop/ui/compose/performance/stability/fix",
+    "status": 200,
+    "resolved": "https://developer.android.com/develop/ui/compose/performance/stability/fix"
+  },
+  {
+    "url": "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping",
+    "status": 200,
+    "resolved": "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+  },
+  {
+    "url": "https://developer.android.com/develop/ui/compose/phases",
+    "status": 200,
+    "resolved": "https://developer.android.com/develop/ui/compose/phases"
+  },
+  {
+    "url": "https://developer.android.com/develop/ui/compose/state#other-supported-types-of-state",
+    "status": 200,
+    "resolved": "https://developer.android.com/develop/ui/compose/state#other-supported-types-of-state"
+  },
+  {
+    "url": "https://developer.android.com/develop/ui/compose/state-saving",
+    "status": 200,
+    "resolved": "https://developer.android.com/develop/ui/compose/state-saving"
+  },
+  {
+    "url": "https://developer.android.com/develop/ui/compose/testing/synchronization",
+    "status": 200,
+    "resolved": "https://developer.android.com/develop/ui/compose/testing/synchronization"
+  },
+  {
+    "url": "https://developer.android.com/develop/ui/views/graphics/hardware-accel",
+    "status": 200,
+    "resolved": "https://developer.android.com/develop/ui/views/graphics/hardware-accel"
+  },
+  {
+    "url": "https://developer.android.com/develop/ui/views/layout/webapps/managing-webview#termination-handle",
+    "status": 200,
+    "resolved": "https://developer.android.com/develop/ui/views/layout/webapps/managing-webview#termination-handle"
+  },
+  {
+    "url": "https://developer.android.com/guide/components/activities/process-lifecycle",
+    "status": 200,
+    "resolved": "https://developer.android.com/guide/components/activities/process-lifecycle"
+  },
+  {
+    "url": "https://developer.android.com/identity/data/autobackup",
+    "status": 200,
+    "resolved": "https://developer.android.com/identity/data/autobackup"
+  },
+  {
+    "url": "https://developer.android.com/kotlin/coroutines/coroutines-best-practices",
+    "status": 200,
+    "resolved": "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+  },
+  {
+    "url": "https://developer.android.com/kotlin/coroutines/coroutines-best-practices#watch-out-for-exceptions",
+    "status": 200,
+    "resolved": "https://developer.android.com/kotlin/coroutines/coroutines-best-practices#watch-out-for-exceptions"
+  },
+  {
+    "url": "https://developer.android.com/kotlin/coroutines/test",
+    "status": 200,
+    "resolved": "https://developer.android.com/kotlin/coroutines/test"
+  },
+  {
+    "url": "https://developer.android.com/kotlin/flow/stateflow-and-sharedflow",
+    "status": 200,
+    "resolved": "https://developer.android.com/kotlin/flow/stateflow-and-sharedflow"
+  },
+  {
+    "url": "https://developer.android.com/media/media3/exoplayer/drm",
+    "status": 200,
+    "resolved": "https://developer.android.com/media/media3/exoplayer/drm"
+  },
+  {
+    "url": "https://developer.android.com/media/media3/exoplayer/track-selection",
+    "status": 200,
+    "resolved": "https://developer.android.com/media/media3/exoplayer/track-selection"
+  },
+  {
+    "url": "https://developer.android.com/privacy-and-security/risks/insecure-webview-native-bridges",
+    "status": 200,
+    "resolved": "https://developer.android.com/privacy-and-security/risks/insecure-webview-native-bridges"
+  },
+  {
+    "url": "https://developer.android.com/privacy-and-security/risks/unsafe-uri-loading",
+    "status": 200,
+    "resolved": "https://developer.android.com/privacy-and-security/risks/unsafe-uri-loading"
+  },
+  {
+    "url": "https://developer.android.com/reference/android/app/Activity",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/android/app/Activity"
+  },
+  {
+    "url": "https://developer.android.com/reference/android/content/SharedPreferences",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/android/content/SharedPreferences"
+  },
+  {
+    "url": "https://developer.android.com/reference/android/graphics/Bitmap.Config#HARDWARE",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/android/graphics/Bitmap.Config#HARDWARE"
+  },
+  {
+    "url": "https://developer.android.com/reference/android/hardware/SensorManager#getDefaultSensor(int)",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/android/hardware/SensorManager#getDefaultSensor(int)"
+  },
+  {
+    "url": "https://developer.android.com/reference/android/hardware/SensorManager#registerListener(android.hardware.SensorEventListener,%20android.hardware.Sensor,%20int)",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/android/hardware/SensorManager#registerListener(android.hardware.SensorEventListener,%20android.hardware.Sensor,%20int)"
+  },
+  {
+    "url": "https://developer.android.com/reference/android/os/PowerManager.OnThermalStatusChangedListener",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/android/os/PowerManager.OnThermalStatusChangedListener"
+  },
+  {
+    "url": "https://developer.android.com/reference/android/os/PowerManager.WakeLock",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/android/os/PowerManager.WakeLock"
+  },
+  {
+    "url": "https://developer.android.com/reference/android/os/StrictMode.ThreadPolicy.Builder",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/android/os/StrictMode.ThreadPolicy.Builder"
+  },
+  {
+    "url": "https://developer.android.com/reference/android/view/Choreographer#postFrameCallback(android.view.Choreographer.FrameCallback)",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/android/view/Choreographer#postFrameCallback(android.view.Choreographer.FrameCallback)"
+  },
+  {
+    "url": "https://developer.android.com/reference/android/view/View#getTag()",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/android/view/View#getTag()"
+  },
+  {
+    "url": "https://developer.android.com/reference/android/view/View#setClipToOutline(boolean)",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/android/view/View#setClipToOutline(boolean)"
+  },
+  {
+    "url": "https://developer.android.com/reference/android/webkit/CookieManager",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/android/webkit/CookieManager"
+  },
+  {
+    "url": "https://developer.android.com/reference/android/webkit/WebViewClient#onPageFinished(android.webkit.WebView,java.lang.String)",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/android/webkit/WebViewClient#onPageFinished(android.webkit.WebView,java.lang.String)"
+  },
+  {
+    "url": "https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,android.webkit.RenderProcessGoneDetail)",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,android.webkit.RenderProcessGoneDetail)"
+  },
+  {
+    "url": "https://developer.android.com/reference/androidx/fragment/app/Fragment",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/androidx/fragment/app/Fragment"
+  },
+  {
+    "url": "https://developer.android.com/reference/androidx/lifecycle/LifecycleKt",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/androidx/lifecycle/LifecycleKt"
+  },
+  {
+    "url": "https://developer.android.com/reference/androidx/lifecycle/LiveData",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/androidx/lifecycle/LiveData"
+  },
+  {
+    "url": "https://developer.android.com/reference/androidx/lifecycle/ViewModel#onCleared()",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/androidx/lifecycle/ViewModel#onCleared()"
+  },
+  {
+    "url": "https://developer.android.com/reference/androidx/media3/exoplayer/ExoPlayer#setForegroundMode(boolean)",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/androidx/media3/exoplayer/ExoPlayer#setForegroundMode(boolean)"
+  },
+  {
+    "url": "https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView#setHasFixedSize(boolean)",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView#setHasFixedSize(boolean)"
+  },
+  {
+    "url": "https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView.Adapter",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView.Adapter"
+  },
+  {
+    "url": "https://developer.android.com/reference/kotlin/androidx/compose/ui/test/IdlingResource",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/kotlin/androidx/compose/ui/test/IdlingResource"
+  },
+  {
+    "url": "https://developer.android.com/reference/kotlin/androidx/compose/ui/test/package-summary",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/kotlin/androidx/compose/ui/test/package-summary"
+  },
+  {
+    "url": "https://developer.android.com/reference/kotlin/androidx/datastore/migrations/SharedPreferencesView",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/kotlin/androidx/datastore/migrations/SharedPreferencesView"
+  },
+  {
+    "url": "https://developer.android.com/reference/kotlin/androidx/room/RoomDatabase.Builder",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/kotlin/androidx/room/RoomDatabase.Builder"
+  },
+  {
+    "url": "https://developer.android.com/reference/kotlin/androidx/tracing/package-summary",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/kotlin/androidx/tracing/package-summary"
+  },
+  {
+    "url": "https://developer.android.com/reference/org/json/JSONObject#optString(java.lang.String)",
+    "status": 200,
+    "resolved": "https://developer.android.com/reference/org/json/JSONObject#optString(java.lang.String)"
+  },
+  {
+    "url": "https://developer.android.com/studio/profile/capture-heap-dump",
+    "status": 200,
+    "resolved": "https://developer.android.com/studio/profile/capture-heap-dump"
+  },
+  {
+    "url": "https://developer.android.com/studio/write/vector-asset-studio",
+    "status": 200,
+    "resolved": "https://developer.android.com/studio/write/vector-asset-studio"
+  },
+  {
+    "url": "https://developer.android.com/topic/architecture/ui-layer/events",
+    "status": 200,
+    "resolved": "https://developer.android.com/topic/architecture/ui-layer/events"
+  },
+  {
+    "url": "https://developer.android.com/topic/google-play-instant/release-notes",
+    "status": 200,
+    "resolved": "https://developer.android.com/topic/google-play-instant/release-notes"
+  },
+  {
+    "url": "https://developer.android.com/topic/libraries/app-startup",
+    "status": 200,
+    "resolved": "https://developer.android.com/topic/libraries/app-startup"
+  },
+  {
+    "url": "https://developer.android.com/topic/libraries/architecture/coroutines",
+    "status": 200,
+    "resolved": "https://developer.android.com/topic/libraries/architecture/coroutines"
+  },
+  {
+    "url": "https://developer.android.com/topic/libraries/architecture/datastore",
+    "status": 200,
+    "resolved": "https://developer.android.com/topic/libraries/architecture/datastore"
+  },
+  {
+    "url": "https://developer.android.com/topic/libraries/architecture/livedata#update_livedata_objects",
+    "status": 200,
+    "resolved": "https://developer.android.com/topic/libraries/architecture/livedata#update_livedata_objects"
+  },
+  {
+    "url": "https://developer.android.com/topic/libraries/architecture/paging/v3-network-db#handle-errors",
+    "status": 200,
+    "resolved": "https://developer.android.com/topic/libraries/architecture/paging/v3-network-db#handle-errors"
+  },
+  {
+    "url": "https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-savedstate",
+    "status": 200,
+    "resolved": "https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-savedstate"
+  },
+  {
+    "url": "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs",
+    "status": 200,
+    "resolved": "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+  },
+  {
+    "url": "https://developer.android.com/topic/performance/app-optimization/customize-which-resources-to-keep",
+    "status": 200,
+    "resolved": "https://developer.android.com/topic/performance/app-optimization/customize-which-resources-to-keep"
+  },
+  {
+    "url": "https://developer.android.com/topic/performance/app-optimization/enable-app-optimization",
+    "status": 200,
+    "resolved": "https://developer.android.com/topic/performance/app-optimization/enable-app-optimization"
+  },
+  {
+    "url": "https://developer.android.com/topic/performance/app-optimization/overview",
+    "status": 404
+  },
+  {
+    "url": "https://developer.android.com/topic/performance/appstandby#restricted",
+    "status": 200,
+    "resolved": "https://developer.android.com/topic/performance/appstandby#restricted"
+  },
+  {
+    "url": "https://developer.android.com/topic/performance/baselineprofiles/overview",
+    "status": 200,
+    "resolved": "https://developer.android.com/topic/performance/baselineprofiles/overview"
+  },
+  {
+    "url": "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview",
+    "status": 200,
+    "resolved": "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
+  },
+  {
+    "url": "https://developer.android.com/topic/performance/graphics/manage-memory",
+    "status": 200,
+    "resolved": "https://developer.android.com/topic/performance/graphics/manage-memory"
+  },
+  {
+    "url": "https://developer.android.com/topic/performance/issues/launch-time",
+    "status": 200,
+    "resolved": "https://developer.android.com/topic/performance/issues/launch-time"
+  },
+  {
+    "url": "https://developer.android.com/topic/performance/memory-overview",
+    "status": 200,
+    "resolved": "https://developer.android.com/topic/performance/memory-overview"
+  },
+  {
+    "url": "https://developer.android.com/topic/performance/rendering/inspect-gpu-rendering",
+    "status": 200,
+    "resolved": "https://developer.android.com/topic/performance/rendering/inspect-gpu-rendering"
+  },
+  {
+    "url": "https://developer.android.com/topic/performance/vitals/anr",
+    "status": 200,
+    "resolved": "https://developer.android.com/topic/performance/issues/anr"
+  },
+  {
+    "url": "https://developer.android.com/training/data-storage/room#database",
+    "status": 200,
+    "resolved": "https://developer.android.com/training/data-storage/room#database"
+  },
+  {
+    "url": "https://developer.android.com/training/data-storage/room/migrating-db-versions",
+    "status": 200,
+    "resolved": "https://developer.android.com/training/data-storage/room/migrating-db-versions"
+  },
+  {
+    "url": "https://developer.android.com/training/dependency-injection/hilt-jetpack",
+    "status": 200,
+    "resolved": "https://developer.android.com/training/dependency-injection/hilt-jetpack"
+  },
+  {
+    "url": "https://developer.android.com/training/dependency-injection/hilt-jetpack#workmanager",
+    "status": 200,
+    "resolved": "https://developer.android.com/training/dependency-injection/hilt-jetpack#workmanager"
+  },
+  {
+    "url": "https://developer.android.com/training/dependency-injection/hilt-testing",
+    "status": 200,
+    "resolved": "https://developer.android.com/training/dependency-injection/hilt-testing"
+  },
+  {
+    "url": "https://developer.android.com/training/monitoring-device-state/doze-standby",
+    "status": 200,
+    "resolved": "https://developer.android.com/training/monitoring-device-state/doze-standby"
+  },
+  {
+    "url": "https://developer.android.com/training/package-visibility/use-cases",
+    "status": 200,
+    "resolved": "https://developer.android.com/training/package-visibility/use-cases"
+  },
+  {
+    "url": "https://developer.apple.com/documentation/xcode/distributing-binary-frameworks-as-swift-packages",
+    "status": 200,
+    "resolved": "https://developer.apple.com/documentation/xcode/distributing-binary-frameworks-as-swift-packages"
+  },
+  {
+    "url": "https://developer.apple.com/videos/play/wwdc2021/10211/",
+    "status": 200,
+    "resolved": "https://developer.apple.com/videos/play/wwdc2021/10211/"
+  },
+  {
+    "url": "https://developers.google.com/widevine/drm/overview",
+    "status": 200,
+    "resolved": "https://developers.google.com/widevine/drm/overview"
+  },
+  {
+    "url": "https://docs.github.com/en/actions/reference/runners/github-hosted-runners",
+    "status": 200,
+    "resolved": "https://docs.github.com/en/actions/reference/runners/github-hosted-runners"
+  },
+  {
+    "url": "https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request",
+    "status": 200,
+    "resolved": "https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request"
+  },
+  {
+    "url": "https://docs.github.com/en/actions/using-jobs/using-concurrency",
+    "status": 200,
+    "resolved": "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency"
+  },
+  {
+    "url": "https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows",
+    "status": 200,
+    "resolved": "https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching"
+  },
+  {
+    "url": "https://docs.github.com/en/billing/reference/actions-runner-pricing",
+    "status": 200,
+    "resolved": "https://docs.github.com/en/billing/reference/actions-runner-pricing"
+  },
+  {
+    "url": "https://docs.gradle.org/current/userguide/build_cache.html",
+    "status": 200,
+    "resolved": "https://docs.gradle.org/current/userguide/build_cache.html"
+  },
+  {
+    "url": "https://docs.gradle.org/current/userguide/build_environment.html",
+    "status": 200,
+    "resolved": "https://docs.gradle.org/current/userguide/build_environment.html"
+  },
+  {
+    "url": "https://docs.gradle.org/current/userguide/build_lifecycle.html",
+    "status": 200,
+    "resolved": "https://docs.gradle.org/current/userguide/build_lifecycle.html"
+  },
+  {
+    "url": "https://docs.gradle.org/current/userguide/configuration_cache.html",
+    "status": 200,
+    "resolved": "https://docs.gradle.org/current/userguide/configuration_cache.html"
+  },
+  {
+    "url": "https://docs.gradle.org/current/userguide/declaring_dependencies_basics.html",
+    "status": 200,
+    "resolved": "https://docs.gradle.org/current/userguide/declaring_dependencies_basics.html"
+  },
+  {
+    "url": "https://docs.gradle.org/current/userguide/dependency_caching.html",
+    "status": 200,
+    "resolved": "https://docs.gradle.org/current/userguide/dependency_caching.html"
+  },
+  {
+    "url": "https://docs.gradle.org/current/userguide/multi_project_builds.html",
+    "status": 200,
+    "resolved": "https://docs.gradle.org/current/userguide/multi_project_builds.html"
+  },
+  {
+    "url": "https://docs.gradle.org/current/userguide/task_configuration_avoidance.html",
+    "status": 200,
+    "resolved": "https://docs.gradle.org/current/userguide/task_configuration_avoidance.html"
+  },
+  {
+    "url": "https://docs.gradle.org/current/userguide/version_catalogs.html",
+    "status": 200,
+    "resolved": "https://docs.gradle.org/current/userguide/version_catalogs.html"
+  },
+  {
+    "url": "https://docs.junit.org/5.11.4/user-guide/index.html#writing-tests-nested",
+    "status": 200,
+    "resolved": "https://docs.junit.org/5.11.4/user-guide/index.html#writing-tests-nested"
+  },
+  {
+    "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html#valueOf(int)",
+    "status": 200,
+    "resolved": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html#valueOf(int)"
+  },
+  {
+    "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/ref/PhantomReference.html",
+    "status": 200,
+    "resolved": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/ref/PhantomReference.html"
+  },
+  {
+    "url": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/ref/WeakReference.html",
+    "status": 200,
+    "resolved": "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/ref/WeakReference.html"
+  },
+  {
+    "url": "https://docs.oracle.com/en/java/javase/21/docs/specs/man/javap.html",
+    "status": 200,
+    "resolved": "https://docs.oracle.com/en/java/javase/21/docs/specs/man/javap.html"
+  },
+  {
+    "url": "https://docs.oracle.com/en/java/javase/21/language/records.html",
+    "status": 200,
+    "resolved": "https://docs.oracle.com/en/java/javase/21/language/records.html"
+  },
+  {
+    "url": "https://docs.oracle.com/javase/specs/jls/se17/html/jls-12.html#jls-12.4.2",
+    "status": 200,
+    "resolved": "https://docs.oracle.com/javase/specs/jls/se17/html/jls-12.html#jls-12.4.2"
+  },
+  {
+    "url": "https://docs.oracle.com/javase/specs/jls/se17/html/jls-17.html#jls-17.4.5",
+    "status": 200,
+    "resolved": "https://docs.oracle.com/javase/specs/jls/se17/html/jls-17.html#jls-17.4.5"
+  },
+  {
+    "url": "https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-2.html",
+    "status": 200,
+    "resolved": "https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-2.html"
+  },
+  {
+    "url": "https://firebase.google.com/docs/cloud-messaging/android-message-priority#message_processing_for_high_and_normal_priority_messages",
+    "status": 200,
+    "resolved": "https://firebase.google.com/docs/cloud-messaging/android-message-priority#message_processing_for_high_and_normal_priority_messages"
+  },
+  {
+    "url": "https://firebase.google.com/docs/remote-config/get-started?platform=android",
+    "status": 200,
+    "resolved": "https://firebase.google.com/docs/remote-config/get-started?platform=android"
+  },
+  {
+    "url": "https://github.com/JetBrains/kotlin/blob/v2.2.21/libraries/stdlib/jvm/runtime/kotlin/jvm/internal/Intrinsics.java",
+    "status": 200,
+    "resolved": "https://github.com/JetBrains/kotlin/blob/v2.2.21/libraries/stdlib/jvm/runtime/kotlin/jvm/internal/Intrinsics.java"
+  },
+  {
+    "url": "https://github.com/JetBrains/kotlin/blob/v2.2.21/libraries/stdlib/jvm/src/kotlin/util/LazyJVM.kt",
+    "status": 200,
+    "resolved": "https://github.com/JetBrains/kotlin/blob/v2.2.21/libraries/stdlib/jvm/src/kotlin/util/LazyJVM.kt"
+  },
+  {
+    "url": "https://github.com/Kotlin/kotlinx-datetime/blob/master/README.md",
+    "status": 200,
+    "resolved": "https://github.com/Kotlin/kotlinx-datetime/blob/master/README.md"
+  },
+  {
+    "url": "https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/nativeDarwin/src/Dispatchers.kt",
+    "status": 200,
+    "resolved": "https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/nativeDarwin/src/Dispatchers.kt"
+  },
+  {
+    "url": "https://github.com/Kotlin/kotlinx.serialization/blob/master/README.md",
+    "status": 200,
+    "resolved": "https://github.com/Kotlin/kotlinx.serialization/blob/master/README.md"
+  },
+  {
+    "url": "https://github.com/Triple-T/gradle-play-publisher",
+    "status": 200,
+    "resolved": "https://github.com/Triple-T/gradle-play-publisher"
+  },
+  {
+    "url": "https://github.com/cashapp/paparazzi",
+    "status": 200,
+    "resolved": "https://github.com/cashapp/paparazzi"
+  },
+  {
+    "url": "https://github.com/cashapp/paparazzi#tasks",
+    "status": 200,
+    "resolved": "https://github.com/cashapp/paparazzi#tasks"
+  },
+  {
+    "url": "https://github.com/cashapp/turbine",
+    "status": 200,
+    "resolved": "https://github.com/cashapp/turbine"
+  },
+  {
+    "url": "https://github.com/google/dagger/releases/tag/dagger-2.48",
+    "status": 200,
+    "resolved": "https://github.com/google/dagger/releases/tag/dagger-2.48"
+  },
+  {
+    "url": "https://github.com/google/ksp/blob/main/api/src/main/kotlin/com/google/devtools/ksp/processing/Resolver.kt",
+    "status": 200,
+    "resolved": "https://github.com/google/ksp/blob/main/api/src/main/kotlin/com/google/devtools/ksp/processing/Resolver.kt"
+  },
+  {
+    "url": "https://github.com/google/ksp/blob/main/docs/ksp2.md",
+    "status": 200,
+    "resolved": "https://github.com/google/ksp/blob/main/docs/ksp2.md"
+  },
+  {
+    "url": "https://github.com/ktorio/ktor/blob/main/ktor-client/ktor-client-core/common/src/io/ktor/client/engine/HttpClientEngineFactory.kt",
+    "status": 200,
+    "resolved": "https://github.com/ktorio/ktor/blob/main/ktor-client/ktor-client-core/common/src/io/ktor/client/engine/HttpClientEngineFactory.kt"
+  },
+  {
+    "url": "https://github.com/robolectric/robolectric",
+    "status": 200,
+    "resolved": "https://github.com/robolectric/robolectric"
+  },
+  {
+    "url": "https://github.com/robolectric/robolectric/blob/master/annotations/src/main/java/org/robolectric/annotation/GraphicsMode.java",
+    "status": 200,
+    "resolved": "https://github.com/robolectric/robolectric/blob/master/annotations/src/main/java/org/robolectric/annotation/GraphicsMode.java"
+  },
+  {
+    "url": "https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Protocol.kt",
+    "status": 200,
+    "resolved": "https://github.com/lysine-dev/okhttp/blob/main/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Protocol.kt"
+  },
+  {
+    "url": "https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt",
+    "status": 200,
+    "resolved": "https://github.com/lysine-dev/okhttp/blob/main/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt"
+  },
+  {
+    "url": "https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/BridgeInterceptor.kt",
+    "status": 200,
+    "resolved": "https://github.com/lysine-dev/okhttp/blob/main/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/BridgeInterceptor.kt"
+  },
+  {
+    "url": "https://github.com/square/retrofit/blob/trunk/retrofit-converters/moshi/src/main/java/retrofit2/converter/moshi/MoshiConverterFactory.java",
+    "status": 200,
+    "resolved": "https://github.com/lysine-dev/retrofit/blob/trunk/retrofit-converters/moshi/src/main/java/retrofit2/converter/moshi/MoshiConverterFactory.java"
+  },
+  {
+    "url": "https://github.com/square/retrofit/blob/trunk/retrofit/src/main/java/retrofit2/HttpServiceMethod.java",
+    "status": 200,
+    "resolved": "https://github.com/lysine-dev/retrofit/blob/trunk/retrofit/src/main/java/retrofit2/HttpServiceMethod.java"
+  },
+  {
+    "url": "https://github.com/square/retrofit/blob/trunk/retrofit/src/main/java/retrofit2/RequestFactory.java",
+    "status": 200,
+    "resolved": "https://github.com/lysine-dev/retrofit/blob/trunk/retrofit/src/main/java/retrofit2/RequestFactory.java"
+  },
+  {
+    "url": "https://github.com/square/retrofit/blob/trunk/retrofit/src/main/java/retrofit2/Retrofit.java",
+    "status": 200,
+    "resolved": "https://github.com/lysine-dev/retrofit/blob/trunk/retrofit/src/main/java/retrofit2/Retrofit.java"
+  },
+  {
+    "url": "https://github.com/square/retrofit/tree/trunk/retrofit-converters/kotlinx-serialization",
+    "status": 200,
+    "resolved": "https://github.com/lysine-dev/retrofit/tree/trunk/retrofit-converters/kotlinx-serialization"
+  },
+  {
+    "url": "https://github.com/vanniktech/gradle-dependency-graph-generator-plugin",
+    "status": 200,
+    "resolved": "https://github.com/vanniktech/gradle-dependency-graph-generator-plugin"
+  },
+  {
+    "url": "https://go.dev/ref/spec#Go_statements",
+    "status": 200,
+    "resolved": "https://go.dev/ref/spec#Go_statements"
+  },
+  {
+    "url": "https://google.github.io/gson/Troubleshooting.html#default-field-values-not-present-after-deserialization",
+    "status": 200,
+    "resolved": "https://google.github.io/gson/Troubleshooting.html#default-field-values-not-present-after-deserialization"
+  },
+  {
+    "url": "https://insert-koin.io/docs/reference/koin-core/modules/",
+    "status": 200,
+    "resolved": "https://insert-koin.io/docs/reference/koin-core/modules/"
+  },
+  {
+    "url": "https://insert-koin.io/docs/reference/koin-test/verify/",
+    "status": 200,
+    "resolved": "https://insert-koin.io/docs/reference/koin-test/verify/"
+  },
+  {
+    "url": "https://kmmbridge.touchlab.co/docs/PORTING_0.3.x",
+    "status": 200,
+    "resolved": "https://kmmbridge.touchlab.co/docs/PORTING_0.3.x/"
+  },
+  {
+    "url": "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/first-or-null.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/first-or-null.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.io/append-text.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.io/append-text.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.native.concurrent/-thread-local/",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.native.concurrent/-thread-local/"
+  },
+  {
+    "url": "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.properties/-delegates/not-null.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.properties/-delegates/not-null.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.reflect/type-of.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.reflect/type-of.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-unsafe-variance/",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-unsafe-variance/"
+  },
+  {
+    "url": "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/run-catching.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/run-catching.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/to-string.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/to-string.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/-factory/-b-u-f-f-e-r-e-d.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/-factory/-b-u-f-f-e-r-e-d.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/close.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/close.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/send.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-send-channel/send.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/channel-flow.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/channel-flow.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/first.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/first.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flow-on.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flow-on.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/map.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/map.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/update.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/update.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/lock.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/lock.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-start/-d-e-f-a-u-l-t/",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-start/-d-e-f-a-u-l-t/"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/invoke-on-completion.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/invoke-on-completion.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-non-cancellable/",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-non-cancellable/"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/async.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/ensure-active.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/ensure-active.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/yield.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/yield.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-test-scope/background-scope.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-test-scope/background-scope.html"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-json/kotlinx.serialization.json/-json-builder/",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-json/kotlinx.serialization.json/-json-builder/"
+  },
+  {
+    "url": "https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-json/kotlinx.serialization.json/-json-builder/coerce-input-values.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-json/kotlinx.serialization.json/-json-builder/coerce-input-values.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/api-guidelines-backward-compatibility.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/api-guidelines-backward-compatibility.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/cancellation-and-timeouts.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/cancellation-and-timeouts.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/cancellation-and-timeouts.html#closing-resources-with-finally",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/cancellation-and-timeouts.html#closing-resources-with-finally"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/collections-overview.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/collections-overview.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/compatibility-guide-17.html#make-when-statements-with-enum-sealed-and-boolean-subjects-exhaustive-by-default",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/compatibility-guide-17.html#make-when-statements-with-enum-sealed-and-boolean-subjects-exhaustive-by-default"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html#debugging-coroutines-and-threads",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html#debugging-coroutines-and-threads"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/data-classes.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/data-classes.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/delegated-properties.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/delegated-properties.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/destructuring-declarations.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/destructuring-declarations.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/exception-handling.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/exception-handling.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/exceptions.html#finally-block",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/exceptions.html#finally-block"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/extensions.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/extensions.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/flow.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/flow.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/generics.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/generics.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/gradle-compilation-and-caches.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/gradle-compilation-and-caches.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/inline-classes.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/inline-classes.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/inline-functions.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/inline-functions.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/interfaces.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/interfaces.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/java-interop.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/java-interop.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/java-interop.html#null-safety-and-platform-types",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/java-interop.html#null-safety-and-platform-types"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/java-to-kotlin-interop.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/java-to-kotlin-interop.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/java-to-kotlin-interop.html#inline-value-classes",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/java-to-kotlin-interop.html#inline-value-classes"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/java-to-kotlin-interop.html#variant-generics",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/java-to-kotlin-interop.html#variant-generics"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/java-to-kotlin-visibility-guide.html",
+    "status": 404
+  },
+  {
+    "url": "https://kotlinlang.org/docs/ksp-incremental.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/ksp-incremental.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/ksp-multi-round.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/ksp-multi-round.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/ksp-overview.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/ksp-overview.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/lambdas.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/lambdas.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/lambdas.html#closures",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/lambdas.html#closures"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/multiplatform/compose-navigation.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/multiplatform/compose-navigation.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/multiplatform/multiplatform-publish-lib-setup.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/multiplatform/multiplatform-publish-lib-setup.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/native-arc-integration.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/native-arc-integration.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/native-improving-compilation-time.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/native-improving-compilation-time.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/native-memory-manager.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/native-memory-manager.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/native-migration-guide.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/native-migration-guide.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/native-objc-interop.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/native-objc-interop.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/native-swift-export.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/native-swift-export.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/null-safety.html#elvis-operator",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/null-safety.html#elvis-operator"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/properties.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/properties.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/sealed-classes.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/sealed-classes.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/sealed-classes.html#use-sealed-classes-with-when-expression",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/sealed-classes.html#use-sealed-classes-with-when-expression"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/sequences.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/sequences.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/visibility-modifiers.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/visibility-modifiers.html"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/visibility-modifiers.html#modules",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/visibility-modifiers.html#modules"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/whatsnew15.html#sealed-interfaces",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/whatsnew15.html#sealed-interfaces"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/whatsnew19.html#stable-data-objects-for-symmetry-with-data-classes",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/whatsnew19.html#stable-data-objects-for-symmetry-with-data-classes"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/whatsnew20.html#generation-of-lambda-functions-using-invokedynamic"
+  },
+  {
+    "url": "https://kotlinlang.org/docs/whatsnew24.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/docs/whatsnew24.html"
+  },
+  {
+    "url": "https://kotlinlang.org/spec/asynchronous-programming-with-coroutines.html",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/spec/asynchronous-programming-with-coroutines.html"
+  },
+  {
+    "url": "https://kotlinlang.org/spec/overload-resolution.html#call-with-an-explicit-receiver",
+    "status": 200,
+    "resolved": "https://kotlinlang.org/spec/overload-resolution.html#call-with-an-explicit-receiver"
+  },
+  {
+    "url": "https://ktor.io/docs/client-custom-plugins.html",
+    "status": 200,
+    "resolved": "https://ktor.io/docs/client-custom-plugins.html"
+  },
+  {
+    "url": "https://ktor.io/docs/client-engines.html",
+    "status": 200,
+    "resolved": "https://ktor.io/docs/client-engines.html"
+  },
+  {
+    "url": "https://ktor.io/docs/client-request-retry.html",
+    "status": 200,
+    "resolved": "https://ktor.io/docs/client-request-retry.html"
+  },
+  {
+    "url": "https://ktor.io/docs/client-response-validation.html",
+    "status": 200,
+    "resolved": "https://ktor.io/docs/client-response-validation.html"
+  },
+  {
+    "url": "https://ktor.io/docs/client-serialization.html",
+    "status": 200,
+    "resolved": "https://ktor.io/docs/client-serialization.html"
+  },
+  {
+    "url": "https://ktor.io/docs/client-testing.html",
+    "status": 200,
+    "resolved": "https://ktor.io/docs/client-testing.html"
+  },
+  {
+    "url": "https://mockk.io/#top-level-functions",
+    "status": 200,
+    "resolved": "https://mockk.io/#top-level-functions"
+  },
+  {
+    "url": "https://openjdk.org/jeps/197",
+    "status": 200,
+    "resolved": "https://openjdk.org/jeps/197"
+  },
+  {
+    "url": "https://perfetto.dev/docs/data-sources/frametimeline",
+    "status": 200,
+    "resolved": "https://perfetto.dev/docs/data-sources/frametimeline"
+  },
+  {
+    "url": "https://perfetto.dev/docs/reference/perfetto-cli",
+    "status": 200,
+    "resolved": "https://perfetto.dev/docs/reference/perfetto-cli"
+  },
+  {
+    "url": "https://pkg.go.dev/golang.org/x/sync/errgroup",
+    "status": 200,
+    "resolved": "https://pkg.go.dev/golang.org/x/sync/errgroup"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/snapshots/Snapshot.kt",
+    "status": 200,
+    "resolved": "https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/snapshots/Snapshot.kt"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/androidx/androidx/androidx-main/datastore/datastore-core/src/commonMain/kotlin/androidx/datastore/core/DataStoreImpl.kt",
+    "status": 200,
+    "resolved": "https://raw.githubusercontent.com/androidx/androidx/androidx-main/datastore/datastore-core/src/commonMain/kotlin/androidx/datastore/core/DataStoreImpl.kt"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/androidx/androidx/androidx-main/datastore/datastore-core/src/jvmAndAndroidMain/kotlin/androidx/datastore/core/FileStorage.kt",
+    "status": 200,
+    "resolved": "https://raw.githubusercontent.com/androidx/androidx/androidx-main/datastore/datastore-core/src/jvmAndAndroidMain/kotlin/androidx/datastore/core/FileStorage.kt"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/aosp-mirror/platform_frameworks_base/master/core/java/android/app/LoadedApk.java",
+    "status": 200,
+    "resolved": "https://raw.githubusercontent.com/aosp-mirror/platform_frameworks_base/master/core/java/android/app/LoadedApk.java"
+  },
+  {
+    "url": "https://robolectric.org/",
+    "status": 200,
+    "resolved": "https://robolectric.org/"
+  },
+  {
+    "url": "https://skie.touchlab.co/features/flows",
+    "status": 200,
+    "resolved": "https://skie.touchlab.co/features/flows"
+  },
+  {
+    "url": "https://skie.touchlab.co/features/suspend",
+    "status": 200,
+    "resolved": "https://skie.touchlab.co/features/suspend"
+  },
+  {
+    "url": "https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager",
+    "status": 200,
+    "resolved": "https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager"
+  },
+  {
+    "url": "https://source.android.com/docs/core/interaction/input",
+    "status": 200,
+    "resolved": "https://source.android.com/docs/core/interaction/input"
+  },
+  {
+    "url": "https://source.android.com/docs/core/runtime/dalvik-bytecode",
+    "status": 200,
+    "resolved": "https://source.android.com/docs/core/runtime/dalvik-bytecode"
+  },
+  {
+    "url": "https://source.android.com/docs/core/runtime/gc-debug",
+    "status": 200,
+    "resolved": "https://source.android.com/docs/core/runtime/gc-debug"
+  },
+  {
+    "url": "https://source.android.com/docs/core/runtime/jit-compiler",
+    "status": 200,
+    "resolved": "https://source.android.com/docs/core/runtime/jit-compiler"
+  },
+  {
+    "url": "https://source.android.com/docs/core/runtime/zygote",
+    "status": 200,
+    "resolved": "https://source.android.com/docs/core/runtime/zygote"
+  },
+  {
+    "url": "https://support.google.com/googleplay/android-developer/answer/9844486",
+    "status": 200,
+    "resolved": "https://support.google.com/googleplay/android-developer/answer/9844486"
+  },
+  {
+    "url": "https://support.google.com/googleplay/android-developer/answer/9844486?hl=en",
+    "status": 200,
+    "resolved": "https://support.google.com/googleplay/android-developer/answer/9844486?hl=en"
+  }
+]
