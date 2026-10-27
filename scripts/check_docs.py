@@ -36,6 +36,8 @@ STALE_DAYS = 180
 # Files that are known-thin and tracked for expansion (see milestones.md, G14).
 # Remove entries as they are expanded. Adding to this list requires a reason.
 THIN_FILE_ALLOWLIST: set[str] = {
+    # Reproduction commands and evidence boundaries for fixtures, not a knowledge chapter.
+    "website/validation/README.md",
     # Component contracts are short references; the 400-word chapter floor does not apply.
     "website/design-system/components/Checkpoint/README.md",
     "website/design-system/components/ReadingSheet/README.md",
