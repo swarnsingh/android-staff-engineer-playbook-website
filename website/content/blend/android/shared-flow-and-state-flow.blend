@@ -1,0 +1,46 @@
+<!-- Website teaching layer for android/concurrency/shared-flow-and-state-flow.md.
+     The original chapter is rendered in full; everything here is added around it.
+     MutableSharedFlow no-subscriber and replay semantics per the kotlinx.coroutines API reference; checked 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">After login, the ViewModel emits <code>NavigateHome</code> on a <code>MutableSharedFlow</code>. Most users land on Home. A few, who switched apps while the login request was running, stay on the login screen forever. When a teammate "fixes" it with <code>replay = 1</code>, other users are sent Home again every time they rotate the phone.</p>
+
+Both bugs come from the **delivery contract**: what happens to a value when nobody is collecting, and what a new collector receives. `StateFlow`, `SharedFlow` and `Channel` each answer those questions differently, and only one answer fits each job. This chapter compares their contracts, how `stateIn` and `shareIn` set them up, and how to deliver effects the user must not miss.
+
+<!-- @after Mental Model :: visual -->
+### Three contracts
+
+<figure class="viz"><div class="viz-grid" style="--cols:3"><div class="node is-key"><strong><code>StateFlow</code></strong><small>always a value · new collectors get the latest · equal values skipped · slow collectors skip ahead</small></div><div class="node"><strong><code>SharedFlow</code></strong><small>broadcast to active collectors · replay 0…n · no value kept without replay</small></div><div class="node"><strong><code>Channel</code></strong><small>a queue · each value goes to one receiver · can buffer while nobody receives</small></div></div><figcaption>State, broadcast and hand-off are different promises; pick the one the feature actually needs.</figcaption></figure>
+
+<!-- @after The Single-Event Problem :: animation -->
+### One navigation event: StateFlow and SharedFlow
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="State is retained; an unbuffered event is not">
+<h3>State is retained; an unbuffered event is not</h3>
+<p class="pb-sub">An illustrative run. Each moving packet is a named request, notification or result.</p>
+<div class="pb-seg" role="group" aria-label="Flow contract"><button type="button" data-mode="state" aria-pressed="true">StateFlow</button><button type="button" data-mode="event" aria-pressed="false">SharedFlow</button></div><div class="pb-paper"><svg class="pb-svg" role="img" aria-label="A producer publishes login completion while no screen collects. Compare StateFlow retention with MutableSharedFlow replay zero."></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div>
+<div class="pb-caption"><span class="pb-count"></span><p aria-live="polite"></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">{"nodes": [{"id": "producer", "label": "Login operation", "art": {"kind": "worker", "role": "runtime"}}, {"id": "hot", "label": "Hot flow", "art": {"kind": "flow", "role": "storage"}}, {"id": "ui", "label": "Screen collector", "art": {"kind": "phone", "role": "client"}}], "layouts": {"wide": {"size": [760, 290], "nodes": {"producer": {"x": 24, "y": 50, "w": 208, "h": 140}, "hot": {"x": 276, "y": 50, "w": 208, "h": 140}, "ui": {"x": 528, "y": 50, "w": 208, "h": 140}}, "edges": {"write": "M234 102 C254 102 254 102 274 102", "deliver": "M486 102 C506 102 506 102 526 102"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}, "narrow": {"size": [320, 470], "nodes": {"producer": {"x": 40, "y": 22, "w": 240, "h": 140}, "hot": {"x": 8, "y": 252, "w": 144, "h": 190}, "ui": {"x": 168, "y": 252, "w": 144, "h": 190}}, "edges": {"write": "M142 164 C142 207 62 207 62 250", "deliver": "M154 329 C160 329 160 329 166 329"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}}, "modes": {"state": {"initial": {"nodes": {"producer": ["", "request running"], "hot": ["", "loggedOut"], "ui": ["", "collecting"]}, "visuals": {"hot": {"empty": false}, "ui": {"rows": 1}}}, "steps": [{"caption": "The StateFlow starts at loggedOut. It always has a current value."}, {"caption": "The screen stops collecting before the request completes.", "set": {"nodes": {"ui": ["", "not collecting"]}, "visuals": {"ui": {"visible": false}}}}, {"caption": "Login completes and the producer sets loggedIn. StateFlow retains the latest value without a collector.", "packets": [{"edge": "write", "label": "loggedIn", "tone": "fwd", "kind": "parcel"}], "set": {"nodes": {"producer": ["is-done", "login finished"], "hot": ["is-done", "loggedIn cached"]}, "visuals": {"hot": {"empty": false}}}}, {"caption": "The screen subscribes again and receives loggedIn. Equal updates are conflated; this is state, not a queue of every login event.", "packets": [{"edge": "deliver", "label": "latest state", "tone": "fwd", "kind": "rows"}], "set": {"nodes": {"ui": ["is-done", "receives loggedIn"]}, "visuals": {"ui": {"visible": true, "rows": 3}}}}]}, "event": {"initial": {"nodes": {"producer": ["", "request running"], "hot": ["", "replay = 0"], "ui": ["", "collecting"]}, "visuals": {"hot": {"empty": true}, "ui": {"rows": 1}}}, "steps": [{"caption": "This track uses the default MutableSharedFlow: no replay and no extra buffer."}, {"caption": "The screen stops collecting. There are no subscribers.", "set": {"nodes": {"ui": ["", "not collecting"]}, "visuals": {"ui": {"visible": false}}}}, {"caption": "The producer emits LoginComplete. With no subscribers and replay zero, emit returns immediately and the event is lost.", "packets": [{"edge": "write", "label": "LoginComplete", "tone": "fwd", "kind": "parcel"}], "set": {"nodes": {"producer": ["is-done", "login finished"], "hot": ["is-warn", "nothing retained"]}, "visuals": {"hot": {"empty": true}}}}, {"caption": "The screen returns. There is no replayed event to deliver, so no packet reaches it. Model durable product state separately from a transient effect.", "set": {"nodes": {"ui": ["is-warn", "no past event"]}, "visuals": {"ui": {"visible": true, "rows": 0}}}}]}}, "illustrated": true, "edgeEndpoints": {"write": {"from": "producer", "to": "hot"}, "deliver": {"from": "hot", "to": "ui"}}}</script>
+<p class="pb-sub">Sources: <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/">StateFlow</a> · <a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/">SharedFlow</a>.</p>
+</section>
+
+<!-- @after Common Misconceptions :: check -->
+**Which primitive?** Decide before opening each answer.
+
+<details><summary>The current list of items in a cart, shown on two screens.</summary>
+
+`StateFlow`. It always has the latest value, and a new screen gets it immediately.
+</details>
+
+<details><summary>Price ticks that several widgets display; a late widget should show the last price.</summary>
+
+`SharedFlow` with `replay = 1` (or `shareIn(…, replay = 1)`), with a deliberate overflow policy for slow collectors.
+</details>
+
+<details><summary>Upload jobs that exactly one worker should process each.</summary>
+
+A `Channel`: point-to-point delivery. A SharedFlow would give each job to every subscriber.
+</details>

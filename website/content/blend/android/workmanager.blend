@@ -1,0 +1,47 @@
+<!-- Website teaching layer for android/concurrency/workmanager.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (WorkManager guide: persistence, constraints, backoff, expedited work)
+     on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A notes app syncs in a coroutine started from the ViewModel. Users on a train edit notes offline, close the app and lose signal. Hours later, the edits still exist only on the phone. Nobody's code was wrong; nothing was left running to try again once the network came back.</p>
+
+Some work must happen **eventually**, under the right conditions, even if the app process dies or the phone restarts in between. WorkManager records that work in its own database, hands scheduling to the system, and runs your `Worker` when constraints are met, retrying with backoff when asked. This chapter follows a request from `enqueue` to `SUCCEEDED`, and shows where WorkManager fits next to foreground services.
+
+<!-- @after Internal Mechanics :: animation -->
+### Follow one sync request across a reboot
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="Persist, wait, retry, finish">
+<h3>Persist, wait, retry, finish</h3>
+<p class="pb-sub">An illustrative run. Each moving packet is a named request, notification or result.</p>
+<div class="pb-paper"><svg class="pb-svg" role="img" aria-label="A persisted work request registers scheduling. The system later starts a worker, whose retry or success result updates the work record. Waiting, reboot and backoff do not imply a packet transfer."></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div>
+<div class="pb-caption"><span class="pb-count"></span><p aria-live="polite"></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">{"nodes": [{"id": "record", "label": "Work record", "art": {"kind": "database", "role": "storage"}}, {"id": "system", "label": "System scheduler", "art": {"kind": "clock", "role": "runtime"}}, {"id": "worker", "label": "CoroutineWorker", "art": {"kind": "worker", "role": "runtime"}}], "layouts": {"wide": {"size": [760, 290], "nodes": {"record": {"x": 24, "y": 50, "w": 208, "h": 140}, "system": {"x": 276, "y": 50, "w": 208, "h": 140}, "worker": {"x": 528, "y": 50, "w": 208, "h": 140}}, "edges": {"schedule": "M234 102 C254 102 254 102 274 102", "start": "M486 102 C506 102 506 102 526 102", "result": "M632 192 C632 270 128 270 128 192"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}, "narrow": {"size": [320, 470], "nodes": {"record": {"x": 40, "y": 22, "w": 240, "h": 140}, "system": {"x": 8, "y": 252, "w": 144, "h": 190}, "worker": {"x": 168, "y": 252, "w": 144, "h": 190}}, "edges": {"schedule": "M142 164 C142 207 62 207 62 250", "start": "M154 329 C160 329 160 329 166 329", "result": "M166 350 L158 350 V190 Q158 172 176 172 H220 L220 164"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}}, "modes": {"run": {"initial": {"nodes": {"record": ["", "not enqueued"], "system": ["", "no request"], "worker": ["", "not running"]}, "visuals": {"record": {"rows": 0}, "worker": {"visible": false}}}, "steps": [{"caption": "enqueueUniqueWork records one request with an unmetered-network constraint. In this run there is only metered connectivity, so it remains ENQUEUED.", "set": {"nodes": {"record": ["is-done", "ENQUEUED"]}, "visuals": {"record": {"rows": 1}}}}, {"caption": "WorkManager arranges scheduling for the persisted request. Registration is not proof that a worker has started.", "packets": [{"edge": "schedule", "label": "schedule", "tone": "fwd", "kind": "parcel"}], "set": {"nodes": {"system": ["is-warn", "waiting for constraints"]}}}, {"caption": "The process dies and the device later reboots. Pending work is persisted and rescheduled; persistence supplies no exact execution deadline.", "set": {"nodes": {"record": ["is-done", "still persisted"], "system": ["is-warn", "pending after reboot"]}}}, {"caption": "Later, all constraints hold and the system grants an execution opportunity. WorkManager starts this CoroutineWorker; the work becomes RUNNING.", "packets": [{"edge": "start", "label": "start", "tone": "fwd", "kind": "signal"}], "set": {"nodes": {"record": ["is-active", "RUNNING"], "system": ["is-done", "execution allowed"], "worker": ["is-active", "sync attempt"]}, "visuals": {"system": {"ready": true}, "worker": {"visible": true, "busy": true}}}}, {"caption": "The attempt returns Result.retry(). The work returns to ENQUEUED with its configured backoff. The paused interval is waiting, not activity between boxes.", "packets": [{"edge": "result", "label": "retry", "tone": "back", "kind": "parcel"}], "set": {"nodes": {"record": ["is-warn", "ENQUEUED · backoff"], "worker": ["is-warn", "retry requested"]}, "visuals": {"system": {"ready": false}, "worker": {"busy": false}}}}, {"caption": "Once eligible again, a later opportunity starts another attempt. Retried writes need idempotency; a failed attempt may already have reached the server.", "packets": [{"edge": "start", "label": "start", "tone": "fwd", "kind": "signal"}], "set": {"nodes": {"record": ["is-active", "RUNNING"], "worker": ["is-active", "next attempt"]}, "visuals": {"system": {"ready": true}, "worker": {"busy": true}}}}, {"caption": "This attempt returns Result.success(). The record becomes SUCCEEDED. If constraints become unmet during a run, WorkManager stops the worker and retries when they hold again.", "packets": [{"edge": "result", "label": "success", "tone": "back", "kind": "parcel"}], "set": {"nodes": {"record": ["is-done", "SUCCEEDED"], "worker": ["is-done", "success"]}, "visuals": {"worker": {"busy": false}}}}]}}, "illustrated": true, "edgeEndpoints": {"schedule": {"from": "record", "to": "system"}, "start": {"from": "system", "to": "worker"}, "result": {"from": "worker", "to": "record"}}}</script>
+<p class="pb-sub">Sources: <a href="https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work">Work requests, constraints and retry</a>.</p>
+</section>
+
+<!-- @diagram 6b7c18c9f8073fff -->
+### Who does what
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>ViewModel / UI</strong><small><code>enqueue</code></small></div><div class="node is-key"><strong>WorkManager</strong><small>1 · saves state in its Room database · 2 · delegates to JobScheduler</small></div><div class="node"><strong>System scheduler</strong><small>3 · wakes the app when conditions hold</small></div><div class="node" data-state="done"><strong><code>CoroutineWorker</code></strong><small>4 · runs, then status is updated in the database</small></div></div><figcaption>Your code only enqueues and does the work; persistence and scheduling belong to WorkManager and the system.</figcaption></figure>
+
+<!-- @after Tradeoffs :: check -->
+**Will it run?** Decide before opening each answer.
+
+<details><summary>Periodic work requested every 5 minutes.</summary>
+
+Not that often: periodic work has a minimum interval of 15 minutes. Use a different design for near-real-time updates.
+</details>
+
+<details><summary>A sync enqueued with <code>ExistingWorkPolicy.KEEP</code> while an identical one is already queued.</summary>
+
+The new request is dropped and the queued one stays, so taps do not stack up duplicate syncs.
+</details>
+
+<details><summary>A Hilt worker whose dependencies are constructor-injected, with the default initializer still enabled.</summary>
+
+WorkManager creates workers with its default factory, which cannot supply those dependencies, so creating the worker fails. Use `HiltWorkerFactory` and on-demand initialization.
+</details>

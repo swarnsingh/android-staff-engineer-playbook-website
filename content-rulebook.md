@@ -48,6 +48,16 @@ Use that need-driven sequencing, not the video's wording, artwork, exact script,
 
 ## 3. Choose the narrative for the topic
 
+### Define the structure before conversion
+
+Before starting a new section/phase, write its topic-by-topic structure in `website/reviews/android-phaseN-structure.md` (or the corresponding tree's review directory). Do this before drafting the teaching layer. Record the opening problem, chosen narrative route, original coverage to retain, important mechanism/internals, planned visuals or animations, production/staff decisions, prerequisites and sources. Explain differences between topics instead of mechanically reusing a template. The owner's instruction is to complete the remaining Android phases and publish a private preview for review; it does not approve pending technical corrections.
+
+For Android, consult relevant sections of the owner's *Manifest Android Interview* by Jaewoong Eum where they address the topic. Record the edition and actual pages read; use it to identify missing teaching questions and internals, then verify changing technical claims against primary sources. Do not claim the whole book was reviewed or copy its prose, examples or figures into lessons.
+
+### Content and Q&A have separate jobs
+
+For **both Kotlin and Android**, the Content tab carries the explanation, code and visual walkthroughs. Dedicated probing questions, answers, review checklists and added question checkpoints belong in the Q&A tab only in the interactive reader. Each answer starts below a clear **Answer** heading on a new line. Preserve every original question and answer; move the existing blocks rather than duplicating them. A rhetorical question that develops the lesson is still part of Content. The complete static chapter remains a readable fallback when JavaScript is unavailable. Test both activated tabs and deep links, not just the default Content view.
+
 These are authoring routes, not new repository file kinds. Select the route that fits the existing canonical/application/decision/blueprint owner. State a short rationale during review when choosing an unusual structure; do not add boilerplate justification to every reader-facing page.
 
 | Topic family | Suitable route | What must not be forced |
@@ -145,6 +155,8 @@ A Kotlin Playground integration is suitable for supported, verified JVM/language
 ## 8. Animations and diagrams
 
 Explanatory animation is part of the intended reading experience wherever temporal or causal behaviour benefits from it. For a topic where it adds no teaching value, use a suitable static representation instead and record that judgement during review. Do not invent decorative motion simply to satisfy a format requirement.
+
+Owner clarification, 2026-10-27: **animation is optional for every topic. A beautiful, clear static diagram is a complete result when it teaches the idea well.** Choose the representation for the mechanism, and use motion only when seeing a change over time makes that mechanism easier to understand. Neither an animation count nor a requirement to animate every chapter is a completion criterion.
 
 Choose motion that reveals a mechanism: suspension/resumption, changing state, request flow, cancellation, backpressure, retries, contention, failure propagation, or recovery. The visual must agree with the prose and code.
 
@@ -267,23 +279,82 @@ The website page for a chapter is a blend of two layers:
 ## 18. Quality bar for the blended pages
 
 - **Different and impactful, not decoration.** Each addition must teach something the original text alone makes harder to see: the problem that makes the concept necessary, a mental picture, a sequence over time, a cause and effect, or a decision. Do not add material just to fill a format.
-- **Use visuals and animation generously where they teach.** Aim for a designed visual in each part of the story where structure, timing or ownership matters, and a step-through animation wherever behaviour unfolds over time (initialisation, capture, suspension, cancellation, backpressure, visibility between threads, compilation steps). Every animation has Previous/Next/Play controls, a caption per step, respects reduced motion, and prints all its steps as text.
+- **Keep visual labels readable when text grows.** Check intermediate as well as narrow/wide layouts with enlarged reading text. A proportional timeline may use numbered bars and a full-text legend; do not discard labels merely to pass an overflow check.
+- **Choose the visual that teaches the mechanism.** Use beautiful, labelled static diagrams for structure, relationships, comparisons and decisions. Use a manual step-through or animation when changing state, timing, order or movement reveals something a still diagram makes harder to understand. A topic may need both. Every animation has suitable step/playback controls, a caption per step, respects reduced motion, and prints all its steps as text. Do not add motion or controls merely to increase coverage.
 - **Stay concise.** Additions should sharpen the chapter, not double it. As a working target, keep added prose under roughly a quarter of the original chapter's words; visuals and animations do not count against it. Review each finished chapter for verbosity and whether it should be split.
 - **Be exactly right.** Added explanations, code and captions follow sections 6 and 7: verify against primary sources, compile or run added code where possible, and never restate an original claim that is pending correction review.
+- **Split wide trees into sub-sections.** A tree with many chapters (Android has 101) is grouped by the phases of its guided reading sequence, in the tree index's `### Phase …` lists. The navigation shows one group per phase, each page names its phase, and a large tree may be converted phase by phase as a pilot.
+- **Flag, do not silently fix.** When blending reveals a possible error in an original chapter, add an "Under review" note before the section that contains it, list the finding with evidence in `website/reviews/<tree>-<scope>-findings.md`, and keep the teaching layer from restating the claim. The replacement wording is applied only after the owner approves it.
 - **Follow the story parts.** Pages are grouped into parts — The problem and the idea, How it really works, In real apps, Staff-level judgement, Practise, Go deeper — shown as bands in the page and groups in the outline. Additions should make each transition between parts feel necessary.
 
 How to build, preview and continue this work — including the blend file format, the animation format, the per-chapter progress table and the open decisions — is documented in [`website/README.md`](website/README.md). Any model or person picking up the website work should read this rulebook and that guide first.
 
-## 19. Separate website repository and private previews
+<a id="19-separate-website-repository-and-private-previews"></a>
 
-Website development belongs in the separate private [website repository](https://github.com/swarnsingh/android-staff-engineer-playbook-website). Since separation, website work makes no further changes to the [original playbook repository](https://github.com/swarnsingh/android-staff-engineer-playbook). Its earlier remote website branch (`codex/reader-website` at `390f8f8`) remains historical work; its `main` and canonical chapters are unchanged. Do not push, merge, delete branches or change visibility there as part of website work. A future source import requires an explicit reviewed revision; do not silently synchronise or rewrite the collected chapters.
+## 19. Separate website repository and publication
+
+### Merged-source synchronization, 2026-10-27
+
+The owner merged source PR #57 and instructed website synchronization and publication. Use merged source commit b8b56170e3b78f26ad73807b626acfb9530deb47 and its 743 correction records as the canonical content for this release. Keep the website snapshot immutable, render the canonical approved inventory once, and verify exact alignment before publication. The earlier “do not merge” instruction below is historical; do not infer permission to merge website PR #1 or future source changes.
+
+### Completion authorization, 2026-10-27
+
+The owner then instructed: “fix the remaining part as well” before the final Gemini review. This extends the earlier selected-issue approval to the retained Kotlin triage, all nine Android phase reports, candidates and handover follow-ups. Verify each issue against official documentation or the owning project's official implementation, apply only a supported correction, record justified no-change decisions, and validate framework-dependent examples with real dependencies where feasible. Keep an exact completion ledger and disclose validation limits. Update both existing PRs; publish the completed website through this repository's GitHub Pages workflow. Do not merge either PR or change the original repository's private visibility. This authorization does not approve unrelated new claims or every historical proposal verbatim.
+
+### Verified source-correction approval, 2026-10-27
+
+The owner subsequently instructed: “fix and publish them” and requested a PR in the original repository as well, with official documentation as the source of truth. Apply the specifically verified incoming-review corrections on the website, label their changes, and propose the same corrections in an isolated branch/PR in the original repository. Do not interpret this as approval of every older correction proposal or a merge instruction. Preserve unrelated local work and the original repository's private visibility. Incorrect explanations must be replaced in active lessons; Git history and correction disclosures retain the former wording for traceability. The detailed source-verification report identifies this approved scope.
+
+
+### One website repository and one deployment path
+
+Owner decision, 2026-10-26: [swarnsingh/android-staff-engineer-playbook-website](https://github.com/swarnsingh/android-staff-engineer-playbook-website) is the single source of truth for the website, regardless of which LLM or developer does the work.
+
+- Make all website changes in this repository: lessons, design tokens, components, assets, reviews, audit tools and deployment configuration. Continue from its current branch and handover; do not create another website repository or an agent-owned copy as the working source.
+- Publish through one deployment workflow defined in this repository. Build the deployed website from an identified commit in this repository and record that commit, the audit result and the deployed URL. Keep the workflow and commands usable by the next LLM or developer.
+- Do not push website source to a second hosting repository, publish separate Codex/Claude artifacts, create a new agent-specific hosting project, or maintain competing preview URLs. A hosting runtime may serve the build, but it must use this repository's documented deployment path; it must not become another source of truth.
+- Local build directories and localhost servers are temporary verification tools. They are not the published website. Existing external previews are historical snapshots until the repository's deployment path replaces them; do not present them as current after local changes.
+- If the repository has no suitable deployment setup, prepare the configuration here and identify the concrete hosting or access decision that remains. Do not silently publish somewhere else or make a private preview public to work around that gap.
+
+This decision supersedes earlier handovers suggesting publication as Claude artifacts or separate agent-hosted previews. It does not approve original-chapter corrections. The public publication decision below supersedes the earlier private-preview requirement.
+
+Website development belongs in the separate [website repository](https://github.com/swarnsingh/android-staff-engineer-playbook-website). Since separation, website work makes no further changes to the [original playbook repository](https://github.com/swarnsingh/android-staff-engineer-playbook). Its earlier remote website branch (`codex/reader-website` at `390f8f8`) remains historical work; its `main` and canonical chapters are unchanged. Do not push, merge, delete branches or change visibility there as part of website work. A future source import requires an explicit reviewed revision; do not silently synchronise or rewrite the collected chapters.
 
 The website repository retains the original chapter layout as a read-only source snapshot. `source-snapshot.json` records its origin, revision and Kotlin file hashes. All reading explanations are rendered in full; the labelled teaching layer lives under `website/content/blend/`. Proposed corrections remain separate, unapplied and unapproved until the owner approves exact replacements. A request to fix a website defect does not approve the entire corrections triage.
 
 Preserve the existing website branches (`codex/reader-website` and `claude/reader-website-kotlin`) and their commit identities in the new repository. They provide the earlier drafts and review history. Keep the current website work on its own branch and describe which branch is the current preview. Never remove earlier work simply to make the new repository look cleaner.
 
-Remote previews must use owner-private hosting. A private GitHub repository alone does not establish private website access. Check the hosting service's returned access/deployment state; never make the preview public as a fallback. Keep deployment credentials out of source, logs and reviewer packages. A hosted preview is a snapshot of the verified build, and later local edits require a new verified deployment before claiming the hosted site includes them.
+Owner decision, 2026-10-27: publish the website repository and rendered website publicly through GitHub Pages, like the AirBridge blog. This explicitly supersedes the earlier private-source/private-preview decision. Keep the original playbook repository private. The single website URL is https://swarnsingh.github.io/android-staff-engineer-playbook-website/ and publication runs through `.github/workflows/website.yml` in this repository. A local server, downloadable build or Codex/Claude artifact is not the delivered website. Verify the actual deployment, live lesson links and `build-info.json` commit before reporting publication. Keep deployment credentials out of source and logs. Later changes require a newly verified deployment.
 
 Preservation has two complementary checks: the static build verifies original units, order, repeat counts, heading levels and permitted diagram disclosures; the rendered browser audit checks source-unit presence in rendered text and the specific visibility/resource failures documented in `website/README.md`. It is not proof against arbitrary overlays, all CSS combinations, low contrast, or accessibility defects. Record both results and the tested browser/device scope. Compile coroutine teaching examples against their stated versions and test lifecycle boundaries, including cancellation before startup, active work, queued work and submissions after shutdown. A single successful happy-path run is not evidence for those contracts.
 
 For actor-style examples, test service-local timeouts separately from cancellation of the worker or caller. Actor shutdown is an ordinary failure for a caller that remains active; do not accidentally cancel that caller by forwarding the actor’s cancellation exception. Before accepting a value-class identity explanation, compile the exact operand types: `===` is prohibited for two value-class operands even though reference identity can be observed after boxing as `Any`. Do not render a proposed correction as an unmarked teaching replacement while the original contradictory example remains unapproved; retain such fragments in review files until approval.
+
+## 20. Website-wide learning experience
+
+### Primary article reference: AirBridge
+
+Owner preference, 2026-10-27: the [AirBridge technical architecture blog](https://swarnsingh.github.io/swaran-technical-blogs/blogs/airbridge-technical-architecture.html) is the primary reference for the overall technical article experience. Use its readable visual hierarchy and connected explanation to guide new articles and reader refinements.
+
+- **Give the article a clear opening.** Use a strong title, a concrete engineering problem and a concise statement of the idea. An opening illustration is useful when it establishes the system or mental model; it is optional.
+- **Create a calm reading rhythm.** Use generous spacing, clear heading levels, restrained colour and readable paragraphs. Let substantial figures have enough room for their labels and relationships to be understood together.
+- **Integrate diagrams with the argument.** Introduce what a figure explains, place it beside the relevant mechanism and add a useful caption. A beautiful static architecture, relationship or state diagram can be the finished visual.
+- **Explain the decisions.** Connect requirements and failure cases to boundaries, ownership, mechanisms, alternatives and trade-offs. Callouts should identify a specific invariant, decision or caveat. Metrics and status badges require evidence; do not invent them to fill a layout.
+- **Use code and tables with a purpose.** A focused code example should explain a contract or mechanism. A comparison table should help the reader choose or understand a consequence. Explain unfamiliar terms where the audience needs them.
+- **Keep claims bounded.** Distinguish verified behaviour, illustrative examples, open findings and unfinished work. Treat the blog as a presentation reference; verify each lesson's technical claims against its own sources.
+
+Adapt these principles to each topic and to the playbook's agreed reading measures, themes, accessibility and navigation. Do not force the AirBridge section list, hero layout or project-specific content onto every Kotlin or Android lesson. ByteByteGo and Cloudmash remain supporting references for diagrams and interactive teaching. The following earlier direction remains relevant within that priority.
+
+Owner direction, 2026-10-27: learn from the whole experience of [ByteByteGo](https://bytebytego.com/courses/system-design-interview/design-a-chat-system) and [Cloudmash Learn](https://cloudmash.dev/learn/hld/load-balancing-and-traffic-management/what-a-load-balancer-does/). Apply the principles across the website, rather than treating a linked lesson as the sole chapter to improve. Use original artwork, wording and implementation.
+
+- **Give the reader a route.** Keep phase navigation, topic search, the current section, previous/next lessons and a clear route to practice available. Introduce the problem, build a mental model, explain the mechanism, expose a failure or trade-off, then ask the reader to reason about it. Preserve the original chapter as required by section 17.
+- **Use one visual language.** Recognizable devices, servers, workers, queues, memory pages and data stores should carry the explanation. Derive colours, typography and surfaces from the shared tokens. Reuse actor colours consistently: blue for devices, purple for execution, teal for stored data, rose for queued work. Show status with words and shapes as well as colour. Attractive diagrams must still identify ownership, boundaries and direction correctly.
+- **Show consequences.** A queue should visibly gain or lose an item; a saved value should remain when its collector leaves; a copied memory page should look different from its parent. Author these changes explicitly. An active box alone is not evidence of a transfer. Numeric badges require an authored quantity; schematic rows must not imply measured totals.
+- **Let readers explore meaningful alternatives.** Use modes or controls when changing an input reveals a different outcome. Make the constraint, action and consequence visible together. Deterministic step-throughs and static structure diagrams remain useful; do not add a simulated control whose outcome the lesson does not explain.
+- **Keep detail progressive.** Make the main diagram understandable at a glance, tie each step to a short caption, and provide the full explanation and sources nearby. Put optional instructions and complete transcripts behind clearly named disclosures. Never hide the original explanatory text to simplify the page.
+- **Protect reading comfort.** Keep the established reading measure, theme/font/text-size controls, keyboard access, readable phone labels, reduced motion and one moving diagram at a time. Adapt the composition to the device rather than shrinking a desktop diagram into unreadable text.
+- **Improve shared components, then inspect real lessons.** Put reusable behaviour in the design system. Review representative structure, time, ownership and failure diagrams on phone, tablet and desktop. Audit the entire rendered tree after shared changes. Record implemented coverage and remaining gaps; do not claim that all state steppers are full animated scenes.
+
+The reference review and implementation evidence belong in `website/reviews/website-experience-2026-10-27.md`. Future contributors should use this standard for every new or revised lesson.
+
+The illustrated first pass across all existing step-throughs is recorded in the [122-item coverage report](website/reviews/illustrated-coverage-2026-10-27.md). The owner's subsequent clarification on 2026-10-27 sets the refinement order: assess what each topic needs, retain useful motion, and simplify unnecessary playback into a beautiful static diagram or comparison. The earlier quantity-first pass does not require every topic to become a full animated scene. Preserve the explanatory content when simplifying a visual, and update the coverage manifest and relevant checks with any representation change. Correctness, readable layouts, reduced motion and source preservation remain required.

@@ -1,0 +1,49 @@
+<!-- Website-only teaching for android/observability/crash-monitoring.md; original chapter remains read-only. Sources checked 2026-10-25. -->
+
+<!-- @opening -->
+
+<p class="story-lead">A rollout adds a new crash cluster. The stack is partly minified, the affected users share a device cohort, and the report arrives after the failure. Useful monitoring must connect this evidence to the exact build and an owner.</p>
+
+Follow capture, later delivery, symbolication and action without assuming any one reporter sees every process failure.
+
+<!-- @after Architecture :: visual -->
+
+### A report crosses several failure boundaries
+
+<figure class="viz"><div class="viz-flow" style="--cols:3"><div class="node"><strong>Capture</strong><small>A supported failure path attempts bounded diagnostics.</small></div><div class="node"><strong>Persist and deliver</strong><small>Storage, collection settings and a later opportunity affect delivery.</small></div><div class="node"><strong>Interpret and act</strong><small>Matching mapping/symbols, cohort context and ownership make it actionable.</small></div></div><figcaption>No upload is established merely because the capture handler ran. A managed exception and an abrupt process termination have different coverage.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: animation -->
+
+### Triage one new release cluster
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">Triage one new release cluster</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="event" data-art="signal" data-art-role="runtime"><strong>Failure</strong><small>Captured supported event</small></div><div class="node" data-el="report" data-art="document" data-art-role="storage"><strong>Report</strong><small>Arrives with build context</small></div><div class="node" data-el="cohort" data-art="inspect" data-art-role="runtime"><strong>Impact</strong><small>Version and journey segmentation</small></div><div class="node" data-el="action" data-art="worker" data-art-role="runtime"><strong>Owner action</strong><small>Mitigate or investigate</small></div></div><script type="application/json" class="steps">[{"label": "Capture", "caption": "A supported failure is recorded if the process and storage conditions allow. This is a conceptual flow, not a delivery guarantee.", "state": {"event": "error"}, "add": ["event", "report", "cohort", "action"]}, {"label": "Interpret", "caption": "Associate the report with its precise release and matching mapping or native symbols. Keep approved breadcrumbs bounded.", "state": {"report": "active"}}, {"label": "Assess", "caption": "Inspect affected users, repeated failures and the product journey. A small fleet percentage can conceal a severe loop for one cohort.", "state": {"report": "done", "cohort": "active"}}, {"label": "Respond", "caption": "The owner chooses a halt, feature mitigation or fix from impact and confidence, then verifies the cohort after the change.", "state": {"cohort": "done", "action": "active"}}]</script><figcaption>Illustrative sequence. Use Previous, Next or Play; every step is also available as text.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+
+Run a controlled release-type failure through capture, persistence, upload and symbolication, and attach the resulting issue to an owner. Check the exact build identity against the mapping or symbols used to read it. State which failures the integration cannot report, such as some process terminations, rather than treating an empty dashboard as proof of health. A new release cluster needs a defined investigation and rollout response, not only a notification.
+
+<!-- @before Further Reading :: check -->
+
+### Check your diagnosis
+
+<details><summary>Does no SDK report prove no process failure?</summary>
+
+No. Capture and delivery have gaps; compare relevant platform and client signals.
+
+</details>
+
+<details><summary>Why compare crash-free users and sessions?</summary>
+
+They describe reach and recurrence differently; repeated failures can concentrate in a small user group.
+
+</details>
+
+<details><summary>What turns a new cluster into an operational action?</summary>
+
+Defined impact evidence, an owner and a mitigation or investigation path.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+
+Primary evidence for the added layer: [Crashlytics report controls](https://firebase.google.com/docs/crashlytics/customize-crash-reports?platform=android), [Native crash evidence](https://source.android.com/docs/core/tests/debug/native-crash).

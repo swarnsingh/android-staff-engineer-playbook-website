@@ -1,0 +1,49 @@
+<!-- Website-only teaching for android/observability/mobile-apm-and-rum.md; original chapter remains read-only. Sources checked 2026-10-25. -->
+
+<!-- @opening -->
+
+<p class="story-lead">The backend reports a quick response, but the user waits for checkout to update. The two clocks may measure different work. Start by naming the client interaction boundary before comparing dashboards.</p>
+
+Treat instrumentation coverage, sampling and timing boundaries as part of the measurement, then connect evidence across the request path.
+
+<!-- @after Why It Matters :: visual -->
+
+### A request lives inside a larger interaction
+
+<figure class="viz"><div class="node is-key" style="padding:.8rem"><strong>Client interaction</strong><small>tap → ready state visibly presented</small><div class="viz-flow" style="margin-top:.6rem"><div class="node" data-state="ghost"><strong>Before the request</strong><small>input handling, scheduling</small></div><div class="node" style="padding:.6rem"><strong>Client request</strong><small>connection setup, TLS, upload, download</small><div class="node" data-state="done" style="margin-top:.5rem"><strong>Server span</strong><small>server-side handling only</small></div></div><div class="node" data-state="ghost"><strong>After the response</strong><small>parsing, state update, rendering</small></div></div></div><figcaption>Nested boundaries: the server span sits inside the client request, which sits inside the user's interaction. Everything outside the inner box is time the server dashboard cannot see.</figcaption></figure>
+
+<!-- @after Production Example :: animation -->
+
+### Correlate a slow interaction without inventing missing spans
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">Correlate a slow interaction without inventing missing spans</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="tap" data-art="phone" data-art-role="client"><strong>Interaction</strong><small>User taps Checkout</small></div><div class="node" data-el="client" data-art="cloud" data-art-role="runtime"><strong>Client request</strong><small>Approved destination</small></div><div class="node" data-el="server" data-art="server" data-art-role="runtime"><strong>Server spans</strong><small>Propagated trace context</small></div><div class="node" data-el="ready" data-art="screen" data-art-role="client"><strong>Ready UI</strong><small>Chosen visual completion</small></div></div><script type="application/json" class="steps">[{"label": "Start", "caption": "Begin a named user interaction at a defined event. Attach only approved low-cardinality context.", "state": {"tap": "active"}, "add": ["tap", "client", "server", "ready"]}, {"label": "Propagate", "caption": "Compatible instrumentation can propagate W3C trace context to an approved backend. SDK coverage, gateways and sampling determine what is retained.", "state": {"tap": "done", "client": "active"}}, {"label": "Correlate", "caption": "Inspect participating server spans and the client boundary. Missing spans are missing evidence, not proof that no work occurred.", "state": {"client": "done", "server": "active"}}, {"label": "Finish", "caption": "End at the same useful visual condition in each implementation. Compare representative distributions and account for sampling and cohort differences.", "state": {"server": "done", "ready": "active"}}]</script><figcaption>Illustrative sequence. Use Previous, Next or Play; every step is also available as text.</figcaption></figure>
+
+<!-- @after Tradeoffs :: staff -->
+
+Choose a concrete user journey such as checkout and identify its client, transport and server boundaries before adding an SDK. Preserve a correlation identity where the integration supports it, and leave uninstrumented intervals visibly unknown. Review sampling and device/network cohorts before interpreting a percentile change. Each added signal should answer an owned operational question; otherwise its runtime overhead, payload volume and privacy surface have no established benefit.
+
+<!-- @before Further Reading :: check -->
+
+### Check your diagnosis
+
+<details><summary>Can client latency minus server latency reliably equal network time?</summary>
+
+Not without compatible boundaries and context. Other client work and instrumentation differences can contribute.
+
+</details>
+
+<details><summary>What does a missing backend span prove?</summary>
+
+Only that the span is unavailable in this evidence; propagation, sampling or coverage may be responsible.
+
+</details>
+
+<details><summary>How would you compare a migrated checkout fairly?</summary>
+
+Use equivalent interaction boundaries and content, comparable cohorts or randomised buckets, and report coverage and uncertainty.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+
+Primary evidence for the added layer: [W3C Trace Context](https://www.w3.org/TR/trace-context/), [Firebase network coverage](https://firebase.google.com/docs/perf-mon/network-traces?platform=android).

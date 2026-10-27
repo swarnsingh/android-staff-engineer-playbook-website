@@ -1,0 +1,28 @@
+<!-- Website teaching layer for android/kotlin-multiplatform/kmp-decision-matrix.md. Original preserved in full. Structure defined in android-phase9-structure.md before drafting. Checked 2026-10-25 against https://kotlinlang.org/docs/api-guidelines-build-for-multiplatform.html. -->
+
+<!-- @opening -->
+<p class="story-lead">A discount is accepted on Android and rejected on iOS. The apps copied the same rule months ago, then changed separately. Sharing that rule may help. Sharing the camera screen simply because it sits next to checkout may add a different problem.</p>
+
+Use this chapter to choose a bounded sharing hypothesis, then decide what evidence would justify expanding it.
+
+<!-- @after Shareability Matrix :: visual -->
+### Share a promise before choosing a framework
+
+<figure class="viz"><table><caption>A pricing rule is a smaller pilot than checkout</caption><tbody><tr><th scope="row">1</th><td>Invariant: price for the same basket</td></tr><tr><th scope="row">2</th><td>Outside the pilot: payment UI and authorization</td></tr><tr><th scope="row">3</th><td>Evidence: target rule tests and both consumers</td></tr><tr><th scope="row">4</th><td>Decision: expand only against the baseline</td></tr></tbody></table><figcaption>The boundaries in this example are different responsibilities, not implied packet transfers.</figcaption></figure>
+
+For the discount mismatch, first agree what the same basket means: currency, rounding, eligibility and the version of the rule. Otherwise one shared implementation merely centralizes an unresolved product disagreement. Keep native payment authorization and presentation outside this first seam. Feed the agreed examples through both existing paths and the candidate rule; compare outcomes before changing who serves users.
+
+The adoption decision then has two independent results: whether the shared rule removed divergence, and what it cost both teams to build, integrate and operate. Set a rollback boundary around the calculation. If the pilot needs platform objects in every function or forces unrelated UI releases to move together, narrow that boundary before expanding sharing. A percentage of shared source is an output of this decision, not its success criterion.
+
+<!-- @after Rollout Strategy :: visual -->
+### One pricing-rule pilot
+
+<figure class="viz decision-map"><ol class="decision-grid"><li class="decision-card"><span class="decision-number" aria-hidden="true">1</span><h4>Find drift</h4><p>Both apps receive the same basket but return different discounts. Capture the intended rule and edge cases before replacing either implementation.</p></li><li class="decision-card"><span class="decision-number" aria-hidden="true">2</span><h4>Choose a seam</h4><p>Put the pure pricing rule behind a small contract. Keep payment UI and device services in each app.</p></li><li class="decision-card"><span class="decision-number" aria-hidden="true">3</span><h4>Exercise both callers</h4><p>Run the rule tests on required targets and compile a Swift consumer. A JVM pass alone does not prove the Apple boundary.</p></li><li class="decision-card"><span class="decision-number" aria-hidden="true">4</span><h4>Measure the cost</h4><p>Compare rule divergence, delivery time, build friction and operational evidence with the baseline. These are proposed measures, not reported results.</p></li></ol><figcaption>Illustrative decision example, not a measured outcome. <a href="https://kotlinlang.org/docs/api-guidelines-build-for-multiplatform.html" target="_blank" rel="noreferrer">Primary contract</a>.</figcaption></figure>
+
+<!-- @after Ownership Model :: check -->
+### Try the decision yourself
+
+<details><summary>Would you start with the whole checkout screen?</summary><p>Only if a UI-sharing pilot justifies that wider boundary. A pricing-rule mismatch alone motivates a smaller experiment.</p></details>
+<details><summary>Is a high sharing percentage success?</summary><p>It does not establish business value, correctness or lower delivery cost.</p></details>
+<details><summary>What makes rollback practical?</summary><p>A stable seam, compatible data and a retained implementation path with a clear release owner.</p></details>
+

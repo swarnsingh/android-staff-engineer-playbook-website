@@ -1,0 +1,89 @@
+<!-- Phase 9 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase9-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">A crash report contains an address, an app version and no shared-module revision. The teams cannot tell whether the fixed Kotlin binary was shipped or whether the symbols belong to this build. Diagnosis starts with identity: connect the event to the artifact before interpreting its stack.</p>
+
+<!-- @after 7. Synthetic-Crash Verification :: animation -->
+### Match the event to the release
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">A diagnostic probe checks the whole artifact path</span><div class="stage viz-stack"><div class="node" data-el="release" data-art="parcel" data-art-role="queue"><strong>Release identity</strong><small data-text="releaseV">—</small></div><div class="node" data-el="symbols" data-art="document" data-art-role="storage"><strong>Platform symbol artifacts</strong><small data-text="symbolsV">—</small></div><div class="node" data-el="event" data-art="signal" data-art-role="runtime"><strong>Controlled failure event</strong><small data-text="eventV">—</small></div><div class="node" data-el="report" data-art="inspect" data-art-role="runtime"><strong>Crash dashboard</strong><small data-text="reportV">—</small></div></div><script type="application/json" class="steps">[
+{
+"label": "Record identity",
+"caption": "Record the app/shared revision and toolchain for the actual distributed artifact.",
+"state": {
+"release": "active"
+},
+"text": {
+"releaseV": "build R; shared revision S",
+"symbolsV": "matching build retained",
+"eventV": "not triggered",
+"reportV": "not checked"
+},
+"add": [
+"release",
+"symbols",
+"event",
+"report"
+]
+},
+{
+"label": "Ship diagnostics",
+"caption": "Deliver the platform-appropriate symbols and build metadata through the configured reporting integration.",
+"state": {
+"symbols": "active"
+},
+"text": {
+"symbolsV": "upload associated with build R"
+}
+},
+{
+"label": "Exercise a probe",
+"caption": "Use the controlled release-type verification path described in the chapter.",
+"state": {
+"event": "active"
+},
+"text": {
+"eventV": "failure from known shared location"
+}
+},
+{
+"label": "Inspect result",
+"caption": "Verify identity, attribution and the expected available stack information in the actual report. An upload success alone is insufficient.",
+"state": {
+"report": "active"
+},
+"text": {
+"reportV": "event ↔ build ↔ symbols checked"
+}
+},
+{
+"label": "Retain evidence",
+"caption": "Keep the artifact identities and verified result with release evidence so a later incident can be traced.",
+"state": {
+"release": "done",
+"symbols": "done",
+"report": "done"
+},
+"text": {
+"reportV": "diagnostic path demonstrated"
+}
+}
+]</script><figcaption>Android mapping files and Apple symbols are separate paths. This probe verifies the configured release, not every possible optimized stack frame.</figcaption></figure>
+
+<!-- @after 7. Synthetic-Crash Verification :: check -->
+### Try the decision
+
+<details><summary>Symbol upload passed. Is a readable report proven?</summary>
+
+No. Inspect a controlled report from the corresponding release-type artifact and verify its identity and expected stack information.
+</details>
+
+<details><summary>App version is known. Why also shared revision?</summary>
+
+Binary consumers can bundle different shared artifacts under their own app release. Shared build identity makes that dependency explicit.
+</details>
+
+<details><summary>Every cancellation appears as a crash. What boundary needs inspection?</summary>
+
+Check broad catch/report paths and the chosen interop integration. Preserve normal cancellation instead of reporting it as an unexpected product failure.
+</details>

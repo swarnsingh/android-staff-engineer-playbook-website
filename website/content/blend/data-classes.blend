@@ -13,7 +13,7 @@ The new state and the old state hold *the same* `MutableList`, which was just ch
 <!-- @before The Six Most Common Pitfalls :: animation -->
 ### The opening bug, step by step
 
-<figure class="stepper"><span class="stepper-title">A shallow <code>copy()</code> that StateFlow ignores</span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">States</span><div class="node" data-el="old"><strong>old <code>CartState</code></strong><small>items → list #1</small></div><div class="node" data-el="new"><strong>new <code>CartState</code> from <code>copy()</code></strong><small>items → list #1 (the same one)</small></div><div class="node" data-el="flow"><strong><code>StateFlow</code></strong><small data-text="flowNote">holds old</small></div></div><div class="col"><span class="col-title">Heap</span><div class="node" data-el="list"><strong>MutableList #1</strong><small data-text="listItems">[a, b]</small></div></div></div><script type="application/json" class="steps">[
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">A shallow <code>copy()</code> that StateFlow ignores</span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">States</span><div class="node" data-el="old" data-art="memory" data-art-role="storage"><strong>old <code>CartState</code></strong><small>items → list #1</small></div><div class="node" data-el="new" data-art="memory" data-art-role="storage"><strong>new <code>CartState</code> from <code>copy()</code></strong><small>items → list #1 (the same one)</small></div><div class="node" data-el="flow" data-art="flow" data-art-role="storage"><strong><code>StateFlow</code></strong><small data-text="flowNote">holds old</small></div></div><div class="col"><span class="col-title">Heap</span><div class="node" data-el="list" data-art="memory" data-art-role="storage"><strong>MutableList #1</strong><small data-text="listItems">[a, b]</small></div></div></div><script type="application/json" class="steps">[
 {"label":"Current state","caption":"The StateFlow holds a CartState whose items property points to MutableList #1, containing [a, b].","add":["old","list","flow"],"state":{"old":"active"}},
 {"label":"Mutate in place","caption":"items.apply { add(c) } changes list #1 itself. The old state now also contains [a, b, c] — it shares the list.","state":{"list":"warn","old":""},"text":{"listItems":"[a, b, c]"}},
 {"label":"copy()","caption":"copy(items = …) creates a new CartState, but the items argument is the very same list #1. copy() never duplicates what you pass in.","add":["new"],"state":{"new":"active","list":""}},
@@ -24,11 +24,67 @@ The new state and the old state hold *the same* `MutableList`, which was just ch
 <!-- @after The Six Most Common Pitfalls :: animation -->
 ### Pitfall 2 inside a `HashSet`
 
-<figure class="stepper"><span class="stepper-title">How a <code>var</code> loses an element</span><div class="stage viz-grid" style="--cols:4"><div class="node" data-el="b1"><strong>Bucket 1</strong><small>empty</small></div><div class="node" data-el="b2"><strong>Bucket 2</strong><small data-text="b2note">empty</small></div><div class="node" data-el="b3"><strong>Bucket 3</strong><small>empty</small></div><div class="node" data-el="b4"><strong>Bucket 4</strong><small data-text="b4note">empty</small></div></div><script type="application/json" class="steps">[
-{"label":"Insert","caption":"set.add(CartItem(\"a\", qty = 1)). Its hashCode, computed from id and qty, selects bucket 2, where the item is stored.","add":["b1","b2","b3","b4"],"state":{"b2":"active"},"text":{"b2note":"CartItem(a, qty=1)"}},
-{"label":"Mutate","caption":"item.qty = 2. The object changes, but the set is not told. It is still filed under bucket 2.","state":{"b2":"warn"},"text":{"b2note":"CartItem(a, qty=2) — filed by the old hash"}},
-{"label":"Look it up","caption":"set.contains(item) recomputes the hash from qty = 2, which now selects bucket 4, and looks only there.","state":{"b4":"active"}},
-{"label":"Not found","caption":"Bucket 4 is empty, so contains returns false — even though the very same object is in the set. It is now effectively lost: remove() cannot find it either.","state":{"b4":"error"},"text":{"b4note":"nothing here → false"}}
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">How a <code>var</code> loses an element</span><div class="stage viz-grid" style="--cols:4"><div class="node" data-el="b1" data-art="queue" data-art-role="queue"><strong>Bucket 1</strong><small>empty</small></div><div class="node" data-el="b2" data-art="queue" data-art-role="queue"><strong>Bucket 2</strong><small data-text="b2note">empty</small></div><div class="node" data-el="b3" data-art="queue" data-art-role="queue"><strong>Bucket 3</strong><small>empty</small></div><div class="node" data-el="b4" data-art="queue" data-art-role="queue"><strong>Bucket 4</strong><small data-text="b4note">empty</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Insert",
+    "caption": "set.add(CartItem(\"a\", qty = 1)). Its hashCode, computed from id and qty, selects bucket 2, where the item is stored.",
+    "add": [
+      "b1",
+      "b2",
+      "b3",
+      "b4"
+    ],
+    "state": {
+      "b2": "active"
+    },
+    "text": {
+      "b2note": "CartItem(a, qty=1)"
+    },
+    "visuals": {
+      "b1": {
+        "count": 0
+      },
+      "b2": {
+        "count": 1,
+        "items": [
+          "a"
+        ]
+      },
+      "b3": {
+        "count": 0
+      },
+      "b4": {
+        "count": 0
+      }
+    }
+  },
+  {
+    "label": "Mutate",
+    "caption": "item.qty = 2. The object changes, but the set is not told. It is still filed under bucket 2.",
+    "state": {
+      "b2": "warn"
+    },
+    "text": {
+      "b2note": "CartItem(a, qty=2) — filed by the old hash"
+    }
+  },
+  {
+    "label": "Look it up",
+    "caption": "set.contains(item) recomputes the hash from qty = 2, which now selects bucket 4, and looks only there.",
+    "state": {
+      "b4": "active"
+    }
+  },
+  {
+    "label": "Not found",
+    "caption": "Bucket 4 is empty, so contains returns false — even though the very same object is in the set. It is now effectively lost: remove() cannot find it either.",
+    "state": {
+      "b4": "error"
+    },
+    "text": {
+      "b4note": "nothing here → false"
+    }
+  }
 ]</script><figcaption>Hash-based collections assume a key's hash never changes. Use <code>val</code> properties and replace elements with <code>copy()</code>.</figcaption></figure>
 
 <!-- @after Inheritance Restrictions :: visual -->

@@ -1,0 +1,52 @@
+<!-- Website teaching layer for android/os-internals/permissions-and-app-ops.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Sources checked 2026-10-25: Request runtime permissions, Explain access to more sensitive information
+     (camera and microphone toggles), Request location permissions (developer.android.com). -->
+
+<!-- @opening -->
+<p class="story-lead">Your logs say the camera permission is granted, and the card scanner still shows nothing but black. The user had switched off camera access for the whole device in quick settings. Your code checked the right permission and still got no picture. Holding a permission and being able to use the camera right now turned out to be different questions.</p>
+
+Permissions are the contract users and the system agree to. AppOps and platform rules decide, operation by operation, whether that contract can be used at this moment. This chapter covers permission categories, the runtime flow and the layered cases such as location. The additions here turn one user action into a capability that reports what actually happened, so the screen can respond sensibly to every outcome.
+
+<!-- @after AppOps Mental Model :: visual -->
+### Three questions before a feature works
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>1. Is the permission granted?</strong><small><code>checkSelfPermission</code>; the user can revoke it later</small></div><div class="node"><strong>2. Is the operation allowed now?</strong><small>AppOps, privacy toggles, background and policy rules</small></div><div class="node is-key"><strong>3. Did the feature produce a result?</strong><small>camera opened, frames arrived, location within accuracy and time</small></div></div><figcaption>A yes to question 1 does not answer questions 2 or 3. With the camera toggle off, Android 12+ gives apps a blank camera feed.</figcaption></figure>
+
+<!-- @after Production Patterns :: animation -->
+### "Scan card" as a capability with outcomes
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">One user action, every outcome handled</span><div class="stage viz-grid" style="--cols:4"><div class="node" data-el="tap" data-art="phone" data-art-role="client"><strong>User taps "Scan card"</strong><small>clear intent</small></div><div class="node" data-el="perm" data-art="key" data-art-role="storage"><strong>Permission</strong><small data-text="permV">—</small></div><div class="node" data-el="op" data-art="frame" data-art-role="client"><strong>Capture</strong><small data-text="opV">—</small></div><div class="node is-key" data-el="ui" data-art="screen" data-art-role="client"><strong>Screen</strong><small data-text="uiV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Ask in context","caption":"The request follows the tap, so the user knows why the camera is needed. Asking on first launch, with no context, trains users to deny.","add":["tap","perm","op","ui"],"state":{"tap":"done","perm":"active"},"text":{"permV":"not granted; request now"}},
+{"label":"Granted","caption":"The user allows it. The capability opens the camera; it does not tell the screen to assume success.","state":{"perm":"done","op":"active"},"text":{"permV":"granted","opV":"opening camera"}},
+{"label":"Blocked anyway","caption":"The device-wide camera toggle is off, so the feed is blank and the system reminds the user. The capability treats no usable frames within a few seconds as a blocked outcome instead of showing a frozen preview.","state":{"op":"warn"},"text":{"opV":"blank feed: sensor toggle off"}},
+{"label":"A useful fallback","caption":"The screen explains that camera access is off for the device and offers manual card entry right away. The user still completes the task.","state":{"op":"done","ui":"active"},"text":{"uiV":"explain + enter card manually"}},
+{"label":"Denied for good","caption":"On another device, running Android 11 or higher, the user has denied the permission twice, so the system no longer shows the dialog. The screen shows a settings link only when the user asks to scan, never in a loop.","state":{"perm":"error","ui":"done"},"text":{"permV":"permanently denied","uiV":"settings link on request + manual entry"}}
+]</script><figcaption>Illustrative flow. Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+Count the outcomes, not just the grants. Track how often each capability returns denied, blocked or degraded, per feature and OS version. A falling grant rate after a release is a product regression with a clear owner.
+
+<!-- @after Failure Modes :: check -->
+### Check your permission design
+
+<details><summary>Your app cached "camera granted" at startup. Later the user revoked it in Settings. What should the scan feature do?</summary>
+
+Check again at the point of use and handle the result. A cached value can be stale, and only the current check reflects what the user decided.
+
+</details>
+
+<details><summary>On Android 11+, the user denied the permission twice and the dialog no longer appears. What does "Scan card" do now?</summary>
+
+Treat it as an explicit state: explain why the feature needs the camera, offer a link to app settings when the user asks, and keep a manual path. Never re-prompt in a loop.
+
+</details>
+
+<details><summary>A weather app asks for precise location and the user picks approximate. What should happen?</summary>
+
+Keep working at city level. Weather does not need precise coordinates, so the product should be designed for approximate location from the start.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+Primary sources for the added layer: [Request runtime permissions](https://developer.android.com/training/permissions/requesting), [Camera and microphone toggles](https://developer.android.com/training/permissions/explaining-access#toggles), [Request location permissions](https://developer.android.com/develop/sensors-and-location/location/permissions).

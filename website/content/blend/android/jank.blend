@@ -1,0 +1,49 @@
+<!-- Website-only teaching for android/performance/jank.md; original chapter remains read-only. Sources checked 2026-10-25. -->
+
+<!-- @opening -->
+
+<p class="story-lead">A feed scroll catches even though no network request is running. The missing evidence is one frame: did app code run too long, wait for another thread, or finish while rendering downstream fell behind?</p>
+
+Start from the delayed frame, follow its dependencies, then choose the smallest change that the trace supports.
+
+<!-- @after First Principles :: visual -->
+
+### A slow frame has several possible owners
+
+<figure class="viz"><div class="viz-cols" style="--cols:3"><div class="node"><strong>Running</strong><small>App CPU work occupies the thread: inspect the expensive slice.</small></div><div class="node"><strong>Waiting</strong><small>A lock, Binder call or scheduling delay prevents progress: follow the dependency.</small></div><div class="node"><strong>Rendering or presentation</strong><small>Inspect RenderThread, GPU and system tracks before blaming a composable.</small></div></div><figcaption>This diagnostic board is not a measured timeline. FrameTimeline supplies expected and actual intervals on supported Android versions; a long slice alone is not a complete root cause.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: animation -->
+
+### Investigate one late frame
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">Investigate one late frame</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="frame" data-art="frame" data-art-role="client"><strong>Frame</strong><small>The observed stutter</small></div><div class="node" data-el="wait" data-art="worker" data-art-role="runtime"><strong>Waiter</strong><small>Main thread</small></div><div class="node" data-el="owner" data-art="worker" data-art-role="runtime"><strong>Dependency</strong><small>Thread or subsystem</small></div><div class="node" data-el="repeat" data-art="inspect" data-art-role="runtime"><strong>Verification</strong><small>Same interaction</small></div></div><script type="application/json" class="steps">[{"label": "Select the frame", "caption": "Find the frame associated with the stutter and align its expected and actual work. Keep the interaction and device conditions recorded.", "state": {"frame": "error"}, "add": ["frame", "wait", "owner", "repeat"]}, {"label": "Classify the time", "caption": "Check whether Main is executing app work, runnable but not scheduled, or blocked. These need different repairs.", "state": {"wait": "active"}}, {"label": "Follow the dependency", "caption": "In this illustrative case Main waits on a lock. Inspect its owner rather than shortening unrelated drawing code.", "state": {"wait": "warn", "owner": "active"}}, {"label": "Retest the interaction", "caption": "Reduce the evidenced blocking boundary, then rerun the same scroll. A lower recomposition count alone does not prove smoother presentation.", "state": {"owner": "done", "repeat": "active"}}]</script><figcaption>Illustrative sequence. Use Previous, Next or Play; every step is also available as text.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+
+Pick a specific late frame in the reported scroll journey and follow its dependencies: CPU work, scheduling delay, locks, rendering and presentation. Assign the fix to the owner of the expensive interval. Verify the same journey on representative refresh rates and device tiers before broadening rollout. A lower average frame time can coexist with worse outliers; preserve the distribution and the cohort that originally experienced the hitch.
+
+<!-- @before Further Reading :: check -->
+
+### Check your diagnosis
+
+<details><summary>Main is runnable but rarely scheduled. Is a faster layout the established fix?</summary>
+
+No. Investigate CPU contention and scheduling in the same interval before attributing the delay to layout.
+
+</details>
+
+<details><summary>How do lab and field measurements complement one another?</summary>
+
+A repeatable lab journey helps test causes; field cohorts show which users and devices experience the issue.
+
+</details>
+
+<details><summary>Why keep a low-tier device in the release gate?</summary>
+
+Its headroom and scheduling conditions can expose regressions hidden by a fast developer device.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+
+Primary evidence for the added layer: [FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline), [Frame metrics](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics).

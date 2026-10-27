@@ -1,0 +1,57 @@
+<!-- Website teaching layer for android/architecture/fragment.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (fragment lifecycle, communicate with fragments) on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A feed screen shows a "New posts" banner whenever its ViewModel emits. QA files a strange bug: open a post, go back, and the banner flashes twice. Go in and out three times and it flashes four times. The heap dump also shows views from screens the user left long ago.</p>
+
+The code observed the ViewModel with `observe(this)`. That looks harmless until you learn that a Fragment has **two lifecycles**: one for the Fragment object and a shorter one for its view. Going to another screen destroys the view but keeps the object, so every return adds another observer to an object that never died. This chapter explains that split, the `FragmentManager` that drives it, and the habits that keep Fragment code safe while apps move to Compose.
+
+<!-- @after First Principles :: visual -->
+### One object, a sequence of views
+
+<figure class="viz"><div class="viz-lanes"><div class="lane"><span class="lane-label">Fragment object</span><div class="track"><span class="mark" style="--at:0%;--len:100%"><code>onCreate()</code> … <code>onDestroy()</code></span></div></div><div class="lane"><span class="lane-label">View, first visit</span><div class="track"><span class="mark" style="--at:4%;--len:30%">view #1</span></div></div><div class="lane"><span class="lane-label">On the back stack</span><div class="track"><span class="mark" style="--at:36%;--len:26%">no view</span></div></div><div class="lane"><span class="lane-label">View, after Back</span><div class="track"><span class="mark" style="--at:64%;--len:32%">view #2</span></div></div></div><figcaption>The object outlives each of its views. Anything tied to the object (<code>this</code>) outlives the view it was meant for; anything tied to <code>viewLifecycleOwner</code> ends with it.</figcaption></figure>
+
+<!-- @after Internal Mechanics :: animation -->
+### Replay the duplicate banner
+
+Compare two observers registered in `onViewCreated()`: one with `this`, one with `viewLifecycleOwner`. Watch what each lifecycle does as the user goes to a post and back.
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">Fragment object, view, and observers</span><div class="stage viz-stack"><div class="viz-grid" style="--cols:2"><div class="node" data-el="object" data-art="memory" data-art-role="storage"><strong>Feed Fragment object</strong><small data-text="objectNote">—</small></div><div class="node" data-el="view" data-art="phone" data-art-role="client"><strong>Feed view</strong><small data-text="viewNote">—</small></div></div><div class="node is-key" data-el="calls" data-art="code" data-art-role="runtime"><strong>Callbacks in this step</strong><small data-text="callsNote">—</small></div><div class="viz-grid" style="--cols:2"><div class="node" data-el="thisObs" data-art="flow" data-art-role="storage"><strong><code>observe(this)</code></strong><small data-text="thisNote">—</small></div><div class="node" data-el="viewObs" data-art="flow" data-art-role="storage"><strong><code>observe(viewLifecycleOwner)</code></strong><small data-text="viewObsNote">—</small></div></div></div><script type="application/json" class="steps">[
+{"label":"Show the feed","caption":"The FragmentManager adds the feed. The object is created, then its view; onViewCreated() registers both observers once.","add":["object","view","calls","thisObs","viewObs"],"state":{"object":"done","view":"active","thisObs":"done","viewObs":"done"},"text":{"objectNote":"RESUMED","viewNote":"view #1, RESUMED","callsNote":"onCreate() → onCreateView() → onViewCreated() → onStart() → onResume()","thisNote":"1 observer","viewObsNote":"1 observer"}},
+{"label":"Open a post","caption":"The feed is replaced and added to the back stack. Its view is destroyed to free memory, but the object stays in the FragmentManager in the CREATED state. The viewLifecycleOwner observer is removed with the view; the this observer stays registered.","state":{"view":"ghost","object":"warn","viewObs":"ghost","thisObs":"warn"},"text":{"objectNote":"CREATED, kept on the back stack","viewNote":"destroyed","callsNote":"onPause() → onStop() → onDestroyView()","thisNote":"1 observer, still registered","viewObsNote":"0 observers"}},
+{"label":"Back to the feed","caption":"Back pops the post. The same object gets a new view, and onViewCreated() runs again. It registers a second this observer next to the first; the view-scoped observer is registered once, fresh.","state":{"view":"active","object":"done","viewObs":"done","thisObs":"error"},"text":{"objectNote":"RESUMED, same object","viewNote":"view #2, RESUMED","callsNote":"onCreateView() → onViewCreated() → onStart() → onResume()","thisNote":"2 observers: banner shows twice","viewObsNote":"1 observer"}},
+{"label":"Twice more","caption":"Each round trip adds one more this observer. The view-scoped one never exceeds one, because each view lifecycle removes its own observers when it ends.","state":{"thisObs":"error","viewObs":"done"},"text":{"viewNote":"view #4, RESUMED","callsNote":"(open a post and go back, twice)","thisNote":"4 observers: banner shows four times","viewObsNote":"1 observer"}},
+{"label":"Rotate","caption":"The activity is recreated. Its FragmentManager restores a new feed object from saved state, using a no-argument constructor or your FragmentFactory. Old observers die with the old object; the bug restarts from one.","state":{"object":"warn","thisObs":"done","viewObs":"done"},"text":{"objectNote":"new object, restored from saved state","viewNote":"view #1 of the new object","callsNote":"old: onDestroyView() → onDestroy(); new: onCreate(bundle) → onCreateView() → onViewCreated() …","thisNote":"1 observer (new object)","viewObsNote":"1 observer"}}
+]</script><figcaption>The fix is one word: register view work with <code>viewLifecycleOwner</code>, and clear view references in <code>onDestroyView()</code>.</figcaption></figure>
+
+<!-- @diagram 98e64fc6110a6da1 -->
+### Who owns what inside the activity
+
+<figure class="viz"><div class="viz-stack"><div class="node is-key"><strong><code>MainActivity</code></strong><small>hosts one <code>FragmentManager</code> (<code>supportFragmentManager</code>)</small></div><div class="down"></div><div class="node"><strong><code>FragmentManager</code></strong><small>applies <code>FragmentTransaction</code>s, keeps the back stack, saves and restores Fragments</small></div><div class="down"></div><div class="viz-grid" style="--cols:2"><div class="node"><strong>Fragment A: Feed</strong><small>a back-stack entry when B is shown</small></div><div class="node"><strong>Fragment B: Details</strong><small>visible</small></div></div><div class="down"></div><div class="node" data-state="done"><strong>Shared ViewModel</strong><small>scoped to the host activity (<code>by activityViewModels()</code>), so both Fragments get the same instance without referencing each other</small></div></div><figcaption>Fragments never point at each other. They share state through a ViewModel in a common scope, or pass one-time results through the FragmentManager.</figcaption></figure>
+
+<!-- @after Production Example :: visual -->
+### How a result travels between Fragments
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>B: <code>setFragmentResult("requestKey", bundle)</code></strong><small>sender knows only the key</small></div><div class="node is-key"><strong><code>FragmentManager</code> stores it</strong><small>one pending result per key; a newer one replaces it</small></div><div class="node"><strong>B is popped; A reaches <code>STARTED</code></strong><small>back-stack Fragments wait until then</small></div><div class="node" data-state="done"><strong>A's listener runs once</strong><small>then the result is cleared</small></div></div><figcaption>Neither Fragment holds a reference to the other, so either one can be recreated independently.</figcaption></figure>
+
+<!-- @after Failure Modes :: check -->
+**Find the bug.** Decide before opening each answer.
+
+<details><summary>A Fragment collects a Flow with <code>lifecycleScope.launch { repeatOnLifecycle(STARTED) { … } }</code> inside <code>onViewCreated()</code>.</summary>
+
+`lifecycleScope` belongs to the Fragment object, so each new view starts another collector that survives until the object is destroyed. Use `viewLifecycleOwner.lifecycleScope` and `viewLifecycleOwner.repeatOnLifecycle(...)` for work that updates the view.
+</details>
+
+<details><summary>Two sibling Fragments each declare <code>private val vm: CartViewModel by viewModels()</code> and expect to share a cart.</summary>
+
+`by viewModels()` scopes the ViewModel to each Fragment, so they get two different instances. Use a common scope, such as `by activityViewModels()` or the parent Fragment.
+</details>
+
+<details><summary>A Fragment keeps <code>private lateinit var adapter: FeedAdapter</code> that holds the RecyclerView.</summary>
+
+The adapter outlives the view if it holds view references, recreating the binding leak in another form. Create view-bound objects in `onViewCreated()` and release them in `onDestroyView()`.
+</details>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+**A migration rule of thumb.** Every Fragment that hosts a single `ComposeView` is a candidate for removal: keep it only while something outside Compose (an XML navigation graph, a legacy host) still needs a Fragment. Track that count; when it reaches zero, the screen no longer needs a second lifecycle at all.

@@ -1,0 +1,32 @@
+<!-- Phase 5 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase5-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">The Android app already works with Retrofit. Now the team wants to share business logic with iOS. Replacing annotations with client calls is the visible part; the harder part is keeping authentication, serialization, cancellation and failure behaviour consistent across platforms. Start by deciding which code needs to be shared.</p>
+
+<!-- @after KMP — The Decisive Factor :: visual -->
+### Choose the boundary before the library
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Shared API</strong><small>Domain-facing operations and models used by the product.</small></div><div class="node"><strong>Per-platform configuration</strong><small>Engine, TLS/proxy behaviour and platform lifecycle.</small></div><div class="node"><strong>Compatibility suite</strong><small>Missing/null fields, error contracts, cancellation and streaming.</small></div><div class="node"><strong>Rollout evidence</strong><small>A representative endpoint, telemetry and rollback path.</small></div></div><figcaption>Sharing request code does not remove the need to verify each supported engine and platform.</figcaption></figure>
+
+<!-- @after Migration Patterns :: visual -->
+### Migrate one contract, then widen
+
+<figure class="viz decision-map"><p class="diagram-context">One repository, two implementations during a staged migration</p><ol class="decision-grid"><li class="decision-card"><span class="decision-number" aria-hidden="true">1</span><h4>Pin behaviour</h4><p>Choose one representative operation and write down its data, auth, error and cancellation contract.</p></li><li class="decision-card"><span class="decision-number" aria-hidden="true">2</span><h4>Add an adapter</h4><p>Implement that contract using the candidate stack behind the existing application boundary.</p></li><li class="decision-card"><span class="decision-number" aria-hidden="true">3</span><h4>Exercise parity</h4><p>Run equivalent fixtures on the engines and targets the product actually ships.</p></li><li class="decision-card"><span class="decision-number" aria-hidden="true">4</span><h4>Roll out selectively</h4><p>Select one implementation per call path. Observe failures and performance; keep rollback available.</p></li><li class="decision-card"><span class="decision-number" aria-hidden="true">5</span><h4>Retire deliberately</h4><p>Remove old dependencies only after their final owned call path and configuration are retired.</p></li></ol><figcaption>Illustrative decision example. This sequence is an application migration plan; its outcome depends on measured parity, not on endpoint count alone.</figcaption></figure>
+
+<!-- @after Common Pitfalls :: check -->
+### Try the decision
+
+<details><summary>Ktor uses the OkHttp engine. Has any transport behaviour changed?</summary>
+
+Some defaults do. OkHttp still carries the bytes, but Ktor's OkHttp engine turns off OkHttp's own redirect following (Ktor handles redirects), creates its own dispatcher unless you pass a preconfigured client, and maps HttpTimeout onto OkHttp's timeouts. Inventory these alongside plugin interactions.
+</details>
+
+<details><summary>MockEngine passes. What remains untested?</summary>
+
+The selected real engine’s sockets, TLS, proxies, connection reuse and integration with platform networking. Use appropriate transport integration tests as well as portable contract tests.
+</details>
+
+<details><summary>What result would justify keeping Retrofit?</summary>
+
+If its supported platform scope and operational behaviour meet the product’s needs, a migration must show enough value to outweigh compatibility, training and rollout costs. There is no requirement to replace a working boundary.
+</details>

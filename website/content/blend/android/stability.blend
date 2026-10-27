@@ -1,0 +1,83 @@
+<!-- Website teaching layer for android/compose/stability.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (Stability in Compose; Fix stability issues: "Annotating a class is overriding
+     what the compiler would otherwise infer"; Strong skipping mode, default since Kotlin 2.0.20) on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A team migrates to Kotlin 2.1 and their "unstable parameter" warnings stop mattering overnight: the same <code>List&lt;Item&gt;</code> rows now skip. A month later, one screen gets slower again. Its rows receive <code>items.map { it.toUi() }</code>, rebuilt on every recomposition: equal contents, new list, no skip.</p>
+
+Whether Compose can skip a child depends on how it compares that child's arguments with the previous ones, and that depends on each parameter's **stability**. Strong skipping, on by default since Kotlin 2.0.20, changed the rule for unstable parameters from "never skip" to "skip if it is the same instance". This chapter explains what is inferred stable, what the annotations promise, and why instance reuse now matters as much as types.
+
+<!-- @diagram 05a1b2ae40d0f9a1 -->
+### Does this call run or skip?
+
+<figure class="viz"><div class="viz-stack"><div class="node is-key"><strong>Composable call</strong></div><div class="viz-grid" style="--cols:3"><div class="node" data-state="warn"><strong>Not restartable</strong><small>runs with its parent's scope</small></div><div class="node" data-state="warn"><strong>Its own scope was invalidated</strong><small>runs: it read state that changed</small></div><div class="node"><strong>Otherwise, compare arguments</strong><small>stable: <code>equals</code> · unstable (strong skipping): <code>===</code></small></div></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="warn"><strong>Any argument changed</strong><small>run the body</small></div><div class="node" data-state="done"><strong>None changed</strong><small>skip and keep the previous composition</small></div></div></div><figcaption>Stability changes how arguments are compared. It never makes mutable data observable.</figcaption></figure>
+
+<!-- @after Strong Skipping Mode :: animation -->
+### Three ways to pass the same rows
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">The parent recomposes; does <code>Rows(items)</code> skip?</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="old" data-art="memory" data-art-role="storage"><strong>No strong skipping · <code>List&lt;Item&gt;</code></strong><small data-text="oldV">—</small></div><div class="node" data-el="same" data-art="memory" data-art-role="storage"><strong>Strong skipping · same list instance</strong><small data-text="sameV">—</small></div><div class="node" data-el="mapped" data-art="memory" data-art-role="storage"><strong>Strong skipping · <code>items.map { … }</code> each time</strong><small data-text="mappedV">—</small></div></div><script type="application/json" class="steps">[
+{
+"label": "Parent recomposes",
+"caption": "Something unrelated changed in the parent, so it runs again and reaches the Rows call with arguments that look the same.",
+"add": [
+"old",
+"same",
+"mapped"
+],
+"state": {},
+"text": {
+"oldV": "List is unstable",
+"sameV": "List is unstable",
+"mappedV": "List is unstable"
+}
+},
+{
+"label": "Older compilers",
+"caption": "Without strong skipping, a composable with an unstable parameter is not skippable at all. Rows runs every time its parent does.",
+"state": {
+"old": "error"
+},
+"text": {
+"oldV": "not skippable → runs"
+}
+},
+{
+"label": "Same instance",
+"caption": "With strong skipping, unstable parameters are compared by identity. The parent passed the same list object, so === holds and Rows is skipped.",
+"state": {
+"same": "done"
+},
+"text": {
+"sameV": "items === previous → skips"
+}
+},
+{
+"label": "Rebuilt list",
+"caption": "The parent maps the list again on every run. The contents are equal, but it is a new object, so the identity check fails and Rows runs. This is the slow screen in the opening.",
+"state": {
+"mapped": "error"
+},
+"text": {
+"mappedV": "new instance → runs"
+}
+}
+]</script><figcaption>This comparison assumes a restartable Rows call with no independent state invalidation. Under strong skipping, reusing the unstable list instance can preserve skipping.</figcaption></figure>
+
+<!-- @after The Two Annotations :: visual -->
+### What each annotation promises
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title"><code>@Immutable</code></span><div class="node"><strong>Promise</strong><small>no observable property ever changes after construction</small></div><div class="node" data-state="warn"><strong>If broken</strong><small>Compose skips a call whose data changed in place: stale UI</small></div></div><div class="col"><span class="col-title"><code>@Stable</code></span><div class="node"><strong>Promise</strong><small><code>equals</code> is consistent, and any change to public state is observable through snapshot state</small></div><div class="node" data-state="warn"><strong>If broken</strong><small>the same: skipped updates you expected to see</small></div></div></div><figcaption>Annotations override inference, much like <code>!!</code> overrides null checks: the compiler trusts them, and does not verify them.</figcaption></figure>
+
+<!-- @after Common Pitfalls :: check -->
+**Stable or not?** Decide before opening each answer.
+
+<details><summary><code>data class Price(val amount: Long, val currency: String)</code></summary>
+
+Stable without annotation: every property is a `val` of a stable type.
+</details>
+
+<details><summary><code>data class Cart(val items: List&lt;Item&gt;)</code> on Kotlin 2.1.</summary>
+
+Unstable (the `List` interface could be mutable), but still skippable under strong skipping: `Cart` is compared by identity. Reuse the instance where appropriate, and measure the actual call before changing its model solely to increase skipping.
+</details>

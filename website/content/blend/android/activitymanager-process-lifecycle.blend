@@ -1,0 +1,61 @@
+<!-- Website teaching layer for android/os-internals/activitymanager-process-lifecycle.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Sources checked 2026-10-25: Processes and app lifecycle, Save UI states, Test process death
+     (developer.android.com). -->
+
+<!-- @opening -->
+<p class="story-lead">A user writes half a message, switches to the camera to take a photo, and comes back through Recents a few minutes later. The app is still in Recents and the screen comes back. The half-written message, though, is gone. The task survived. The process holding the text did not.</p>
+
+Android keeps three things apart: the task the user sees in Recents, the components the system can recreate, and the Linux process that held your memory. `ActivityManagerService` decides when that process can be killed, and it does not ask you first. This chapter explains process creation, importance and the background-work rules. The additions here follow one draft through a process kill and show which owner brings each piece back.
+
+<!-- @diagram 9ec3c02757c2507a -->
+### Starting a process from a tap
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>User taps the icon</strong></div><div class="node"><strong>Launcher</strong><small><code>startActivity</code></small></div><div class="node is-key"><strong>ActivityManagerService</strong><small>asks Zygote to fork</small></div><div class="node"><strong>New app process</strong><small>loads the APK, creates <code>Application</code></small></div><div class="node" data-state="done"><strong>Activity launched</strong><small>by AMS in that process</small></div></div><figcaption>Redrawn from the original sequence diagram. The same path runs when the user returns to a task whose process was killed.</figcaption></figure>
+
+<!-- @after Process Death vs Configuration Change :: visual -->
+### Where each piece of state lives
+
+<figure class="viz"><div class="viz-cols" style="--cols:3"><div class="col"><span class="col-title">Held by the system</span><div class="node" data-state="done"><strong>Task in Recents</strong></div><div class="node" data-state="done"><strong>Saved instance state</strong><small><code>SavedStateHandle</code>, <code>rememberSaveable</code>: small and bounded</small></div></div><div class="col"><span class="col-title">On disk</span><div class="node" data-state="done"><strong>Room, DataStore, files</strong></div><div class="node" data-state="done"><strong>WorkManager queue</strong><small>pending durable work</small></div></div><div class="col"><span class="col-title">RAM only</span><div class="node" data-state="error"><strong>ViewModels, singletons</strong></div><div class="node" data-state="error"><strong>Coroutines, caches</strong><small>gone with the process</small></div></div></div><figcaption>A process kill empties the third column. The first two are what restoration rebuilds from.</figcaption></figure>
+
+<!-- @after Durable State Rule :: animation -->
+### One draft through a process kill
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="Persist, lose the process, rebuild">
+<h3>Persist, lose the process, rebuild</h3>
+<p class="pb-sub">An illustrative run. Each moving packet is a named request, notification or result.</p>
+<div class="pb-paper"><svg class="pb-svg" role="img" aria-label="App state is persisted before the process is killed. Returning launches a new process that reloads durable product data. Process death has no guaranteed onDestroy packet."></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div>
+<div class="pb-caption"><span class="pb-count"></span><p aria-live="polite"></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">{"nodes": [{"id": "system", "label": "Android system", "art": {"kind": "server", "role": "runtime"}}, {"id": "app", "label": "App process", "art": {"kind": "phone", "role": "client"}}, {"id": "disk", "label": "Durable draft", "art": {"kind": "database", "role": "storage"}}], "layouts": {"wide": {"size": [760, 290], "nodes": {"system": {"x": 24, "y": 50, "w": 208, "h": 140}, "app": {"x": 276, "y": 50, "w": 208, "h": 140}, "disk": {"x": 528, "y": 50, "w": 208, "h": 140}}, "edges": {"save": "M486 102 C506 102 506 102 526 102", "start": "M234 102 C254 102 254 102 274 102", "load": "M526 138 C506 138 506 138 486 138"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}, "narrow": {"size": [320, 470], "nodes": {"system": {"x": 40, "y": 22, "w": 240, "h": 140}, "app": {"x": 8, "y": 252, "w": 144, "h": 190}, "disk": {"x": 168, "y": 252, "w": 144, "h": 190}}, "edges": {"save": "M154 329 C160 329 160 329 166 329", "start": "M142 164 C142 207 62 207 62 250", "load": "M166 365 C160 365 160 365 154 365"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}}, "modes": {"run": {"initial": {"nodes": {"system": ["", "foreground app"], "app": ["", "draft in memory"], "disk": ["", "older saved draft"]}, "visuals": {"app": {"rows": 1}, "disk": {}}}, "steps": [{"caption": "The user is editing a draft. This example distinguishes durable product data from in-memory objects and framework saved UI state."}, {"caption": "The app saves the edited draft at a deliberate product boundary. Waiting until a hypothetical final callback would risk losing it.", "packets": [{"edge": "save", "label": "save draft", "tone": "fwd", "kind": "parcel"}], "set": {"nodes": {"disk": ["is-done", "draft committed"]}, "visuals": {"disk": {}}}}, {"caption": "The user leaves. With no component requiring higher importance in this run, the process becomes cached and eligible for reclamation.", "set": {"nodes": {"system": ["", "cached process"], "app": ["is-warn", "background, cached"]}}}, {"caption": "The system later kills the process. Its ViewModels and heap are gone; no guaranteed onDestroy callback arrives to save the draft.", "set": {"nodes": {"app": ["is-warn", "process gone"], "disk": ["is-done", "draft still stored"]}, "visuals": {"app": {"visible": false, "rows": 0}}}}, {"caption": "When the user returns, Android creates an app process as needed. New objects do not revive old in-memory references.", "packets": [{"edge": "start", "label": "launch", "tone": "fwd", "kind": "parcel"}], "set": {"nodes": {"app": ["is-active", "new process"]}, "visuals": {"app": {"visible": true}}}}, {"caption": "The new repository reads the committed draft and rebuilds screen state. Restore small navigation/form state through the applicable saved-state APIs separately.", "packets": [{"edge": "load", "label": "load draft", "tone": "back", "kind": "parcel"}], "set": {"nodes": {"app": ["is-done", "draft rebuilt"]}, "visuals": {"app": {"rows": 1}}}}]}}, "illustrated": true, "edgeEndpoints": {"save": {"from": "app", "to": "disk"}, "start": {"from": "system", "to": "app"}, "load": {"from": "disk", "to": "app"}}}</script>
+<p class="pb-sub">Sources: <a href="https://developer.android.com/guide/components/activities/process-lifecycle">Processes and app lifecycle</a>.</p>
+</section>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+Make process death part of the definition of done. For each critical flow, write down what survives, who restores it, and the test that kills the process mid-flow. A rotation test does not prove any of it.
+
+<!-- @after Failure Modes :: check -->
+### Check your restoration
+
+<details><summary>Every screen survives rotation. Is the app safe from process death?</summary>
+
+No. Rotation keeps the process and its ViewModels alive. Process death removes both; test it separately by backgrounding the app and killing the process.
+
+</details>
+
+<details><summary>An upload runs in <code>viewModelScope</code> and the process is killed. What happens, and what should own the upload?</summary>
+
+The coroutine dies with the process and the upload is lost. Persist it to an outbox and let WorkManager schedule it.
+
+</details>
+
+<details><summary>Which goes in saved state: the open thread's ID, the unsent text, or the downloaded messages?</summary>
+
+The ID and the unsent text, which are small. The messages belong in Room, reloaded using the ID, because saved state is small and bounded.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+Primary sources for the added layer: [Processes and app lifecycle](https://developer.android.com/guide/components/activities/process-lifecycle), [Save UI states](https://developer.android.com/topic/libraries/architecture/saving-states), [Test process death](https://developer.android.com/guide/components/activities/activity-lifecycle#asem).

@@ -1,0 +1,48 @@
+<!-- Website teaching layer for android/compose/compose-navigation.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Follows developer.android.com Navigation 3 guides (back stack, saved state, entry decorators, scenes) as cited by the
+     chapter; checked 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A team adds a tablet layout: email list on the left, message on the right. In their Navigation 2 app, every screen is one destination that fills the host, so "show two destinations at once" fights the framework. The team must decide which state represents the user’s journey and how one-pane and two-pane presentations share it.</p>
+
+Both requests are about **who owns the back stack**. In Navigation Compose 2.x the `NavController` owns it and you send it commands. In Navigation 3 the back stack is ordinary app state, a list you add to and remove from, and `NavDisplay` renders it, possibly several entries at once. This chapter covers both lines, when each fits, and how to migrate without breaking deep links or ViewModel lifetimes.
+
+<!-- @after Mental Model :: visual -->
+### Who holds the list?
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Navigation Compose 2.x</span><div class="node"><strong>You call</strong><small><code>navController.navigate(Profile("u1"))</code></small></div><div class="node is-key"><strong><code>NavController</code> owns the back stack</strong><small>framework state you query and command</small></div><div class="node"><strong><code>NavHost</code> shows the top entry</strong></div></div><div class="col"><span class="col-title">Navigation 3</span><div class="node"><strong>You write</strong><small><code>backStack.add(Profile("u1"))</code></small></div><div class="node is-key"><strong>Your <code>NavBackStack</code> owns it</strong><small>observable app state you mutate directly</small></div><div class="node"><strong><code>NavDisplay</code> renders it</strong><small>a scene strategy may show several entries together</small></div></div></div><figcaption>Same routes, opposite ownership. That single difference explains most of the trade-offs in the comparison tables below.</figcaption></figure>
+
+<!-- @diagram dd33b36021f82e3d -->
+### Navigation 2: routes, controller, host
+
+<figure class="viz"><div class="viz-stack"><div class="viz-grid" style="--cols:2"><div class="node"><strong><code>object Home</code></strong><small>route</small></div><div class="node"><strong><code>data class Profile</code></strong><small>route</small></div></div><div class="viz-flow"><div class="node"><strong>Home composable</strong><small>calls <code>navController.navigate(Profile(…))</code></small></div><div class="node is-key"><strong><code>NavController</code></strong><small>updates its back stack</small></div><div class="node"><strong><code>NavHost</code></strong><small>swaps content</small></div><div class="node" data-state="done"><strong>Profile composable</strong><small>rendered</small></div></div></div><figcaption>Routes are registered with the host; the controller decides what is on top.</figcaption></figure>
+
+<!-- @after Per-Entry Lifecycle and ViewModel :: animation -->
+### Drive a Navigation 3 back stack by hand
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">The back stack is a list; the UI follows it</span><div class="stage viz-stack"><div class="viz-flow"><div class="node" data-el="login" data-art="phone" data-art-role="client"><strong><code>Login</code></strong></div><div class="node" data-el="home" data-art="phone" data-art-role="client"><strong><code>Home</code></strong></div><div class="node" data-el="profile" data-art="phone" data-art-role="client"><strong><code>Profile("u1")</code></strong><small>entry-scoped ViewModel</small></div></div><div class="node is-key" data-el="code" data-art="code" data-art-role="runtime"><strong>Code</strong><small data-text="codeV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Start","caption":"rememberNavBackStack(Home) creates a saveable list with one key. NavDisplay renders its last entry.","add":["home","code"],"state":{"home":"active"},"text":{"codeV":"val backStack = rememberNavBackStack(Home)"}},
+{"label":"Navigate","caption":"Navigating is adding a key. With the ViewModel-store entry decorator installed, Profile gets its own ViewModelStore.","add":["profile"],"state":{"home":"done","profile":"active"},"text":{"codeV":"backStack.add(Profile(\"u1\"))"}},
+{"label":"Back","caption":"onBack removes the last key. The decorator clears Profile's ViewModelStore because its entry left the stack.","remove":["profile"],"state":{"home":"active"},"text":{"codeV":"onBack = { backStack.removeLastOrNull() }"}},
+{"label":"Deep link","caption":"A link to profile u1 arrives. The app parses it and builds the stack it wants, Home under Profile, so Back from the link lands somewhere sensible.","add":["profile"],"state":{"home":"done","profile":"active"},"text":{"codeV":"backStack.clear(); backStack.add(Home); backStack.add(Profile(\"u1\"))"}},
+{"label":"Log out","caption":"Logout replaces the whole stack with the signed-out root. No authenticated entry remains reachable with Back.","remove":["home","profile"],"add":["login"],"state":{"login":"active"},"text":{"codeV":"backStack.clear(); backStack.add(Login)"}}
+]</script><figcaption>Everything that Navigation 2 did inside the controller (push, pop, deep-link stacks, clearing) is now ordinary list code you own and test.</figcaption></figure>
+
+<!-- @after When To Pick Each :: check -->
+**Which line?** Decide before opening each answer.
+
+<details><summary>A mature phone app on Navigation 2 with 80 destinations and no adaptive or KMP plans.</summary>
+
+Stay on Navigation 2. It is supported, and migration would cost effort without a concrete benefit.
+</details>
+
+<details><summary>A new Compose app that must show list and detail side by side on tablets.</summary>
+
+Navigation 3 is a strong default: scene strategies map back-stack entries to adaptive layouts as part of the navigation model.
+</details>
+
+<details><summary>A Navigation 3 app's ViewModels outlive the screens that created them.</summary>
+
+The entry decorator for ViewModel stores is missing, so `viewModel()` resolves against a wider owner. Add `rememberViewModelStoreNavEntryDecorator()`.
+</details>

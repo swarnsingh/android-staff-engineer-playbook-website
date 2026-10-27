@@ -1,0 +1,5720 @@
+{
+  "pages": [
+    {
+      "href": "/android/architecture/state-management/",
+      "preservation": {
+        "views": [
+          {
+            "source": "android/architecture/state-management.md",
+            "view": "content",
+            "checked": 952,
+            "units": 183,
+            "diagrams": 2,
+            "loadedDiagrams": 2,
+            "diagramResources": [
+              {
+                "source": "/diagrams/c8223138b4d691e4.svg",
+                "status": "loaded"
+              },
+              {
+                "source": "/diagrams/f546d541ede4a6a1.svg",
+                "status": "loaded"
+              }
+            ],
+            "problems": []
+          },
+          {
+            "source": "android/architecture/state-management.md",
+            "view": "qa",
+            "checked": 66,
+            "units": 26,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 209,
+        "diagrams": 2,
+        "loadedDiagrams": 2
+      },
+      "steppers": 1,
+      "ready": 1,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    },
+    {
+      "href": "/android/concurrency/battery-optimizations/",
+      "preservation": {
+        "views": [
+          {
+            "source": "android/concurrency/battery-optimizations.md",
+            "view": "content",
+            "checked": 194,
+            "units": 71,
+            "diagrams": 1,
+            "loadedDiagrams": 1,
+            "diagramResources": [
+              {
+                "source": "/diagrams/195946fb412e3416.svg",
+                "status": "loaded"
+              }
+            ],
+            "problems": []
+          },
+          {
+            "source": "android/concurrency/battery-optimizations.md",
+            "view": "qa",
+            "checked": 53,
+            "units": 22,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 93,
+        "diagrams": 1,
+        "loadedDiagrams": 1
+      },
+      "steppers": 1,
+      "ready": 1,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    },
+    {
+      "href": "/android/concurrency/services/",
+      "preservation": {
+        "views": [
+          {
+            "source": "android/concurrency/services.md",
+            "view": "content",
+            "checked": 261,
+            "units": 68,
+            "diagrams": 1,
+            "loadedDiagrams": 1,
+            "diagramResources": [
+              {
+                "source": "/diagrams/c2877ffbe98949a6.svg",
+                "status": "loaded"
+              }
+            ],
+            "problems": []
+          },
+          {
+            "source": "android/concurrency/services.md",
+            "view": "qa",
+            "checked": 72,
+            "units": 22,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 90,
+        "diagrams": 1,
+        "loadedDiagrams": 1
+      },
+      "steppers": 1,
+      "ready": 1,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    },
+    {
+      "href": "/android/concurrency/synchronization-and-mutex/",
+      "preservation": {
+        "views": [
+          {
+            "source": "android/concurrency/synchronization-and-mutex.md",
+            "view": "content",
+            "checked": 259,
+            "units": 70,
+            "diagrams": 1,
+            "loadedDiagrams": 1,
+            "diagramResources": [
+              {
+                "source": "/diagrams/ba208c04d568f5fe.svg",
+                "status": "loaded"
+              }
+            ],
+            "problems": []
+          },
+          {
+            "source": "android/concurrency/synchronization-and-mutex.md",
+            "view": "qa",
+            "checked": 84,
+            "units": 22,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 92,
+        "diagrams": 1,
+        "loadedDiagrams": 1
+      },
+      "steppers": 1,
+      "ready": 1,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    },
+    {
+      "href": "/android/data-and-di/paging/",
+      "preservation": {
+        "views": [
+          {
+            "source": "android/data-and-di/paging.md",
+            "view": "content",
+            "checked": 328,
+            "units": 64,
+            "diagrams": 1,
+            "loadedDiagrams": 1,
+            "diagramResources": [
+              {
+                "source": "/diagrams/2301ffe70d644897.svg",
+                "status": "loaded"
+              }
+            ],
+            "problems": []
+          },
+          {
+            "source": "android/data-and-di/paging.md",
+            "view": "qa",
+            "checked": 95,
+            "units": 22,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 86,
+        "diagrams": 1,
+        "loadedDiagrams": 1
+      },
+      "steppers": 0,
+      "ready": 0,
+      "scenes": 1,
+      "sceneReady": 1,
+      "runtimeErrors": [],
+      "sceneChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "mode": "run",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "light",
+          "mode": "run",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "light",
+          "mode": "run",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "light",
+          "mode": "run",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "light",
+          "mode": "run",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "light",
+          "mode": "run",
+          "step": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "mode": "run",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "mode": "run",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "mode": "run",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "mode": "run",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "mode": "run",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "mode": "run",
+          "step": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "mode": "run",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "mode": "run",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "mode": "run",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "mode": "run",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "mode": "run",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "mode": "run",
+          "step": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "mode": "run",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "mode": "run",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "mode": "run",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "mode": "run",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "mode": "run",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "mode": "run",
+          "step": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "mode": "run",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "mode": "run",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "mode": "run",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "mode": "run",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "mode": "run",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "mode": "run",
+          "step": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "mode": "run",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "mode": "run",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "mode": "run",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "mode": "run",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "mode": "run",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "mode": "run",
+          "step": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "mode": "run",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "mode": "run",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "mode": "run",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "mode": "run",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "mode": "run",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "mode": "run",
+          "step": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "mode": "run",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "mode": "run",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "mode": "run",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "mode": "run",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "mode": "run",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "mode": "run",
+          "step": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "mode": "run",
+          "step": 6,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "mode": "run",
+          "step": 6,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "illustratedChecks": [],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    },
+    {
+      "href": "/android/kotlin-multiplatform/production/ci-cd-for-kmp/",
+      "preservation": {
+        "views": [
+          {
+            "source": "android/kotlin-multiplatform/production/ci-cd-for-kmp.md",
+            "view": "content",
+            "checked": 355,
+            "units": 71,
+            "diagrams": 1,
+            "loadedDiagrams": 1,
+            "diagramResources": [
+              {
+                "source": "/diagrams/75bfab8b671aac69.svg",
+                "status": "loaded"
+              }
+            ],
+            "problems": []
+          },
+          {
+            "source": "android/kotlin-multiplatform/production/ci-cd-for-kmp.md",
+            "view": "qa",
+            "checked": 26,
+            "units": 12,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 83,
+        "diagrams": 1,
+        "loadedDiagrams": 1
+      },
+      "steppers": 1,
+      "ready": 1,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    },
+    {
+      "href": "/android/kotlin-multiplatform/production/concurrency-and-memory/",
+      "preservation": {
+        "views": [
+          {
+            "source": "android/kotlin-multiplatform/production/concurrency-and-memory.md",
+            "view": "content",
+            "checked": 411,
+            "units": 95,
+            "diagrams": 2,
+            "loadedDiagrams": 2,
+            "diagramResources": [
+              {
+                "source": "/diagrams/e3cb53e5fe1604a2.svg",
+                "status": "loaded"
+              },
+              {
+                "source": "/diagrams/ab0d748023c8f7e4.svg",
+                "status": "loaded"
+              }
+            ],
+            "problems": []
+          },
+          {
+            "source": "android/kotlin-multiplatform/production/concurrency-and-memory.md",
+            "view": "qa",
+            "checked": 29,
+            "units": 12,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 107,
+        "diagrams": 2,
+        "loadedDiagrams": 2
+      },
+      "steppers": 1,
+      "ready": 1,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    },
+    {
+      "href": "/android/networking-and-security/webview-and-hybrid/",
+      "preservation": {
+        "views": [
+          {
+            "source": "android/networking-and-security/webview-and-hybrid.md",
+            "view": "content",
+            "checked": 304,
+            "units": 79,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          },
+          {
+            "source": "android/networking-and-security/webview-and-hybrid.md",
+            "view": "qa",
+            "checked": 36,
+            "units": 14,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 93,
+        "diagrams": 0,
+        "loadedDiagrams": 0
+      },
+      "steppers": 1,
+      "ready": 1,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    },
+    {
+      "href": "/android/performance/jank/",
+      "preservation": {
+        "views": [
+          {
+            "source": "android/performance/jank.md",
+            "view": "content",
+            "checked": 245,
+            "units": 80,
+            "diagrams": 1,
+            "loadedDiagrams": 1,
+            "diagramResources": [
+              {
+                "source": "/diagrams/4dd38592eec3285b.svg",
+                "status": "loaded"
+              }
+            ],
+            "problems": []
+          },
+          {
+            "source": "android/performance/jank.md",
+            "view": "qa",
+            "checked": 56,
+            "units": 22,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 102,
+        "diagrams": 1,
+        "loadedDiagrams": 1
+      },
+      "steppers": 1,
+      "ready": 1,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    },
+    {
+      "href": "/android/performance/macrobenchmark-and-perfetto/",
+      "preservation": {
+        "views": [
+          {
+            "source": "android/performance/macrobenchmark-and-perfetto.md",
+            "view": "content",
+            "checked": 253,
+            "units": 96,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          },
+          {
+            "source": "android/performance/macrobenchmark-and-perfetto.md",
+            "view": "qa",
+            "checked": 13,
+            "units": 11,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 107,
+        "diagrams": 0,
+        "loadedDiagrams": 0
+      },
+      "steppers": 1,
+      "ready": 1,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    },
+    {
+      "href": "/android/performance/memory-management-and-leaks/",
+      "preservation": {
+        "views": [
+          {
+            "source": "android/performance/memory-management-and-leaks.md",
+            "view": "content",
+            "checked": 235,
+            "units": 68,
+            "diagrams": 1,
+            "loadedDiagrams": 1,
+            "diagramResources": [
+              {
+                "source": "/diagrams/3898877f44da65cd.svg",
+                "status": "loaded"
+              }
+            ],
+            "problems": []
+          },
+          {
+            "source": "android/performance/memory-management-and-leaks.md",
+            "view": "qa",
+            "checked": 68,
+            "units": 22,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 90,
+        "diagrams": 1,
+        "loadedDiagrams": 1
+      },
+      "steppers": 1,
+      "ready": 1,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    },
+    {
+      "href": "/android/performance/rendering/",
+      "preservation": {
+        "views": [
+          {
+            "source": "android/performance/rendering.md",
+            "view": "content",
+            "checked": 727,
+            "units": 215,
+            "diagrams": 2,
+            "loadedDiagrams": 2,
+            "diagramResources": [
+              {
+                "source": "/diagrams/1d5aad77c742da60.svg",
+                "status": "loaded"
+              },
+              {
+                "source": "/diagrams/f6e32d6fe51c2ec8.svg",
+                "status": "loaded"
+              }
+            ],
+            "problems": []
+          },
+          {
+            "source": "android/performance/rendering.md",
+            "view": "qa",
+            "checked": 73,
+            "units": 26,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 241,
+        "diagrams": 2,
+        "loadedDiagrams": 2
+      },
+      "steppers": 1,
+      "ready": 1,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    },
+    {
+      "href": "/android/performance/startup/",
+      "preservation": {
+        "views": [
+          {
+            "source": "android/performance/startup.md",
+            "view": "content",
+            "checked": 851,
+            "units": 171,
+            "diagrams": 1,
+            "loadedDiagrams": 1,
+            "diagramResources": [
+              {
+                "source": "/diagrams/b084371960b0b0eb.svg",
+                "status": "loaded"
+              }
+            ],
+            "problems": []
+          },
+          {
+            "source": "android/performance/startup.md",
+            "view": "qa",
+            "checked": 71,
+            "units": 26,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 197,
+        "diagrams": 1,
+        "loadedDiagrams": 1
+      },
+      "steppers": 1,
+      "ready": 1,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    },
+    {
+      "href": "/kotlin/coroutines-and-flow/coroutines/",
+      "preservation": {
+        "views": [
+          {
+            "source": "kotlin/coroutines-and-flow/coroutines.md",
+            "view": "content",
+            "checked": 942,
+            "units": 187,
+            "diagrams": 1,
+            "loadedDiagrams": 1,
+            "diagramResources": [
+              {
+                "source": "/diagrams/4b00da8fd97c81d4.svg",
+                "status": "loaded"
+              }
+            ],
+            "problems": []
+          },
+          {
+            "source": "kotlin/coroutines-and-flow/coroutines.md",
+            "view": "qa",
+            "checked": 120,
+            "units": 26,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 213,
+        "diagrams": 1,
+        "loadedDiagrams": 1
+      },
+      "steppers": 2,
+      "ready": 2,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "states": 6,
+          "objects": 7,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 1,
+          "states": 6,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "states": 6,
+          "objects": 7,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 1,
+          "states": 6,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 6,
+          "objects": 7,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 1,
+          "states": 6,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 6,
+          "objects": 7,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 1,
+          "states": 6,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "states": 6,
+          "objects": 7,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 1,
+          "states": 6,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "states": 6,
+          "objects": 7,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 1,
+          "states": 6,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 6,
+          "objects": 7,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 1,
+          "states": 6,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 6,
+          "objects": 7,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 1,
+          "states": 6,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "states": 6,
+          "objects": 7,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 1,
+          "states": 6,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "states": 6,
+          "objects": 7,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 1,
+          "states": 6,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 6,
+          "objects": 7,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 1,
+          "states": 6,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 6,
+          "objects": 7,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 1,
+          "states": 6,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "states": 6,
+          "objects": 7,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 1,
+          "states": 6,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "states": 6,
+          "objects": 7,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 1,
+          "states": 6,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 6,
+          "objects": 7,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 1,
+          "states": 6,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 6,
+          "objects": 7,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 1,
+          "states": 6,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    },
+    {
+      "href": "/kotlin/language-core/null-safety/",
+      "preservation": {
+        "views": [
+          {
+            "source": "kotlin/language-core/null-safety.md",
+            "view": "content",
+            "checked": 895,
+            "units": 166,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          },
+          {
+            "source": "kotlin/language-core/null-safety.md",
+            "view": "qa",
+            "checked": 141,
+            "units": 26,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 192,
+        "diagrams": 0,
+        "loadedDiagrams": 0
+      },
+      "steppers": 3,
+      "ready": 3,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 1,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 2,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 1,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 2,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 1,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 2,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 1,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 2,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 1,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 2,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 1,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 2,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 1,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 2,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 1,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 2,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 1,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 2,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 1,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 2,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 1,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 2,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 1,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 2,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 1,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 2,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 1,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 2,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 1,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 2,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 1,
+          "states": 4,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 2,
+          "states": 5,
+          "objects": 5,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    },
+    {
+      "href": "/kotlin/language-core/sealed-classes/",
+      "preservation": {
+        "views": [
+          {
+            "source": "kotlin/language-core/sealed-classes.md",
+            "view": "content",
+            "checked": 1078,
+            "units": 140,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          },
+          {
+            "source": "kotlin/language-core/sealed-classes.md",
+            "view": "qa",
+            "checked": 135,
+            "units": 29,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 169,
+        "diagrams": 0,
+        "loadedDiagrams": 0
+      },
+      "steppers": 1,
+      "ready": 1,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 4,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    }
+  ],
+  "done": true,
+  "widths": [
+    320,
+    390,
+    768,
+    1181,
+    1280,
+    1439,
+    1440
+  ],
+  "textSize": 22,
+  "font": "Shantell Sans"
+}

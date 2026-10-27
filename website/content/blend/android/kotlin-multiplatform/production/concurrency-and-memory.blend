@@ -1,0 +1,79 @@
+<!-- Phase 9 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase9-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">The shared screen leaves the navigation stack, but its callback still holds the Swift owner and a Kotlin job still produces state. Sharing an object between threads, keeping it alive, and cancelling its work are three separate questions. Trace the references and the owner before reaching for a GC setting.</p>
+
+<!-- @after 3. The Dual-GC Architecture (The Real Danger) :: animation -->
+### Follow the owner through the reference graph
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">Why ending a screen is more than dropping one local variable</span><div class="stage viz-stack"><div class="node" data-el="swift" data-art="phone" data-art-role="client"><strong>Swift screen owner</strong><small data-text="swiftV">—</small></div><div class="node" data-el="kotlin" data-art="memory" data-art-role="storage"><strong>Shared state holder</strong><small data-text="kotlinV">—</small></div><div class="node" data-el="callback" data-art="signal" data-art-role="runtime"><strong>Registered callback</strong><small data-text="callbackV">—</small></div></div><script type="application/json" class="steps">[
+{
+"label": "Subscribe",
+"caption": "The Swift owner retains the shared holder; its registered callback captures the Swift owner in this example.",
+"state": {
+"swift": "active",
+"kotlin": "active",
+"callback": "active"
+},
+"text": {
+"swiftV": "retains shared holder",
+"kotlinV": "retains callback",
+"callbackV": "retains Swift owner"
+},
+"add": [
+"swift",
+"kotlin",
+"callback"
+]
+},
+{
+"label": "Leave screen",
+"caption": "Removing a screen from presentation does not by itself identify and break every retained reference.",
+"state": {
+"swift": "warn"
+},
+"text": {
+"swiftV": "no longer presented; still retained"
+}
+},
+{
+"label": "End owned work",
+"caption": "At the designed ownership boundary, cancel the observation/work and detach callbacks that are no longer needed.",
+"state": {
+"callback": "ghost",
+"kotlin": "done"
+},
+"text": {
+"callbackV": "registration removed",
+"kotlinV": "owned work stopped"
+}
+},
+{
+"label": "Verify release",
+"caption": "Check the reference graph and runtime memory behaviour. Collection/deinitialization timing depends on the participating runtimes.",
+"state": {
+"swift": "done"
+},
+"text": {
+"swiftV": "no unwanted ownership path remains"
+}
+}
+]</script><figcaption>This illustrates application ownership, not immediate reclamation or one mandatory Swift bridge API.</figcaption></figure>
+
+<!-- @after Common Pitfalls :: check -->
+### Try the decision
+
+<details><summary>The new memory manager allows sharing. Does that serialize concurrent mutation?</summary>
+
+No. You still need a concurrency contract for shared mutable state: a single owner, synchronization, or a suitable thread-safe primitive.
+</details>
+
+<details><summary>Can a Swift task’s cancelled flag prove a Kotlin request stopped?</summary>
+
+No. Observe the underlying Kotlin job/request and reference release through the actual bridge selected by the application.
+</details>
+
+<details><summary>Memory rises after repeatedly opening a screen. Tune GC first?</summary>
+
+First distinguish retained owners, unfinished jobs, transient allocations and collection behaviour. Profile a repeatable workload before changing runtime options.
+</details>

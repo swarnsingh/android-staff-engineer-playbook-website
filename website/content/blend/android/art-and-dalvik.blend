@@ -1,0 +1,57 @@
+<!-- Website teaching layer for android/os-internals/art-and-dalvik.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Sources checked 2026-10-25: AOSP "Implement ART just-in-time compiler" (JIT, profiles), AOSP "Configure ART" (compiler filters), Baseline Profiles overview,
+     Macrobenchmark CompilationMode (developer.android.com). -->
+
+<!-- @opening -->
+<p class="story-lead">The feed opens noticeably faster on Thursday than it did on Monday, after install. Nobody shipped a fix in between. The code was the same. What changed was how much of it ART had turned into machine code, after it watched which paths the user actually ran.</p>
+
+ART runs DEX bytecode in several ways: interpreted, compiled while running (JIT) and compiled ahead of time (AOT). Profiles of what actually runs decide what gets compiled later. This chapter traces how Dalvik became ART and how today's mix of modes works. The additions here follow one journey across several runs, so you can tell a runtime-state change from a change in your code.
+
+<!-- @diagram 60c0861cc5c7f00c -->
+### Execution modes and the profile loop
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Kotlin code</strong></div><div class="node"><strong>R8 compiler</strong></div><div class="node"><strong><code>.dex</code> bytecode</strong></div><div class="node is-key"><strong>Device execution</strong><small>available compiled code, interpretation or JIT</small></div><div class="node"><strong>Runtime profile</strong><small>selected hot methods and classes</small></div></div><div class="viz-flow"><div class="node"><strong>When eligible</strong><small>the platform invokes <code>dex2oat</code></small></div><div class="node"><strong>ART AOT compiler</strong><small>uses DEX and the profile</small></div><div class="node" data-state="done"><strong>Compiled code</strong><small>later runs need less runtime compilation</small></div></div><figcaption>Redrawn from the original diagram. The loop explains why the same build can behave differently over its first days on a device.</figcaption></figure>
+
+<!-- @after Internal Mechanics :: animation -->
+### One journey, several runs
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">Opening the feed as ART learns</span><div class="stage viz-grid" style="--cols:4"><div class="node" data-el="run" data-art="phone" data-art-role="client"><strong>Feed journey</strong><small data-text="runV">—</small></div><div class="node" data-el="mode" data-art="code" data-art-role="runtime"><strong>How it executes</strong><small data-text="modeV">—</small></div><div class="node" data-el="prof" data-art="document" data-art-role="storage"><strong>Profile</strong><small data-text="profV">empty</small></div><div class="node is-key" data-el="aot" data-art="code" data-art-role="runtime"><strong>Compiled code</strong><small data-text="aotV">none for these paths</small></div></div><script type="application/json" class="steps">[
+{"label":"Fresh install","caption":"With no profile delivered, the feed's code starts out interpreted, with hot methods JIT-compiled as they warm up.","add":["run","mode","prof","aot"],"state":{"run":"active","mode":"warn"},"text":{"runV":"Monday: first run","modeV":"interpreter + JIT"}},
+{"label":"Record","caption":"ART writes the methods and classes it saw running into a runtime profile. It records selected hot code, not every call.","state":{"prof":"active"},"text":{"profV":"feed methods recorded"}},
+{"label":"Compile later","caption":"Later, typically during background dexopt (AOSP's Pixel example runs it while the device is idle and charging), the profiled methods are compiled ahead of time. Nothing in your app triggered this.","state":{"prof":"done","aot":"active"},"text":{"aotV":"feed paths compiled"}},
+{"label":"Next run","caption":"Thursday's run finds compiled code for those paths and spends less time interpreting and JIT-compiling. Same build, different runtime state.","state":{"aot":"done","mode":"done","run":"done"},"text":{"runV":"Thursday: faster","modeV":"mostly compiled code"}},
+{"label":"Measure fairly","caption":"A benchmark that compares Monday's device with Thursday's is measuring ART, not your change. Fix the compilation state, for example with Macrobenchmark's CompilationMode, before comparing builds.","state":{}}
+]</script><figcaption>Illustrative; real timing depends on Android version, device and compiler filter. Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>
+
+<!-- @after Production Example :: staff -->
+Record the runtime state with every performance number: Android version, how the build was installed, whether a Baseline or Cloud Profile applied, and the compilation mode. Without it, two measurements of the same code can disagree for reasons that have nothing to do with the change under test.
+
+<!-- @after Common Misconceptions :: check -->
+### Check your runtime reasoning
+
+<details><summary>Startup is faster on the third day after install than on the first. Did a code change cause it?</summary>
+
+Not necessarily. Profile-guided background compilation may have compiled the startup path. Control the compilation state before attributing the difference to code.
+
+</details>
+
+<details><summary>You ship a Baseline Profile. Is the startup path guaranteed to be compiled at install?</summary>
+
+No. As the chapter's Answer 10 says, delivery, installer, Android version, compiler filter and device state decide when and how much is compiled.
+
+</details>
+
+<details><summary>ART's collector is mostly concurrent. Is allocating new objects in <code>onDraw</code> therefore free?</summary>
+
+No. Allocation churn still costs CPU, memory and collection work, and can still contribute to missed frames. Confirm with allocation and frame traces.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+Primary sources for the added layer: [ART JIT compiler (AOSP)](https://source.android.com/docs/core/runtime/jit-compiler), [Configure ART](https://source.android.com/docs/core/runtime/configure), [Baseline Profiles overview](https://developer.android.com/topic/performance/baselineprofiles/overview), [Macrobenchmark compilation mode](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview#compilation-mode).
+
+<!-- @after Mental Model :: visual -->
+### Three ways the same method can run
+
+<figure class="viz"><div class="viz-cols" style="--cols:3"><div class="col"><span class="col-title">Interpreted</span><div class="node"><strong>When</strong><small>no compiled code exists yet for the method</small></div><div class="node" data-state="warn"><strong>Cost</strong><small>slowest per call, nothing to compile first</small></div></div><div class="col"><span class="col-title">JIT</span><div class="node"><strong>When</strong><small>a method turns hot while the app runs</small></div><div class="node"><strong>Leaves behind</strong><small>a profile file listing the hot code</small></div></div><div class="col"><span class="col-title">AOT (speed-profile)</span><div class="node is-key"><strong>When</strong><small>at install from a cloud profile, or when the device is idle and charging</small></div><div class="node is-key"><strong>Leaves behind</strong><small>an <code>.oat</code> file of compiled methods</small></div></div></div><figcaption>The profile is the link between the columns: JIT records what ran, and dex2oat compiles those methods ahead of time for later launches.</figcaption></figure>

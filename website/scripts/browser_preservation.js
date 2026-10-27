@@ -3,13 +3,14 @@
  * This is not a proof of contrast, arbitrary clipping, occlusion, or accessibility.
  * It never changes DOM, preferences, scroll positions, or disclosures.
  */
-(async function inspectOriginalContent(expectedDiagrams = {}, unitManifest = {}) {
-  const panel = document.querySelector('#panel-content');
-  if (!panel || panel.hidden) return {problems: ['Content must be present and selected'], checked: 0};
+(async function inspectOriginalContent(expectedDiagrams = {}, unitManifest = {}, view = 'content') {
+  const panel = document.querySelector(view === 'qa' ? '#panel-qa' : '#panel-content');
+  if (!panel || panel.hidden) return {problems: [`${view} must be present and selected`], checked: 0};
   const source = document.body.dataset.source || 'fixture';
-  const expectedUnits = Array.isArray(unitManifest) ? unitManifest : unitManifest[source];
+  const allUnits = Array.isArray(unitManifest) ? unitManifest : unitManifest[source];
+  const expectedUnits = allUnits?.filter(unit => unit.view ? unit.view === view : view === 'content');
   const problems = [], reported = new Set(), concealed = new Set();
-  const ignore = '.blend,.correction-note,.code-header,.part-band,.steps-text';
+  const ignore = '.blend,.correction-note,.code-header,.part-band,.steps-text,.qa-answer-label';
   const sourceZones = '.original-opening,section[id^="section-"]';
   let checked = 0, loadedDiagrams = 0;
   function report(element, why) {
@@ -85,10 +86,10 @@
   }
   const stream = compact(zones.filter(zone => !zone.parentElement?.closest(sourceZones)).map(rendered).join(' '));
   let position = 0;
-  if (!expectedUnits?.length) problems.push('Original-unit manifest is required; rendered preservation is unverified');
+  if (!allUnits?.length) problems.push('Original-unit manifest is required; rendered preservation is unverified');
   else for (let i = 0; i < expectedUnits.length; i++) {
     const unit = expectedUnits[i];
-    if (i === 0 && unit.kind === 'heading') {
+    if (unit.title || (!unit.view && i === 0 && unit.kind === 'heading')) {
       if (compact(title?.innerText) !== compact(unit.text)) problems.push('Original title text is missing or changed');
       continue;
     }
@@ -120,5 +121,5 @@
     else report(image, status === 'failed' ? 'original diagram image failed to load' : 'original diagram image has not loaded; resource validation is incomplete');
   }
   if (expectedUnits && images.length !== expectedUnits.filter(unit => unit.kind === 'diagram').length) problems.push('Original diagram image count does not match the source');
-  return {source, checked, units: expectedUnits?.length || 0, diagrams: images.length, loadedDiagrams, diagramResources, problems};
+  return {source, view, checked, units: expectedUnits?.length || 0, diagrams: images.length, loadedDiagrams, diagramResources, problems};
 })

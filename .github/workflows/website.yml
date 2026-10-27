@@ -1,0 +1,81 @@
+name: Website review and GitHub Pages
+
+on:
+  pull_request:
+    paths: ['website/**', 'source-snapshot.json', '.github/workflows/website.yml']
+  push:
+    branches: [main, codex/android-completion]
+    paths: ['website/**', 'source-snapshot.json', '.github/workflows/website.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install build dependencies
+        run: python -m pip install -r website/requirements.txt
+      - name: Check browser scripts
+        run: |
+          node --check website/app.js
+          node --check website/blend.js
+          node --check website/design-system/components/bundle.js
+          node --check website/tools/browser_audit_runner.js
+          node --check website/tools/motion_audit_runner.js
+          node --check website/tools/binder_audit_runner.js
+          node --check website/tools/refinement_audit_runner.js
+      - uses: actions/cache@v4
+        with:
+          path: website/.cache/diagrams
+          key: website-diagrams-${{ runner.os }}-${{ hashFiles('website/scripts/build.py', 'android/**/*.md', 'kotlin/**/*.md', 'website/content/corrections-*.json') }}
+      - name: Test correction markup boundaries
+        run: python -m unittest discover -s website/scripts -p "test_*.py"
+      - name: Build and verify original chapter preservation
+        env:
+          SITE_BASE: /android-staff-engineer-playbook-website/
+          MERMAID_RENDERER: npx --yes @mermaid-js/mermaid-cli@11.16.0 --puppeteerConfigFile .github/puppeteer-config.json
+        run: python website/scripts/build.py
+      - name: Record build provenance
+        run: |
+          python - <<'PY'
+          import json, os, pathlib
+          pathlib.Path('website/dist/build-info.json').write_text(json.dumps({
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'commit': os.environ['GITHUB_SHA'],
+              'run': os.environ['GITHUB_SERVER_URL']+'/'+os.environ['GITHUB_REPOSITORY']+'/actions/runs/'+os.environ['GITHUB_RUN_ID']
+          }, indent=2)+'\n')
+          PY
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: website/dist
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: github-pages-publication
+      cancel-in-progress: false
+    steps:
+      - name: Publish verified website
+        id: deployment
+        uses: actions/deploy-pages@v4

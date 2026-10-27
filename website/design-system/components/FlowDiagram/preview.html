@@ -1,0 +1,25 @@
+<!-- @dsCard group="Diagrams" height=700 subtitle="Packets loop along the connectors; phones get a stacked layout generated from the node order" -->
+<style>
+  body { margin: 0; background: var(--sheet); color: var(--ink); font-family: var(--font-sans); }
+  .demo { display: grid; gap: 24px; padding: 20px max(12px, min(24px, 4vw)); }
+</style>
+<div class="demo">
+  <figure class="pb-figure" data-pb-flow="diagram">
+    <h3>State down, events up</h3>
+    <div class="pb-paper"><svg class="pb-svg" role="img" aria-label="Products flow from the repository to the ViewModel to the Compose UI. Clicks flow back from the UI to the ViewModel, and refresh requests go on to the repository."></svg></div>
+    <div class="pb-bar"><p>Round green packets are state moving toward the screen; blue diamonds on dotted lines are the user's events going back.</p><button type="button" class="pb-btn" data-toggle aria-pressed="false">Pause</button></div>
+    <script type="application/json">
+    {"nodes": [{"id": "repo", "label": "Repository"}, {"id": "vm", "label": "ViewModel"}, {"id": "ui", "label": "Compose UI"}], "state": {"nodes": {"repo": ["", "emits products"], "vm": ["", "holds UiState"], "ui": ["", "renders, sends clicks"]}}, "edges": [{"id": "e1", "from": "repo", "to": "vm", "tone": "fwd", "label": "products"}, {"id": "e2", "from": "vm", "to": "ui", "tone": "fwd", "label": "uiState"}, {"id": "b1", "from": "ui", "to": "vm", "tone": "back", "label": "onClick"}, {"id": "b2", "from": "vm", "to": "repo", "tone": "back", "label": "refresh()"}], "streams": [{"edge": "e1", "tone": "fwd"}, {"edge": "e2", "tone": "fwd"}, {"edge": "b1", "tone": "back", "count": 2}, {"edge": "b2", "tone": "back", "count": 1}], "note": {"wide": "state flows right · events flow back", "narrow": "state flows down · events flow up"}}
+    </script>
+  </figure>
+
+  <figure class="pb-figure" data-pb-flow="diagram">
+    <h3>A blocked call</h3>
+    <div class="pb-paper"><svg class="pb-svg" role="img" aria-label="The UI thread sends a call to the Binder driver. Both service threads are busy, so calls queue in the driver and no reply comes back yet."></svg></div>
+    <div class="pb-bar"><p>Orange dash-dot means stuck: calls slow down and wait in the driver until a service thread frees up. The faint reply path has nothing on it yet.</p><button type="button" class="pb-btn" data-toggle aria-pressed="false">Pause</button></div>
+    <script type="application/json">
+    {"nodes": [{"id": "ui", "label": "UI thread"}, {"id": "driver", "label": "Binder driver", "queue": true}, {"id": "pool", "label": "Service threads", "chips": ["T1", "T2"]}], "state": {"nodes": {"ui": ["is-warn", "blocked · waiting"], "driver": ["is-warn", "queued: 3"], "pool": ["is-warn", ""]}, "chips": {"T1": "busy", "T2": "busy"}, "queue": 3}, "edges": [{"id": "c1", "from": "ui", "to": "driver", "tone": "fwd", "label": "isPlaying()"}, {"id": "c2", "from": "driver", "to": "pool", "tone": "stuck", "label": "no free\nthread"}, {"id": "r1", "from": "pool", "to": "driver", "lane": "back", "label": "no reply\nyet"}, {"id": "r2", "from": "driver", "to": "ui", "lane": "back"}], "streams": [{"edge": "c1", "tone": "fwd", "count": 2}, {"edge": "c2", "tone": "stuck", "count": 2, "period": 4.8}], "note": {"wide": "the call looked local; the caller waits on a busy service", "narrow": "the caller waits on a busy service"}}
+    </script>
+  </figure>
+</div>
+<script>window.Playbook && window.Playbook.mountAll(document);</script>

@@ -1,0 +1,43 @@
+<!-- Website teaching layer for android/concurrency/battery-optimizations.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (Optimize for Doze and App Standby; App Standby Buckets; exact alarm
+     permission, Android 12 behaviour changes) on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A medication reminder fires at 8:00 sharp on every test phone. In the field, users report it arriving at 9:30, or not until they pick up the phone. The test phones were on a desk, plugged in, screen on. The users' phones were asleep on a nightstand, where Android had been deferring the alarm, on purpose, to save battery.</p>
+
+Android assumes background work can wait, and enforces it with **Doze**, which defers work when the device is idle, and **App Standby Buckets**, which ration work by how recently each app was used. Work that truly cannot wait has to use one of the narrow exits the system provides. This chapter shows how idle phases unfold, what is deferred in each, and which exit fits which feature.
+
+<!-- @after First Principles :: animation -->
+### A night on the nightstand
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">Doze phases and what still runs</span><div class="stage viz-stack"><div class="node is-key" data-el="phase" data-art="phone" data-art-role="client"><strong>Device state</strong><small data-text="phaseV">—</small></div><div class="viz-grid" style="--cols:3"><div class="node" data-el="jobs" data-art="worker" data-art-role="runtime"><strong>Jobs and syncs</strong><small data-text="jobsV">—</small></div><div class="node" data-el="alarms" data-art="clock" data-art-role="runtime"><strong>Alarms</strong><small data-text="alarmsV">—</small></div><div class="node" data-el="net" data-art="cloud" data-art-role="runtime"><strong>Network</strong><small data-text="netV">—</small></div></div></div><script type="application/json" class="steps">[
+{"label":"In use","caption":"Screen on or charging: no Doze restrictions. This is the state most tests run in.","add":["phase","jobs","alarms","net"],"state":{"phase":"done","jobs":"done","alarms":"done","net":"done"},"text":{"phaseV":"active","jobsV":"run on schedule","alarmsV":"fire on time","netV":"available"}},
+{"label":"Asleep","caption":"Unplugged, screen off and stationary for a while: the device enters Doze. For a non-exempt app, ordinary jobs/syncs and standard alarms are deferred, network is restricted and ordinary wake locks are ignored. Exemptions and allowed alarm APIs have separate rules.","state":{"phase":"warn","jobs":"ghost","alarms":"ghost","net":"ghost"},"text":{"phaseV":"Doze","jobsV":"deferred","alarmsV":"deferred, including setExact","netV":"suspended"}},
+{"label":"Maintenance window","caption":"Periodically the system opens a short window: deferred jobs, syncs and alarms run together, then Doze resumes. Windows become less frequent the longer the device stays idle.","state":{"phase":"active","jobs":"active","alarms":"active","net":"active"},"text":{"phaseV":"maintenance window","jobsV":"batched run","alarmsV":"deferred ones fire","netV":"briefly available"}},
+{"label":"Back to sleep","caption":"The window closes. Ordinary deferred work for this non-exempt app may wait for a later window. That explains a delayed reminder, not a promise of any particular firing time.","state":{"phase":"warn","jobs":"ghost","alarms":"ghost","net":"ghost"},"text":{"phaseV":"Doze","jobsV":"deferred","alarmsV":"deferred","netV":"suspended"}},
+{"label":"The narrow exits","caption":"Examples include high-priority FCM for user-visible notifications and allow-while-idle alarms under their permission/rate limits. This is not an exhaustive list: alarm-clock alarms and battery-optimisation exemptions have distinct rules.","state":{"alarms":"done","net":"warn"},"text":{"alarmsV":"setExactAndAllowWhileIdle fires","netV":"short access for a high-priority FCM message"}}
+]</script><figcaption>Design for the nightstand, not the desk: assume work waits, and use an exit only when the user would notice the delay.</figcaption></figure>
+
+<!-- @diagram 195946fb412e3416 -->
+### How a device reaches Doze
+
+<figure class="viz"><div class="viz-stack"><div class="viz-flow"><div class="node"><strong>Screen off</strong></div><div class="node"><strong>Unplugged</strong></div><div class="node"><strong>Stationary</strong></div><div class="node is-key"><strong>Timer expires → Doze</strong></div></div><div class="viz-grid" style="--cols:3"><div class="node" data-state="warn"><strong>Ordinary network restricted</strong><small>non-exempt apps; temporary exceptions exist</small></div><div class="node" data-state="warn"><strong>Alarms deferred</strong><small>wake locks ignored</small></div><div class="node" data-state="warn"><strong>Jobs queued</strong><small>WorkManager waits</small></div></div><div class="node" data-state="done"><strong>Maintenance window</strong><small>brief, batched wake-up; then back to Doze</small></div></div><figcaption>Doze is device-wide, but exemptions and special-purpose APIs change what an individual app may do. Maintenance windows let deferred work proceed subject to the remaining rules.</figcaption></figure>
+
+<!-- @after Common Misconceptions :: check -->
+**Which mechanism?** Decide before opening each answer.
+
+<details><summary>A chat message that must appear within seconds while the phone sleeps.</summary>
+
+A high-priority FCM message that results in a user-visible notification. Using high priority without notifying the user risks being downgraded.
+</details>
+
+<details><summary>A nightly backup of the user's photos.</summary>
+
+WorkManager with constraints such as unmetered network and charging. The request persists; eligible work is scheduled when system policy permits, not at a promised deadline.
+</details>
+
+<details><summary>Testing why a daily sync never runs in production.</summary>
+
+Put the app in the bucket real users are in (`adb shell am set-standby-bucket <package> rare`) and force idle to exercise Doze, instead of testing only while the screen is on and the phone is charging.
+</details>

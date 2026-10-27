@@ -1,0 +1,26 @@
+<!-- @dsCard group="Content" height=560 subtitle="Start here, Staff note, Remember, Under review" -->
+<style>
+  body { margin: 0; background: var(--sheet); color: var(--ink); font-family: var(--font-sans); }
+  .stack { display: grid; gap: 20px; padding: 24px; max-width: var(--measure-text); }
+  .callout { border-radius: var(--radius-md); padding: 18px 22px; }
+  .callout .label { display: inline-block; font: 650 12px/16px var(--font-sans); letter-spacing: .08em; text-transform: uppercase;
+    border-radius: var(--radius-pill); padding: 3px 10px; margin-bottom: 8px; }
+  .callout p { margin: 0; font: 17px/28px var(--font-sans); color: var(--ink); }
+  .callout p + p { margin-top: 8px; }
+  .start { background: var(--accent-soft); } .start .label { background: var(--accent); color: var(--on-accent); }
+  .staff { background: var(--sheet-sunken); } .staff .label { background: var(--ink); color: var(--sheet); }
+  .remember { background: var(--event-soft); } .remember .label { background: var(--event); color: var(--sheet); }
+  .review { background: var(--warn-soft); } .review .label { background: var(--warn); color: var(--sheet); }
+  .review p { font-size: 15px; line-height: 24px; }
+  code { font: 500 .88em var(--font-mono); font-variant-ligatures: none; background: var(--sheet); border-radius: var(--radius-sm); padding: 1px 5px; }
+</style>
+<div class="stack">
+  <section class="callout start"><span class="label">Start here</span>
+    <p>A music app's play button freezes for two seconds, and the code behind it is one line: <code>if (service.isPlaying())</code>. The method looked local. The cost was not.</p></section>
+  <section class="callout staff"><span class="label">Staff note</span>
+    <p>Treat every cross-process call as a network call with better latency: give it a timeout budget, keep it off the main thread, and design the contract so a slow service degrades one feature, not the app.</p></section>
+  <section class="callout remember"><span class="label">Remember</span>
+    <p>A <code>oneway</code> call returns without waiting for the work, but the transaction still has to be accepted and delivered.</p></section>
+  <section class="callout review"><span class="label">Under review</span>
+    <p>Question 10's premise, that an app keeps running after the system server crashes (BD1), is under technical review. A correction is pending the owner's approval.</p></section>
+</div>

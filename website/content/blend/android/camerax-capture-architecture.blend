@@ -1,0 +1,115 @@
+<!-- Phase 5 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase5-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">The scanner preview is smooth, but results describe where the barcode was a second ago. Throughput alone is misleading: the feature needs a recent frame and must return every borrowed image buffer.</p>
+
+<!-- @after Analysis Pipeline :: animation -->
+### Prefer a fresh answer over a growing queue
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">KEEP_ONLY_LATEST while one frame is being analyzed</span><div class="stage viz-stack"><div class="node" data-el="analysis" data-art="worker" data-art-role="runtime"><strong>Analyzer</strong><small data-text="analysisV">—</small></div><div class="node" data-el="latest" data-art="frame" data-art-role="client"><strong>Waiting image</strong><small data-text="latestV">—</small></div><div class="node" data-el="result" data-art="frame" data-art-role="client"><strong>Result</strong><small data-text="resultV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Analyze A",
+    "caption": "The analyzer owns frame A until it closes the ImageProxy.",
+    "state": {
+      "analysis": "active"
+    },
+    "text": {
+      "analysisV": "A in progress",
+      "latestV": "none",
+      "resultV": "pending"
+    },
+    "add": [
+      "analysis",
+      "latest",
+      "result"
+    ],
+    "visuals": {
+      "analysis": {
+        "badge": "A"
+      },
+      "latest": {
+        "visible": false
+      },
+      "result": {
+        "visible": false
+      }
+    }
+  },
+  {
+    "label": "New frames",
+    "caption": "B arrives, then C. The latest waiting image replaces older pending work.",
+    "state": {
+      "latest": "active"
+    },
+    "text": {
+      "latestV": "C replaces B"
+    },
+    "visuals": {
+      "latest": {
+        "visible": true,
+        "badge": "C"
+      }
+    }
+  },
+  {
+    "label": "Finish A",
+    "caption": "Finish using A, close its ImageProxy, then the next delivered image can be analyzed.",
+    "state": {
+      "analysis": "done",
+      "result": "active"
+    },
+    "text": {
+      "analysisV": "A closed",
+      "resultV": "A result"
+    },
+    "visuals": {
+      "result": {
+        "visible": true,
+        "badge": "A"
+      }
+    }
+  },
+  {
+    "label": "Analyze latest",
+    "caption": "Continue with the latest waiting image rather than processing every stale intermediate frame.",
+    "state": {
+      "analysis": "active",
+      "latest": "done"
+    },
+    "text": {
+      "analysisV": "C in progress",
+      "latestV": "consumed"
+    },
+    "visuals": {
+      "analysis": {
+        "badge": "C"
+      },
+      "latest": {
+        "visible": false
+      }
+    }
+  }
+]</script><figcaption>Close each ImageProxy on every completion path. For asynchronous inference, close after that work finishes using the image.</figcaption></figure>
+
+<!-- @after Production Architecture :: check -->
+### Try the decision
+
+<details><summary>Preview works: analysis healthy?</summary>
+
+Not necessarily. Preview can look smooth while the analyzer falls behind. Measure frame age, analyzer duration and dropped frames.
+</details>
+
+<details><summary>Close the wrapped Media.Image?</summary>
+
+No. Close the ImageProxy CameraX gave you; closing the wrapped Media.Image directly breaks CameraX's image handling.
+</details>
+
+<details><summary>All four use cases always bind together?</summary>
+
+No. Supported use-case combinations vary by device, resolution and configuration, so bind what the screen needs and handle unsupported combinations.
+</details>
+
+<!-- @after Use-Case Model :: visual -->
+### One camera, separate jobs
+
+<figure class="viz"><div class="viz-cols" style="--cols:4"><div class="node"><strong><code>Preview</code></strong><small>frames to the screen</small></div><div class="node"><strong><code>ImageCapture</code></strong><small>still photos, to memory or a file</small></div><div class="node"><strong><code>ImageAnalysis</code></strong><small>frames to your code for ML, scanning or measurement</small></div><div class="node"><strong><code>VideoCapture</code></strong><small>recording through the video API</small></div></div><figcaption>Each use case has its own output and its own failure. Bind only the ones a screen needs; supported combinations vary by device.</figcaption></figure>

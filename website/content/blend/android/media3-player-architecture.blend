@@ -1,0 +1,42 @@
+<!-- Phase 5 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase5-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">A video tile expands to full screen and starts again from the beginning. Background audio then stops when the Activity disappears. These are ownership decisions: the player, its visible surface and its controller do not need the same lifetime.</p>
+
+<!-- @after 2. Session Layer: Background Playback and External Control :: visual -->
+### Objects with different jobs
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Player</strong><small>Playback state and media operations.</small></div><div class="node"><strong>Surface</strong><small>Where video is displayed.</small></div><div class="node"><strong>MediaSession</strong><small>Exposes playback to permitted controllers.</small></div><div class="node"><strong>UI controller</strong><small>Connects the screen to session commands and state.</small></div></div><figcaption>For service-owned playback, the UI can disconnect while the service continues to own playback.</figcaption></figure>
+
+<!-- @after 6. Player-as-Platform: the Single-Instance Question :: animation -->
+### Transfer presentation without losing the owner
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="Commands reach a service-owned player">
+<h3>Commands reach a service-owned player</h3>
+<p class="pb-sub">An illustrative run. Each moving packet is a named request, notification or result.</p>
+<div class="pb-paper"><svg class="pb-svg" role="img" aria-label="A MediaController sends a permitted command to a MediaSession backed by a player. Player state drives the UI; replacing a view does not create a second playback owner."></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div>
+<div class="pb-caption"><span class="pb-count"></span><p aria-live="polite"></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">{"nodes": [{"id": "controller", "label": "MediaController", "art": {"kind": "phone", "role": "client"}}, {"id": "session", "label": "MediaSession", "art": {"kind": "server", "role": "runtime"}}, {"id": "player", "label": "Service player", "art": {"kind": "player", "role": "runtime"}}, {"id": "view", "label": "Video surface", "art": {"kind": "screen", "role": "client"}}], "layouts": {"wide": {"size": [760, 490], "nodes": {"controller": {"x": 24, "y": 40, "w": 300, "h": 140}, "session": {"x": 436, "y": 40, "w": 300, "h": 140}, "player": {"x": 24, "y": 310, "w": 300, "h": 140}, "view": {"x": 436, "y": 310, "w": 300, "h": 140}}, "edges": {"command": "M326 92 C380 92 380 92 434 92", "play": "M568 182 C568 245 156 245 156 308", "video": "M326 362 C380 362 380 362 434 362"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}, "narrow": {"size": [320, 550], "nodes": {"controller": {"x": 8, "y": 25, "w": 144, "h": 190}, "session": {"x": 168, "y": 25, "w": 144, "h": 190}, "player": {"x": 8, "y": 330, "w": 144, "h": 190}, "view": {"x": 168, "y": 330, "w": 144, "h": 190}}, "edges": {"command": "M154 102 C160 102 160 102 166 102", "play": "M222 217 C222 272.5 62 272.5 62 328", "video": "M154 407 C160 407 160 407 166 407"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}}, "modes": {"run": {"initial": {"nodes": {"controller": ["", "connected"], "session": ["", "player exposed"], "player": ["", "paused"], "view": ["", "feed view attached"]}, "visuals": {"player": {"playing": false}, "view": {"rows": 0}}}, "steps": [{"caption": "In this design the service owns the player and session. The screen owns a controller and its presentation; this drawing omits transport and decoder internals."}, {"caption": "A controller issues an available playback command. Session connection and command permissions define what this caller can request.", "packets": [{"edge": "command", "label": "play", "tone": "fwd", "kind": "signal"}], "set": {"nodes": {"session": ["is-active", "play command"]}}}, {"caption": "The session delegates the allowed command to its backing player. A UI command is not a request to allocate a new ExoPlayer per view.", "packets": [{"edge": "play", "label": "play", "tone": "fwd", "kind": "signal"}], "set": {"nodes": {"player": ["is-active", "play requested"]}}}, {"caption": "When prepared and able to render, the player supplies video to its attached surface. Buffering, readiness and playWhenReady are distinct state, so a play command alone does not guarantee immediate frames.", "packets": [{"edge": "video", "label": "video frame", "tone": "fwd", "kind": "frame"}], "set": {"nodes": {"player": ["is-done", "playing in this run"], "view": ["is-done", "feed shows video"]}, "visuals": {"player": {"playing": true}, "view": {"playing": true}}}}, {"caption": "The UI switches the selected player’s presentation to fullscreen and detaches the old view in the required order for its integration. Surface ownership changes; the service still owns the same player.", "set": {"nodes": {"view": ["is-active", "fullscreen attached"], "player": ["is-done", "same player, position"]}}}, {"caption": "Leaving a screen releases its controller/view resources according to their owners. The service’s playback policy decides whether playback continues; service teardown releases player and session.", "set": {"nodes": {"controller": ["", "screen disconnected"], "view": ["", "screen detached"]}, "visuals": {"view": {"visible": false}, "controller": {"visible": false}}}}]}}, "illustrated": true, "edgeEndpoints": {"command": {"from": "controller", "to": "session"}, "play": {"from": "session", "to": "player"}, "video": {"from": "player", "to": "view"}}}</script>
+<p class="pb-sub">Sources: <a href="https://developer.android.com/media/media3/session/background-playback">MediaSessionService background playback</a>.</p>
+</section>
+
+<!-- @after 7. Observability :: check -->
+### Try the decision
+
+<details><summary>Cache bytes equal a durable download?</summary>
+
+No. Offline state also needs managed download progress and, for protected content, license lifecycle.
+</details>
+
+<details><summary>Rotation should recreate service playback?</summary>
+
+A service-owned session can retain playback while the screen reconnects its controller.
+</details>
+
+<details><summary>Only measure app crashes?</summary>
+
+Measure first-frame time, stalls, rendition choices, DRM and download failures too.
+</details>

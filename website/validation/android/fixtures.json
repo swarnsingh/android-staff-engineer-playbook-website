@@ -1,0 +1,124 @@
+[
+  {
+    "fixture": "RepositoryTransaction",
+    "source": "android/data-and-di/repository-source-of-truth.md",
+    "sha256": "59f491f4b99018ce606020976c52f307ed5c06b775f0bb955d35389ecc04abfa",
+    "enclosingContext": false,
+    "applicationHelpers": true
+  },
+  {
+    "fixture": "SnapshotCounter",
+    "source": "android/compose/snapshot-system.md",
+    "sha256": "2f6fd4ea0d492c362ccd05851ab6ba6d1740c45fba15aa6e00a9c6ebf78110af",
+    "enclosingContext": false,
+    "applicationHelpers": false
+  },
+  {
+    "fixture": "LifecycleEffects",
+    "source": "android/concurrency/shared-flow-and-state-flow.md",
+    "sha256": "fc9e3634ac6bac50f3b455e043c271bc08cd041f0c282aa5adb509f92ee1f2f8",
+    "enclosingContext": true,
+    "applicationHelpers": true
+  },
+  {
+    "fixture": "ImmutableFeed",
+    "source": "android/architecture/state-management.md",
+    "sha256": "cbf41881b7cc01a72da82858fdbef1516cbb38d0d2e8bc48a7087e205a8133df",
+    "enclosingContext": false,
+    "applicationHelpers": true
+  },
+  {
+    "fixture": "CheckoutOwnership",
+    "source": "android/architecture/state-management.md",
+    "sha256": "f63c03e234e36cf3e6e926add54c69b912e024fa1550c64df92bed3829f584d8",
+    "enclosingContext": false,
+    "applicationHelpers": true
+  },
+  {
+    "fixture": "SessionScope",
+    "source": "android/data-and-di/scopes.md",
+    "sha256": "6338886c2503ae133d28775bd82d531ce5983ccf7f96be3280715030f749d1f1",
+    "enclosingContext": false,
+    "applicationHelpers": false
+  },
+  {
+    "fixture": "CustomComponent",
+    "source": "android/data-and-di/components.md",
+    "sha256": "d40e3391d6c40a346399aa7d678a4a623947b968f8f6ec8f810eb6589392c49a",
+    "applicationHelpers": true
+  },
+  {
+    "fixture": "ServiceFlow",
+    "source": "android/concurrency/services.md",
+    "sha256": "7216ae5c3640ffedbeb37f82269e587905e08245a55f87f885e62dfdd6722318"
+  },
+  {
+    "fixture": "AnalyticsBatch",
+    "source": "android/concurrency/synchronization-and-mutex.md",
+    "sha256": "23398dbbcc47a8f67845ccf5590dc9ac637b213ec93c8790ac6c204e970199dc",
+    "enclosingContext": false,
+    "applicationHelpers": true
+  },
+  {
+    "fixture": "UiFlow",
+    "source": "android/architecture/flow.md",
+    "sha256": "174e335ae56763b4b00f767c5502d95e187eb3e86cb55463fa4fe13773f1afa0",
+    "enclosingContext": false,
+    "applicationHelpers": true
+  },
+  {
+    "fixture": "Poller",
+    "source": "android/testing/unit-testing.md",
+    "sha256": "48d3d2e49967f8b2fb7732b6a5222fac36b292b8f55ff336645d7608be4a02a0",
+    "enclosingContext": false,
+    "applicationHelpers": false
+  },
+  {
+    "fixture": "ThemePreferences",
+    "source": "android/performance/startup.md",
+    "sha256": "bd58643d57183df145aa3940687b93215b71f8f102aec2006952caef51f4f14b",
+    "enclosingContext": true,
+    "applicationHelpers": true
+  },
+  {
+    "fixture": "MainSafeTrace",
+    "source": "android/performance/macrobenchmark-and-perfetto.md",
+    "sha256": "e89cb5e30f04f8fc4392064dbc4c801a580a1cc8d3d353425349e529dd8202cb",
+    "enclosingContext": false,
+    "applicationHelpers": true
+  },
+  {
+    "fixture": "ThermalMonitor",
+    "source": "android/performance/thermal-low-end-device-strategy.md",
+    "sha256": "84a56652d7a0b2a0ab74b347718f2f120f7c14051ff639d3df7ef5c5980b0c87",
+    "enclosingContext": false,
+    "applicationHelpers": false
+  },
+  {
+    "fixture": "ParcelableBoundary",
+    "source": "kotlin/language-core/extensions.md",
+    "sha256": "48fa274673cce8fdd3f3a3c77b3aeeac743950e19ae26248a77a0910c5ea2e66",
+    "enclosingContext": false,
+    "applicationHelpers": false
+  },
+  {
+    "fixture": "KtorClient",
+    "source": "android/kotlin-multiplatform/ecosystem/networking-with-ktor.md",
+    "sha256": "0f85807d2535e0d39f38f47d5199fe780bfe372af60e2c0a7894717c6b201bee",
+    "enclosingContext": false,
+    "applicationHelpers": false
+  },
+  {
+    "fixture": "KtorResult",
+    "source": "android/kotlin-multiplatform/ecosystem/networking-with-ktor.md",
+    "sha256": "ba92d89428b400937c157f21ecb24e22a85f5776f5e45d9a43523d613409a699",
+    "enclosingContext": false,
+    "applicationHelpers": true
+  },
+  {
+    "fixture": "HiltAndAccessibilityTests",
+    "source": "android/testing/ui-testing.md",
+    "sha256": "84e0d9ca759bccb478153cf6eeca58482d1f9491b8d4fec260339597a7c3e81d",
+    "applicationHelpers": true
+  }
+]

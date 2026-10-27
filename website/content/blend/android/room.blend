@@ -1,0 +1,57 @@
+<!-- Website teaching layer for android/data-and-di/room.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (Room, one-to-many relationships: "Room to run two queries")
+     on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">Version 4.2 adds a colour column. The 4.1 migration works, but there is no path from 3.9. Without destructive fallback, those users cannot open the database. Enabling the fallback makes the app open again by deleting their notes. Neither outcome is an acceptable release.</p>
+
+A database outlives every version of the code that writes to it. Room's job is to keep the Kotlin side and the SQLite schema in agreement: it checks your SQL against your entities at build time, keeps query results live as tables change, and runs migrations when the schema moves on. This chapter follows each of those mechanisms and the review discipline that keeps users' data intact across releases they skipped.
+
+<!-- @after Mental Model :: visual -->
+### Three annotations, three generated pieces
+
+<figure class="viz"><div class="viz-grid" style="--cols:3"><div class="node"><strong><code>@Entity</code></strong><small>a data class → a table (<code>CREATE TABLE …</code>)</small></div><div class="node"><strong><code>@Dao</code></strong><small>an interface of queries → a generated implementation that runs SQL and maps rows</small></div><div class="node is-key"><strong><code>@Database</code></strong><small>lists entities and DAOs, holds the version, opens the connection</small></div></div><figcaption>You write Kotlin declarations and SQL; Room's annotation processor checks them against each other and generates the cursor code.</figcaption></figure>
+
+<!-- @after Internal Mechanics :: animation -->
+### Watch an observable query stay live
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="A table change causes a re-query">
+<h3>A table change causes a re-query</h3>
+<p class="pb-sub">An illustrative run. Each moving packet is a named request, notification or result.</p>
+<div class="pb-paper"><svg class="pb-svg" role="img" aria-label="A users-table invalidation wakes the observable query. The query emits a fresh row list to its collector; unrelated playlists writes do not travel along these edges."></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div>
+<div class="pb-caption"><span class="pb-count"></span><p aria-live="polite"></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">{"nodes": [{"id": "table", "label": "Users table", "art": {"kind": "database", "role": "storage"}}, {"id": "query", "label": "Observable query", "art": {"kind": "code", "role": "runtime"}}, {"id": "ui", "label": "Collector", "art": {"kind": "phone", "role": "client"}}], "layouts": {"wide": {"size": [760, 290], "nodes": {"table": {"x": 24, "y": 50, "w": 208, "h": 140}, "query": {"x": 276, "y": 50, "w": 208, "h": 140}, "ui": {"x": 528, "y": 50, "w": 208, "h": 140}}, "edges": {"invalidate": "M234 102 C254 102 254 102 274 102", "rows": "M486 102 C506 102 506 102 526 102"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}, "narrow": {"size": [320, 470], "nodes": {"table": {"x": 40, "y": 22, "w": 240, "h": 140}, "query": {"x": 8, "y": 252, "w": 144, "h": 190}, "ui": {"x": 168, "y": 252, "w": 144, "h": 190}}, "edges": {"invalidate": "M142 164 C142 207 62 207 62 250", "rows": "M154 329 C160 329 160 329 166 329"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}}, "modes": {"run": {"initial": {"nodes": {"table": ["", "Ana, Ben"], "query": ["", "observing users"], "ui": ["", "collecting"]}, "visuals": {"table": {"rows": 2}, "ui": {"rows": 0}}}, "steps": [{"caption": "A collector starts the users query. In this run its first result contains Ana and Ben.", "packets": [{"edge": "rows", "label": "initial rows", "tone": "fwd", "kind": "rows"}], "set": {"nodes": {"ui": ["is-done", "[Ana, Ben]"]}, "visuals": {"ui": {"rows": 2}}}}, {"caption": "A repository inserts Chen and commits. The stored table changes; the old result in the collector does not update itself.", "set": {"nodes": {"table": ["is-active", "Ana, Ben, Chen"]}, "visuals": {"table": {"rows": 3}}}}, {"caption": "The users-table invalidation wakes the observable query, which reads the database again. The signal says that the table changed; it does not carry the new row list.", "packets": [{"edge": "invalidate", "label": "invalidate", "tone": "fwd", "kind": "signal"}], "set": {"nodes": {"query": ["is-active", "re-querying"]}}}, {"caption": "The new query result reaches the collector. Invalidation is per table, so even a write outside a query’s result can cause a re-query; distinctUntilChanged can suppress equal downstream results.", "packets": [{"edge": "rows", "label": "fresh rows", "tone": "fwd", "kind": "rows"}], "set": {"nodes": {"query": ["is-done", "read complete"], "ui": ["is-done", "[Ana, Ben, Chen]"]}, "visuals": {"ui": {"rows": 3}}}}, {"caption": "A write only to playlists does not invalidate this users-only query. No users invalidation or row packet moves.", "set": {"nodes": {"table": ["", "unchanged users"], "query": ["", "observing users"]}}}, {"caption": "Cancelling collection ends this query’s observation. Later writes have no delivery path to this cancelled collector.", "set": {"nodes": {"query": ["", "observation ended"], "ui": ["", "cancelled"]}, "visuals": {"ui": {"visible": false}}}}]}}, "illustrated": true, "edgeEndpoints": {"invalidate": {"from": "table", "to": "query"}, "rows": {"from": "query", "to": "ui"}}}</script>
+<p class="pb-sub">Sources: <a href="https://developer.android.com/training/data-storage/room/async-queries">Room asynchronous queries</a>.</p>
+</section>
+
+<!-- @diagram b33f8a4b14376953 -->
+### Where Room sits in the data flow
+
+<figure class="viz"><div class="viz-stack"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Compose UI</strong><small>observes <code>StateFlow</code></small></div><div class="node"><strong>ViewModel</strong><small>observes the repository's <code>Flow</code></small></div></div><div class="down"></div><div class="node is-key"><strong>Repository</strong><small>queries Room as a <code>Flow</code>; inserts what the network returns</small></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>Room database</strong><small>source of truth; its InvalidationTracker re-triggers queries</small></div><div class="node"><strong>Retrofit network</strong><small>syncs into the repository, never straight to the UI</small></div></div></div><figcaption>The network writes; Room notifies; the UI reads. Each arrow has one direction.</figcaption></figure>
+
+<!-- @after Schema Evolution Discipline :: visual -->
+### A user who skipped nine releases
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Installed: v3</strong></div><div class="node" data-state="done"><strong>3→4 … 6→7</strong><small>registered</small></div><div class="node" data-state="error"><strong>7→8</strong><small>missing</small></div><div class="node" data-state="ghost"><strong>8→9 … 11→12</strong><small>never reached</small></div><div class="node is-key"><strong>Shipping: v12</strong></div></div><figcaption>Room needs a path of migrations from the installed version to the current one. One missing hop fails the first database open; a destructive fallback silently deletes the user's data instead.</figcaption></figure>
+
+<!-- @after Common Misconceptions :: check -->
+**Will it ship safely?** Decide before opening each answer.
+
+<details><summary>A PR adds a nullable <code>colour TEXT</code> column, bumps the version to 13 and adds <code>MIGRATION_12_13</code>.</summary>
+
+Not yet. It also needs the exported schema JSON committed, a test for 12→13, and a long-hop test from the oldest supported version, so users who skipped releases still get a full migration path.
+</details>
+
+<details><summary>A cache-only database of server responses enables destructive fallback for versions 1–4.</summary>
+
+Acceptable if the fallback is limited to those start versions (`fallbackToDestructiveMigrationFrom(…)`) on that cache database only, the app can refetch everything, and the decision is documented. Never on the database that holds drafts or the outbox.
+</details>
+
+<details><summary>A DAO method <code>fun insert(note: Note)</code> without <code>suspend</code>, called from a click handler.</summary>
+
+It runs on the main thread, which Room rejects by default. Make it `suspend` and call it from a coroutine, or the app crashes at the first click.
+</details>

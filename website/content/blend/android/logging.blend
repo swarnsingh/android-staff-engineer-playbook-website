@@ -1,0 +1,49 @@
+<!-- Website-only teaching for android/observability/logging.md; original chapter remains read-only. Sources checked 2026-10-25. -->
+
+<!-- @opening -->
+
+<p class="story-lead">A release logger ignores a debug message, but the expensive expression inside that message still runs. Logging has two boundaries: constructing the argument and deciding what reaches a sink.</p>
+
+Follow both boundaries, then decide what diagnostic value justifies CPU, privacy and retention cost.
+
+<!-- @after Internal Mechanics :: visual -->
+
+### Policy starts after ordinary arguments are evaluated
+
+<figure class="viz"><div class="viz-flow" style="--cols:3"><div class="node"><strong>Call-site work</strong><small>Interpolation and function arguments can run before the facade is called.</small></div><div class="node"><strong>Logging policy</strong><small>Configured trees or wrappers select, sample and redact.</small></div><div class="node"><strong>Sink</strong><small>Logcat or remote diagnostics retain only approved output.</small></div></div><figcaption>Runtime suppression alone does not prove argument work disappeared. Verify release transformations and use a genuinely lazy boundary when needed.</figcaption></figure>
+
+<!-- @after Failure Modes :: animation -->
+
+### Why a silent logger can still do work
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">Why a silent logger can still do work</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="call" data-art="code" data-art-role="runtime"><strong>Call site</strong><small>Build debug message</small></div><div class="node" data-el="heavy" data-art="worker" data-art-role="runtime"><strong>Argument</strong><small>Expensive calculation</small></div><div class="node" data-el="tree" data-art="gate" data-art-role="runtime"><strong>Runtime tree</strong><small>Reject debug output</small></div><div class="node" data-el="sink" data-art="document" data-art-role="storage"><strong>Sink</strong><small>No message written</small></div></div><script type="application/json" class="steps">[{"label": "Evaluate", "caption": "In this illustrative ordinary eager call, the message expression calls the expensive calculation before entering the logging facade.", "state": {"call": "active", "heavy": "active"}, "add": ["call", "heavy", "tree", "sink"]}, {"label": "Filter", "caption": "The runtime policy rejects the debug message. That decision cannot undo work already performed.", "state": {"heavy": "done", "tree": "active"}}, {"label": "Suppress", "caption": "No message reaches the sink. Silence is evidence about output, not about the earlier argument cost.", "state": {"tree": "done", "sink": "ghost"}}, {"label": "Verify the boundary", "caption": "Use an appropriate guard or lazy wrapper for material argument work and inspect the optimised release behavior. Do not assume a facade guarantees removal.", "state": {"call": "done", "heavy": "warn"}}]</script><figcaption>Illustrative sequence. Use Previous, Next or Play; every step is also available as text.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+
+Review one expensive suppressed message from argument evaluation through filtering and the final sink. Put the cost gate before expensive construction where the logging API supports that contract. Separately verify redaction at every sink and confirm release routing in the shipped artifact. A disabled debug sink does not prove that argument work was skipped or that another crash/telemetry sink cannot receive the same private data.
+
+<!-- @before Further Reading :: check -->
+
+### Check your diagnosis
+
+<details><summary>Can a release tree stop an already-evaluated argument?</summary>
+
+No. Put the policy before material evaluation or use a lazy boundary; verify the actual release artifact.
+
+</details>
+
+<details><summary>Does an error priority make a message safe to upload?</summary>
+
+No. Classify and minimise its content before any sink receives it.
+
+</details>
+
+<details><summary>What proves a logging optimisation worked?</summary>
+
+Release-artifact/runtime evidence on the relevant call path, including argument work and retained output.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+
+Primary evidence for the added layer: [Timber API and routing](https://github.com/JakeWharton/timber), [Android Log](https://developer.android.com/reference/android/util/Log).

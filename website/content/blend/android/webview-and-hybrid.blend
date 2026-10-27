@@ -1,0 +1,81 @@
+<!-- Phase 5 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase5-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">Checkout works on the happy path. Then a redirect reaches an unexpected page that can still talk to native code. Rendering a page and granting it a capability are different decisions. Follow the loaded content, the exposed bridge and the native side effect as separate trust questions.</p>
+
+<!-- @after Mental Model :: visual -->
+### Audit a capability at both ends
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Web content</strong><small>Which origins and frames can send messages?</small></div><div class="node"><strong>Bridge contract</strong><small>Which messages, payloads and versions are accepted?</small></div><div class="node"><strong>Native handler</strong><small>What authorization and validation precede a side effect?</small></div><div class="node"><strong>Lifecycle</strong><small>When is the bridge attached, removed and unavailable?</small></div></div><figcaption>Review the complete capability path; a familiar hostname alone does not answer every trust question.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: animation -->
+### A bridge message is a request
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">An origin-scoped message reaches native code</span><div class="stage viz-stack"><div class="node" data-el="source" data-art="document" data-art-role="storage"><strong>Content source</strong><small data-text="sourceV">—</small></div><div class="node" data-el="bridge" data-art="gate" data-art-role="runtime"><strong>Message listener</strong><small data-text="bridgeV">—</small></div><div class="node" data-el="native" data-art="worker" data-art-role="runtime"><strong>Native operation</strong><small data-text="nativeV">—</small></div></div><script type="application/json" class="steps">[
+{
+"label": "Configure",
+"caption": "Configure the explicit origin allowlist and supported listener feature before relying on the bridge.",
+"state": {
+"bridge": "active"
+},
+"text": {
+"sourceV": "origin A",
+"bridgeV": "allowlist configured",
+"nativeV": "not invoked"
+},
+"add": [
+"source",
+"bridge",
+"native"
+]
+},
+{
+"label": "Message arrives",
+"caption": "The native callback receives source and frame information plus an untrusted payload.",
+"state": {
+"source": "active",
+"bridge": "active"
+},
+"text": {
+"bridgeV": "message + source context"
+}
+},
+{
+"label": "Validate",
+"caption": "Apply the application’s frame, payload, authorization and duplicate-handling policy.",
+"state": {
+"native": "active"
+},
+"text": {
+"nativeV": "validate before side effect"
+}
+},
+{
+"label": "Perform or reject",
+"caption": "Only an accepted request reaches the capability. Return a controlled result; do not expose arbitrary native execution.",
+"state": {
+"native": "done"
+},
+"text": {
+"nativeV": "bounded operation or rejection"
+}
+}
+]</script><figcaption>Origin scoping narrows exposure. It does not replace validation or authorization in the native handler.</figcaption></figure>
+
+<!-- @after Common Misconceptions :: check -->
+### Try the decision
+
+<details><summary>An origin is allowed. Trust every message body?</summary>
+
+No. Validate its structure and authorize the requested operation. Origin control does not make a payload safe by itself.
+</details>
+
+<details><summary>The initial URL passed review. Stop watching later navigation?</summary>
+
+No. Redirects and later content changes are part of the trust lifecycle. Review the whole flow and the callback limits stated in the chapter.
+</details>
+
+<details><summary>Can a WebView with a native bridge host the OAuth sign-in?</summary>
+
+Native OAuth authorization belongs in an external user agent such as a browser or Custom Tab; do not design it around a credential-capturing WebView bridge.
+</details>

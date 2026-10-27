@@ -1,0 +1,57 @@
+<!-- Website teaching layer for android/os-internals/package-manager-installation-classloading.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Sources checked 2026-10-25: About Android App Bundles, Play Feature Delivery (on-demand delivery,
+     SplitInstallManager, SplitCompat), Shrink/obfuscate code (keep rules), Package visibility. -->
+
+<!-- @opening -->
+<p class="story-lead">Install succeeds on every test device. A week later, crash reports arrive from one deep link, <code>/review</code>. The screen it opens lives in an on-demand feature module that most users never downloaded. Nothing failed at install time, because nothing on that path was looked up until a user followed the link.</p>
+
+Installation and class loading happen at different times. At install, `PackageManagerService` checks the signature, assigns the UID and records every component. Classes are found later, one at a time, when running code first needs them. This chapter covers the install pipeline, signing identity, the sandbox and the class loaders. The additions here follow one optional feature from install to its first use, so you can see where an absent class shows up.
+
+<!-- @diagram 683dd7ca5031e374 -->
+### The install pipeline
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Play or installer</strong><small>install session with split APKs</small></div><div class="node"><strong>PackageInstaller</strong><small>commits the session</small></div><div class="node is-key"><strong>PackageManagerService</strong><small>verifies the signature, parses the manifest</small></div><div class="node"><strong>System registry</strong><small>components, permissions, UID</small></div><div class="node" data-state="done"><strong>ART / dexopt</strong><small>prepares DEX as policy allows</small></div></div><figcaption>Redrawn from the original sequence diagram. When this finishes, the system knows about your components; it has not run any of your code.</figcaption></figure>
+
+<!-- @after Class Loading :: visual -->
+### Install time versus first use
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Decided at install</span><div class="node"><strong>Signing identity</strong><small>is this an update of the same app?</small></div><div class="node"><strong>UID and data directory</strong></div><div class="node"><strong>Components and filters</strong><small>what the system can launch</small></div></div><div class="col"><span class="col-title">Discovered at first use</span><div class="node" data-state="warn"><strong>Is the class in an installed DEX file?</strong><small>base APK or an installed split</small></div><div class="node" data-state="warn"><strong>Did R8 keep it?</strong><small>reflection targets need keep rules</small></div><div class="node" data-state="warn"><strong>Is the native library there?</strong><small>for this device's ABI</small></div></div></div><figcaption>A clean install says nothing about the right column. Those failures appear only when a code path first runs.</figcaption></figure>
+
+<!-- @after Multidex and Splits :: animation -->
+### Opening a feature that is not installed
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">The <code>/review</code> deep link, before and after a fallback</span><div class="stage viz-grid" style="--cols:4"><div class="node" data-el="install" data-art="parcel" data-art-role="queue"><strong>Installed</strong><small>base + config splits</small></div><div class="node" data-el="link" data-art="document" data-art-role="storage"><strong>Deep link</strong><small><code>/review</code></small></div><div class="node" data-el="check" data-art="gate" data-art-role="runtime"><strong>Module check</strong><small data-text="checkV">—</small></div><div class="node is-key" data-el="screen" data-art="phone" data-art-role="client"><strong>Review screen</strong><small data-text="screenV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Install","caption":"Play delivered the base APK and configuration splits. The on-demand reviewer module was not part of the install, and nothing complained.","add":["install","link","check","screen"],"state":{"install":"done","check":"ghost"},"text":{"screenV":"code not on the device"}},
+{"label":"The link arrives","caption":"The router maps /review to the reviewer screen. Until now, no code needed that screen's class.","state":{"link":"active"}},
+{"label":"Direct reference","caption":"The fragile router references the screen straight away. The class loader searches the installed DEX files, finds nothing and throws: the crash in the opening.","state":{"link":"done","screen":"error"},"text":{"screenV":"class not found"}},
+{"label":"Check first","caption":"The robust router asks SplitInstallManager whether the reviewer module is installed. It is not, so it shows an install or fallback state instead of touching the class.","state":{"check":"active","screen":"warn"},"text":{"checkV":"reviewer: not installed","screenV":"install prompt / fallback"}},
+{"label":"After install","caption":"Once the module is installed and made available to the app (SplitCompat, per the Play Feature Delivery guide), the same route opens the screen.","state":{"check":"done","screen":"done"},"text":{"checkV":"reviewer: installed","screenV":"opens"}}
+]</script><figcaption>Illustrative routes. Test this path with real split artifacts, not a single debug APK. Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+Ship the artifact you tested. A release candidate should be checked as minified split APKs generated from the bundle, on more than one ABI, with optional modules both present and absent. Each of those differs from the debug APK developers run every day.
+
+<!-- @after Failure Modes :: check -->
+### Check the install contract
+
+<details><summary>The install succeeded on every device. Does that prove every class the app needs is present?</summary>
+
+Class lookup is lazy. A class in an absent split, removed by R8 or missing for an ABI fails only when its code path first runs.
+
+</details>
+
+<details><summary>A release build crashes with <code>ClassNotFoundException</code> on a handler loaded with <code>Class.forName</code>. Debug works. Why?</summary>
+
+R8 saw no static reference and removed or renamed the class. Replace the string lookup with a direct reference or generated registry, or add a precise keep rule.
+
+</details>
+
+<details><summary>An update is signed with a different key than the installed app. What does the system do?</summary>
+
+It rejects the update as a different app. Signing identity decides upgrades, data retention and signature permissions, so keys and rotation need an owner and a runbook.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+Primary sources for the added layer: [About Android App Bundles](https://developer.android.com/guide/app-bundle), [Play Feature Delivery: on-demand delivery](https://developer.android.com/guide/playcore/feature-delivery/on-demand), [Shrink, obfuscate and optimize](https://developer.android.com/build/shrink-code), [Package visibility](https://developer.android.com/training/package-visibility).

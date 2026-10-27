@@ -1,0 +1,307 @@
+{
+  "pages": [
+    {
+      "href": "/android/networking-and-security/graphql/",
+      "preservation": {
+        "views": [
+          {
+            "source": "android/networking-and-security/graphql.md",
+            "view": "content",
+            "checked": 252,
+            "units": 74,
+            "diagrams": 1,
+            "loadedDiagrams": 1,
+            "diagramResources": [
+              {
+                "source": "/diagrams/f99fb81083ab1479.svg",
+                "status": "loaded"
+              }
+            ],
+            "problems": []
+          },
+          {
+            "source": "android/networking-and-security/graphql.md",
+            "view": "qa",
+            "checked": 64,
+            "units": 22,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 96,
+        "diagrams": 1,
+        "loadedDiagrams": 1
+      },
+      "steppers": 1,
+      "ready": 1,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "states": 5,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "states": 5,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "states": 5,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "states": 5,
+          "objects": 3,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    }
+  ],
+  "done": true,
+  "widths": [
+    320,
+    390,
+    768,
+    1181,
+    1280,
+    1439,
+    1440
+  ],
+  "textSize": 22,
+  "font": "Shantell Sans"
+}

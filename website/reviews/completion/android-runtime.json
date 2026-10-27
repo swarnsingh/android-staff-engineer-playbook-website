@@ -1,0 +1,56 @@
+[
+  {
+    "suite": "dev.playbook.validation.CompletionRegressionTest",
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "cases": [
+      "unconfinedEntryDoesNotMeanCompletion",
+      "turbineConsumesFiniteCompletion",
+      "jvmOverloadsRetainsRequiredMiddleParameter",
+      "customStateSnapshotDoesNotPublishUntilApplied",
+      "roomRefreshCommitsRowsAndMetadataTogether",
+      "roomMetadataFailureRollsBackProductWrite",
+      "lifecycleCollectorStopsAndRestartsAtStarted",
+      "cancelledUploadCanBeRetriedByTheOwner",
+      "failedUploadIsRequeuedAndOwnershipReleased",
+      "pollerDeadlineIsDrivenExplicitly",
+      "gatedStateMakesLoadingObservable",
+      "concurrentBatchArrivalsHaveNoLostEvents",
+      "customStateReadObserverSeesTheActualState"
+    ]
+  },
+  {
+    "suite": "dev.playbook.validation.ComposeContractTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "cases": [
+      "manualClockObservesIntermediateAnimation",
+      "independentClickBoundarySurvivesDescendantMerge",
+      "controlledTextInputUpdatesThroughCallback"
+    ]
+  },
+  {
+    "suite": "dev.playbook.validation.NetworkRegressionTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "cases": [
+      "successfulGetIsNotRetried",
+      "cancellationIsNotConvertedToAnApplicationError",
+      "nonIdempotentPostIsNotReplayed",
+      "transformed401MapsToAnErrorResult"
+    ]
+  },
+  {
+    "suite": "dev.playbook.validation.ui.main.MainScreenViewModelTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "cases": [
+      "uiState_initiallyLoading",
+      "uiState_onItemSaved_isDisplayed"
+    ]
+  }
+]

@@ -1,0 +1,990 @@
+[
+  {
+    "id": "VR01",
+    "path": "android/architecture/activity.md",
+    "old": "- **`onPause()`:** The Activity loses Input Focus, but is *still partially visible*. Example: A system permission dialog pops up, or the user opens Android's split-screen mode. You must pause video playback here, but you *should not* do heavy teardown (like closing a database), because the user might just dismiss the dialog and instantly return to `onResume()`.",
+    "new": "- **`onPause()`:** The Activity is leaving the resumed state but may remain visible, for example beneath another translucent Activity. Entering split-screen is not a reliable pause example on Android 10+, which supports multiple resumed activities. Choose resource ownership from the required lifecycle state; use top-resumed callbacks for exclusive resources.",
+    "reason": "Android 10+ multi-resume invalidates split-screen as a universal pause example.",
+    "sources": [
+      "https://developer.android.com/develop/ui/views/layout/support-multi-window-mode"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR02",
+    "path": "android/architecture/viewmodel.md",
+    "old": "The Android OS explicitly allows an Activity to pass *one* object to the OS before it is destroyed for a configuration change. Jetpack uses this loophole to hand the entire `ViewModelStore` to the OS. When the new Activity boots up, it asks the OS, \"Hey, do you have my NonConfigurationInstance?\" and gets the store back.",
+    "new": "During a configuration change, the retained `ViewModelStore` stays in the app process. AndroidX `ComponentActivity` retains it through its non-configuration instance and restores the reference for the replacement Activity. The store is not serialized to system_server and cannot survive process death.",
+    "reason": "ViewModelStore retention is an in-process non-configuration mechanism.",
+    "sources": [
+      "https://raw.githubusercontent.com/androidx/androidx/androidx-main/activity/activity/src/main/java/androidx/activity/ComponentActivity.kt"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR03",
+    "path": "android/architecture/savedstatehandle.md",
+    "old": "The `SavedStateHandle` is bound by Android's strict `TransactionTooLargeException` limits (1MB across the *entire* OS IPC system).",
+    "new": "The `SavedStateHandle` participates in saved-instance-state Bundles. Binder has a currently 1 MB transaction buffer shared by the process's in-flight transactions, not a separate allowance per Activity and not a system-wide pool. Keep saved state small; store identifiers and restore larger data from persistence.",
+    "reason": "Binder transaction-buffer scope is per process.",
+    "sources": [
+      "https://developer.android.com/guide/components/activities/parcelables-and-bundles"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR04",
+    "path": "android/architecture/process-death-and-state-restoration.md",
+    "old": "The OS `Bundle` is incredibly constrained. It is sent over the Binder (IPC limit of 1MB total across all apps). If you try to shove a 2MB downloaded Image or a 500-item JSON list into the `Bundle`, your app will crash with a `TransactionTooLargeException`.",
+    "new": "A saved-state `Bundle` crosses Binder. The currently 1 MB transaction buffer is shared by in-flight transactions in the app process; it is not a system-wide allowance or a safe target size for one Bundle. Large images or JSON payloads can trigger `TransactionTooLargeException`; persist the data and save a small identifier.",
+    "reason": "Saved state must respect the shared per-process Binder limit.",
+    "sources": [
+      "https://developer.android.com/guide/components/activities/parcelables-and-bundles"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR05",
+    "path": "android/architecture/mvvm-vs-mvi.md",
+    "old": "2. **Pass `onIntent` as a stable lambda** — `vm::processIntent` is a method reference; stable, recomposition-friendly. Avoid `{ vm.processIntent(it) }` which allocates a new lambda each composition.",
+    "new": "2. **Choose a clear callback and audit captures** — under strong skipping, enabled by default since Kotlin 2.0.20, lambdas inside composables are remembered using their captures. Neither `{ vm.processIntent(it) }` nor `vm::processIntent` is universally faster; avoid assuming a fresh allocation on every recomposition.",
+    "reason": "Current Compose remembers lambdas with unstable and stable captures under strong skipping.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR06",
+    "path": "android/architecture/modularization-strategies.md",
+    "old": "Compose Navigation 2.7+ supports type-safe routes:",
+    "new": "Navigation Compose 2.8.0 introduced Kotlin Serialization-based type-safe routes:",
+    "reason": "The incorrect version is in Modularization Strategies; Navigation itself already says 2.8.",
+    "sources": [
+      "https://developer.android.com/guide/navigation/design/type-safety"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR07",
+    "path": "android/data-and-di/repository-source-of-truth.md",
+    "old": "    private val dao: ProductDao,\n    private val api: ProductApi",
+    "new": "    private val database: RoomDatabase, // androidx.room.RoomDatabase; owns this DAO\n    private val dao: ProductDao,\n    private val api: ProductApi",
+    "reason": "Supply the database owning this DAO for the Room transaction extension.",
+    "sources": [
+      "https://developer.android.com/jetpack/androidx/releases/room#2.1.0-alpha05"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR08",
+    "path": "android/data-and-di/repository-source-of-truth.md",
+    "old": "        dao.withTransaction {",
+    "new": "        database.withTransaction { // import androidx.room.withTransaction",
+    "reason": "Room withTransaction extends RoomDatabase, not a DAO.",
+    "sources": [
+      "https://developer.android.com/jetpack/androidx/releases/room#2.1.0-alpha05"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR09",
+    "path": "android/data-and-di/room.md",
+    "old": "- **The N+1 Query Problem:**\n  If a developer uses the older `@Relation` system to load a list of `Users` and their associated `Playlists`, Room executes 1 query to get the Users, and then potentially N queries to get the playlists for each user.\n  *(Fix: Always look at the generated `Dao_Impl.java` code, or utilize modern Multi-Map returns which force a single `JOIN` statement).*",
+    "new": "- **Assuming `@Relation` means N+1:**\n  Room batches related-row retrieval; its documented simple User/Playlist relationship uses a parent query and a related-rows query. It is not inherently one child query per parent. Nested relationships and large key sets can require more work, so inspect generated code and measure the actual shape. A multimap JOIN is an alternative with its own row duplication and mapping costs.",
+    "reason": "Do not teach @Relation as inherently N+1 or promise exactly two queries for every graph.",
+    "sources": [
+      "https://developer.android.com/training/data-storage/room/relationships/one-to-many"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR10",
+    "path": "android/data-and-di/room.md",
+    "old": "2.  **Flow Granularity:** A major architectural flaw is exposing a `Flow<List<HeavyObject>>` when the UI only needs the ID and Title. Every time a minor field (like `lastLoginDate`) changes, the `InvalidationTracker` re-emits the entire massive list, causing the Compose UI to stutter. I enforce specific Projection classes (e.g., `@Query(\"SELECT id, title FROM items\") fun getLightItems(): Flow<List<LightItem>>`).",
+    "new": "2. **Flow granularity:** Project only the columns the consumer needs to reduce I/O and mapping. Invalidation is still at the observed-table level: changing another column can re-run the query. Apply `distinctUntilChanged()` when equal mapped results should be suppressed, and measure the UI's actual recomposition behavior.",
+    "reason": "Projection does not change table-level invalidation.",
+    "sources": [
+      "https://developer.android.com/training/data-storage/room/async-queries"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR11",
+    "path": "android/data-and-di/room.md",
+    "old": "   If you select all columns (e.g., `SELECT *`), any update to *any* column in that table triggers the `InvalidationTracker`. This causes the query to re-run and the `Flow` to emit identically relevant UI data, triggering unnecessary recompositions and wasting CPU/battery. Always project only the needed columns.",
+    "new": "   Projection reduces fetched data and mapping cost. It does not prevent invalidation when another column in an observed table changes. The query can re-run and return an equal projection; use `distinctUntilChanged()` where equal downstream results should be suppressed.",
+    "reason": "Fix the answer key consistently with table-level invalidation.",
+    "sources": [
+      "https://developer.android.com/training/data-storage/room/async-queries"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR12",
+    "path": "android/data-and-di/room.md",
+    "old": "   A Multi-Map return type (e.g., `Map<User, List<Playlist>>`) allows developers to write a standard SQL `JOIN` query, and Room automatically groups the flat ResultSet into a Kotlin Map. It eliminates the boilerplate of `@Relation` data classes and solves the N+1 query performance problem inherent in the older system.",
+    "new": "   A multimap return such as `Map<User, List<Playlist>>` groups a SQL JOIN result by parent. It can avoid a separate relation data class, but does not fix an inherent @Relation N+1 problem: Room batches relation retrieval. Compare generated SQL, result size and mapping costs for the actual schema.",
+    "reason": "Remove the repeated inherent N+1 claim from the answer key.",
+    "sources": [
+      "https://developer.android.com/training/data-storage/room/relationships/one-to-many"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR13",
+    "path": "android/data-and-di/components.md",
+    "old": "| **`ActivityRetainedComponent`** | First Activity created | Activity finished (NOT rotation) | `@ActivityRetainedScoped` | ViewModels (via `@HiltViewModel`), session-scoped state |",
+    "new": "| **`ActivityRetainedComponent`** | First Activity created | Activity finished (NOT rotation) | `@ActivityRetainedScoped` | Dependencies shared across ViewModels belonging to the retained Activity |",
+    "reason": "Hilt ViewModels use ViewModelComponent; the retained Activity component is its ancestor.",
+    "sources": [
+      "https://dagger.dev/hilt/components.html"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR14",
+    "path": "android/data-and-di/dependency-injection.md",
+    "old": "  Developers often slap `@Singleton` on every single class \"just to be safe.\" This forces the app to instantiate and hold every repository, use case, and utility class in RAM from the moment the app boots until it dies, severely bloating memory.",
+    "new": "  `@Singleton` caches a binding's instance in its component after it is requested; it does not eagerly instantiate every binding when the app boots. App-wide dependencies can still retain expensive state longer than needed. Audit actual injection paths and lifetimes rather than treating scope as a startup trigger.",
+    "reason": "Dagger scopes cache requested bindings rather than eagerly constructing every scoped binding.",
+    "sources": [
+      "https://dagger.dev/semantics/advanced.html#scopes"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR15",
+    "path": "android/data-and-di/dependency-injection.md",
+    "old": "- **The Scope:** If a `Steak` is `@Singleton`, the kitchen cooks one massive steak in the morning and slices off a piece for every waiter all day (Shared State). If it is unscoped, they cook a brand new steak from scratch every time a waiter asks.",
+    "new": "- **The Scope:** A `@Singleton` recipe produces one instance when first requested and the component reuses it. An unscoped recipe is evaluated separately for each request; scope controls caching, not an automatic morning startup batch.",
+    "reason": "Keep the analogy consistent with lazy scoped binding evaluation.",
+    "sources": [
+      "https://dagger.dev/semantics/advanced.html#scopes"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR16",
+    "path": "android/compose/stability.md",
+    "old": "Compose's smart recomposition decision rule:\n\n> When a parent recomposes, for each child `@Composable` call:\n> 1. Are all parameters **stable** types?\n> 2. If yes — compare each with `equals()` to its previous value.\n> 3. If none changed — **skip** the child's body entirely.\n> 4. If any parameter is unstable — **always re-run** the child, regardless.\n\nThat last point is the killer. **One unstable parameter forces every recomposition.** A `LazyColumn` with 1000 rows that pass an unstable `List` will recompose every row, every frame, every time anything changes.\n\nSmart recomposition is what makes Compose performant. Stability is what unlocks it. Get this wrong and Compose performs worse than the View system you migrated from.\n",
+    "new": "With strong skipping enabled (the default since Kotlin 2.0.20), restartable composables can be skipped even with unstable parameters. Stable arguments compare with `equals()`; unstable arguments compare by reference identity (`===`). An invalidated scope still runs.\n\nA list recreated on each parent recomposition is a different reference even when its contents are equal. Reusing an unchanged instance can permit skipping; it does not make mutation observable. Under the older non-strong-skipping model, unstable parameters made a composable unskippable.\n\nUse compiler reports and runtime measurements to distinguish input changes, state invalidation and expensive work. Stability alone does not establish a frame-rate outcome.",
+    "reason": "Replace legacy universal skipping rules with the current versioned comparison model.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR17",
+    "path": "android/compose/stability.md",
+    "old": "> Skippable recomposition is the difference between a buttery 60fps Compose UI and a stuttery one. The compiler decides what's skippable based on **stability**. Most perf bugs in production Compose apps trace to a single unstable parameter forcing an entire sub-tree to recompose every frame. Staff-level mastery is reading the Compose compiler metrics, knowing exactly which types are inferred stable, knowing when to annotate `@Immutable` vs `@Stable`, and using `ImmutableList` for collections — all without breaking the cache.",
+    "new": "> Compose can skip eligible work when inputs compare unchanged. Stability, identity reuse, state observation and the compiler mode determine that decision. Learn to read compiler reports, choose honest `@Immutable`/`@Stable` contracts and measure the work that actually affects a frame.",
+    "reason": "Do not claim unstable inputs universally force recomposition under current defaults.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR18",
+    "path": "android/compose/stability.md",
+    "old": "| **Restartable + Skippable** | Only if any input changed via `equals` | Yes |",
+    "new": "| **Restartable + Skippable** | When required by invalidation or changed inputs (stable: `equals`; unstable with strong skipping: `===`) | Yes |",
+    "reason": "The comparison depends on parameter stability and compiler mode.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR19",
+    "path": "android/compose/stability.md",
+    "old": "A function is **not skippable** if any parameter is unstable.",
+    "new": "Without strong skipping, an unstable parameter makes the composable unskippable. With strong skipping, restartable composables remain eligible for skipping, subject to invalidation and argument comparison.",
+    "reason": "Qualify the legacy unskippable rule.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR20",
+    "path": "android/compose/stability.md",
+    "old": "Lambda expressions compile to stable types, and the Compose compiler **automatically memoizes** a lambda — wraps it in `remember`, keyed on its captures — when everything it captures is stable. So `{ vm.processIntent(it) }` reuses the same instance across recompositions as long as `vm` is stable. If a lambda captures a `var` or an unstable value, it can't be memoized (before Strong Skipping) and a fresh instance is allocated per recomposition, breaking skipping in every child it's passed to.",
+    "new": "Lambda types are stable. With strong skipping enabled, the compiler remembers lambdas inside composables using stable captures with equality and unstable captures with identity. Older compiler modes had narrower memoization rules. Audit captures and toolchain mode rather than assuming callback syntax determines allocation.",
+    "reason": "Update the legacy capture-only memoization description.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR21",
+    "path": "android/compose/stability.md",
+    "old": "@Composable fun ItemRow(items: List<Item>) { /* NOT skippable ❌ */ }\n@Composable fun Lookup(map: Map<String, User>) { /* NOT skippable ❌ */ }",
+    "new": "@Composable fun ItemRow(items: List<Item>) { /* unstable; identity compared with strong skipping */ }\n@Composable fun Lookup(map: Map<String, User>) { /* unstable; identity compared with strong skipping */ }",
+    "reason": "Update misleading collection sample comments.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR22",
+    "path": "android/compose/stability.md",
+    "old": "This is the **#1 source of unintentional unstable params**. Every `LazyColumn(items: List<T>)` you write is potentially the unstable parameter killing your perf.",
+    "new": "An unstable collection type affects how arguments are compared. With strong skipping, passing the same unchanged instance can skip a child; rebuilding an equal list changes identity. Measure the actual workload before attributing a performance problem to the type alone.",
+    "reason": "Remove the unsupported universal collection-performance claim.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR23",
+    "path": "android/compose/modifiers-and-layout.md",
+    "old": "- **Recomposing Modifiers:**\n  ```kotlin\n  // BAD: We create a new lambda object on every single frame!\n  Box(modifier = Modifier.offset { IntOffset(x, y) }) \n  ```\n  *(Fix: As discussed in the [Jank](../performance/jank.md) module, use lambda modifiers to defer state reads to the Layout phase, avoiding Composition phase thrashing).*\n",
+    "new": "- **Reading fast-changing position in composition:**\n  ```kotlin\n  val xState = remember { mutableIntStateOf(0) }\n  val yState = remember { mutableIntStateOf(0) }\n  // Update these from gesture events; read inside the placement lambda.\n  Box(modifier = Modifier.offset { IntOffset(xState.intValue, yState.intValue) })\n  ```\n  The lambda overload defers these reads to layout placement, so position changes can avoid recomposition and remeasurement. Reading state earlier and merely capturing the resulting numbers does not defer the original read. Confirm the invalidation path with traces.\n",
+    "reason": "The lambda offset overload is the recommended deferred placement read, not an allocation anti-pattern.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/phases"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR24",
+    "path": "android/compose/side-effects.md",
+    "old": "        if (errorMessage != null) {\n            snackbarHostState.showSnackbar(\n                message = errorMessage,",
+    "new": "        val message = errorMessage // Snapshot the delegated nullable property.\n        if (message != null) {\n            snackbarHostState.showSnackbar(\n                message = message,",
+    "reason": "A local delegated property is not eligible for this smart cast; snapshot its value.",
+    "sources": [
+      "https://kotlinlang.org/docs/typecasts.html#smart-cast-prerequisites"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR25",
+    "path": "android/compose/recomposition-and-state.md",
+    "old": "    - *Cons:* It permanently ties your ViewModel to the Compose framework dependency (`androidx.compose.runtime`). You cannot share this ViewModel with a KMP iOS app.",
+    "new": "    - *Cons:* This API depends on Compose runtime. Compose runtime and AndroidX ViewModel have multiplatform artifacts, so that dependency alone does not prevent iOS sharing. Check the complete dependency graph, Swift-facing API and platform lifecycle ownership.",
+    "reason": "Compose runtime and ViewModel dependency alone do not rule out KMP iOS sharing.",
+    "sources": [
+      "https://kotlinlang.org/docs/multiplatform/compose-viewmodel.html"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR26",
+    "path": "android/concurrency/services.md",
+    "old": "        // Run on background thread\n        withContext(Dispatchers.IO) {\n            for (progress in 1..100) {\n                delay(100) // Fake processing\n                emit(progress)\n            }\n        }\n    }",
+    "new": "        for (progress in 1..100) {\n            delay(100) // Illustrative processing\n            emit(progress)\n        }\n    }.flowOn(Dispatchers.IO) // import kotlinx.coroutines.flow.flowOn",
+    "reason": "Use flowOn for the upstream context; flow builders cannot emit from withContext.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flow.html"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR27",
+    "path": "android/concurrency/workmanager.md",
+    "old": "*Staff Note:* Since Android 12, `WorkManager` introduced **Expedited Jobs** (`setExpedited(true)`). This allows a WorkRequest to instantly execute within seconds, even if the app is in the background. The OS internally grants the app a temporary exemption or automatically converts it to a Foreground Service under the hood.",
+    "new": "*Staff Note:* Request expedited work with `setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)` or choose `DROP_WORK_REQUEST` when falling back is inappropriate. Expedited work is quota-limited and not a guarantee of immediate execution. On pre-Android-12 releases WorkManager may use a foreground service for compatibility; supply the required foreground information.",
+    "reason": "Correct the API signature and scheduling/quota guarantee.",
+    "sources": [
+      "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work#expedited"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR28",
+    "path": "android/concurrency/battery-optimizations.md",
+    "old": "**Tradeoff:** `setExactAndAllowWhileIdle` is incredibly heavy on the battery. Google restricts you to firing this a maximum of **once every 9 minutes**. Furthermore, starting in Android 14, you must explicitly declare the `SCHEDULE_EXACT_ALARM` permission in your manifest, and Google Play will reject your app if you are not a legitimate Alarm Clock or Calendar app.",
+    "new": "**Tradeoff:** Exact alarms consume scarce power and scheduling resources. `SCHEDULE_EXACT_ALARM` was introduced in Android 12. On Android 14, it is denied by default for most newly installed apps targeting Android 13 or higher. Check capability before scheduling and handle denial. Do not confuse this user-granted special access with `USE_EXACT_ALARM`, whose Play eligibility is restricted to qualifying alarm/calendar use cases.",
+    "reason": "Correct introduction version, target threshold and the distinction between exact-alarm permissions.",
+    "sources": [
+      "https://developer.android.com/about/versions/14/changes/schedule-exact-alarms"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR29",
+    "path": "android/concurrency/battery-optimizations.md",
+    "old": "   Developers abused it to bypass Doze Mode and run exact background work, draining battery. Now, Google Play restricts it to legitimate Alarm Clock and Calendar apps.",
+    "new": "   Exact alarms are intended for user-facing actions needing precise timing. Android 14 changes default granting for SCHEDULE_EXACT_ALARM on most new installs targeting Android 13+. The separate USE_EXACT_ALARM permission has restricted qualifying use cases. Request only the permission appropriate to the product and handle unavailable exact-alarm capability.",
+    "reason": "Keep the answer key consistent with the two distinct permissions.",
+    "sources": [
+      "https://developer.android.com/about/versions/14/changes/schedule-exact-alarms"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR30",
+    "path": "android/concurrency/threads-and-looper.md",
+    "old": "   `quit()` terminates the `Looper` immediately, dropping any unprocessed messages. `quitSafely()` allows all currently pending messages in the queue to finish processing before terminating the thread.",
+    "new": "   `quit()` stops processing queued messages without draining them. `quitSafely()` processes messages already due when shutdown is requested, then exits; delayed messages due in the future are discarded. Neither API forcefully interrupts a callback that is already executing.",
+    "reason": "quitSafely does not drain future delayed messages.",
+    "sources": [
+      "https://developer.android.com/reference/android/os/Looper#quitSafely()"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR31",
+    "path": "android/concurrency/shared-flow-and-state-flow.md",
+    "old": "For one-off collection in Compose, use `LaunchedEffect` and lifecycle-aware flow collection when needed.",
+    "new": "For UI effects that should be collected only while the screen is started, combine a composition-owned effect with `repeatOnLifecycle`. Collection stops below STARTED and restarts on re-entry. A replay-zero SharedFlow can lose events while there is no subscriber; represent important user outcomes as acknowledged UI state when that loss is unacceptable.",
+    "reason": "State the lifecycle and delivery contract explicitly.",
+    "sources": [
+      "https://developer.android.com/kotlin/flow/stateflow-and-sharedflow"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR32",
+    "path": "android/concurrency/shared-flow-and-state-flow.md",
+    "old": "LaunchedEffect(viewModel) {\n    viewModel.effects.collect { effect ->\n        when (effect) {\n            is UiEffect.ShowToast -> snackbarHostState.showSnackbar(effect.message)\n        }\n    }\n}",
+    "new": "val lifecycleOwner = LocalLifecycleOwner.current // androidx.lifecycle.compose\nLaunchedEffect(viewModel, lifecycleOwner, snackbarHostState) {\n    lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {\n        viewModel.effects.collect { effect ->\n            when (effect) {\n                is UiEffect.ShowToast -> snackbarHostState.showSnackbar(effect.message)\n            }\n        }\n    }\n} // imports: androidx.lifecycle.Lifecycle, androidx.lifecycle.repeatOnLifecycle",
+    "reason": "Gate this UI effect collector on STARTED while retaining composition ownership.",
+    "sources": [
+      "https://developer.android.com/kotlin/flow/stateflow-and-sharedflow"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR33",
+    "path": "android/networking-and-security/ktor-vs-retrofit.md",
+    "old": "Annotations describe each call. Retrofit's code generator (or proxy) creates the implementation. Type-safe; refactor-safe; concise.",
+    "new": "Annotations describe each call. Standard Retrofit implements the service interface through a Java dynamic proxy at runtime, parses and caches method metadata, and delegates calls to OkHttp. A converter may separately generate adapters for body serialization; that is not Retrofit interface code generation.",
+    "reason": "Distinguish Retrofit runtime proxies from converter code generation.",
+    "sources": [
+      "https://raw.githubusercontent.com/square/retrofit/trunk/retrofit/src/main/java/retrofit2/Retrofit.java"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR34",
+    "path": "android/networking-and-security/graphql.md",
+    "old": "fun observeUser(id: String): Flow<GetUserProfileQuery.Data> {\n    // watch() returns a Flow that emits according to the fetch policy and\n    // relevant normalized-cache changes while it is collected.\n    return apolloClient.query(GetUserProfileQuery(id))\n        .fetchPolicy(FetchPolicy.CacheAndNetwork) // Read DB first, then hit Network\n        .watch()\n}",
+    "new": "fun observeUser(id: String): Flow<ApolloResponse<GetUserProfileQuery.Data>> {\n    // Preserve data, GraphQL errors and transport failures for the UI/repository\n    // to handle explicitly. CacheAndNetwork can emit more than one response.\n    return apolloClient.query(GetUserProfileQuery(id))\n        .fetchPolicy(FetchPolicy.CacheAndNetwork)\n        .watch()\n} // import com.apollographql.apollo.api.ApolloResponse",
+    "reason": "Apollo watch emits response wrappers; preserve their data/error contract rather than silently dropping or throwing away intermediate responses.",
+    "sources": [
+      "https://www.apollographql.com/docs/kotlin/caching/query-watchers"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR35",
+    "path": "android/testing/unit-testing.md",
+    "old": "    poller.start()\n    \n    coVerify",
+    "new": "    poller.start()\n    runCurrent() // Start work queued by StandardTestDispatcher.\n    \n    coVerify",
+    "reason": "Drain work scheduled at the current time before assertions.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-test-coroutine-scheduler/advance-time-by.html"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR36",
+    "path": "android/testing/unit-testing.md",
+    "old": "    advanceTimeBy(30.seconds)\n    coVerify",
+    "new": "    advanceTimeBy(30.seconds)\n    runCurrent() // Execute work scheduled exactly at the new deadline.\n    coVerify",
+    "reason": "advanceTimeBy excludes tasks at its final timestamp.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-test-coroutine-scheduler/advance-time-by.html"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR37",
+    "path": "android/testing/unit-testing.md",
+    "old": "    advanceTimeBy(60.seconds)\n    coVerify",
+    "new": "    advanceTimeBy(60.seconds)\n    runCurrent()\n    coVerify",
+    "reason": "Execute tasks at the endpoint before asserting the count.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-test-coroutine-scheduler/advance-time-by.html"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR38",
+    "path": "android/testing/unit-testing.md",
+    "old": "Without Turbine, Flow testing involves manual `Job` management and is brittle. Turbine has become the standard.",
+    "new": "Turbine is one option for asserting emissions and managing collection. Finite flows can use terminal operators such as `first()`, `take(n).toList()` or `toList()`; long-lived collectors need an explicit cancellation owner such as `backgroundScope` in `runTest`.",
+    "reason": "Turbine is optional; flow termination and scope ownership determine whether tests finish.",
+    "sources": [
+      "https://developer.android.com/kotlin/flow/test"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR39",
+    "path": "android/testing/unit-testing.md",
+    "old": "### Pitfall: never `collect { }` without Turbine in tests",
+    "new": "### Pitfall: collecting a never-ending flow without a cancellation plan",
+    "reason": "Scope the warning to never-ending collection, not every collect call.",
+    "sources": [
+      "https://developer.android.com/kotlin/flow/test"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR40",
+    "path": "android/testing/unit-testing.md",
+    "old": "| Test hangs forever | `flow.collect { }` without Turbine | Always wrap in `flow.test { }` |",
+    "new": "| Test hangs forever | Collecting a never-ending flow in a scope the test waits for | Bound collection with a terminal operator, use backgroundScope, or use Turbine and cancel |",
+    "reason": "Finite collect calls are not inherently infinite.",
+    "sources": [
+      "https://developer.android.com/kotlin/flow/test"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR41",
+    "path": "android/testing/unit-testing.md",
+    "old": "   `collect` suspends indefinitely waiting for a continuous flow to finish, hanging the test. Use Turbine's `flow.test { }` which runs in its own scope and provides `awaitItem()` and `cancelAndIgnoreRemainingEvents()`.",
+    "new": "   A collection hangs when it waits for a never-ending stream in the test's completion scope. Finite flows can complete normally; use `first()`, `take(n).toList()` or an explicitly cancelled background collector. Turbine is a useful assertion tool that also supports explicit cancellation.",
+    "reason": "Correct the corresponding answer-key claim.",
+    "sources": [
+      "https://developer.android.com/kotlin/flow/test"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR42",
+    "path": "android/performance/anrs.md",
+    "old": "- **BroadcastReceiver Timeout:** 10 seconds. If a BroadcastReceiver's `onReceive()` takes longer than 10 seconds on the Main Thread, ANR.",
+    "new": "- **Broadcast receiver timeout:** Depends on intent priority and Android release. Before Android 14, foreground-priority broadcasts use 10 seconds and background-priority broadcasts 60 seconds. Android 14+ permits 10–20 and 60–120 seconds respectively depending on CPU starvation. `goAsync()` still requires `finish()` within the same timeout.",
+    "reason": "Timeout depends on broadcast priority and version, not simply whether UI is visible.",
+    "sources": [
+      "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR43",
+    "path": "android/performance/anrs.md",
+    "old": "- **Service Timeout:** 20 seconds. If a Service takes longer than 20 seconds to execute `onCreate` or `onStartCommand` on the Main Thread, ANR.",
+    "new": "- **Execute-service timeout:** Default 20 seconds for foreground service execution and 200 seconds for background service execution, including cold startup and the relevant lifecycle callback. This is distinct from the foreground-service promotion timeout and service-type running-duration limits.",
+    "reason": "The report reversed the execute-service foreground/background values.",
+    "sources": [
+      "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR44",
+    "path": "android/performance/anrs.md",
+    "old": "- **\"If my app is in the background, it can't ANR.\"** False. If your app is in the background, and a `BroadcastReceiver` fires, and you block the thread for 10 seconds, the OS will silently record a \"Background ANR.\" While the user won't see the dialog, Google Play Console *will* penalize your app's vitals score just as heavily.",
+    "new": "- **\"If my app is in the background, it cannot ANR.\"** False. A broadcast or service can exceed its applicable timeout without visible UI. Broadcast priority flags and OS version determine the broadcast deadline; `goAsync()` does not remove it.",
+    "reason": "Background ANR timing is not universally ten seconds.",
+    "sources": [
+      "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR45",
+    "path": "android/performance/anrs.md",
+    "old": "   If a background `BroadcastReceiver` takes longer than 10 seconds to execute its `onReceive()` method (which runs on the Main Thread), the OS will silently record a \"Background ANR\" and penalize the app.",
+    "new": "   An app without visible UI can exceed a broadcast-processing deadline. Use intent priority and OS version to determine the timeout; asynchronous work obtained with goAsync must still call finish in time. UI visibility alone does not select a ten-second deadline.",
+    "reason": "Fix the answer-key timeout categorization.",
+    "sources": [
+      "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR46",
+    "path": "android/performance/anrs.md",
+    "old": "- **\"I can just increase the 5-second timeout limit.\"** Impossible. The 5-second Input Dispatching timeout is hardcoded into the Android OS kernel (ActivityManager). You cannot bypass it or change it.",
+    "new": "- **\"I can increase the timeout from my app.\"** Apps do not have a supported setting to extend the system input-dispatch ANR deadline. This mechanism belongs to Android framework/system services, not an application-controlled timer; do not describe ActivityManager as the kernel.",
+    "reason": "Do not misidentify framework ANR machinery as the kernel.",
+    "sources": [
+      "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR47",
+    "path": "android/build-tooling/gradle-and-build-systems.md",
+    "old": "- **\"Cleaning the project fixes build errors.\"** Calling `./gradlew clean` deletes the `build/` directory. This destroys the local build cache. If you have to `clean` to get a successful build, your build graph is mathematically corrupt (a task is failing to declare its inputs or outputs correctly). A Staff Engineer fixes the broken task; they don't accept `clean` as a workflow.",
+    "new": "- **\"Cleaning the project fixes build errors.\"** `./gradlew clean` deletes project build outputs; it does not normally delete the local build cache in Gradle User Home. Gradle can restore eligible outputs from that cache afterward. Repeated clean-only recovery warrants investigating task inputs/outputs, stale generated files, plugin defects or environmental state; it is not proof of one particular cause.",
+    "reason": "Distinguish project outputs from the Gradle build cache.",
+    "sources": [
+      "https://docs.gradle.org/current/userguide/build_cache.html"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR48",
+    "path": "android/os-internals/art-and-dalvik.md",
+    "old": "1.  **DEX (Dalvik Executable):** The highly optimized bytecode format specific to Android. The `d8` / `R8` compiler turns your Kotlin into DEX.",
+    "new": "1. **DEX (Dalvik Executable):** Android bytecode consumed by ART. The Kotlin/JVM compiler produces JVM `.class` files; D8 converts Java bytecode to DEX, and R8 combines shrinking/optimization with DEX generation when enabled.",
+    "reason": "D8/R8 do not consume Kotlin source directly.",
+    "sources": [
+      "https://developer.android.com/tools/d8"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR49",
+    "path": "android/os-internals/the-zygote.md",
+    "old": "- [`baseline-profiles.md`](../performance/baseline-profiles.md) — How AOT compilation bypasses the need for the Zygote to JIT compile your specific app code.",
+    "new": "- [`baseline-profiles.md`](../performance/baseline-profiles.md) — Profile-guided compilation of app code by ART; Zygote preloading and process creation are separate responsibilities.",
+    "reason": "Zygote does not JIT-compile each app's specific code.",
+    "sources": [
+      "https://source.android.com/docs/core/runtime/jit-compiler"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR50",
+    "path": "kotlin/runtime-and-jvm/memory-model.md",
+    "old": "| `@Volatile` | Reads/writes have happens-before semantics across threads; no caching in CPU registers |",
+    "new": "| `@Volatile` | Atomic backing-field reads/writes and visibility/order guarantees; does not make compound read-modify-write atomic or promise to bypass CPU caches |",
+    "reason": "Describe volatile through its memory-model contract rather than a cache-bypass story.",
+    "sources": [
+      "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.concurrent/-volatile/"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR51",
+    "path": "kotlin/runtime-and-jvm/memory-model.md",
+    "old": "   Double-checked locking checks for null, acquires a lock, checks for null again, and then instantiates. `@Volatile` ensures the newly created object's fields are fully initialized and flushed to main memory *before* the `INSTANCE` reference is made visible to other threads. Without it, instruction reordering could allow another thread to see a non-null `INSTANCE` pointing to an uninitialized object.",
+    "new": "   Double-checked locking reads the reference, acquires a lock on the slow path, checks again and initializes once. A volatile publication establishes the visibility and ordering needed for readers to observe preceding initialization writes. Describe this as a happens-before guarantee, not literal CPU-cache bypass or a universal physical RAM flush.",
+    "reason": "Correct the repeated physical-memory explanation of safe publication.",
+    "sources": [
+      "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.concurrent/-volatile/"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR52",
+    "path": "kotlin/compiler-features/inline-functions.md",
+    "old": "  *(Fix: If the lambda must escape, you must mark it as `crossinline`. This tells the compiler: \"Still inline the function, but forbid the user from using non-local returns inside this lambda, because the outer function will have already finished before this thread runs\").*",
+    "new": "  *(Fix: Use `crossinline` when an inlined lambda is invoked from another callable context such as a Runnable; this forbids non-local returns. Use `noinline` when the function value itself must be stored or passed to a non-inline consumer. A crossinline invocation does not require the outer function to have finished.)*",
+    "reason": "Distinguish crossinline capture/invocation from noinline storage.",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html#non-local-jump-expressions"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR53",
+    "path": "android/networking-and-security/retrofit-and-okhttp.md",
+    "old": "        API[Kotlin @GET Interface] -->|Serialization| Moshi[Moshi Converter]\n        Moshi -->|Generates| Req[OkHttp Request]",
+    "new": "        API[Kotlin @GET Interface] --> Factory[Retrofit RequestFactory]\n        Factory -->|Builds URL headers method| Req[OkHttp Request]\n        Moshi[Moshi Converter] -->|Converts request body| Req",
+    "reason": "Retrofit builds the HTTP request; converters transform bodies.",
+    "sources": [
+      "https://raw.githubusercontent.com/square/retrofit/trunk/retrofit/src/main/java/retrofit2/RequestFactory.java"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR54",
+    "path": "android/os-internals/art-and-dalvik.md",
+    "old": "        Kotlin[Kotlin Code] -->|R8 Compiler| DEX[.dex Bytecode]",
+    "new": "        Kotlin[Kotlin source] -->|Kotlin JVM compiler| Classes[JVM .class bytecode]\n        Classes -->|D8 or R8| DEX[.dex Bytecode]",
+    "reason": "Make the bytecode-to-DEX boundary explicit in the diagram.",
+    "sources": [
+      "https://developer.android.com/tools/d8"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested verified official-source fixes and publication, 2026-10-27; source-repository PR additionally requested.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR55",
+    "path": "android/architecture/activity.md",
+    "old": "1. `onPause()` means the Activity has lost focus but can remain visible, such as behind a permission dialog or in multi-window mode; `onStop()` means it is no longer visible. Keep `onPause()` brief and defer visibility-dependent cleanup to `onStop()`.",
+    "new": "1. `onPause()` leaves the resumed state but the Activity can remain visible, for example beneath another translucent Activity. Multi-window on Android 10+ can keep multiple activities resumed; an ordinary in-window dialog is not itself a new Activity. `onStop()` means the Activity is no longer visible. Keep lifecycle callbacks brief and release resources according to their required ownership state.",
+    "reason": "Correct the repeated multi-window/dialog lifecycle example.",
+    "sources": [
+      "https://developer.android.com/develop/ui/views/layout/support-multi-window-mode"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR56",
+    "path": "android/architecture/activity.md",
+    "old": "- **`onPause()`:** The guest steps away to answer a phone call (a transparent dialog appears over your app). You pause the conversation, but you keep the door open.",
+    "new": "- **`onPause()`:** The guest steps back while another translucent Activity takes the foreground, but remains visible. An ordinary dialog in the same window does not itself dispatch Activity pause/resume.",
+    "reason": "Avoid implying every dialog pauses its host Activity.",
+    "sources": [
+      "https://developer.android.com/guide/components/activities/activity-lifecycle"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR57",
+    "path": "android/architecture/activity.md",
+    "old": "stateDiagram-v2\n    [*] --> Created : OS Instantiates\n    \n    state \"Visible but not Interactive\" as Visible\n    state \"Interactive (Foreground)\" as Active\n    state \"Invisible (Background)\" as Hidden\n    \n    Created --> Visible : onStart()\n    Visible --> Active : onResume()\n    \n    Active --> Visible : onPause() (e.g. Dialog appears)\n    Visible --> Active : onResume() (Dialog dismissed)\n    \n    Visible --> Hidden : onStop() (e.g. Home button)\n    Hidden --> Visible : onRestart() -> onStart()\n    \n    Hidden --> Destroyed : onDestroy()\n    Destroyed --> [*]\n",
+    "new": "stateDiagram-v2\n    [*] --> Created : OS Instantiates\n    \n    state \"Visible but not Interactive\" as Visible\n    state \"Interactive (Foreground)\" as Active\n    state \"Invisible (Background)\" as Hidden\n    \n    Created --> Visible : onStart()\n    Visible --> Active : onResume()\n    \n    Active --> Visible : onPause() (e.g. translucent Activity takes foreground)\n    Visible --> Active : onResume() (foreground Activity finishes)\n    \n    Visible --> Hidden : onStop() (e.g. Home button)\n    Hidden --> Visible : onRestart() -> onStart()\n    \n    Hidden --> Destroyed : onDestroy()\n    Destroyed --> [*]\n",
+    "reason": "Activity transition examples must describe another Activity, not every Dialog.",
+    "sources": [
+      "https://developer.android.com/guide/components/activities/activity-lifecycle"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR58",
+    "path": "android/data-and-di/components.md",
+    "old": "The component that powers `@HiltViewModel`. Created the first time an Activity is created; lives until that Activity is permanently finished (NOT recreated on rotation).",
+    "new": "The retained component is an ancestor shared by the Activity's ViewModel components. Each Hilt ViewModel is created through its own `ViewModelComponent`; dependencies explicitly annotated `@ActivityRetainedScoped` can be shared across those ViewModels.",
+    "reason": "Distinguish the ViewModel injector from its retained ancestor.",
+    "sources": [
+      "https://dagger.dev/hilt/components.html"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR59",
+    "path": "android/data-and-di/components.md",
+    "old": ") : ViewModel()   // automatically @ActivityRetainedScoped via the @HiltViewModel macro",
+    "new": ") : ViewModel()   // ViewModelComponent supplies the ViewModel dependencies.",
+    "reason": "HiltViewModel does not turn the class into an ActivityRetainedScoped binding.",
+    "sources": [
+      "https://dagger.dev/hilt/components.html"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR60",
+    "path": "android/data-and-di/components.md",
+    "old": "| Cannot inject Activity-scoped dep into ViewModel | ViewModel lives in `ActivityRetainedComponent`, not `ActivityComponent` | Re-scope dep to `@ActivityRetainedScoped` or `@Singleton` |",
+    "new": "| Cannot inject Activity-scoped dep into ViewModel | ViewModelComponent is a sibling of ActivityComponent under ActivityRetainedComponent | Use a dependency whose actual owner and scope are valid for the ViewModel; do not retain Activity state in a longer-lived binding |",
+    "reason": "A ViewModel cannot access a sibling Activity component.",
+    "sources": [
+      "https://dagger.dev/hilt/components.html"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR61",
+    "path": "android/data-and-di/components.md",
+    "old": "5. Why is `@HiltViewModel` scoped to `ActivityRetainedComponent` rather than `ActivityComponent`?",
+    "new": "5. Which component supplies a Hilt ViewModel, and why can it not depend on an ActivityComponent-scoped object?",
+    "reason": "Fix the question premise consistently with the component hierarchy.",
+    "sources": [
+      "https://dagger.dev/hilt/components.html"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR62",
+    "path": "android/data-and-di/components.md",
+    "old": "5. **Why is `@HiltViewModel` scoped to `ActivityRetainedComponent` rather than `ActivityComponent`?**\n   ViewModels are designed by the Android framework to survive configuration changes (rotation). `ActivityComponent` is destroyed on rotation. Therefore, ViewModels must live in `ActivityRetainedComponent`, which maps to that exact rotation-surviving lifetime.",
+    "new": "5. **Which component supplies a Hilt ViewModel, and why can it not depend on an ActivityComponent-scoped object?**\n   Hilt uses ViewModelComponent for each ViewModel. ViewModelComponent and ActivityComponent are siblings beneath ActivityRetainedComponent. A ViewModel can use bindings from its own component and ancestors, not the Activity sibling. ViewModelStore ownership lets it survive Activity recreation without retaining the old Activity.",
+    "reason": "Correct the repeated Hilt ViewModel ownership explanation.",
+    "sources": [
+      "https://dagger.dev/hilt/components.html"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR63",
+    "path": "android/data-and-di/dependency-injection.md",
+    "old": "   Annotating everything `@Singleton` forces the app to keep every class in RAM indefinitely, leading to massive memory bloat and slower startup times. Instead, most classes should be unscoped (so they can be garbage collected when the referencing component dies) or scoped tightly to the ViewModel (`@ViewModelScoped`).",
+    "new": "   A scoped binding is created when requested and its component caches the result. Scope does not eagerly construct all classes, but an app-wide cached object can retain state longer than needed. Choose scope from actual sharing and ownership requirements; use startup traces to establish initialization cost.",
+    "reason": "Fix the answer-key claim about eager creation of all singleton bindings.",
+    "sources": [
+      "https://dagger.dev/semantics/advanced.html#scopes"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR64",
+    "path": "android/concurrency/workmanager.md",
+    "old": "5.  What are \"Expedited Jobs\" in WorkManager, and what specific Android 12+ restriction were they introduced to bypass?",
+    "new": "5. What does an expedited WorkRequest request, and what happens when its quota is unavailable?",
+    "reason": "Avoid framing expedited work as an unrestricted bypass.",
+    "sources": [
+      "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work#expedited"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR65",
+    "path": "android/concurrency/workmanager.md",
+    "old": "5. **What are \"Expedited Jobs\" in WorkManager, and what specific Android 12+ restriction were they introduced to bypass?**\n   They allow immediate, high-priority background execution. They were introduced to bypass Android 12's restriction that prevents apps running in the background from launching Foreground Services.",
+    "new": "5. **What does an expedited WorkRequest request, and what happens when its quota is unavailable?**\n   It requests prompt execution for short, important work within system quota. Use setExpedited with an OutOfQuotaPolicy to choose ordinary-work fallback or dropping the request. It does not guarantee immediate execution or exempt arbitrary background work from platform restrictions.",
+    "reason": "Correct the repeated immediate-execution guarantee.",
+    "sources": [
+      "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work#expedited"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR66",
+    "path": "android/compose/stability.md",
+    "old": "restartable fun CartScreen(   ← NOT skippable!",
+    "new": "restartable skippable fun CartScreen(   ← representative strong-skipping output",
+    "reason": "Make the representative compiler output consistent with the current compiler mode.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR67",
+    "path": "android/compose/stability.md",
+    "old": "  unstable cart: Cart            ← culprit",
+    "new": "  unstable cart: Cart            ← compared by identity with strong skipping",
+    "reason": "An unstable argument can still be skipped under strong skipping.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR68",
+    "path": "android/compose/stability.md",
+    "old": "The audit is mechanical: find every `restartable fun X(` that's missing the `skippable` keyword. Each one is a perf opportunity.",
+    "new": "Inspect the actual compiler mode and reports. A missing skippable marker needs investigation, but it is not by itself proof of a performance defect or an unstable-parameter cause. Measure invalidation and expensive work on representative call paths.",
+    "reason": "Avoid interpreting one compiler marker as proof of a performance problem.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR69",
+    "path": "android/compose/stability.md",
+    "old": "Aggregate metrics: number of composables, % skippable, % stable classes. Track this over time as a build-output. A regression means someone introduced an unstable parameter.",
+    "new": "Track composable counts and stability/skipping classifications across comparable toolchains. A changed count can reflect compiler mode, source changes or report format; inspect the diff before attributing it to an unstable parameter.",
+    "reason": "Report changes have several possible causes.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR70",
+    "path": "android/compose/stability.md",
+    "old": "| LazyColumn re-renders every row on any change | `items` parameter is `List<T>` (unstable) | `ImmutableList<T>` or `@Immutable` wrapper |",
+    "new": "| Rows execute more often than expected | Changed arguments, observed-state invalidation, or work in the row | Inspect actual comparison/identity rules and traces before changing collection APIs |",
+    "reason": "Avoid treating List as a universal recomposition cause.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR71",
+    "path": "android/compose/stability.md",
+    "old": "| Compose metrics show \"NOT skippable\" everywhere | All public APIs use `List` / `Map` | Migrate to `ImmutableList`; annotate model types |",
+    "new": "| Compose metrics show unexpected non-skippable functions | Compiler mode, non-restartable functions or API shape | Check compiler reports and strong-skipping configuration; measure affected call sites |",
+    "reason": "Do not prescribe ImmutableList solely from a non-skippable marker.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR72",
+    "path": "android/compose/stability.md",
+    "old": "| `Composable` lambda parameter shows unstable | Lambda captures unstable state | Hoist captures; pass needed state as parameters |",
+    "new": "| Callback identity changes unexpectedly | Captures or compiler configuration changed | Inspect remembered captures and toolchain mode; do not infer lambda type stability from its captures |",
+    "reason": "Captured values do not make the function type unstable.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR73",
+    "path": "android/compose/stability.md",
+    "old": "| `@Immutable` annotation has no effect | Class has a `var` somewhere | Cannot mix `@Immutable` and `var`; refactor to `val` |",
+    "new": "| UI stays stale after an @Immutable object mutates | The annotation promise was violated | Use an actually immutable object graph or observable mutable state; annotations do not enforce immutability |",
+    "reason": "Compose trusts annotation contracts; it does not enforce immutability.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/fix"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR74",
+    "path": "android/build-tooling/gradle-and-build-systems.md",
+    "old": "   Because Gradle's incremental build and caching are mathematically designed to be 100% reliable based on inputs/outputs. If `clean` is required to fix a build, it means a task is failing to declare its inputs/outputs correctly, polluting the cache. Fixing the broken task is the real solution.",
+    "new": "   Correct task inputs, outputs and dependencies support reliable incremental builds and cache reuse. Repeated clean-only recovery is a diagnostic signal, not proof of a mathematically corrupt graph: investigate stale outputs, task declarations, plugin defects and environmental differences. Clean removes project outputs, not the shared build cache.",
+    "reason": "Align the answer key with the corrected output/cache distinction.",
+    "sources": [
+      "https://docs.gradle.org/current/userguide/build_cache.html"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR75",
+    "path": "android/performance/startup.md",
+    "old": "## Diagnosing Slow Startup",
+    "new": "## Diagnosing Slow Startup\n\nFor an app shipping native code, also check [16 KB page-size compatibility](../../release-engineering/16kb-page-sizes.md). Android 15 introduced support for devices configured with 16 KB pages. Audit your own and SDK-provided native libraries, ELF and APK alignment, and test in a 16 KB environment. This compatibility check complements startup traces; it is not a promise of a specific startup-speed improvement. See the [official page-size guide](https://developer.android.com/guide/practices/page-sizes).",
+    "reason": "Add the requested native-library compatibility cross-reference without claiming all Android 15 devices use 16 KB pages.",
+    "sources": [
+      "https://developer.android.com/guide/practices/page-sizes"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source fixes, publication and an original-repository PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  },
+  {
+    "id": "VR76",
+    "path": "android/architecture/mvvm-vs-mvi.md",
+    "old": "1. **`collectAsStateWithLifecycle`** (not `collectAsState`) — stops collecting when the lifecycle stops; restarts on resume. Saves CPU and battery for off-screen tabs.",
+    "new": "1. **`collectAsStateWithLifecycle`** collects at STARTED or above by default, stops below that state and restarts on re-entry. This is lifecycle gating, not a promise of one collection per onResume.",
+    "reason": "The default active threshold is STARTED, not RESUMED.",
+    "sources": [
+      "https://developer.android.com/kotlin/flow/stateflow-and-sharedflow"
+    ],
+    "status": "superseded-by-merged-source",
+    "approval": "Owner requested official-source corrections and both publication and original-source PR, 2026-10-27.",
+    "superseded_by": "corrections-z-completion.json"
+  }
+]

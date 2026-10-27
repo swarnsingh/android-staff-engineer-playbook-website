@@ -1,0 +1,36 @@
+<!-- Website teaching layer for android/compose/form-factors-matrix.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Uses only the surfaces, toolkits and constraints the chapter cites from developer.android.com. 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A roadmap slide says "Q3: Wear, TV, Auto". Engineering estimates it as three ports of the phone app. Six weeks in, the watch team has rebuilt every screen with different components, the car team learns their category does not allow custom UI while driving, and nobody owns the TV app's focus bugs.</p>
+
+Each Android surface beyond phones and tablets has its **own UI toolkit, interaction model and review rules**, and only the layers below the UI carry over. Whether to build for it is therefore a cost model: which session belongs there, how many of your users can reach it, and who maintains it. This chapter is that model, with a decision sequence you can apply to any "let's be everywhere" proposal.
+
+<!-- @after 1. The Matrix :: visual -->
+### What carries over, and what is new
+
+<figure class="viz"><div class="viz-stack"><div class="viz-grid" style="--cols:4"><div class="node" data-state="warn"><strong>Wear OS UI</strong><small>Compose for Wear components</small></div><div class="node" data-state="warn"><strong>TV UI</strong><small>Compose for TV, focus-first</small></div><div class="node" data-state="warn"><strong>Car UI</strong><small>templates or host-rendered media</small></div><div class="node" data-state="warn"><strong>Widget UI</strong><small>Glance → RemoteViews</small></div></div><div class="down"></div><div class="node is-key" data-state="done"><strong>Shared: domain, data, sync, and for media apps the playback stack</strong><small>the modules that pay for modularization</small></div></div><figcaption>Budget each surface's UI as new code; reuse comes from the layers beneath it.</figcaption></figure>
+
+<!-- @after 3. The Decision Framework :: visual -->
+### Run one proposal through the framework
+
+<figure class="viz decision-map"><p class="diagram-context">"Let's build a full Wear OS app"</p><ol class="decision-grid"><li class="decision-card"><span class="decision-number" aria-hidden="true">1</span><h4>Session</h4><p>A fitness app: logging a set mid-workout is a moment when the phone is the wrong device. The proposal passes the first gate.</p></li><li class="decision-card"><span class="decision-number" aria-hidden="true">2</span><h4>Denominator</h4><p>Instrumentation shows what fraction of active users own a watch. This is the gate most proposals fail; here the overlap is small.</p></li><li class="decision-card"><span class="decision-number" aria-hidden="true">3</span><h4>Sharing</h4><p>Domain and sync modules carry over. The UI does not: Wear has its own components and navigation, so every screen is new code.</p></li><li class="decision-card"><span class="decision-number" aria-hidden="true">4</span><h4>Ownership</h4><p>A watch app needs its own test matrix and release train. No team has committed to it.</p></li><li class="decision-card"><span class="decision-number" aria-hidden="true">5</span><h4>Climb the ladder instead</h4><p>Following the leverage sequence, the team ships a Wear tile for the active workout first: high value per engineering hour, little new UI, and a cheap way to measure demand.</p></li></ol><figcaption>Illustrative decision example. The framework rarely says "never"; it usually says "a smaller surface first".</figcaption></figure>
+
+<!-- @after 4. Review Checklist :: check -->
+**Allowed on that surface?** Decide before opening each answer.
+
+<details><summary>Using phone Material 3 components inside a Wear OS app.</summary>
+
+No. Wear has its own Material implementation, and the documentation warns that mixing in the mobile artifacts can cause unexpected behaviour.
+</details>
+
+<details><summary>A widget expected to behave like a continuously live chat screen.</summary>
+
+Updates need an explicit producer and must respect widget scheduling constraints. Design a snapshot with a tap-through action rather than promise an always-live chat session.
+</details>
+
+<details><summary>A shopping app's custom browsing UI on Android Auto while driving.</summary>
+
+No. Driving experiences are limited to approved categories and templates; free-form UI is reserved for supported parked categories.
+</details>

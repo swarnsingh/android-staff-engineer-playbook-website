@@ -1,0 +1,43 @@
+<!-- Teaching layer: android/testing/unit-testing.md; pending original claims are listed in android-phase6-findings.md. -->
+<!-- @opening -->
+<p class="story-lead">A cart applies a discount twice after the same action is submitted again. Reproducing it by tapping through the app is slow. First isolate the rule: given an existing cart and this input, what result should the public API produce?</p>
+
+A unit test makes the cause small enough to inspect. Supply controlled dependencies, perform one meaningful action, and assert its observable result. A mock can check a required interaction; a fake can model state over several calls. Neither choice proves Android or server integration.
+
+<!-- @diagram d69c88c3cb1f2e4d -->
+### The pyramid as an economics model
+
+<figure class="viz"><div class="viz-stack"><div class="node" data-state="done"><strong>Small set of end-to-end journeys</strong><small>real devices / Test Lab</small></div><div class="node"><strong>Fewer integration and UI tests</strong><small>Robolectric, Compose, screenshots</small></div><div class="node is-key"><strong>Many unit tests</strong><small>pure JVM, fast, narrow</small></div></div><figcaption>Redrawn from the original diagram, read from the base up. Each layer up costs more per test and sees more of the real system.</figcaption></figure>
+
+<!-- @after Mocks, Fakes, and Spies :: visual -->
+### Mock, fake or spy?
+
+<figure class="viz"><div class="viz-cols" style="--cols:3"><div class="col"><span class="col-title">Mock</span><div class="node"><strong>Checks a required interaction</strong><small>"was the analytics event sent once?"</small></div></div><div class="col"><span class="col-title">Fake</span><div class="node is-key"><strong>Models state over several calls</strong><small><code>FakeCartRepository</code>: add, remove, observe</small></div></div><div class="col"><span class="col-title">Spy</span><div class="node"><strong>Wraps a real object</strong><small>records calls while keeping real behaviour</small></div></div></div><figcaption>The chapter's rule of thumb: fake small stateful dependencies, mock wide ones where you test one or two calls. Keep each fake honest with contract tests against the real implementation.</figcaption></figure>
+
+<!-- @after Testing Repositories :: animation -->
+### Pin the double discount with a fake
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">From a bug report to a regression test</span><div class="stage viz-grid" style="--cols:4"><div class="node" data-el="repo" data-art="database" data-art-role="storage"><strong><code>FakeCartRepository</code></strong><small data-text="repoV">—</small></div><div class="node" data-el="act" data-art="signal" data-art-role="runtime"><strong>Action</strong><small data-text="actV">—</small></div><div class="node" data-el="assert" data-art="inspect" data-art-role="runtime"><strong>Assertion</strong><small data-text="assertV">—</small></div><div class="node is-key" data-el="keep" data-art="document" data-art-role="storage"><strong>Regression suite</strong><small data-text="keepV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Fresh state","caption":"Create a new fake for this test with one known item. A fixture shared across tests would make other tests part of this one's input.","add":["repo","act","assert","keep"],"state":{"repo":"active"},"text":{"repoV":"one item, 100.00"}},
+{"label":"Repeat the input","caption":"Apply the same coupon twice, exactly as the duplicate submission did. The fake behaves like a real repository, so the second call sees the first call's result.","state":{"repo":"done","act":"active"},"text":{"actV":"apply SAVE10 × 2"}},
+{"label":"Observe the bug","caption":"Assert the public result: the total should reflect one discount. The test fails, with 81.00 instead of 90.00, so the bug is now reproducible in milliseconds.","state":{"act":"done","assert":"error"},"text":{"assertV":"expected 90.00, got 81.00"}},
+{"label":"Fix and keep","caption":"Make coupon application idempotent and rerun: the same assertion passes. The test stays in the suite, so the duplicate-submission path is guarded from now on.","state":{"assert":"done","keep":"done"},"text":{"assertV":"90.00","keepV":"runs on every change"}}
+]</script><figcaption>Illustrative values. Assert the observable total, not which internal helper was called. Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>
+
+<!-- @after Test Naming and Structure :: check -->
+### Check your test design
+
+<details><summary>Why create a fresh fake for each case?</summary>
+
+It keeps prior calls and mutations from becoming hidden inputs, so each test fails only for its own reason.
+</details>
+
+<details><summary>Must every test verify every dependency call?</summary>
+
+No. Verify an interaction when it is the behavior promised by the contract; otherwise prefer the observable result, which survives refactoring.
+</details>
+
+<details><summary>A fake accepts data the real server rejects. What confidence does this test provide?</summary>
+
+Only confidence against the fake model. Add contract or integration evidence for the real boundary, and correct the fake so it rejects the same input.
+</details>

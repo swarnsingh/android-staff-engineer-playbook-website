@@ -1,0 +1,52 @@
+<!-- Website teaching layer for android/concurrency/threads-and-looper.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Looper/Handler behaviour per developer.android.com reference (Looper.quit / quitSafely) and
+     "Processes and threads"; checked 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A screen shows "Saved!" ten minutes after a save, then crashes because the activity it belonged to was destroyed long ago. The code posted a delayed update with a <code>Handler</code>. Nobody remembered that the message was sitting in the main thread's queue all that time, holding the old activity.</p>
+
+Android's main event loop serialises queued input, frame and lifecycle work, and dispatched `Dispatchers.Main` resumptions. Work can also run inline when already on that thread, including through `Dispatchers.Main.immediate`. `Looper`, `MessageQueue` and `Handler` are that loop, that queue and the way to put work into it. This chapter shows how they fit, why blocking the loop freezes the app, and how queued work can outlive the code that queued it.
+
+<!-- @after First Principles :: visual -->
+### One thread, one loop, one queue
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Any thread</strong><small><code>handler.post { … }</code></small></div><div class="node"><strong><code>MessageQueue</code></strong><small>ordered by due time</small></div><div class="node is-key"><strong><code>Looper.loop()</code></strong><small>takes the next due message, runs it, repeats</small></div><div class="node" data-state="done"><strong>The Looper's thread</strong><small>for the main Looper: the UI thread</small></div></div><figcaption>A <code>Handler</code> runs code on its Looper's thread, whoever calls <code>post</code>.</figcaption></figure>
+
+<!-- @after Internal Mechanics :: animation -->
+### Watch the main queue for a few seconds
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="One Looper, one callback at a time">
+<h3>One Looper, one callback at a time</h3>
+<p class="pb-sub">An illustrative run. Each moving packet is a named request, notification or result.</p>
+<div class="pb-paper"><svg class="pb-svg" role="img" aria-label="Posting code sends callbacks to the main MessageQueue. The main Looper dispatches due callbacks one at a time; the delayed callback remains queued."></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div>
+<div class="pb-caption"><span class="pb-count"></span><p aria-live="polite"></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">{"nodes": [{"id": "poster", "label": "Posting code", "art": {"kind": "phone", "role": "client"}}, {"id": "queue", "label": "MessageQueue", "queue": true, "art": {"kind": "queue", "role": "queue", "queue": true}}, {"id": "main", "label": "Main thread", "art": {"kind": "worker", "role": "runtime"}}], "layouts": {"wide": {"size": [760, 290], "nodes": {"poster": {"x": 24, "y": 50, "w": 208, "h": 140}, "queue": {"x": 276, "y": 50, "w": 208, "h": 140}, "main": {"x": 528, "y": 50, "w": 208, "h": 140}}, "edges": {"post": "M234 102 C254 102 254 102 274 102", "dispatch": "M486 102 C506 102 506 102 526 102"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}, "narrow": {"size": [320, 470], "nodes": {"poster": {"x": 40, "y": 22, "w": 240, "h": 140}, "queue": {"x": 8, "y": 252, "w": 144, "h": 190}, "main": {"x": 168, "y": 252, "w": 144, "h": 190}}, "edges": {"post": "M142 164 C142 207 62 207 62 250", "dispatch": "M154 329 C160 329 160 329 166 329"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}}, "modes": {"run": {"initial": {"nodes": {"poster": ["", "main Handler"], "queue": ["", "two due, one later"], "main": ["", "ready"]}, "queue": 3, "visuals": {}}, "steps": [{"caption": "A frame callback and a touch event are due; a delayed update is due in ten minutes. This simplified queue omits barriers and other platform scheduling details."}, {"caption": "The Looper dispatches the frame callback on the main thread. While it runs, that thread cannot dispatch the next callback.", "packets": [{"edge": "dispatch", "label": "frame", "tone": "fwd", "kind": "parcel"}], "set": {"nodes": {"queue": ["", "touch + delayed"], "main": ["is-active", "drawing frame"]}, "queue": 2, "visuals": {"main": {"busy": true}}}}, {"caption": "The frame callback returns. Only then can the Looper dispatch the touch callback. Blocking inside onClick would delay subsequent work on this thread.", "packets": [{"edge": "dispatch", "label": "touch", "tone": "fwd", "kind": "parcel"}], "set": {"nodes": {"queue": ["", "delayed only"], "main": ["is-active", "running onClick"]}, "queue": 1}}, {"caption": "The old activity is destroyed. Its delayed Runnable is still queued and still captures it; this lifecycle change sends no message from the touch callback to the delayed callback.", "set": {"nodes": {"poster": ["is-warn", "old activity gone"], "main": ["", "available"], "queue": ["is-warn", "retains old activity"]}, "visuals": {"poster": {"visible": false}, "main": {"busy": false}}}}, {"caption": "If it is left queued, the delayed callback can run when due against stale UI ownership. A crash is possible, not inevitable. Cancel or detach work at its ownership boundary.", "packets": [{"edge": "dispatch", "label": "delayed", "tone": "stuck", "kind": "parcel"}], "set": {"nodes": {"queue": ["", "drained"], "main": ["is-warn", "stale UI update"]}, "queue": 0, "visuals": {"main": {"busy": true}}}}]}}, "illustrated": true, "edgeEndpoints": {"post": {"from": "poster", "to": "queue"}, "dispatch": {"from": "queue", "to": "main"}}}</script>
+<p class="pb-sub">Sources: <a href="https://developer.android.com/reference/android/os/Handler">Handler reference</a>.</p>
+</section>
+
+<!-- @diagram ecb7e8b069453bfd -->
+### Background work, main-thread update
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Background thread</span><div class="node"><strong>Worker logic</strong><small>download, parse</small></div><div class="node"><strong><code>mainHandler.post { … }</code></strong><small>enqueue the UI update</small></div></div><div class="col"><span class="col-title">Main thread</span><div class="node"><strong>Message queue</strong></div><div class="node is-key"><strong>Looper pulls the task</strong></div><div class="node" data-state="done"><strong>Update UI</strong><small>then the loop repeats</small></div></div></div><figcaption>A main Handler is one way across; main-dispatcher coroutines and other UI scheduling APIs also marshal work to the UI thread. A background thread should not mutate views directly.</figcaption></figure>
+
+<!-- @after Common Misconceptions :: check -->
+**Which thread runs it?** Decide before opening each answer.
+
+<details><summary><code>Handler(Looper.getMainLooper()).post { … }</code> called from a background thread.</summary>
+
+The main thread. A Handler runs work on its Looper's thread, not the caller's.
+</details>
+
+<details><summary>Parsing a 10 MB JSON file posted to a <code>HandlerThread</code> that also handles camera frames.</summary>
+
+That one thread: and while it parses, no camera frame is handled. Run CPU-heavy work on `Dispatchers.Default` or a pool.
+</details>
+
+<details><summary>A coroutine resumes on <code>Dispatchers.Main</code>.</summary>
+
+The main thread. The regular Main dispatcher posts through its Handler; `Dispatchers.Main.immediate` can avoid an extra dispatch when already on the matching Looper.
+</details>

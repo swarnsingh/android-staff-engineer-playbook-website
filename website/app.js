@@ -1,15 +1,17 @@
 'use strict';
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
-const sourceRoot = 'https://github.com/swarnsingh/android-staff-engineer-playbook/blob/main/';
+const sourceRoot = 'https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/codex/android-completion/';
 const escapeHtml = text => text.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 
-// The source text remains readable without this optional highlighting pass.
-const tokenPattern = /("[^"\n]*"|\/\/[^\n]*|\b(?:import|fun|suspend|val|var|class|return|if|else|try|catch|finally|throw|case|switch|new|public|final|private|object)\b|\b(?:true|false|null|\d[\d_]*)\b|\b[A-Za-z_][\w]*(?=\s*\())/g;
+// Highlight tokens once, preserving every source character and escaping markup.
+const keywordNames = 'import package fun suspend val var class interface return if else try catch finally throw case switch new public final private protected internal object data sealed inline reified crossinline noinline override open abstract enum annotation companion constructor init by get set where is as in out when for while do break continue typealias expect actual const lateinit this super static void'.split(' ');
+const keywordSet = new Set(keywordNames);
+const tokenPattern = new RegExp('(\"\"\"[\\s\\S]*?\"\"\"|\"(?:\\\\.|[^\"\\\\\\n])*\"|\'(?:\\\\.|[^\'\\\\\\n])*\'|\\/\\*[\\s\\S]*?\\*\\/|\\/\\/[^\\n]*|@(?:\\w+:)?(?:\\w+\\.)*\\w+|\\b(?:'+keywordNames.join('|')+')\\b|\\b(?:true|false|null|\\d[\\d_]*(?:\\.\\d[\\d_]*)?)\\b|\\b[A-Z][A-Za-z0-9_]*\\b|\\b[A-Za-z_]\\w*(?=\\s*\\())','g');
 $$('code.highlight').forEach(code => {
   code.innerHTML = code.textContent.split(tokenPattern).map((part,index) => {
     if (!(index % 2)) return escapeHtml(part);
-    const kind = part.startsWith('"') ? 'string' : part.startsWith('//') ? 'comment' : /^(true|false|null|\d)/.test(part) ? 'number' : /^(import|fun|suspend|val|var|class|return|if|else|try|catch|finally|throw|case|switch|new|public|final|private|object)$/.test(part) ? 'key' : 'call';
+    const kind = part.startsWith('"') || part.startsWith("'") ? 'string' : part.startsWith('//') || part.startsWith('/*') ? 'comment' : part.startsWith('@') ? 'annotation' : /^(true|false|null|\d)/.test(part) ? 'number' : keywordSet.has(part) ? 'key' : /^[A-Z]/.test(part) ? 'type' : 'call';
     return `<span class="syntax-${kind}">${escapeHtml(part)}</span>`;
   }).join('');
 });
@@ -26,7 +28,7 @@ $$('[data-copy]').forEach(button => button.addEventListener('click', async () =>
   } catch { toast('Clipboard unavailable. Select the code to copy it.'); }
 }));
 
-const fonts = {sans:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',serif:'Georgia,"Palatino Linotype",serif',times:'"Times New Roman",Times,serif',hand:'"Playbook Hand",sans-serif'};
+const fonts = {sans:'Inter,system-ui,-apple-system,"Segoe UI",sans-serif',serif:'"Source Serif 4",Georgia,"Palatino Linotype",serif',times:'"Times New Roman",Times,serif',hand:'"Shantell Sans","Playbook Hand",sans-serif'};
 let preferences = {};
 try { preferences = JSON.parse(localStorage.getItem('playbook-reader-v1')) || {}; } catch {}
 if (typeof preferences !== 'object' || Array.isArray(preferences)) preferences = {};
@@ -34,7 +36,7 @@ const systemMotion = matchMedia('(prefers-reduced-motion:reduce)');
 let effectiveReducedMotion = false;
 // Every animation registers its stop function here; dialogs and reduced motion stop them all.
 const animationStops = [];
-function pauseAnimation() { animationStops.forEach(stop => stop()); }
+function pauseAnimation() { animationStops.forEach(stop => stop()); window.Playbook?.pauseAll(); }
 function savePreferences() { try { localStorage.setItem('playbook-reader-v1',JSON.stringify(preferences)); } catch {} }
 function applyPreferences() {
   const theme = ['light','dark','sepia','contrast'].includes(preferences.theme) ? preferences.theme : 'light';
@@ -72,7 +74,7 @@ $('#focus-toggle').addEventListener('click',() => { const enabled=document.body.
 const settingsDialog = $('#reading-dialog');
 const curriculumDialog = $('#curriculum-dialog');
 const curriculum = $('#curriculum');
-const drawerMedia = matchMedia('(max-width:1180px)');
+const drawerMedia = matchMedia('(max-width:1439px)'); // the curriculum rail shows only from 1440px (theme.css)
 function syncModalState() { document.body.classList.toggle('modal-open',settingsDialog.open || curriculumDialog.open); }
 function openSettings() { pauseAnimation(); settingsDialog.showModal(); syncModalState(); }
 function openCurriculum() { pauseAnimation(); if (drawerMedia.matches && !curriculumDialog.open) { curriculumDialog.showModal(); syncModalState(); } }
@@ -108,11 +110,51 @@ document.addEventListener('keydown',e => {
   }
 });
 
-// Supplemental views derive from the same in-lesson answers and source links.
-$$('[data-question]').forEach(question => { const clone=question.cloneNode(true); [clone,...clone.querySelectorAll('[id]')].forEach(node=>node.removeAttribute('id')); clone.removeAttribute('data-question'); $('#practice-questions').append(clone); });
+// Move each practice block once: Content teaches; Q&A holds questions and answers.
+// Static HTML preserves the complete chapter as a no-JS fallback. The build gate checks
+// that stream; the browser gate independently checks both activated tabs against it.
+const practice = $('#practice-questions');
+const practiceBlocks = $$('[data-question], #panel-content .blend[data-kind="check"]');
+practiceBlocks.forEach(block => {
+  if (block.closest('[data-question]') !== null && !block.hasAttribute('data-question')) return;
+  const previous = block.previousElementSibling;
+  if (previous?.matches('.blend[data-kind="review"]')) practice.append(previous);
+  practice.append(block);
+});
+// Answer labels are interface text, not edits to the original answer wording.
+practice.querySelectorAll('[id="section-answer-key"] > ol > li').forEach((item, index) => {
+  const label = document.createElement('h3');
+  label.className = 'qa-answer-label';
+  label.textContent = `Answer ${index + 1}`;
+  const first = item.firstElementChild;
+  const paragraph = first?.tagName === 'P' ? first : item;
+  const question = paragraph.firstElementChild;
+  if (question?.tagName === 'STRONG' && /\?\s*$/.test(question.textContent)) {
+    // Some chapters repeat the question before the answer. Keep that question first,
+    // then place the Answer heading and the remaining nodes on their own lines.
+    const response = document.createElement('div');
+    response.className = 'qa-answer-body';
+    while (question.nextSibling) response.append(question.nextSibling);
+    if (paragraph === item) question.after(label, response);
+    else paragraph.after(label, response);
+  } else item.prepend(label);
+});
+practice.querySelectorAll('.blend[data-kind="check"] details > summary').forEach(summary => {
+  const label = document.createElement('h4');
+  label.className = 'qa-answer-label'; label.textContent = 'Answer'; summary.after(label);
+});
+// Hide empty story bands and remove practice links from the Content outline.
+$$('.part-band').forEach(band => {
+  let next = band.nextElementSibling;
+  while (next?.classList.contains('blend')) next = next.nextElementSibling;
+  if (!next || next.classList.contains('part-band')) band.hidden = true;
+});
+$$('.page-outline a,.mobile-outline a').forEach(link => {
+  if (document.getElementById(link.hash.slice(1))?.closest('#panel-qa')) link.remove();
+});
 $('#qa-empty').hidden=!!$('#practice-questions').children.length;
 const seenSources = new Set();
-$$('article a[target=_blank]').forEach(link => {
+$$('#panel-content a[target=_blank],#panel-qa a[target=_blank]').forEach(link => {
   if(seenSources.has(link.href)) return;
   seenSources.add(link.href); const copy=link.cloneNode(true); copy.className='resource-row'; $('#resource-links').append(copy);
 });
@@ -133,12 +175,13 @@ window.addEventListener('scroll',()=>{
   clearTimeout(readingScrollTimer);
   readingScrollTimer=setTimeout(()=>{if(activeView==='content')lastReadingY=window.scrollY;},180);
 },{passive:true});
-let contentHash=location.hash;
+let contentHash=document.getElementById(location.hash.slice(1))?.closest('#panel-qa') ? '' : location.hash;
 function setView(view,{focus=false,anchor=null,writeHistory=true,restore=true}={}) {
   if(!['content','qa','playground','resources'].includes(view)) view='content';
+  if (anchor) view = document.getElementById(anchor)?.closest('#panel-qa') ? 'qa' : 'content';
   clearTimeout(readingScrollTimer);
   positions[activeView]=activeView==='content'?lastReadingY:window.scrollY;
-  if(activeView==='content' && location.hash) contentHash=location.hash;
+  if(activeView==='content' && location.hash && !document.getElementById(location.hash.slice(1))?.closest('#panel-qa')) contentHash=location.hash;
   activeView=view;
   tabs.forEach(tab=>{
     const selected=tab.id===`tab-${view}`;
@@ -146,11 +189,11 @@ function setView(view,{focus=false,anchor=null,writeHistory=true,restore=true}={
     $(`#${tab.getAttribute('aria-controls')}`).hidden=!selected;
   });
   $('.page-outline').hidden=view!=='content'; $('.mobile-outline').hidden=view!=='content';
-  if(anchor) contentHash=`#${anchor}`;
+  if(anchor && view==='content') contentHash=`#${anchor}`;
   if(writeHistory) {
     const url=new URL(location.href);
     if(view==='content') url.searchParams.delete('view'); else url.searchParams.set('view',view);
-    url.hash=view==='content'?contentHash:'';
+    url.hash=anchor ? `#${anchor}` : view==='content'?contentHash:'';
     history.pushState({view},'',url);
   }
   if(focus) $(`#tab-${view}`).focus({preventScroll:true});
@@ -178,7 +221,7 @@ $$('.page-outline a,.mobile-outline a,.brand').forEach(link=>link.addEventListen
 window.addEventListener('popstate',()=>setView(new URL(location.href).searchParams.get('view')||'content',{writeHistory:false,anchor:location.hash?location.hash.slice(1):null}));
 window.addEventListener('hashchange',()=>{ if(location.hash && document.getElementById(location.hash.slice(1))) setView('content',{writeHistory:false,anchor:location.hash.slice(1)}); });
 const initialView=new URL(location.href).searchParams.get('view');
-if(initialView) setView(initialView,{writeHistory:false,restore:false});
+if(initialView || location.hash) setView(initialView || 'content',{writeHistory:false,restore:false,anchor:location.hash.slice(1) || null});
 const outlineLinks=$$('.page-outline a,.mobile-outline a');
 // Observe each section with one shared observer.
 const sectionObserver=new IntersectionObserver(entries=>{
@@ -190,11 +233,31 @@ const sectionObserver=new IntersectionObserver(entries=>{
 },{rootMargin:'-15% 0px -65% 0px'});
 $$('.lesson-section').forEach(section=>sectionObserver.observe(section));
 
+// Scroll position, not a claim that the reader has completed or understood a lesson.
+const readingProgress=$('.reading-progress');
+let progressFrame=0;
+function scheduleReadingProgress(){
+  if(progressFrame||!readingProgress)return;
+  progressFrame=requestAnimationFrame(()=>{
+    progressFrame=0;
+    const panel=$('#panel-'+activeView);if(!panel)return;
+    const box=panel.getBoundingClientRect(),top=$('.topbar').getBoundingClientRect().bottom;
+    const range=box.height-Math.max(1,innerHeight-top);
+    const value=Math.round(Math.max(0,Math.min(1,range>0?(top-box.top)/range:(box.top<=top?1:0)))*100);
+    readingProgress.firstElementChild.style.width=value+'%';readingProgress.setAttribute('aria-valuenow',value);
+  });
+}
+window.addEventListener('scroll',scheduleReadingProgress,{passive:true});
+window.addEventListener('resize',scheduleReadingProgress);
+if(window.ResizeObserver)new ResizeObserver(scheduleReadingProgress).observe($('.reading-content'));
+scheduleReadingProgress();
+
+
 function chapterLink(chapter){
   const active=chapter.path===document.body.dataset.source;
   const link=document.createElement('a');link.textContent=chapter.title;
   if(active){link.href='#problem';link.setAttribute('aria-current','page');link.addEventListener('click',e=>{e.preventDefault();closeCurriculum();setView('content',{anchor:'problem'});});}
-  else if(chapter.path.startsWith('kotlin/')){link.href=(document.body.dataset.base||'/')+chapter.path.replace(/\.md$/,'/');}
+  else if(chapter.rendered){link.href=(document.body.dataset.base||'/')+chapter.path.replace(/\.md$/,'/');}
   else{link.href=sourceRoot+chapter.path;link.target='_blank';link.rel='noreferrer';link.setAttribute('aria-describedby','external-note');const cue=document.createElement('span');cue.className='external-cue';cue.textContent='GitHub ↗';link.append(cue);}
   return link;
 }
@@ -205,21 +268,22 @@ function renderNavigation(query=''){
     const chapters=topic.chapters.filter(chapter=>!query||all||`${chapter.title} ${chapter.path} ${chapter.path.endsWith('/coroutines.md')?'suspend cancellation cancel viewmodelscope continuation async await':''}`.toLowerCase().includes(query));
     if(!chapters.length)continue;count+=chapters.length;
     if(topic.category!==previousCategory){const label=document.createElement('p');label.className='nav-label';label.textContent=topic.category;nav.append(label);previousCategory=topic.category;}
-    const group=document.createElement('details');group.className='nav-group';group.open=!!query||topic.slug==='kotlin';
+    const group=document.createElement('details');group.className='nav-group';const here=document.body.dataset.source;group.open=!!query||here===topic.slug+'.md'||topic.chapters.some(c=>c.path===here);
     const summary=document.createElement('summary');const icon=document.createElement('span');icon.className='nav-icon';icon.textContent=topic.icon;icon.setAttribute('aria-hidden','true');
     const name=document.createElement('span');name.textContent=topic.title;const chevron=document.createElement('span');chevron.className='chevron';chevron.textContent='›';chevron.setAttribute('aria-hidden','true');summary.append(icon,name,chevron);group.append(summary);
     const children=document.createElement('div');children.className='nav-children';
-    if(topic.slug==='kotlin'&&!query){
-      let currentFolder='',folderGroup;
+    // Trees with lessons on this site open at their learning path; wide trees group by guided-reading phase.
+    if(topic.chapters.some(c=>c.rendered)&&!query){const path=document.createElement('a');path.href=(document.body.dataset.base||'/')+topic.slug+'/';path.textContent='Learning path';if(here===topic.slug+'.md')path.setAttribute('aria-current','page');children.append(path);}
+    if(!query&&new Set(chapters.map(c=>c.section)).size>1){
+      let currentSection='',sectionGroup;
       for(const chapter of chapters){
-        const folder=chapter.path.split('/')[1];
-        if(folder!==currentFolder){
-          folderGroup=document.createElement('details');folderGroup.className='nav-group';
-          folderGroup.open=chapters.some(c=>c.path===document.body.dataset.source && c.path.split('/')[1]===folder);
-          const heading=document.createElement('summary');heading.textContent=folder.replaceAll('-',' ');
-          folderGroup.append(heading);children.append(folderGroup);currentFolder=folder;
+        if(chapter.section!==currentSection){
+          sectionGroup=document.createElement('details');sectionGroup.className='nav-group';
+          sectionGroup.open=chapters.some(c=>c.path===here&&c.section===chapter.section);
+          const heading=document.createElement('summary');heading.textContent=chapter.section;
+          sectionGroup.append(heading);children.append(sectionGroup);currentSection=chapter.section;
         }
-        folderGroup.append(chapterLink(chapter));
+        sectionGroup.append(chapterLink(chapter));
       }
     }else chapters.forEach(c=>children.append(chapterLink(c)));
     group.append(children);nav.append(group);

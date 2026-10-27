@@ -1,0 +1,140 @@
+/* Playbook Design System applied to the reader (see website/design-system/README.md).
+   Tokens come from tokens.css, which build.py compiles from website/design-system/tokens.json;
+   the older names (--bg, --text, --accent…) are aliases of the design-system roles. */
+
+/* Reading sheet: the page is a tinted canvas and the lesson sits on one sheet. */
+body { background: var(--canvas); color: var(--ink); }
+/* Dark theme: two faint glows on the navy canvas, behind the sheet only. */
+html[data-theme=dark] body { background-image: radial-gradient(80% 50% at 50% -20%, #6366f126, transparent), radial-gradient(60% 40% at 80% 80%, #8b5cf614, transparent); background-attachment: fixed; }
+.topbar { background: var(--sheet); }
+main {
+  --sheet-pad: clamp(20px, 4vw, 48px);
+  box-sizing: border-box; width: 100%; max-width: var(--measure-wide);
+  margin: 24px auto 48px; padding: 0 var(--sheet-pad) 32px;
+  background: var(--sheet); border-radius: var(--radius-lg); box-shadow: var(--shadow-sheet);
+}
+.reading-content { max-width: var(--measure-text); margin-inline: auto; overflow-wrap: anywhere; }
+/* Diagrams may use the sheet's full inner width, wider than the text column (ReadingSheet rule).
+   main is a size container, so 100cqw is the sheet's inner width; on phones the two widths match and nothing moves. */
+main { container-type: inline-size; }
+.blend:has(.pb-figure), .source-diagram { margin-inline: min(0px, calc((100% - 100cqw) / 2)); }
+.lesson-hero { background: none; border: 0; border-radius: 0; padding: 28px 0 8px; }
+h1, .lesson-hero h1 { max-width: 22ch; font: 700 clamp(2rem, 4.2vw, 3.5rem)/1.12 var(--font-sans); letter-spacing: -.04em; text-wrap: balance; }
+.mobile-outline { margin-inline: calc(-1 * var(--sheet-pad)); padding-inline: var(--sheet-pad); background: var(--sheet); }
+
+/* Rails take space only when the sheet still fits: both from 1440px, the chapter outline alone from 1181px. */
+@media (min-width: 1181px) and (max-width: 1439px) {
+  .layout { grid-template-columns: minmax(0, 1fr) 210px; }
+  #sidebar-slot { display: none; }
+  #menu-toggle { display: inline-flex; }
+}
+@media (min-width: 641px) and (max-width: 1180px) {
+  main { width: auto; margin: 16px 16px 40px; }
+}
+@media (max-width: 640px) {
+  main { --sheet-pad: 16px; width: auto; margin: 8px 8px 24px; border-radius: 14px; }
+}
+
+/* Code: JetBrains Mono with ligatures off, so -> and != look exactly as typed. */
+code, pre, kbd, .code-card pre, .model-code pre { font-family: var(--font-mono); font-variant-ligatures: none; }
+
+/* Article callouts: a role accent, readable label and restrained tint. */
+.blend { border: 0; border-inline-start: 3px solid var(--accent); border-radius: var(--radius-md); background: var(--sheet-sunken); }
+.blend > .blend-label { padding: 3px 10px; border-radius: var(--radius-pill); background: var(--accent); color: var(--on-accent);
+  font: 650 .7rem/1.4 var(--font-sans); letter-spacing: .08em; }
+.blend[data-kind=story] { background: var(--accent-soft); }
+.blend[data-kind=staff] > .blend-label { background: var(--ink); color: var(--sheet); }
+.blend[data-kind=review] { background: var(--warn-soft); }
+.blend[data-kind=review] > .blend-label { background: var(--warn); color: var(--sheet); }
+.blend[data-kind=bridge] { background: none; border: 0; padding: .2rem 0; }
+.question, .deep-dive, .static-model { border: 0; background: var(--sheet-sunken); border-radius: var(--radius-md); }
+
+/* Static Mermaid diagrams keep a readable size (blend.js sets min-width from each drawing's width)
+   and scroll sideways inside their own box instead of shrinking. */
+.source-diagram, .original-diagram { overflow-x: auto; overscroll-behavior-x: contain; }
+.source-diagram img.is-sized, .original-diagram img.is-sized { max-height: none; }
+.source-diagram.is-scrollable::before, .original-diagram.is-scrollable::before {
+  content: "Scroll sideways to see the whole diagram →"; content: "Scroll sideways to see the whole diagram →" / "";
+  display: block; margin-bottom: .6rem; font: 600 13px/18px var(--font-sans); color: var(--ink-muted);
+}
+.source-diagram:focus-visible, .original-diagram:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* Code cards: when a line runs past the edge, fade the hidden edge and say how to see it (blend.js toggles the classes). */
+.code-card.is-scrollable:not(.at-end) pre { -webkit-mask-image: linear-gradient(to left, transparent, #000 36px); mask-image: linear-gradient(to left, transparent, #000 36px); }
+.code-card.is-scrollable::after {
+  content: "Some lines continue past the edge: scroll sideways, or turn on line wrapping in Reading settings.";
+  content: "Some lines continue past the edge: scroll sideways, or turn on line wrapping in Reading settings." / "";
+  display: block; padding: 0 1.1rem .8rem; font: 600 12px/16px var(--font-sans); color: var(--code-comment);
+}
+
+/* Part headers wrap, so a wide reading font never pushes the page sideways. */
+:has(> .part-promise) { flex-wrap: wrap; }
+.part-promise { min-width: 0; overflow-wrap: break-word; }
+
+/* Diagrams always draw in the diagram hand (Patrick Hand), whatever reading font the reader picks; their boxes are sized for it. */
+.viz, .stepper .stage { font-family: var(--font-hand); }
+
+/* Preserve drawing width inside the sheet: nested callout padding must not shrink phone labels. */
+@media (max-width: 520px) {
+  .blend:has(.pb-figure) { padding-inline: 0; }
+  .blend:has(.pb-figure) > .blend-label, .blend:has(.pb-figure) > h3 { margin-inline: 12px; }
+  .blend .pb-figure { padding-inline: 4px; }
+  .stepper .viz-grid, .stepper .viz-cols { grid-template-columns: minmax(0, 1fr); }
+}
+.viz, .stepper .stage { font-size: max(18px, .92em); }
+.viz .node small, .stepper .node small { font-size: max(15px, .85em); }
+
+/* Step-throughs: only an explicitly authored transfer sends a handoff packet. */
+.stepper .stage { position: relative; }
+.stepper-packet { position: absolute; left: 0; top: 0; width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 2px var(--sheet); pointer-events: none; z-index: 3; }
+.stepper-packet.is-warn { background: var(--warn); }
+html.reduce-motion .stepper-packet { display: none; }
+
+/* High contrast: no tints or shadows; 1px borders mark the sheet and blocks. */
+html[data-theme=contrast] main { box-shadow: none; border: 1px solid var(--line); }
+html[data-theme=contrast] .blend, html[data-theme=contrast] .question, html[data-theme=contrast] .deep-dive { background: transparent; border: 1px solid var(--line); }
+html[data-theme=contrast] .blend > .blend-label { border: 1px solid var(--ink); }
+
+@media print {
+  body { background: #fff; }
+  main { box-shadow: none; border-radius: 0; max-width: none; margin: 0; padding: 0; }
+  .source-diagram.is-scrollable::before, .original-diagram.is-scrollable::before { display: none; }
+}
+
+/* Article rhythm follows the AirBridge reference within the established reading measure. */
+.lesson-hero { padding: 36px 0 24px; }
+.lesson-hero > .eyebrow { display: inline-block; padding: 5px 10px; border: 1px solid var(--line); border-radius: var(--radius-pill); background: var(--sheet-sunken); }
+.lesson-hero > p { max-width: 62ch; font: 400 1.08rem/1.8 var(--font-sans); color: var(--ink-muted); }
+.lesson-meta { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 24px; }
+.reading-content h2, .reading-content h3 { font-family: var(--font-sans); font-weight: 650; }
+.lesson-section { padding-top: 3.25rem; }
+.part-band { border-top: 1px solid var(--line); padding-top: 1.25rem; gap: 10px 14px; }
+.part-band .part-number { border-radius: var(--radius-pill); padding: 5px 8px; }
+.blend[data-kind=story] { background: var(--sheet-sunken); border-inline-start-color: var(--scene-client); }
+.blend[data-kind=story] > .blend-label { background: var(--scene-client); color: var(--sheet); }
+.blend[data-kind=staff] { border-inline-start-color: var(--scene-runtime); }
+.blend[data-kind=review] { border-inline-start-color: var(--warn); }
+.blend[data-kind=visual], .blend[data-kind=animation] { border: 1px solid var(--line); background: transparent; }
+.blend[data-kind=bridge] { border: 0; }
+.viz { font-family: var(--font-sans); }
+.viz figcaption, .stepper figcaption { font: 400 max(13px,.85em)/1.7 var(--font-sans); margin-top: 14px; }
+.reading-progress { position: absolute; bottom: -1px; left: 0; right: 0; height: 3px; pointer-events: none; }
+.reading-progress i { display: block; height: 100%; width: 0; background: var(--accent); }
+.syntax-annotation { color: var(--code-call); }
+.syntax-type { color: var(--code-call); }
+.decision-map { margin: 20px 0; }
+.decision-map .diagram-context { font: 650 16px/1.6 var(--font-sans); }
+.decision-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; list-style: none; padding: 0!important; margin: 16px 0!important; }
+.decision-card { margin: 0!important; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--sheet-sunken); }
+.decision-card .decision-number { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; color: var(--on-accent); background: var(--accent); font: 650 13px var(--font-sans); }
+.decision-card h4 { font: 650 18px/1.4 var(--font-sans); margin: 12px 0 8px; }
+.decision-card p { font: 400 max(15px,.92em)/1.75 var(--reader-font); margin: 0; }
+.decision-card:last-child:nth-child(odd) { grid-column: 1 / -1; border-inline-start: 3px solid var(--accent); }
+@media(max-width:640px){.lesson-hero{padding:24px 0 16px}.lesson-hero h1{font-size:clamp(2rem,7vw,2.65rem)}.lesson-section{padding-top:2.75rem}.decision-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-height:500px),print{.reading-progress{display:none}}
+
+/* Numbered structure diagrams wrap within their paper, including 320px screens. */
+.viz > table { table-layout: fixed; }
+.viz > table th, .viz > table td { min-width: 0; overflow-wrap: anywhere; }
+.viz > table th[scope=row] { width: 3rem; }

@@ -1,0 +1,59 @@
+<!-- Website teaching layer for android/build-tooling/convention-plugins.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Sources checked 2026-10-25: Gradle "Sharing build logic between subprojects", composite builds,
+     Gradle API (Gradle.projectsLoaded/settingsEvaluated), Gradle build cache, AGP 9.0 release notes.
+     Lifecycle callbacks were probed with Gradle 9.7.1 (pure Gradle, no Android plugin). -->
+
+<!-- @opening -->
+<p class="story-lead">Release day. One library module still compiles against an older SDK, another skipped the lint rule everyone else enforces, and a third has a different Java target. Nobody chose any of this. Each module's build file was copied from a neighbour at a different time, and the copies drifted apart.</p>
+
+A convention plugin is ordinary Kotlin that configures a module the moment the module applies its ID. Settings then live in one reviewed place instead of fifty copies. This chapter shows how to build `build-logic/`, compose small plugins and govern them. The additions here trace what Gradle does with one plugin ID, and how to roll out a convention change without breaking every module at once.
+
+<!-- @diagram a7b8ff16e5282b79 -->
+### How the pieces connect
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Version catalog</strong><small><code>libs.versions.toml</code></small></div><div class="node is-key"><strong><code>build-logic</code> composite build</strong><small>small convention plugins</small></div><div class="node" data-state="done"><strong>Modules</strong><small>application, Android/JVM library and feature modules</small></div></div><div class="viz-flow"><div class="node"><strong>Base conventions</strong></div><div class="node"><strong>Compose convention</strong><small>and</small><strong>Hilt convention</strong></div><div class="node" data-state="done"><strong>Feature modules</strong><small>compose both</small></div></div><figcaption>Redrawn from the original diagram. Build logic configures modules; it is not part of the app that ships.</figcaption></figure>
+
+<!-- @after A Plugin from Scratch :: animation -->
+### What Gradle does with one plugin ID
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">From <code>id("yourorg.android.feature")</code> to a configured module</span><div class="stage viz-grid" style="--cols:3"><div class="node" data-el="settings" data-art="document" data-art-role="storage"><strong>Root settings</strong><small><code>includeBuild("build-logic")</code></small></div><div class="node" data-el="id" data-art="document" data-art-role="storage"><strong>Plugin ID</strong><small>registered in <code>gradlePlugin { }</code></small></div><div class="node" data-el="lib" data-art="code" data-art-role="runtime"><strong>Library convention</strong><small>Android library, SDK, Java target</small></div><div class="node" data-el="caps" data-art="code" data-art-role="runtime"><strong>Hilt + Compose</strong><small>composed capabilities</small></div><div class="node" data-el="module" data-art="document" data-art-role="storage"><strong>Module script</strong><small data-text="modV">namespace and its own dependencies</small></div><div class="node is-key" data-el="proof" data-art="inspect" data-art-role="runtime"><strong>Evidence</strong><small>a representative module still builds</small></div></div><script type="application/json" class="steps">[
+{"label":"Find the plugin","caption":"pluginManagement includes the build-logic build, so Gradle can build it and use the plugins it publishes when a module asks for one.","add":["settings","id","lib","caps","module","proof"],"state":{"settings":"active"}},
+{"label":"Resolve the ID","caption":"The ID maps to the implementation class registered in build-logic's gradlePlugin block. A typo or missing registration fails here, before the rest of that module's script runs.","state":{"settings":"done","id":"active"}},
+{"label":"Apply the base","caption":"The feature plugin first applies the library convention: the Android library plugin, compile SDK, minimum SDK and Java target, all in one place.","state":{"id":"done","lib":"active"}},
+{"label":"Compose capabilities","caption":"Then it applies the Hilt and Compose conventions. A module that needs neither applies only the library convention instead of inheriting both.","state":{"lib":"done","caps":"active"}},
+{"label":"The module's own lines","caption":"Only now does the rest of the module's script run. A line that overrides a shared setting here silently diverges from every other module: the opening's drift, reintroduced.","state":{"caps":"done","module":"warn"},"text":{"modV":"an override here diverges quietly"}},
+{"label":"Roll out with evidence","caption":"Change the convention once, then build a representative consumer of each plugin before merging. One reviewed change replaces fifty edits, so it deserves the same testing as shared library code.","state":{"module":"done","proof":"done"},"text":{"modV":"namespace and its own dependencies"}}
+]</script><figcaption>Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>
+
+<!-- @after Governance Rules :: staff -->
+A convention plugin is a platform API with every module as a consumer. Version its behaviour changes, keep escape hatches named and searchable, and count how many modules use each one: a popular escape hatch is a sign the default is wrong.
+
+<!-- @after Composing Plugins — The Feature Plugin :: visual -->
+### One mega-plugin or small capabilities?
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">One plugin for everything</span><div class="node" data-state="warn"><strong><code>:core:model</code></strong><small>gets Android, Compose and Hilt it never uses</small></div><div class="node" data-state="warn"><strong>Every change</strong><small>reaches every module at once</small></div></div><div class="col"><span class="col-title">Small composable plugins</span><div class="node" data-state="done"><strong><code>:core:model</code></strong><small>pure Kotlin library convention only</small></div><div class="node" data-state="done"><strong>A Compose change</strong><small>reaches only modules that apply Compose</small></div></div></div><figcaption>The chapter's Common Pitfalls make the same point: split conventions per concern so modules opt into what they need.</figcaption></figure>
+
+<!-- @after Common Pitfalls :: check -->
+### Check your conventions
+
+<details><summary>Two modules apply the same library convention but report different compile SDKs. Where do you look first?</summary>
+
+In the module build scripts, after the plugins block. A module-level override runs after the convention and wins, so the drift comes from the module, not the plugin.
+
+</details>
+
+<details><summary>Only UI modules need Compose. Should the base library convention enable it?</summary>
+
+No. Put Compose in its own convention and let the feature convention compose it. Pure-Kotlin and data modules then stay free of Compose configuration and dependencies.
+
+</details>
+
+<details><summary>You must raise the compile SDK for all 50 library modules. How do you roll it out?</summary>
+
+Change it once in the convention, build one representative module of each kind, then let CI build the rest before merging. That follows the chapter's "apply to one module first" migration step.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+Primary sources for the added layer: [Sharing build logic between subprojects](https://docs.gradle.org/current/userguide/sharing_build_logic_between_subprojects.html), [Composite builds](https://docs.gradle.org/current/userguide/composite_builds.html), [AGP 9.0 release notes](https://developer.android.com/build/releases/agp-9-0-0-release-notes).

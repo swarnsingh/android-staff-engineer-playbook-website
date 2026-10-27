@@ -1,0 +1,51 @@
+{
+  "done": true,
+  "ok": true,
+  "results": [
+    {
+      "name": "State changes do not infer transfers",
+      "ok": true
+    },
+    {
+      "name": "Explicit transfer has an immediate Pause control",
+      "ok": true
+    },
+    {
+      "name": "data-no-handoff suppresses an authored transfer",
+      "ok": true
+    },
+    {
+      "name": "Scene Next can be paused mid-flight",
+      "ok": true
+    },
+    {
+      "name": "Two scenes share one motion turn",
+      "ok": true
+    },
+    {
+      "name": "Scene and legacy stepper share one motion turn",
+      "ok": true
+    },
+    {
+      "name": "Loop, scene and legacy stepper share one motion turn",
+      "ok": true
+    },
+    {
+      "name": "Live reduced motion cancels autoplay and permits manual steps",
+      "ok": true
+    },
+    {
+      "name": "Packet labels stay inside the drawing at edge lanes",
+      "ok": true
+    },
+    {
+      "name": "Reader pause hook cancels motion immediately",
+      "ok": true
+    },
+    {
+      "name": "Leaving the rendered area cancels a scene",
+      "ok": true
+    }
+  ],
+  "verified_source_commit": "7120f9a"
+}

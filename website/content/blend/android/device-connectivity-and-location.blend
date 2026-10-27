@@ -1,0 +1,88 @@
+<!-- Phase 5 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase5-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">A thermometer appears in discovery, connects, then stops sending readings. “Connected” was only one step. A reliable device feature must know which operation is pending, how it ends, and whether the user still wants the session.</p>
+
+<!-- @after BLE Architecture :: animation -->
+### Discovery is not readiness
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">One bounded connection attempt</span><div class="stage viz-stack"><div class="node" data-el="radio" data-art="phone" data-art-role="client"><strong>BLE state</strong><small data-text="radioV">—</small></div><div class="node" data-el="intent" data-art="document" data-art-role="storage"><strong>User intent</strong><small data-text="intentV">—</small></div><div class="node" data-el="data" data-art="flow" data-art-role="storage"><strong>Measurement</strong><small data-text="dataV">—</small></div></div><script type="application/json" class="steps">[
+{
+"label": "Find",
+"caption": "With the required permission, scan with a deadline.",
+"state": {
+"radio": "active"
+},
+"text": {
+"radioV": "scanning",
+"intentV": "connect requested",
+"dataV": "none"
+},
+"add": [
+"radio",
+"intent",
+"data"
+]
+},
+{
+"label": "Connect",
+"caption": "Finding a candidate ends discovery; connection and service discovery still remain.",
+"state": {
+"radio": "active"
+},
+"text": {
+"radioV": "connecting → discovering"
+}
+},
+{
+"label": "Ready",
+"caption": "A configured subscription can now deliver data.",
+"state": {
+"data": "active"
+},
+"text": {
+"radioV": "ready",
+"dataV": "reading received"
+}
+},
+{
+"label": "Leave",
+"caption": "If the user ends the feature, stop owned work rather than reconnecting indefinitely.",
+"state": {
+"intent": "done",
+"radio": "ghost"
+},
+"text": {
+"intentV": "session ended",
+"radioV": "stopped"
+}
+}
+]</script><figcaption>Every active state also needs a failure, cancellation and timeout path.</figcaption></figure>
+
+<!-- @after Reliability and Observability :: check -->
+### Try the decision
+
+<details><summary>Persist a live GATT object?</summary>
+
+No. A GATT connection belongs to one process and one radio session. Persist the device identity and what the user wanted, then rebuild the connection when the app needs it again.
+</details>
+
+<details><summary>Permission granted once: finished?</summary>
+
+No. The user or the system can revoke it later, so check at each use and keep a path for denial or revocation.
+</details>
+
+<details><summary>A location is accurate but old. Use it?</summary>
+
+Only if it is fresh enough. Check both the fix's age and its accuracy against what the feature needs; an accurate position from an hour ago can be wrong for this decision.
+</details>
+
+<!-- @after Reliability and Observability :: animation -->
+### Losing the device and getting it back
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">Reconnect only while the product still needs it</span><div class="stage viz-grid" style="--cols:3"><div class="node" data-el="link" data-art="cloud" data-art-role="runtime"><strong>BLE link</strong><small data-text="linkV">connected</small></div><div class="node" data-el="intent" data-art="document" data-art-role="storage"><strong>Durable intent</strong><small>device ID + "keep syncing"</small></div><div class="node is-key" data-el="retry" data-art="clock" data-art-role="runtime"><strong>Reconnect policy</strong><small data-text="retryV">idle</small></div></div><script type="application/json" class="steps">[
+{"label":"Lost","caption":"The peripheral walks out of range and the callback reports a disconnect. The live GATT object is now useless.","add":["link","intent","retry"],"state":{"link":"error"},"text":{"linkV":"disconnected"}},
+{"label":"Still wanted?","caption":"Check the durable intent first. If the user has left the feature, stop here; a reconnect loop nobody needs drains the battery.","state":{"intent":"active"}},
+{"label":"Bounded retry","caption":"The user still wants syncing, so retry with exponential backoff and jitter, with a limit, as the chapter's Reliability section describes.","state":{"intent":"done","retry":"active"},"text":{"retryV":"backoff with jitter, capped"}},
+{"label":"Rebuilt","caption":"The device returns. A new connection is built from the stored device ID, not from the old object, and syncing resumes.","state":{"link":"done","retry":"done"},"text":{"linkV":"new connection","retryV":"reset"}}
+]</script><figcaption>Illustrative flow. Use Previous, Next or Play; every step is also readable as text.</figcaption></figure>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the original Kotlin chapters without shortening their content."""
+"""Render the original chapters of each lesson tree without shortening their content."""
 from pathlib import Path
 from html import escape, unescape
 from urllib.parse import urlsplit, unquote, quote
@@ -10,10 +10,45 @@ ROOT = Path(__file__).resolve().parents[2]
 WEB = ROOT / 'website'
 OUT = WEB / 'dist'
 CACHE = WEB / '.cache'
-SOURCE_ROOT = 'https://github.com/swarnsingh/android-staff-engineer-playbook/blob/main/'
+SOURCE_ROOT = 'https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/codex/android-completion/'
 MD = MarkdownIt('commonmark', {'html': True}).enable(['table', 'strikethrough'])
-FILES = sorted((ROOT/'kotlin').rglob('*.md'))
-PATHS = {p.relative_to(ROOT).as_posix() for p in FILES} | {'kotlin.md'}
+# Topic trees rendered as lessons, in site order. `phases` lists the guided-reading phases a pilot
+# renders (None renders the whole tree); chapters outside them keep linking to GitHub.
+TREES = {
+    'kotlin': {'title': 'Kotlin', 'phases': None},
+    'android': {'title': 'Android', 'phases': [1, 2, 3, 4, 5, 6, 7, 8, 9]},
+}
+
+
+def phases(slug):
+    """[(phase heading, chapter paths)] from the `### Phase …` lists of a tree's guided reading sequence."""
+    result = []
+    for block in re.split(r'^### ', (ROOT/f'{slug}.md').read_text(), flags=re.M)[1:]:
+        heading, _, body = block.partition('\n')
+        chapters = []
+        # Links with an #anchor point into another chapter's section; they do not list that chapter here.
+        for target in re.findall(r'\]\(([^)#]+\.md)\)', body.split('\n## ')[0]):
+            if target.startswith(slug + '/') and target not in chapters: chapters.append(target)
+        if chapters and heading.startswith('Phase'): result.append((heading.strip(), chapters))
+    return result
+
+
+ORDER, SECTION = {}, {}
+for _slug, _tree in TREES.items():
+    ORDER[_slug] = []
+    for _heading, _chapters in phases(_slug):
+        if _tree['phases'] is None or int(re.match(r'Phase (\d+)', _heading)[1]) in _tree['phases']:
+            ORDER[_slug] += [p for p in _chapters if p not in ORDER[_slug]]
+            for p in _chapters: SECTION.setdefault(p, _heading)  # the first phase listing a chapter owns it
+    # A chapter's first phase owns it; the rendered reading sequence must not return to an earlier group.
+    _phase_positions = {heading: index for index, (heading, _) in enumerate(phases(_slug))}
+    _group_numbers = [_phase_positions[SECTION[p]] for p in ORDER[_slug]]
+    if _group_numbers != sorted(_group_numbers):
+        raise ValueError(f'{_slug} reading phases are not contiguous')
+    if _tree['phases'] is None and set(ORDER[_slug]) != {p.relative_to(ROOT).as_posix() for p in (ROOT/_slug).rglob('*.md')}:
+        raise ValueError(f'{_slug} reading sequence does not cover every chapter')
+PAGES = [p for slug in TREES for p in [f'{slug}.md'] + ORDER[slug]]
+PATHS = set(PAGES)
 # Site prefix, so the same build works at a domain root or under a project path.
 BASE = '/' + os.environ.get('SITE_BASE', '/').strip('/') + '/' if os.environ.get('SITE_BASE', '/').strip('/') else '/'
 MERMAID_RENDERER = os.environ.get('MERMAID_RENDERER', 'npx --yes @mermaid-js/mermaid-cli@11.16.0')
@@ -26,7 +61,11 @@ APPROVED_CORRECTIONS = [fix for fix in ALL_CORRECTIONS if fix.get('status') == '
 
 
 def route(path):
-    return BASE + 'kotlin/' if path == 'kotlin.md' else BASE + path.removesuffix('.md') + '/'
+    return BASE + path.removesuffix('.md') + '/'
+
+
+def tree_of(path):
+    return path.split('/')[0].removesuffix('.md')
 
 
 def slug(text):
@@ -61,8 +100,11 @@ def corrected(source, path, mark=False):
         line_start = source.rfind('\n', 0, at) + 1
         in_fence = len(re.findall(r'^\s*(```|~~~)', source[:at], re.M)) % 2 == 1
         in_span = source[line_start:at].count('`') % 2 == 1
+        line_end = source.find('\n', at)
+        current_line = source[line_start:line_end if line_end >= 0 else len(source)]
+        in_table_row = current_line.lstrip().startswith('|')
         new = fix['new']
-        if mark and '\n' not in fix['old'] + new and not in_fence and not in_span:
+        if mark and '\n' not in fix['old'] + new and not in_fence and not in_span and not in_table_row:
             # At the start of a line, keep the block syntax (list marker, heading, quote) outside the mark;
             # table rows and indented lines stay unmarked and rely on the section note.
             prefix = '' if at > line_start else re.match(r'(?:[-*+] |\d+\.\s+|> ?|#{1,6} )?', new).group(0)
@@ -119,7 +161,7 @@ def link_rules(path):
 # a blend file can override the mapping with `<!-- @part Heading :: KEY -->`.
 PARTS = [
     ('BEGINNING', 'The problem and the idea', 'Why this exists, and the picture to keep in mind.'),
-    ('MECHANISM', 'How it really works', 'What the compiler and runtime actually do.'),
+    ('MECHANISM', 'How it really works', 'How the mechanism works, step by step.'),
     ('PRODUCTION', 'In real apps', 'Patterns, trade-offs and the ways it fails.'),
     ('STAFF', 'Staff-level judgement', 'Decisions, reviews and the misconceptions to correct.'),
     ('PRACTICE', 'Practise', 'Questions with worked answers.'),
@@ -161,7 +203,12 @@ def load_blend(path):
     <!-- @part Heading :: KEY -->          force the part a section belongs to
     Headings are matched on their visible text (backticks and emphasis removed).
     """
-    file = WEB / 'content/blend' / (Path(path).stem + '.blend')
+    # Kotlin blends predate other trees and sit at the top level; other trees use a folder per tree.
+    folder = WEB / 'content/blend' if tree_of(path) == 'kotlin' else WEB / 'content/blend' / tree_of(path)
+    # Full chapter paths prevent collisions such as data-and-di/dependency-injection
+    # and kotlin-multiplatform/ecosystem/dependency-injection. Retain legacy locations.
+    scoped = WEB / 'content/blend' / Path(path).with_suffix('.blend')
+    file = scoped if scoped.exists() else folder / (Path(path).stem + '.blend')
     if not file.exists():
         return {}
     pieces = re.split(r'<!--\s*@(opening|before|after|diagram|part)\b(.*?)-->', file.read_text(), flags=re.S)
@@ -188,13 +235,42 @@ def load_blend(path):
     return blend
 
 
+def timeline_labels(html):
+    """Keep long teaching-timeline labels readable without changing proportional bars."""
+    def track(match):
+        labels = re.findall(r'<span\b[^>]*class="mark(?:\s[^"]*)?"[^>]*>(.*?)</span>', match.group(2), re.S)
+        if not labels or all(len(clean(unescape(label))) <= 2 for label in labels):
+            return match.group(0)
+        index = 0
+        def mark(item):
+            nonlocal index
+            index += 1
+            return item.group(1)[:-1] + f' data-label-index="{index}" aria-hidden="true">' + item.group(2) + '</span>'
+        bars = re.sub(r'(<span\b[^>]*class="mark(?:\s[^"]*)?"[^>]*>)(.*?)</span>', mark, match.group(2), flags=re.S)
+        legend = '<ol class="timeline-legend">' + ''.join('<li>'+label+'</li>' for label in labels) + '</ol>'
+        return '<div class="timeline-lane-body">' + match.group(1) + bars + '</div>' + legend + '</div>'
+    return re.sub(r'(<div\b[^>]*class="track"[^>]*>)(.*?)</div>', track, html, flags=re.S)
+
+
 def steps_as_text(html):
     """Print every animation step as a numbered list, so no step depends on motion or JavaScript."""
     def add(match):
         steps = json.loads(match.group(2))
         items = ''.join(f'<li>{"<strong>"+escape(s["label"])+".</strong> " if s.get("label") else ""}{escape(s.get("caption",""))}</li>' for s in steps)
         return match.group(1) + match.group(2) + match.group(3) + f'<details class="steps-text"><summary>Read every step as text</summary><ol>{items}</ol></details>'
-    return re.sub(r'(<script type="application/json" class="steps">)(.*?)(</script>)', add, html, flags=re.S)
+    html = re.sub(r'(<script type="application/json" class="steps">)(.*?)(</script>)', add, html, flags=re.S)
+    def scene_text(match):
+        fragment = match.group(0)
+        data = json.loads(re.search(r'<script type="application/json">(.*?)</script>', fragment, re.S)[1])
+        modes = list(data['modes'].values())
+        items = ''.join('<li>'+s['caption']+'</li>' for s in modes[0]['steps'])
+        fragment = fragment.replace('<ol></ol>', '<ol>'+items+'</ol>', 1)
+        # Alternate tracks also remain readable when JavaScript is unavailable.
+        if len(modes) > 1:
+            alternate = ''.join('<ol>'+''.join('<li>'+s['caption']+'</li>' for s in mode['steps'])+'</ol>' for mode in modes[1:])
+            fragment = fragment.replace('</section>', '<noscript><p>Alternate track:</p>'+alternate+'</noscript></section>')
+        return fragment
+    return re.sub(r'<section\b[^>]*data-pb-flow="scene"[^>]*>.*?</section>', scene_text, html, flags=re.S)
 
 
 def wrap(kind, markdown, env):
@@ -211,7 +287,13 @@ def wrap(kind, markdown, env):
         html = MD.render(markdown, env)
     finally:
         env['blend'] = False
-    return added(kind, steps_as_text(html))
+    return added(kind, steps_as_text(timeline_labels(html)))
+
+
+def is_question_section(heading):
+    """Explicit practice sections; a mechanism heading containing 'question' stays in Content."""
+    name = re.sub(r'^\d+\.\s*', '', clean(heading)).casefold()
+    return name in {'probing questions', 'answer key', 'q&a', 'questions and answers'} or name.endswith(('review checklist', 'review questions'))
 
 
 def render_chapter(path, raw, is_course=False):
@@ -272,7 +354,7 @@ def render_chapter(path, raw, is_course=False):
         used.add(('opening', ''))
         body=first_band+f'<section class="lesson-section lesson-start" id="problem"><h2>Start here</h2>{wrap("story", blend[("opening","")], env)}<div class="original-opening">{opening}</div></section>'
     else:
-        desc=INTRO.get(Path(path).stem, 'Follow the concepts, examples, failure modes and design decisions in this chapter.')
+        desc=intro(path)
         body=first_band+f'<section class="lesson-section lesson-start" id="problem"><span class="eyebrow">START WITH THE NEED</span><h2>Why this topic matters</h2><p>{escape(desc)}</p><div class="original-opening">{opening}</div></section>'
     if path.endswith('/coroutines.md'):
         body += '<section class="lesson-section" id="experiment">' + added('try', '<h2>Watch independent waits overlap</h2><p>A profile needs a name and an avatar. Waiting for one request before starting the other adds avoidable waiting. Run the example, switch <code>concurrent</code> from <code>true</code> to <code>false</code>, and compare the start messages.</p>' + (WEB/'content/coroutine-experiment.html').read_text() + '<p>In Playground output, <code>main @coroutine#2</code> means thread <code>main</code>, coroutine #2. Different coroutine numbers can share the same thread.</p>') + '</section>'
@@ -283,7 +365,7 @@ def render_chapter(path, raw, is_course=False):
         name=clean(heading)
         env['heading']=name
         rendered=MD.renderer.render(tokens[start:end],MD.options,env)
-        qa=' data-question' if any(s in heading.lower() for s in ['answer key','probing question','review checklist','review questions']) else ''
+        qa=' data-question' if is_question_section(heading) else ''
         # Parts only move forward, so the story reads as one progression.
         wanted = PART_KEYS.index(blend[('part', name)]) if ('part', name) in blend else classify_part(name)
         if ('part', name) in blend: used.add(('part', name))
@@ -297,7 +379,7 @@ def render_chapter(path, raw, is_course=False):
         used.update(k for k in blend if k[:2] in (('before', name), ('after', name)))
         section_fixes = fixes_in(section_lines[j], section_lines[j + 1])
         note = correction_note(section_fixes) if section_fixes else ''
-        body += before + f'<section class="lesson-section" id="section-{anchor}" data-part="{part}"{qa}>{rendered}{note}{after}</section>'
+        body += before + f'<section class="lesson-section" id="section-{anchor}" data-part="{part}" data-source-order="{j+1}"{qa}>{rendered}{note}{after}</section>'
         if path.endswith('/coroutines.md') and heading=='How `suspend` Works (Mental Model + Mechanism)':
             body += added('deeper', (WEB/'content/coroutine-internals.html').read_text())
         if path.endswith('/coroutines.md') and heading=='Exception Handling Patterns':
@@ -305,7 +387,8 @@ def render_chapter(path, raw, is_course=False):
         if path.endswith('/coroutines.md') and heading=='Job Hierarchy and Cancellation':
             figure=(WEB/'content/coroutine-model.html').read_text()
             body += '<section class="lesson-section" id="ownership">' + added('visual', '<h2>See the ownership and failure policy</h2><p>The Android UI owner starts the profile load. The model assumes main-safe requests and shows an illustrative sequence, not measured Android frames or a captured runtime trace.</p><p>In the failure scenario, the outer UI boundary catches the expected <code>IOException</code> and sets an error state. Cancellation is allowed to propagate.</p>'+owner_code()+figure) + '</section>'
-    body += '<section class="lesson-section" id="continue-learning"><span class="eyebrow">CONNECT THE IDEAS</span><h2>Continue your Kotlin learning path</h2><p>The chapter above presents the original explanations, code examples, questions and answers in full. Use the learning path to connect this topic to the next one.</p><a class="secondary-button" href="'+BASE+'kotlin/">Explore all Kotlin chapters →</a></section>'
+    tree = TREES[tree_of(path)]['title']
+    body += f'<section class="lesson-section" id="continue-learning"><span class="eyebrow">CONNECT THE IDEAS</span><h2>Continue your {tree} learning path</h2><p>The chapter above presents the original explanations, code examples, questions and answers in full. Use the learning path to connect this topic to the next one.</p><a class="secondary-button" href="{route(tree_of(path) + ".md")}">Explore all {tree} chapters →</a></section>'
     unused = set(blend) - used
     if unused:
         raise ValueError(f'{path}: blend inserts target headings or diagrams that do not exist: {sorted(unused)}')
@@ -363,7 +446,114 @@ INTRO = {
 'jvm-interop':'Your Kotlin API may be called from Java or exposed through JVM tooling. Inspect what callers actually see: signatures, nullability, properties, wildcards, defaults and binary compatibility.',
 'bytecode':'Readable Kotlin can hide allocations, generated methods and dispatch. Connect source constructs to JVM output before making a performance or compatibility claim.',
 'kotlin-2-4-update':'A compiler upgrade changes language and platform capabilities. Separate stable concepts from release-specific changes, and verify compatibility before changing a production build.',
-'kotlin':'Start with values and functions, then connect types, compiler transformations, asynchronous work and runtime behaviour. Follow the guided phases or open a chapter directly.'}
+'kotlin':'Start with values and functions, then connect types, compiler transformations, asynchronous work and runtime behaviour. Follow the guided phases or open a chapter directly.',
+# Other trees are keyed by path, because chapter names repeat across trees.
+'android.md':'Start with the lifecycle the system imposes on every screen, then decide who owns state and data, how the UI renders it, where work runs, and how you verify and measure the result. Follow the guided phases or open a chapter directly.',
+'android/architecture/activity.md':'The system can stop or destroy your screen at any moment: on rotation, when another app comes forward, or to reclaim memory. Learn what an Activity is in that contract, which callbacks you can rely on, and what must not live inside it.',
+'android/architecture/fragment.md':'Many production screens are still built from Fragments, which add a second, shorter-lived view lifecycle inside their host. Learn where that split causes leaks and stale UI, and how Fragments fit a Compose-first codebase.',
+'android/architecture/viewmodel.md':'Rotation recreates the Activity, but the user expects loaded data to stay. A ViewModel keeps screen state across configuration changes; know exactly what it survives, what it does not, and who owns its work.',
+'android/architecture/savedstatehandle.md':'A ViewModel is lost when the system kills a backgrounded process. SavedStateHandle keeps small, critical screen inputs in saved instance state, so the screen can rebuild after process death.',
+'android/architecture/process-death-and-state-restoration.md':'Android kills background processes to free memory, and the user returns expecting the same screen. Learn what the system restores, what you must restore, and how to test that path deliberately.',
+'android/architecture/navigation.md':'A flow of screens must survive Back, deep links, rotation and process death while passing each destination only what it needs. Learn how the back stack is modelled and what belongs in navigation arguments.',
+'android/architecture/mvvm-vs-mvi.md':'Two screens with the same features can behave very differently under concurrent events and failures. Compare how MVVM and MVI shape state, events and tests before choosing one for a team.',
+'android/architecture/state-management.md':'Duplicated or ambiguously owned state shows stale data and races between updates. Give each piece of screen state one owner, one source of truth and one direction of flow.',
+'android/architecture/modularization-strategies.md':'As an app and its team grow, build times, ownership and accidental coupling grow with them. Learn how to split modules by feature and layer, and what each boundary costs.',
+'android/data-and-di/repository-source-of-truth.md':'When the network, the database and the UI each hold a copy, users see stale screens and lose offline edits. Decide which copy is the truth for each kind of data, then build the read path, durable writes and merge rules around it.',
+'android/data-and-di/room.md':'A database outlives every version of the code that writes to it. Learn how Room checks SQL at build time, keeps queries live as tables change, and migrates schemas without losing users\' data.',
+'android/data-and-di/datastore.md':'Settings stored with SharedPreferences can block the main thread in places you never wrote disk code. Learn how DataStore makes reads and writes asynchronous and transactional, and how to migrate safely.',
+'android/data-and-di/room-vs-datastore.md':'Both Room and DataStore persist data with Flow reads and suspend writes, but one rewrites a whole document on every change. Choose by the shape of the data, then plan migrations, encryption and backup.',
+'android/data-and-di/storage-and-content-sharing.md':'Access to a file your app does not own is a permission attached to a URI, and it can expire before your background work runs. Pick the right storage primitive and keep its grant valid for as long as you need it.',
+'android/data-and-di/paging.md':'Infinite lists show duplicates, reset on rotation and go blank offline when pages are loaded by hand. Learn how Paging 3 loads pages, survives configuration changes and pages from a database the network fills.',
+'android/data-and-di/dependency-injection.md':'Classes that build their own collaborators are slow to test and share nothing by accident or by design. Learn how dependency injection and Hilt decide how each dependency is built, shared and released.',
+'android/data-and-di/components.md':'A Hilt scope is a promise about which container holds an instance, and each container lives for one Android lifetime. Map the standard components to those lifetimes and learn how a request finds its binding.',
+'android/data-and-di/scopes.md':'A singleton says nothing about when its background work stops. Separate Hilt scopes, which decide how many instances exist, from coroutine scopes, which decide when work is cancelled.',
+'android/data-and-di/hilt-vs-koin-vs-manual-di.md':'Every app does dependency injection; the choice is when the graph is checked, what it costs to build and where it can run. Compare manual DI, Hilt and Koin on those trade-offs.',
+'android/compose/compose-runtime.md':'Compose has no virtual DOM to diff. Follow how the compiler and runtime record what each composable emitted, so you can predict what re-runs after a state change and what is skipped.',
+'android/compose/snapshot-system.md':'Every mutableStateOf keeps versioned records read through snapshots. Learn how Compose tracks reads, publishes several writes at once, and bridges state to coroutines.',
+'android/compose/recomposition-and-state.md':'Nothing redraws because a variable changed; it redraws because observable state that a composable read was written. Build that model, then use it for hoisting, lists and loops.',
+'android/compose/stability.md':'Whether Compose can skip a child depends on how it compares arguments. Learn what is inferred stable, what the annotations promise, and why instance reuse matters under strong skipping.',
+'android/compose/modifiers-and-layout.md':'A Modifier chain is an ordered list of wrappers, not a set of attributes. Read it in the right direction and backgrounds, ripples, clipping and margins all follow from one rule.',
+'android/compose/custom-layout-measurement.md':'A custom layout is a contract: measure each child once, choose a size within the constraints, then place children. Learn when to write one and how to keep each clause.',
+'android/compose/side-effects.md':'A composable may run many times, be skipped or be abandoned. Give every effect on the outside world an owner that defines when it starts, restarts and is cleaned up.',
+'android/compose/compose-navigation.md':'Navigation Compose 2 keeps the back stack inside a controller; Navigation 3 makes it app-owned state. Compare the two lines, choose one, and migrate without breaking deep links or ViewModel lifetimes.',
+'android/compose/adaptive-compose-large-screens.md':'Large screens rarely need different features; they need the same product state in a different arrangement that can change at any moment. Separate state from layout across windows, folds and input modes.',
+'android/compose/form-factors-matrix.md':'Wear OS, TV, cars and widgets each have their own UI toolkit and rules, and only the layers below the UI carry over. Decide which surfaces to build with a cost model, not a wish list.',
+'android/compose/compose-accessibility.md':'Accessibility services see a semantics tree, not pixels. Make every element say what it is, what state it has and what it can do, then test it with real assistive technology.',
+'android/compose/view-interop-and-migration.md':'Most apps move to Compose over years, with Views and Compose embedded in each other. Learn both interop directions, what every seam costs, and a migration order that keeps features shipping.',
+'android/compose/compose-performance-tooling.md':'Compose performance work starts with measurement, not techniques. Reproduce the journey in a release-like build, find the phase that costs time, fix it, and guard it with a benchmark.',
+'android/architecture/structured-concurrency.md':'Background work that nothing owns keeps running after its screen is gone. Give every coroutine a parent and every parent a lifetime, so cancellation flows down and failure flows up.',
+'android/architecture/flow.md':'A Flow runs its producer once per collector, which is wrong for an expensive source many screens share. Keep sources cold, share them once in the ViewModel, and collect with lifecycle awareness.',
+'android/concurrency/coroutines-under-the-hood.md':'A suspend function does not hold a thread while it waits. Follow the compiler-generated state machine to see where locals live, where execution resumes, and why thread-confined state is lost.',
+'android/concurrency/threads-and-looper.md':'Everything on the main thread is a message taken from one queue by one loop. Learn how Looper, MessageQueue and Handler fit together, why blocking the loop freezes the app, and how queued work outlives its owner.',
+'android/concurrency/shared-flow-and-state-flow.md':'StateFlow, SharedFlow and Channel make different promises about values nobody is collecting and what new collectors receive. Match the contract to the job, especially for effects the user must not miss.',
+'android/concurrency/synchronization-and-mutex.md':'Shared mutable state needs a rule for who may touch it and when. Match atomics, locks, Mutex and confinement to the problems each actually solves, without blocking threads coroutines depend on.',
+'android/concurrency/services.md':'A Service is not a thread but a declaration to the system that the process is doing work that matters. Learn the three kinds, the main-thread trap, foreground service types, and when WorkManager fits better.',
+'android/concurrency/workmanager.md':'Some work must happen eventually, even across process death and reboots. Follow a WorkManager request from enqueue to success, with constraints, retries and backoff.',
+'android/concurrency/battery-optimizations.md':'Android defers background work when a device is idle and rations it by how recently each app was used. Learn how Doze and App Standby Buckets behave, and which narrow exits fit work that cannot wait.',
+'android/networking-and-security/retrofit-and-okhttp.md':"A request that works in a demo breaks once authentication, retries and response bodies interact. Separate Retrofit's declarative interface from OkHttp's transport, then decide who owns each policy and resource.",
+'android/networking-and-security/ktor-vs-retrofit.md':'Retrofit and Ktor can both fetch the same JSON; they differ in where the code can run and how the pipeline is extended. Choose by the boundary you are sharing and what you must operate, not by fashion.',
+'android/networking-and-security/graphql.md':"One screen needing data from five REST endpoints tempts a team towards GraphQL, which moves the shape of every response into the client's query. Learn what that buys, how caching and partial errors change, and what the server must now protect.",
+'android/networking-and-security/networkcallback-metered-vpn-captive-portal.md':'"Connected" does not mean your request will succeed: the network may be metered, behind a VPN or trapped by a captive portal. Treat connectivity signals as hints, and let real request outcomes drive retries.',
+'android/networking-and-security/security-and-keystore.md':'A secret stored in app files can be copied off a rooted or backed-up device. Learn how Android Keystore keeps key material out of your process, what hardware backing promises, and what it cannot protect.',
+'android/networking-and-security/device-connectivity-and-location.md':'A BLE scan or location request that works on the desk can drain the battery, lose its connection or be stopped by the system in the field. Design when access starts, when it stops and what survives process death.',
+'android/data-and-di/health-connect.md':"Health data comes from many apps and devices, and the user decides who may read or write each kind. Learn how Health Connect's shared schema, permissions and change tokens let apps exchange records without owning them.",
+'android/networking-and-security/webview-and-hybrid.md':"Embedded web pages run someone else's code with access to whatever your app exposes to it, next to your users' sessions. Decide when WebView, Custom Tabs or native screens fit, and how to keep the JavaScript bridge and navigation from becoming an attack surface.",
+'android/media/media3-player-architecture.md':'Feed autoplay, full-screen video, background audio and downloads all compete for limited codecs, audio focus, memory and battery. Design a single Media3 player stack that every surface shares, with a session the system can control.',
+'android/media/camerax-capture-architecture.md':'Camera code that works on one phone fails on hundreds of others with different sensors and quirks. Learn how CameraX use cases bind to a lifecycle, when Camera2 is worth its cost, and how to test across devices.',
+'android/testing/testing-strategy.md':'A test suite that takes an hour or fails at random stops protecting releases and starts slowing them down. Decide what each tier of tests is worth, where it runs in CI and who owns flakiness.',
+'android/testing/unit-testing.md':'Fast tests are only useful if they exercise the real logic with time and threads under control. Learn how to isolate a unit, fake its collaborators and drive coroutines with a test scheduler.',
+'android/testing/ui-testing.md':'UI tests that sleep, guess at timing or match pixels become the flakiest part of a build. Learn how Compose and Espresso tests synchronise with the app, find elements by semantics and stay trustworthy at scale.',
+'android/performance/startup.md':'A spinner appears quickly, but the user is still waiting for the content they came for. Choose the finish line that matters, measure cold, warm and hot starts against it, then cut work from the critical path.',
+'android/performance/jank.md':'A scroll stutters even with no network request running. Find out which part of one late frame took too long: app code on the main thread, a wait on another thread, or rendering further downstream.',
+'android/performance/rendering.md':'The main thread can finish its work and the frame still arrives late. Follow a frame from recorded drawing commands through the RenderThread and buffer queue to the display.',
+'android/performance/anrs.md':'When an app stops responding, the main thread is usually waiting on something: slow I/O, a binder call, heavy work, or a lock whose owner is itself stuck. Learn what the system times out, how to read the traces, and how to follow the wait to its cause.',
+'android/performance/memory-management-and-leaks.md':'Every screen the user closes should become garbage, yet a forgotten listener can keep each one alive. Treat memory growth as an ownership problem: who registered a reference, and who promised to remove it?',
+'android/performance/native-memory-bitmaps.md':"An image feed can be killed on a small device while the Kotlin heap looks normal, because pixels and graphics buffers live elsewhere. Account for the whole process's memory and size bitmaps for the view that shows them.",
+'android/performance/app-size-and-r8.md':'A feature works in development and fails only in the release build, while each new SDK makes the download bigger. Learn what R8 keeps, removes and renames, and how to measure the bytes users actually receive.',
+'android/performance/baseline-profiles.md':'A freshly installed app is slower on its first journeys than after repeated use. Baseline Profiles tell the runtime which code to compile ahead of time; learn how to generate, ship and verify them.',
+'android/performance/macrobenchmark-and-perfetto.md':'A red benchmark only matters if the experiment was fair: the same content, device and compilation state. Learn how Macrobenchmark measures real journeys and how Perfetto traces explain the result.',
+'android/performance/battery-power-profiling.md':'The app sits idle on screen and the battery keeps draining. Find the work that continues after useful activity ends, such as retry loops, location sessions and wake locks, and measure its cost.',
+'android/performance/network-radio-wakeups.md':'Many tiny requests can cost more battery than one large one, because each can keep the radio in a high-power state for longer. Set a freshness requirement for every request, then batch, defer or push what can wait.',
+'android/performance/thermal-low-end-device-strategy.md':'An app that is smooth for the first minute slows as the device heats up, and low-end phones start with less headroom. Adapt quality and work to the budget the device can sustain, not the one it has at launch.',
+'android/observability/logging.md':'A disabled debug log can still build its expensive message, and a forgotten log can leak personal data. Decide what each log costs to construct, which sink receives it, and what must never be written.',
+'android/observability/crash-monitoring.md':'A new release brings a crash cluster with minified stacks from one group of devices. Connect each report to the exact build, its mapping files and an owner, and decide when to halt the rollout.',
+'android/observability/mobile-apm-and-rum.md':"In an illustrative case, the backend says checkout took 200 milliseconds while the user waited three seconds. Measure from the user's interaction to the visible result, and connect client timings to server traces.",
+'android/kotlin-multiplatform/kmp-decision-matrix.md':'Two native apps implement the same business rule and slowly drift apart. Decide whether Kotlin Multiplatform is worth its build, tooling and team costs, and which code to share first.',
+'android/kotlin-multiplatform/foundations/overview-and-k1-vs-k2.md':'Kotlin is one language compiled by one frontend into very different targets: JVM bytecode, native binaries and JavaScript. Learn how that pipeline works and what the K2 compiler changed for multiplatform code.',
+'android/kotlin-multiplatform/shared-domain-boundaries.md':'The best shared code is plain domain logic with explicit platform edges; the worst hides Android and iOS differences until production. Decide what to share and where each boundary should sit.',
+'android/kotlin-multiplatform/foundations/architecture-and-module-boundaries.md':'Sharing only logic and sharing the whole UI lead to different project shapes, iOS workflows and CI costs. Choose a paradigm, then set module boundaries both platform teams can live with.',
+'android/kotlin-multiplatform/tooling/build-system-and-source-sets.md':'A KMP build compiles the same module for several targets, each seeing a different set of source files and dependencies. Learn how source-set hierarchies and published variants decide what code each target gets.',
+'android/kotlin-multiplatform/ecosystem/libraries-ecosystem.md':'A dependency usable on Android may have no variant for iOS, and common code can call only what every target supports. Check library support per target before choosing, and plan for the gaps.',
+'android/kotlin-multiplatform/ecosystem/networking-with-ktor.md':"Shared networking needs one API in common code and a different HTTP engine on each platform. Learn how Ktor's client pipeline separates the two, and where engine differences still reach your code.",
+'android/kotlin-multiplatform/ecosystem/persistence.md':'Moving a database into shared code means choosing a library that works on every target and migrating data users already have. Compare Room, SQLDelight and key-value stores for multiplatform use.',
+'android/kotlin-multiplatform/ecosystem/dependency-injection.md':'Hilt builds Android graphs well but does not run on iOS. Decide how shared code receives its dependencies, and which DI approach each platform uses around it.',
+'android/kotlin-multiplatform/ui-sharing/compose-multiplatform.md':'Sharing UI saves the most code and carries the most risk, because users expect each platform to look and behave natively. Learn what Compose Multiplatform shares, how it renders on iOS, and where native screens still fit.',
+'android/kotlin-multiplatform/ui-sharing/resource-sharing.md':'Strings, images and fonts need to be packaged differently for each platform yet referenced once from shared code. Learn how Compose Multiplatform resources are generated, packaged and loaded.',
+'android/kotlin-multiplatform/production/concurrency-and-memory.md':'Kotlin/Native once froze objects shared between threads, and old code still carries that history. Learn how the current memory model and garbage collector work, and how coroutines cross into Swift.',
+'android/kotlin-multiplatform/tooling/swift-interop.md':'iOS developers meet shared code only through its exported API, so awkward names, lossy generics and unmanaged Flows make it expensive to adopt. Design the Swift-facing surface deliberately.',
+'android/kotlin-multiplatform/tooling/ios-distribution.md':'An iOS team needs a predictable framework it can reproduce and debug, not just Kotlin that compiles. Choose how the framework is built, packaged and versioned, and what ships with each release.',
+'android/kotlin-multiplatform/binary-compatibility-api-evolution.md':'A change that is harmless for Android consumers can break Swift callers or persisted data. Name each consumer and its compatibility promise, then gate every published artifact separately.',
+'android/kotlin-multiplatform/production/testing-and-mocking.md':'Shared code can pass on the JVM and fail on iOS, because runtimes, schedulers and platform adapters differ. Decide which tests run on which targets and how to replace platform dependencies in them.',
+'android/kotlin-multiplatform/kmp-observability-crash-symbolication.md':'A crash inside shared Kotlin code on iOS can arrive as an unreadable native stack. Make shared failures traceable across platforms, with symbols, logs and metrics tied to each release.',
+'android/kotlin-multiplatform/production/ci-cd-for-kmp.md':'Apple frameworks can only be linked and tested on macOS, which makes multiplatform pipelines slower and more expensive. Decide what runs on each change, what is cached, and how releases stay reproducible.',
+'android/kotlin-multiplatform/production/adoption-and-migration.md':'Rewriting two apps at once is rarely an option. Introduce shared code behind existing boundaries one slice at a time, keep each step reversible, and define when the old path can be removed.',
+'android/build-tooling/gradle-and-build-systems.md':'You change one line and wait a minute before anything compiles. Learn how Gradle configures a task graph from plugins, decides what to run, and where an incremental build actually spends its time.',
+'android/build-tooling/multi-module.md':"A private change in one feature turns other teams' builds red when module boundaries are wrong. Learn a standard module taxonomy and how API, implementation and test modules limit how far an edit spreads.",
+'android/build-tooling/convention-plugins.md':'Fifty copied build files drift apart until no two modules are configured alike. Move shared build logic into small, tested convention plugins that every module applies by ID.',
+'android/build-tooling/ksp.md':'Much of the code your app runs is generated at build time by annotation processors. Learn how KSP reads Kotlin symbols directly, why it replaces kapt, and how incremental processing decides what to regenerate.',
+'android/os-internals/intent-resolution-and-manifest.md':'Every intent that reaches your app is input from outside, and every manifest entry is part of your public surface. Learn how Android matches intents to components and what your code must still check.',
+'android/os-internals/broadcast-receivers.md':'A broadcast receiver can start your process for one short callback, then let it be killed. Learn how receivers are delivered, how long they live, and how to hand lasting work to an owner that survives.',
+'android/os-internals/content-providers-and-contentresolver.md':'Another app cannot read a path into your private storage. Learn how content providers, URIs and temporary grants share exactly one piece of data, and why providers run before Application.onCreate().',
+'android/os-internals/permissions-and-app-ops.md':'Holding a permission and being allowed to use a sensor right now are different questions. Learn the permission categories, the runtime flow, and how to design features that handle denial and degraded access.',
+'android/os-internals/activitymanager-process-lifecycle.md':"Your app's task can stay in Recents after the process holding its memory has been killed. Learn how Android ranks and kills processes, and which owners restore state when the user returns.",
+'android/os-internals/package-manager-installation-classloading.md':'An install can succeed while a class the app needs is missing until a user reaches it. Learn what PackageManager records at install, how classes load lazily, and how splits and R8 change that.',
+'android/os-internals/the-binder.md':"A method call that looks local can wait on another process's busy thread. Learn how Binder carries calls between processes, what limits apply, and how to design cross-process contracts.",
+'android/os-internals/the-zygote.md':'Every app needs the same framework, so Android prepares it once and copies the process. Learn how the Zygote preloads, forks and shares memory, and why a fast fork does not mean a ready app.',
+'android/os-internals/art-and-dalvik.md':'The same build can run faster days after install with no code change. Learn how ART mixes interpretation, JIT and profile-guided AOT compilation, and how to measure performance fairly.'}
+
+
+def intro(path):
+    return INTRO.get(path) or INTRO[Path(path).stem]
 
 
 def render_diagrams():
@@ -379,35 +569,92 @@ def render_diagrams():
         shutil.copy2(cached,OUT/'diagrams'/cached.name)
 
 
+DESIGN=WEB/'design-system'
+# The site's names for design-system tokens, so existing styles take the new palette unchanged.
+TOKEN_ALIASES={'bg':'sheet','surface':'sheet-sunken','hero':'accent-soft','text':'ink','muted':'ink-muted','line':'line',
+               'accent':'accent','on-accent':'on-accent','accent-soft':'accent-soft','warning':'warn','code':'code-bg','code-text':'code-ink'}
+THEME_SELECTORS={'light':':root','dark':'html[data-theme=dark]','sepia':'html[data-theme=sepia]','contrast':'html[data-theme=contrast]'}
+
+def design_tokens_css():
+    """Compile website/design-system/tokens.json into the site's custom properties and @font-face rules."""
+    tokens=json.loads((DESIGN/'tokens.json').read_text())
+    themes=[t['id'] for t in tokens['color']['themes']]
+    value=lambda v,theme: v if isinstance(v,str) else v.get(theme,v[themes[0]])
+    out=['/* Generated by build.py from website/design-system/tokens.json. Do not edit. */']
+    for f in tokens['type'].get('fonts',[]):
+        out.append(f'@font-face{{font-family:"{f["family"]}";src:url("fonts/{Path(f["file"]).name}") format("woff2");'
+                   f'font-weight:{f.get("weight","400")};font-style:{f.get("style","normal")};font-display:swap}}')
+    for theme in themes:
+        props=[f'--{c["name"]}:{value(c["value"],theme)}' for c in tokens['color']['tokens']]
+        props+=[f'--{x["name"]}:{value(x["value"],theme)}' for x in tokens['shadow']['tokens']]
+        # A token alias to itself creates a CSS variable cycle and invalidates the real colour.
+        props+=[f'--{old}:var(--{new})' for old,new in TOKEN_ALIASES.items() if old != new]
+        if theme==themes[0]:
+            for family in ('spacing','radius','layout'): props+=[f'--{x["name"]}:{x["value"]}' for x in tokens[family]['tokens']]
+            props+=[f'--font-{k}:{v}' for k,v in tokens['type']['families'].items()]
+        out.append(THEME_SELECTORS[theme]+'{'+';'.join(props)+'}')
+    return '\n'.join(out)+'\n'
+
+def design_gallery(asset_version):
+    """Use real lesson sections and shared assets; do not maintain a second scene demo."""
+    tokens=json.loads((DESIGN/'tokens.json').read_text())
+    names=['canvas','sheet','ink','accent','scene-client','scene-runtime','scene-storage','scene-queue']
+    swatches=''.join('<div class="swatch" style="--colour:var(--'+escape(name)+')"><i aria-hidden="true"></i><code>'+escape(name)+'</code></div>' for name in names)
+    samples=[]
+    for name,label in [('room','Data changes become a new screen state'),('the-binder','Compare blocking and one-way calls'),('the-zygote','A child writes its own memory page'),('flow','A value survives its collector')]:
+        source=(WEB/'content/blend/android'/f'{name}.blend').read_text()
+        scene=re.search(r'<section class="pb-figure" data-pb-flow="scene".*?</section>',source,re.S)
+        if not scene: raise ValueError('Gallery scene missing: '+name)
+        samples.append('<section class="demo"><h3>'+label+'</h3>'+scene[0]+'</section>')
+    for name,label in [('channels-and-select','Compare four channel capacities'),('bytecode','Watch an operand stack change'),('android/viewmodel','Follow a retained state owner')]:
+        source=(WEB/'content/blend'/f'{name}.blend').read_text()
+        scene=re.search(r'<figure class="stepper".*?</figure>',source,re.S)
+        if not scene: raise ValueError('Gallery illustrated stepper missing: '+name)
+        samples.append('<section class="demo"><h3>'+label+'</h3>'+scene[0]+'</section>')
+    page=(DESIGN/'gallery.html').read_text().replace('{{swatches}}',swatches).replace('{{scenes}}',''.join(samples))
+    for asset in ('styles.css','blend.css','theme.css','tokens.css','flow.css','flow.js','blend.js'):page=page.replace('"/'+asset+'"','"'+BASE+asset+'?v='+asset_version+'"')
+    page=page.replace('href="/android/"','href="'+route('android.md')+'"')
+    destination=OUT/'design-system';destination.mkdir(exist_ok=True)
+    (destination/'index.html').write_text(page)
+
 def build(skip_diagrams=False):
     if OUT.exists(): shutil.rmtree(OUT)
     OUT.mkdir()
     for directory in ['diagram-sources','diagrams','coverage']:(OUT/directory).mkdir(exist_ok=True)
     # Content hash in asset URLs, so browsers never mix a new page with stale CSS or JS.
-    asset_version=hashlib.sha256(b''.join((WEB/n).read_bytes() for n in ['styles.css','blend.css','app.js','blend.js','coroutines.js','lesson-model.js'])).hexdigest()[:10]
+    tokens_css=design_tokens_css().encode()
+    asset_version=hashlib.sha256(tokens_css+b''.join((WEB/n).read_bytes() for n in ['styles.css','blend.css','theme.css','app.js','blend.js','coroutines.js','lesson-model.js','design-system/components/bundle.css','design-system/components/bundle.js'])).hexdigest()[:10]
     template=(WEB/'templates/reader.html').read_text().replace('{{base}}',BASE).replace('{{asset_version}}',asset_version)
-    index=(ROOT/'kotlin.md').read_text()
-    order=[]
-    for relative in re.findall(r'\]\((kotlin/[^)#]+\.md)\)',index):
-        if relative not in order: order.append(relative)
-    if set(order)!=PATHS-{'kotlin.md'}: raise ValueError('Kotlin reading sequence does not cover every chapter')
     # Generate catalog from checked-in tree indexes, using guided order rather than filenames.
+    # Each chapter carries its guided-reading phase, so wide trees group into sub-sections.
     catalog=json.loads((WEB/'nav-data.js').read_text().split('=',1)[1].strip().rstrip(';'))
     for tree in catalog:
         tree_index=ROOT/(tree['slug']+'.md')
         if not tree_index.exists():continue
         tree_order=[]
-        for target in re.findall(r'\]\(([^)#]+\.md)(?:#[^)]*)?\)',tree_index.read_text()):
+        section={}
+        phase_groups=phases(tree['slug'])
+        for heading,paths in phase_groups:
+            for p in paths:
+                if p not in tree_order: tree_order.append(p)
+                section.setdefault(p,heading)
+        # Section cross-references do not claim a chapter's place in the Topics menu either.
+        for target in re.findall(r'\]\(([^)#]+\.md)\)',tree_index.read_text()):
             if target.startswith(tree['slug']+'/') and target not in tree_order:tree_order.append(target)
         actual=sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/tree['slug']).rglob('*.md'))
         tree_order += [p for p in actual if p not in tree_order]
-        tree['chapters']=[{'title':title(ROOT/p),'path':p} for p in tree_order]
+        phase_positions={heading:index for index,(heading,_) in enumerate(phase_groups)}
+        catalog_positions=[phase_positions[section[p]] for p in tree_order if p in section]
+        if catalog_positions != sorted(catalog_positions):
+            raise ValueError(f'{tree["slug"]} Topics phases are not contiguous')
+        tree['chapters']=[{'title':title(ROOT/p),'path':p,'section':section.get(p,'More chapters'),'rendered':p in PATHS} for p in tree_order]
     (OUT/'nav-data.js').write_text('window.PLAYBOOK_CATALOG = '+json.dumps(catalog,ensure_ascii=False)+';\n')
     reports=[]
-    for path in ['kotlin.md']+order:
-        raw=(ROOT/path).read_text(); article,outline,report=render_chapter(path,raw,path=='kotlin.md')
+    for path in PAGES:
+        slug=tree_of(path); order=ORDER[slug]; is_index=path==f'{slug}.md'
+        raw=(ROOT/path).read_text(); article,outline,report=render_chapter(path,raw,is_index)
         name=title(ROOT/path)
-        category='Learning path' if path=='kotlin.md' else Path(path).parent.name.replace('-',' ').title()
+        category='Learning path' if is_index else SECTION[path]
         navigation=''
         if path in order:
             i=order.index(path); links=[]
@@ -419,21 +666,33 @@ def build(skip_diagrams=False):
         if path.endswith('/coroutines.md'): playground+='<p>The runnable console example demonstrates overlapping waits. Return to Content to edit and run it beside the explanation.</p><button class="primary-button" data-go="experiment">Go to the example →</button>'
         else: playground+='<p>Use a Kotlin/JVM project or an Android project as indicated by each example. Read the assumptions and expected behaviour before running or changing a block.</p><button class="primary-button" data-open-tab="content">Return to Content</button>'
         playground+='</div></section>'
-        values={'title':escape(name),'description':escape(INTRO[Path(path).stem]),'article':article,'outline':outline,'source':path,'source_url':SOURCE_ROOT+path,'category':escape(category),'chapter_navigation':navigation,'lesson_scripts':scripts,'playground_panel':playground}
+        tree=TREES[slug]['title']
+        values={'title':escape(name),'description':escape(intro(path)),'tree_title':escape(tree),'tree_route':route(f'{slug}.md'),'tree_eyebrow':escape(tree.upper()),'article':article,'outline':outline,'source':path,'source_url':SOURCE_ROOT+path,'category':escape(category),'chapter_navigation':navigation,'lesson_scripts':scripts,'playground_panel':playground}
         html=template
         for key,value in values.items():html=html.replace('{{'+key+'}}',value)
         if re.search(r'\{\{[a-z_]+\}\}',html):raise ValueError('Unexpanded page template')
         destination=OUT/route(path)[len(BASE):].strip('/')/'index.html';destination.parent.mkdir(parents=True,exist_ok=True);destination.write_text(html)
         report['url']=route(path);reports.append(report)
         if path=='kotlin.md':(OUT/'index.html').write_text(html)
-    for name in ['styles.css','blend.css','app.js','blend.js','coroutines.js','lesson-model.js']:
+    home=(WEB/'templates/home.html').read_text().replace('{{base}}',BASE).replace('{{version}}',asset_version).replace('{{android_count}}',str(len(ORDER['android']))).replace('{{kotlin_count}}',str(len(ORDER['kotlin'])))
+    (OUT/'index.html').write_text(home)
+    (OUT/'.nojekyll').touch()
+    for name in ['styles.css','blend.css','theme.css','app.js','blend.js','coroutines.js','lesson-model.js']:
         shutil.copy2(WEB/name,OUT/name)
+    # The design system is the source for tokens, the diagram runtime and the self-hosted fonts.
+    (OUT/'tokens.css').write_bytes(tokens_css)
+    shutil.copy2(DESIGN/'components/bundle.css',OUT/'flow.css')
+    shutil.copy2(DESIGN/'components/bundle.js',OUT/'flow.js')
     shutil.copytree(WEB/'fonts',OUT/'fonts')
+    for font in (DESIGN/'fonts').glob('*.woff2'): shutil.copy2(font,OUT/'fonts'/font.name)
+    design_gallery(asset_version)
     if not skip_diagrams: render_diagrams()
-    (OUT/'coverage/kotlin.json').write_text(json.dumps(reports,ensure_ascii=False,indent=2)+'\n')
+    (OUT/'coverage/pages.json').write_text(json.dumps(reports,ensure_ascii=False,indent=2)+'\n')
     (OUT/'coverage/diagram-sources.json').write_text(json.dumps({p.stem:p.read_text() for p in sorted((OUT/'diagram-sources').glob('*.mmd'))},ensure_ascii=False,indent=2)+'\n')
+    shutil.copy2(WEB/'content/illustrated-stepper-coverage.json',OUT/'coverage/illustrated-steppers.json')
     (OUT/'coverage/corrections.json').write_text(json.dumps(APPROVED_CORRECTIONS,ensure_ascii=False,indent=2)+'\n')
-    print(f'Rendered {len(order)} Kotlin chapters + learning path; {sum(r["original_sections"] for r in reports)} source sections; {sum(r["code_blocks"] for r in reports)} code/diagram blocks; {len(APPROVED_CORRECTIONS)} of {len(ALL_CORRECTIONS)} proposed corrections approved and applied.')
+    trees='; '.join(f'{TREES[s]["title"]}: {len(ORDER[s])} chapters + learning path' for s in TREES)
+    print(f'Rendered {trees}; {sum(r["original_sections"] for r in reports)} source sections; {sum(r["code_blocks"] for r in reports)} code/diagram blocks; {len(APPROVED_CORRECTIONS)} of {len(ALL_CORRECTIONS)} proposed corrections approved and applied.')
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
@@ -441,6 +700,12 @@ if __name__=='__main__':
     args=parser.parse_args()
     import check_review_data
     check_review_data.check()
+    import check_completion
+    check_completion.check()
+    import check_illustrated_coverage
+    check_illustrated_coverage.check()
+    import check_scene_routes
+    check_scene_routes.check()
     build(args.skip_diagrams)
     # Never publish a build that dropped original content.
     import check_preservation

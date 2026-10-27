@@ -1,0 +1,70 @@
+<!-- @dsCard group="Content" height=420 subtitle="Dark in every theme, ligatures off, a cue when lines run past the edge" -->
+<style>
+  body { margin: 0; background: var(--sheet); font-family: var(--font-sans); }
+  .wrap { padding: 24px max(12px, min(24px, 4vw)); max-width: var(--measure-wide); box-sizing: border-box; }
+  .code { background: var(--code-bg); color: var(--code-ink); border-radius: var(--radius-md); overflow: hidden; }
+  .head { display: flex; justify-content: space-between; gap: 8px 12px; align-items: center; flex-wrap: wrap; padding: 10px 18px;
+    border-bottom: 1px solid var(--line-strong); font: 600 13px/18px var(--font-sans); }
+  .head small { display: block; font-weight: 400; color: var(--code-comment); }
+  .actions { display: flex; gap: 8px; }
+  .head button { font: 600 13px/18px var(--font-sans); color: var(--code-ink); background: none; border: 1px solid var(--code-comment);
+    border-radius: var(--radius-pill); padding: 5px 12px; min-height: 32px; cursor: pointer; }
+  .head button[aria-pressed="true"] { background: var(--code-ink); color: var(--code-bg); }
+  .head button:focus-visible, .scroll:focus-visible { outline: 2px solid var(--code-call); outline-offset: 2px; }
+  .body { position: relative; }
+  .scroll { overflow-x: auto; overscroll-behavior-x: contain; }
+  pre { margin: 0; padding: 18px; font: 15px/26px var(--font-mono); font-variant-ligatures: none; tab-size: 4; width: max-content; min-width: 100%; box-sizing: border-box; }
+  .code.wrapped pre { width: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+  /* Cue: a fade on the edge that hides text, and a one-line hint, only while a line runs past the edge. */
+  .body::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 36px; pointer-events: none;
+    background: linear-gradient(to left, var(--code-bg), transparent); opacity: 0; transition: opacity .2s; }
+  .code.is-scrollable:not(.at-end) .body::after { opacity: 1; }
+  .hint { display: none; margin: 0; padding: 0 18px 12px; font: 600 12px/16px var(--font-sans); color: var(--code-comment); }
+  .code.is-scrollable .hint { display: block; }
+  .k { color: var(--code-key); } .f { color: var(--code-call); } .s { color: var(--code-string); } .c { color: var(--code-comment); }
+</style>
+<div class="wrap">
+  <div class="code">
+    <div class="head"><span>ProductRoute.kt<small>Collect state at the screen boundary; children get values and lambdas</small></span>
+      <span class="actions"><button type="button" data-wrap aria-pressed="false">Wrap lines</button><button type="button" data-copy>Copy</button></span></div>
+    <div class="body"><div class="scroll" data-label="Code: ProductRoute.kt"><pre><span class="k">@Composable</span>
+<span class="k">fun</span> <span class="f">ProductRoute</span>(viewModel: <span class="f">ProductViewModel</span>) {
+    <span class="k">val</span> uiState <span class="k">by</span> viewModel.uiState.<span class="f">collectAsStateWithLifecycle</span>()
+    <span class="f">ProductScreen</span>(products = uiState.products, onProductClick = viewModel::openProduct)
+}
+
+<span class="k">@Composable</span>
+<span class="k">fun</span> <span class="f">ProductScreen</span>(products: <span class="f">List</span>&lt;<span class="f">Product</span>&gt;, onProductClick: (<span class="f">ProductId</span>) -> <span class="f">Unit</span>) {
+    <span class="f">LazyColumn</span> {
+        <span class="f">items</span>(products, key = { product -> product.id }) { product ->
+            <span class="f">ProductRow</span>(product, onClick = { onProductClick(product.id) })
+        }
+    }
+}</pre></div></div>
+    <p class="hint" aria-hidden="true">Some lines continue past the edge: scroll sideways or turn on Wrap lines.</p>
+  </div>
+</div>
+<script>
+  document.querySelectorAll('.code').forEach(function (card) {
+    var scroll = card.querySelector('.scroll'), pre = card.querySelector('pre');
+    function sync() {
+      var more = scroll.scrollWidth > scroll.clientWidth + 1;
+      card.classList.toggle('is-scrollable', more);
+      card.classList.toggle('at-end', scroll.scrollLeft + scroll.clientWidth >= scroll.scrollWidth - 1);
+      if (more) { scroll.setAttribute('tabindex', '0'); scroll.setAttribute('role', 'region'); scroll.setAttribute('aria-label', scroll.dataset.label + ', scrolls sideways'); }
+      else { scroll.removeAttribute('tabindex'); scroll.removeAttribute('role'); scroll.removeAttribute('aria-label'); }
+    }
+    scroll.addEventListener('scroll', sync, { passive: true });
+    if (window.ResizeObserver) new ResizeObserver(sync).observe(scroll); else window.addEventListener('resize', sync);
+    card.querySelector('[data-wrap]').addEventListener('click', function () {
+      var on = card.classList.toggle('wrapped'); this.setAttribute('aria-pressed', on ? 'true' : 'false'); sync();
+    });
+    card.querySelector('[data-copy]').addEventListener('click', function () {
+      var b = this, text = pre.innerText;
+      function done(msg) { b.textContent = msg; setTimeout(function () { b.textContent = 'Copy'; }, 1600); }
+      function select() { var r = document.createRange(); r.selectNodeContents(pre); var s = getSelection(); s.removeAllRanges(); s.addRange(r); done('Selected: press Ctrl/Cmd+C'); }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { done('Copied'); }, select); else select();
+    });
+    sync();
+  });
+</script>

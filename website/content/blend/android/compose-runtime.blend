@@ -1,0 +1,52 @@
+<!-- Website teaching layer for android/compose/compose-runtime.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Follows the chapter's own conceptual model and the AndroidX design note "How Composition Works";
+     generated code is described conceptually, as the chapter does. Checked 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A search screen has a text field and a list of 500 results. Typing one letter makes the whole screen stutter. A profiler shows the list header being rebuilt on every keystroke, even though nothing in it changed. The engineer asks the obvious question: how does Compose decide what to run again?</p>
+
+Compose has no virtual DOM to diff. Instead, the compiler turns each `@Composable` into code that talks to a runtime `Composer`, which records what was emitted, and where, in a **slot table**. When state changes, only the scopes that read it are invalidated, and everything else can be skipped by jumping over its group. This chapter follows that machinery from the compiler to the UI tree, so you can predict what re-runs, and why.
+
+<!-- @diagram 848679d1d075013c -->
+### Three layers, one loop
+
+<figure class="viz"><div class="viz-stack"><div class="viz-flow"><div class="node"><strong><code>@Composable</code> source</strong></div><div class="node"><strong>Compose compiler plugin</strong><small>adds the composer, change masks and restart scopes</small></div><div class="node is-key"><strong>Composer</strong><small>walks groups; reads and writes the slot table</small></div><div class="node"><strong>Applier</strong><small>mutates the Compose UI node tree</small></div></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="warn"><strong>Observed snapshot state</strong><small>a write invalidates the scopes that read it</small></div><div class="node"><strong>Recomposer</strong><small>re-runs invalidated scopes on the next frame</small></div></div></div><figcaption>The compiler prepares the code once; the runtime loop of invalidate, recompose and apply runs whenever observed state changes.</figcaption></figure>
+
+<!-- @after The Slot Table (Gap Buffer) :: animation -->
+### One state write, followed through the slot table
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="Invalidate, recompose, apply">
+<h3>Invalidate, recompose, apply</h3>
+<p class="pb-sub">An illustrative run. Each moving packet is a named request, notification or result.</p>
+<div class="pb-paper"><svg class="pb-svg" role="img" aria-label="A snapshot-state change invalidates a reading scope. Scheduled recomposition reruns that scope and changes the UI node tree. Layout and drawing remain separate phases."></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div>
+<div class="pb-caption"><span class="pb-count"></span><p aria-live="polite"></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">{"nodes": [{"id": "state", "label": "Snapshot state", "art": {"kind": "flow", "role": "storage"}}, {"id": "recomposer", "label": "Recomposer", "art": {"kind": "clock", "role": "runtime"}}, {"id": "scope", "label": "Restart scope", "art": {"kind": "code", "role": "runtime"}}, {"id": "ui", "label": "UI node tree", "art": {"kind": "phone", "role": "client"}}], "layouts": {"wide": {"size": [760, 490], "nodes": {"state": {"x": 24, "y": 40, "w": 300, "h": 140}, "recomposer": {"x": 436, "y": 40, "w": 300, "h": 140}, "scope": {"x": 24, "y": 310, "w": 300, "h": 140}, "ui": {"x": 436, "y": 310, "w": 300, "h": 140}}, "edges": {"invalidate": "M326 92 C380 92 380 92 434 92", "restart": "M568 182 C568 245 156 245 156 308", "apply": "M326 362 C380 362 380 362 434 362"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}, "narrow": {"size": [320, 550], "nodes": {"state": {"x": 8, "y": 25, "w": 144, "h": 190}, "recomposer": {"x": 168, "y": 25, "w": 144, "h": 190}, "scope": {"x": 8, "y": 330, "w": 144, "h": 190}, "ui": {"x": 168, "y": 330, "w": 144, "h": 190}}, "edges": {"invalidate": "M154 102 C160 102 160 102 166 102", "restart": "M222 217 C222 272.5 62 272.5 62 328", "apply": "M154 407 C160 407 160 407 166 407"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}}, "modes": {"run": {"initial": {"nodes": {"state": ["", "query = empty"], "recomposer": ["", "idle"], "scope": ["", "read query before"], "ui": ["", "old text"]}, "visuals": {"state": {"empty": true}, "ui": {"rows": 1}}}, "steps": [{"caption": "A composable read query during composition. This model follows a composition-phase read; reads during layout or drawing can invalidate those phases instead."}, {"caption": "A changed state value invalidates a scope that read it. Invalidation schedules work rather than immediately rebuilding every composable.", "packets": [{"edge": "invalidate", "label": "invalidate", "tone": "fwd", "kind": "signal"}], "set": {"nodes": {"state": ["is-done", "query = cat"], "recomposer": ["is-active", "work pending"]}, "visuals": {"state": {"empty": false}, "recomposer": {"ready": true}}}}, {"caption": "The Recomposer performs scheduled work. The affected restart scope runs again; skipping other calls depends on their actual inputs and state dependencies.", "packets": [{"edge": "restart", "label": "restart scope", "tone": "fwd", "kind": "signal"}], "set": {"nodes": {"scope": ["is-active", "recompose query reader"]}}}, {"caption": "The recomposed result supplies changes for the UI node tree. This is a conceptual change path, not a virtual-DOM diff or a cross-thread message guarantee.", "packets": [{"edge": "apply", "label": "apply changes", "tone": "fwd", "kind": "parcel"}], "set": {"nodes": {"ui": ["is-active", "apply changed text"]}}}, {"caption": "The UI tree now reflects cat. Required layout and drawing work follows its own phase dependencies; unchanged structure does not imply that every later phase must run.", "set": {"nodes": {"ui": ["is-done", "text = cat"], "recomposer": ["", "await next work"], "scope": ["is-done", "new state read"]}, "visuals": {"ui": {"rows": 3}, "recomposer": {"ready": false}}}}]}}, "illustrated": true, "edgeEndpoints": {"invalidate": {"from": "state", "to": "recomposer"}, "restart": {"from": "recomposer", "to": "scope"}, "apply": {"from": "scope", "to": "ui"}}}</script>
+<p class="pb-sub">Sources: <a href="https://developer.android.com/develop/ui/compose/phases">Compose rendering phases</a>.</p>
+</section>
+
+<!-- @after CompositionLocal — Implicit Tree Data :: visual -->
+### What a provider change invalidates
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title"><code>compositionLocalOf</code></span><div class="node"><strong>Provider value changes</strong></div><div class="node" data-state="done"><strong>Only readers recompose</strong><small>scopes that read <code>.current</code> were tracked</small></div><div class="node"><strong>Suits</strong><small>values that can change while the UI is shown</small></div></div><div class="col"><span class="col-title"><code>staticCompositionLocalOf</code></span><div class="node"><strong>Provider value changes</strong></div><div class="node" data-state="warn"><strong>All provided content recomposes</strong><small>reads were not tracked, so every descendant is invalidated</small></div><div class="node"><strong>Suits</strong><small>values that effectively never change</small></div></div></div><figcaption>Static locals trade a cheaper read for a much more expensive change.</figcaption></figure>
+
+<!-- @after remember Under the Hood :: check -->
+**Predict the slot.** Decide before opening each answer.
+
+<details><summary><code>if (expanded) { val draft = remember { mutableStateOf("") } … }</code>: the user collapses and re-expands.</summary>
+
+The draft resets. Its group left the composition when the branch did, so the remembered value was forgotten. Hoist it above the `if` if hiding must not reset it.
+</details>
+
+<details><summary><code>val sorted = remember(items) { items.sortedBy { it.name } }</code>: the parent passes a new list with the same contents.</summary>
+
+It does not re-sort. `remember` compares keys with `equals`, and a list with equal contents is equal, so the cached result is reused. Only a list with different contents re-runs the sort.
+</details>
+
+<details><summary>A <code>LazyColumn</code> without item keys; one item is inserted at the top.</summary>
+
+Every visible row's state shifts by one position. With `key = { it.id }`, each row keeps its slots as it moves.
+</details>

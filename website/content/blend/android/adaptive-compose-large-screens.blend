@@ -1,0 +1,41 @@
+<!-- Website teaching layer for android/compose/adaptive-compose-large-screens.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (adaptive apps, window size classes, canonical layouts) on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A user reads an email on a folded phone, then opens the phone to see it larger. The app switches to its tablet layout: the list appears, the message disappears, and the scroll position is gone. Folding it again opens the inbox, not the email. The code had a phone screen and a tablet screen, and no shared idea of what the user was doing.</p>
+
+Large screens rarely need different features. They need the **same product state** shown in a different arrangement, and the arrangement can change at any moment as windows resize, devices fold and apps share the screen. This chapter separates state from layout, then covers window size classes, canonical layouts, folds, input modes and how to test them.
+
+<!-- @after Window Size Classes :: visual -->
+### Two decisions, two inputs
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">Screen architecture</span><div class="node is-key"><strong>Window size class</strong><small>compact, medium, expanded, large, extra-large width classes</small></div><div class="node"><strong>Decides</strong><small>one pane or two, bottom bar or rail</small></div></div><div class="col"><span class="col-title">Component internals</span><div class="node is-key"><strong>Local constraints</strong><small><code>BoxWithConstraints</code>, the layout's max width</small></div><div class="node"><strong>Decides</strong><small>inline metadata, wrapping, compact variants</small></div></div></div><figcaption>A card can sit in a narrow pane on a wide window, so components should look at their own space, not the window's.</figcaption></figure>
+
+<!-- @after State Preservation :: animation -->
+### Fold, unfold, fold: one state throughout
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">Same <code>InboxUiState</code>, different arrangements</span><div class="stage viz-stack"><div class="node is-key" data-el="state" data-art="flow" data-art-role="storage"><strong>State owner (ViewModel + saved state)</strong><small data-text="stateV">—</small></div><div class="viz-grid" style="--cols:2"><div class="node" data-el="list" data-art="screen" data-art-role="client"><strong>Inbox list</strong><small data-text="listV">—</small></div><div class="node" data-el="detail" data-art="screen" data-art-role="client"><strong>Message detail</strong><small data-text="detailV">—</small></div></div></div><script type="application/json" class="steps">[
+{"label":"Folded: list","caption":"Compact width shows one pane. Nothing is selected yet.","add":["state","list"],"state":{"list":"active","state":"done"},"text":{"stateV":"selectedMessageId = null","listV":"full screen"}},
+{"label":"Open a message","caption":"Selecting a message updates the state owner and saved state. On compact width the detail is shown as its own screen.","add":["detail"],"remove":["list"],"state":{"detail":"active"},"text":{"stateV":"selectedMessageId = 123","detailV":"full screen · scrolled halfway"}},
+{"label":"Unfold","caption":"The window becomes expanded. The layout policy now shows both panes, using the same selected ID; the detail uses hoisted scroll state or a SaveableStateHolder keyed by message ID, so replacing its presentation does not discard that state.","add":["list","detail"],"state":{"list":"done","detail":"active"},"text":{"listV":"left pane · 123 highlighted","detailV":"right pane · same scroll position"}},
+{"label":"Fold again","caption":"Back to compact. The selection still exists, so the detail stays in front and Back returns to the list. The opening bug came from layouts that each kept their own idea of the selection.","remove":["list"],"state":{"detail":"active"},"text":{"detailV":"full screen · Back → list"}}
+]</script><figcaption>The route and the state describe what the user is doing; the window decides how to arrange it.</figcaption></figure>
+
+<!-- @after Production Failure Modes :: check -->
+**Layout or state?** Decide before opening each answer.
+
+<details><summary>Routes <code>/tablet/inbox/123</code> and <code>/phone/inbox/123</code>.</summary>
+
+Layout leaked into navigation state. Use one route for the product state and let the window decide the panes.
+</details>
+
+<details><summary>Expanded layout with nothing selected shows an empty right half.</summary>
+
+A missing state, not a missing screen: render a deliberate "select a message" placeholder in the detail pane.
+</details>
+
+<details><summary>A component checks <code>LocalConfiguration.current.screenWidthDp &gt; 600</code>.</summary>
+
+screenWidthDp follows the app window in multi-window, but is not the full window metrics or the component’s own constraints. Use window size classes for top-level policy and local constraints for the card or pane.
+</details>

@@ -75,9 +75,10 @@ class Page(HTMLParser):
         self.codes = []              # (text, concealed) for every <pre><code> in the original areas
         self.stack, self.code = [], None
         self.headings, self.heading = [], None
+        self.hero_titles, self.hero_title = [], None
 
     def top(self):
-        return self.stack[-1] if self.stack else {'tag': '', 'zone': False, 'added': False, 'concealed': False, 'hidden': False, 'details': []}
+        return self.stack[-1] if self.stack else {'tag': '', 'zone': False, 'added': False, 'concealed': False, 'hidden': False, 'details': [], 'hero': False}
 
     def emit(self, text, concealed=False):
         if concealed and text.strip(BOUNDARY + ' '):
@@ -108,10 +109,13 @@ class Page(HTMLParser):
             details.append(classes)
         self.stack.append({
             'tag': tag, 'hidden': hidden, 'details': details,
+            'hero': parent['hero'] or 'lesson-hero' in classes,
             'concealed': hidden or bool(details),
             'zone': parent['zone'] or 'original-opening' in classes or (tag == 'section' and (a.get('id') or '').startswith('section-')),
             'added': parent['added'] or bool(classes & ADDED),
         })
+        if tag == 'h1' and self.top()['hero']:
+            self.hero_title = [[], self.top()['concealed']]
         if re.fullmatch(r'h[1-6]', tag) and self.top()['zone'] and not self.top()['added']:
             self.heading = (self.size, tag)
         if tag == 'code' and parent['tag'] == 'pre' and self.top()['zone'] and not self.top()['added']:
@@ -125,6 +129,9 @@ class Page(HTMLParser):
             if element['tag'] == 'code' and self.code is not None:
                 self.codes.append((''.join(self.code), element['hidden'], element['details']))
                 self.code = None
+            if element['tag'] == 'h1' and self.hero_title is not None:
+                self.hero_titles.append((''.join(self.hero_title[0]), self.hero_title[1]))
+                self.hero_title = None
             if element['tag'] == tag:
                 if re.fullmatch(r'h[1-6]', tag) and self.heading is not None:
                     start, level = self.heading
@@ -135,6 +142,9 @@ class Page(HTMLParser):
             self.emit(BOUNDARY)
 
     def handle_data(self, data):
+        if self.hero_title is not None:
+            self.hero_title[0].append(data)
+            self.hero_title[1] |= self.top()['concealed']
         if self.code is not None:
             self.code.append(data)
         element = self.top()
@@ -178,7 +188,8 @@ def verify(path, panel):
         checked += 1
         if kind == 'heading':
             level = next(heading_levels)
-        if kind == 'heading' and build.clean(unit) == page_title and checked == 1:
+        # Inline code in a title renders with different spacing, so compare without whitespace.
+        if kind == 'heading' and re.sub(r'\s+', '', build.clean(unit)) == re.sub(r'\s+', '', page_title) and checked == 1:
             continue  # the H1 is shown as the page title
         if kind in ('code', 'diagram'):
             found = next((i for i in range(code_index, len(page.codes)) if page.codes[i][0].rstrip('\n') == unit), None)
@@ -219,13 +230,21 @@ def verify(path, panel):
     return problems, checked
 
 
+def verify_title(path, html):
+    page = Page()
+    page.feed(html); page.close()
+    expected = re.sub(r'\s+', ' ', build.title(build.ROOT/path)).strip()
+    if len(page.hero_titles) != 1 or page.hero_titles[0][1] or re.sub(r'\s+', ' ', page.hero_titles[0][0]).strip() != expected:
+        return [('structure', 'heading', 'The original H1 must appear once, visible, as the page title')]
+    return []
+
+
 def check(path):
     page_file = build.OUT / build.route(path)[len(build.BASE):].strip('/') / 'index.html'
     html = page_file.read_text()
     problems, checked = verify(path, content_panel(html))
-    titles = re.findall(r'<h1\b[^>]*>(.*?)</h1>', html, re.S)
-    if len(titles) != 1 or normalise(titles[0]) != build.title(build.ROOT / path):
-        problems.append(('structure', 'heading', 'The original H1 must appear once as the page title'))
+    # Original inner H1s remain in place; hero H1 uniqueness is scoped to the complete hero subtree.
+    problems.extend(verify_title(path, html))
     return problems, checked
 
 
@@ -269,19 +288,48 @@ def self_test():
         problems, _ = verify(page_path, broken)
         if not problems:
             raise AssertionError(f'preservation self-test: {name} was not detected')
-    return len(checks)
+    title_path = 'kotlin/language-core/variables.md'
+    title_file = build.OUT / build.route(title_path)[len(build.BASE):].strip('/') / 'index.html'
+    full = title_file.read_text()
+    original_title = re.search(r'<h1\b[^>]*>.*?</h1>', full, re.S).group(0)
+    hero_cases = {
+        'missing hero H1': full.replace(original_title, '', 1),
+        'duplicated hero H1': full.replace(original_title, original_title * 2, 1),
+        'hidden hero H1': full.replace(original_title, '<div hidden>'+original_title+'</div>', 1),
+    }
+    for name, broken in hero_cases.items():
+        if not verify_title(title_path, broken):
+            raise AssertionError(f'preservation self-test: {name} was not detected')
+    inner_count = 0
+    nav_path = 'android/compose/compose-navigation.md'
+    if nav_path in build.PATHS:
+        nav = panel_of(nav_path)
+        h1 = re.search(r'<h1\b[^>]*>.*?</h1>', nav, re.S).group(0)
+        demoted = h1.replace('<h1', '<h2', 1).replace('</h1>', '</h2>', 1)
+        if not verify(nav_path, nav.replace(h1, demoted, 1))[0]:
+            raise AssertionError('preservation self-test: demoted original inner H1 was not detected')
+        inner_count = 1
+    return len(checks) + len(hero_cases) + inner_count
 
 
 def main():
     fixture_count = self_test()
     print(f'Preservation self-tests: {fixture_count} tampering cases detected.')
-    order = ['kotlin.md'] + sorted(p for p in build.PATHS if p != 'kotlin.md')
+    order = build.PAGES
     total_problems = total_checked = 0
     report, manifest = {}, {}
     for path in order:
         problems, checked = check(path)
         source, _ = build.corrected((build.ROOT/path).read_text(), path)
-        manifest[path] = [{'kind': kind, 'text': text} for kind, text in units(source)]
+        # Rendering moves explicit practice sections into Q&A. Keep their expected tab
+        # in the manifest independently of the live DOM, so a misplaced block fails QA.
+        levels = iter(token.tag for token in MD.parse(source) if token.type == 'heading_open')
+        view = 'content'
+        manifest[path] = []
+        for index, (kind, text) in enumerate(units(source)):
+            if kind == 'heading' and next(levels) == 'h2':
+                view = 'qa' if build.is_question_section(text) else 'content'
+            manifest[path].append({'kind': kind, 'text': text, 'view': view, 'title': index == 0 and kind == 'heading'})
         total_checked += checked
         report[path] = [{'problem': p, 'kind': k, 'text': t} for p, k, t in problems]
         total_problems += len(problems)

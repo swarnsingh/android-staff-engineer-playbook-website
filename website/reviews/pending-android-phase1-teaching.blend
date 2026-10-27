@@ -1,0 +1,15 @@
+<!-- ARCHIVED REVIEW MATERIAL: superseded by the approved corrections and current active teaching. Do not re-activate these historical fragments. See completion/REPORT.md. -->
+
+<!-- Phase 1 fragments held for owner approval; never rendered automatically. -->
+
+<!-- ViewModel step held for VM2 ordering approval -->
+{"label": "User presses Back", "caption": "Now the activity is finishing, not changing configuration. On ON_DESTROY, ComponentActivity clears the store: each ViewModel's viewModelScope is cancelled, then its onCleared() runs.", "state": {"activity": "error", "store": "error", "vm": "error", "job": "error"}, "text": {"activityNote": "finished", "storeNote": "cleared", "vmNote": "onCleared()", "jobNote": "cancelled", "eventNote": "onDestroy() with isChangingConfigurations == false → viewModelStore.clear()"}}
+
+<!-- state-management.blend: held for SM5: repository-to-ViewModel edge label; restore only after owner approval. -->
+<!-- @diagram 0295bf26b88c3e04 -->
+### One loop across the whole screen
+
+<figure class="viz"><div class="viz-stack"><div class="node"><strong>Repository</strong><small>source of truth; exposes <code>Flow</code> and suspend functions</small></div><div class="viz-grid" style="--cols:2"><div class="node"><strong>data ↑</strong><small>a <code>Flow</code> from the repository</small></div><div class="node"><strong>commands ↓</strong><small>suspend calls such as <code>repo.refresh()</code></small></div></div><div class="node is-key"><strong>ViewModel</strong><small>screen state holder; exposes <code>StateFlow&lt;UiState&gt;</code></small></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>state ↓</strong><small>UI collects with <code>collectAsStateWithLifecycle()</code></small></div><div class="node"><strong>events ↑</strong><small>callbacks such as <code>onRefresh()</code></small></div></div><div class="node"><strong>Composable</strong><small>renders state; holds only UI element state</small></div></div><figcaption>Each value has one owner on this loop. A value held both in the ViewModel and in a composable's <code>remember</code> is the opening bug.</figcaption></figure>
+
+<!-- ViewModel detailed retention description held for VM1 -->
+{"label": "Rotation starts", "caption": "Before destroying the instance, ComponentActivity returns its ViewModelStore from onRetainNonConfigurationInstance(). The platform keeps that object in the app process. Because isChangingConfigurations is true, the store is not cleared.", "state": {"activity": "error", "store": "warn", "vm": "active", "job": "active"}, "text": {"activityNote": "destroyed", "storeNote": "kept for the configuration change", "eventNote": "old activity destroyed; ViewModel retained for the replacement"}}

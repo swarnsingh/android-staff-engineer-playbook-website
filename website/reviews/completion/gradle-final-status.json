@@ -1,0 +1,45 @@
+{
+  "result": {
+    "command": "./gradlew :app:testDebugUnitTest :app:compileDebugAndroidTestKotlin --console=plain --no-scan",
+    "elapsed_seconds": 13.797,
+    "excerpt": [
+      "> Task :app:transformDebugClassesWithAsm",
+      "> Task :app:hiltCollectClassesDebugUnitTest",
+      "> Task :app:bundleDebugClassesToRuntimeJar UP-TO-DATE",
+      "> Task :app:hiltAggregateDepsDebugUnitTest UP-TO-DATE",
+      "> Task :app:hiltJavaCompileDebugUnitTest NO-SOURCE",
+      "> Task :app:transformDebugUnitTestClassesWithAsm",
+      "> Task :app:kspDebugAndroidTestKotlin",
+      "> Task :app:compileDebugAndroidTestKotlin",
+      "> Task :app:testDebugUnitTest",
+      "BUILD SUCCESSFUL in 13s",
+      "43 actionable tasks: 9 executed, 34 up-to-date",
+      "Configuration cache entry stored."
+    ],
+    "exit_status": 0,
+    "failed_tasks": [],
+    "failed_tasks_truncated": false,
+    "failure_fingerprints": [],
+    "failure_fingerprints_truncated": 0,
+    "log": "/private/var/folders/lv/zt4jc7bx2m1912fqnq_63rhw0000gn/T/gradle-run/fe76d123c6107442037e38f525c47fff/0012.log",
+    "repeated_command": true,
+    "repeated_primary_failure": false,
+    "scope": "targeted",
+    "warning_fingerprints": [],
+    "warning_fingerprints_truncated": 0
+  },
+  "result_sequence": 12,
+  "run": {
+    "child_pid": 8443,
+    "command": "./gradlew :app:testDebugUnitTest :app:compileDebugAndroidTestKotlin --console=plain --no-scan",
+    "cwd": "/Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook-website/website/validation/android",
+    "log": "0012.log",
+    "question": "After syncing merged PR 57 and the tracing artifact coordinate, do all runtime regressions and instrumentation compilation st...",
+    "scope": "targeted",
+    "sequence": 12,
+    "started_at": 1793123306.0938141,
+    "wrapper_pid": 8433
+  },
+  "state": "completed",
+  "workflow": "fe76d123c6107442037e38f525c47fff"
+}

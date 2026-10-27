@@ -1,0 +1,83 @@
+<!-- Phase 9 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase9-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">commonTest is green on the Android host, while the Apple consumer fails to import the framework. The test source was shared; the runtime and consumer were not exercised. Name the public contract, then name the target and host that can supply its evidence.</p>
+
+<!-- @after 1. Understand What commonTest Means :: visual -->
+### Read the test report as a matrix
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Common source</strong><small>Reusable test intent and assertions.</small></div><div class="node"><strong>Target execution</strong><small>A concrete compilation, runner and runtime.</small></div><div class="node"><strong>Platform adapter</strong><small>The actual storage, networking or lifecycle boundary.</small></div><div class="node"><strong>Native consumer</strong><small>The API after framework export, linking and Swift import.</small></div></div><figcaption>Record which tasks ran; a missing target report is missing evidence, not an implicit pass.</figcaption></figure>
+
+<!-- @after 4. Test HTTP Contracts With Ktor MockEngine :: animation -->
+### A fake failure proves a bounded contract
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">The repository falls back only for its declared recoverable failure</span><div class="stage viz-stack"><div class="node" data-el="api" data-art="cloud" data-art-role="runtime"><strong>Controlled API</strong><small data-text="apiV">—</small></div><div class="node" data-el="store" data-art="database" data-art-role="storage"><strong>Controlled store</strong><small data-text="storeV">—</small></div><div class="node" data-el="repo" data-art="code" data-art-role="runtime"><strong>Repository</strong><small data-text="repoV">—</small></div><div class="node" data-el="assert" data-art="inspect" data-art-role="runtime"><strong>Assertions</strong><small data-text="assertV">—</small></div></div><script type="application/json" class="steps">[
+{
+"label": "Arrange",
+"caption": "Seed a cached item and configure the API’s recoverable transport failure.",
+"state": {
+"api": "warn",
+"store": "done"
+},
+"text": {
+"apiV": "recoverable failure",
+"storeV": "cached item A",
+"repoV": "not invoked",
+"assertV": "pending"
+},
+"add": [
+"api",
+"store",
+"repo",
+"assert"
+]
+},
+{
+"label": "Call public API",
+"caption": "Invoke the repository through the contract the product uses.",
+"state": {
+"repo": "active"
+},
+"text": {
+"repoV": "requests category X"
+}
+},
+{
+"label": "Observe fallback",
+"caption": "The declared failure takes the cached path in this example; assert the result and relevant request parameters.",
+"state": {
+"assert": "active"
+},
+"text": {
+"assertV": "cached A; requested X"
+}
+},
+{
+"label": "Test a different boundary",
+"caption": "Cancellation and unexpected defects are separate cases. Real transport and Apple export require separate execution evidence.",
+"state": {
+"assert": "done"
+},
+"text": {
+"assertV": "scope of confidence recorded"
+}
+}
+]</script><figcaption>The original repository catches its named transport exception. This model does not turn arbitrary failures or cancellation into success.</figcaption></figure>
+
+<!-- @after Common Failure Modes :: check -->
+### Try the decision
+
+<details><summary>commonTest exists. Has iOS run it?</summary>
+
+Only the invoked target task and its report establish that. Require the Apple-capable job and platform-specific checks your support promise needs.
+</details>
+
+<details><summary>MockEngine decodes the payload. Has TLS been verified?</summary>
+
+No. It uses no socket. Exercise the selected transport and real contract at an appropriate separate boundary.
+</details>
+
+<details><summary>Virtual time controls one dispatcher. Can another real dispatcher still wait?</summary>
+
+Yes. Share the test scheduler among injected test dispatchers and identify work that intentionally runs outside it.
+</details>

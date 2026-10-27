@@ -1,0 +1,52 @@
+> Historical review record. Current completion, public publication and candidate dispositions are in [completion/REPORT.md](completion/REPORT.md). Earlier pending/private-hosting statements below are superseded.
+
+# Reader design review, round 4
+
+Reviewed from local handover `09836cf` on 2026-10-26. This review covers the applied reader, its shared animation runtime, the Binder pilot and all sixteen additional movement scenes. The owner requested fixes and an audit after review, so accepted findings were repaired in the website repository. Original chapters and correction approval statuses remain unchanged.
+
+## Findings and dispositions
+
+1. **P1 — Phone diagram labels fall below the promised floors.** `website/theme.css:77`. In the actual Binder lesson at 320px, nested callout and diagram padding left a 209.6px drawing: handwritten node labels were 12.45px and secondary labels 9.83px. Standalone design-system previews did not reproduce the reader's nested padding. The fix removes the extra callout padding and uses a more specific mobile diagram-padding rule so the later `flow.css` shorthand cannot override it. The matrix checks both tracks, every step, all four themes, all four reader fonts, 15px and 22px body settings, seven widths and both reading tabs.
+
+2. **P2 — Active-box changes fabricate transfers.** `website/blend.js:41`. The old rule inferred a packet from the first previously active element to the first newly active/warning element. For example, Looper's frame → touch transition suggested one callback handed work to the other; Room's collection → insert transition suggested the collector sent the database write; KSP's diagnostic checks and KMP's adoption decisions also are not transport edges. Transfers now require an explicit `{from,to}` on the step. Every retained legacy state sequence has `data-no-handoff`; a change of focus alone cannot animate a packet. The four new scenes name actual dispatch, invalidation, scheduling and request/response edges.
+
+3. **P2 — Separate playback controllers allow concurrent motion.** `website/design-system/components/bundle.js:184`, `website/blend.js:98`. Legacy steppers and scenes were outside the loop registry. A scene could coexist with another scene or a legacy autoplay sequence. A loop button also assigned ownership directly, bypassing scene cancellation. All three types now claim the same turn and stop the previous controller. The reader's existing pause hook also stops the design-system runtime.
+
+4. **P2 — Manual flights have no direct Pause action; reduced motion does not stop scene autoplay.** `website/design-system/components/bundle.js` (`ui`, `stop`, motion subscription), `website/blend.js` (`handoff`, `cancelFlight`). Previously Next could launch a packet while the button still read Play. Turning on reduced motion could settle a flight yet leave the scene's advance timer running. A manual flight now exposes Pause, which settles the destination state and removes packets, marching edges and pulses. Reduced motion stops autoplay and disables scene Play while retaining instant Previous/Next. Offscreen and document-visibility hooks stop playback too. CSS transitions inside the scene are suppressed under reduced motion.
+
+5. **P2 — The audit claims the handwritten setting while loading another font.** `website/tools/browser_audit_runner.js:3`. The previous harness selected `Playbook Hand`, an alias for Patrick Hand, rather than the reader's Shantell Sans. The actual setting exposed a 320px overflow in Null Safety's ordinary prose (`kotlinx.serialization`). The harness now loads Shantell Sans, and prose can wrap long identifiers. It also covers 1181, 1439 and 1440px rail boundaries and verifies scene initialization and rendered SVG label sizes. The earlier all-page results do not certify the actual handwritten setting.
+
+6. **P2 — Scene text fallback depends on JavaScript.** `website/scripts/build.py` (`steps_as_text`). The pilot shipped an empty caption list that only the runtime filled. The build now emits the primary track's captions and a no-script alternate-track list, keeping the added explanation available without playback or JavaScript.
+
+7. **P1 — Switching to a shorter scene track can retain an invalid index.** `website/design-system/components/bundle.js` (mode click handler). Switching Binder from synchronous step 9 to the six-step oneway track attempted to settle step 9 against the new track. The handler now resets the index when changing mode. Audits assert the actual step counter on every track and collect runtime errors, rather than inferring success from geometry alone.
+
+8. **P2 — Packet labels can escape edge lanes.** `website/design-system/components/bundle.js:160`. Binder's narrow incoming edge begins near x=300 on a 320-unit drawing, but its packet label was offset to the right. A long return edge in the WorkManager scene has the same risk. Labels now stay within the SVG's horizontal bounds while their packets follow the authored path. A real-runtime regression exercises the return lane.
+
+## Scene batches
+
+- **Looper:** queued frame, touch and delayed callbacks dispatch to the Looper's thread. Activity destruction changes ownership state without inventing a callback-to-callback transfer. The stale update is described as a possible crash, not an inevitable one. Checked against the [Handler reference](https://developer.android.com/reference/android/os/Handler).
+- **Room:** distinguish table invalidation from the row list delivered after a re-query. Unrelated-table writes and cancelled collection have no delivery packet. Checked against [observable DAO queries](https://developer.android.com/training/data-storage/room/async-queries).
+- **WorkManager:** separate persisted request, scheduling, waiting/reboot, actual execution, retry/backoff and success. No exact start time is promised. Checked against [work requests, constraints and retry](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work).
+- **OkHttp:** request/proceed travels in, response unwinds back, and the caller owns body closure. The HTTP chain includes cache handling; a network round trip is not invented for a cache hit. Checked against the [official interceptor guide](https://github.com/square/okhttp/blob/master/docs/features/interceptors.md). The existing authenticator state sequence remains alongside the new scene.
+
+Batch 2 adds Flow sharing, StateFlow versus SharedFlow, coroutine suspension/resumption, and Paging. Batch 3 adds Zygote, Intent resolution, broadcasts, and process lifecycle. Batch 4 adds Gradle phases, KSP rounds, Compose recomposition, and Media3. Each has authored state changes and named edges; waiting, process creation/death, UI ownership changes and diagnostic choices are not represented as fabricated transfers.
+
+There are seventeen full scenes including Binder and 122 retained legacy steppers. All movement candidates named in the handover are covered; Flow sharing and StateFlow/SharedFlow have separate scenes. Comparison/decision lessons retain state steppers where a moving packet would not teach a real flow.
+
+The seven shared-template KMP lessons now have concrete case explanations, contract tables and differentiated hierarchy, boundary, stack or pipeline layouts. All fifteen Phase 7 staff notes now tie evidence to a specific ownership/release decision. KS4, KS5, KO2 and KC8 have neutral on-page notes and updated primary-source follow-up records. KS4's consumer-module symptom and KO2's particular archive still need reproductions; they are not declared disproved or corrected.
+
+## Validation record
+
+Runtime and Binder-matrix evidence is recorded in the adjacent `round4-*-validation.json` files. The latest full sweep is recorded separately; interrupted/incomplete sweeps are not passes. The harness now loads built HTML into isolated same-origin document fixtures, checks readiness, bounds paint waits, avoids history writes during its layout matrix and collects runtime errors. This checks document rendering and behavior, not every browser navigation path. The build checks all 125 source hashes and 15,572 original units, with zero preservation problems. The documentation checker and its 15 unit tests pass. Component-reference documents and the small Phase 6 plan have explicit word-floor exemptions rather than padded prose.
+
+The browser evidence is desktop Chromium at emulated layout widths. It does not establish physical-device behavior, Safari/WebKit swipe containment, other engines, accessibility conformance, Android execution or benchmark results. The owner's Binder review remains pending.
+
+## Publication and remaining work
+
+The owner clarified that all LLMs must use one website repository and one repository-controlled publication path, then confirmed both source and preview must remain private. Rulebook section 19 records that decision. The workflow packages an identified source commit as a private GitHub Actions build artifact; it has no public Pages deployment job or public-publishing switch. A live private hosting runtime is not configured. Old Claude artifacts and the ChatGPT Kotlin reader are historical snapshots.
+
+Remaining owner/external work: the owner's Binder review on physical devices; exact owner approval of original-chapter replacements; reproductions for the unresolved KS4 and KO2 candidate details; and selecting an access-controlled live hosting runtime. Full-scene authoring, the seven KMP reworks and fifteen Phase 7 staff-note improvements are implemented. Final verification and publication outcomes are stated in the current continuation report.
+
+## Final integrated sweep
+
+All **125 pages** pass on the final build: **1,750 layout checks**, **1,808 scene-state checks**, **122 steppers**, **17 scenes**, **93 loaded original diagrams**, zero runtime errors or preservation failures. Evidence is [round4-browser-validation.json](round4-browser-validation.json). The sweep also exposed ResizeObserver feedback notifications; resize-driven DOM updates now run in a coalesced animation frame.

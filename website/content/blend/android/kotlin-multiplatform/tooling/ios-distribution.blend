@@ -1,0 +1,94 @@
+<!-- Phase 9 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase9-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">The framework builds on the author’s Mac, but another iOS app cannot resolve the package. A second consumer resolves it and then links the wrong platform slice. Distribution begins where local compilation ends: the consumer needs an exact artifact, a usable API and a reproducible way to obtain both.</p>
+
+<!-- @after Choose Integration by Ownership :: visual -->
+### Who runs the build?
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Local source integration</strong><small>The app’s development workflow invokes the Kotlin build.</small></div><div class="node"><strong>Released binary integration</strong><small>The consumer resolves a versioned artifact without compiling Kotlin.</small></div><div class="node"><strong>Shared release contract</strong><small>Supported variants, public API, resources, licenses and symbols.</small></div><div class="node"><strong>Acceptance evidence</strong><small>A clean consumer resolves, links, archives and exercises the intended artifact.</small></div></div><figcaption>Repository layout alone does not determine the integration; the consumer and release owners choose it explicitly.</figcaption></figure>
+
+<!-- @after Remote SwiftPM Binary Distribution :: animation -->
+### Keep the release identity together
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">From assembled framework to an immutable package</span><div class="stage viz-stack"><div class="node" data-el="build" data-art="code" data-art-role="runtime"><strong>Release build</strong><small data-text="buildV">—</small></div><div class="node" data-el="archive" data-art="parcel" data-art-role="queue"><strong>XCFramework archive</strong><small data-text="archiveV">—</small></div><div class="node" data-el="manifest" data-art="document" data-art-role="storage"><strong>Package manifest + version</strong><small data-text="manifestV">—</small></div><div class="node" data-el="consumer" data-art="phone" data-art-role="client"><strong>Clean consumer</strong><small data-text="consumerV">—</small></div></div><script type="application/json" class="steps">[
+{
+"label": "Build variants",
+"caption": "Produce and test the platform variants in the support matrix.",
+"state": {
+"build": "active"
+},
+"text": {
+"buildV": "source revision + tools recorded",
+"archiveV": "not packaged",
+"manifestV": "not released",
+"consumerV": "not resolved"
+},
+"add": [
+"build",
+"archive",
+"manifest",
+"consumer"
+]
+},
+{
+"label": "Package exact bytes",
+"caption": "Create the archive and compute its checksum. The checksum describes this archive, not a later rebuilt ZIP.",
+"state": {
+"archive": "active"
+},
+"text": {
+"archiveV": "archive A + checksum A"
+}
+},
+{
+"label": "Publish version",
+"caption": "Bind the immutable URL and checksum to reviewed package metadata and its release version.",
+"state": {
+"manifest": "active",
+"archive": "done"
+},
+"text": {
+"manifestV": "version V → archive A"
+}
+},
+{
+"label": "Resolve independently",
+"caption": "A clean app fetches the released package, selects the intended variant, then links and exercises it.",
+"state": {
+"consumer": "active"
+},
+"text": {
+"consumerV": "resolution + link + runtime checks"
+}
+},
+{
+"label": "Change means new release",
+"caption": "A changed artifact needs a new release identity. Keep the old bytes and metadata reproducible.",
+"state": {
+"consumer": "done",
+"manifest": "done"
+},
+"text": {
+"manifestV": "V remains immutable"
+}
+}
+]</script><figcaption>A matching checksum proves agreement with the manifest. Release trust also depends on repository, hosting and credential controls.</figcaption></figure>
+
+<!-- @after Failure Modes to Catch Early :: check -->
+### Try the decision
+
+<details><summary>Device and simulator both use ARM64. Merge them into one indistinguishable slice?</summary>
+
+No. CPU architecture and Apple platform variant are different dimensions. Preserve the supported variants and test the consumer destination.
+</details>
+
+<details><summary>Three framework blocks exist. Is an XCFramework task guaranteed?</summary>
+
+Not merely from those blocks. Configure the XCFramework assembly relationship as shown in the original and inspect the actual registered task and artifact.
+</details>
+
+<details><summary>Published ZIP was rebuilt with the same version. Keep the old checksum?</summary>
+
+That breaks the identity contract when bytes differ. Publish a new immutable release and verify clean resolution from its real location.
+</details>

@@ -1,0 +1,61 @@
+<!-- Website teaching layer for android/os-internals/intent-resolution-and-manifest.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Sources checked 2026-10-25: Intents and intent filters, <activity> android:exported, Android App Links
+     verification, Package visibility, PendingIntent mutability guidance (developer.android.com). -->
+
+<!-- @opening -->
+<p class="story-lead">A customer taps <code>https://example.com/orders/43</code> in an email. Your verified App Link opens the order screen at once, with no chooser and no question. But order 43 belongs to someone else. The link reached exactly the right app, and the app still had to decide whether to show it.</p>
+
+Every manifest entry is a promise about how other apps and the system may reach you. Every intent that arrives is input from outside. This chapter explains how Android matches an intent to a component and which manifest settings form your security boundary. The additions here separate what the system decides from what your code must still check.
+
+<!-- @diagram b3a61092347dc92b -->
+### How an implicit intent finds its target
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Caller app</strong><small><code>startActivity(intent)</code></small></div><div class="node"><strong>ActivityManagerService</strong><small>asks PackageManager to resolve</small></div><div class="node is-key"><strong>PackageManagerService</strong><small>matches action, data and category against filters</small></div><div class="node"><strong>ResolveInfo</strong><small>or chooser candidates</small></div><div class="node" data-state="done"><strong>Target app</strong><small>component launched via Binder</small></div></div><figcaption>Redrawn from the original sequence diagram. Matching happens in system services, outside both apps.</figcaption></figure>
+
+<!-- @after Manifest as Security Boundary :: visual -->
+### Four gates, two owners
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">The system decides</span><div class="node"><strong>1. Does a filter match?</strong><small>action, data and category against installed filters</small></div><div class="node"><strong>2. Which app gets the link?</strong><small>App Link verification ties a domain to your app</small></div></div><div class="col"><span class="col-title">Your code decides</span><div class="node is-key"><strong>3. Is it a known route?</strong><small>scheme, host, path and parameters parsed and validated</small></div><div class="node is-key"><strong>4. May this user see it?</strong><small>sign-in and server-side authorization</small></div></div></div><figcaption>Passing gates 1 and 2 means the intent reached you, not that it is safe or permitted. Gates 3 and 4 belong to the router.</figcaption></figure>
+
+<!-- @after Production Patterns :: animation -->
+### A verified link meets the router
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="Resolve first, then deliver">
+<h3>Resolve first, then deliver</h3>
+<p class="pb-sub">An illustrative run. Each moving packet is a named request, notification or result.</p>
+<div class="pb-paper"><svg class="pb-svg" role="img" aria-label="A caller requests an activity through the system resolver. Matching and access checks precede a selected target receiving the Intent. A chooser is not an automatic handoff."></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div>
+<div class="pb-caption"><span class="pb-count"></span><p aria-live="polite"></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">{"nodes": [{"id": "caller", "label": "Calling app", "art": {"kind": "phone", "role": "client"}}, {"id": "resolver", "label": "System resolver", "art": {"kind": "gate", "role": "runtime"}}, {"id": "target", "label": "Selected activity", "art": {"kind": "phone", "role": "client"}}], "layouts": {"wide": {"size": [760, 290], "nodes": {"caller": {"x": 24, "y": 50, "w": 208, "h": 140}, "resolver": {"x": 276, "y": 50, "w": 208, "h": 140}, "target": {"x": 528, "y": 50, "w": 208, "h": 140}}, "edges": {"request": "M234 102 C254 102 254 102 274 102", "deliver": "M486 102 C506 102 506 102 526 102"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}, "narrow": {"size": [320, 470], "nodes": {"caller": {"x": 40, "y": 22, "w": 240, "h": 140}, "resolver": {"x": 8, "y": 252, "w": 144, "h": 190}, "target": {"x": 168, "y": 252, "w": 144, "h": 190}}, "edges": {"request": "M142 164 C142 207 62 207 62 250", "deliver": "M154 329 C160 329 160 329 166 329"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}}, "modes": {"run": {"initial": {"nodes": {"caller": ["", "VIEW /orders/43"], "resolver": ["", "not resolved"], "target": ["", "not started"]}, "visuals": {"target": {"visible": false, "rows": 0}}}, "steps": [{"caption": "This run uses an implicit activity Intent for a URL. It names action and data rather than a concrete component."}, {"caption": "startActivity requests system resolution. Action, data and categories participate in filter matching; matching alone is not authorization.", "packets": [{"edge": "request", "label": "Intent", "tone": "fwd", "kind": "parcel"}], "set": {"nodes": {"resolver": ["is-active", "matching candidates"]}}}, {"caption": "The system applies activity-launch eligibility and applicable URL/default-handler rules. In this run a permitted preferred handler exists.", "set": {"nodes": {"resolver": ["is-done", "one eligible handler"]}}}, {"caption": "The system starts or routes to the selected activity and delivers the Intent. Process startup and task/launch-mode details are omitted from this resolution model.", "packets": [{"edge": "deliver", "label": "launch", "tone": "fwd", "kind": "parcel"}], "set": {"nodes": {"target": ["is-active", "Intent received"]}, "visuals": {"target": {"visible": true}}}}, {"caption": "The receiving app validates the incoming route and data before opening order 43. An exported entry point must not trust caller-supplied content.", "set": {"nodes": {"target": ["is-done", "validated order route"]}, "visuals": {"target": {"rows": 3}}}}, {"caption": "Without an eligible handler, the caller needs a failure path. When a choice is required, resolution waits for that choice rather than sending a packet to an arbitrary activity.", "set": {"nodes": {"resolver": ["", "handle other outcomes"]}}}]}}, "illustrated": true, "edgeEndpoints": {"request": {"from": "caller", "to": "resolver"}, "deliver": {"from": "resolver", "to": "target"}}}</script>
+<p class="pb-sub">Sources: <a href="https://developer.android.com/guide/components/intents-filters">Intents and filters</a>.</p>
+</section>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+Put the merged manifest in code review. A new exported component, intent filter, permission or `<queries>` entry changes your app's public surface, even when the Kotlin diff looks unrelated, because library manifests merge into yours.
+
+<!-- @after Failure Modes :: check -->
+### Check the boundary
+
+<details><summary>Your App Link is verified. Does the router still need to validate the path and the user?</summary>
+
+Yes. Verification decides which app opens the domain's links. It says nothing about whether this path is a known route or whether this user may see the content.
+
+</details>
+
+<details><summary>An internal debug activity has no intent filter. Should you still write <code>android:exported="false"</code>?</summary>
+
+Without intent filters it is not exported by default, but writing it explicitly makes the intent visible in manifest review and protects you if someone adds a filter later.
+
+</details>
+
+<details><summary>A screen receives a full order with 500 line items as an extra. What fails, and what should you pass?</summary>
+
+Extras cross Binder, so a large payload can fail with <code>TransactionTooLargeException</code>. Pass the order ID and let the destination load the data.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+Primary sources for the added layer: [Intents and intent filters](https://developer.android.com/guide/components/intents-filters), [`<activity>` and `android:exported`](https://developer.android.com/guide/topics/manifest/activity-element#exported), [Verify Android App Links](https://developer.android.com/training/app-links/verify-android-applinks), [Package visibility](https://developer.android.com/training/package-visibility).

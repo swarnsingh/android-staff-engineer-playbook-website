@@ -1,0 +1,47 @@
+<!-- Website teaching layer for android/concurrency/coroutines-under-the-hood.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Follows the chapter's conceptual CPS model and kotlinlang.org coroutine docs; checked 2026-10-25. The Kotlin tree's
+     Coroutines chapter covers the same mechanism with compiled examples. -->
+
+<!-- @opening -->
+<p class="story-lead">A logging library tags every line with the current user ID, stored in a <code>ThreadLocal</code>. After a migration to coroutines, about a third of the log lines lose their tag, always after a network call. Nothing cleared the value. The code simply continued on a different thread, one that had never been given a user ID.</p>
+
+A `suspend` function looks sequential, but it does not hold a thread while it waits. The compiler turns it into a **state machine**: a label for where to continue, and fields for the local variables that must survive the wait. When the awaited result arrives, the machine resumes, possibly on another thread from the dispatcher. This chapter shows that transformation, and the bugs that come from forgetting it.
+
+<!-- @after Internal Mechanics :: animation -->
+### Run <code>fetchAndShowUser()</code> through its state machine
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="Suspend, retain state, resume">
+<h3>Suspend, retain state, resume</h3>
+<p class="pb-sub">An illustrative run. Each moving packet is a named request, notification or result.</p>
+<div class="pb-paper"><svg class="pb-svg" role="img" aria-label="A main-dispatched coroutine saves its continuation, suspends during asynchronous work, then resumes through its dispatcher. Threads are not transported."></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div>
+<div class="pb-caption"><span class="pb-count"></span><p aria-live="polite"></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">{"nodes": [{"id": "main", "label": "Main thread", "art": {"kind": "phone", "role": "client"}}, {"id": "cont", "label": "Continuation", "art": {"kind": "memory", "role": "storage"}}, {"id": "io", "label": "Async operation", "art": {"kind": "cloud", "role": "runtime"}}], "layouts": {"wide": {"size": [760, 290], "nodes": {"main": {"x": 24, "y": 50, "w": 208, "h": 140}, "cont": {"x": 276, "y": 50, "w": 208, "h": 140}, "io": {"x": 528, "y": 50, "w": 208, "h": 140}}, "edges": {"save": "M234 102 C254 102 254 102 274 102", "call": "M486 102 C506 102 506 102 526 102", "resume": "M526 138 C506 138 506 138 486 138", "dispatch": "M274 138 C254 138 254 138 234 138"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}, "narrow": {"size": [320, 470], "nodes": {"main": {"x": 40, "y": 22, "w": 240, "h": 140}, "cont": {"x": 8, "y": 252, "w": 144, "h": 190}, "io": {"x": 168, "y": 252, "w": 144, "h": 190}}, "edges": {"save": "M142 164 C142 207 62 207 62 250", "call": "M154 329 C160 329 160 329 166 329", "resume": "M166 365 C160 365 160 365 154 365", "dispatch": "M98 250 C98 207 178 207 178 164"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}}, "modes": {"run": {"initial": {"nodes": {"main": ["", "running label 0"], "cont": ["", "label 0"], "io": ["", "not started"]}, "visuals": {"cont": {"visible": false}}}, "steps": [{"caption": "This illustrative coroutine is confined to a main dispatcher and calls an asynchronously completing suspending operation."}, {"caption": "Before a possible suspension, the state machine records where execution should continue and the local state needed later.", "packets": [{"edge": "save", "label": "save state", "tone": "fwd", "kind": "rows"}], "set": {"nodes": {"cont": ["is-active", "next label = 1"]}, "visuals": {"cont": {"visible": true}}}}, {"caption": "The operation receives the continuation. In this run it does not complete immediately and returns the suspension marker.", "packets": [{"edge": "call", "label": "start", "tone": "fwd", "kind": "signal"}], "set": {"nodes": {"io": ["is-active", "waiting for result"], "main": ["is-done", "free for other work"]}}}, {"caption": "Waiting does not move a thread into the continuation. The heap state persists while the main thread can handle frames.", "set": {"nodes": {"cont": ["", "label 1 retained"]}}}, {"caption": "The operation completes and resumes the continuation. Its interceptor/dispatcher determines how execution resumes; a callback thread is not automatically the UI thread.", "packets": [{"edge": "resume", "label": "result", "tone": "back", "kind": "parcel"}], "set": {"nodes": {"io": ["is-done", "result ready"], "cont": ["is-active", "result received"]}}}, {"caption": "In this dispatched run, the continuation executes again on the main thread at label 1. Suspension itself is not an instruction to switch to an I/O thread.", "packets": [{"edge": "dispatch", "label": "resume", "tone": "back", "kind": "signal"}], "set": {"nodes": {"main": ["is-active", "running label 1"], "cont": ["is-done", "result consumed"]}}}]}}, "illustrated": true, "edgeEndpoints": {"save": {"from": "main", "to": "cont"}, "call": {"from": "cont", "to": "io"}, "resume": {"from": "io", "to": "cont"}, "dispatch": {"from": "cont", "to": "main"}}}</script>
+<p class="pb-sub">Sources: <a href="https://kotlinlang.org/spec/asynchronous-programming-with-coroutines.html">Kotlin coroutine specification</a>.</p>
+</section>
+
+<!-- @diagram 8a0f8b7b256c3ca5 -->
+### Labels, suspensions and threads
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Label 0: Start</strong><small>run by Thread 1</small></div><div class="node" data-state="warn"><strong>Return <code>COROUTINE_SUSPENDED</code></strong><small>Thread 1 is freed</small></div><div class="node"><strong>Resume with User</strong><small>a network callback calls <code>resume()</code>; Thread 2 runs it</small></div><div class="node"><strong>Label 1: print user</strong></div><div class="node" data-state="warn"><strong>Return <code>COROUTINE_SUSPENDED</code></strong><small>Thread 2 is freed</small></div><div class="node" data-state="done"><strong>Resume with avatar → Label 2: Done</strong></div></div><figcaption>Each suspension point splits the function; each resume enters it again at the next label.</figcaption></figure>
+
+<!-- @after Common Misconceptions :: check -->
+**Blocked or suspended?** Decide before opening each answer.
+
+<details><summary><code>Thread.sleep(2000)</code> inside <code>launch</code> on the main dispatcher.</summary>
+
+Blocked. `sleep` holds the main thread, so nothing else runs there: the UI freezes. `delay(2000)` suspends and frees it.
+</details>
+
+<details><summary>500 coroutines launched on <code>Dispatchers.Main</code>, each doing a suspending network call.</summary>
+
+All 500 are concurrent, interleaving on one thread at their suspension points. None runs in parallel, and none blocks the others while waiting.
+</details>
+
+<details><summary>A callback API wrapped with <code>suspendCoroutine</code>, and the screen closes while waiting.</summary>
+
+The Job can be marked cancelled, but plain `suspendCoroutine` does not complete that suspension merely because its Job was cancelled: the callback still needs to resume it. Cancellation does not automatically unregister the listener; whether it is removed depends on the wrapper/API. Use `suspendCancellableCoroutine` with cancellation cleanup when bridging a cancellable listener.
+</details>

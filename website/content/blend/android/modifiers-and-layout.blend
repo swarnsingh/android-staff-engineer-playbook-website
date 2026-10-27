@@ -1,0 +1,48 @@
+<!-- Website teaching layer for android/compose/modifiers-and-layout.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (Compose modifiers; Constraints and modifier order; Phases: deferring reads
+     with lambda modifiers such as offset { }) on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A designer files two bugs on the same chip: the red background stops short of the edges they asked for, and tapping the space around the text does nothing. The code has every modifier the design needs: padding, background, clickable. They are simply in an order that means something else.</p>
+
+A `Modifier` chain is not a set of attributes; it is an ordered list of wrappers. Constraints travel inward through the chain and sizes travel back out, so each modifier works on whatever the modifiers after it produced. Once you can read a chain in that direction, background bounds, ripples, clipping and "margins" all follow from one rule. This chapter builds that rule and the layout model underneath it.
+
+<!-- @after Internal Mechanics :: animation -->
+### Measure a chain, one wrapper at a time
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title"><code>Modifier.padding(10.dp).background(Red).padding(5.dp)</code> around a <code>Text</code></span><div class="stage viz-flow"><div class="node" data-el="p1" data-art="frame" data-art-role="client"><strong><code>padding(10.dp)</code></strong><small data-text="p1V">—</small></div><div class="node" data-el="bg" data-art="frame" data-art-role="client"><strong><code>background(Red)</code></strong><small data-text="bgV">—</small></div><div class="node" data-el="p2" data-art="frame" data-art-role="client"><strong><code>padding(5.dp)</code></strong><small data-text="p2V">—</small></div><div class="node" data-el="text" data-art="screen" data-art-role="client"><strong><code>Text</code></strong><small data-text="textV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Constraints arrive","caption":"The parent offers the outermost modifier its constraints. Each wrapper may shrink them before passing them inward.","add":["p1","bg","p2","text"],"state":{"p1":"active"},"text":{"p1V":"receives the parent's constraints"}},
+{"label":"Inward","caption":"padding(10) subtracts 10 on each side from the maximum and asks the next element. background does not change constraints. padding(5) subtracts 5 more.","state":{"p1":"done","bg":"done","p2":"active"},"text":{"p1V":"max − 20","bgV":"passes through","p2V":"max − 30"}},
+{"label":"The content measures","caption":"Text measures itself inside the remaining space. In the chapter's example it chooses 100 × 100.","state":{"p2":"done","text":"active"},"text":{"textV":"100 × 100"}},
+{"label":"Sizes return outward","caption":"padding(5) adds 5 on each side: 110. background takes the size it wraps: 110, and that is the area it paints. padding(10) adds 10 on each side: 130.","state":{"text":"done","p2":"done","bg":"warn","p1":"done"},"text":{"p2V":"110 × 110","bgV":"paints 110 × 110","p1V":"130 × 130, red not filling the outer 10"}},
+{"label":"Why the red stopped short","caption":"The outer 10 dp sits outside background, so it is transparent: a margin. Moving background first would paint all 130. The same reading explains taps: clickable covers only the size of what it wraps.","state":{"bg":"done"},"text":{"bgV":"move it outward to paint more"}}
+]</script><figcaption>Read a chain from the outside in for constraints, and from the inside out for sizes.</figcaption></figure>
+
+<!-- @diagram e21283fe0325389d -->
+### The chain as nested boxes
+
+<figure class="viz"><div class="viz-stack"><div class="node"><strong><code>padding(10.dp)</code></strong><small>returns 130 × 130 to the screen</small></div><div class="node" data-state="warn"><strong><code>background(Red)</code></strong><small>paints and returns 110 × 110</small></div><div class="node"><strong><code>padding(5.dp)</code></strong><small>returns 110 × 110</small></div><div class="node is-key"><strong><code>Text</code></strong><small>measures 100 × 100</small></div></div><figcaption>Each element wraps everything listed after it in the chain.</figcaption></figure>
+
+<!-- @after Production Example :: visual -->
+### Same modifiers, two orders
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title"><code>.padding(16.dp).clickable { }</code></span><div class="node" data-state="warn"><strong>Ripple and touch area</strong><small>only the text: the 16 dp ring is outside <code>clickable</code></small></div></div><div class="col"><span class="col-title"><code>.clickable { }.padding(16.dp)</code></span><div class="node" data-state="done"><strong>Ripple and touch area</strong><small>text plus the 16 dp ring: <code>clickable</code> wraps the padding</small></div></div></div><figcaption>For a larger hit target, put <code>clickable</code> before the padding that should be tappable.</figcaption></figure>
+
+<!-- @after Common Misconceptions :: check -->
+**Read the chain.** Decide before opening each answer.
+
+<details><summary><code>Modifier.background(Red).clip(CircleShape)</code>: what shape is red?</summary>
+
+A square. The background is outside the clip, so it paints its full rectangle; the clip affects only what comes after it. Put `clip` first.
+</details>
+
+<details><summary>Make a card with 8 dp of space outside its border and 16 dp inside.</summary>
+
+`Modifier.padding(8.dp).border(1.dp, Gray).padding(16.dp)`: outer spacing before the border, inner spacing after it.
+</details>
+
+<details><summary>A <code>LazyColumn</code> inside <code>Column(Modifier.verticalScroll(state))</code> crashes.</summary>
+
+The scrolling parent gives the lazy list an unbounded height, so it has no viewport. Flatten into one `LazyColumn`, or give the inner list a finite height.
+</details>

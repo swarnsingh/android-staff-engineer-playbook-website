@@ -1,0 +1,28 @@
+<!-- Website teaching layer for android/kotlin-multiplatform/ecosystem/libraries-ecosystem.md. Original preserved in full. Structure defined in android-phase9-structure.md before drafting. Checked 2026-10-25 against https://kotlinlang.org/docs/api-guidelines-build-for-multiplatform.html. -->
+
+<!-- @opening -->
+<p class="story-lead">A library is written in Kotlin and works perfectly in the Android app. Adding iOS fails because the artifact is JVM-only. The language on the repository badge did not describe the targets your build could consume.</p>
+
+Evaluate the exact library version, exported API and behaviour before choosing a replacement.
+
+<!-- @after A Staff-Level Dependency Evaluation :: visual -->
+### Four pieces of portability evidence
+
+<figure class="viz"><table><caption>A dependency review starts with the next consumer</caption><tbody><tr><th scope="row">1</th><td>Required behavior: name the feature that must survive</td></tr><tr><th scope="row">2</th><td>Artifact: compatible variant at the selected version</td></tr><tr><th scope="row">3</th><td>Runtime: prove behavior in the new consumer</td></tr><tr><th scope="row">4</th><td>Exit: replacement or explicit unsupported target</td></tr></tbody></table><figcaption>The boundaries in this example are different responsibilities, not implied packet transfers.</figcaption></figure>
+
+Suppose a new target is proposed after Android and iOS already ship. Make the required feature explicit before evaluating dependencies: encrypted persistence, cancellation or streaming may be essential, while a convenience formatter may be replaceable. Inspect the exact artifact version and supported variants, then build the proposed consumer. A Kotlin repository badge does not establish a compatible artifact or equivalent behavior.
+
+If a dependency is missing, choose among a supported replacement, a narrower source set, a platform adapter or postponing that target. Each choice has a different maintenance owner. Write down what the substitute must preserve, especially failure and data-protection behavior. A no-op that makes compilation pass can silently remove the feature the application depended on. Keep the qualification evidence with the version decision and repeat the consumer probe when target support or exported APIs change.
+
+<!-- @after Future-Target Failure Modes :: animation -->
+### Add a new target without hiding a missing feature
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">Add a new target without hiding a missing feature</span><div class="stage viz-stack"><div class="node" data-el="n0" data-art="phone" data-art-role="client"><strong>Existing targets</strong><small data-text="v0">—</small></div><div class="node" data-el="n1" data-art="phone" data-art-role="client"><strong>New target</strong><small data-text="v1">—</small></div><div class="node" data-el="n2" data-art="graph" data-art-role="runtime"><strong>Dependency seam</strong><small data-text="v2">—</small></div><div class="node" data-el="n3" data-art="gate" data-art-role="runtime"><strong>Product decision</strong><small data-text="v3">—</small></div></div><script type="application/json" class="steps">[{"label": "Expand", "caption": "Android and iOS work. A proposed web target changes the required support matrix, so repeat the dependency evaluation.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "active", "n1": "idle", "n2": "idle", "n3": "idle"}, "text": {"v0": "Existing evidence", "v1": "New requirement", "v2": "Audit exact versions", "v3": "No portability assumption"}}, {"label": "Resolve", "caption": "One dependency has no compatible variant for the new target. Capture the failing configuration and published metadata.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "active", "n2": "idle", "n3": "idle"}, "text": {"v0": "Still supported", "v1": "Resolution fails", "v2": "Unsupported implementation", "v3": "Visible limitation"}}, {"label": "Choose", "caption": "Consider a supported version, replacement, narrower source set or an explicit platform adapter.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "idle", "n2": "active", "n3": "idle"}, "text": {"v0": "Preserve working paths", "v1": "Needs real support", "v2": "Replaceable boundary", "v3": "Costed alternatives"}}, {"label": "Validate", "caption": "Build the new consumer and test its behaviour. A silent no-op is not a valid substitute for a required security or persistence capability.", "add": ["n0", "n1", "n2", "n3"], "state": {"n0": "idle", "n1": "idle", "n2": "idle", "n3": "active"}, "text": {"v0": "Regression checks", "v1": "Target evidence", "v2": "Contract preserved", "v3": "Accept or defer target"}}]</script><figcaption>Illustrative sequence, not a measured trace. <a href="https://kotlinlang.org/docs/api-guidelines-build-for-multiplatform.html" target="_blank" rel="noreferrer">Primary contract</a>.</figcaption></figure>
+
+<!-- @after Platform Escape Hatches :: check -->
+### Try the decision yourself
+
+<details><summary>Does Kotlin source imply commonMain support?</summary><p>No. Artifact variants, dependencies and API availability decide compatibility.</p></details>
+<details><summary>Can a common dependency use Java in its Android implementation?</summary><p>Yes, if the common API and other target implementations are valid for their compilations.</p></details>
+<details><summary>When is a no-op adapter unacceptable?</summary><p>When omitting the required behaviour silently breaks correctness, security or the product contract.</p></details>
+

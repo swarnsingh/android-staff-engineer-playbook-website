@@ -1,0 +1,42 @@
+<!-- Website teaching layer for android/compose/custom-layout-measurement.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (Custom layouts; Intrinsic measurements) on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A row of overlapping avatars looks perfect in the design review. In Arabic, the overlap goes the wrong way; on a narrow phone, the last avatar is cut in half; and at the largest font size, the "+3" badge collides with the text beside it. All three bugs live in about twenty lines of measurement code.</p>
+
+A custom layout is a contract with the layout system: **receive constraints, measure each child once, choose your own size within the constraints, then place children**. Those clauses help locate constraint and placement bugs; large text also requires testing content fit and overflow. This chapter shows when to write your own layout, and how to keep each clause, including direction, accessibility and performance.
+
+<!-- @after Layout Pipeline :: visual -->
+### Pick the smallest tool that fits
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong><code>Modifier.layout { }</code></strong><small>one child: custom offset, padding or baseline placement</small></div><div class="node" data-state="done"><strong><code>Layout { }</code></strong><small>several children with a custom measure-and-place policy</small></div><div class="node" data-state="warn"><strong>Intrinsic measurements</strong><small>"how tall at this width?" before measuring: use sparingly</small></div><div class="node" data-state="error"><strong><code>SubcomposeLayout</code></strong><small>only when what to compose depends on measured size</small></div></div><figcaption>Each step down adds work that is harder to reason about. Start with standard layouts and move down only when the requirement forces it.</figcaption></figure>
+
+<!-- @after Layout :: animation -->
+### Run <code>OverlappingRow</code> step by step
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">Measure, size, place, for three 40 dp avatars overlapping by 12 dp</span><div class="stage viz-stack"><div class="viz-grid" style="--cols:3"><div class="node" data-el="a1" data-art="frame" data-art-role="client"><strong>Avatar 1</strong><small data-text="a1V">—</small></div><div class="node" data-el="a2" data-art="frame" data-art-role="client"><strong>Avatar 2</strong><small data-text="a2V">—</small></div><div class="node" data-el="a3" data-art="frame" data-art-role="client"><strong>Avatar 3</strong><small data-text="a3V">—</small></div></div><div class="node is-key" data-el="row" data-art="screen" data-art-role="client"><strong>The layout</strong><small data-text="rowV">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Receive constraints","caption":"The parent offers, say, a maximum width of 300 dp. The layout loosens the minimums to 0 so each avatar may choose its natural size.","add":["a1","a2","a3","row"],"state":{"row":"active"},"text":{"rowV":"constraints: 0–300 wide","a1V":"not measured","a2V":"not measured","a3V":"not measured"}},
+{"label":"Measure each child once","caption":"Each measurable is measured exactly once and returns a placeable. Measuring the same child twice in one pass is rejected by Compose.","state":{"a1":"done","a2":"done","a3":"done"},"text":{"a1V":"40 × 40","a2V":"40 × 40","a3V":"40 × 40"}},
+{"label":"Choose its own size","caption":"Width is 40 + (40 − 12) + (40 − 12) = 96, then coerced into the incoming constraints. Skipping the coerce step is how layouts end up larger than the space they were given.","state":{"row":"done"},"text":{"rowV":"96 × 40, within 0–300"}},
+{"label":"Place left to right","caption":"Children are placed at x = 0, 28 and 56. placeRelative means these positions are logical: start to end, not left to right.","state":{"a1":"active","a2":"active","a3":"active"},"text":{"a1V":"x = 0","a2V":"x = 28","a3V":"x = 56"}},
+{"label":"Right-to-left","caption":"In an RTL locale, placeRelative mirrors the same positions, so the row reads from the right. Using place instead would keep the left-to-right overlap: the Arabic bug from the opening.","state":{"a1":"done","a2":"done","a3":"done"},"text":{"a1V":"mirrored: rightmost","a3V":"mirrored: leftmost","rowV":"same code, mirrored placement"}}
+]</script><figcaption>Every clause of the contract appears once: measure once, coerce the size, place relative to the layout direction.</figcaption></figure>
+
+<!-- @after Staff Engineer Review Checklist :: check -->
+**Find the clause that broke.** Decide before opening each answer.
+
+<details><summary>A badge layout returns <code>layout(contentWidth + badgeWidth, …)</code> without <code>coerceIn</code>.</summary>
+
+Sizing. The layout can report a size outside its constraints, so a narrow parent will clip or misplace it. Coerce width and height into the incoming constraints.
+</details>
+
+<details><summary>A layout measures a child with loose constraints, then measures it again with the result.</summary>
+
+Measure once. Compose throws when a child is measured twice in one pass. Use intrinsics, or redesign the measurement so one pass suffices.
+</details>
+
+<details><summary>A chip layout uses place(x, y), looks right in English and reverses incorrectly in Hebrew.</summary>
+
+Placement. It uses `place` with computed x positions. Switch to `placeRelative` so placement follows the layout direction.
+</details>

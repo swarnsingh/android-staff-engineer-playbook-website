@@ -1,0 +1,61 @@
+<!-- Website teaching layer for android/architecture/activity.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Lifecycle facts checked against developer.android.com (activity lifecycle, activity state changes,
+     multi-window support, Activity reference) on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A courier opens the delivery app, types a note about a damaged parcel, and taps "Add photo". The camera app takes over. When the courier comes back, the delivery screen is there, but the note is gone. No crash, no error: the screen simply started again from nothing.</p>
+
+Nothing in the app's code asked for that. While the camera was in front, Android stopped the delivery screen, then reclaimed memory by killing the app's whole process. When the courier returned, Android rebuilt the screen. The **Activity** is the object through which the system does all of this to your screen, and its lifecycle callbacks are the only warning your code gets. This chapter explains each callback, what you may do in it, and what the system can do without calling you at all.
+
+<!-- @after Mental Model :: check -->
+**Predict the callbacks.** Decide before opening each answer.
+
+<details><summary>A runtime permission prompt appears over your screen.</summary>
+
+`onPause()` only. The prompt is a separate activity that partially covers yours, so your activity loses focus but stays visible. `onStop()` runs only when it is no longer visible.
+</details>
+
+<details><summary>The user presses Home, then comes back a minute later.</summary>
+
+`onPause()` → `onStop()` on the way out (Home behaves as if the activity were completely covered), then `onRestart()` → `onStart()` → `onResume()` on return. `onCreate()` does not run again, because nothing was destroyed.
+</details>
+
+<details><summary>Your app was in the background and the system needed memory.</summary>
+
+Nothing runs. The system kills the process, not the activity, so no `onDestroy()` is called. When the user returns, a new process calls `onCreate()` with the saved instance state.
+</details>
+
+<!-- @after Internal Mechanics: The Lifecycle :: animation -->
+### A day in the life of one screen
+
+Follow one activity through the events a real user produces. Watch which callbacks run, which lifecycle state it is in, and what survives each event.
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">Callbacks, state and what survives</span><div class="stage viz-stack"><div class="viz-flow"><div class="node" data-el="created" data-art="phone" data-art-role="client"><strong>Created</strong><small>object exists</small></div><div class="node" data-el="started" data-art="phone" data-art-role="client"><strong>Started</strong><small>visible</small></div><div class="node" data-el="resumed" data-art="phone" data-art-role="client"><strong>Resumed</strong><small>in focus, interactive</small></div><div class="node" data-el="stopped" data-art="phone" data-art-role="client"><strong>Stopped</strong><small>hidden, still in memory</small></div></div><div class="node is-key" data-el="log" data-art="code" data-art-role="runtime"><strong>Callbacks in this step</strong><small data-text="calls">—</small></div><div class="viz-grid" style="--cols:4"><div class="node" data-el="instance" data-art="phone" data-art-role="client"><strong>Activity object</strong><small data-text="instanceNote">—</small></div><div class="node" data-el="vm" data-art="memory" data-art-role="storage"><strong>ViewModel</strong><small data-text="vmNote">—</small></div><div class="node" data-el="saved" data-art="document" data-art-role="storage"><strong>Saved instance state</strong><small data-text="savedNote">—</small></div><div class="node" data-el="process" data-art="server" data-art-role="runtime"><strong>App process</strong><small data-text="processNote">—</small></div></div></div><script type="application/json" class="steps">[
+{"label":"Launch","caption":"The user taps the launcher icon. The system creates the activity, makes it visible, then gives it focus. savedInstanceState is null: there is nothing to restore.","add":["created","started","resumed","stopped","log","instance","vm","saved","process"],"state":{"created":"done","started":"done","resumed":"active","stopped":"ghost","instance":"done","vm":"done","saved":"ghost","process":"done"},"text":{"calls":"onCreate(null) → onStart() → onResume()","instanceNote":"instance #1","vmNote":"created on first use","savedNote":"none yet","processNote":"running"}},
+{"label":"Permission prompt","caption":"The permission prompt is another activity that partially covers yours. Yours loses focus but stays visible, so only onPause() runs. In Jetpack Lifecycle terms it is back in STARTED.","state":{"resumed":"ghost","started":"active"},"text":{"calls":"onPause()"}},
+{"label":"Prompt answered","caption":"The prompt closes and focus returns. Nothing was hidden or destroyed, so only onResume() runs.","state":{"resumed":"active","started":"done"},"text":{"calls":"onResume()"}},
+{"label":"Home","caption":"Home behaves as if the activity were completely covered: it pauses and stops. For apps targeting Android 9 or higher, the system saves instance state after onStop(). The object stays in memory.","state":{"resumed":"ghost","started":"ghost","stopped":"active","saved":"done"},"text":{"calls":"onPause() → onStop() → onSaveInstanceState()","savedNote":"bundle saved"}},
+{"label":"Back to the app","caption":"The same object comes back. onCreate() does not run again, because nothing was destroyed.","state":{"stopped":"ghost","started":"done","resumed":"active"},"text":{"calls":"onRestart() → onStart() → onResume()"}},
+{"label":"Rotate","caption":"A configuration change destroys this instance and creates a new one. The ViewModel is kept across the change, and the saved bundle reaches the new onCreate().","state":{"instance":"warn","vm":"done","saved":"done"},"text":{"calls":"onPause() → onStop() → onSaveInstanceState() → onDestroy(), then onCreate(bundle) → onStart() → onResume()","instanceNote":"instance #2 (new)","vmNote":"same instance, survived","savedNote":"passed to onCreate"}},
+{"label":"Camera, then memory pressure","caption":"The camera app comes to the front, so ours stops and saves its state. Then the system needs memory and kills our process. No callback runs for the kill: there is no onDestroy().","state":{"resumed":"ghost","started":"ghost","stopped":"warn","instance":"error","vm":"error","process":"error","saved":"done"},"text":{"calls":"onPause() → onStop() → onSaveInstanceState(), then the process is killed with no callback","instanceNote":"gone","vmNote":"gone","savedNote":"kept by the system","processNote":"killed"}},
+{"label":"Return from Recents","caption":"The user expects the same screen. A new process starts and the system recreates the activity with the saved bundle. The ViewModel starts empty, which is why the courier's note was lost: it lived only in memory.","state":{"stopped":"ghost","started":"done","resumed":"active","instance":"done","vm":"warn","process":"done","saved":"done"},"text":{"calls":"new process → onCreate(bundle) → onStart() → onResume()","instanceNote":"instance #3","vmNote":"new and empty","savedNote":"restored into onCreate","processNote":"new process"}}
+]</script><figcaption>The opening story is the last two steps: the note lived in memory, and memory was taken away without a callback.</figcaption></figure>
+
+<!-- @diagram 78af522b6d8797b3 -->
+### The lifecycle as states, plus the exit nobody announces
+
+<figure class="viz"><div class="viz-stack"><div class="viz-flow"><div class="node"><strong>Created</strong><small><code>onCreate()</code>: build the UI</small></div><div class="node"><strong>Started</strong><small><code>onStart()</code>: visible</small></div><div class="node is-key"><strong>Resumed</strong><small><code>onResume()</code>: in focus, interactive</small></div></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="warn"><strong><code>onPause()</code> → Started</strong><small>Lost focus, often still visible. <code>onResume()</code> returns.</small></div><div class="node"><strong><code>onStop()</code> → Stopped</strong><small>Not visible. <code>onRestart()</code> → <code>onStart()</code> returns.</small></div><div class="node"><strong><code>onDestroy()</code> → Destroyed</strong><small>Activity finish or a configuration change; Back does not always finish an activity.</small></div><div class="node" data-state="error"><strong>Process killed → nothing</strong><small>In the background the system can kill the whole process. No callback runs.</small></div></div></div><figcaption>The bottom-right exit is the one that loses data: it has no callback, so restoration depends on the last saved state and durable data.</figcaption></figure>
+
+<!-- @after Production Example :: visual -->
+### Put each kind of work in its callback pair
+
+<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node is-key"><strong><code>onCreate()</code></strong><small>Once per instance: set the content, read <code>savedInstanceState</code>, connect to the ViewModel.</small></div><div class="node"><strong><code>onStart()</code> ↔ <code>onStop()</code></strong><small>Work that is only useful while visible. Prefer lifecycle-aware APIs such as <code>collectAsStateWithLifecycle()</code>. Keep callbacks responsive; persist durable changes through the data layer as they happen.</small></div><div class="node" data-state="warn"><strong><code>onResume()</code> ↔ <code>onPause()</code></strong><small>Keep both brief. Android's guidance: do not save data, make network calls or run database transactions in <code>onPause()</code>.</small></div><div class="node" data-state="error"><strong><code>onDestroy()</code></strong><small>Release what <code>onCreate()</code> set up. Never rely on it to save data: a killed process never calls it.</small></div></div><figcaption>Paired callbacks undo each other. If work starts in one, it should stop in its pair.</figcaption></figure>
+
+<!-- @after Failure Modes :: visual -->
+### Why the singleton leak keeps the whole screen alive
+
+<figure class="viz"><div class="viz-flow"><div class="node" data-state="error"><strong><code>SingletonManager</code></strong><small>lives as long as the process</small></div><div class="node"><strong><code>context</code> field</strong><small>points at the activity</small></div><div class="node" data-state="warn"><strong>Destroyed activity</strong><small>still reachable</small></div><div class="node" data-state="warn"><strong>Its window and every view</strong><small>bitmaps, adapters, listeners</small></div></div><figcaption>The garbage collector frees only objects nothing reachable points at. One long-lived field keeps the entire destroyed screen in memory after every rotation.</figcaption></figure>
+
+<!-- @after Common Misconceptions :: staff -->
+**Review question to ask:** "If the process dies right after this screen stops, what does the user lose?" If the answer is anything they typed or chose, it must already be in saved state or the data layer by the time its state is saved. The next chapters show where each kind of state belongs: [ViewModel](viewmodel.md), [SavedStateHandle](savedstatehandle.md) and [Process Death & State Restoration](process-death-and-state-restoration.md).

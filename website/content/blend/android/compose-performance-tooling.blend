@@ -1,0 +1,42 @@
+<!-- Website teaching layer for android/compose/compose-performance-tooling.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Phase model per developer.android.com "Jetpack Compose phases" and performance best practices; checked 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A feed stutters while scrolling. One engineer wraps every expression in <code>remember</code>, another marks every model <code>@Immutable</code>, a third rewrites the row in Views. The stutter stays. The trace nobody took would have shown full-size photos decoding on the main thread: a problem none of the three fixes touched.</p>
+
+Compose performance work starts with a measurement, not a technique. Reproduce the journey in a release-like build, find **which phase** the time is spent in (composition, layout, draw) or whether it is not a Compose problem at all, fix that cause, and protect the journey with a benchmark. This chapter walks through that loop and the Compose-specific tools inside it.
+
+<!-- @after Measurement Stack :: visual -->
+### Where a frame's time can go
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Composition</strong><small>which UI exists: run composables</small></div><div class="node"><strong>Layout</strong><small>measure and place</small></div><div class="node"><strong>Drawing</strong><small>render to the canvas</small></div><div class="node" data-state="warn"><strong>Outside Compose</strong><small>image decode, Binder, I/O, GC, GPU upload</small></div></div><figcaption>A state read invalidates the phase it happens in. Reading scroll state inside an <code>offset { }</code> lambda moves that read from composition to layout; a changed placement still needs drawing.</figcaption></figure>
+
+<!-- @after Trace the User Journey :: animation -->
+### Run the loop on the stuttering feed
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">From "it feels slow" to a guarded fix</span><div class="stage viz-stack"><div class="node" data-el="s1" data-art="phone" data-art-role="client"><strong>1 · Reproduce</strong><small data-text="s1V">—</small></div><div class="node" data-el="s2" data-art="inspect" data-art-role="runtime"><strong>2 · Measure release-like</strong><small data-text="s2V">—</small></div><div class="node" data-el="s3" data-art="inspect" data-art-role="runtime"><strong>3 · Locate the phase</strong><small data-text="s3V">—</small></div><div class="node" data-el="s4" data-art="code" data-art-role="runtime"><strong>4 · Fix the smallest cause</strong><small data-text="s4V">—</small></div><div class="node" data-el="s5" data-art="document" data-art-role="storage"><strong>5 · Protect it</strong><small data-text="s5V">—</small></div></div><script type="application/json" class="steps">[
+{"label":"Reproduce","caption":"Name the journey: open the feed, fling through 50 items on a mid-tier device with a fixed data fixture.","add":["s1"],"state":{"s1":"done"},"text":{"s1V":"feed fling, fixed fixture, mid-tier phone"}},
+{"label":"Measure","caption":"Use a minified build with Baseline Profiles installed. A Macrobenchmark records frame timing and a trace; debug builds would mislead.","add":["s2"],"state":{"s2":"done"},"text":{"s2V":"slow frames recorded, trace captured"}},
+{"label":"Locate","caption":"In Perfetto, the long frames line up with bitmap decoding on the main thread, not with recomposition. remember and @Immutable could not have helped.","add":["s3"],"state":{"s3":"warn"},"text":{"s3V":"main-thread image decode, not composition"}},
+{"label":"Fix","caption":"Load images at their displayed size through an image library that decodes off the main thread and caches the result.","add":["s4"],"state":{"s3":"done","s4":"done"},"text":{"s4V":"sized, off-main decoding with caching"}},
+{"label":"Protect","caption":"Keep the benchmark in CI on a pinned device, comparing against a rolling baseline with a tolerance band, so the regression cannot quietly return.","add":["s5"],"state":{"s5":"done"},"text":{"s5V":"benchmark guard in CI"}}
+]</script><figcaption>Every step before "Fix" exists to make sure the fix is aimed at the real cause.</figcaption></figure>
+
+<!-- @after Staff Engineer Review Checklist :: check -->
+**Which tool answers it?** Decide before opening each answer.
+
+<details><summary>"Is this composable skippable, and how are its parameters compared in this compiler mode?"</summary>
+
+Compose compiler reports. They show stability and skippability. Under strong skipping an unstable parameter can still skip by identity; compare the report with actual arguments and traces before blaming a type.
+</details>
+
+<details><summary>"Did last week's change make startup slower on low-end devices?"</summary>
+
+A startup Macrobenchmark in CI, compared against a baseline, plus field metrics split by device tier.
+</details>
+
+<details><summary>"Why does this one frame take 40 ms?"</summary>
+
+A Perfetto trace of the journey, correlating the frame with composition, layout, draw, Binder, decode and GC sections.
+</details>

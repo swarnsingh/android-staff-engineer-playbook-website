@@ -1,0 +1,82 @@
+<!-- Phase 5 website teaching layer; original chapter remains read-only. Evidence: website/reviews/android-phase5-findings.md. -->
+
+<!-- @opening -->
+<p class="story-lead">The Wi-Fi icon is visible, yet upload fails. A connection is a path; validation is a system observation; your API response is the outcome. Keeping those three separate lets the app explain failures without pretending it can predict the next request.</p>
+
+<!-- @after Request-Level Reality :: animation -->
+### Three pieces of evidence
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">A network can change between observation and use</span><div class="stage viz-stack"><div class="node" data-el="path" data-art="cloud" data-art-role="runtime"><strong>Network path</strong><small data-text="pathV">—</small></div><div class="node" data-el="policy" data-art="gate" data-art-role="runtime"><strong>Work policy</strong><small data-text="policyV">—</small></div><div class="node" data-el="call" data-art="cloud" data-art-role="runtime"><strong>Request result</strong><small data-text="callV">—</small></div></div><script type="application/json" class="steps">[
+{
+"label": "Available",
+"caption": "A network path becomes available.",
+"state": {
+"path": "active"
+},
+"text": {
+"pathV": "available",
+"policyV": "waiting for relevant state",
+"callV": "not attempted"
+},
+"add": [
+"path",
+"policy",
+"call"
+]
+},
+{
+"label": "Policy permits work",
+"caption": "Suppose the observed capabilities and user policy permit this upload.",
+"state": {
+"policy": "active"
+},
+"text": {
+"policyV": "attempt allowed"
+}
+},
+{
+"label": "Request starts",
+"caption": "The path disappears after the decision.",
+"state": {
+"path": "warn",
+"call": "active"
+},
+"text": {
+"pathV": "lost",
+"callV": "in progress"
+}
+},
+{
+"label": "Handle failure",
+"caption": "The request reports its own failure. Preserve durable intent and apply bounded recovery.",
+"state": {
+"call": "warn"
+},
+"text": {
+"callV": "failed; retry policy decides"
+}
+}
+]</script><figcaption>A policy decision permits an attempt; it cannot guarantee delivery.</figcaption></figure>
+
+<!-- @after Staff Engineer Review Checklist :: check -->
+### Try the decision
+
+<details><summary>Wi-Fi means unmetered?</summary>
+
+No. A hotspot or a user setting can make Wi-Fi metered. Read NET_CAPABILITY_NOT_METERED and respect the user's data policy instead of inferring cost from the transport.
+</details>
+
+<details><summary>Validated means the API is up?</summary>
+
+No. Validation is the system's own reachability probe. DNS, TLS, a proxy or your backend can still fail this request, so handle each request's outcome on its own.
+</details>
+
+<details><summary>Large upload can wait. Keep a polling loop?</summary>
+
+No. Persist the upload and enqueue WorkManager work with a network constraint (unmetered if the user expects that), so the system runs it when conditions fit instead of the app polling.
+</details>
+
+<!-- @after Capabilities to Check :: visual -->
+### What each signal can and cannot tell you
+
+<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">The system reports</span><div class="node"><strong><code>NET_CAPABILITY_NOT_METERED</code></strong><small>cost policy for this network</small></div><div class="node"><strong><code>NET_CAPABILITY_VALIDATED</code></strong><small>the system's own reachability probe succeeded</small></div><div class="node"><strong><code>NET_CAPABILITY_CAPTIVE_PORTAL</code></strong><small>sign-in is needed before traffic flows</small></div><div class="node"><strong>VPN transport</strong><small>traffic is routed through a VPN</small></div></div><div class="col"><span class="col-title">Only your request can tell you</span><div class="node is-key"><strong>Does this API answer?</strong><small>DNS, TLS, proxy and backend can each still fail</small></div><div class="node is-key"><strong>Is it fast enough now?</strong><small>timeouts belong to the request, not the callback</small></div><div class="node is-key"><strong>Should it run now?</strong><small>product policy combines cost, urgency and user settings</small></div></div></div><figcaption>Capabilities are inputs to a decision. The request outcome is the evidence.</figcaption></figure>

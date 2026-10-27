@@ -1,0 +1,51 @@
+<!-- Website teaching layer for android/data-and-di/paging.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (Paging 3 overview, network + database paging) on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">A feed shows the same post twice, a few rows apart. Users who scroll quickly see it most. After a rotation, the feed jumps back to the top and downloads page one again. On a train with no signal, the screen is blank, although the user read these exact posts an hour ago.</p>
+
+Each symptom has a manual-pagination cause: two requests for the same page, list state that lived in the activity, and a list that came only from the network. Paging 3 moves page loading into a component that tracks what is in flight, survives configuration changes when cached in a scope, and can page from a local database that the network fills. This chapter follows those pieces and the places they still need care.
+
+<!-- @after First Principles :: visual -->
+### Four pieces, four jobs
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong><code>PagingSource</code></strong><small>loads one page for a key</small></div><div class="node"><strong><code>RemoteMediator</code></strong><small>optional: fills the database from the network</small></div><div class="node is-key"><strong><code>Pager</code></strong><small>decides when to load; one load per direction at a time</small></div><div class="node" data-state="done"><strong><code>Flow&lt;PagingData&gt;</code></strong><small><code>cachedIn(viewModelScope)</code>, collected by the list</small></div></div><figcaption>The UI never asks for "page 3"; it reports what is visible, and the Pager decides what to load.</figcaption></figure>
+
+<!-- @after Internal Mechanics :: animation -->
+### Scroll an offline-first feed
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="RemoteMediator fills the database">
+<h3>RemoteMediator fills the database</h3>
+<p class="pb-sub">An illustrative run. Each moving packet is a named request, notification or result.</p>
+<div class="pb-paper"><svg class="pb-svg" role="img" aria-label="Paging asks its mediator for more data. The mediator fetches a page and commits it to Room; a fresh PagingSource supplies rows from that database."></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div>
+<div class="pb-caption"><span class="pb-count"></span><p aria-live="polite"></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">{"nodes": [{"id": "paging", "label": "Paging coordinator", "art": {"kind": "phone", "role": "client"}}, {"id": "mediator", "label": "RemoteMediator", "art": {"kind": "worker", "role": "runtime"}}, {"id": "net", "label": "Network API", "art": {"kind": "cloud", "role": "runtime"}}, {"id": "db", "label": "Room database", "art": {"kind": "database", "role": "storage"}}], "layouts": {"wide": {"size": [760, 490], "nodes": {"paging": {"x": 24, "y": 40, "w": 300, "h": 140}, "mediator": {"x": 436, "y": 40, "w": 300, "h": 140}, "net": {"x": 24, "y": 310, "w": 300, "h": 140}, "db": {"x": 436, "y": 310, "w": 300, "h": 140}}, "edges": {"load": "M326 92 C380 92 380 92 434 92", "fetch": "M568 182 C568 245 156 245 156 308", "response": "M192 308 C192 245 604 245 604 182", "commit": "M568 182 C568 245 568 245 568 308", "rows": "M604 308 C604 245 192 245 192 182"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}, "narrow": {"size": [320, 550], "nodes": {"paging": {"x": 8, "y": 25, "w": 144, "h": 190}, "mediator": {"x": 168, "y": 25, "w": 144, "h": 190}, "net": {"x": 8, "y": 330, "w": 144, "h": 190}, "db": {"x": 168, "y": 330, "w": 144, "h": 190}}, "edges": {"load": "M154 102 C160 102 160 102 166 102", "fetch": "M222 217 C222 272.5 62 272.5 62 328", "response": "M98 328 C98 272.5 258 272.5 258 217", "commit": "M222 217 C222 272.5 222 272.5 222 328", "rows": "M258 328 C258 272.5 98 272.5 98 217"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}}, "modes": {"run": {"initial": {"nodes": {"paging": ["", "cache exhausted"], "mediator": ["", "idle"], "net": ["", "more pages exist"], "db": ["", "current cached rows"]}, "visuals": {"paging": {"rows": 2}}}, "steps": [{"caption": "This Room-backed paging setup displays database rows. Reaching the cached boundary can request more remote data."}, {"caption": "Paging calls RemoteMediator.load for the needed load type. The mediator coordinates a remote load; it does not deliver network rows directly to the UI.", "packets": [{"edge": "load", "label": "load", "tone": "fwd", "kind": "parcel"}], "set": {"nodes": {"mediator": ["is-active", "load requested"]}}}, {"caption": "The mediator requests the next page using this dataset’s remote key.", "packets": [{"edge": "fetch", "label": "page key", "tone": "fwd", "kind": "rows"}], "set": {"nodes": {"net": ["is-active", "fetch page"]}}}, {"caption": "The API returns a page and its continuation information. Key rules and end-of-pagination conditions belong to this API.", "packets": [{"edge": "response", "label": "page", "tone": "back", "kind": "rows"}], "set": {"nodes": {"mediator": ["is-active", "page received"], "net": ["is-done", "response ready"]}}}, {"caption": "The mediator commits rows and the associated remote-key changes transactionally. The network result becomes database state.", "packets": [{"edge": "commit", "label": "commit", "tone": "fwd", "kind": "parcel"}], "set": {"nodes": {"db": ["is-done", "rows + keys committed"], "mediator": ["is-done", "load success"]}, "visuals": {}}}, {"caption": "The database update invalidates the old PagingSource. A new source loads the committed rows for Paging to display; cache loading and remote load states remain distinct.", "packets": [{"edge": "rows", "label": "fresh rows", "tone": "back", "kind": "rows"}], "set": {"nodes": {"paging": ["is-done", "new database rows"]}, "visuals": {"paging": {"rows": 3}}}}]}}, "illustrated": true, "edgeEndpoints": {"load": {"from": "paging", "to": "mediator"}, "fetch": {"from": "mediator", "to": "net"}, "response": {"from": "net", "to": "mediator"}, "commit": {"from": "mediator", "to": "db"}, "rows": {"from": "db", "to": "paging"}}}</script>
+<p class="pb-sub">Sources: <a href="https://developer.android.com/topic/libraries/architecture/paging/v3-network-db">Paging with network and database</a>.</p>
+</section>
+
+<!-- @diagram 2301ffe70d644897 -->
+### Who talks to whom
+
+<figure class="viz"><div class="viz-stack"><div class="node"><strong><code>LazyColumn</code></strong><small>reports scrolling; renders <code>PagingData</code></small></div><div class="down"></div><div class="node is-key"><strong><code>Pager</code> (in the ViewModel)</strong><small>reads pages from the database; triggers the mediator when they run out</small></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>Room database</strong><small>source of every page the UI sees</small></div><div class="node"><strong><code>RemoteMediator</code></strong><small>fetches from the network API and inserts into Room</small></div></div></div><figcaption>The UI never talks to the network; it only observes the database through a PagingSource.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: check -->
+**Which fix?** Decide before opening each answer.
+
+<details><summary>The list jumps back to the top after every rotation.</summary>
+
+The `Pager` flow is not cached. Apply `cachedIn(viewModelScope)` in the ViewModel so the new UI collects the same paged data.
+</details>
+
+<details><summary>New posts at the top of the server feed cause duplicates further down.</summary>
+
+Offset pagination shifted under the user. Use a cursor key from the server so continuation does not depend on positions.
+</details>
+
+<details><summary>Refresh briefly shows an empty list before the new data.</summary>
+
+Clearing and inserting happened in separate transactions. Do both inside one `withTransaction` so invalidation never observes the empty table.
+</details>

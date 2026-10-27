@@ -1,0 +1,61 @@
+<!-- Website teaching layer for android/os-internals/broadcast-receivers.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Sources checked 2026-10-25: Broadcasts overview (effects on process state, goAsync, receiver export flags),
+     Diagnose and fix ANRs (broadcast receiver timeouts), WorkManager unique work. -->
+
+<!-- @opening -->
+<p class="story-lead">A user taps "Mark as read" on a notification, and the message stays unread. The receiver started a coroutine to call the server and returned at once. A few seconds later the system reclaimed the idle process, and the request went with it. No error was logged, because nothing ever failed. The work simply stopped existing.</p>
+
+A broadcast receiver is a doorway, not a workplace. The system can start your process just to call `onReceive()`, and once it returns the receiver is finished and the process may be killed. This chapter covers receiver types, delivery, time limits and security. The additions here follow one notification action from the doorway to an owner that outlives it.
+
+<!-- @diagram 258254336f135e0e -->
+### Delivering one broadcast
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Sender</strong><small><code>sendBroadcast(intent)</code></small></div><div class="node is-key"><strong>ActivityManagerService</strong><small>resolves receivers</small></div><div class="node"><strong>Receiver process</strong><small>started if needed</small></div><div class="node"><strong><code>onReceive(context, intent)</code></strong></div><div class="node" data-state="done"><strong>Return quickly</strong><small>back to the system</small></div></div><figcaption>Redrawn from the original sequence diagram. Delivery travels over Binder and may start a process that had no visible UI.</figcaption></figure>
+
+<!-- @after Time Limits and goAsync() :: visual -->
+### How long each piece lives
+
+<figure class="viz"><div class="viz-lanes"><div class="lane"><span class="lane-label"><code>onReceive()</code></span><div class="track"><span class="mark" style="--at:0%;--len:14%">receiver</span></div></div><div class="lane"><span class="lane-label">Unowned coroutine</span><div class="track"><span class="mark" data-tone="warn" style="--at:4%;--len:30%">killed with process</span></div></div><div class="lane"><span class="lane-label">Idle process</span><div class="track"><span class="mark" data-tone="ghost" style="--at:14%;--len:20%">may be reclaimed</span></div></div><div class="lane"><span class="lane-label">WorkManager request</span><div class="track"><span class="mark" data-tone="soft" style="--at:10%;--len:88%">persisted until it succeeds</span></div></div></div><figcaption>Illustrative timeline. The broadcasts guide: the system can stop the process at any moment after <code>onReceive()</code> returns, ending threads it started. A WorkManager request is stored and rescheduled after process death and reboot.</figcaption></figure>
+
+<!-- @after Production Patterns :: animation -->
+### "Mark as read", from tap to server
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="A receiver hands off durable work">
+<h3>A receiver hands off durable work</h3>
+<p class="pb-sub">An illustrative run. Each moving packet is a named request, notification or result.</p>
+<div class="pb-paper"><svg class="pb-svg" role="img" aria-label="A broadcast reaches onReceive. A short receiver validates it and enqueues appropriate persistent work, then returns. A scheduled worker may run later."></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div>
+<div class="pb-caption"><span class="pb-count"></span><p aria-live="polite"></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">{"nodes": [{"id": "sender", "label": "Broadcast sender", "art": {"kind": "server", "role": "runtime"}}, {"id": "receiver", "label": "onReceive", "art": {"kind": "worker", "role": "runtime"}}, {"id": "work", "label": "WorkManager record", "art": {"kind": "database", "role": "storage"}}, {"id": "worker", "label": "Worker attempt", "art": {"kind": "worker", "role": "runtime"}}], "layouts": {"wide": {"size": [760, 490], "nodes": {"sender": {"x": 24, "y": 40, "w": 300, "h": 140}, "receiver": {"x": 436, "y": 40, "w": 300, "h": 140}, "work": {"x": 24, "y": 310, "w": 300, "h": 140}, "worker": {"x": 436, "y": 310, "w": 300, "h": 140}}, "edges": {"deliver": "M326 92 C380 92 380 92 434 92", "enqueue": "M568 182 C568 245 156 245 156 308", "start": "M326 362 C380 362 380 362 434 362"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}, "narrow": {"size": [320, 550], "nodes": {"sender": {"x": 8, "y": 25, "w": 144, "h": 190}, "receiver": {"x": 168, "y": 25, "w": 144, "h": 190}, "work": {"x": 8, "y": 330, "w": 144, "h": 190}, "worker": {"x": 168, "y": 330, "w": 144, "h": 190}}, "edges": {"deliver": "M154 102 C160 102 160 102 166 102", "enqueue": "M222 217 C222 272.5 62 272.5 62 328", "start": "M154 407 C160 407 160 407 166 407"}, "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}}, "modes": {"run": {"initial": {"nodes": {"sender": ["", "event produced"], "receiver": ["", "not running"], "work": ["", "no request"], "worker": ["", "not running"]}, "visuals": {"receiver": {"visible": false}, "work": {"rows": 0}, "worker": {"visible": false}}}, "steps": [{"caption": "Assume this registration is eligible for the broadcast and the app is allowed to schedule the work. Platform restrictions still apply."}, {"caption": "The system delivers the matching broadcast. Delivery timing is not guaranteed, and ordinary onReceive work runs on the main thread by default.", "packets": [{"edge": "deliver", "label": "broadcast", "tone": "fwd", "kind": "parcel"}], "set": {"nodes": {"receiver": ["is-active", "validate action + input"]}, "visuals": {"receiver": {"visible": true, "busy": true}}}}, {"caption": "After validation, the receiver enqueues an appropriate persistent request. This requests later work; it does not promise the worker runs inside the receiver’s lifetime.", "packets": [{"edge": "enqueue", "label": "enqueue", "tone": "fwd", "kind": "parcel"}], "set": {"nodes": {"work": ["is-done", "request persisted"]}, "visuals": {"work": {"rows": 1}}}}, {"caption": "onReceive returns. A raw thread launched here would not by itself keep the process alive. goAsync provides bounded completion time, not an unlimited background lifetime.", "set": {"nodes": {"receiver": ["is-done", "returned"], "worker": ["", "still not running"]}, "visuals": {"receiver": {"busy": false}}}}, {"caption": "At a later permitted scheduling opportunity, WorkManager starts an attempt. Constraints and system policy determine eligibility.", "packets": [{"edge": "start", "label": "start attempt", "tone": "fwd", "kind": "parcel"}], "set": {"nodes": {"worker": ["is-active", "attempt running"]}, "visuals": {"worker": {"visible": true, "busy": true}}}}, {"caption": "The worker handles completion or retry under its own contract. Do not mistake broadcast delivery or enqueue success for completion of the product operation.", "set": {"nodes": {"worker": ["is-done", "result recorded"]}, "visuals": {"worker": {"busy": false}}}}]}}, "illustrated": true, "edgeEndpoints": {"deliver": {"from": "sender", "to": "receiver"}, "enqueue": {"from": "receiver", "to": "work"}, "start": {"from": "work", "to": "worker"}}}</script>
+<p class="pb-sub">Sources: <a href="https://developer.android.com/develop/background-work/background-tasks/broadcasts">Broadcasts overview</a>.</p>
+</section>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+Review every exported receiver as an endpoint other apps can call: what can a forged intent trigger, which permission stops it, and what state does the handler re-read before acting?
+
+<!-- @after Failure Modes :: check -->
+### Check your receivers
+
+<details><summary>A receiver must upload a 2 MB diagnostics file. Is <code>goAsync()</code> enough?</summary>
+
+No. The chapter limits <code>goAsync()</code> to small, bounded work, and a network upload is neither. Enqueue a WorkManager request with a network constraint and return.
+
+</details>
+
+<details><summary>An exported receiver reads a <code>user_id</code> extra and deletes that user's data. What should protect it?</summary>
+
+Keep it unexported if possible. Otherwise require a signature permission, treat the extra as a hint, and re-check authorization against trusted state before doing anything destructive.
+
+</details>
+
+<details><summary>Two broadcasts for the same state change arrive within a second. How do you avoid running the sync twice?</summary>
+
+Enqueue unique work under a stable name, and make the work itself idempotent, so duplicates and retries change nothing extra.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+Primary sources for the added layer: [Broadcasts overview](https://developer.android.com/develop/background-work/background-tasks/broadcasts), [Diagnose and fix ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs), [Managing unique work](https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/manage-work#unique-work).

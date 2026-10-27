@@ -1,0 +1,49 @@
+<!-- Website-only teaching for android/performance/rendering.md; original chapter remains read-only. Sources checked 2026-10-25. -->
+
+<!-- @opening -->
+
+<p class="story-lead">A trace shows the main thread finishing its work, yet the frame still appears late. Drawing commands are only one handoff. Something must execute them, provide the buffer, and present it on the display.</p>
+
+Use this chapter to follow a frame across app and system boundaries, keeping recording, GPU execution and presentation distinct.
+
+<!-- @after The Rendering Pipeline (One Frame) :: visual -->
+
+### Commands are not pixels on the display
+
+<figure class="viz"><div class="viz-lanes"><div class="lane"><span class="lane-label">UI thread</span><div class="track"><span class="mark" style="--at:0%;--len:30%">frame N</span><span class="mark" data-tone="soft" style="--at:34%;--len:30%">frame N+1</span></div></div><div class="lane"><span class="lane-label">RenderThread + GPU</span><div class="track"><span class="mark" style="--at:30%;--len:32%">frame N</span><span class="mark" data-tone="soft" style="--at:64%;--len:30%">frame N+1</span></div></div><div class="lane"><span class="lane-label">SurfaceFlinger + display</span><div class="track"><span class="mark" style="--at:66%;--len:22%">present N</span></div></div></div><figcaption>Illustrative, not to scale. While the RenderThread and GPU finish frame N, the UI thread already works on frame N+1, so a stage can be late without the UI thread being slow. Check FrameTimeline's expected and actual frames before assigning blame.</figcaption></figure>
+
+<!-- @after Vsync and Choreographer :: animation -->
+
+### Follow the buffer, then the presentation
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">Follow the buffer, then the presentation</span><div class="stage viz-grid" style="--cols:2"><div class="node" data-el="ui" data-art="worker" data-art-role="runtime"><strong>UI thread</strong><small>Records app draw work</small></div><div class="node" data-el="render" data-art="code" data-art-role="runtime"><strong>RenderThread / GPU</strong><small>Processes rendering</small></div><div class="node" data-el="buffer" data-art="frame" data-art-role="client"><strong>App buffer</strong><small>Becomes available</small></div><div class="node" data-el="display" data-art="screen" data-art-role="client"><strong>Presentation</strong><small>System composition and display</small></div></div><script type="application/json" class="steps">[{"label": "Record", "caption": "The app changes its UI and records draw work. A completed recording phase does not prove that GPU work has finished.", "state": {"ui": "active"}, "add": ["ui", "render", "buffer", "display"]}, {"label": "Execute", "caption": "Rendering proceeds downstream. The next frame’s app work can overlap; this animation shows dependencies rather than fixed timing.", "state": {"ui": "done", "render": "active"}}, {"label": "Provide a buffer", "caption": "The app’s rendering result becomes available to system composition. Follow the corresponding frame token where tracing supports it.", "state": {"render": "done", "buffer": "active"}}, {"label": "Check presentation", "caption": "Compare app and SurfaceFlinger timelines. The slow stage determines which investigation to pursue; do not infer an exact display delay from Main duration alone.", "state": {"buffer": "done", "display": "active"}}]</script><figcaption>Illustrative sequence. Use Previous, Next or Play; every step is also available as text.</figcaption></figure>
+
+<!-- @after Measuring Rendering — Tools :: staff -->
+
+A quiet main thread does not clear the rendering pipeline. Follow the affected frame through application recording, RenderThread/GPU work and system presentation, using the surface and frame identity to avoid comparing unrelated intervals. Decide whether the fix belongs in application work, overdraw/content, resource preparation or a platform issue. Keep that attribution with the release decision so a later UI rewrite is not justified by an unexamined GPU bottleneck.
+
+<!-- @before Further Reading :: check -->
+
+### Check your diagnosis
+
+<details><summary>Main is fast and the GPU is late. Where do you investigate next?</summary>
+
+Rendering work and its GPU/system evidence, including expensive effects and resource uploads if the trace points there.
+
+</details>
+
+<details><summary>What should remain comparable across two rendering experiments?</summary>
+
+The user journey, useful content, device conditions and relevant surface/frame boundaries.
+
+</details>
+
+<details><summary>Why distinguish recording from presentation?</summary>
+
+A recorded command list still needs rendering and composition before the user sees its result.
+
+</details>
+
+<!-- @before Further Reading :: deeper -->
+
+Primary evidence for the added layer: [Frame pipeline evidence](https://perfetto.dev/docs/data-sources/frametimeline), [Hardware acceleration](https://developer.android.com/develop/ui/views/graphics/hardware-accel).

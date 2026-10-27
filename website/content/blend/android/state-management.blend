@@ -1,0 +1,47 @@
+<!-- Website teaching layer for android/architecture/state-management.md.
+     The original chapter is rendered in full; everything here is added around it.
+     Checked against developer.android.com (UI layer, state holders, state in Compose, Hilt ViewModels)
+     and the kotlinx.coroutines API on 2026-10-25. -->
+
+<!-- @opening -->
+<p class="story-lead">On a search screen, the query lives in two places: the text field keeps it in <code>rememberSaveable</code>, and the ViewModel keeps an in-memory copy to run the search. After the user clears the field, the ViewModel still searches for the old query. After process death the field shows the old query, the ViewModel copy is empty, and the results are gone. Each fix makes the other case worse.</p>
+
+The bug is not in either copy. It is in having two owners for one value. This chapter gives every piece of state exactly one owner, chosen by how long the state must live and who needs to change it, and connects those owners with one rule: state flows down, events flow up.
+
+<!-- @after Two Kinds of State :: visual -->
+### Choose the owner by required lifetime
+
+<figure class="viz"><div class="viz-lanes"><div class="lane"><span class="lane-label"><code>remember</code></span><div class="track"><span class="mark" style="--at:0%;--len:20%">recompositions</span></div></div><div class="lane"><span class="lane-label">plain state holder</span><div class="track"><span class="mark" style="--at:0%;--len:20%">as long as it is remembered</span></div></div><div class="lane"><span class="lane-label"><code>rememberSaveable</code></span><div class="track"><span class="mark" style="--at:0%;--len:60%">+ rotation + process death (small values)</span></div></div><div class="lane"><span class="lane-label"><code>ViewModel</code></span><div class="track"><span class="mark" style="--at:0%;--len:40%">+ rotation, same process</span></div></div><div class="lane"><span class="lane-label"><code>SavedStateHandle</code></span><div class="track"><span class="mark" style="--at:0%;--len:60%">+ process death (small values)</span></div></div><div class="lane"><span class="lane-label">repository + storage</span><div class="track"><span class="mark" style="--at:0%;--len:100%">+ app restarts, reboots</span></div></div></div><figcaption>Pick the shortest lifetime that is still long enough. Longer lifetimes cost memory, saved-state space or disk writes.</figcaption></figure>
+
+<!-- @after State Hoisting — The Core Pattern :: animation -->
+### Hoist only as far as the readers
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">Moving <code>count</code> to its lowest common ancestor</span><div class="stage viz-stack"><div class="node" data-el="screen" data-art="screen" data-art-role="client"><strong><code>Screen()</code></strong><small data-text="screenNote">—</small></div><div class="viz-grid" style="--cols:2"><div class="node" data-el="counter" data-art="flow" data-art-role="storage"><strong><code>Counter</code></strong><small data-text="counterNote">—</small></div><div class="node" data-el="warning" data-art="signal" data-art-role="runtime"><strong><code>Warning</code></strong><small data-text="warningNote">—</small></div></div><div class="node is-key" data-el="flow" data-art="flow" data-art-role="storage"><strong>Data flow</strong><small data-text="flowNote">—</small></div></div><script type="application/json" class="steps">[
+{"label":"State inside the child","caption":"BadCounter owns count in its own remember. It works on its own, but nothing outside it can read the value.","add":["screen","counter","flow"],"state":{"counter":"warn"},"text":{"screenNote":"no state","counterNote":"var count by remember { … }","flowNote":"state is trapped in Counter"}},
+{"label":"A sibling needs it","caption":"A new requirement: show a warning when count > 5. Warning is a sibling of Counter and cannot see Counter's private state.","add":["warning"],"state":{"warning":"error"},"text":{"warningNote":"needs count, cannot read it","flowNote":"two readers, one private owner"}},
+{"label":"Hoist to the common parent","caption":"Move count to Screen, the lowest common ancestor of both readers. Use rememberSaveable there if the value should survive rotation.","state":{"screen":"active","counter":"","warning":""},"text":{"screenNote":"var count by rememberSaveable { mutableStateOf(0) }","counterNote":"Counter(count, onIncrement)","warningNote":"Warning(visible = count > 5)","flowNote":"one owner: Screen"}},
+{"label":"State down, events up","caption":"Counter receives count as a parameter and reports taps through onIncrement. Screen changes the value; both children re-render from it. Counter is now stateless, reusable and previewable.","state":{"screen":"done","counter":"done","warning":"done"},"text":{"flowNote":"count ↓ to both children · onIncrement ↑ to Screen"}}
+]</script><figcaption>Hoisting further than the readers (into a ViewModel for a purely visual counter) only widens the owner's lifetime without adding a reader.</figcaption></figure>
+
+<!-- @after Screen vs UI State — Concrete Examples :: check -->
+**Who owns it?** Decide before opening each answer.
+
+<details><summary>The text in a search field before the user submits.</summary>
+
+One owner only. If the ViewModel reacts to every keystroke (instant search), keep it in the ViewModel and save it in `SavedStateHandle`. If only submit matters, keep it in `rememberSaveable` and pass it up on submit.
+</details>
+
+<details><summary>Whether a "Filters" panel is expanded.</summary>
+
+The composable, with `rememberSaveable` if users expect it to survive rotation. It is presentation, not business state.
+</details>
+
+<details><summary>The posts shown in the feed.</summary>
+
+The repository is the source of truth; the ViewModel exposes them as screen state. Not `remember`: they would be refetched after every rotation.
+</details>
+
+<!-- @diagram f546d541ede4a6a1 -->
+### Where does this state belong?
+
+<figure class="viz"><div class="viz-stack"><div class="node is-key"><strong>Must it survive process death?</strong></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>Small, restorable UI input</strong><small><code>SavedStateHandle</code> or <code>rememberSaveable</code></small></div><div class="node" data-state="done"><strong>Durable user or business data</strong><small>repository + persistent store</small></div></div><div class="down"></div><div class="node is-key"><strong>No. Must it survive a configuration change?</strong></div><div class="viz-grid" style="--cols:3"><div class="node"><strong>Business or async state</strong><small><code>ViewModel</code></small></div><div class="node"><strong>Shared UI coordination</strong><small>remembered plain state holder</small></div><div class="node"><strong>Transient presentation</strong><small>local <code>remember</code></small></div></div></div><figcaption>Answer the durability question first; it rules out most owners.</figcaption></figure>

@@ -1,0 +1,38 @@
+<!-- Teaching layer: android/testing/testing-strategy.md; structure defined in android-phase6-structure.md. -->
+<!-- @opening -->
+<p class="story-lead">A checkout regression escapes to production. The team adds another end-to-end test, but the merge gate already takes forty minutes and often turns green on retry. More tests alone will not restore confidence: which failure should each test detect, and who responds when it fails?</p>
+
+Start with the risk: a wrong price, a broken screen, a failed payment integration. Then ask what evidence would expose that failure. The chapter's portfolio is a way to buy that evidence without paying device-test cost for every business rule.
+
+<!-- @after Mental Model :: visual -->
+### One risk, several observation points
+
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Price rule</strong><small>controlled inputs → domain result</small></div><div class="node"><strong>Checkout screen</strong><small>state + action → visible behavior</small></div><div class="node"><strong>Payment contract</strong><small>serialized request → provider agreement</small></div><div class="node"><strong>Device journey</strong><small>real integration → critical path</small></div></div><figcaption>These are complementary boundaries. A pixel diff cannot prove a server contract; a fake server cannot prove the real integration.</figcaption></figure>
+
+<!-- @diagram 81a56c3560d46094 -->
+### Four gates, rising fidelity
+
+<figure class="viz"><div class="viz-flow"><div class="node is-key"><strong>PR gate</strong><small>static checks, affected fast tests, smoke</small></div><div class="node"><strong>Per-merge main</strong><small>full JVM suite, sharded managed devices</small></div><div class="node"><strong>Nightly</strong><small>real-device journeys, performance</small></div><div class="node" data-state="done"><strong>Release qualification</strong><small>full matrix, stress, visual diff</small></div></div><figcaption>Redrawn from the original CI Topology diagram. Each gate catches what the earlier one cannot afford to run; put a risk at the earliest gate that can observe it, and give each gate a latency budget and an owner.</figcaption></figure>
+
+<!-- @after Flakiness as a System, Not a Nuisance :: animation -->
+### Follow a red test without losing the evidence
+
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">Follow a red test without losing the evidence</span><div class="stage viz-flow"><div class="node" data-el="run" data-art="document" data-art-role="storage"><strong>Original failure</strong><small data-text="runV">retained</small></div><div class="node" data-el="classify" data-art="inspect" data-art-role="runtime"><strong>Classification</strong><small data-text="classifyV">pending</small></div><div class="node" data-el="owner" data-art="worker" data-art-role="runtime"><strong>Owner</strong><small data-text="ownerV">unassigned</small></div><div class="node" data-el="gate" data-art="gate" data-art-role="runtime"><strong>Merge gate</strong><small data-text="gateV">policy decision</small></div></div><script type="application/json" class="steps">[{"label": "Red run", "caption": "Keep the failing seed, logs, device identity and first-attempt result. A later pass must not erase this observation.", "state": {"run": "warn"}, "text": {"runV": "failure + artifacts retained"}}, {"label": "Bounded investigation", "caption": "Use the agreed diagnostic rerun policy to distinguish repeatable product failure from timing or infrastructure symptoms. A rerun is evidence, not proof of innocence.", "state": {"classify": "active"}, "text": {"classifyV": "reproducible / intermittent / infrastructure"}}, {"label": "Accountable quarantine", "caption": "If policy permits removing an intermittent test from the blocking gate, attach an owner and expiry. Preserve an independent release decision for the affected risk.", "state": {"owner": "active", "gate": "warn"}, "text": {"ownerV": "ticket + deadline", "gateV": "risk reviewed explicitly"}}, {"label": "Repair and return", "caption": "Reproduce the cause, repair the test or product, and establish reliability before restoring the gate. Measure first-attempt reliability separately from eventual pass rate.", "state": {"run": "done", "classify": "done", "owner": "done", "gate": "done"}, "text": {"gateV": "trusted signal restored"}}]</script><figcaption>This is a governance trace, not a retry-count or probability guarantee.</figcaption></figure>
+
+<!-- @after Staff Engineer Thinking :: check -->
+### Check your test portfolio
+
+<details><summary>A pricing rule can be tested without Android. Which boundary earns the fastest useful feedback?</summary>
+
+A focused rule test with controlled inputs. Add a higher layer only for behavior that crosses that boundary.
+</details>
+
+<details><summary>The second run passes. Can the first red run disappear from the dashboard?</summary>
+
+No. Keep first-attempt reliability and diagnostic artifacts; eventual green hides intermittent risk.
+</details>
+
+<details><summary>The contract fixture passes while the provider changes its schema. What is missing?</summary>
+
+Evidence that the fixture still represents the provider, with an owner and a refresh/verification process.
+</details>

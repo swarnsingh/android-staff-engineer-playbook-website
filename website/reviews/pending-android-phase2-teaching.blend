@@ -1,0 +1,15 @@
+<!-- ARCHIVED REVIEW MATERIAL: superseded by the approved corrections and current active teaching. Do not re-activate these historical fragments. See completion/REPORT.md. -->
+
+<!-- Held Phase 2 diagram redraws. Not rendered. Restore only after the owner approves the associated original corrections (C2 / DI2). -->
+
+<!-- components; held pending the related original finding. -->
+<!-- @diagram e53267b523603f05 -->
+### The hierarchy, with each lifetime
+
+<figure class="viz"><div class="viz-stack"><div class="node is-key"><strong><code>SingletonComponent</code></strong><small>Application created → Application destroyed (the process)</small></div><div class="viz-grid" style="--cols:2"><div class="node"><strong><code>ActivityRetainedComponent</code></strong><small>first <code>Activity#onCreate()</code> → last <code>Activity#onDestroy()</code>: survives rotation</small></div><div class="node"><strong><code>ServiceComponent</code></strong><small><code>Service#onCreate()</code> → <code>Service#onDestroy()</code></small></div></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong><code>ViewModelComponent</code></strong><small>one per ViewModel: created with it, destroyed when it is cleared</small></div><div class="node" data-state="warn"><strong><code>ActivityComponent</code></strong><small>one per activity instance: recreated on rotation</small></div></div><div class="viz-grid" style="--cols:2"><div class="node"><strong><code>FragmentComponent</code></strong><small>child of the activity component</small></div><div class="node"><strong><code>ViewComponent</code></strong><small>child of the activity component (or of the fragment component, as <code>ViewWithFragmentComponent</code>)</small></div></div></div><figcaption>A child can use everything its ancestors provide. Nothing flows downward: an ancestor cannot see a child's bindings.</figcaption></figure>
+
+<!-- dependency-injection; held pending the related original finding. -->
+<!-- @diagram 395274f9516f690a -->
+### Which component holds what
+
+<figure class="viz"><div class="viz-stack"><div class="node is-key"><strong><code>SingletonComponent</code></strong><small>Application · Room database · Retrofit</small></div><div class="viz-grid" style="--cols:2"><div class="node"><strong><code>ViewModelComponent</code></strong><small>ViewModel · Repository requested by it</small></div><div class="node"><strong><code>ActivityComponent</code></strong><small>the Activity; requests the ViewModel</small></div></div></div><figcaption>Child components can use bindings from their ancestors: the repository reaches the singleton database and network, never the other way round.</figcaption></figure>
