@@ -51,8 +51,10 @@ def main():
     shutil.copy2(ROOT/'website/tools/motion_audit_runner.js',fx/'motion.js')
     shutil.copy2(ROOT/'website/tools/binder_audit_runner.js',fx/'binder.js')
     (output/'binder-audit.html').write_text('<!doctype html><title>Binder reading matrix</title><button id="binder-start">Start Binder matrix</button><pre id="binder-results">Not started</pre><iframe id="binder-frame" style="width:1440px;height:900px;position:fixed;left:0;top:150px;opacity:.01;pointer-events:none"></iframe><script src="/fx/binder.js"></script><script>document.getElementById("binder-start").onclick=runBinderAudit</script>')
+    shutil.copy2(ROOT/'website/tools/refinement_audit_runner.js',fx/'refinement.js')
+    (output/'refinement-audit.html').write_text('<!doctype html><title>Reader refinement checks</title><button id="refinement-start">Start refinement checks</button><pre id="refinement-results">Not started</pre><iframe style="width:390px;height:900px;position:fixed;left:0;top:150px;opacity:.01;pointer-events:none"></iframe><script src="/fx/refinement.js"></script><script>document.getElementById("refinement-start").onclick=runRefinementAudit</script>')
     export_script = "<button id=\"export-results\">Download results</button><script>document.getElementById('export-results').onclick=()=>{const out=document.querySelector('pre');const a=document.createElement('a');a.download=location.pathname.split('/').pop().replace('.html','.json');a.href=URL.createObjectURL(new Blob([out.textContent],{type:'application/json'}));a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};</script>"
-    for name in ['audit.html','motion-fixture.html','binder-audit.html']:
+    for name in ['audit.html','motion-fixture.html','binder-audit.html','refinement-audit.html']:
         page=output/name
         page.write_text(page.read_text()+export_script)
     print(f'{len(targets)} pages prepared in {output}. Serve this directory; open /audit.html and press Start audit.')

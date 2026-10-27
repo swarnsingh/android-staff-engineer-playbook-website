@@ -289,7 +289,9 @@ The website page for a chapter is a blend of two layers:
 
 How to build, preview and continue this work — including the blend file format, the animation format, the per-chapter progress table and the open decisions — is documented in [`website/README.md`](website/README.md). Any model or person picking up the website work should read this rulebook and that guide first.
 
-## 19. Separate website repository and private previews
+<a id="19-separate-website-repository-and-private-previews"></a>
+
+## 19. Separate website repository and publication
 
 ### One website repository and one deployment path
 
@@ -301,15 +303,15 @@ Owner decision, 2026-10-26: [swarnsingh/android-staff-engineer-playbook-website]
 - Local build directories and localhost servers are temporary verification tools. They are not the published website. Existing external previews are historical snapshots until the repository's deployment path replaces them; do not present them as current after local changes.
 - If the repository has no suitable deployment setup, prepare the configuration here and identify the concrete hosting or access decision that remains. Do not silently publish somewhere else or make a private preview public to work around that gap.
 
-This decision supersedes earlier handovers suggesting publication as Claude artifacts or separate agent-hosted previews. It does not approve original-chapter corrections or change the required privacy of the website.
+This decision supersedes earlier handovers suggesting publication as Claude artifacts or separate agent-hosted previews. It does not approve original-chapter corrections. The public publication decision below supersedes the earlier private-preview requirement.
 
-Website development belongs in the separate private [website repository](https://github.com/swarnsingh/android-staff-engineer-playbook-website). Since separation, website work makes no further changes to the [original playbook repository](https://github.com/swarnsingh/android-staff-engineer-playbook). Its earlier remote website branch (`codex/reader-website` at `390f8f8`) remains historical work; its `main` and canonical chapters are unchanged. Do not push, merge, delete branches or change visibility there as part of website work. A future source import requires an explicit reviewed revision; do not silently synchronise or rewrite the collected chapters.
+Website development belongs in the separate [website repository](https://github.com/swarnsingh/android-staff-engineer-playbook-website). Since separation, website work makes no further changes to the [original playbook repository](https://github.com/swarnsingh/android-staff-engineer-playbook). Its earlier remote website branch (`codex/reader-website` at `390f8f8`) remains historical work; its `main` and canonical chapters are unchanged. Do not push, merge, delete branches or change visibility there as part of website work. A future source import requires an explicit reviewed revision; do not silently synchronise or rewrite the collected chapters.
 
 The website repository retains the original chapter layout as a read-only source snapshot. `source-snapshot.json` records its origin, revision and Kotlin file hashes. All reading explanations are rendered in full; the labelled teaching layer lives under `website/content/blend/`. Proposed corrections remain separate, unapplied and unapproved until the owner approves exact replacements. A request to fix a website defect does not approve the entire corrections triage.
 
 Preserve the existing website branches (`codex/reader-website` and `claude/reader-website-kotlin`) and their commit identities in the new repository. They provide the earlier drafts and review history. Keep the current website work on its own branch and describe which branch is the current preview. Never remove earlier work simply to make the new repository look cleaner.
 
-Remote previews must use owner-private hosting. A private GitHub repository alone does not establish private website access. Check the hosting service's returned access/deployment state; never make the preview public as a fallback. Keep deployment credentials out of source, logs and reviewer packages. A hosted preview is a snapshot of the verified build, and later local edits require a new verified deployment before claiming the hosted site includes them.
+Owner decision, 2026-10-27: publish the website repository and rendered website publicly through GitHub Pages, like the AirBridge blog. This explicitly supersedes the earlier private-source/private-preview decision. Keep the original playbook repository private. The single website URL is https://swarnsingh.github.io/android-staff-engineer-playbook-website/ and publication runs through `.github/workflows/website.yml` in this repository. A local server, downloadable build or Codex/Claude artifact is not the delivered website. Verify the actual deployment, live lesson links and `build-info.json` commit before reporting publication. Keep deployment credentials out of source and logs. Later changes require a newly verified deployment.
 
 Preservation has two complementary checks: the static build verifies original units, order, repeat counts, heading levels and permitted diagram disclosures; the rendered browser audit checks source-unit presence in rendered text and the specific visibility/resource failures documented in `website/README.md`. It is not proof against arbitrary overlays, all CSS combinations, low contrast, or accessibility defects. Record both results and the tested browser/device scope. Compile coroutine teaching examples against their stated versions and test lifecycle boundaries, including cancellation before startup, active work, queued work and submissions after shutdown. A single successful happy-path run is not evidence for those contracts.
 

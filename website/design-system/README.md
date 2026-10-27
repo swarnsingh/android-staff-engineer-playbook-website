@@ -2,7 +2,7 @@
 
 The look and behaviour of the Android Engineering Playbook reader: a calm, professional reading sheet for long technical lessons, with illustrated diagrams where data visibly moves. Think of it as the playbook's `MaterialTheme`: one `colorScheme`, one `typography`, one `shapes`, plus motion rules, applied the same way on every page.
 
-**Status:** implemented across the reader; illustrated scene update, 27 Oct 2026. The build includes an interactive gallery at `design-system/index.html` in the private GitHub Actions artifact. Source, tokens, renderer and publication workflow all live in this repository. See [the website experience report](../reviews/website-experience-2026-10-27.md) for coverage and verification.
+**Status:** implemented across the reader; illustrated scene update, 27 Oct 2026. The build includes an interactive gallery at `design-system/index.html` on [GitHub Pages](https://swarnsingh.github.io/android-staff-engineer-playbook-website/design-system/). Source, tokens, renderer and publication workflow all live in this repository. See [the website experience report](../reviews/website-experience-2026-10-27.md) for coverage and verification.
 
 ## Principles
 
@@ -18,7 +18,7 @@ The look and behaviour of the Android Engineering Playbook reader: a calm, profe
 |---|---|---|
 | 0 | `canvas` | The page around the sheet. A faint tinted ground, so the sheet reads as the lesson. |
 | 1 | `sheet` + `shadow-sheet` + `radius-lg` | The reading sheet: hero, tabs and lesson text. Width `measure-wide`; text inside it is capped at `measure-text`. |
-| 2 | `sheet-sunken` or a `*-soft` tint + `radius-md` | Callouts, checkpoints, diagram paper. No border, no shadow. |
+| 2 | `sheet-sunken` or a `*-soft` tint + `radius-md` | Callouts, checkpoints, diagram paper. Subtle border or role accent where useful; no independent shadow. |
 
 Code cards are the one dark object on the sheet (`code-bg`) in every theme. High contrast drops the tints and uses a 1px `line` border instead, because tinted grounds lower contrast there; `components/bundle.css` applies this to callouts, checkpoints and diagrams.
 
@@ -46,14 +46,14 @@ Actor colours have a separate role: `scene-client` (blue devices), `scene-runtim
 
 | Style | `Typography` slot | Face |
 |---|---|---|
-| `displayLarge`, `headlineMedium` | `displayLarge`, `headlineMedium` | Source Serif 4: lesson and phase titles only |
+| `displayLarge`, `headlineMedium` | `displayLarge`, `headlineMedium` | Inter: lesson and phase titles |
 | `titleLarge`, `titleMedium` | `titleLarge`, `titleMedium` | Inter: H2 and H3 |
 | `bodyLarge`, `bodyMedium` | `bodyLarge`, `bodyMedium` | Inter: running text, captions |
 | `labelLarge`, `labelSmall` | `labelLarge`, `labelSmall` | Inter: controls, eyebrows |
 | `codeBlock`, `codeInline` | (none) | JetBrains Mono, ligatures off |
 | `handNode`, `handNote` | (none) | Patrick Hand: diagrams and one annotation per diagram |
 
-Five families, self-hosted from `fonts/` (Latin subsets, SIL Open Font License): Inter variable 400–700 (48KB), Source Serif 4 SemiBold (21KB), JetBrains Mono variable 400–500 (31KB) and Patrick Hand (63KB), plus Shantell Sans variable 400–600 for the reader's handwritten setting. Shantell Sans was designed for on-screen reading, but it is about 25% wider than Patrick Hand, so diagram labels stay in Patrick Hand to fit their boxes. Nothing loads from a font CDN. Handwriting never carries an answer, a finding, an Under review note or code.
+Five families, self-hosted from `fonts/` (Latin subsets, SIL Open Font License): Inter variable 400–700 (48KB), Source Serif 4 SemiBold (21KB), JetBrains Mono variable 400–500 (31KB) and Patrick Hand (63KB), plus Shantell Sans variable 400–600 for the reader's handwritten setting. Shantell Sans was designed for on-screen reading, but it is about 25% wider than Patrick Hand, so animated diagram labels stay in Patrick Hand to fit their boxes; static structure diagrams use Inter. Nothing loads from a font CDN. Handwriting never carries an answer, a finding, an Under review note or code.
 
 ## Shapes and spacing
 
@@ -73,7 +73,7 @@ See the **Motion and diagrams** section for the full rules. In short: interface 
 | Checkpoint | Q&A tab questions with an Answer heading. |
 | FlowDiagram | A short looping diagram that shows direction and blockage. |
 | FlowScene | One system stepped through, where packets land and change state. 17 authored lessons, including Binder, Room, Looper, Flow, build tooling and Media3. |
-| Illustrated state stepper | The 122 existing HTML sequences with explicit object choices, authored visual contents and numbered navigation. |
+| Illustrated state stepper | 119 HTML sequences with explicit object choices, authored visual contents and numbered navigation. |
 | WideDiagram | A static diagram that keeps a readable size and scrolls sideways on phones. |
 
 FlowDiagram, FlowScene and WideDiagram share one runtime, `components/bundle.js` (`window.Playbook`, no dependencies), and one stylesheet, `components/bundle.css`.
@@ -82,13 +82,13 @@ FlowDiagram, FlowScene and WideDiagram share one runtime, `components/bundle.js`
 
 - The text column is capped at `measure-text` and centred on a sheet, instead of spanning the space between the rails.
 - Body text defaults to Inter instead of the handwritten face; handwriting moves into diagrams.
-- Callouts lose their left accent bar and become tints with a capital label.
+- Callouts use a restrained role accent, clear label and tinted ground.
 - Flow diagrams animate packets along their connectors instead of showing static arrows, and each lesson's main mechanism becomes one stepped FlowScene instead of separate small visuals.
 
 ## Established defaults
 
 1. **Accent hue: green (default).** It keeps the playbook's identity. A blue or teal accent would need the `event` colour to change too, so the two directions stay distinct.
-2. **Title face: serif (default).** A serif title (Source Serif 4) keeps the current site's editorial feel; Inter at `displayLarge` would make it plainer and more product-like.
+2. **Title face: Inter.** Headings use the shared sans family for the AirBridge article hierarchy. Source Serif 4 remains available as a reading preference.
 3. **Default theme: light.** The reader can switch. Dark is a deep navy page (`canvas` #0a0f1e) with a slate sheet and two faint glows behind it (in the style of the AlgoInsight reference); every text and outline pair passes 4.5:1 and 3:1 on all three dark surfaces. The AlgoInsight reference is dark-first.
 
 ## Website-wide learning standard
@@ -97,7 +97,7 @@ The owner's [AirBridge architecture blog](https://swarnsingh.github.io/swaran-te
 
 Choose static diagrams, manual steps or animation according to what teaches the mechanism. The owner clarified on 27 October 2026 that beautiful static diagrams are sufficient where motion adds no explanation. There is no requirement to animate every topic or turn all existing state figures into full scenes. Use the [representation guide](motion.md#choose-the-representation-before-the-component) when refining a lesson.
 
-Rulebook section 20 applies the reference review across the website: consistent navigation and reading comfort, problem-first lessons, progressive detail, meaningful alternatives, and one shared visual language. Reusable behaviour lives in the components rather than individual preview copies. The 17 illustrated scenes use numbered step navigation, adaptive layouts, optional visual-key instructions and complete captions. All 122 additional state steppers now have explicitly chosen SVG actors, visible status changes, numbered navigation and a progress bar. These cover 545 objects across 107 lesson files. They retain their authored structure and are described as illustrated state sequences, separately from the 17 full scenes. See the [coverage report](../reviews/illustrated-coverage-2026-10-27.md).
+Rulebook section 20 applies the reference review across the website: consistent navigation and reading comfort, problem-first lessons, progressive detail, meaningful alternatives, and one shared visual language. Reusable behaviour lives in the components rather than individual preview copies. The 17 illustrated scenes use numbered step navigation, adaptive layouts, optional visual-key instructions and complete captions. The quantity-first pass illustrated 122 state steppers with 545 objects across 107 lesson files. The refinement converts three decision examples to static diagrams with all explanations visible, leaving 119 state steppers with 532 actors. They have explicitly chosen SVG actors, visible status changes, numbered navigation and a progress bar. They retain their authored structure and are described as illustrated state sequences, separately from the 17 full scenes. See the [coverage report](../reviews/illustrated-coverage-2026-10-27.md).
 
 The gallery is generated from the actual lesson sections in the same build, so changing a lesson or shared renderer changes its gallery sample too. Previous component preview HTML files are historical standalone samples; use the generated gallery to review the current design.
 

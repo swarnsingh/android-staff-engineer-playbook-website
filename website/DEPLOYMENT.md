@@ -1,18 +1,20 @@
 # Website source, checks and publication
 
-The website has one source repository: [swarnsingh/android-staff-engineer-playbook-website](https://github.com/swarnsingh/android-staff-engineer-playbook-website). Read [rulebook section 19](../content-rulebook.md#19-separate-website-repository-and-private-previews) before changing hosting. All LLMs and developers use the same repository, branch history, build tools and workflow.
+The website has one source repository: [swarnsingh/android-staff-engineer-playbook-website](https://github.com/swarnsingh/android-staff-engineer-playbook-website). Read [rulebook section 19](../content-rulebook.md#19-separate-website-repository-and-publication). All models and developers use this repository, its branch history, build tools and workflow.
 
-## Current hosting decision
+## Public GitHub Pages
 
-The repository is private. On 2026-10-26, GitHub reported `has_pages: false`; no GitHub Pages site is configured. Earlier Claude artifacts and the ChatGPT-hosted Kotlin reader are historical snapshots. Do not update them or create a replacement agent-specific hosting project.
+The owner approved public source and a public website on 27 October 2026, superseding the earlier private-source/private-preview decision. The original playbook repository remains private and unchanged. Historical Claude and ChatGPT previews are no longer publication targets.
 
-[GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages) can build directly from this repository. However, [private Pages access requires an organization using GitHub Enterprise Cloud](https://docs.github.com/en/enterprise-cloud@latest/pages/getting-started-with-github-pages/changing-the-visibility-of-your-github-pages-site). This is a personal repository. Keeping its source private does not make a Pages website private.
+Live URL: [Engineering Playbook](https://swarnsingh.github.io/android-staff-engineer-playbook-website/). Both learning paths and the design-system gallery belong to this deployment. No login is required to read the public website. The repository and rendered content are public.
 
-The owner confirmed on 2026-10-26 that both source and preview must remain private. The repository workflow therefore publishes a downloadable private Actions build artifact, with no Pages deployment job and no public deployment switch. A live private website remains unconfigured. It requires an owner-approved access-controlled hosting runtime connected to this repository; do not create another source repository or agent-hosted artifact to fill this gap.
+[`.github/workflows/website.yml`](../.github/workflows/website.yml) checks browser-script syntax, renders Mermaid diagrams, verifies source hashes and original-content preservation, and builds with `SITE_BASE=/android-staff-engineer-playbook-website/`. Pushes to `codex/android-completion` and `main` publish via GitHub Pages; PR runs build only. The current publication branch is `codex/android-completion` while PR #1 remains available for review. Configure Pages to use GitHub Actions, with its deployment environment permitting this branch. Future branch changes must update this guide, workflow and source-reference links together.
 
-## Reproduce the build locally
+The build writes `build-info.json` with repository, commit and Actions run. Deployment uses the built Pages artifact and GitHub OIDC, without a second source repository or stored publishing token. A successful build alone is not publication: verify the deployment job, live page responses, assets, both learning paths and deployed commit. Never deliver a ZIP or localhost address as the published website.
 
-Run from the repository root:
+## Reproduce and audit
+
+Run from this repository root:
 
 ```sh
 python3 -m venv .venv
@@ -22,20 +24,16 @@ python3 website/tools/prepare_browser_audit.py website/.cache/browser-qa
 python3 -m http.server 4179 --bind 127.0.0.1 --directory website/.cache/browser-qa
 ```
 
-Open `/audit.html` and start the full sweep. Also run `/motion-fixture.html` and `/binder-audit.html`. Every result must pass. The instrumented directory is disposable and must never be published. Build output is `website/dist/`; it is generated, not another source repository.
+Open `/audit.html` and start the 125-page sweep. Also run `/motion-fixture.html`, `/binder-audit.html` and `/refinement-audit.html`. Record raw failures and focused rechecks when a fix is needed. The landing page and gallery require separate responsive and route checks. The instrumented directory is disposable and must never be deployed. Build output is `website/dist/`, intentionally untracked.
 
-For a project-path build such as GitHub Pages:
+For the publication build:
 
 ```sh
 SITE_BASE=/android-staff-engineer-playbook-website/ .venv/bin/python website/scripts/build.py
 ```
 
-The browser-audit preparation command expects the root-path local build. Rebuild without `SITE_BASE` before local browser auditing.
+The browser-audit preparation command expects a root-path local build. Rebuild without `SITE_BASE` before preparing local browser audits. Complete the checks before pushing a publishing branch. Original-chapter corrections remain separate owner decisions.
 
-## Repository workflow
+## Troubleshoot publication
 
-[`.github/workflows/website.yml`](../.github/workflows/website.yml) builds the website on website changes in pull requests, `main`, and `codex/android-completion`, or on manual dispatch. It checks JavaScript syntax, renders Mermaid diagrams, verifies source hashes and original-content preservation, then packages the relative-link reader as a private Actions artifact named `website-private-preview-<commit>`. `build-info.json` identifies the repository, commit and Actions run. Download access follows the private repository's permissions; retention is 14 days and another run can recreate the artifact.
-
-The artifact includes instructions for running a local server after download. It is a verified build package, not a live hosted website. Record the source commit, Actions run URL and artifact outcome in the current handover. The workflow has no Pages deployment job, no source push to another hosting repository, and no publishing credentials.
-
-When the owner chooses a private runtime, add its deployment job to this workflow using the already-built output and repository secrets or supported identity federation. Verify returned access restrictions and deployed commit before reporting a live private URL. Preserve this repository as the only source and keep the same commit provenance.
+If deployment fails, inspect the failed job before rerunning. Check that Pages uses the workflow build type and that the `github-pages` environment allows the publication branch. If lessons load without styles, verify the project prefix in generated asset URLs. Compare the live provenance commit with the intended branch head before blaming browser caching. Keep failed runs and corrected audit evidence traceable in the current review report.

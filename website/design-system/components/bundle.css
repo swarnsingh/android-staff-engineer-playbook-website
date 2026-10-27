@@ -55,7 +55,7 @@
 .pb-pk.is-object .payload-fill, .pb-pk.is-object .return-cue { fill: var(--payload); stroke: var(--sheet); stroke-width: 1; }
 .pb-pk.is-object text { transform: translateY(-8px); }
 .pb-step-nav { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0 4px; }
-.pb-step-nav button { width: 36px; height: 36px; border: 1px solid var(--line-strong); border-radius: 50%; background: var(--sheet); color: var(--ink-muted); font: 650 13px var(--font-sans); cursor: pointer; }
+.pb-step-nav button { width: 44px; height: 44px; border: 1px solid var(--line-strong); border-radius: 50%; background: var(--sheet); color: var(--ink-muted); font: 650 13px var(--font-sans); cursor: pointer; }
 .pb-step-nav button[aria-current] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .pb-step-nav button:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 .pb-guide { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 12px; font: 13px/21px var(--font-sans); color: var(--ink-muted); }
@@ -111,7 +111,7 @@
 .pb-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px 12px; flex-wrap: wrap; margin-top: 10px; }
 .pb-bar p { margin: 0; flex: 1 1 240px; min-width: 0; font: 14px/21px var(--font-sans); color: var(--ink-muted); }
 .pb-btn { font: 600 13px/18px var(--font-sans); color: var(--ink); background: var(--sheet); border: 1.5px solid var(--line-strong);
-  border-radius: var(--radius-pill); padding: 7px 14px; min-height: 36px; cursor: pointer; }
+  border-radius: var(--radius-pill); padding: 7px 14px; min-height: 44px; cursor: pointer; }
 .pb-btn:hover { border-color: var(--accent); }
 .pb-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .pb-btn:disabled { opacity: .45; cursor: default; }
@@ -159,3 +159,5 @@ html.reduce-motion .pb-figure * { transition: none; }
 [data-theme="contrast"] .pb-figure, [data-theme="contrast"] .pb-paper { border: 1px solid var(--line); background-image: none; }
 [data-theme="contrast"] .sheet, [data-theme="contrast"] .callout, [data-theme="contrast"] .pb-check { background: transparent; border: 1px solid var(--line); }
 [data-theme="contrast"] .pb-node.is-warn > rect, [data-theme="contrast"] .pb-node.is-done > rect { fill: var(--sheet); stroke-width: 3; }
+
+@media(pointer:coarse),(max-width:640px){.pb-btn,.pb-seg button{min-height:48px}.pb-step-nav button{width:48px;height:48px}.stepper-buttons button{min-height:48px}.pb-controls,.stepper-buttons{gap:10px}}

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "scope": "First illustrated pass: object actors and authored state transitions; bespoke transfer choreography is separate.",
+  "scope": "Illustrated state figures selected for meaningful state comparisons. Static decision figures are tracked separately in representation reviews.",
   "figures": [
     {
       "path": "android/activity",
@@ -594,37 +594,6 @@
       ]
     },
     {
-      "path": "android/form-factors-matrix",
-      "figure": 0,
-      "nodes": [
-        {
-          "id": "q1",
-          "kind": "phone",
-          "role": "client"
-        },
-        {
-          "id": "q2",
-          "kind": "inspect",
-          "role": "runtime"
-        },
-        {
-          "id": "q3",
-          "kind": "graph",
-          "role": "runtime"
-        },
-        {
-          "id": "q4",
-          "kind": "worker",
-          "role": "runtime"
-        },
-        {
-          "id": "out",
-          "kind": "gate",
-          "role": "runtime"
-        }
-      ]
-    },
-    {
       "path": "android/fragment",
       "figure": 0,
       "nodes": [
@@ -953,32 +922,6 @@
       ]
     },
     {
-      "path": "android/kotlin-multiplatform/kmp-decision-matrix",
-      "figure": 0,
-      "nodes": [
-        {
-          "id": "n0",
-          "kind": "inspect",
-          "role": "runtime"
-        },
-        {
-          "id": "n1",
-          "kind": "parcel",
-          "role": "queue"
-        },
-        {
-          "id": "n2",
-          "kind": "phone",
-          "role": "client"
-        },
-        {
-          "id": "n3",
-          "kind": "gate",
-          "role": "runtime"
-        }
-      ]
-    },
-    {
       "path": "android/kotlin-multiplatform/kmp-observability-crash-symbolication",
       "figure": 0,
       "nodes": [
@@ -1282,32 +1225,6 @@
           "id": "n3",
           "kind": "phone",
           "role": "client"
-        }
-      ]
-    },
-    {
-      "path": "android/ktor-vs-retrofit",
-      "figure": 0,
-      "nodes": [
-        {
-          "id": "contract",
-          "kind": "document",
-          "role": "storage"
-        },
-        {
-          "id": "old",
-          "kind": "code",
-          "role": "runtime"
-        },
-        {
-          "id": "new",
-          "kind": "code",
-          "role": "runtime"
-        },
-        {
-          "id": "gate",
-          "kind": "gate",
-          "role": "runtime"
         }
       ]
     },

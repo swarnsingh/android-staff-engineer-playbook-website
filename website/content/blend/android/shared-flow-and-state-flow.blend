@@ -44,3 +44,6 @@ Both bugs come from the **delivery contract**: what happens to a value when nobo
 
 A `Channel`: point-to-point delivery. A SharedFlow would give each job to every subscriber.
 </details>
+
+<!-- @before Lifecycle-Safe Collection :: review -->
+The lifecycle gating of the direct effects collector in this section (SS1) is under technical review. A correction is pending the owner's approval.

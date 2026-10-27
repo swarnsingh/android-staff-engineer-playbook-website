@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 WEB = ROOT / 'website'
 OUT = WEB / 'dist'
 CACHE = WEB / '.cache'
-SOURCE_ROOT = 'https://github.com/swarnsingh/android-staff-engineer-playbook/blob/main/'
+SOURCE_ROOT = 'https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/codex/android-completion/'
 MD = MarkdownIt('commonmark', {'html': True}).enable(['table', 'strikethrough'])
 # Topic trees rendered as lessons, in site order. `phases` lists the guided-reading phases a pilot
 # renders (None renders the whole tree); chapters outside them keep linking to GitHub.
@@ -610,6 +610,7 @@ def design_gallery(asset_version):
         samples.append('<section class="demo"><h3>'+label+'</h3>'+scene[0]+'</section>')
     page=(DESIGN/'gallery.html').read_text().replace('{{swatches}}',swatches).replace('{{scenes}}',''.join(samples))
     for asset in ('styles.css','blend.css','theme.css','tokens.css','flow.css','flow.js','blend.js'):page=page.replace('"/'+asset+'"','"'+BASE+asset+'?v='+asset_version+'"')
+    page=page.replace('href="/android/"','href="'+route('android.md')+'"')
     destination=OUT/'design-system';destination.mkdir(exist_ok=True)
     (destination/'index.html').write_text(page)
 
@@ -670,6 +671,9 @@ def build(skip_diagrams=False):
         destination=OUT/route(path)[len(BASE):].strip('/')/'index.html';destination.parent.mkdir(parents=True,exist_ok=True);destination.write_text(html)
         report['url']=route(path);reports.append(report)
         if path=='kotlin.md':(OUT/'index.html').write_text(html)
+    home=(WEB/'templates/home.html').read_text().replace('{{base}}',BASE).replace('{{version}}',asset_version).replace('{{android_count}}',str(len(ORDER['android']))).replace('{{kotlin_count}}',str(len(ORDER['kotlin'])))
+    (OUT/'index.html').write_text(home)
+    (OUT/'.nojekyll').touch()
     for name in ['styles.css','blend.css','theme.css','app.js','blend.js','coroutines.js','lesson-model.js']:
         shutil.copy2(WEB/name,OUT/name)
     # The design system is the source for tokens, the diagram runtime and the self-hosted fonts.

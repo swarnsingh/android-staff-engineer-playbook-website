@@ -1,6 +1,6 @@
 # Website continuation report — 2026-10-26
 
-Start here when continuing the work from handover `09836cf`. The only website source repository is `swarnsingh/android-staff-engineer-playbook-website`, on branch `codex/android-completion`. Read [rulebook section 19](../../content-rulebook.md#19-separate-website-repository-and-private-previews), [the build guide](../README.md), [deployment](../DEPLOYMENT.md), and [round-4 findings](design-system-review-round4.md).
+Start here when continuing the work from handover `09836cf`. The only website source repository is `swarnsingh/android-staff-engineer-playbook-website`, on branch `codex/android-completion`. Read [rulebook section 19](../../content-rulebook.md#19-separate-website-repository-and-publication), [the build guide](../README.md), [deployment](../DEPLOYMENT.md), and [round-4 findings](design-system-review-round4.md).
 
 ## Completed source work
 

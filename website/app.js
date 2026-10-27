@@ -1,15 +1,17 @@
 'use strict';
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
-const sourceRoot = 'https://github.com/swarnsingh/android-staff-engineer-playbook/blob/main/';
+const sourceRoot = 'https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/codex/android-completion/';
 const escapeHtml = text => text.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 
-// The source text remains readable without this optional highlighting pass.
-const tokenPattern = /("[^"\n]*"|\/\/[^\n]*|\b(?:import|fun|suspend|val|var|class|return|if|else|try|catch|finally|throw|case|switch|new|public|final|private|object)\b|\b(?:true|false|null|\d[\d_]*)\b|\b[A-Za-z_][\w]*(?=\s*\())/g;
+// Highlight tokens once, preserving every source character and escaping markup.
+const keywordNames = 'import package fun suspend val var class interface return if else try catch finally throw case switch new public final private protected internal object data sealed inline reified crossinline noinline override open abstract enum annotation companion constructor init by get set where is as in out when for while do break continue typealias expect actual const lateinit this super static void'.split(' ');
+const keywordSet = new Set(keywordNames);
+const tokenPattern = new RegExp('(\"\"\"[\\s\\S]*?\"\"\"|\"(?:\\\\.|[^\"\\\\\\n])*\"|\'(?:\\\\.|[^\'\\\\\\n])*\'|\\/\\*[\\s\\S]*?\\*\\/|\\/\\/[^\\n]*|@(?:\\w+:)?(?:\\w+\\.)*\\w+|\\b(?:'+keywordNames.join('|')+')\\b|\\b(?:true|false|null|\\d[\\d_]*(?:\\.\\d[\\d_]*)?)\\b|\\b[A-Z][A-Za-z0-9_]*\\b|\\b[A-Za-z_]\\w*(?=\\s*\\())','g');
 $$('code.highlight').forEach(code => {
   code.innerHTML = code.textContent.split(tokenPattern).map((part,index) => {
     if (!(index % 2)) return escapeHtml(part);
-    const kind = part.startsWith('"') ? 'string' : part.startsWith('//') ? 'comment' : /^(true|false|null|\d)/.test(part) ? 'number' : /^(import|fun|suspend|val|var|class|return|if|else|try|catch|finally|throw|case|switch|new|public|final|private|object)$/.test(part) ? 'key' : 'call';
+    const kind = part.startsWith('"') || part.startsWith("'") ? 'string' : part.startsWith('//') || part.startsWith('/*') ? 'comment' : part.startsWith('@') ? 'annotation' : /^(true|false|null|\d)/.test(part) ? 'number' : keywordSet.has(part) ? 'key' : /^[A-Z]/.test(part) ? 'type' : 'call';
     return `<span class="syntax-${kind}">${escapeHtml(part)}</span>`;
   }).join('');
 });
@@ -230,6 +232,26 @@ const sectionObserver=new IntersectionObserver(entries=>{
   }});
 },{rootMargin:'-15% 0px -65% 0px'});
 $$('.lesson-section').forEach(section=>sectionObserver.observe(section));
+
+// Scroll position, not a claim that the reader has completed or understood a lesson.
+const readingProgress=$('.reading-progress');
+let progressFrame=0;
+function scheduleReadingProgress(){
+  if(progressFrame||!readingProgress)return;
+  progressFrame=requestAnimationFrame(()=>{
+    progressFrame=0;
+    const panel=$('#panel-'+activeView);if(!panel)return;
+    const box=panel.getBoundingClientRect(),top=$('.topbar').getBoundingClientRect().bottom;
+    const range=box.height-Math.max(1,innerHeight-top);
+    const value=Math.round(Math.max(0,Math.min(1,range>0?(top-box.top)/range:(box.top<=top?1:0)))*100);
+    readingProgress.firstElementChild.style.width=value+'%';readingProgress.setAttribute('aria-valuenow',value);
+  });
+}
+window.addEventListener('scroll',scheduleReadingProgress,{passive:true});
+window.addEventListener('resize',scheduleReadingProgress);
+if(window.ResizeObserver)new ResizeObserver(scheduleReadingProgress).observe($('.reading-content'));
+scheduleReadingProgress();
+
 
 function chapterLink(chapter){
   const active=chapter.path===document.body.dataset.source;

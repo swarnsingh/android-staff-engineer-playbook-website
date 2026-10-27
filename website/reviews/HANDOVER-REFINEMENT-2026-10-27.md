@@ -1,5 +1,8 @@
 # Handover: AirBridge-style reader refinement
 
+**Superseded continuation instructions, 27 October 2026:** The owner subsequently approved making the website repository and GitHub Pages website public. The AirBridge shared presentation pass is now implemented; three decision figures are static, with 119 illustrated state figures and 17 temporal scenes retained. Use [the completed refinement report](AIRBRIDGE-REFINEMENT-2026-10-27.md) and [deployment guide](../DEPLOYMENT.md) for current checks, publication and live links. The original playbook repository remains private. The restart automation remains PAUSED. Older privacy, download-only and pending-implementation statements below are historical and must not override this update.
+
+
 This is the continuation point after the owner reported low remaining usage and requested an automatic restart after the usage window renews. The implemented illustrated pass is complete; the subsequent article-experience refinement has been discussed and documented, but has not been implemented. Continue from the existing work rather than rebuilding the website or rewriting every chapter.
 
 ## Repository and publication
@@ -40,4 +43,4 @@ After changing shared presentation, audit both trees at phone, tablet and deskto
 
 After this handover was written, the owner pasted two review reports and asked to continue. Read both complete files under `website/reviews/incoming/`: `2026-10-27-topic-audit.txt` and `2026-10-27-website-review.txt`, plus `2026-10-27-review-status.txt`. They cover Android/Kotlin technical claims, the SharedFlow scene, mobile targets, syntax highlighting and longer-term suggestions. They are unverified review inputs, not proof of an all-topic audit or blanket approval of original-chapter replacements. Map them to the existing findings/triage and verify each substantive claim; avoid blindly repeating categorical claims or adding a third Channel mode just to match an old heading. The confirmed SharedFlow heading was changed to name its two actual modes. Other substantive recommendations remain to assess.
 
-An active one-time thread heartbeat, `resume-playbook-refinement`, is scheduled for 05:35 Asia/Calcutta on 27 October 2026, following the owner's request to restart after roughly 3 hours 15 minutes. Resume this same branch and PR #1; the owner should not need to send another continue prompt. Check for newer work before acting so the scheduled run does not duplicate changes.
+The owner subsequently cancelled the `resume-playbook-refinement` heartbeat. It is PAUSED and must not be re-enabled without a new request. The owner asked to continue the review directly, fix and self-review the remaining work, then deliver a real hosted website URL rather than a downloadable package. Resume this same branch and PR #1. Check for newer instructions before acting.

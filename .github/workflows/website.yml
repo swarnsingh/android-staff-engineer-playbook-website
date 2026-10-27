@@ -1,4 +1,4 @@
-name: Website build and private preview
+name: Website review and GitHub Pages
 
 on:
   pull_request:
@@ -36,15 +36,17 @@ jobs:
           node --check website/tools/browser_audit_runner.js
           node --check website/tools/motion_audit_runner.js
           node --check website/tools/binder_audit_runner.js
+          node --check website/tools/refinement_audit_runner.js
       - uses: actions/cache@v4
         with:
           path: website/.cache/diagrams
           key: website-diagrams-${{ runner.os }}-${{ hashFiles('website/scripts/build.py', 'android/**/*.md', 'kotlin/**/*.md') }}
       - name: Build and verify original chapter preservation
         env:
+          SITE_BASE: /android-staff-engineer-playbook-website/
           MERMAID_RENDERER: npx --yes @mermaid-js/mermaid-cli@11.16.0 --puppeteerConfigFile .github/puppeteer-config.json
         run: python website/scripts/build.py
-      - name: Record source commit in the build
+      - name: Record build provenance
         run: |
           python - <<'PY'
           import json, os, pathlib
@@ -54,14 +56,24 @@ jobs:
               'run': os.environ['GITHUB_SERVER_URL']+'/'+os.environ['GITHUB_REPOSITORY']+'/actions/runs/'+os.environ['GITHUB_RUN_ID']
           }, indent=2)+'\n')
           PY
-      - name: Prepare a relative-link private review build
-        run: python website/tools/make_artifact_preview.py website/dist website/.cache/private-preview/site
-      - name: Include review instructions and provenance
-        run: |
-          cp website/PRIVATE-PREVIEW.md website/.cache/private-preview/README.md
-          cp website/dist/build-info.json website/.cache/private-preview/build-info.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-pages-artifact@v3
         with:
-          name: website-private-preview-${{ github.sha }}
-          path: website/.cache/private-preview
-          retention-days: 14
+          path: website/dist
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: github-pages-publication
+      cancel-in-progress: false
+    steps:
+      - name: Publish verified website
+        id: deployment
+        uses: actions/deploy-pages@v4
