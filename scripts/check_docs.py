@@ -16,8 +16,9 @@ Checks (each maps to a defect class that has actually occurred in this repo):
                                   last-checked date is older than STALE_DAYS. Never fails
                                   the build: the passage of time must not break unrelated
                                   PRs. It nags until the row is re-verified and re-dated.
-  7. Answer-key coverage        — existing debt is warning-only while topics migrate, but
-                                  every present key must answer each numbered question once.
+  7. Question/answer coverage   — paired questions need an immediate nonempty answer;
+                                  existing separate keys retain their ordinal checks.
+                                  Legacy missing-key debt remains warning-only.
   8. Guided-index coverage     — every topic file appears in its tree's parent sequence.
 
 Exit code 0 = all clean; 1 = at least one violation (CI fails).
@@ -137,6 +138,85 @@ def numbered_ordinals(section: str) -> list[int]:
     ]
 
 
+def root_section(text: str, heading: str) -> list | None:
+    """Read an H2 section using Markdown blocks, excluding fenced/quoted headings."""
+    tokens = MARKDOWN.parse(text)
+    for index, token in enumerate(tokens):
+        if (token.type == "heading_open" and token.tag == "h2"
+                and token.level == 0 and tokens[index + 1].content == heading):
+            start = index + 3
+            end = next((i for i in range(start, len(tokens))
+                        if tokens[i].type == "heading_open" and tokens[i].level == 0
+                        and tokens[i].tag in {"h1", "h2"}), len(tokens))
+            return tokens[start:end]
+    return None
+
+
+def question_answer_coverage(text: str) -> tuple[bool, list[str]]:
+    """Accept adjacent Question/Answer headings and legacy numbered answer keys.
+
+    Return warning-only legacy missing-key debt separately from malformed coverage.
+    Only dedicated Probing Questions are inspected; ordinary checklists stay lists.
+    """
+    questions = root_section(text, "Probing Questions")
+    if not questions:
+        return False, []
+    headings = [(i, token.tag, questions[i + 1].content)
+                for i, token in enumerate(questions)
+                if token.type == "heading_open" and token.level == 0]
+    paired = [(i, name) for i, tag, name in headings
+              if tag == "h3" and re.match(r"^Question(?:\s|$)", name, re.I)]
+    has_answer_heading = any(tag == "h4" and name.casefold() == "answer"
+                             for _, tag, name in headings)
+    if paired or has_answer_heading:
+        errors = []
+        numbers = []
+        if not paired:
+            return False, ["paired answers have no numbered Question headings"]
+        if root_section(text, "Answer Key") is not None:
+            errors.append("paired questions also contain a separate Answer Key")
+        if any(i < paired[0][0] and tag == "h4" and name.casefold() == "answer"
+               for i, tag, name in headings):
+            errors.append("Answer heading appears before the first Question")
+        for start, name in paired:
+            match = re.fullmatch(r"Question\s+(\d+)(?:\s*[:.—-]\s*(.+))?", name, re.I)
+            numbers.append(int(match.group(1)) if match else None)
+            end = next((i for i, tag, _ in headings if i > start and tag == "h3"), len(questions))
+            answers = [i for i, tag, title in headings
+                       if start < i < end and tag == "h4" and title.casefold() == "answer"]
+            if len(answers) != 1:
+                errors.append(f"{name}: expected one immediate Answer heading, found {len(answers)}")
+                continue
+            answer = answers[0]
+            if any(start < i < answer for i, _, _ in headings):
+                errors.append(f"{name}: Answer must be the next heading after the question")
+            meaningful = lambda blocks: any(
+                t.type in {"inline", "fence", "code_block"} and t.content.strip()
+                and not (i and blocks[i - 1].type == "heading_open")
+                for i, t in enumerate(blocks))
+            if not (match and match.group(2)) and not meaningful(questions[start + 3:answer]):
+                errors.append(f"{name}: question text is empty")
+            if not meaningful(questions[answer + 3:end]):
+                errors.append(f"{name}: answer text is empty")
+        expected = list(range(1, len(paired) + 1))
+        if numbers != expected:
+            errors.append(f"paired question numbers {numbers}; expected {expected}")
+        return False, errors
+
+    # Keep the legacy contract: every present numbered key covers each numbered
+    # question exactly once, while wholly absent keys remain migration warnings.
+    answers = root_section(text, "Answer Key")
+    if answers is None:
+        return True, []
+    ordinals = lambda blocks: [int(t.info) for t in blocks if t.type == "list_item_open"
+                              and t.level == 1 and t.markup in {".", ")"}]
+    question_numbers, answer_numbers = ordinals(questions), ordinals(answers)
+    expected = list(range(1, len(question_numbers) + 1))
+    if question_numbers != expected or answer_numbers != expected:
+        return False, [f"questions {question_numbers}, answers {answer_numbers}; expected {expected}"]
+    return False, []
+
+
 def currency_warnings() -> list[str]:
     """Warn-only: watchlist rows in milestones.md older than STALE_DAYS."""
     warnings = []
@@ -229,31 +309,10 @@ def main() -> int:
         for m in re.finditer(r"\*TODO:[^*]*\*|(?<![\w/])TBD(?![\w/])", prose):
             todos.append(f"{path}: {m.group(0)[:70]}")
 
-        questions = re.search(
-            r"^## Probing Questions\s*$(.*?)(?=^## |\Z)",
-            text,
-            flags=re.MULTILINE | re.DOTALL,
-        )
-        if questions:
-            answer_key = re.search(
-                r"^## Answer Key\s*$(.*?)(?=^## |\Z)",
-                text,
-                flags=re.MULTILINE | re.DOTALL,
-            )
-            if not answer_key:
-                missing_answer_keys.append(path)
-            else:
-                question_ordinals = numbered_ordinals(questions.group(1))
-                answer_ordinals = numbered_ordinals(answer_key.group(1))
-                expected_ordinals = list(range(1, len(question_ordinals) + 1))
-                if (
-                    question_ordinals != expected_ordinals
-                    or answer_ordinals != expected_ordinals
-                ):
-                    answer_key_mismatches.append(
-                        f"{path}: questions {question_ordinals}, answers {answer_ordinals}; "
-                        f"expected {expected_ordinals}"
-                    )
+        missing_key, coverage_problems = question_answer_coverage(text)
+        if missing_key:
+            missing_answer_keys.append(path)
+        answer_key_mismatches.extend(f"{path}: {problem}" for problem in coverage_problems)
 
         if path.removeprefix("./") in TREE_INDEXES:
             if not re.search(r"^## Guided Reading Sequence\s*$", text, flags=re.MULTILINE):
@@ -275,7 +334,7 @@ def main() -> int:
         ("Link text/target mismatches (stale redirects)", mismatches),
         ("Unfinished-content markers (TODO/TBD)", todos),
         ("Thin content files (expand, or allowlist with a reason)", thin),
-        ("Answer keys whose numbered answers do not match their questions", answer_key_mismatches),
+        ("Question/answer coverage mismatches", answer_key_mismatches),
         ("Tree indexes without a Guided Reading Sequence", unordered_indexes),
         ("Topic files missing from their guided tree index", unindexed_topics),
     ]:
@@ -301,7 +360,7 @@ def main() -> int:
             "probing questions but no answer key (warning only)"
         )
     else:
-        print("✓ Probing questions: every topic has an answer key")
+        print("✓ Probing questions: paired answers or legacy answer keys are present")
 
     return 1 if failed else 0
 

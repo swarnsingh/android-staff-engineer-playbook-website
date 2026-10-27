@@ -56,7 +56,7 @@ For Android, consult relevant sections of the owner's *Manifest Android Intervie
 
 ### Content and Q&A have separate jobs
 
-For **both Kotlin and Android**, the Content tab carries the explanation, code and visual walkthroughs. Dedicated probing questions, answers, review checklists and added question checkpoints belong in the Q&A tab only in the interactive reader. Each answer starts below a clear **Answer** heading on a new line. Preserve every original question and answer; move the existing blocks rather than duplicating them. A rhetorical question that develops the lesson is still part of Content. The complete static chapter remains a readable fallback when JavaScript is unavailable. Test both activated tabs and deep links, not just the default Content view.
+For **every topic tree**, including future subjects beyond Kotlin and Android, the Content tab carries the explanation, code and visual walkthroughs. Dedicated probing questions, answers, review checklists and added question checkpoints belong in the Q&A tab only in the interactive reader. Place each question immediately before its own answer, with a clear **Answer** heading on a new line. Do not send the reader to a separate answer key or require scrolling back to recover the question. New source material uses adjacent question/answer sections; the shared reader pairs legacy numbered lists without duplicating or abbreviating their text. Checklists remain checklists rather than acquiring invented answers. Preserve every original question and answer; move the existing blocks rather than duplicating them. A rhetorical question that develops the lesson is still part of Content. The complete static chapter remains a readable fallback when JavaScript is unavailable. Test both activated tabs and deep links, not just the default Content view.
 
 These are authoring routes, not new repository file kinds. Select the route that fits the existing canonical/application/decision/blueprint owner. State a short rationale during review when choosing an unusual structure; do not add boilerplate justification to every reader-facing page.
 
@@ -272,7 +272,7 @@ The website page for a chapter is a blend of two layers:
 1. **The original chapter, rendered in full.** Every heading, paragraph, list item, table row, code block and diagram appears, in the original order. `website/scripts/check_preservation.py` runs on every build and fails it if any original unit is missing, out of order, repeated fewer times than in the Markdown, hidden or folded away, or if unlabelled text appears among the original blocks. Heading levels are checked, and diagram disclosure exemptions apply only to actual Mermaid source. It tests itself against those cases first. Browser CSS visibility is verified separately with the read-only audit in `website/scripts/browser_preservation.js`; the static build does not evaluate a browser CSS cascade. The original order changes only when the owner approves a specific move.
 2. **An added teaching layer** in website-only files (`website/content/blend/<chapter>.blend`): a problem-first opening story, plain-language guides before dense passages, designed diagrams, step-through animations, checkpoints with answers, bridges between sections, and staff-level framing. Every added fragment is visibly labelled ("Start here", "In plain words", "See it", "Step through it", "Check yourself" and similar) so readers can always tell the original from the additions.
 
-**Corrections** to original text are also website-only. They live in `website/content/corrections-*.json`, each with the exact original text, the replacement, a reason and sources. A correction is applied only after the owner approves it (`"status": "approved"`), and an applied correction must be visibly marked on the page: the build highlights the corrected words where it safely can and adds a "Corrected on this website" note to the section with the reason, the original wording and the sources. Wording or style rewrites are not corrections and are not applied.
+**Corrections** to original text are also website-only. They live in `website/content/corrections-*.json`, each with the exact original text, the replacement, a reason and sources. A correction is applied only after the owner approves it (`"status": "approved"`), and an applied correction reads as the current lesson text. Owner decision, 2026-10-28: remove repeated correction notices and inline correction highlighting from the main article. Retain each correction, its reason, official sources and original wording in the repository and optional technical correction history under About this lesson. This supersedes the earlier visible-marking rule. Wording or style rewrites are not corrections and are not applied.
 
 **Diagrams.** Original Mermaid or text diagrams may be redrawn as designed, theme-aware visuals that reflow on phones. The original diagram stays available beside the redraw ("Original diagram from the chapter"), so it is never lost.
 
@@ -292,6 +292,10 @@ How to build, preview and continue this work — including the blend file format
 <a id="19-separate-website-repository-and-private-previews"></a>
 
 ## 19. Separate website repository and publication
+
+### Website UX publication, 2026-10-28
+
+The owner approved completing the UX review with subagents and publishing the verified result. Website PR #1 is merged; `main` is the current publication branch and source-reference target. Apply this presentation work in the existing website repository and preserve the canonical corrected content. The later code-readability request includes fixing fenced examples inside lists throughout the site.
 
 ### Merged-source synchronization, 2026-10-27
 
@@ -331,6 +335,18 @@ Preservation has two complementary checks: the static build verifies original un
 For actor-style examples, test service-local timeouts separately from cancellation of the worker or caller. Actor shutdown is an ordinary failure for a caller that remains active; do not accidentally cancel that caller by forwarding the actor’s cancellation exception. Before accepting a value-class identity explanation, compile the exact operand types: `===` is prohibited for two value-class operands even though reference identity can be observed after boxing as `Any`. Do not render a proposed correction as an unmarked teaching replacement while the original contradictory example remains unapproved; retain such fragments in review files until approval.
 
 ## 20. Website-wide learning experience
+
+### Learning navigation and diagram interactions
+
+Owner-approved UX refinement, 2026-10-27:
+
+- Learning-path pages prioritise choosing a phase and starting a chapter. Lesson-specific tabs and save controls belong on lessons, and tabs appear only when they contain meaningful material.
+- Curriculum navigation defaults to the current Android or Kotlin track. Make the complete catalog an explicit choice, label title/path search scope and mark external destinations.
+- Distinguish curriculum navigation, the current-page outline and the next lesson. Retain the complete original chapter and no-JavaScript fallback; simplified controls must not discard questions, answers, sources or explanations.
+- Keep the current diagram state, caption and controls together. Use consistent Previous, Next and Reset labels for equivalent actions; offer Play/Pause for temporal playback. Put reusable help and the full textual transcript in an optional disclosure while keeping the current-step explanation visible.
+- Fenced code uses one continuous code surface in every context, including nested lists. Inline-code chip styling must never apply to a fenced example. Keep code headers concise; retain specific example assumptions near the explanation.
+- Keep editorial provenance, technical correction history and original-source details in an About disclosure. Corrected explanations read normally, without repeated review notices or highlighted replacements. Published reader chrome must not show draft labels.
+- Verify both learning paths and representative lessons at phone, tablet and desktop widths, including keyboard operation, motion preferences, touch controls and enlarged text. Record evidence and limits before publication.
 
 ### Primary article reference: AirBridge
 

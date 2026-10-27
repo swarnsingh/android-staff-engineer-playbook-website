@@ -1,0 +1,368 @@
+{
+  "done": true,
+  "ok": true,
+  "checks": [
+    {
+      "name": "/ 320 light",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 320 dark",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 320 sepia",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 320 contrast",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 390 light",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 390 dark",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 390 sepia",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 390 contrast",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 768 light",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 768 dark",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 768 sepia",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 768 contrast",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 1181 light",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 1181 dark",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 1181 sepia",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 1181 contrast",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 1280 light",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 1280 dark",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 1280 sepia",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 1280 contrast",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 1439 light",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 1439 dark",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 1439 sepia",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 1439 contrast",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 1440 light",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 1440 dark",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 1440 sepia",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ 1440 contrast",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/ navigation",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 320 light",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 320 dark",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 320 sepia",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 320 contrast",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 390 light",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 390 dark",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 390 sepia",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 390 contrast",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 768 light",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 768 dark",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 768 sepia",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 768 contrast",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 1181 light",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 1181 dark",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 1181 sepia",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 1181 contrast",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 1280 light",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 1280 dark",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 1280 sepia",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 1280 contrast",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 1439 light",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 1439 dark",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 1439 sepia",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 1439 contrast",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 1440 light",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 1440 dark",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 1440 sepia",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ 1440 contrast",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/design-system/ navigation",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/android/compose/form-factors-matrix/ static decision map",
+      "ok": true,
+      "problems": [],
+      "cards": 5
+    },
+    {
+      "name": "/android/kotlin-multiplatform/kmp-decision-matrix/ static decision map",
+      "ok": true,
+      "problems": [],
+      "cards": 4
+    },
+    {
+      "name": "/android/networking-and-security/ktor-vs-retrofit/ static decision map",
+      "ok": true,
+      "problems": [],
+      "cards": 5
+    },
+    {
+      "name": "/android/os-internals/the-binder/ code text preservation",
+      "ok": true,
+      "problems": [],
+      "blocks": 3,
+      "annotations": 1,
+      "types": 7
+    },
+    {
+      "name": "/android/os-internals/the-binder/ content reading position",
+      "ok": true,
+      "problems": [],
+      "start": 0,
+      "end": 100
+    },
+    {
+      "name": "/android/os-internals/the-binder/ qa reading position",
+      "ok": true,
+      "problems": [],
+      "start": 0,
+      "end": 100
+    },
+    {
+      "name": "/android/os-internals/the-binder/ phone control targets",
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "/android/concurrency/shared-flow-and-state-flow/ code text preservation",
+      "ok": true,
+      "problems": [],
+      "blocks": 30,
+      "annotations": 5,
+      "types": 105
+    },
+    {
+      "name": "/android/concurrency/shared-flow-and-state-flow/ content reading position",
+      "ok": true,
+      "problems": [],
+      "start": 0,
+      "end": 100
+    },
+    {
+      "name": "/android/concurrency/shared-flow-and-state-flow/ qa reading position",
+      "ok": true,
+      "problems": [],
+      "start": 0,
+      "end": 100
+    },
+    {
+      "name": "/android/concurrency/shared-flow-and-state-flow/ phone control targets",
+      "ok": true,
+      "problems": []
+    }
+  ]
+}

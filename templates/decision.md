@@ -34,11 +34,17 @@ Name the evidence, experiments, owners, and cross-team consequences required bef
 
 ## Probing Questions
 
-Questions that force the reader to apply the criteria to different contexts.
+Write each dedicated question with its answer immediately below it. Continue the numbered Question headings for additional pairs; do not collect answers in a separate key.
 
-## Answer Key
+### Question 1
 
-Give concise numbered answer criteria. Context-dependent questions should state what evidence would change the choice.
+Write a question that tests reasoning about this topic.
+
+#### Answer
+
+Explain the decision criteria and the evidence that would change the choice.
+
+---
 
 ## Further Reading
 

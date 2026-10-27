@@ -1,0 +1,18 @@
+{
+  "pages": 125,
+  "layouts": 1736,
+  "original_question_answer_pairs": 928,
+  "code_checks": 4732,
+  "scene_states": 1808,
+  "illustrated_states": 8880,
+  "failures": 0,
+  "static_original_units": 15564,
+  "static_tampering_fixtures": 22,
+  "qa_and_content_negative_fixture_checks": 31,
+  "focused_ux_checks": 278,
+  "binder_checks": 448,
+  "motion_checks": 13,
+  "refinement_checks": 69,
+  "docs_checker_tests": 31,
+  "renderer_tests": 3
+}

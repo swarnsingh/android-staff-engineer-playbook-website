@@ -39,3 +39,5 @@ How this architecture scales — both up (load) and out (new tenants/features).
 ## Release Strategy
 
 How changes are rolled out safely. Link to `release-engineering/` canonical files.
+
+> If dedicated probing or review questions help this topic, put each answer immediately below its question, using `### Question 1` and `#### Answer` under `## Probing Questions`. Ordinary operational checklists do not require an answer per item.

@@ -1,9 +1,66 @@
 #!/usr/bin/env python3
 """Copy a built site into a disposable, instrumented browser QA directory."""
 from pathlib import Path
-import argparse, hashlib, json, shutil
+from html.parser import HTMLParser
+import argparse, hashlib, json, shutil, subprocess, sys
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+class SourceNode:
+    def __init__(self, tag='', attrs=()):
+        self.tag, self.attrs, self.children = tag, dict(attrs), []
+
+    def walk(self):
+        yield self
+        for child in self.children:
+            if isinstance(child, SourceNode): yield from child.walk()
+
+    def text(self):
+        # Presentation labels cannot establish that an original answer survived.
+        if self.tag in {'script','style'} or set(self.attrs.get('class','').split()) & {'blend','correction-note','code-header','qa-answer-label'}: return ''
+        return ''.join(child.text() if isinstance(child, SourceNode) else child for child in self.children)
+
+
+class SourceHTML(HTMLParser):
+    def __init__(self, html):
+        super().__init__(convert_charrefs=True)
+        self.root = SourceNode(); self.stack = [self.root]; self.feed(html)
+
+    def handle_starttag(self, tag, attrs):
+        node=SourceNode(tag,attrs);self.stack[-1].children.append(node)
+        if tag not in {'area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'}: self.stack.append(node)
+
+    def handle_endtag(self, tag):
+        for index in range(len(self.stack)-1,0,-1):
+            if self.stack[index].tag==tag:
+                self.stack=self.stack[:index];break
+
+    def handle_data(self, value): self.stack[-1].children.append(value)
+
+
+def source_pair_manifest(output, pages):
+    """Read unpaired static HTML, independently of the runtime pairing metadata.
+
+    The static build has already checked its source units. Exclude presentation
+    chrome so copying code or simplifying a header cannot alter answer identity.
+    """
+    import re
+    digest=lambda node:hashlib.sha256(re.sub(r'\s+',' ',node.text()).strip().encode()).hexdigest()
+    manifest={}
+    for page in pages:
+        dom=SourceHTML((output/page['url'].strip('/')/'index.html').read_text())
+        sections={node.attrs.get('id'):node for node in dom.root.walk() if node.tag=='section'}
+        if 'section-probing-questions' not in sections or 'section-answer-key' not in sections: continue
+        lists=[]
+        for key in ['section-probing-questions','section-answer-key']:
+            lists.append(next((node for node in sections[key].children if isinstance(node,SourceNode) and node.tag=='ol'),None))
+        if not all(lists):raise ValueError('Missing original question/answer list: '+page['source'])
+        questions,answers=([node for node in group.children if isinstance(node,SourceNode) and node.tag=='li'] for group in lists)
+        first=int(lists[0].attrs.get('start','1'))
+        if len(questions)!=len(answers) or first!=int(lists[1].attrs.get('start','1')):raise ValueError('Question/answer numbering mismatch: '+page['source'])
+        manifest[page['source']]=[{'number':first+index,'question_sha256':digest(question),'answer_sha256':digest(answer)} for index,(question,answer) in enumerate(zip(questions,answers))]
+    return manifest
 
 
 def main():
@@ -26,6 +83,8 @@ def main():
     (fx/'audit.js').write_text('window.__inspectOriginalContent = '+audit+';\n')
     shutil.copy2(ROOT/'website/tools/browser_audit_runner.js',fx/'run.js')
     pages = json.loads((output/'coverage/pages.json').read_text())
+    pairs = source_pair_manifest(output,pages)
+    (output/'coverage/qa-pairs.json').write_text(json.dumps(pairs,separators=(',',':'))+'\n')
     targets = [p['url'] for p in pages if args.tree == 'all' or p['source'].startswith(args.tree+'/') or p['source']==args.tree+'.md']
     for page in output.rglob('index.html'):
         page.write_text(page.read_text().replace('<head>', '<head><script>window.__qaErrors=[];addEventListener(\"error\",e=>{if(e.message)window.__qaErrors.push(e.message)});addEventListener(\"unhandledrejection\",e=>window.__qaErrors.push(String(e.reason)));</script>').replace('</body>',f'<script src="/fx/audit.js?v={version}"></script></body>'))
@@ -53,8 +112,13 @@ def main():
     (output/'binder-audit.html').write_text('<!doctype html><title>Binder reading matrix</title><button id="binder-start">Start Binder matrix</button><pre id="binder-results">Not started</pre><iframe id="binder-frame" style="width:1440px;height:900px;position:fixed;left:0;top:150px;opacity:.01;pointer-events:none"></iframe><script src="/fx/binder.js"></script><script>document.getElementById("binder-start").onclick=runBinderAudit</script>')
     shutil.copy2(ROOT/'website/tools/refinement_audit_runner.js',fx/'refinement.js')
     (output/'refinement-audit.html').write_text('<!doctype html><title>Reader refinement checks</title><button id="refinement-start">Start refinement checks</button><pre id="refinement-results">Not started</pre><iframe style="width:390px;height:900px;position:fixed;left:0;top:150px;opacity:.01;pointer-events:none"></iframe><script src="/fx/refinement.js"></script><script>document.getElementById("refinement-start").onclick=runRefinementAudit</script>')
+    shutil.copy2(ROOT/'website/tools/ux_audit_runner.js',fx/'ux.js')
+    (output/'ux-audit.html').write_text('<!doctype html><title>Reader UX checks</title><button id="ux-start">Start UX checks</button><pre id="ux-results">Not started</pre><iframe style="width:390px;height:900px;position:fixed;left:0;top:150px;opacity:.01;pointer-events:none"></iframe><script src="/fx/ux.js"></script><script>document.getElementById("ux-start").onclick=runUXAudit</script>')
+    shutil.copy2(ROOT/'website/tools/qa_fixture_runner.js',fx/'qa-fixtures.js')
+    subprocess.run([sys.executable,str(ROOT/'website/scripts/make_browser_fixtures.py'),str(output/'fixtures')],check=True)
+    (output/'qa-fixtures.html').write_text('<!doctype html><title>Question answer preservation regressions</title><button id="qa-fixture-start">Start Q&amp;A regressions</button><pre id="qa-fixture-results">Not started</pre><iframe style="width:390px;height:900px;position:fixed;left:0;top:150px;opacity:.01;pointer-events:none"></iframe><script src="/fx/qa-fixtures.js"></script><script>document.getElementById("qa-fixture-start").onclick=runQAFixtures</script>')
     export_script = "<button id=\"export-results\">Download results</button><script>document.getElementById('export-results').onclick=()=>{const out=document.querySelector('pre');const a=document.createElement('a');a.download=location.pathname.split('/').pop().replace('.html','.json');a.href=URL.createObjectURL(new Blob([out.textContent],{type:'application/json'}));a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};</script>"
-    for name in ['audit.html','motion-fixture.html','binder-audit.html','refinement-audit.html']:
+    for name in ['audit.html','motion-fixture.html','binder-audit.html','refinement-audit.html','ux-audit.html','qa-fixtures.html']:
         page=output/name
         page.write_text(page.read_text()+export_script)
     print(f'{len(targets)} pages prepared in {output}. Serve this directory; open /audit.html and press Start audit.')

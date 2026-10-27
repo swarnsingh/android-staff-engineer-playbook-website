@@ -1,0 +1,45 @@
+{
+  "verified_date": "2026-10-28",
+  "scope": "Five added answer guidelines for existing Health Connect staff review questions; original source chapter unchanged.",
+  "guidance": [
+    {
+      "question": 1,
+      "claims": "Identify needed record types, operations and corresponding permission declarations; align Play declarations.",
+      "sources": [
+        "https://developer.android.com/health-and-fitness/health-connect/data-types",
+        "https://developer.android.com/health-and-fitness/health-connect/get-started#declare-permissions"
+      ]
+    },
+    {
+      "question": 2,
+      "claims": "Check current grants before use, handle revocation, and provide permission management. Partial-feature presentation is design guidance.",
+      "sources": [
+        "https://developer.android.com/health-and-fitness/health-connect/get-started#step-4",
+        "https://developer.android.com/health-and-fitness/health-connect/ui/permissions"
+      ]
+    },
+    {
+      "question": 3,
+      "claims": "Aggregate supported metrics; user-priority deduplication applies to Activity and Sleep, not every type. Custom metric definition is application guidance.",
+      "sources": [
+        "https://developer.android.com/health-and-fitness/health-connect/aggregate-data"
+      ]
+    },
+    {
+      "question": 4,
+      "claims": "Use stable client IDs and versioning for exports, record IDs for imports/deletions. Committing local changes plus matching progress together and replay testing are explicitly application design guidance.",
+      "sources": [
+        "https://developer.android.com/health-and-fitness/health-connect/sync-data"
+      ]
+    },
+    {
+      "question": 5,
+      "claims": "Explain data use in privacy policy; Health Connect provides record deletion APIs. Inventory of local/server copies, retention and deletion propagation are explicit product decisions.",
+      "sources": [
+        "https://developer.android.com/health-and-fitness/health-connect/get-started#show-privacy-policy",
+        "https://developer.android.com/health-and-fitness/health-connect/delete-data"
+      ]
+    }
+  ],
+  "link_verification": "All six canonical pages opened in official Android documentation. The three cited get-started anchors were additionally checked against actual heading IDs in fetched HTML."
+}

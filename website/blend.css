@@ -123,3 +123,14 @@
 .timeline-legend li{padding-left:.05rem}
 .track .mark[data-label-index]{font-size:0;min-width:0}
 .track .mark[data-label-index]::before{content:attr(data-label-index);font-size:calc(var(--reader-size)*.6);line-height:1;font-weight:700}
+
+/* A single interaction area keeps the current state beside its next action. */
+.stepper-controls .stepper-status{min-width:0}
+.stepper-controls .stepper-caption{min-height:0;margin:.35rem 0 .7rem}
+.stepper-controls .pb-progress{margin:0 0 .65rem}
+.stepper-controls .pb-step-nav{margin:.4rem 0 .7rem}
+.stepper-buttons button{min-height:44px}
+.steps-text .diagram-help{font-size:.9em;line-height:1.6;color:var(--muted);margin:.5rem 0}
+.steps-text summary{display:list-item;min-height:44px;align-content:center;cursor:pointer}
+.stepper-buttons button[aria-disabled=true]{opacity:.5;cursor:default}
+@media(max-width:520px){.stepper-buttons{gap:.5rem}.stepper-buttons button{flex:1 1 auto}.stepper-buttons .text-button{margin-left:0}.stepper-controls .pb-step-nav{gap:.4rem}}

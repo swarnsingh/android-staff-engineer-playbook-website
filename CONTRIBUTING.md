@@ -138,10 +138,10 @@ Additional requirements:
 ### Probing questions and answer keys
 
 - Probing questions are retrieval and reasoning checks, not links that send the reader elsewhere to discover the basic answer.
-- Put a concise `## Answer Key` after `## Probing Questions` in the same file. Number answers in the same order as the questions.
-- Explain the expected reasoning, decision criteria, or failure mode. Do not copy the chapter into the answer key and do not paste official documentation.
+- For new or revised dedicated questions in any knowledge tree, place each answer immediately below its question. Under `## Probing Questions`, use `### Question 1`, the question text, `#### Answer`, then the answer text; continue with `### Question 2`. Keep the Answer heading on its own line.
+- Explain the expected reasoning, decision criteria, or failure mode. Keep answers concise and write them in the repository’s own words. Ordinary operational or review checklists do not need an invented answer for every item.
 - Cite current primary sources in `## Further Reading` for claims about platform behavior, policies, versions, compiler behavior, or APIs. The repository teaches the answer; the official source proves and deepens it.
-- When updating an older topic that has questions but no key, add the key as part of that change. Existing files are migrated incrementally and tracked as documentation debt.
+- Existing numbered `## Probing Questions` and `## Answer Key` sections remain supported by the checker. When revising their dedicated questions, migrate them to adjacent Question/Answer pairs. A wholly missing legacy key remains tracked migration debt; missing or empty answers in the paired format fail the documentation check.
 
 ### Guided reading sequences
 

@@ -162,7 +162,7 @@ def pattern(unit, anchored):
 
 
 def content_panel(page):
-    match = re.search(r'<section id="panel-content".*?(?=<section id="panel-qa")', page, re.S)
+    match = re.search(r'<section id="panel-content"[^>]*>.*?</article>\s*</section>', page, re.S)
     if not match:
         raise ValueError('page has no Content panel')
     return match.group(0)
@@ -328,7 +328,7 @@ def main():
         manifest[path] = []
         for index, (kind, text) in enumerate(units(source)):
             if kind == 'heading' and next(levels) == 'h2':
-                view = 'qa' if build.is_question_section(text) else 'content'
+                view = 'qa' if '/' in path and build.is_question_section(text) else 'content'
             manifest[path].append({'kind': kind, 'text': text, 'view': view, 'title': index == 0 and kind == 'heading'})
         total_checked += checked
         report[path] = [{'problem': p, 'kind': k, 'text': t} for p, k, t in problems]

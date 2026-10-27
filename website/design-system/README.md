@@ -104,3 +104,9 @@ The gallery is generated from the actual lesson sections in the same build, so c
 ## Illustrated state sequence contract
 
 The existing `.stepper` data format supports `visuals: {actorId: patch}` in each step. Patches accumulate from the beginning, so backwards jumps restore earlier queue contents and object visibility. The markup explicitly selects `data-art` and `data-art-role` per node. `window.Playbook.Actor` renders the same vector objects used by FlowScene. Only reviewed `handoff: {from, to, kind, label}` entries create moving payloads; active-state changes never infer one. The build verifies every object against `website/content/illustrated-stepper-coverage.json`.
+
+## Learning paths and lesson interactions
+
+Learning paths present phase counts, chapter choices and a start action. Lesson pages retain reading controls and only populated supplemental views. The current track is the default curriculum scope; All topics opens the full catalog. Focus mode retains the topic drawer on desktop as well as smaller widths.
+
+Current-step captions and controls form one interaction area. Equivalent actions use Previous, Next and Reset; temporal playback uses Play/Pause. Reusable instructions and the full textual transcript share one optional disclosure. Each dedicated question is followed immediately by a clearly labelled answer. Verified corrections read normally; their detailed history is available under About this lesson. Inline-code chips belong to prose; fenced examples use one uninterrupted code surface, even inside a list. See the [UX review and browser evidence](../reviews/ux-2026-10-28/REPORT.md) for the verification scope.

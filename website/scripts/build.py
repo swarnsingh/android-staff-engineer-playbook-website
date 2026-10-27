@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 WEB = ROOT / 'website'
 OUT = WEB / 'dist'
 CACHE = WEB / '.cache'
-SOURCE_ROOT = 'https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/codex/android-completion/'
+SOURCE_ROOT = 'https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/'
 MD = MarkdownIt('commonmark', {'html': True}).enable(['table', 'strikethrough'])
 # Topic trees rendered as lessons, in site order. `phases` lists the guided-reading phases a pilot
 # renders (None renders the whole tree); chapters outside them keep linking to GitHub.
@@ -64,6 +64,10 @@ def route(path):
     return BASE + path.removesuffix('.md') + '/'
 
 
+def slug_heading(heading):
+    return slug(heading)
+
+
 def tree_of(path):
     return path.split('/')[0].removesuffix('.md')
 
@@ -89,7 +93,8 @@ def corrected(source, path, mark=False):
     """Apply approved corrections. Returns the corrected source and, per fix, the line it landed on.
 
     With mark=True, a single-line fix outside code (except table rows) is wrapped in <mark class="correction-mark">, so the
-    corrected words are visible where they stand; every fix is also listed in its section's correction note.
+    corrected words are visible where they stand. The reader uses unmarked corrected prose
+    and keeps the detailed change inventory in its optional footer history.
     """
     applied = []
     for fix in APPROVED_CORRECTIONS:
@@ -122,12 +127,14 @@ def corrected(source, path, mark=False):
 
 
 def correction_note(fixes):
-    """Show what an approved correction changed, why, and the chapter's original wording."""
+    """Optional editorial history; corrected lesson prose reads without review annotations."""
+    if not fixes: return ''
     items = ''.join(
-        f'<li><p>{escape(fix["reason"])}</p><details><summary>Original wording</summary><pre>{escape(fix["old"])}</pre></details>'
-        + (f'<p class="original-note">Sources: ' + ', '.join(f'<a href="{escape(url)}" target="_blank" rel="noreferrer">{escape(urlsplit(url).netloc)}</a>' for url in fix['sources']) + '</p>' if fix.get('sources') else '')
+        f'<li data-correction-id="{escape(fix["id"])}"><p>{escape(fix["reason"])}</p><details><summary>Changed wording</summary><p>Current wording</p><pre>{escape(fix["new"])}</pre><p>Original wording</p><pre>{escape(fix["old"])}</pre></details>'
+        + (f'<p>Sources: ' + ', '.join(f'<a href="{escape(url)}" target="_blank" rel="noreferrer">{escape(urlsplit(url).netloc)}</a>' for url in fix['sources']) + '</p>' if fix.get('sources') else '')
         + '</li>' for fix in fixes)
-    return f'<aside class="correction-note"><span class="blend-label">Corrected on this website</span><p>The original chapter says this differently; the text above includes an approved correction.</p><ul>{items}</ul></aside>'
+    count=len(fixes)
+    return f'<details class="technical-correction-history"><summary>Technical correction history · {count} {"update" if count==1 else "updates"}</summary><ol>{items}</ol></details>'
 
 
 def added(kind, html):
@@ -297,7 +304,7 @@ def is_question_section(heading):
 
 
 def render_chapter(path, raw, is_course=False):
-    source, fixes = corrected(raw, path, mark=True)
+    source, fixes = corrected(raw, path, mark=False)
     tokens = MD.parse(source)
     counts = {}; sections = []; headings = []; codes = []
     for i, token in enumerate(tokens):
@@ -331,20 +338,14 @@ def render_chapter(path, raw, is_course=False):
             label, note = {'kotlin':'Kotlin','java':'Java','text':'Output'}.get(language,language), 'Added example'
         else:
             label={'kotlin':'Kotlin','java':'Java','groovy':'Gradle / Groovy','kts':'Gradle / Kotlin','text':'Illustrative output'}.get(language,language)
-            note='Chapter example · surrounding text defines its assumptions'
-        return f'<div class="code-card"><div class="code-header"><span>{escape(label)}<small>{note}</small></span><button class="code-button" data-copy="{code_id}">Copy code</button></div><pre tabindex="0" aria-label="{escape(label)} example"><code id="{code_id}" class="highlight language-{escape(language)}">{escape(token.content)}</code></pre></div>\n'
+            note=''
+        return f'<div class="code-card"><div class="code-header"><span>{escape(label)}{f'<small>{note}</small>' if note else ''}</span><button class="code-button" data-copy="{code_id}">Copy code</button></div><pre tabindex="0" aria-label="{escape(label)} example"><code id="{code_id}" class="highlight language-{escape(language)}">{escape(token.content)}</code></pre></div>\n'
     MD.renderer.rules['fence']=fence
     env={'prefix':slug(path),'code_index':0}
     initial=tokens[:sections[0][0]] if sections else tokens
     # H1 is represented by the page hero; all other opening content stays intact.
     if initial and initial[0].type=='heading_open' and initial[0].tag=='h1': initial=initial[3:]
     opening=MD.renderer.render(initial,MD.options,env)
-    # Each approved correction is noted at the end of the section it changed.
-    def fixes_in(first_line, end_line):
-        return [fix for fix in fixes if first_line <= fix['line'] < end_line]
-    section_lines = [tokens[start].map[0] for start, _, _ in sections] + [len(source.splitlines()) + 1]
-    opening_fixes = fixes_in(0, section_lines[0])
-    if opening_fixes: opening += correction_note(opening_fixes)
     def band(number, index):
         key, title_text, promise = PARTS[index]
         return f'<div class="part-band" data-part-band="{key}"><span class="part-number">PART {number}</span><span class="part-name">{title_text}</span><p class="part-promise">{promise}</p></div>'
@@ -377,9 +378,7 @@ def render_chapter(path, raw, is_course=False):
         before = ''.join(wrap(kind, html, env) for key, html in blend.items() if len(key) == 3 and key[0] == 'before' and key[1] == name for kind in [key[2]])
         after = ''.join(wrap(kind, html, env) for key, html in blend.items() if len(key) == 3 and key[0] == 'after' and key[1] == name for kind in [key[2]])
         used.update(k for k in blend if k[:2] in (('before', name), ('after', name)))
-        section_fixes = fixes_in(section_lines[j], section_lines[j + 1])
-        note = correction_note(section_fixes) if section_fixes else ''
-        body += before + f'<section class="lesson-section" id="section-{anchor}" data-part="{part}" data-source-order="{j+1}"{qa}>{rendered}{note}{after}</section>'
+        body += before + f'<section class="lesson-section" id="section-{anchor}" data-part="{part}" data-source-order="{j+1}"{qa}>{rendered}{after}</section>'
         if path.endswith('/coroutines.md') and heading=='How `suspend` Works (Mental Model + Mechanism)':
             body += added('deeper', (WEB/'content/coroutine-internals.html').read_text())
         if path.endswith('/coroutines.md') and heading=='Exception Handling Patterns':
@@ -387,8 +386,6 @@ def render_chapter(path, raw, is_course=False):
         if path.endswith('/coroutines.md') and heading=='Job Hierarchy and Cancellation':
             figure=(WEB/'content/coroutine-model.html').read_text()
             body += '<section class="lesson-section" id="ownership">' + added('visual', '<h2>See the ownership and failure policy</h2><p>The Android UI owner starts the profile load. The model assumes main-safe requests and shows an illustrative sequence, not measured Android frames or a captured runtime trace.</p><p>In the failure scenario, the outer UI boundary catches the expected <code>IOException</code> and sets an error state. Cancellation is allowed to propagate.</p>'+owner_code()+figure) + '</section>'
-    tree = TREES[tree_of(path)]['title']
-    body += f'<section class="lesson-section" id="continue-learning"><span class="eyebrow">CONNECT THE IDEAS</span><h2>Continue your {tree} learning path</h2><p>The chapter above presents the original explanations, code examples, questions and answers in full. Use the learning path to connect this topic to the next one.</p><a class="secondary-button" href="{route(tree_of(path) + ".md")}">Explore all {tree} chapters →</a></section>'
     unused = set(blend) - used
     if unused:
         raise ValueError(f'{path}: blend inserts target headings or diagrams that do not exist: {sorted(unused)}')
@@ -623,7 +620,7 @@ def build(skip_diagrams=False):
     for directory in ['diagram-sources','diagrams','coverage']:(OUT/directory).mkdir(exist_ok=True)
     # Content hash in asset URLs, so browsers never mix a new page with stale CSS or JS.
     tokens_css=design_tokens_css().encode()
-    asset_version=hashlib.sha256(tokens_css+b''.join((WEB/n).read_bytes() for n in ['styles.css','blend.css','theme.css','app.js','blend.js','coroutines.js','lesson-model.js','design-system/components/bundle.css','design-system/components/bundle.js'])).hexdigest()[:10]
+    asset_version=hashlib.sha256(tokens_css+b''.join((WEB/n).read_bytes() for n in ['styles.css','blend.css','theme.css','learning-path.css','navigation.css','app.js','blend.js','coroutines.js','lesson-model.js','design-system/components/bundle.css','design-system/components/bundle.js'])).hexdigest()[:10]
     template=(WEB/'templates/reader.html').read_text().replace('{{base}}',BASE).replace('{{asset_version}}',asset_version)
     # Generate catalog from checked-in tree indexes, using guided order rather than filenames.
     # Each chapter carries its guided-reading phase, so wide trees group into sub-sections.
@@ -658,16 +655,39 @@ def build(skip_diagrams=False):
         navigation=''
         if path in order:
             i=order.index(path); links=[]
-            if i: links.append(f'<a href="{route(order[i-1])}">← {escape(title(ROOT/order[i-1]))}</a>')
-            if i+1<len(order):links.append(f'<a href="{route(order[i+1])}">{escape(title(ROOT/order[i+1]))} →</a>')
-            navigation='<nav class="chapter-navigation" aria-label="Chapter navigation">'+''.join(links)+'</nav>'
+            if i: links.append(f'<a href="{route(order[i-1])}"><small>Previous lesson</small>← {escape(title(ROOT/order[i-1]))}</a>')
+            if i+1<len(order):links.append(f'<a href="{route(order[i+1])}"><small>Next lesson</small>{escape(title(ROOT/order[i+1]))} →</a>')
+            else: links.append(f'<a href="{route(slug+".md")}"><small>Review the path</small>Explore {escape(TREES[slug]["title"])} phases →</a>')
+            navigation='<nav class="chapter-navigation" id="continue-learning" aria-label="Continue learning">'+''.join(links)+'</nav>'
         scripts=f'<script defer src="{BASE}lesson-model.js?v={asset_version}"></script><script defer src="{BASE}coroutines.js?v={asset_version}"></script>' if path.endswith('/coroutines.md') else ''
-        playground='<section id="panel-playground" role="tabpanel" aria-labelledby="tab-playground" tabindex="0" hidden><div class="panel-intro"><span class="eyebrow">LEARN THROUGH CODE</span><h2>Keep the example with its explanation.</h2><p>Code blocks throughout Content can be copied. Application fragments depend on the surrounding app types, imports and libraries; they are not presented as standalone programs.</p>'
-        if path.endswith('/coroutines.md'): playground+='<p>The runnable console example demonstrates overlapping waits. Return to Content to edit and run it beside the explanation.</p><button class="primary-button" data-go="experiment">Go to the example →</button>'
-        else: playground+='<p>Use a Kotlin/JVM project or an Android project as indicated by each example. Read the assumptions and expected behaviour before running or changing a block.</p><button class="primary-button" data-open-tab="content">Return to Content</button>'
-        playground+='</div></section>'
         tree=TREES[slug]['title']
-        values={'title':escape(name),'description':escape(intro(path)),'tree_title':escape(tree),'tree_route':route(f'{slug}.md'),'tree_eyebrow':escape(tree.upper()),'article':article,'outline':outline,'source':path,'source_url':SOURCE_ROOT+path,'category':escape(category),'chapter_navigation':navigation,'lesson_scripts':scripts,'playground_panel':playground}
+        page_kind='learning-path' if is_index else 'lesson'
+        has_qa=not is_index and bool(re.search(r'\bdata-question\b|data-kind="check"',article))
+        has_playground=path.endswith('/coroutines.md')
+        page_fixes=[fix for fix in APPROVED_CORRECTIONS if fix['path']==path]
+        has_resources=not is_index and (bool(page_fixes) or bool(re.search(r'<a\b[^>]*target="_blank"',article)))
+        controls=[('content','Content')]
+        if has_qa: controls.append(('qa','Q&A'))
+        if has_playground: controls.append(('playground','Playground'))
+        if has_resources: controls.append(('resources','Resources'))
+        tabs='' if is_index else '<div class="lesson-tabs" role="tablist" aria-label="Lesson views">'+''.join(
+            f'<button id="tab-{view}" role="tab" aria-selected="{str(view=="content").lower()}" aria-controls="panel-{view}" tabindex="{0 if view=="content" else -1}">{label}</button>' for view,label in controls)+'</div>'
+        qa_panel='<section id="panel-qa" role="tabpanel" aria-labelledby="tab-qa" tabindex="0" hidden><div class="panel-intro"><span class="eyebrow">RETRIEVE AND REASON</span><h2>Questions & answers</h2><p>Practice questions, answers and review checklists for this chapter. Added checkpoints are labelled separately.</p></div><div id="practice-questions"></div><button class="secondary-button" data-open-tab="content">Return to your reading position</button></section>' if has_qa else ''
+        playground='<section id="panel-playground" role="tabpanel" aria-labelledby="tab-playground" tabindex="0" hidden><div class="panel-intro"><span class="eyebrow">LEARN THROUGH CODE</span><h2>Experiment with overlapping waits</h2><p>Edit and run the coroutine example beside its explanation. Compare sequential and concurrent requests, then inspect the output.</p><button class="primary-button" data-go="experiment">Go to the example →</button></div></section>' if has_playground else ''
+        resources='<section id="panel-resources" role="tabpanel" aria-labelledby="tab-resources" tabindex="0" hidden><div class="panel-intro"><span class="eyebrow">CONTRACTS AND DEEPER ROUTES</span><h2>Follow the source trail.</h2><p>Sources are cited where each mechanism is explained. This view gathers the same reading routes.</p></div><div id="resource-links"></div><button class="secondary-button" data-go="continue-learning">Continue learning →</button></section>' if has_resources else ''
+        path_overview=''
+        if is_index:
+            groups=[(heading,[p for p in order if SECTION[p]==heading]) for heading,_ in phases(slug)]
+            groups=[(heading,paths) for heading,paths in groups if paths]
+            hero=f'<div class="lesson-hero path-hero"><span class="eyebrow">{escape(tree.upper())} / LEARNING PATH</span><h1>{escape(name)}</h1><p>{escape(intro(path))}</p><ul class="path-facts" aria-label="Learning path summary"><li>{len(groups)} phases</li><li>{len(order)} chapters</li><li>Beginner to Staff</li></ul><div class="path-actions"><a class="primary-button" href="{route(order[0])}">Start with {escape(title(ROOT/order[0]))} →</a><a class="secondary-button" href="#path-phases">Choose a phase</a></div></div>'
+            cards=[]
+            for index,(heading,paths) in enumerate(groups,1):
+                label=re.sub(r'^Phase \d+\s*[—–-]\s*','',heading)
+                cards.append(f'<li><a href="#{slug_heading(heading)}"><span class="phase-number">Phase {index}</span><strong>{escape(label)}</strong><span class="phase-count">{len(paths)} {"chapter" if len(paths)==1 else "chapters"} · View sequence →</span></a></li>')
+            path_overview='<section class="path-overview" id="path-phases" aria-labelledby="path-phases-title"><h2 id="path-phases-title">Choose your next phase</h2><p>Follow the phases in order, or use the checkpoints in the full sequence below to find your starting point.</p><ol class="path-phase-grid">'+''.join(cards)+'</ol></section>'
+        else:
+            hero=f'<div class="lesson-hero"><span class="eyebrow">{escape(tree.upper())} · BEGINNER TO STAFF</span><h1>{escape(name)}</h1><p>{escape(intro(path))}</p><div class="lesson-meta"><span id="reading-time">Read at your pace · experiments extra</span><button id="bookmark" class="text-button" aria-pressed="false">☆ Save lesson</button></div></div>'
+        values={'title':escape(name),'description':escape(intro(path)),'tree_title':escape(tree),'tree_route':route(f'{slug}.md'),'tree_eyebrow':escape(tree.upper()),'article':article,'outline':outline,'source':path,'source_url':SOURCE_ROOT+path,'category':escape(category),'chapter_navigation':navigation,'lesson_scripts':scripts,'playground_panel':playground,'page_kind':page_kind,'page_label':'learning path' if is_index else 'lesson','page_hero':hero,'page_tabs':tabs,'path_overview':path_overview,'qa_panel':qa_panel,'resources_panel':resources,'correction_history':correction_note(page_fixes),'outline_label':'ON THIS PATH' if is_index else 'ON THIS PAGE','content_semantics':'role="region" aria-label="Learning path"' if is_index else 'role="tabpanel" aria-labelledby="tab-content"'}
         html=template
         for key,value in values.items():html=html.replace('{{'+key+'}}',value)
         if re.search(r'\{\{[a-z_]+\}\}',html):raise ValueError('Unexpanded page template')
@@ -677,7 +697,7 @@ def build(skip_diagrams=False):
     home=(WEB/'templates/home.html').read_text().replace('{{base}}',BASE).replace('{{version}}',asset_version).replace('{{android_count}}',str(len(ORDER['android']))).replace('{{kotlin_count}}',str(len(ORDER['kotlin'])))
     (OUT/'index.html').write_text(home)
     (OUT/'.nojekyll').touch()
-    for name in ['styles.css','blend.css','theme.css','app.js','blend.js','coroutines.js','lesson-model.js']:
+    for name in ['styles.css','blend.css','theme.css','learning-path.css','navigation.css','app.js','blend.js','coroutines.js','lesson-model.js']:
         shutil.copy2(WEB/name,OUT/name)
     # The design system is the source for tokens, the diagram runtime and the self-hosted fonts.
     (OUT/'tokens.css').write_bytes(tokens_css)

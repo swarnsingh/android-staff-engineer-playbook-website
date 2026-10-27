@@ -1,7 +1,7 @@
 'use strict';
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
-const sourceRoot = 'https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/codex/android-completion/';
+const sourceRoot = 'https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/';
 const escapeHtml = text => text.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 
 // Highlight tokens once, preserving every source character and escaping markup.
@@ -55,8 +55,12 @@ function applyPreferences() {
   $('#reduce-motion').disabled = systemMotion.matches;
   $('#motion-note').textContent = systemMotion.matches ? 'Your system requests reduced motion. Manual steps stay available; automatic playback is off.' : effectiveReducedMotion ? 'Motion and automatic playback are off. Use Previous and Next to explore every state.' : 'Uses your system preference, plus this optional override.';
   $('#wrap-code').checked = !!preferences.wrap;
-  $('#bookmark').setAttribute('aria-pressed',!!preferences.bookmarked);
-  $('#bookmark').textContent = preferences.bookmarked ? '★ Lesson saved' : '☆ Save lesson';
+  const bookmark=$('#bookmark');
+  if(bookmark){
+    const saved=!!preferences.savedLessons?.[document.body.dataset.source];
+    bookmark.setAttribute('aria-pressed',saved);
+    bookmark.textContent=saved?'★ Lesson saved':'☆ Save lesson';
+  }
   $('#play-model')?.setAttribute('aria-disabled',effectiveReducedMotion);
   if (effectiveReducedMotion) pauseAnimation();
   document.dispatchEvent(new Event('playbook:motion'));
@@ -68,8 +72,14 @@ $$('input[name=theme]').forEach(input => input.addEventListener('change',() => {
 $('#reduce-motion').addEventListener('change',e => { preferences.motion=e.target.checked; applyPreferences(); savePreferences(); });
 $('#wrap-code').addEventListener('change',e => { preferences.wrap=e.target.checked; applyPreferences(); savePreferences(); });
 systemMotion.addEventListener('change',applyPreferences);
-$('#bookmark').addEventListener('click',() => { preferences.bookmarked=!preferences.bookmarked; applyPreferences(); savePreferences(); toast(preferences.bookmarked?'Saved on this device.':'Lesson removed from your saved list.'); });
-$('#focus-toggle').addEventListener('click',() => { const enabled=document.body.classList.toggle('focus-mode'); $('#focus-toggle').setAttribute('aria-pressed',enabled); $('#focus-toggle').textContent=enabled?'Exit focus':'Focus'; });
+$('#bookmark')?.addEventListener('click',() => {
+  const key=document.body.dataset.source;
+  if(!preferences.savedLessons || typeof preferences.savedLessons!=='object' || Array.isArray(preferences.savedLessons))preferences.savedLessons={};
+  const saved=!preferences.savedLessons[key];
+  if(saved)preferences.savedLessons[key]=true;else delete preferences.savedLessons[key];
+  applyPreferences();savePreferences();toast(saved?'Saved on this device.':'Lesson unsaved on this device.');
+});
+$('#focus-toggle').addEventListener('click',() => { const enabled=document.body.classList.toggle('focus-mode'); $('#focus-toggle').setAttribute('aria-pressed',enabled); $('#focus-toggle').textContent=enabled?'Exit focus':'Focus'; placeCurriculum(); });
 
 const settingsDialog = $('#reading-dialog');
 const curriculumDialog = $('#curriculum-dialog');
@@ -77,10 +87,11 @@ const curriculum = $('#curriculum');
 const drawerMedia = matchMedia('(max-width:1439px)'); // the curriculum rail shows only from 1440px (theme.css)
 function syncModalState() { document.body.classList.toggle('modal-open',settingsDialog.open || curriculumDialog.open); }
 function openSettings() { pauseAnimation(); settingsDialog.showModal(); syncModalState(); }
-function openCurriculum() { pauseAnimation(); if (drawerMedia.matches && !curriculumDialog.open) { curriculumDialog.showModal(); syncModalState(); } }
+function useCurriculumDrawer() { return drawerMedia.matches || document.body.classList.contains('focus-mode'); }
+function openCurriculum() { pauseAnimation(); if (useCurriculumDrawer() && !curriculumDialog.open) { curriculumDialog.showModal(); syncModalState(); } }
 function closeCurriculum() { if(curriculumDialog.open) curriculumDialog.close(); }
 function placeCurriculum() {
-  if (drawerMedia.matches) curriculumDialog.append(curriculum);
+  if (useCurriculumDrawer()) curriculumDialog.append(curriculum);
   else { closeCurriculum(); $('#sidebar-slot').append(curriculum); }
 }
 placeCurriculum(); drawerMedia.addEventListener('change',placeCurriculum);
@@ -114,34 +125,74 @@ document.addEventListener('keydown',e => {
 // Static HTML preserves the complete chapter as a no-JS fallback. The build gate checks
 // that stream; the browser gate independently checks both activated tabs against it.
 const practice = $('#practice-questions');
-const practiceBlocks = $$('[data-question], #panel-content .blend[data-kind="check"]');
+const practiceBlocks = $('#tab-qa') && practice ? $$('[data-question], #panel-content .blend[data-kind="check"]') : [];
 practiceBlocks.forEach(block => {
   if (block.closest('[data-question]') !== null && !block.hasAttribute('data-question')) return;
   const previous = block.previousElementSibling;
   if (previous?.matches('.blend[data-kind="review"]')) practice.append(previous);
   practice.append(block);
 });
-// Answer labels are interface text, not edits to the original answer wording.
-practice.querySelectorAll('[id="section-answer-key"] > ol > li').forEach((item, index) => {
-  const label = document.createElement('h3');
-  label.className = 'qa-answer-label';
-  label.textContent = `Answer ${index + 1}`;
-  const first = item.firstElementChild;
-  const paragraph = first?.tagName === 'P' ? first : item;
-  const question = paragraph.firstElementChild;
-  if (question?.tagName === 'STRONG' && /\?\s*$/.test(question.textContent)) {
-    // Some chapters repeat the question before the answer. Keep that question first,
-    // then place the Answer heading and the remaining nodes on their own lines.
-    const response = document.createElement('div');
-    response.className = 'qa-answer-body';
-    while (question.nextSibling) response.append(question.nextSibling);
-    if (paragraph === item) question.after(label, response);
-    else paragraph.after(label, response);
-  } else item.prepend(label);
+// Pair the original ordered lists once. Answer nodes retain their source identity;
+// no answer text is copied, abbreviated or inferred from the prompt.
+const questionSection=practice?.querySelector('#section-probing-questions');
+const answerSection=practice?.querySelector('#section-answer-key');
+const questionList=questionSection?.querySelector(':scope > ol');
+const answerList=answerSection?.querySelector(':scope > ol');
+const questionItems=questionList?[...questionList.children].filter(node=>node.tagName==='LI'):[];
+const answerItems=answerList?[...answerList.children].filter(node=>node.tagName==='LI'):[];
+// A changed source shape must remain intact rather than partially pairing unrelated items.
+if(questionItems.length && questionItems.length===answerItems.length &&
+   questionList.start===answerList.start){
+  questionSection.insertBefore(answerSection,questionList);
+  answerSection.classList.add('qa-key-intro');
+  answerSection.querySelector(':scope > h2')?.classList.add('qa-key-heading');
+  answerList.dataset.qaAnswerSlot=answerSection.id;
+  answerList.hidden=true;
+  questionItems.forEach((question,index)=>{
+    const ordinal=questionList.start+index;
+    question.dataset.qaQuestionIndex=String(ordinal);
+    question.classList.add('qa-paired-question');
+    const pair=document.createElement('div');pair.className='qa-answer-pair';
+    const label=document.createElement('h3');label.className='qa-answer-label';label.textContent='Answer';
+    const list=document.createElement('ol');list.className='qa-answer-list';list.start=ordinal;
+    const answer=answerItems[index];
+    answer.dataset.originalSection=answerSection.id;
+    answer.dataset.originalAnswerIndex=String(ordinal);
+    list.append(answer);pair.append(label,list);question.append(pair);
+  });
+}
+// Supplemental answers are explicitly authored and labelled; never infer an answer
+// from an unrelated checkpoint merely because both appear in the same chapter.
+const guidanceGroups=new Map();
+(practice?.querySelectorAll('[data-guidance-answer-for]') || []).forEach(answer=>{
+  const section=answer.dataset.guidanceAnswerFor;
+  if(!guidanceGroups.has(section))guidanceGroups.set(section,[]);
+  guidanceGroups.get(section).push(answer);
 });
-practice.querySelectorAll('.blend[data-kind="check"] details > summary').forEach(summary => {
-  const label = document.createElement('h4');
-  label.className = 'qa-answer-label'; label.textContent = 'Answer'; summary.after(label);
+for(const [sectionId,guidance] of guidanceGroups){
+  const section=document.getElementById(sectionId);
+  const list=section?.querySelector(':scope > ol');
+  const questions=list?[...list.children].filter(node=>node.tagName==='LI'):[];
+  const first=list?.start ?? 1;
+  const byIndex=new Map(guidance.map(answer=>[Number(answer.dataset.questionIndex),answer]));
+  if(!practice.contains(section) || !questions.length || guidance.length!==questions.length ||
+     byIndex.size!==questions.length || questions.some((_,index)=>!byIndex.has(first+index)))continue;
+  questions.forEach((question,index)=>{
+    const ordinal=first+index;
+    question.dataset.guidanceQuestionIndex=String(ordinal);
+    question.classList.add('qa-paired-question');
+    const pair=document.createElement('div');pair.className='qa-answer-pair';pair.dataset.supplementalAnswer='true';
+    const label=document.createElement('h3');label.className='qa-answer-label';label.textContent='Answer';
+    const answers=document.createElement('ol');answers.className='qa-answer-list';answers.start=ordinal;
+    const item=document.createElement('li');item.dataset.guidanceAnswerIndex=String(ordinal);
+    item.append(byIndex.get(ordinal));answers.append(item);pair.append(label,answers);question.append(pair);
+  });
+}
+(practice?.querySelectorAll('.blend[data-kind="check"] details > summary') || []).forEach(summary => {
+  const label=document.createElement('h4');label.className='qa-answer-label';label.textContent='Answer';
+  summary.after(label);
+  // The question and its authored answer are immediately available together.
+  summary.parentElement.open=true;
 });
 // Hide empty story bands and remove practice links from the Content outline.
 $$('.part-band').forEach(band => {
@@ -152,21 +203,26 @@ $$('.part-band').forEach(band => {
 $$('.page-outline a,.mobile-outline a').forEach(link => {
   if (document.getElementById(link.hash.slice(1))?.closest('#panel-qa')) link.remove();
 });
-$('#qa-empty').hidden=!!$('#practice-questions').children.length;
+// An empty supplemental view should not be an extra stop in the reader.
+if(!practice?.children.length){$('#tab-qa')?.remove();$('#panel-qa')?.remove();}
+$('#qa-empty')?.remove();
 const seenSources = new Set();
-$$('#panel-content a[target=_blank],#panel-qa a[target=_blank]').forEach(link => {
+$$('#panel-content a[target=_blank],#panel-qa a[target=_blank],.lesson-about a[target=_blank]').forEach(link => {
   if(seenSources.has(link.href)) return;
-  seenSources.add(link.href); const copy=link.cloneNode(true); copy.className='resource-row'; $('#resource-links').append(copy);
+  seenSources.add(link.href); const copy=link.cloneNode(true); copy.className='resource-row'; $('#resource-links')?.append(copy);
 });
 function markExternalLinks(root=document) {
   root.querySelectorAll('a[target=_blank]').forEach(link => { link.setAttribute('aria-describedby','external-note'); });
 }
 markExternalLinks();
+if(!$('#resource-links')?.children.length){$('#tab-resources')?.remove();$('#panel-resources')?.remove();}
 const countCopy = $('article').cloneNode(true); countCopy.querySelectorAll('pre,figure,table').forEach(node=>node.remove());
 const words = countCopy.textContent.trim().split(/\s+/).length;
-$('#reading-time').textContent=`About ${Math.ceil(words/200)} min reading · experiments extra`;
+if($('#reading-time'))$('#reading-time').textContent=`About ${Math.ceil(words/200)} min reading · experiments extra`;
 
-const tabs=$$('[role=tab]');
+const tabs=$$('.lesson-tabs [role=tab]');
+const availableViews=new Set(['content',...tabs.map(tab=>tab.id.replace('tab-',''))]);
+if(tabs.length<2)$('.lesson-tabs')?.setAttribute('hidden','');
 let activeView='content';
 const positions={content:0,qa:0,playground:0,resources:0};
 let lastReadingY=window.scrollY,readingScrollTimer;
@@ -177,8 +233,8 @@ window.addEventListener('scroll',()=>{
 },{passive:true});
 let contentHash=document.getElementById(location.hash.slice(1))?.closest('#panel-qa') ? '' : location.hash;
 function setView(view,{focus=false,anchor=null,writeHistory=true,restore=true}={}) {
-  if(!['content','qa','playground','resources'].includes(view)) view='content';
-  if (anchor) view = document.getElementById(anchor)?.closest('#panel-qa') ? 'qa' : 'content';
+  if(!availableViews.has(view)) view='content';
+  if (anchor) view = availableViews.has('qa') && document.getElementById(anchor)?.closest('#panel-qa') ? 'qa' : 'content';
   clearTimeout(readingScrollTimer);
   positions[activeView]=activeView==='content'?lastReadingY:window.scrollY;
   if(activeView==='content' && location.hash && !document.getElementById(location.hash.slice(1))?.closest('#panel-qa')) contentHash=location.hash;
@@ -186,9 +242,11 @@ function setView(view,{focus=false,anchor=null,writeHistory=true,restore=true}={
   tabs.forEach(tab=>{
     const selected=tab.id===`tab-${view}`;
     tab.setAttribute('aria-selected',selected); tab.tabIndex=selected?0:-1;
-    $(`#${tab.getAttribute('aria-controls')}`).hidden=!selected;
+    const panel=$(`#${tab.getAttribute('aria-controls')}`);if(panel)panel.hidden=!selected;
   });
-  $('.page-outline').hidden=view!=='content'; $('.mobile-outline').hidden=view!=='content';
+  $$('.reading-content > [role=tabpanel]').forEach(panel=>{panel.hidden=panel.id!==`panel-${view}`;});
+  if($('.page-outline'))$('.page-outline').hidden=view!=='content';
+  if($('.mobile-outline'))$('.mobile-outline').hidden=view!=='content';
   if(anchor && view==='content') contentHash=`#${anchor}`;
   if(writeHistory) {
     const url=new URL(location.href);
@@ -196,7 +254,7 @@ function setView(view,{focus=false,anchor=null,writeHistory=true,restore=true}={
     url.hash=anchor ? `#${anchor}` : view==='content'?contentHash:'';
     history.pushState({view},'',url);
   }
-  if(focus) $(`#tab-${view}`).focus({preventScroll:true});
+  if(focus)($(`#tab-${view}`)||$('#panel-content')).focus({preventScroll:true});
   if(anchor && document.getElementById(anchor)) document.getElementById(anchor).scrollIntoView({block:'start',behavior:'instant'});
   else if(restore) window.scrollTo({top:positions[view],behavior:'instant'});
   if(view==='content')lastReadingY=window.scrollY;
@@ -215,7 +273,8 @@ tabs.forEach((tab,index)=>{
 $$('[data-open-tab]').forEach(button=>button.addEventListener('click',()=>setView(button.dataset.openTab,{focus:true})));
 $$('[data-go]').forEach(button=>button.addEventListener('click',()=>setView('content',{anchor:button.dataset.go,focus:true})));
 $$('.page-outline a,.mobile-outline a,.brand').forEach(link=>link.addEventListener('click',e=>{
-  e.preventDefault(); $('.mobile-outline').open=false;
+  if(!link.hash)return;
+  e.preventDefault(); if($('.mobile-outline'))$('.mobile-outline').open=false;
   setView('content',{anchor:link.hash.slice(1)});
 }));
 window.addEventListener('popstate',()=>setView(new URL(location.href).searchParams.get('view')||'content',{writeHistory:false,anchor:location.hash?location.hash.slice(1):null}));
@@ -228,7 +287,7 @@ const sectionObserver=new IntersectionObserver(entries=>{
   entries.forEach(entry=>{if(entry.isIntersecting){
     outlineLinks.forEach(link=>{const current=link.hash===`#${entry.target.querySelector('h2[id]')?.id || entry.target.id}`;link.classList.toggle('current',current);if(current)link.setAttribute('aria-current','location');else link.removeAttribute('aria-current');});
     const anchor=entry.target.querySelector('h2[id]')?.id || entry.target.id;
-    const currentLink=$(`.page-outline a[href="#${anchor}"]`); if(currentLink)$('#mobile-current').textContent=currentLink.textContent.replace(/^\d+\. /,'');
+    const currentLink=$(`.page-outline a[href="#${anchor}"]`); if(currentLink && $('#mobile-current'))$('#mobile-current').textContent=currentLink.textContent.replace(/^\d+\. /,'');
   }});
 },{rootMargin:'-15% 0px -65% 0px'});
 $$('.lesson-section').forEach(section=>sectionObserver.observe(section));
@@ -261,13 +320,42 @@ function chapterLink(chapter){
   else{link.href=sourceRoot+chapter.path;link.target='_blank';link.rel='noreferrer';link.setAttribute('aria-describedby','external-note');const cue=document.createElement('span');cue.className='external-cue';cue.textContent='GitHub ↗';link.append(cue);}
   return link;
 }
+// Curriculum scope is local to this page: the whole catalog remains one explicit action away.
+const catalog=window.PLAYBOOK_CATALOG || [];
+const currentTrack=catalog.find(topic=>document.body.dataset.source===topic.slug+'.md' || document.body.dataset.source?.startsWith(topic.slug+'/'));
+let navigationScope=currentTrack?'track':'all';
+const scopeControls=document.createElement('div');scopeControls.className='navigation-scope';
+scopeControls.setAttribute('role','group');scopeControls.setAttribute('aria-label','Browse topics');
+const trackButton=document.createElement('button');trackButton.type='button';trackButton.className='secondary-button';
+trackButton.textContent=currentTrack?.title || 'This track';trackButton.hidden=!currentTrack;trackButton.setAttribute('aria-controls','topic-nav');
+const allTopicsButton=document.createElement('button');allTopicsButton.type='button';allTopicsButton.className='secondary-button';
+allTopicsButton.textContent='All topics';allTopicsButton.setAttribute('aria-controls','topic-nav');
+scopeControls.append(trackButton,allTopicsButton);$('#topic-search').closest('.search-wrap').before(scopeControls);
+const scopeHelp=$('.search-help');
+function chooseNavigationScope(scope){
+  navigationScope=scope;renderNavigation($('#topic-search').value.trim().toLowerCase());
+}
+trackButton.addEventListener('click',()=>chooseNavigationScope('track'));
+allTopicsButton.addEventListener('click',()=>chooseNavigationScope('all'));
 function renderNavigation(query=''){
   const nav=$('#topic-nav');nav.replaceChildren();let previousCategory='',count=0;
-  for(const topic of window.PLAYBOOK_CATALOG){
+  const trackOnly=navigationScope==='track' && currentTrack;
+  trackButton.setAttribute('aria-pressed',!!trackOnly);allTopicsButton.setAttribute('aria-pressed',!trackOnly);
+  $('#curriculum-title').textContent=trackOnly?'Browse '+currentTrack.title:'All playbook topics';
+  $('#topic-search').placeholder=trackOnly?'Find in '+currentTrack.title+'…':'Find across all topics…';
+  $('#topic-search').setAttribute('aria-label',trackOnly?'Find a topic in '+currentTrack.title:'Find a topic across the playbook');
+  scopeHelp.textContent=trackOnly?'Search titles and paths in this track. Choose All topics to browse the full catalog.':'Search titles and paths across the catalog. GitHub links open source chapters in a new tab.';
+  const startLink=$('.learning-path');
+  if(startLink){
+    startLink.href=trackOnly?(document.body.dataset.base||'/')+currentTrack.slug+'/':(document.body.dataset.base||'/');
+    startLink.removeAttribute('target');startLink.removeAttribute('aria-describedby');
+    startLink.replaceChildren(document.createTextNode(trackOnly?currentTrack.title+' learning path →':'Choose a learning path →'));
+  }
+  for(const topic of (trackOnly?[currentTrack]:catalog)){
     const all=topic.title.toLowerCase().includes(query);
     const chapters=topic.chapters.filter(chapter=>!query||all||`${chapter.title} ${chapter.path} ${chapter.path.endsWith('/coroutines.md')?'suspend cancellation cancel viewmodelscope continuation async await':''}`.toLowerCase().includes(query));
     if(!chapters.length)continue;count+=chapters.length;
-    if(topic.category!==previousCategory){const label=document.createElement('p');label.className='nav-label';label.textContent=topic.category;nav.append(label);previousCategory=topic.category;}
+    if(!trackOnly && topic.category!==previousCategory){const label=document.createElement('p');label.className='nav-label';label.textContent=topic.category;nav.append(label);previousCategory=topic.category;}
     const group=document.createElement('details');group.className='nav-group';const here=document.body.dataset.source;group.open=!!query||here===topic.slug+'.md'||topic.chapters.some(c=>c.path===here);
     const summary=document.createElement('summary');const icon=document.createElement('span');icon.className='nav-icon';icon.textContent=topic.icon;icon.setAttribute('aria-hidden','true');
     const name=document.createElement('span');name.textContent=topic.title;const chevron=document.createElement('span');chevron.className='chevron';chevron.textContent='›';chevron.setAttribute('aria-hidden','true');summary.append(icon,name,chevron);group.append(summary);
@@ -288,7 +376,9 @@ function renderNavigation(query=''){
     }else chapters.forEach(c=>children.append(chapterLink(c)));
     group.append(children);nav.append(group);
   }
-  $('#search-empty').hidden=count>0;$('#search-status').textContent=query?`${count} matching topic${count===1?'':'s'}. Titles, paths and a few sample-lesson keywords; not full-text search.`:'';
+  $('#search-empty').hidden=count>0;
+  $('#search-empty').textContent=trackOnly?'No matching topic in this track. Try All topics to search the complete catalog.':'No matching topic title or path. Try a broader search.';
+  $('#search-status').textContent=query?`${count} matching topic${count===1?'':'s'} in ${trackOnly?currentTrack.title:'all topics'}. Search uses titles, paths and selected keywords, not full lesson text.`:`${count} chapters in ${trackOnly?currentTrack.title:'the full catalog'}.`;
 }
 renderNavigation();let searchTimer;
 $('#topic-search').addEventListener('input',e=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>renderNavigation(e.target.value.trim().toLowerCase()),150);});

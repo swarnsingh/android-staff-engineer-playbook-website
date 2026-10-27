@@ -1,8 +1,8 @@
 # Android Engineering Playbook — Reader Website
 
-This repository develops the reader website separately from the [original playbook](https://github.com/swarnsingh/android-staff-engineer-playbook). Since repository separation, website work makes no further changes to the original repository. Its earlier website branch remains as historical work; its main branch and original chapters are unchanged.
+This repository develops the reader website separately from the [original playbook](https://github.com/swarnsingh/android-staff-engineer-playbook). Website presentation work stays in this repository. The owner merged verified content corrections separately through original-repository PR #57; the website mirrors that approved content. Earlier website branches in the original repository remain historical.
 
-The current website renders the Kotlin learning path and all 22 Kotlin chapters, plus the Android learning path and all 101 Android chapters across nine phases. Original chapter Markdown is a read-only snapshot; explanations, examples, tables and questions remain in order. The website adds labelled stories, visuals, step-through animations, reading preferences and responsive navigation. Technical corrections are separate proposals and require owner approval before application.
+The current website renders the Kotlin learning path and all 22 Kotlin chapters, plus the Android learning path and all 101 Android chapters across nine phases. Original chapter Markdown is a read-only snapshot; explanations, examples, tables and questions remain in order. The website adds labelled stories, visuals, step-through animations, reading preferences and responsive navigation. The website applies 743 approved corrections from merged source PR #57; future technical corrections require an authorised review scope and evidence.
 
 Read the [content rulebook](content-rulebook.md), especially sections 16–19, and the [website build/handover guide](website/README.md). Source provenance and Kotlin and Android checksums are recorded in `source-snapshot.json`.
 
@@ -25,8 +25,8 @@ Run from this new website checkout, choose an available port, and open the local
 
 ## Branch history
 
-- `main`: last published Kotlin preview source (`d9cae81`).
-- `codex/android-completion`: current website and GitHub Pages publication branch: Android, Kotlin, 17 temporal scenes, 119 illustrated state figures and static decision diagrams. See the [refinement report](website/reviews/AIRBRIDGE-REFINEMENT-2026-10-27.md) for validation and publication status.
+- `main`: current Android/Kotlin website and GitHub Pages publication source; website PR #1 is merged.
+- `codex/android-completion`: retained branch for the completed content and illustrated-scene work, merged through PR #1.
 - `codex/reader-website-fixes`: the current fix and repository-separation snapshot.
 - `codex/reader-website`: preserved original website draft history.
 - `claude/reader-website-kotlin`: preserved teaching-layer and review history through `8a77e22`.

@@ -8,6 +8,7 @@ window.__runAudit = async (pages, widths = [320, 390, 768, 1181, 1280, 1439, 144
   try {
     const diag = await (await fetch('/coverage/diagram-sources.json')).json();
     const units = await (await fetch('/coverage/original-units.json')).json();
+    const qaPairs = await (await fetch('/coverage/qa-pairs.json')).json();
     const frame = document.createElement('iframe');
     frame.style.cssText='width:1280px;height:900px;position:fixed;left:0;top:0;opacity:0.01;pointer-events:none';
     document.body.append(frame);
@@ -31,10 +32,13 @@ window.__runAudit = async (pages, widths = [320, 390, 768, 1181, 1280, 1439, 144
         const d=frame.contentDocument,w=frame.contentWindow;
         if (typeof w.__inspectOriginalContent !== 'function') throw new Error('QA instrumentation missing');
         const viewAudits=[];
-        for(const view of ['content','qa']) {
+        const views=d.querySelector('#panel-qa')?['content','qa']:['content'];
+        const expectedQA=(units[d.body.dataset.source]||[]).filter(u=>u.view==='qa');
+        if(!d.querySelector('#panel-qa') && expectedQA.length)viewAudits.push({problems:['Required practice view missing'],units:0});
+        for(const view of views) {
           w.setView(view,{writeHistory:false,restore:false});
           await Promise.race([new Promise(resolve=>w.requestAnimationFrame(resolve)),new Promise(resolve=>setTimeout(resolve,300))]);
-          viewAudits.push(await Promise.race([w.__inspectOriginalContent(diag,units,view),new Promise(resolve=>setTimeout(()=>resolve({problems:['AUDIT TIMEOUT']}),20000))]));
+          viewAudits.push(await Promise.race([w.__inspectOriginalContent(diag,units,view,qaPairs),new Promise(resolve=>setTimeout(()=>resolve({problems:['AUDIT TIMEOUT']}),20000))]));
         }
         const preservation={views:viewAudits,problems:viewAudits.flatMap(v=>v.problems),units:viewAudits.reduce((n,v)=>n+(v.units||0),0),diagrams:viewAudits.reduce((n,v)=>n+(v.diagrams||0),0),loadedDiagrams:viewAudits.reduce((n,v)=>n+(v.loadedDiagrams||0),0)};
         const steppers=d.querySelectorAll('figure.stepper').length,ready=d.querySelectorAll('figure.stepper.is-ready').length;
@@ -48,7 +52,7 @@ window.__runAudit = async (pages, widths = [320, 390, 768, 1181, 1280, 1439, 144
         // Reveal only teaching animation states to check worst-case card geometry. Original DOM stays intact.
         d.querySelectorAll('.blend .is-off').forEach(e=>e.classList.remove('is-off'));
         const layouts=[];
-        for(const view of ['content','qa']) for(const width of widths){
+        for(const view of views) for(const width of widths){
           w.setView(view,{writeHistory:false,restore:false});
           frame.style.width=width+'px';
           await Promise.race([new Promise(resolve=>w.requestAnimationFrame(()=>w.requestAnimationFrame(()=>w.requestAnimationFrame(resolve)))),new Promise(resolve=>setTimeout(resolve,300))]);
@@ -125,10 +129,26 @@ window.__runAudit = async (pages, widths = [320, 390, 768, 1181, 1280, 1439, 144
           }
           d.documentElement.classList.remove('reduce-motion');
         }
-        const qaSeparation = d.querySelectorAll('#panel-content [data-question],#panel-content .blend[data-kind="check"]').length === 0;
-        const answers = [...d.querySelectorAll('#panel-qa #section-answer-key > ol > li')];
-        const answerLabels = answers.every(item=>item.querySelector('.qa-answer-label'));
-        window.__R.pages.push({href,preservation,steppers,ready,scenes,sceneReady,runtimeErrors,sceneChecks,illustratedChecks,layouts,qaSeparation,answerLabels,ok:runtimeErrors.length===0&&illustratedChecks.every(c=>c.ok)&&sceneChecks.every(c=>c.ok)&&preservation.problems.length===0&&steppers===ready&&scenes===sceneReady&&qaSeparation&&answerLabels&&layouts.every(l=>!l.overflow&&!l.clipped&&!l.smallLabels.length)});
+        const codeChecks=[];
+        function luminance(color){
+          const rgb=color.match(/[\d.]+/g).slice(0,3).map(Number).map(c=>{c/=255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4});
+          return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;
+        }
+        function contrast(fg,bg){const a=luminance(fg),b=luminance(bg);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);}
+        for(const theme of ['light','dark','sepia','contrast']){
+          d.documentElement.dataset.theme=theme;
+          for(const code of d.querySelectorAll('.code-card pre > code,.model-code pre > code')){
+            const css=w.getComputedStyle(code),pre=w.getComputedStyle(code.parentElement),bg=w.getComputedStyle(code.closest('.code-card,.model-code')).backgroundColor,problems=[];
+            if(css.backgroundColor!=='rgba(0, 0, 0, 0)')problems.push('inline chip background on fenced code');
+            if(css.fontSize!==pre.fontSize)problems.push('inline font size overrides code block');
+            for(const node of [code,...code.querySelectorAll('[class^="syntax-"]')])if(contrast(w.getComputedStyle(node).color,bg)<4.5)problems.push('low code text contrast: '+node.className);
+            codeChecks.push({theme,id:code.id,inList:!!code.closest('li'),problems:[...new Set(problems)],ok:!problems.length});
+          }
+        }
+        const qaSeparation = d.body.dataset.pageKind==='learning-path' || d.querySelectorAll('#panel-content [data-question],#panel-content .blend[data-kind="check"]').length === 0;
+        const answers = [...d.querySelectorAll('#panel-qa [data-original-answer-index]')];
+        const answerLabels = answers.every(item=>item.closest('.qa-answer-pair')?.querySelector('.qa-answer-label'));
+        window.__R.pages.push({href,preservation,steppers,ready,scenes,sceneReady,runtimeErrors,sceneChecks,illustratedChecks,codeChecks,layouts,qaSeparation,answerLabels,ok:runtimeErrors.length===0&&codeChecks.every(c=>c.ok)&&illustratedChecks.every(c=>c.ok)&&sceneChecks.every(c=>c.ok)&&preservation.problems.length===0&&steppers===ready&&scenes===sceneReady&&qaSeparation&&answerLabels&&layouts.every(l=>!l.overflow&&!l.clipped&&!l.smallLabels.length)});
       } catch(error) {
         window.__R.pages.push({href,ok:false,error:String(error),loadState:frame.contentDocument?.readyState,title:frame.contentDocument?.title,runtimeErrors:frame.contentWindow?.__qaErrors});
       } finally {

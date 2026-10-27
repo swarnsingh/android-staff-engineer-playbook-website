@@ -1,0 +1,20 @@
+/* Curriculum scope stays separate from the within-page outline. */
+.navigation-scope { display: flex; gap: .4rem; margin: .75rem 0; flex-wrap: wrap; }
+.navigation-scope .secondary-button { flex: 1 1 auto; min-width: 0; font-size: .875rem; min-height: 44px; }
+.navigation-scope button[aria-pressed=true] { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+.sidebar .search-help { line-height: 1.6; }
+.sidebar .learning-path { min-height: 44px; }
+.sidebar .nav-children > .nav-group > summary { min-height: 44px; box-sizing: border-box; align-content: center; }
+.sidebar .nav-children a { min-height: 44px; box-sizing: border-box; align-content: center; }
+.focus-mode #menu-toggle { display: inline-flex; }
+@media print { .navigation-scope { display: none; } }
+
+/* The same numbered source answers sit directly under their question. */
+.qa-paired-question { margin-bottom: 2rem !important; }
+.qa-answer-pair { margin-top: .85rem; padding: .9rem 1rem; background: var(--sheet-sunken); border-inline-start: 3px solid var(--scene-storage); border-radius: var(--radius-md); }
+.qa-answer-pair > .qa-answer-label { margin: 0 0 .6rem; font: 650 .875rem/1.5 var(--font-sans); color: var(--ink); }
+.reading-content .qa-answer-list { margin: 0; padding: 0; list-style: none; }
+.reading-content .qa-answer-list > li { margin: 0; }
+.qa-key-intro.lesson-section { padding: 0; margin: .5rem 0 1.25rem; }
+.qa-key-intro > .qa-key-heading { margin: 0; font: 600 .875rem/1.5 var(--font-sans); color: var(--ink-muted); }
+@media(max-width: 480px) { .qa-answer-pair { padding: .75rem .7rem; } }

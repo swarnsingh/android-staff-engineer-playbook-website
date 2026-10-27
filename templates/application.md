@@ -49,3 +49,5 @@ The specific metrics, logs, traces, and dashboards used for this application. Li
 ## Cross-References
 
 Other application files that exercise the same canonical concept, so the reader can compare.
+
+> If dedicated probing or review questions help this topic, put each answer immediately below its question, using `### Question 1` and `#### Answer` under `## Probing Questions`. Ordinary operational checklists do not require an answer per item.

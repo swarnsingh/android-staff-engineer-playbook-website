@@ -161,3 +161,15 @@ html.reduce-motion .pb-figure * { transition: none; }
 [data-theme="contrast"] .pb-node.is-warn > rect, [data-theme="contrast"] .pb-node.is-done > rect { fill: var(--sheet); stroke-width: 3; }
 
 @media(pointer:coarse),(max-width:640px){.pb-btn,.pb-seg button{min-height:48px}.pb-step-nav button{width:48px;height:48px}.stepper-buttons button{min-height:48px}.pb-controls,.stepper-buttons{gap:10px}}
+
+/* Scene feedback and controls stay one visual unit; reusable help is optional. */
+.pb-interaction{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+.pb-interaction .pb-caption{margin-top:0;min-height:0;grid-template-columns:minmax(0,1fr);gap:4px}
+.pb-interaction .pb-progress{margin-top:10px}
+.pb-interaction .pb-step-nav{margin:10px 0 0}
+.pb-interaction .pb-controls{margin-top:10px}
+.pb-steps.pb-guide{margin-top:12px;padding-top:0;border-top:0;font:15px/24px var(--font-sans)}
+.pb-steps summary{min-height:44px;align-content:center}
+.pb-seg{flex-wrap:wrap;max-width:100%;box-sizing:border-box}
+.pb-seg button{min-height:44px}
+@media(max-width:520px){.pb-interaction .pb-controls .pb-btn{flex:1 1 auto}.pb-interaction .pb-controls .spacer{display:none}}

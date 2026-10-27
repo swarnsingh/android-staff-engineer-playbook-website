@@ -157,9 +157,9 @@ Run from the new website repository root. Port 4177 is an example: choose an ava
 
 ## How a page is assembled
 
-`scripts/build.py` parses each original chapter with markdown-it and renders it into `templates/reader.html`. Sections are grouped into six parts (`PARTS` in the script) by their headings; parts only move forward. Then it adds, in order: the chapter's blend fragments, the Codex coroutine fragments for the coroutines page (each wrapped in a labelled `.blend` container), and approved corrections. An approved correction highlights the changed words (`mark.correction-mark`, when the change is one line outside code) and adds a `.correction-note` to its section with the reason, the original wording and the sources.
+`scripts/build.py` parses each original chapter with markdown-it and renders it into `templates/reader.html`. Sections are grouped into six parts (`PARTS` in the script) by their headings; parts only move forward. Then it adds, in order: the chapter's blend fragments, the Codex coroutine fragments for the coroutines page (each wrapped in a labelled `.blend` container), and approved corrections. Approved corrections read as normal current text. Their reasons, current/original wording and official sources are retained in optional technical correction history under About this lesson.
 
-`scripts/check_preservation.py` reads the original areas of each page (`.original-opening` and `section#section-…`), skipping labelled additions. It checks original units, order, repetitions, heading levels and the title, and rejects concealed HTML containers including `template`, `noscript`, `script` and `style`. Only actual Mermaid source may use a diagram disclosure. It currently runs 18 tampering fixtures before checking 4,731 units across 33 pages. It also writes `dist/coverage/original-units.json` from the approved rendering input. The static gate does not evaluate a browser CSS cascade.
+`scripts/check_preservation.py` reads the original areas of each page (`.original-opening` and `section#section-…`), skipping labelled additions. It checks original units, order, repetitions, heading levels and the title, and rejects concealed HTML containers including `template`, `noscript`, `script` and `style`. Only actual Mermaid source may use a diagram disclosure. It runs 22 tampering fixtures before checking 15,564 original units across 125 pages. It also writes `dist/coverage/original-units.json` from the approved rendering input. The static gate does not evaluate a browser CSS cascade.
 
 Invoke the read-only `scripts/browser_preservation.js` async function in a rendered Content page with two arguments: parsed `dist/coverage/diagram-sources.json` and parsed `dist/coverage/original-units.json`. The second argument may instead be that page's unit array for a disposable fixture. Both are required for a meaningful preservation result. The audit compares rendered original-area text with the unit manifest in order, excluding labelled additions and folded prose. A default/empty unit manifest is reported as unverified, not success. Whitespace is ignored; this is not a typography or exact-layout comparison.
 
@@ -188,32 +188,17 @@ Kinds: `story`, `guide`, `visual`, `animation`, `check`, `deeper`, `staff`, `try
 
 A `<figure class="stepper">` contains a `.stage` with elements marked `data-el="id"` (shown, hidden or given a state per step) and `data-text="id"` (text replaced per step), followed by `<script type="application/json" class="steps">`. Each step has `label`, `caption`, and optional `add`, `remove`, `state` and `text`. Frames are always folded from step one. The build prints every step as a numbered list, so no meaning depends on motion or JavaScript.
 
-## Decisions so far
+## Current authoring and verification rules
 
-- Original chapters stay untouched and in their original order; additions are labelled.
-- Corrections are website-only, applied only when approved, and visibly marked.
-- Visuals and animations are used wherever they teach; added prose stays concise.
-- Kotlin first; other trees follow the same approach. Android started as a Phase 1 pilot.
-- Wide trees are split into sub-sections by their guided-reading phases, not by folder.
-- A possible error in an original chapter is flagged on the page with an **Under review** note before its section; the replacement wording waits for the owner's approval.
+Original chapter Markdown remains the recorded source snapshot. Approved exact corrections render once, through the canonical inventory, and teaching additions are labelled. Source PR #57 is merged; the website's corrected text aligns with that revision. The [completion report](reviews/completion/REPORT.md) and [UX review](reviews/ux-2026-10-28/REPORT.md) describe their separate content and presentation checks.
 
-## Verification scope
+Learning paths use phase selection and a start action, without lesson tabs or bookmarks. Individual lessons expose populated Q&A and Resources; Playground appears for the runnable coroutine example. Curriculum navigation starts in the current track, with an explicit All topics option. Focus mode retains access to the topic drawer at every width. Keep original questions and answers available in the static chapter. In the interactive practice view, pair each question with its own answer directly below it; retain checklist-only sections as checklists. This convention applies to every topic tree, including future subjects.
 
-The local website renders 22 Kotlin chapters and 41 Android chapters (phases 1–4), each tree with its learning path: 65 pages. The active Kotlin blend files contain 90 figures and 33 steppers; Android contains 112 figures and 41 steppers. Disputed additions are retained in phase-specific `reviews/pending-android-phaseN-teaching.blend` files until owner approval. Original chapters and approval data remain unchanged.
+Diagram controls use consistent Previous, Next and Reset labels. Temporal playback retains Play/Pause, reduced motion and shared motion ownership. The current explanation remains beside the controls; optional help and the full transcript share one disclosure. Fenced code has a continuous code surface, including inside nested lists; inline-code chip styling must not leak into examples.
 
-The static build preserves 8,555 original units and runs 22 tampering fixtures, including original inner-H1 demotion and missing/duplicated/hidden hero titles. The integrated browser report is `reviews/android-completion-validation.json`: 65 pages, 41 loaded original diagram images, 74 initialised steppers, and 260 clean geometry checks across 320/390/768/1280px using 22px handwritten text. Original visibility is audited before the disposable harness reveals added animation states for geometry checks. The report does not certify physical devices, other browser engines, arbitrary occlusion, screen readers or Android runtime behaviour.
+The static gate checks all 125 pages and 15,564 original units. Browser verification checks actual views, rendered preservation, enlarged text, illustrations, scenes and code presentation. Dedicated motion, Binder, gallery and UX suites complement that sweep. Browser emulation does not certify physical devices, other engines or screen-reader behaviour. Run the documented audits after changing shared reader code and record the tested scope before publication.
 
-Timeline bars with long labels now use numbered references and a wrapping full-text legend, retaining proportional bar positions. Very short numeric labels remain on their bars. This avoids clipping at enlarged font sizes without discarding the teaching text.
-
-Independent reviews of the existing phases identified the fixes now recorded in `reviews/android-review-todos/`. The Phase 4 original review completed and its fixes were applied; a further follow-up review attempt and a Phase 1 follow-up attempt were interrupted by the account's review-agent usage limit. The coordinator completed build, source-hash and browser checks. Phases 5–9 (60 chapters) remain unconverted and must retain the per-phase independent-review gate when work resumes.
-
-The first review's eleven fixes are historical context, not a blanket accuracy guarantee. Subsequent review found further actor, value-class and preservation defects. Re-run the targeted checks after changes, and report the scope of actual compilation and browser interaction. Known technical corrections in the original chapters remain unapplied until owner approval.
-
-## Next steps
-
-1. The owner reviews the exact texts in `reviews/corrections-with-edits.md` (and `.json`) for the 23 "approve with edit" rows, including the revised CH4 actor proposal. Then the owner approves `reviews/corrections-triage.md` (all 292 + 3 new reviewed: 199 approve, 23 approve with edit, 73 reject). Then set `"status": "approved"` (and amended text) in `content/corrections-*.json` and add the three new findings. The markers are already built; check each approved page after the build.
-2. The owner reviews the Android findings in `reviews/android-phase*-findings.md`, approving by ID.
-3. Continue Android phase by phase: add the next phase number to `TREES['android']['phases']` in `scripts/build.py`, add its intros to `INTRO`, and write `content/blend/android/<chapter>.blend` for each chapter. Each finished phase gets an independent review before the next phase starts.
+Earlier phase counts, held corrections and pending conversion lists belong to the historical phase reports. They do not describe current work: all nine Android phases and all Kotlin chapters are rendered, and the retained correction backlog has documented dispositions.
 
 ## Regression checks for the final review fixes
 
@@ -223,7 +208,7 @@ The runner compiles the exact CH4 JSON proposal with the chapter's command types
 
 The channel is cancelled by the worker's completion handler even if startup never occurred. Active callers receive ordinary `CartStoppedException` on shutdown. Their own cancellation remains `CancellationException`. A cancellation from the service while the worker stays active becomes `CheckoutRequestCancelledException` for that request; it does not kill the actor. A checkout that finishes while shutdown begins still returns its result rather than `CartStoppedException`. If cancellation or failure happens before the receipt is delivered, the outcome is unknown; use idempotency or reconcile server state before retrying. Unexpected failures still stop the worker and retain the owner's reporting policy. Accepted commands belong to the actor's owner; cancellation of the waiting caller does not promise rollback. The sample is in-memory and makes no durability guarantee.
 
-CH4 remains a proposal. Tests use a temporary directory and never approve corrections or edit original chapters. The sample needs the coroutine/channel imports and `java.io.IOException`, as stated beside the proposal.
+CH4 is included in the approved canonical correction inventory. Tests use a temporary directory and never approve new corrections or edit original chapters. The sample needs the coroutine/channel imports and `java.io.IOException`, as stated beside the proposal.
 
 For browser regressions, create disposable fixtures with `python3 website/scripts/make_browser_fixtures.py /absolute/scratch/path`, serve that directory on a free port and invoke the audit using each `cases.json` entry's diagrams and units. There are 19 cases: a visible control, 17 required detections, and an overlay case recorded as an explicit limitation. Compare each result to its `expected` field. The audit itself never changes DOM, preferences, scrolling or disclosures.
 

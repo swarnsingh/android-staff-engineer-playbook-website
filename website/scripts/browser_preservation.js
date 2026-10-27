@@ -3,7 +3,7 @@
  * This is not a proof of contrast, arbitrary clipping, occlusion, or accessibility.
  * It never changes DOM, preferences, scroll positions, or disclosures.
  */
-(async function inspectOriginalContent(expectedDiagrams = {}, unitManifest = {}, view = 'content') {
+(async function inspectOriginalContent(expectedDiagrams = {}, unitManifest = {}, view = 'content', pairManifest = {}) {
   const panel = document.querySelector(view === 'qa' ? '#panel-qa' : '#panel-content');
   if (!panel || panel.hidden) return {problems: [`${view} must be present and selected`], checked: 0};
   const source = document.body.dataset.source || 'fixture';
@@ -75,16 +75,58 @@
   }
   // Walk actual rendered text rather than textContent: templates, noscript, hidden descendants,
   // folded prose and labelled additions must not satisfy a missing original unit.
-  function rendered(element) {
+  const paired = view === 'qa' && !!panel.querySelector('[data-qa-answer-slot]');
+  function rendered(element, owner = null) {
+    // Pairing moves original nodes, while their source section/ordinal remains
+    // explicit. Reconstruct the source reading order without changing the DOM.
+    // Visibility is still inspected at each node's actual rendered location.
+    if (owner && element !== owner && element.matches(sourceZones)) return '';
+    if (owner && element.matches('.qa-answer-pair')) return '';
+    if (owner && element.hasAttribute('data-qa-answer-slot')) {
+      const key = element.dataset.qaAnswerSlot;
+      if (key !== owner.id) return '';
+      return [...panel.querySelectorAll('[data-original-answer-index]')]
+        .filter(answer => answer.dataset.originalSection === key)
+        .sort((a,b) => Number(a.dataset.originalAnswerIndex)-Number(b.dataset.originalAnswerIndex))
+        .map(answer => rendered(answer, owner)).join(' ');
+    }
     if (element.matches(ignore + ',template,noscript,script,style,button,summary,figcaption') || concealed.has(element) || folded(element) || !element.innerText) return '';
     let text = '';
     for (const child of element.childNodes) {
       if (child.nodeType === 3) text += child.textContent;
-      else if (child.nodeType === 1) text += rendered(child);
+      else if (child.nodeType === 1) text += rendered(child, owner);
     }
     return text + ' ';
   }
-  const stream = compact(zones.filter(zone => !zone.parentElement?.closest(sourceZones)).map(rendered).join(' '));
+  const stream = compact(paired
+    ? [...zones].sort((a,b) => Number(a.dataset.sourceOrder ?? -1)-Number(b.dataset.sourceOrder ?? -1)).map(zone => rendered(zone,zone)).join(' ')
+    : zones.filter(zone => !zone.parentElement?.closest(sourceZones)).map(zone => rendered(zone)).join(' '));
+  // Independently verify which answer is displayed under which question. Source
+  // order reconstruction alone must never permit a swapped or duplicated pair.
+  const pairChecks = [];
+  const expectedPairs = view === 'qa' ? (pairManifest[source] || []) : [];
+  if (view === 'qa' && (paired || expectedPairs.length)) {
+    const questions = [...panel.querySelectorAll('#section-probing-questions > ol > li')];
+    const answers = [...panel.querySelectorAll('[data-original-answer-index]')];
+    if (!expectedPairs.length) problems.push('Independent question/answer manifest is required');
+    if (questions.length !== expectedPairs.length || answers.length !== expectedPairs.length) problems.push('Question/answer pair count differs from the source');
+    if (panel.querySelectorAll('[data-qa-answer-slot]').length !== 1) problems.push('Expected exactly one original answer-list slot');
+    const originalText = (node, question = false) => {
+      if (node.nodeType === 3) return node.textContent;
+      if (node.nodeType !== 1 || node.matches(ignore + ',script,style') || (question && node.matches('.qa-answer-pair'))) return '';
+      return [...node.childNodes].map(child => originalText(child,question)).join('');
+    };
+    const digest = async text => [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text.replace(/\s+/g,' ').trim())))].map(b=>b.toString(16).padStart(2,'0')).join('');
+    for (const [index, expected] of expectedPairs.entries()) {
+      const question = questions[index], own = question?.querySelectorAll(':scope > .qa-answer-pair > ol > li') || [], answer = own[0], failures = [];
+      if (!question || Number(question.dataset.qaQuestionIndex) !== expected.number) failures.push('question ordinal mismatch');
+      if (own.length !== 1 || !answer || Number(answer.dataset.originalAnswerIndex) !== expected.number || Number(answer.parentElement.start) !== expected.number || answer.dataset.originalSection !== 'section-answer-key') failures.push('answer is not paired with its original question');
+      if (question && await digest(originalText(question,true)) !== expected.question_sha256) failures.push('question changed or duplicated');
+      if (answer && await digest(originalText(answer)) !== expected.answer_sha256) failures.push('answer changed or duplicated');
+      pairChecks.push({number:expected.number,ok:!failures.length,problems:failures});
+      failures.forEach(failure => problems.push('Question '+expected.number+': '+failure));
+    }
+  }
   let position = 0;
   if (!allUnits?.length) problems.push('Original-unit manifest is required; rendered preservation is unverified');
   else for (let i = 0; i < expectedUnits.length; i++) {
@@ -121,5 +163,5 @@
     else report(image, status === 'failed' ? 'original diagram image failed to load' : 'original diagram image has not loaded; resource validation is incomplete');
   }
   if (expectedUnits && images.length !== expectedUnits.filter(unit => unit.kind === 'diagram').length) problems.push('Original diagram image count does not match the source');
-  return {source, view, checked, units: expectedUnits?.length || 0, diagrams: images.length, loadedDiagrams, diagramResources, problems};
+  return {source, view, checked, units: expectedUnits?.length || 0, diagrams: images.length, loadedDiagrams, diagramResources, pairChecks, problems};
 })

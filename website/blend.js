@@ -80,18 +80,26 @@
     const controls = document.createElement('div');
     controls.className = 'stepper-controls';
     controls.innerHTML = '<div class="stepper-status"><span class="stepper-count"></span><p class="stepper-caption" aria-live="polite"></p></div>' +
-      '<div class="stepper-buttons"><button type="button" class="secondary-button" data-act="prev">← Previous</button>' +
+      '<div class="stepper-buttons"><button type="button" class="secondary-button" data-act="prev">Previous</button>' +
       '<button type="button" class="primary-button" data-act="play" aria-pressed="false">Play</button>' +
-      '<button type="button" class="secondary-button" data-act="next">Next →</button>' +
-      '<button type="button" class="text-button" data-act="reset">Replay ↺</button></div>';
+      '<button type="button" class="secondary-button" data-act="next">Next</button>' +
+      '<button type="button" class="text-button" data-act="reset">Reset</button></div>';
     figure.querySelector('.stage').after(controls);
+    const transcript = figure.querySelector('.steps-text');
+    if (transcript) {
+      transcript.querySelector('summary').textContent = 'Help & step transcript';
+      const help = document.createElement('p');
+      help.className = 'diagram-help';
+      help.textContent = 'Use Previous and Next to compare states' + (actors.size ? ', or choose a numbered step. ' : '. ') + 'Reset returns to the first step. Play follows the sequence automatically and starts again after the last step; Pause stops playback. With reduced motion, use the step controls. Every step is listed below.';
+      transcript.querySelector('summary').after(help);
+    }
     const $ = selector => controls.querySelector(selector);
     let stepNav, progress;
     if(actors.size){
       stepNav=document.createElement('nav');stepNav.className='pb-step-nav';stepNav.setAttribute('aria-label','Scene steps');
       steps.forEach((step,index)=>{const b=document.createElement('button');b.type='button';b.dataset.index=index;b.textContent=index+1;b.setAttribute('aria-label','Go to step '+(index+1)+(step.label?': '+step.label:''));stepNav.appendChild(b);});
-      controls.prepend(stepNav);
-      const track=document.createElement('div');track.className='pb-progress';track.setAttribute('aria-hidden','true');progress=document.createElement('i');track.appendChild(progress);controls.prepend(track);
+      controls.querySelector('.stepper-status').after(stepNav);
+      const track=document.createElement('div');track.className='pb-progress';track.setAttribute('aria-hidden','true');progress=document.createElement('i');track.appendChild(progress);controls.querySelector('.stepper-status').after(track);
       stepNav.addEventListener('click',event=>{const b=event.target.closest('[data-index]');if(!b)return;stop();turn?.claim();position=Number(b.dataset.index);render(false);});
     }
 

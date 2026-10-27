@@ -1,0 +1,34 @@
+/* Learning paths prioritize choosing a chapter; lessons retain the reading controls. */
+.path-facts { display:flex; flex-wrap:wrap; gap:.5rem 1.5rem; margin:1.25rem 0; padding:0; list-style:none; color:var(--muted); font:500 .9375rem/1.6 var(--font-sans); }
+.path-facts li { margin:0; }
+.path-actions { display:flex; flex-wrap:wrap; align-items:center; gap:.75rem; margin-top:1.5rem; }
+.path-actions a { min-height:44px; text-align:center; }
+.path-overview { margin:1.5rem 0 2rem; padding:1.5rem 0; border-block:1px solid var(--line); }
+.path-overview h2 { margin:0 0 .5rem; font:650 1.4rem/1.4 var(--font-sans); }
+.path-overview > p { color:var(--muted); font:400 1rem/1.7 var(--font-sans); margin:.5rem 0 1.25rem; }
+.path-phase-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem; list-style:none; margin:0; padding:0; }
+.path-phase-grid li { min-width:0; margin:0; }
+.path-phase-grid a { display:flex; flex-direction:column; gap:.5rem; padding:1.1rem; height:100%; border:1px solid var(--line); border-radius:var(--radius-md); background:var(--sheet-sunken); color:var(--text); text-decoration:none; overflow-wrap:anywhere; }
+.path-phase-grid a:hover { border-color:var(--accent); }
+.path-phase-grid .phase-number { color:var(--accent); font:650 .8125rem/1.5 var(--font-sans); }
+.path-phase-grid strong { font:650 1rem/1.5 var(--font-sans); }
+.path-phase-grid .phase-count { margin-top:auto; color:var(--muted); font:400 .8125rem/1.5 var(--font-sans); }
+.lesson-about { margin-top:1rem; max-width:48rem; }
+.lesson-about summary { min-height:44px; display:list-item; align-content:center; cursor:pointer; color:var(--muted); }
+.lesson-about p { margin:.5rem 0; line-height:1.7; }
+.chapter-navigation a { display:flex; flex-direction:column; gap:.35rem; text-decoration:none; }
+.chapter-navigation small { color:var(--muted); font:500 .8125rem/1.5 var(--font-sans); }
+body[data-page-kind="learning-path"] .mobile-outline { top:5rem; }
+body[data-page-kind="learning-path"] { scroll-padding-top:6rem; }
+@media(max-width:640px) {
+  .path-phase-grid { grid-template-columns:minmax(0,1fr); }
+  .path-actions { align-items:stretch; }
+  .path-actions a { flex:1 1 12rem; }
+  body[data-page-kind="learning-path"] .mobile-outline { top:4.25rem; }
+}
+@media print { .path-actions,.path-overview,.lesson-about { display:none; } }
+
+/* Editorial history stays available without interrupting the lesson. */
+.technical-correction-history { margin-top:1rem; }
+.technical-correction-history li { margin-block:1rem; }
+.technical-correction-history pre { white-space:pre-wrap; overflow-wrap:anywhere; font:400 .8125rem/1.7 var(--font-mono); padding:.75rem; border:1px solid var(--line); border-radius:var(--radius-sm); }

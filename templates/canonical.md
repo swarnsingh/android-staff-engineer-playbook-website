@@ -139,13 +139,15 @@ List misconceptions.
 
 ## Probing Questions
 
-Questions a Staff engineer should be able to answer cold about this topic. Depth check, not interview prep.
+Write each dedicated question with its answer immediately below it. Continue the numbered Question headings for additional pairs; do not collect answers in a separate key.
 
----
+### Question 1
 
-## Answer Key
+Write a question that tests reasoning about this topic.
 
-Give a concise numbered answer for every probing question. State the expected reasoning, tradeoff, or failure mode rather than repeating the chapter. A reader should be able to grade their answer here; use Further Reading for authoritative API details and deeper study.
+#### Answer
+
+State the expected reasoning, tradeoff, or failure mode. Keep the answer concise and cite primary sources in Further Reading.
 
 ---
 

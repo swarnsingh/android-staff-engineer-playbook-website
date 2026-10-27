@@ -417,15 +417,22 @@
     var btn = {}; root.querySelectorAll('[data-act]').forEach(function (b) { btn[b.dataset.act] = b; });
     var mode = Object.keys(data.modes)[0], idx = 0, token = 0, flying = false, playing = false, timer = 0, ref, key;
     var turn;
+    // Keep the live explanation and its controls together; optional help and the
+    // full transcript share one disclosure instead of competing with the scene.
+    var interaction = document.createElement('div'); interaction.className = 'pb-interaction';
+    var caption = root.querySelector('.pb-caption'), progress = root.querySelector('.pb-progress'), controls = root.querySelector('.pb-controls');
+    caption.before(interaction); interaction.append(caption, progress, controls);
+    btn.prev.textContent = 'Previous'; btn.next.textContent = 'Next'; btn.reset.textContent = 'Reset';
+    var guide = root.querySelector('.pb-steps');
+    guide.classList.add('pb-guide');
+    guide.querySelector('summary').textContent = 'Help & step transcript';
+    var help=document.createElement('p');help.textContent='Use Next to follow cause and effect, Previous to compare states' + (data.illustrated ? ', or choose a numbered step. ' : '. ') + 'Reset returns to the first step. Play follows the sequence; Pause finishes the current step. With reduced motion, use the step controls.';
+    guide.insertBefore(help, list);
     if(data.illustrated){
       root.classList.add('is-illustrated');
-      var guide=document.createElement('details');guide.className='pb-guide';
-      var summary=document.createElement('summary');summary.textContent='How to explore this scene';guide.appendChild(summary);
-      var help=document.createElement('p');help.textContent='Use Next to follow cause and effect. Jump to a numbered step to compare states. Play follows the same sequence; Pause finishes the current step. Read every step as text below.';guide.appendChild(help);
       var legend=document.createElement('div');legend.className='pb-legend';
-      [['client','Devices'],['runtime','Execution'],['storage','Stored data'],['queue','Queued work']].forEach(function(pair){var item=document.createElement('span');item.className='actor-'+pair[0];item.textContent=pair[1];legend.appendChild(item);});guide.appendChild(legend);
-      var direction=document.createElement('p');direction.textContent='Long dashes show forward transfers; dotted paths and a diamond mark returns. Amber marks a warning. The caption names the actual object or signal being transferred.';guide.appendChild(direction);
-      root.querySelector('.pb-steps').insertAdjacentElement('beforebegin',guide);
+      [['client','Devices'],['runtime','Execution'],['storage','Stored data'],['queue','Queued work']].forEach(function(pair){var item=document.createElement('span');item.className='actor-'+pair[0];item.textContent=pair[1];legend.appendChild(item);});guide.insertBefore(legend,list);
+      var direction=document.createElement('p');direction.textContent='Long dashes show forward transfers; dotted paths and a diamond mark returns. Amber marks a warning. The caption names the actual object or signal being transferred.';guide.insertBefore(direction,list);
     }
     function track() { return data.modes[mode]; }
     function stateAt(k) {
@@ -455,8 +462,9 @@
       capEl.innerHTML = track().steps[idx].caption;
       bar.style.width = ((idx + 1) / n * 100) + '%';
       btn.prev.disabled = idx === 0; btn.next.disabled = idx === n - 1;
-      btn.play.textContent = playing || flying ? 'Pause' : (idx === n - 1 ? 'Replay' : 'Play');
+      btn.play.textContent = playing || flying ? 'Pause' : 'Play';
       btn.play.setAttribute('aria-pressed', playing || flying ? 'true' : 'false');
+      btn.play.setAttribute('aria-label', playing || flying ? 'Pause playback' : (idx === n - 1 ? 'Play from the first step' : 'Play sequence'));
       btn.play.disabled = motion.reduced();
       root.querySelectorAll('[data-step]').forEach(function(b){if(Number(b.dataset.step)===idx)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');});
     }

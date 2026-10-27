@@ -4,7 +4,7 @@ on:
   pull_request:
     paths: ['website/**', 'source-snapshot.json', '.github/workflows/website.yml']
   push:
-    branches: [main, codex/android-completion]
+    branches: [main]
     paths: ['website/**', 'source-snapshot.json', '.github/workflows/website.yml']
   workflow_dispatch:
 
@@ -30,6 +30,9 @@ jobs:
         run: python -m pip install -r website/requirements.txt
       - name: Check browser scripts
         run: |
+          node --check website/scripts/browser_preservation.js
+          node --check website/tools/ux_audit_runner.js
+          node --check website/tools/qa_fixture_runner.js
           node --check website/app.js
           node --check website/blend.js
           node --check website/design-system/components/bundle.js
@@ -41,6 +44,8 @@ jobs:
         with:
           path: website/.cache/diagrams
           key: website-diagrams-${{ runner.os }}-${{ hashFiles('website/scripts/build.py', 'android/**/*.md', 'kotlin/**/*.md', 'website/content/corrections-*.json') }}
+          restore-keys: |
+            website-diagrams-${{ runner.os }}-
       - name: Test correction markup boundaries
         run: python -m unittest discover -s website/scripts -p "test_*.py"
       - name: Build and verify original chapter preservation
