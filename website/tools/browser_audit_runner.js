@@ -44,7 +44,7 @@ window.__runAudit = async (pages, widths = [320, 390, 768, 1181, 1280, 1439, 144
         const steppers=d.querySelectorAll('figure.stepper').length,ready=d.querySelectorAll('figure.stepper.is-ready').length;
         const scenes=d.querySelectorAll('[data-pb-flow="scene"]').length;
         const sceneReady=[...d.querySelectorAll('[data-pb-flow="scene"]')].filter(e=>!e.classList.contains('pb-error')&&e.querySelector('.pb-count').textContent&&e.querySelector('.pb-node')).length;
-        d.documentElement.style.setProperty('--reader-font','"Shantell Sans",sans-serif');
+        d.documentElement.dataset.readerFont='handwritten';
         d.documentElement.style.setProperty('--reader-size','1.375rem');
         await d.fonts.load('22px "Shantell Sans"');
         await d.fonts.load('19px "Patrick Hand"');

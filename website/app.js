@@ -28,7 +28,12 @@ $$('[data-copy]').forEach(button => button.addEventListener('click', async () =>
   } catch { toast('Clipboard unavailable. Select the code to copy it.'); }
 }));
 
-const fonts = {sans:'Inter,system-ui,-apple-system,"Segoe UI",sans-serif',serif:'"Source Serif 4",Georgia,"Palatino Linotype",serif',times:'"Times New Roman",Times,serif',hand:'"Shantell Sans","Playbook Hand",sans-serif'};
+// Reading-font options come from the design tokens (build.py writes them into the select).
+// A saved legacy ID maps to its successor; a missing choice follows the default without being saved.
+const fontOptions = [...$('#font-family').options];
+const defaultFont = fontOptions[0].value;
+const legacyFonts = Object.fromEntries(fontOptions.flatMap(option => option.dataset.legacy.split(' ').filter(Boolean).map(id => [id,option.value])));
+const readerFont = id => { const mapped = legacyFonts[id] || id; return fontOptions.some(option => option.value === mapped) ? mapped : defaultFont; };
 let preferences = {};
 try { preferences = JSON.parse(localStorage.getItem('playbook-reader-v1')) || {}; } catch {}
 if (typeof preferences !== 'object' || Array.isArray(preferences)) preferences = {};
@@ -40,15 +45,16 @@ function pauseAnimation() { animationStops.forEach(stop => stop()); window.Playb
 function savePreferences() { try { localStorage.setItem('playbook-reader-v1',JSON.stringify(preferences)); } catch {} }
 function applyPreferences() {
   const theme = ['light','dark','sepia','contrast'].includes(preferences.theme) ? preferences.theme : 'light';
-  const font = Object.hasOwn(fonts,preferences.font) ? preferences.font : 'sans';
+  const font = readerFont(preferences.font);
   const size = Math.max(15,Math.min(22,Number(preferences.size) || 18));
   effectiveReducedMotion = systemMotion.matches || !!preferences.motion;
   document.documentElement.dataset.theme = theme;
-  document.documentElement.style.setProperty('--reader-font',fonts[font]);
+  document.documentElement.dataset.readerFont = font;
   document.documentElement.style.setProperty('--reader-size',`${size / 16}rem`);
   document.documentElement.classList.toggle('reduce-motion',effectiveReducedMotion);
   document.body.classList.toggle('code-wrap',!!preferences.wrap);
   $('#font-family').value = font; $('#font-size').value = size;
+  $('#font-description').textContent = $('#font-family').selectedOptions[0].dataset.description;
   $('#font-size-value').textContent = `${size}px base`;
   $$('input[name=theme]').forEach(input => { input.checked = input.value === theme; });
   $('#reduce-motion').checked = effectiveReducedMotion;
@@ -65,9 +71,50 @@ function applyPreferences() {
   if (effectiveReducedMotion) pauseAnimation();
   document.dispatchEvent(new Event('playbook:motion'));
 }
+if (legacyFonts[preferences.font]) { preferences.font = legacyFonts[preferences.font]; savePreferences(); }
 applyPreferences();
-$('#font-family').addEventListener('change',e => { preferences.font=e.target.value; applyPreferences(); savePreferences(); });
-$('#font-size').addEventListener('input',e => { preferences.size=e.target.value; applyPreferences(); savePreferences(); });
+// Text reflows when the font or size changes. Keep the line under the header where it was: anchor on the
+// nearest visible block at that line, at the same fraction of its height.
+const anchorBlocks = 'h2,h3,h4,p,li,pre,table,figure,blockquote,summary';
+const shown = el => el.checkVisibility ? el.checkVisibility() : !el.closest('details:not([open]) > :not(summary)');
+function readingAnchor() {
+  const line = $('.topbar')?.getBoundingClientRect().bottom || 0;
+  const panel = $$('.reading-content > section').find(view => !view.hidden) || $('.reading-content');
+  if (!panel) return null;
+  // The visible block closest to the line, by layout rather than DOM order. A container gives way to its own
+  // block starting within about a line of the reading line; among blocks that all cross it, the smallest wins.
+  const onScreen = [...panel.querySelectorAll(anchorBlocks)].map(el => ({el, box: el.getBoundingClientRect()}))
+    .filter(({el, box}) => box.height > 0 && box.bottom > line + 8 && box.top < innerHeight && shown(el));
+  const near = line + parseFloat(getComputedStyle(panel).fontSize) * 2;
+  const best = onScreen.filter(({el}) => !onScreen.some(inner => inner.el !== el && el.contains(inner.el) && inner.box.top < near))
+    .sort((a, b) => Math.max(a.box.top, line) - Math.max(b.box.top, line) || a.box.height - b.box.height)[0];
+  if (!best) return null;
+  const box = best.box;
+  return {block: best.el, line, offset: box.top, fraction: box.top < line ? (line - box.top) / box.height : 0};
+}
+function keepReadingPosition(anchor) {
+  if (!anchor || !anchor.block.isConnected) return;
+  const box = anchor.block.getBoundingClientRect();
+  const shift = anchor.fraction ? box.top + anchor.fraction * box.height - anchor.line : box.top - anchor.offset;
+  if (Math.abs(shift) > 1) window.scrollBy({top: shift, behavior: 'instant'});
+}
+let readingChanges = 0;
+async function changeReading(update) {
+  const anchor = readingAnchor(), change = ++readingChanges;
+  // The browser's own scroll anchoring would correct the same reflow a frame later and double the shift.
+  document.documentElement.style.overflowAnchor = 'none';
+  update();
+  applyPreferences(); savePreferences(); keepReadingPosition(anchor);
+  // Re-anchor once the newly chosen face has loaded and swapped in.
+  try { await Promise.race([document.fonts.load(`400 1em ${getComputedStyle(document.documentElement).getPropertyValue('--font-prose')}`), new Promise(resolve => setTimeout(resolve,3000))]); } catch {}
+  requestAnimationFrame(() => {
+    if (change !== readingChanges) return;
+    keepReadingPosition(anchor);
+    document.documentElement.style.overflowAnchor = '';
+  });
+}
+$('#font-family').addEventListener('change',e => changeReading(() => { preferences.font=e.target.value; }));
+$('#font-size').addEventListener('input',e => changeReading(() => { preferences.size=e.target.value; }));
 $$('input[name=theme]').forEach(input => input.addEventListener('change',() => { preferences.theme=input.value; applyPreferences(); savePreferences(); }));
 $('#reduce-motion').addEventListener('change',e => { preferences.motion=e.target.checked; applyPreferences(); savePreferences(); });
 $('#wrap-code').addEventListener('change',e => { preferences.wrap=e.target.checked; applyPreferences(); savePreferences(); });

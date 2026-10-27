@@ -1,0 +1,1640 @@
+{
+ "tool": "reading-font interaction checks",
+ "browser": "Chrome headless shell 151 (puppeteer 25.4.0)",
+ "checks": 103,
+ "failures": [],
+ "pageErrors": [],
+ "results": [
+  {
+   "name": "legacy sans -> modern",
+   "ok": true,
+   "detail": {
+    "state": {
+     "font": "modern",
+     "select": "modern",
+     "size": "20px",
+     "theme": "sepia"
+    },
+    "store": {
+     "font": "modern",
+     "size": 20,
+     "theme": "sepia",
+     "wrap": true
+    }
+   }
+  },
+  {
+   "name": "legacy serif -> book",
+   "ok": true,
+   "detail": {
+    "state": {
+     "font": "book",
+     "select": "book",
+     "size": "20px",
+     "theme": "sepia"
+    },
+    "store": {
+     "font": "book",
+     "size": 20,
+     "theme": "sepia",
+     "wrap": true
+    }
+   }
+  },
+  {
+   "name": "legacy times -> classic",
+   "ok": true,
+   "detail": {
+    "state": {
+     "font": "classic",
+     "select": "classic",
+     "size": "20px",
+     "theme": "sepia"
+    },
+    "store": {
+     "font": "classic",
+     "size": 20,
+     "theme": "sepia",
+     "wrap": true
+    }
+   }
+  },
+  {
+   "name": "legacy hand -> handwritten",
+   "ok": true,
+   "detail": {
+    "state": {
+     "font": "handwritten",
+     "select": "handwritten",
+     "size": "20px",
+     "theme": "sepia"
+    },
+    "store": {
+     "font": "handwritten",
+     "size": 20,
+     "theme": "sepia",
+     "wrap": true
+    }
+   }
+  },
+  {
+   "name": "default font not persisted",
+   "ok": true,
+   "detail": {
+    "theme": "dark"
+   }
+  },
+  {
+   "name": "saved choice applied before paint",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "name": "unknown id falls back, stored value untouched",
+   "ok": true,
+   "detail": {
+    "font": "unknown-font"
+   }
+  },
+  {
+   "name": "modern: preload and on-demand fonts",
+   "ok": true,
+   "detail": {
+    "preloads": [
+     "Inter-Variable-latin.woff2",
+     "PlaybookSans-Variable-latin.woff2"
+    ],
+    "fetched": [
+     "Inter-Variable-latin.woff2",
+     "PlaybookSans-Variable-latin.woff2",
+     "PlaybookSans-Italic-Variable-latin.woff2",
+     "JetBrainsMono-Variable-latin.woff2",
+     "PatrickHand-Regular.woff2"
+    ]
+   }
+  },
+  {
+   "name": "book: preload and on-demand fonts",
+   "ok": true,
+   "detail": {
+    "preloads": [
+     "Inter-Variable-latin.woff2",
+     "PlaybookSerif-Variable-latin.woff2"
+    ],
+    "fetched": [
+     "Inter-Variable-latin.woff2",
+     "PlaybookSerif-Variable-latin.woff2",
+     "PlaybookSerif-Italic-Variable-latin.woff2",
+     "JetBrainsMono-Variable-latin.woff2",
+     "PatrickHand-Regular.woff2"
+    ]
+   }
+  },
+  {
+   "name": "classic: preload and on-demand fonts",
+   "ok": true,
+   "detail": {
+    "preloads": [
+     "Inter-Variable-latin.woff2"
+    ],
+    "fetched": [
+     "Inter-Variable-latin.woff2",
+     "JetBrainsMono-Variable-latin.woff2",
+     "PatrickHand-Regular.woff2"
+    ]
+   }
+  },
+  {
+   "name": "handwritten: preload and on-demand fonts",
+   "ok": true,
+   "detail": {
+    "preloads": [
+     "Inter-Variable-latin.woff2",
+     "ShantellSans-Variable-latin.woff2"
+    ],
+    "fetched": [
+     "Inter-Variable-latin.woff2",
+     "ShantellSans-Variable-latin.woff2",
+     "JetBrainsMono-Variable-latin.woff2",
+     "PatrickHand-Regular.woff2"
+    ]
+   }
+  },
+  {
+   "name": "easy: preload and on-demand fonts",
+   "ok": true,
+   "detail": {
+    "preloads": [
+     "Inter-Variable-latin.woff2",
+     "AtkinsonHyperlegibleNext-Variable-latin.woff2"
+    ],
+    "fetched": [
+     "Inter-Variable-latin.woff2",
+     "AtkinsonHyperlegibleNext-Variable-latin.woff2",
+     "AtkinsonHyperlegibleNext-Italic-Variable-latin.woff2",
+     "JetBrainsMono-Variable-latin.woff2",
+     "PatrickHand-Regular.woff2"
+    ]
+   }
+  },
+  {
+   "name": "/android/architecture/process-death-and-state-restoration/ @1440 position kept",
+   "ok": true,
+   "detail": [
+    [
+     0,
+     "modern",
+     0
+    ],
+    [
+     0,
+     "book",
+     0
+    ],
+    [
+     0,
+     "classic",
+     0
+    ],
+    [
+     0,
+     "handwritten",
+     -1
+    ],
+    [
+     0,
+     "easy",
+     -1
+    ],
+    [
+     0.5,
+     "modern",
+     -0.01
+    ],
+    [
+     0.5,
+     "book",
+     0
+    ],
+    [
+     0.5,
+     "classic",
+     0
+    ],
+    [
+     0.5,
+     "handwritten",
+     0
+    ],
+    [
+     0.5,
+     "easy",
+     0
+    ]
+   ]
+  },
+  {
+   "name": "/android/architecture/process-death-and-state-restoration/ @1440 no reload, size kept, choice saved",
+   "ok": true,
+   "detail": {
+    "reload": false,
+    "size": "20px",
+    "saved": "easy"
+   }
+  },
+  {
+   "name": "/android/architecture/process-death-and-state-restoration/ @1440 diagram state kept",
+   "ok": true,
+   "detail": {
+    "before": "Step 3 of 5 \u00b7 User returns|3",
+    "after": "Step 3 of 5 \u00b7 User returns|3"
+   }
+  },
+  {
+   "name": "/android/architecture/process-death-and-state-restoration/ @1440 Q&A tab kept and its prose follows the font",
+   "ok": true,
+   "detail": {
+    "selected": "true",
+    "visible": true,
+    "font": "\"Playbook Serif\", \"Playbook Serif Fallback\", Georgia, serif"
+   }
+  },
+  {
+   "name": "/android/architecture/process-death-and-state-restoration/ @390 position kept",
+   "ok": true,
+   "detail": [
+    [
+     0,
+     "modern",
+     0
+    ],
+    [
+     0,
+     "book",
+     0
+    ],
+    [
+     0,
+     "classic",
+     0
+    ],
+    [
+     0,
+     "handwritten",
+     0
+    ],
+    [
+     0,
+     "easy",
+     0
+    ],
+    [
+     0.5,
+     "modern",
+     0
+    ],
+    [
+     0.5,
+     "book",
+     0
+    ],
+    [
+     0.5,
+     "classic",
+     0
+    ],
+    [
+     0.5,
+     "handwritten",
+     0
+    ],
+    [
+     0.5,
+     "easy",
+     0
+    ]
+   ]
+  },
+  {
+   "name": "/android/architecture/process-death-and-state-restoration/ @390 no reload, size kept, choice saved",
+   "ok": true,
+   "detail": {
+    "reload": false,
+    "size": "20px",
+    "saved": "easy"
+   }
+  },
+  {
+   "name": "/android/architecture/process-death-and-state-restoration/ @390 diagram state kept",
+   "ok": true,
+   "detail": {
+    "before": "Step 3 of 5 \u00b7 User returns|3",
+    "after": "Step 3 of 5 \u00b7 User returns|3"
+   }
+  },
+  {
+   "name": "/android/architecture/process-death-and-state-restoration/ @390 Q&A tab kept and its prose follows the font",
+   "ok": true,
+   "detail": {
+    "selected": "true",
+    "visible": true,
+    "font": "\"Playbook Serif\", \"Playbook Serif Fallback\", Georgia, serif"
+   }
+  },
+  {
+   "name": "/android/architecture/viewmodel/ @1440 position kept",
+   "ok": true,
+   "detail": [
+    [
+     0,
+     "modern",
+     0
+    ],
+    [
+     0,
+     "book",
+     0
+    ],
+    [
+     0,
+     "classic",
+     0
+    ],
+    [
+     0,
+     "handwritten",
+     0
+    ],
+    [
+     0,
+     "easy",
+     0
+    ],
+    [
+     0.5,
+     "modern",
+     0
+    ],
+    [
+     0.5,
+     "book",
+     0
+    ],
+    [
+     0.5,
+     "classic",
+     0
+    ],
+    [
+     0.5,
+     "handwritten",
+     0
+    ],
+    [
+     0.5,
+     "easy",
+     0
+    ]
+   ]
+  },
+  {
+   "name": "/android/architecture/viewmodel/ @1440 no reload, size kept, choice saved",
+   "ok": true,
+   "detail": {
+    "reload": false,
+    "size": "20px",
+    "saved": "easy"
+   }
+  },
+  {
+   "name": "/android/architecture/viewmodel/ @1440 diagram state kept",
+   "ok": true,
+   "detail": {
+    "before": "Step 3 of 6 \u00b7 New activity|3",
+    "after": "Step 3 of 6 \u00b7 New activity|3"
+   }
+  },
+  {
+   "name": "/android/architecture/viewmodel/ @1440 Q&A tab kept and its prose follows the font",
+   "ok": true,
+   "detail": {
+    "selected": "true",
+    "visible": true,
+    "font": "\"Playbook Serif\", \"Playbook Serif Fallback\", Georgia, serif"
+   }
+  },
+  {
+   "name": "/android/architecture/viewmodel/ @390 position kept",
+   "ok": true,
+   "detail": [
+    [
+     0,
+     "modern",
+     0
+    ],
+    [
+     0,
+     "book",
+     -1
+    ],
+    [
+     0,
+     "classic",
+     0
+    ],
+    [
+     0,
+     "handwritten",
+     -1
+    ],
+    [
+     0,
+     "easy",
+     0
+    ],
+    [
+     0.5,
+     "modern",
+     0
+    ],
+    [
+     0.5,
+     "book",
+     0.01
+    ],
+    [
+     0.5,
+     "classic",
+     0
+    ],
+    [
+     0.5,
+     "handwritten",
+     0.01
+    ],
+    [
+     0.5,
+     "easy",
+     0
+    ]
+   ]
+  },
+  {
+   "name": "/android/architecture/viewmodel/ @390 no reload, size kept, choice saved",
+   "ok": true,
+   "detail": {
+    "reload": false,
+    "size": "20px",
+    "saved": "easy"
+   }
+  },
+  {
+   "name": "/android/architecture/viewmodel/ @390 diagram state kept",
+   "ok": true,
+   "detail": {
+    "before": "Step 3 of 6 \u00b7 New activity|3",
+    "after": "Step 3 of 6 \u00b7 New activity|3"
+   }
+  },
+  {
+   "name": "/android/architecture/viewmodel/ @390 Q&A tab kept and its prose follows the font",
+   "ok": true,
+   "detail": {
+    "selected": "true",
+    "visible": true,
+    "font": "\"Playbook Serif\", \"Playbook Serif Fallback\", Georgia, serif"
+   }
+  },
+  {
+   "name": "/android/compose/recomposition-and-state/ @1440 position kept",
+   "ok": true,
+   "detail": [
+    [
+     0,
+     "modern",
+     0
+    ],
+    [
+     0,
+     "book",
+     0
+    ],
+    [
+     0,
+     "classic",
+     0
+    ],
+    [
+     0,
+     "handwritten",
+     0
+    ],
+    [
+     0,
+     "easy",
+     0
+    ],
+    [
+     0.5,
+     "modern",
+     0
+    ],
+    [
+     0.5,
+     "book",
+     0
+    ],
+    [
+     0.5,
+     "classic",
+     0
+    ],
+    [
+     0.5,
+     "handwritten",
+     -0.03
+    ],
+    [
+     0.5,
+     "easy",
+     0
+    ]
+   ]
+  },
+  {
+   "name": "/android/compose/recomposition-and-state/ @1440 no reload, size kept, choice saved",
+   "ok": true,
+   "detail": {
+    "reload": false,
+    "size": "20px",
+    "saved": "easy"
+   }
+  },
+  {
+   "name": "/android/compose/recomposition-and-state/ @1440 diagram state kept",
+   "ok": true,
+   "detail": {
+    "before": "Step 3 of 4 \u00b7 Recompose|3",
+    "after": "Step 3 of 4 \u00b7 Recompose|3"
+   }
+  },
+  {
+   "name": "/android/compose/recomposition-and-state/ @1440 Q&A tab kept and its prose follows the font",
+   "ok": true,
+   "detail": {
+    "selected": "true",
+    "visible": true,
+    "font": "\"Playbook Serif\", \"Playbook Serif Fallback\", Georgia, serif"
+   }
+  },
+  {
+   "name": "/android/compose/recomposition-and-state/ @390 position kept",
+   "ok": true,
+   "detail": [
+    [
+     0,
+     "modern",
+     0
+    ],
+    [
+     0,
+     "book",
+     0
+    ],
+    [
+     0,
+     "classic",
+     1
+    ],
+    [
+     0,
+     "handwritten",
+     0
+    ],
+    [
+     0,
+     "easy",
+     1
+    ],
+    [
+     0.5,
+     "modern",
+     0
+    ],
+    [
+     0.5,
+     "book",
+     0
+    ],
+    [
+     0.5,
+     "classic",
+     -0.01
+    ],
+    [
+     0.5,
+     "handwritten",
+     0
+    ],
+    [
+     0.5,
+     "easy",
+     -0.01
+    ]
+   ]
+  },
+  {
+   "name": "/android/compose/recomposition-and-state/ @390 no reload, size kept, choice saved",
+   "ok": true,
+   "detail": {
+    "reload": false,
+    "size": "20px",
+    "saved": "easy"
+   }
+  },
+  {
+   "name": "/android/compose/recomposition-and-state/ @390 diagram state kept",
+   "ok": true,
+   "detail": {
+    "before": "Step 3 of 4 \u00b7 Recompose|3",
+    "after": "Step 3 of 4 \u00b7 Recompose|3"
+   }
+  },
+  {
+   "name": "/android/compose/recomposition-and-state/ @390 Q&A tab kept and its prose follows the font",
+   "ok": true,
+   "detail": {
+    "selected": "true",
+    "visible": true,
+    "font": "\"Playbook Serif\", \"Playbook Serif Fallback\", Georgia, serif"
+   }
+  },
+  {
+   "name": "/kotlin/coroutines-and-flow/coroutines/ @1440 position kept",
+   "ok": true,
+   "detail": [
+    [
+     0,
+     "modern",
+     0
+    ],
+    [
+     0,
+     "book",
+     -1
+    ],
+    [
+     0,
+     "classic",
+     -1
+    ],
+    [
+     0,
+     "handwritten",
+     -1
+    ],
+    [
+     0,
+     "easy",
+     -1
+    ],
+    [
+     0.5,
+     "modern",
+     0
+    ],
+    [
+     0.5,
+     "book",
+     0
+    ],
+    [
+     0.5,
+     "classic",
+     0.01
+    ],
+    [
+     0.5,
+     "handwritten",
+     0
+    ],
+    [
+     0.5,
+     "easy",
+     0.01
+    ]
+   ]
+  },
+  {
+   "name": "/kotlin/coroutines-and-flow/coroutines/ @1440 no reload, size kept, choice saved",
+   "ok": true,
+   "detail": {
+    "reload": false,
+    "size": "20px",
+    "saved": "easy"
+   }
+  },
+  {
+   "name": "/kotlin/coroutines-and-flow/coroutines/ @1440 diagram state kept",
+   "ok": true,
+   "detail": {
+    "before": "Step 3 of 6 \u00b7 Up to Job 2|3",
+    "after": "Step 3 of 6 \u00b7 Up to Job 2|3"
+   }
+  },
+  {
+   "name": "/kotlin/coroutines-and-flow/coroutines/ @1440 Q&A tab kept and its prose follows the font",
+   "ok": true,
+   "detail": {
+    "selected": "true",
+    "visible": true,
+    "font": "\"Playbook Serif\", \"Playbook Serif Fallback\", Georgia, serif"
+   }
+  },
+  {
+   "name": "/kotlin/coroutines-and-flow/coroutines/ @390 position kept",
+   "ok": true,
+   "detail": [
+    [
+     0,
+     "modern",
+     0
+    ],
+    [
+     0,
+     "book",
+     0
+    ],
+    [
+     0,
+     "classic",
+     0
+    ],
+    [
+     0,
+     "handwritten",
+     0
+    ],
+    [
+     0,
+     "easy",
+     0
+    ],
+    [
+     0.5,
+     "modern",
+     0
+    ],
+    [
+     0.5,
+     "book",
+     0
+    ],
+    [
+     0.5,
+     "classic",
+     0.01
+    ],
+    [
+     0.5,
+     "handwritten",
+     0.01
+    ],
+    [
+     0.5,
+     "easy",
+     0.01
+    ]
+   ]
+  },
+  {
+   "name": "/kotlin/coroutines-and-flow/coroutines/ @390 no reload, size kept, choice saved",
+   "ok": true,
+   "detail": {
+    "reload": false,
+    "size": "20px",
+    "saved": "easy"
+   }
+  },
+  {
+   "name": "/kotlin/coroutines-and-flow/coroutines/ @390 diagram state kept",
+   "ok": true,
+   "detail": {
+    "before": "Step 3 of 6 \u00b7 Up to Job 2|3",
+    "after": "Step 3 of 6 \u00b7 Up to Job 2|3"
+   }
+  },
+  {
+   "name": "/kotlin/coroutines-and-flow/coroutines/ @390 Q&A tab kept and its prose follows the font",
+   "ok": true,
+   "detail": {
+    "selected": "true",
+    "visible": true,
+    "font": "\"Playbook Serif\", \"Playbook Serif Fallback\", Georgia, serif"
+   }
+  },
+  {
+   "name": "/kotlin/language-core/sealed-classes/ @1440 position kept",
+   "ok": true,
+   "detail": [
+    [
+     0,
+     "modern",
+     0
+    ],
+    [
+     0,
+     "book",
+     0
+    ],
+    [
+     0,
+     "classic",
+     0
+    ],
+    [
+     0,
+     "handwritten",
+     0
+    ],
+    [
+     0,
+     "easy",
+     -1
+    ],
+    [
+     0.5,
+     "modern",
+     0
+    ],
+    [
+     0.5,
+     "book",
+     0
+    ],
+    [
+     0.5,
+     "classic",
+     0
+    ],
+    [
+     0.5,
+     "handwritten",
+     -0.01
+    ],
+    [
+     0.5,
+     "easy",
+     -0.01
+    ]
+   ]
+  },
+  {
+   "name": "/kotlin/language-core/sealed-classes/ @1440 no reload, size kept, choice saved",
+   "ok": true,
+   "detail": {
+    "reload": false,
+    "size": "20px",
+    "saved": "easy"
+   }
+  },
+  {
+   "name": "/kotlin/language-core/sealed-classes/ @1440 diagram state kept",
+   "ok": true,
+   "detail": {
+    "before": "Step 3 of 5 \u00b7 The compiler lists the work|3",
+    "after": "Step 3 of 5 \u00b7 The compiler lists the work|3"
+   }
+  },
+  {
+   "name": "/kotlin/language-core/sealed-classes/ @1440 Q&A tab kept and its prose follows the font",
+   "ok": true,
+   "detail": {
+    "selected": "true",
+    "visible": true,
+    "font": "\"Playbook Serif\", \"Playbook Serif Fallback\", Georgia, serif"
+   }
+  },
+  {
+   "name": "/kotlin/language-core/sealed-classes/ @390 position kept",
+   "ok": true,
+   "detail": [
+    [
+     0,
+     "modern",
+     0
+    ],
+    [
+     0,
+     "book",
+     -1
+    ],
+    [
+     0,
+     "classic",
+     -1
+    ],
+    [
+     0,
+     "handwritten",
+     -1
+    ],
+    [
+     0,
+     "easy",
+     -1
+    ],
+    [
+     0.5,
+     "modern",
+     -0.01
+    ],
+    [
+     0.5,
+     "book",
+     0
+    ],
+    [
+     0.5,
+     "classic",
+     0
+    ],
+    [
+     0.5,
+     "handwritten",
+     -0.01
+    ],
+    [
+     0.5,
+     "easy",
+     0
+    ]
+   ]
+  },
+  {
+   "name": "/kotlin/language-core/sealed-classes/ @390 no reload, size kept, choice saved",
+   "ok": true,
+   "detail": {
+    "reload": false,
+    "size": "20px",
+    "saved": "easy"
+   }
+  },
+  {
+   "name": "/kotlin/language-core/sealed-classes/ @390 diagram state kept",
+   "ok": true,
+   "detail": {
+    "before": "Step 3 of 5 \u00b7 The compiler lists the work|3",
+    "after": "Step 3 of 5 \u00b7 The compiler lists the work|3"
+   }
+  },
+  {
+   "name": "/kotlin/language-core/sealed-classes/ @390 Q&A tab kept and its prose follows the font",
+   "ok": true,
+   "detail": {
+    "selected": "true",
+    "visible": true,
+    "font": "\"Playbook Serif\", \"Playbook Serif Fallback\", Georgia, serif"
+   }
+  },
+  {
+   "name": "/android/ @1440 position kept",
+   "ok": true,
+   "detail": [
+    [
+     0,
+     "modern",
+     0
+    ],
+    [
+     0,
+     "book",
+     0
+    ],
+    [
+     0,
+     "classic",
+     0
+    ],
+    [
+     0,
+     "handwritten",
+     0
+    ],
+    [
+     0,
+     "easy",
+     0
+    ],
+    [
+     0.5,
+     "modern",
+     -0.01
+    ],
+    [
+     0.5,
+     "book",
+     -0.01
+    ],
+    [
+     0.5,
+     "classic",
+     -0.02
+    ],
+    [
+     0.5,
+     "handwritten",
+     -0.02
+    ],
+    [
+     0.5,
+     "easy",
+     -0.01
+    ]
+   ]
+  },
+  {
+   "name": "/android/ @1440 no reload, size kept, choice saved",
+   "ok": true,
+   "detail": {
+    "reload": false,
+    "size": "20px",
+    "saved": "easy"
+   }
+  },
+  {
+   "name": "/android/ @390 position kept",
+   "ok": true,
+   "detail": [
+    [
+     0,
+     "modern",
+     0
+    ],
+    [
+     0,
+     "book",
+     0
+    ],
+    [
+     0,
+     "classic",
+     0
+    ],
+    [
+     0,
+     "handwritten",
+     0
+    ],
+    [
+     0,
+     "easy",
+     0
+    ],
+    [
+     0.5,
+     "modern",
+     0
+    ],
+    [
+     0.5,
+     "book",
+     0
+    ],
+    [
+     0.5,
+     "classic",
+     0
+    ],
+    [
+     0.5,
+     "handwritten",
+     0
+    ],
+    [
+     0.5,
+     "easy",
+     0
+    ]
+   ]
+  },
+  {
+   "name": "/android/ @390 no reload, size kept, choice saved",
+   "ok": true,
+   "detail": {
+    "reload": false,
+    "size": "20px",
+    "saved": "easy"
+   }
+  },
+  {
+   "name": "/kotlin/ @1440 position kept",
+   "ok": true,
+   "detail": [
+    [
+     0,
+     "modern",
+     0
+    ],
+    [
+     0,
+     "book",
+     0
+    ],
+    [
+     0,
+     "classic",
+     0
+    ],
+    [
+     0,
+     "handwritten",
+     0
+    ],
+    [
+     0,
+     "easy",
+     0
+    ],
+    [
+     0.5,
+     "modern",
+     0.01
+    ],
+    [
+     0.5,
+     "book",
+     0.01
+    ],
+    [
+     0.5,
+     "classic",
+     0.01
+    ],
+    [
+     0.5,
+     "handwritten",
+     0
+    ],
+    [
+     0.5,
+     "easy",
+     0
+    ]
+   ]
+  },
+  {
+   "name": "/kotlin/ @1440 no reload, size kept, choice saved",
+   "ok": true,
+   "detail": {
+    "reload": false,
+    "size": "20px",
+    "saved": "easy"
+   }
+  },
+  {
+   "name": "/kotlin/ @390 position kept",
+   "ok": true,
+   "detail": [
+    [
+     0,
+     "modern",
+     0
+    ],
+    [
+     0,
+     "book",
+     0
+    ],
+    [
+     0,
+     "classic",
+     0
+    ],
+    [
+     0,
+     "handwritten",
+     0
+    ],
+    [
+     0,
+     "easy",
+     0
+    ],
+    [
+     0.5,
+     "modern",
+     0
+    ],
+    [
+     0.5,
+     "book",
+     0
+    ],
+    [
+     0.5,
+     "classic",
+     0
+    ],
+    [
+     0.5,
+     "handwritten",
+     0
+    ],
+    [
+     0.5,
+     "easy",
+     0
+    ]
+   ]
+  },
+  {
+   "name": "/kotlin/ @390 no reload, size kept, choice saved",
+   "ok": true,
+   "detail": {
+    "reload": false,
+    "size": "20px",
+    "saved": "easy"
+   }
+  },
+  {
+   "name": "light: keyboard reaches the font control with a visible focus ring",
+   "ok": true,
+   "detail": {
+    "id": "font-family",
+    "outline": "solid 2px",
+    "ratio": 6.875100242677278,
+    "dialog": true
+   }
+  },
+  {
+   "name": "light: keyboard choice applies live to page and preview",
+   "ok": true,
+   "detail": {
+    "font": "easy",
+    "preview": "\"Atkinson Hyperlegible Next\", \"Atkinson Hyperlegible Next Fallback\", system-ui, sans-serif",
+    "description": "Developed to increase legibility for readers with low vision, with distinctive letterforms that are hard to confuse. Some readers find it easier; others prefer Modern Sans.",
+    "describedBy": "font-description"
+   }
+  },
+  {
+   "name": "light: Escape closes settings and returns focus",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "name": "dark: keyboard reaches the font control with a visible focus ring",
+   "ok": true,
+   "detail": {
+    "id": "font-family",
+    "outline": "solid 2px",
+    "ratio": 9.896828946129888,
+    "dialog": true
+   }
+  },
+  {
+   "name": "dark: keyboard choice applies live to page and preview",
+   "ok": true,
+   "detail": {
+    "font": "easy",
+    "preview": "\"Atkinson Hyperlegible Next\", \"Atkinson Hyperlegible Next Fallback\", system-ui, sans-serif",
+    "description": "Developed to increase legibility for readers with low vision, with distinctive letterforms that are hard to confuse. Some readers find it easier; others prefer Modern Sans.",
+    "describedBy": "font-description"
+   }
+  },
+  {
+   "name": "dark: Escape closes settings and returns focus",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "name": "sepia: keyboard reaches the font control with a visible focus ring",
+   "ok": true,
+   "detail": {
+    "id": "font-family",
+    "outline": "solid 2px",
+    "ratio": 7.044219272564206,
+    "dialog": true
+   }
+  },
+  {
+   "name": "sepia: keyboard choice applies live to page and preview",
+   "ok": true,
+   "detail": {
+    "font": "easy",
+    "preview": "\"Atkinson Hyperlegible Next\", \"Atkinson Hyperlegible Next Fallback\", system-ui, sans-serif",
+    "description": "Developed to increase legibility for readers with low vision, with distinctive letterforms that are hard to confuse. Some readers find it easier; others prefer Modern Sans.",
+    "describedBy": "font-description"
+   }
+  },
+  {
+   "name": "sepia: Escape closes settings and returns focus",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "name": "contrast: keyboard reaches the font control with a visible focus ring",
+   "ok": true,
+   "detail": {
+    "id": "font-family",
+    "outline": "solid 2px",
+    "ratio": 17.39220319006502,
+    "dialog": true
+   }
+  },
+  {
+   "name": "contrast: keyboard choice applies live to page and preview",
+   "ok": true,
+   "detail": {
+    "font": "easy",
+    "preview": "\"Atkinson Hyperlegible Next\", \"Atkinson Hyperlegible Next Fallback\", system-ui, sans-serif",
+    "description": "Developed to increase legibility for readers with low vision, with distinctive letterforms that are hard to confuse. Some readers find it easier; others prefer Modern Sans.",
+    "describedBy": "font-description"
+   }
+  },
+  {
+   "name": "contrast: Escape closes settings and returns focus",
+   "ok": true,
+   "detail": null
+  },
+  {
+   "name": "reduced motion: no transition on prose, reader honours the setting",
+   "ok": true,
+   "detail": {
+    "transition": "0s",
+    "animation": "none",
+    "reduce": true
+   }
+  },
+  {
+   "name": "modern 200% zoom /android/architecture/process-death-and-state-restoration/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  },
+  {
+   "name": "modern 200% zoom /kotlin/coroutines-and-flow/coroutines/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  },
+  {
+   "name": "modern 320px + 200% text /android/architecture/process-death-and-state-restoration/",
+   "ok": true,
+   "detail": {
+    "overflow": 188,
+    "wide": [],
+    "topbarOverflow": true
+   }
+  },
+  {
+   "name": "modern 320px + 200% text /kotlin/coroutines-and-flow/coroutines/",
+   "ok": true,
+   "detail": {
+    "overflow": 188,
+    "wide": [],
+    "topbarOverflow": true
+   }
+  },
+  {
+   "name": "modern 320px + 22px reading size /android/architecture/process-death-and-state-restoration/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  },
+  {
+   "name": "modern 320px + 22px reading size /kotlin/coroutines-and-flow/coroutines/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  },
+  {
+   "name": "book 200% zoom /android/architecture/process-death-and-state-restoration/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  },
+  {
+   "name": "book 200% zoom /kotlin/coroutines-and-flow/coroutines/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  },
+  {
+   "name": "book 320px + 200% text /android/architecture/process-death-and-state-restoration/",
+   "ok": true,
+   "detail": {
+    "overflow": 188,
+    "wide": [],
+    "topbarOverflow": true
+   }
+  },
+  {
+   "name": "book 320px + 200% text /kotlin/coroutines-and-flow/coroutines/",
+   "ok": true,
+   "detail": {
+    "overflow": 188,
+    "wide": [],
+    "topbarOverflow": true
+   }
+  },
+  {
+   "name": "book 320px + 22px reading size /android/architecture/process-death-and-state-restoration/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  },
+  {
+   "name": "book 320px + 22px reading size /kotlin/coroutines-and-flow/coroutines/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  },
+  {
+   "name": "classic 200% zoom /android/architecture/process-death-and-state-restoration/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  },
+  {
+   "name": "classic 200% zoom /kotlin/coroutines-and-flow/coroutines/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  },
+  {
+   "name": "classic 320px + 200% text /android/architecture/process-death-and-state-restoration/",
+   "ok": true,
+   "detail": {
+    "overflow": 188,
+    "wide": [],
+    "topbarOverflow": true
+   }
+  },
+  {
+   "name": "classic 320px + 200% text /kotlin/coroutines-and-flow/coroutines/",
+   "ok": true,
+   "detail": {
+    "overflow": 188,
+    "wide": [],
+    "topbarOverflow": true
+   }
+  },
+  {
+   "name": "classic 320px + 22px reading size /android/architecture/process-death-and-state-restoration/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  },
+  {
+   "name": "classic 320px + 22px reading size /kotlin/coroutines-and-flow/coroutines/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  },
+  {
+   "name": "handwritten 200% zoom /android/architecture/process-death-and-state-restoration/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  },
+  {
+   "name": "handwritten 200% zoom /kotlin/coroutines-and-flow/coroutines/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  },
+  {
+   "name": "handwritten 320px + 200% text /android/architecture/process-death-and-state-restoration/",
+   "ok": true,
+   "detail": {
+    "overflow": 188,
+    "wide": [],
+    "topbarOverflow": true
+   }
+  },
+  {
+   "name": "handwritten 320px + 200% text /kotlin/coroutines-and-flow/coroutines/",
+   "ok": true,
+   "detail": {
+    "overflow": 188,
+    "wide": [],
+    "topbarOverflow": true
+   }
+  },
+  {
+   "name": "handwritten 320px + 22px reading size /android/architecture/process-death-and-state-restoration/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  },
+  {
+   "name": "handwritten 320px + 22px reading size /kotlin/coroutines-and-flow/coroutines/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  },
+  {
+   "name": "easy 200% zoom /android/architecture/process-death-and-state-restoration/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  },
+  {
+   "name": "easy 200% zoom /kotlin/coroutines-and-flow/coroutines/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  },
+  {
+   "name": "easy 320px + 200% text /android/architecture/process-death-and-state-restoration/",
+   "ok": true,
+   "detail": {
+    "overflow": 188,
+    "wide": [],
+    "topbarOverflow": true
+   }
+  },
+  {
+   "name": "easy 320px + 200% text /kotlin/coroutines-and-flow/coroutines/",
+   "ok": true,
+   "detail": {
+    "overflow": 188,
+    "wide": [],
+    "topbarOverflow": true
+   }
+  },
+  {
+   "name": "easy 320px + 22px reading size /android/architecture/process-death-and-state-restoration/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  },
+  {
+   "name": "easy 320px + 22px reading size /kotlin/coroutines-and-flow/coroutines/",
+   "ok": true,
+   "detail": {
+    "overflow": 0,
+    "wide": [],
+    "topbarOverflow": false
+   }
+  }
+ ]
+}

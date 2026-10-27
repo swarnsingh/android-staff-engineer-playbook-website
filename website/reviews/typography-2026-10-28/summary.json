@@ -1,0 +1,27 @@
+{
+  "pages": 125,
+  "layouts": 1736,
+  "original_question_answer_pairs": 928,
+  "code_checks": 4732,
+  "failures": 0,
+  "binder_checks": 560,
+  "motion_checks": 13,
+  "refinement_checks": 69,
+  "focused_ux_checks": 278,
+  "qa_and_content_negative_fixture_checks": 31,
+  "typography_matrix_checks": 3640,
+  "typography_interaction_checks": 103,
+  "static_original_units": 15564,
+  "docs_checker_tests": 31,
+  "renderer_tests": 3,
+  "font_bytes_first_visit": {
+    "before": 142560,
+    "before serif": 164048,
+    "before hand": 284716,
+    "after modern": 205484,
+    "after book": 224300,
+    "after classic": 142560,
+    "after handwritten": 228972,
+    "after easy": 186960
+  }
+}

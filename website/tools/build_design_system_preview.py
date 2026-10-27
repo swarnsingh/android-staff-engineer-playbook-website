@@ -19,6 +19,7 @@ def css(theme):
         out += [f"--{x['name']}:{x['value']};" for x in tokens[family]['tokens']]
     out += [f"--{x['name']}:{val(x['value'])};" for x in tokens['shadow']['tokens']]
     out += [f"--font-{k}:{v};" for k, v in tokens['type']['families'].items()]
+    out += [f"--font-prose:var(--font-{tokens['type']['prose']['default']});"]
     return ':root{' + ''.join(out) + '}'
 
 def font_faces():

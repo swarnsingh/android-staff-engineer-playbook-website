@@ -34,7 +34,7 @@
 .node{border:1.5px solid var(--line);background:var(--bg);border-radius:.55rem;padding:.6rem .75rem;min-width:0;transition:opacity .35s,transform .35s,border-color .35s,background .35s}
 .node strong{display:block;font-size:.98em}
 .node small,.node .note{display:block;color:var(--muted);font-size:.85em;line-height:1.45;margin-top:.15rem}
-.node code{font:.88em ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--accent);background:var(--accent-soft);border-radius:.2rem;padding:0 .2rem}
+.node code{font:var(--code-inline) var(--font-mono);color:var(--accent);background:var(--accent-soft);border-radius:.2rem;padding:0 .2rem}
 .node[data-state=active],.node.is-key{border-color:var(--accent);background:var(--accent-soft)}
 .node[data-state=done]{border-style:solid;border-color:var(--accent)}
 .node[data-state=done]::before{content:"✓ ";color:var(--accent);font-weight:700}
@@ -76,7 +76,7 @@
 .viz-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.8rem}
 .viz-pair .pane{min-width:0;border:1px solid var(--line);border-radius:.55rem;overflow:hidden;background:var(--code);color:var(--code-text)}
 .viz-pair .pane-title{display:block;padding:.45rem .7rem;font-size:.78em;font-weight:700;letter-spacing:.04em;background:color-mix(in srgb,var(--code-text) 10%,var(--code))}
-.viz-pair pre{margin:0;padding:.7rem;font:.8em/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.viz-pair pre{margin:0;padding:.7rem;font:var(--code-size)/var(--code-leading) var(--font-mono);white-space:pre-wrap;overflow-wrap:anywhere}
 .viz-pair mark,.viz-pair .hl{background:color-mix(in srgb,var(--accent) 35%,transparent);color:inherit;border-radius:.15rem}
 
 /* Step-through animation shell. */
@@ -115,7 +115,7 @@
 .correction-note{margin:1.5rem 0;padding:1rem 1.2rem;border:1px solid var(--line);border-left:3px solid var(--warning);border-radius:0 .6rem .6rem 0;background:var(--surface);font-size:.92em}
 .correction-note>.blend-label{display:inline-block;margin-bottom:.4rem;font:700 .68rem/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--warning)}
 .correction-note ul{margin:.4rem 0 0;padding-left:1.2em}
-.correction-note pre{white-space:pre-wrap;overflow-wrap:anywhere;font:.85em/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;margin:.4rem 0}
+.correction-note pre{white-space:pre-wrap;overflow-wrap:anywhere;font:var(--code-size)/var(--code-leading) var(--font-mono);margin:.4rem 0}
 
 /* Timeline bars retain their proportions; full labels live in a wrapping numbered legend. */
 .timeline-lane-body{min-width:0}

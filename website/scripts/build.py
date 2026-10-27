@@ -581,6 +581,10 @@ def design_tokens_css():
     for f in tokens['type'].get('fonts',[]):
         out.append(f'@font-face{{font-family:"{f["family"]}";src:url("fonts/{Path(f["file"]).name}") format("woff2");'
                    f'font-weight:{f.get("weight","400")};font-style:{f.get("style","normal")};font-display:swap}}')
+    # Metric-matched local fallbacks: text keeps its line breaks while a web font is still loading.
+    for f in tokens['type'].get('fallbacks',{}).get('faces',[]):
+        out.append(f'@font-face{{font-family:"{f["family"]}";src:'+','.join(f'local("{name}")' for name in f['local'])+
+                   f';size-adjust:{f["sizeAdjust"]};ascent-override:{f["ascentOverride"]};descent-override:{f["descentOverride"]};line-gap-override:{f["lineGapOverride"]}}}')
     for theme in themes:
         props=[f'--{c["name"]}:{value(c["value"],theme)}' for c in tokens['color']['tokens']]
         props+=[f'--{x["name"]}:{value(x["value"],theme)}' for x in tokens['shadow']['tokens']]
@@ -589,8 +593,35 @@ def design_tokens_css():
         if theme==themes[0]:
             for family in ('spacing','radius','layout'): props+=[f'--{x["name"]}:{x["value"]}' for x in tokens[family]['tokens']]
             props+=[f'--font-{k}:{v}' for k,v in tokens['type']['families'].items()]
+            prose=tokens['type']['prose']; body=prose['metrics']
+            props+=[f'--font-prose:var(--font-{reader_font(prose,prose["default"])["family"]})','--reader-font:var(--font-prose)',
+                    f'--prose-leading:{body["lineHeight"]}',f'--prose-weight:{body["weight"]}',f'--prose-spacing:{body["paragraphSpacing"]}',f'--prose-x-height:{body["xHeight"]}',
+                    f'--measure-prose:{reader_font(prose,prose["default"])["measure"]}']
+            code=tokens['type']['code']; props+=[f'--code-size:{code["size"]}',f'--code-leading:{code["lineHeight"]}',f'--code-inline:{code["inline"]}']
         out.append(THEME_SELECTORS[theme]+'{'+';'.join(props)+'}')
+    # The reader's font choice swaps one token; every prose rule reads --font-prose.
+    prose=tokens['type']['prose']
+    out+=[f'html[data-reader-font={o["id"]}]{{--font-prose:var(--font-{o["family"]});--measure-prose:{o["measure"]}}}' for o in prose['options'] if o['id']!=prose['default']]
     return '\n'.join(out)+'\n'
+
+def reader_font(prose,font_id):
+    return next(o for o in prose['options'] if o['id']==font_id)
+
+def reader_font_markup():
+    """Reading-font options and the head bootstrap, both from tokens.json, so the panel and the CSS cannot drift."""
+    tokens=json.loads((DESIGN/'tokens.json').read_text()); prose=tokens['type']['prose']
+    options=''.join(f'<option value="{o["id"]}" data-legacy="{" ".join(o["legacy"])}" data-description="{escape(o["description"])}">{escape(o["label"])}</option>' for o in prose['options'])
+    preload=[f for f in tokens['type']['fonts'] if f.get('preload')]
+    files={o['id']:BASE+'fonts/'+Path(o['file']).name for o in prose['options'] if o.get('file')}
+    legacy={old:o['id'] for o in prose['options'] for old in o['legacy']}
+    # Runs before first paint: applies a saved choice (mapping legacy IDs) and preloads only that prose font.
+    script=('<script>(()=>{let p={};try{p=JSON.parse(localStorage.getItem("playbook-reader-v1"))||{}}catch{}'
+            f'const files={json.dumps(files)},legacy={json.dumps(legacy)},ids={json.dumps([o["id"] for o in prose["options"]])};'
+            f'let f=legacy[p.font]||p.font;if(!ids.includes(f))f={json.dumps(prose["default"])};'
+            'document.documentElement.dataset.readerFont=f;'
+            'if(files[f]){const l=document.createElement("link");l.rel="preload";l.as="font";l.type="font/woff2";l.crossOrigin="anonymous";l.href=files[f];document.head.append(l)}})()</script>')
+    head=''.join(f'<link rel="preload" href="{BASE}fonts/{Path(f["file"]).name}" as="font" type="font/woff2" crossorigin>' for f in preload)+script
+    return options,head
 
 def design_gallery(asset_version):
     """Use real lesson sections and shared assets; do not maintain a second scene demo."""
@@ -608,7 +639,10 @@ def design_gallery(asset_version):
         scene=re.search(r'<figure class="stepper".*?</figure>',source,re.S)
         if not scene: raise ValueError('Gallery illustrated stepper missing: '+name)
         samples.append('<section class="demo"><h3>'+label+'</h3>'+scene[0]+'</section>')
-    page=(DESIGN/'gallery.html').read_text().replace('{{swatches}}',swatches).replace('{{scenes}}',''.join(samples))
+    prose=tokens['type']['prose']
+    fonts=''.join(f'<figure class="specimen" style="--specimen:var(--font-{o["family"]});--measure-prose:{o["measure"]}"><figcaption><strong>{escape(o["label"])}</strong> · {escape(o["description"])}</figcaption>'
+                  '<p>A suspended call gives its thread back. When the result arrives, the coroutine resumes where it stopped, with its state intact.</p></figure>' for o in prose['options'])
+    page=(DESIGN/'gallery.html').read_text().replace('{{swatches}}',swatches).replace('{{fonts}}',fonts).replace('{{scenes}}',''.join(samples))
     for asset in ('styles.css','blend.css','theme.css','tokens.css','flow.css','flow.js','blend.js'):page=page.replace('"/'+asset+'"','"'+BASE+asset+'?v='+asset_version+'"')
     page=page.replace('href="/android/"','href="'+route('android.md')+'"')
     destination=OUT/'design-system';destination.mkdir(exist_ok=True)
@@ -621,7 +655,8 @@ def build(skip_diagrams=False):
     # Content hash in asset URLs, so browsers never mix a new page with stale CSS or JS.
     tokens_css=design_tokens_css().encode()
     asset_version=hashlib.sha256(tokens_css+b''.join((WEB/n).read_bytes() for n in ['styles.css','blend.css','theme.css','learning-path.css','navigation.css','app.js','blend.js','coroutines.js','lesson-model.js','design-system/components/bundle.css','design-system/components/bundle.js'])).hexdigest()[:10]
-    template=(WEB/'templates/reader.html').read_text().replace('{{base}}',BASE).replace('{{asset_version}}',asset_version)
+    font_options,font_head=reader_font_markup()
+    template=(WEB/'templates/reader.html').read_text().replace('{{font_head}}',font_head).replace('{{font_options}}',font_options).replace('{{base}}',BASE).replace('{{asset_version}}',asset_version)
     # Generate catalog from checked-in tree indexes, using guided order rather than filenames.
     # Each chapter carries its guided-reading phase, so wide trees group into sub-sections.
     catalog=json.loads((WEB/'nav-data.js').read_text().split('=',1)[1].strip().rstrip(';'))
@@ -705,6 +740,8 @@ def build(skip_diagrams=False):
     shutil.copy2(DESIGN/'components/bundle.js',OUT/'flow.js')
     shutil.copytree(WEB/'fonts',OUT/'fonts')
     for font in (DESIGN/'fonts').glob('*.woff2'): shutil.copy2(font,OUT/'fonts'/font.name)
+    # Each bundled family travels with its SIL Open Font License and provenance.
+    shutil.copytree(DESIGN/'fonts/licenses',OUT/'fonts/licenses'); shutil.copy2(DESIGN/'fonts/README.md',OUT/'fonts/README.md')
     design_gallery(asset_version)
     if not skip_diagrams: render_diagrams()
     (OUT/'coverage/pages.json').write_text(json.dumps(reports,ensure_ascii=False,indent=2)+'\n')

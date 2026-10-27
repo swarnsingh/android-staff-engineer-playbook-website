@@ -1,0 +1,154 @@
+{
+ "before": {
+  "bytes": 142560,
+  "files": {
+   "Inter-Variable-latin.woff2": 48432,
+   "JetBrainsMono-Variable-latin.woff2": 31340,
+   "PatrickHand-Regular.woff2": 62788
+  },
+  "preloads": [],
+  "pages": {
+   "/android/architecture/process-death-and-state-restoration/": 142560,
+   "/android/architecture/viewmodel/": 142560,
+   "/android/compose/recomposition-and-state/": 142560,
+   "/kotlin/coroutines-and-flow/coroutines/": 142560,
+   "/kotlin/language-core/sealed-classes/": 142560
+  }
+ },
+ "before serif": {
+  "bytes": 164048,
+  "files": {
+   "Inter-Variable-latin.woff2": 48432,
+   "JetBrainsMono-Variable-latin.woff2": 31340,
+   "PatrickHand-Regular.woff2": 62788,
+   "SourceSerif4-SemiBold-latin.woff2": 21488
+  },
+  "preloads": [],
+  "pages": {
+   "/android/architecture/process-death-and-state-restoration/": 164048,
+   "/android/architecture/viewmodel/": 164048,
+   "/android/compose/recomposition-and-state/": 164048,
+   "/kotlin/coroutines-and-flow/coroutines/": 164048,
+   "/kotlin/language-core/sealed-classes/": 164048
+  }
+ },
+ "before hand": {
+  "bytes": 284716,
+  "files": {
+   "Inter-Variable-latin.woff2": 48432,
+   "JetBrainsMono-Variable-latin.woff2": 31340,
+   "PatrickHand-Regular.woff2": 62788,
+   "ShantellSans-Variable-latin.woff2": 79368,
+   "patrick-hand-9a110f3256dd.woff2": 62788
+  },
+  "preloads": [],
+  "pages": {
+   "/android/architecture/process-death-and-state-restoration/": 284716,
+   "/android/architecture/viewmodel/": 284716,
+   "/android/compose/recomposition-and-state/": 284716,
+   "/kotlin/coroutines-and-flow/coroutines/": 284716,
+   "/kotlin/language-core/sealed-classes/": 284716
+  }
+ },
+ "after modern": {
+  "bytes": 205484,
+  "files": {
+   "PlaybookSans-Variable-latin.woff2": 31392,
+   "Inter-Variable-latin.woff2": 48432,
+   "PlaybookSans-Italic-Variable-latin.woff2": 31532,
+   "JetBrainsMono-Variable-latin.woff2": 31340,
+   "PatrickHand-Regular.woff2": 62788
+  },
+  "preloads": [
+   "Inter-Variable-latin.woff2",
+   "PlaybookSans-Variable-latin.woff2"
+  ],
+  "pages": {
+   "/android/architecture/process-death-and-state-restoration/": 205484,
+   "/android/architecture/viewmodel/": 205484,
+   "/android/compose/recomposition-and-state/": 205484,
+   "/kotlin/coroutines-and-flow/coroutines/": 205484,
+   "/kotlin/language-core/sealed-classes/": 205484
+  }
+ },
+ "after book": {
+  "bytes": 224300,
+  "files": {
+   "Inter-Variable-latin.woff2": 48432,
+   "PlaybookSerif-Variable-latin.woff2": 40680,
+   "PlaybookSerif-Italic-Variable-latin.woff2": 41060,
+   "JetBrainsMono-Variable-latin.woff2": 31340,
+   "PatrickHand-Regular.woff2": 62788
+  },
+  "preloads": [
+   "Inter-Variable-latin.woff2",
+   "PlaybookSerif-Variable-latin.woff2"
+  ],
+  "pages": {
+   "/android/architecture/process-death-and-state-restoration/": 224300,
+   "/android/architecture/viewmodel/": 224300,
+   "/android/compose/recomposition-and-state/": 224300,
+   "/kotlin/coroutines-and-flow/coroutines/": 224300,
+   "/kotlin/language-core/sealed-classes/": 224300
+  }
+ },
+ "after classic": {
+  "bytes": 142560,
+  "files": {
+   "Inter-Variable-latin.woff2": 48432,
+   "JetBrainsMono-Variable-latin.woff2": 31340,
+   "PatrickHand-Regular.woff2": 62788
+  },
+  "preloads": [
+   "Inter-Variable-latin.woff2"
+  ],
+  "pages": {
+   "/android/architecture/process-death-and-state-restoration/": 142560,
+   "/android/architecture/viewmodel/": 142560,
+   "/android/compose/recomposition-and-state/": 142560,
+   "/kotlin/coroutines-and-flow/coroutines/": 142560,
+   "/kotlin/language-core/sealed-classes/": 142560
+  }
+ },
+ "after handwritten": {
+  "bytes": 228972,
+  "files": {
+   "Inter-Variable-latin.woff2": 48432,
+   "ShantellSans-Variable-latin.woff2": 86412,
+   "JetBrainsMono-Variable-latin.woff2": 31340,
+   "PatrickHand-Regular.woff2": 62788
+  },
+  "preloads": [
+   "Inter-Variable-latin.woff2",
+   "ShantellSans-Variable-latin.woff2"
+  ],
+  "pages": {
+   "/android/architecture/process-death-and-state-restoration/": 228972,
+   "/android/architecture/viewmodel/": 228972,
+   "/android/compose/recomposition-and-state/": 228972,
+   "/kotlin/coroutines-and-flow/coroutines/": 228972,
+   "/kotlin/language-core/sealed-classes/": 228972
+  }
+ },
+ "after easy": {
+  "bytes": 186960,
+  "files": {
+   "Inter-Variable-latin.woff2": 48432,
+   "AtkinsonHyperlegibleNext-Variable-latin.woff2": 20644,
+   "AtkinsonHyperlegibleNext-Italic-Variable-latin.woff2": 23756,
+   "JetBrainsMono-Variable-latin.woff2": 31340,
+   "PatrickHand-Regular.woff2": 62788
+  },
+  "preloads": [
+   "Inter-Variable-latin.woff2",
+   "AtkinsonHyperlegibleNext-Variable-latin.woff2"
+  ],
+  "pages": {
+   "/android/architecture/process-death-and-state-restoration/": 186960,
+   "/android/architecture/viewmodel/": 186960,
+   "/android/compose/recomposition-and-state/": 186960,
+   "/kotlin/coroutines-and-flow/coroutines/": 186960,
+   "/kotlin/language-core/sealed-classes/": 186960
+  }
+ }
+}
