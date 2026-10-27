@@ -1,0 +1,225 @@
+Analyzed android-phase1-findings.md:L1-48
+Analyzed android-phase2-findings.md:L1-43
+Analyzed corrections-triage.md:L1-60
+Ran inspect tokens.json
+Ran diff stat of PR 1
+Ran head of app.js
+Ran find tab handling in app.js
+Ran find practice-questions in app.js
+
+# Comprehensive Review & Analysis: Android Staff Engineer Playbook Reader Website
+
+**Target Review:** [SharedFlow and StateFlow Preview](file:///Users/swaransinghaulakh/Downloads/website-private-preview-44edf0d33433c89fb8bbc8709ca2cdc6631f36c3/site/android/concurrency/shared-flow-and-state-flow/index.html)  
+**Pull Request:** [swarnsingh/android-staff-engineer-playbook-website#1](https://github.com/swarnsingh/android-staff-engineer-playbook-website/pull/1)  
+**Main Playbook:** [`android-staff-engineer-playbook`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook)  
+**Design Gallery:** [Playbook Design System Gallery](file:///Users/swaransinghaulakh/Downloads/website-private-preview-44edf0d33433c89fb8bbc8709ca2cdc6631f36c3/site/design-system/index.html)
+
+---
+
+## 1. Executive Summary
+
+PR #1 represents an extraordinary architectural leap forward. Transforming 123 in-depth technical chapters (101 Android + 22 Kotlin) into a custom, responsive, accessible, interactive reader website—with **17 authored full interactive scenes**, **122 illustrated state steppers**, **545 semantic vector actors**, and **zero external JavaScript dependencies**—is exceptional work.
+
+The core architecture follows solid engineering principles:
+* **Zero bundle bloat:** No heavy frameworks (React, Vue, Webpack); pure vanilla JS ([`bundle.js`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook-website/website/design-system/components/bundle.js), [`app.js`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook-website/website/app.js), [`blend.js`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook-website/website/blend.js)).
+* **Accessibility first:** 4 full themes (Light, Navy Dark, Sepia, High Contrast) with WCAG AA contrast (≥ 4.5:1 text, ≥ 3:1 graphical elements), OS & manual reduced-motion toggles, and complete textual step-by-step transcripts for screen readers.
+* **Preservation of source truth:** The original playbook Markdown remains frozen and byte-verified against hashes; the website cleanly overlays an educational teaching layer (`.blend` files).
+
+Below is the detailed technical analysis across **The Design System & UX**, the **SharedFlow & StateFlow Chapter**, and the **Full Android & Kotlin Content Spectrum** compared against official Android / Kotlin specifications and the main playbook.
+
+---
+
+## 2. Design System & Interactive Experience Review
+
+### What Works Exceptionally Well
+1. **Semantic Actor System:**
+   Dividing diagram objects into 4 defined roles (`scene-client` blue devices, `scene-runtime` purple execution, `scene-storage` teal databases/flows, `scene-queue` rose queues) brings instant visual consistency across all 139 diagrams.
+2. **Motion with Intent:**
+   Animations aren't frivolous; they show directional consequence (e.g., packets queuing in the Binder driver, table invalidations waking Room queries, fork copy-on-write page dirtying).
+3. **Reading Comfort:**
+   The 880px sheet (`measure-wide`) with a 760px reading column (`measure-text`) prevents excessive line lengths, while the dual-rail layout on wide viewports (≥ 1440px) gives instant curriculum access.
+
+---
+
+### Key Opportunities to Elevate the Design System
+
+#### A. Elevating to the AirBridge Benchmark
+The target article reference ([AirBridge Technical Architecture](https://swarnsingh.github.io/swaran-technical-blogs/blogs/airbridge-technical-architecture.html)) succeeds due to its high-impact editorial pacing:
+* **Callout Visual Hierarchy:** Currently, `.blend` callouts (Start here, Staff note, Under review) use subtle sunken backgrounds (`var(--sheet-sunken)`). To match AirBridge's executive clarity, add distinct colored left accent borders (e.g., 3px `var(--accent)` for Start here, `var(--warn)` for Under review) and a small leading icon/badge.
+* **Sticky Table of Contents with Scrollspy:** The on-page outline in the right rail is clean, but active section highlighting as the user scrolls (scrollspy) and an article reading progress indicator at the top would greatly improve navigation through 4,000+ word deep dives.
+* **Section Spacing Rhythm:** Increase the top margin of H2 sections from `36px` to `52px–56px` to clearly demarcate major architectural concepts.
+
+#### B. The "Playground" Tab Gap
+Currently, clicking the **Playground** tab on any lesson yields a static placeholder:
+> *"Keep the example with its explanation. Code blocks throughout Content can be copied..."*
+
+* **Recommendation:** Transform this into genuine interactive value:
+  1. For Kotlin and pure Coroutines lessons, embed the official [Kotlin Playground component](https://play.kotlinlang.org) so readers can run and modify snippets directly in the browser.
+  2. For Android-specific snippets, add an **"Open in Kotlin Playground"** or **"Open in Android Studio / GitHub Template"** direct link button.
+
+#### C. Mobile Touch Targets & SVG Responsive Bounds
+* **Touch Targets (WCAG 2.5.5):** The numbered navigation dots in `.pb-progress` and the stepper controls have small active hitboxes on mobile touchscreens (< 36px). Increase their touch area with padding or touch-target expansion to at least 44×44px.
+* **Compact Viewport Text Clipping (320px–360px):** In the narrow layout mode (320px width), actor boxes with multi-word labels (e.g., `"Observable query"`, `"Login operation"`) occasionally run tight against box borders. Allow dynamic SVG text scaling or multiline `tspan` wrapping for nodes with >12 characters.
+
+#### D. Code Syntax Highlighting
+* The custom regex tokenizer (`tokenPattern` in [`app.js`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook-website/website/app.js)) only catches basic keywords and numbers. It misses:
+  - Compose annotations: `@Composable`, `@LaunchedEffect`, `@Preview`
+  - DI annotations: `@Inject`, `@HiltViewModel`, `@Singleton`
+  - Advanced Kotlin keywords: `inline`, `reified`, `crossinline`, `sealed`, `internal`
+  - Generics and Flow types (`StateFlow<T>`, `SharedFlow<T>`).
+* Expanding `tokenPattern` with these keywords will make code cards far more legible.
+
+---
+
+## 3. Deep Dive: SharedFlow and StateFlow
+
+Reviewing [`site/android/concurrency/shared-flow-and-state-flow/index.html`](file:///Users/swaransinghaulakh/Downloads/website-private-preview-44edf0d33433c89fb8bbc8709ca2cdc6631f36c3/site/android/concurrency/shared-flow-and-state-flow/index.html) and [`shared-flow-and-state-flow.blend`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook-website/website/content/blend/android/shared-flow-and-state-flow.blend):
+
+### 1. UI & Visual Inconsistency in the Interactive Scene
+* **The Heading vs. UI Mismatch:**
+  In [`shared-flow-and-state-flow.blend` line 16](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook-website/website/content/blend/android/shared-flow-and-state-flow.blend#L16):
+  ```html
+  ### One navigation event, three ways
+  ```
+  However, the interactive widget segmented control only contains **two** buttons:
+  ```html
+  <div class="pb-seg">
+    <button data-mode="state">StateFlow</button>
+    <button data-mode="event">SharedFlow</button>
+  </div>
+  ```
+  The third way—**`Channel`** (or `SharedFlow(replay=1)`)—is completely missing from the interactive scene!
+* **Recommendation:**
+  Add the third mode: **`Channel`** (Point-to-point queue handoff).
+  - *State 1 (Producer emits):* Channel buffers the navigation item even while the screen is not collecting.
+  - *State 2 (Screen resubscribes):* Screen collector receives the buffered item.
+  - *State 3 (Consumption):* The channel dequeues it; rotating again does *not* re-trigger navigation.
+  This directly completes the three contracts highlighted in the chapter's opening table!
+
+---
+
+### 2. Technical Code & Content Audit vs. Official Documentation
+
+#### Issue A: `LaunchedEffect(viewModel)` Background Lifecycle Leak
+In [`shared-flow-and-state-flow.md` lines 314–322](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/concurrency/shared-flow-and-state-flow.md#L314-L322):
+```kotlin
+// In the chapter:
+LaunchedEffect(viewModel) {
+    viewModel.effects.collect { effect ->
+        when (effect) {
+            is UiEffect.ShowToast -> snackbarHostState.showSnackbar(effect.message)
+        }
+    }
+}
+```
+> [!CAUTION]
+> **Technical Inaccuracy / Anti-pattern:**
+> In Jetpack Compose, `LaunchedEffect` continues executing as long as the composable remains in the composition. When the app is sent to the background (Activity in `onStop`), **the composition is NOT disposed**!
+> Directly collecting a flow in `LaunchedEffect` without lifecycle gating means the collector keeps consuming events in the background, wasting battery and triggering UI work while invisible.
+
+* **Official Android Guidance:**
+  According to [Android Official Documentation on Flow Collection](https://developer.android.com/kotlin/flow/stateflow-and-sharedflow#collect-ui-events):
+  ```kotlin
+  val lifecycleOwner = LocalLifecycleOwner.current
+  LaunchedEffect(lifecycleOwner) {
+      lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+          viewModel.effects.collect { effect ->
+              when (effect) {
+                  is UiEffect.ShowToast -> snackbarHostState.showSnackbar(effect.message)
+              }
+          }
+      }
+  }
+  ```
+  Or even better, as recommended in Modern Android Architecture: model one-off effects as part of the `UiState` with an ID and explicit consumption callback (`onMessageShown(id)`).
+
+#### Issue B: `tryEmit` Nuance in the Explanation Table
+In [`shared-flow-and-state-flow.md` line 222](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/concurrency/shared-flow-and-state-flow.md#L222):
+> *"tryEmit succeeds only when there are no subscribers, and in that case the value is immediately lost."*
+
+* **Official Doc Check ([`MutableSharedFlow.tryEmit`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-mutable-shared-flow/try-emit.html)):**
+  This behavior is true *specifically* for a **default unbuffered `MutableSharedFlow`** (`replay = 0`, `extraBufferCapacity = 0`, `onBufferOverflow = SUSPEND`). If the flow has an `extraBufferCapacity > 0` or uses `DROP_OLDEST` / `DROP_LATEST`, `tryEmit` **does** succeed with active subscribers as long as there is buffer space.
+* **Correction:** Clarify that this counter-intuitive behavior ("succeeds only when no one is listening") applies strictly to the *default zero-buffer configuration*.
+
+#### Issue C: Fragile Navigation Keying
+In [`shared-flow-and-state-flow.md` line 418](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/concurrency/shared-flow-and-state-flow.md#L418):
+```kotlin
+if (state.destination == Destination.Home) {
+    LaunchedEffect(Unit) {
+        navController.navigate("home") {
+            popUpTo("login") { inclusive = true }
+        }
+        viewModel.onNavigationHandled()
+    }
+}
+```
+* **Analysis:** Keying `LaunchedEffect` on `Unit` inside a conditional is fragile if `state.destination` is cleared and re-emitted within the same composition cycle, or if parameterized routes are used. Keying on `LaunchedEffect(state.destination)` or `message?.id` (as done for messages) is the robust pattern.
+
+---
+
+## 4. Full Android Topics Content Audit (Phases 1–9)
+
+Cross-checking the website content and main playbook chapters against the official Android documentation:
+
+| Topic / Phase | Passage in Playbook | Verified Official Doc Reality |
+|---|---|---|
+| **Phase 1: Architecture** ([`activity.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/architecture/activity.md)) | Split-screen mode is an example of `onPause()` without `onStop()`. | **Outdated:** Since Android 10 (API 29), Android supports **multi-resume**. All visible activities in split-screen stay in the `RESUMED` state ([Android Multi-window Support](https://developer.android.com/develop/ui/views/layout/support-multi-window-mode)). |
+| **Phase 1: Architecture** ([`viewmodel.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/architecture/viewmodel.md)) | Activity hands `ViewModelStore` to the OS and asks the OS for it back after recreation. | **Incorrect:** The `ViewModelStore` never leaves the app process; it is retained in memory by `NonConfigurationInstances` inside `ComponentActivity` ([ComponentActivity.java](https://cs.android.com/androidx/platform/frameworks/support/+/androidx-main:activity/activity/src/main/java/androidx/activity/ComponentActivity.kt)). |
+| **Phase 1: Architecture** ([`savedstatehandle.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/architecture/savedstatehandle.md)) | TransactionTooLargeException 1MB limit across the *entire* OS IPC system. | **Incorrect:** The 1MB Binder transaction buffer is allocated **per process** (shared across all concurrent IPC transactions within that process), not OS-wide ([Parcelables and Bundles](https://developer.android.com/guide/components/activities/parcelables-and-bundles)). |
+| **Phase 1: Architecture** ([`mvvm-vs-mvi.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/architecture/mvvm-vs-mvi.md)) | Avoid passing `{ vm.processIntent(it) }` because it allocates a new lambda each composition. | **Outdated:** Under Compose **Strong Skipping Mode** (default in Kotlin 2.0.20+), lambdas with unstable/stable captures are automatically remembered ([Strong Skipping Mode](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)). |
+| **Phase 1: Architecture** ([`navigation.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/architecture/navigation.md)) | Type-safe navigation arrived in Navigation 2.7+. | **Correction:** Type-safe Kotlin Serialization routes were introduced in **Navigation 2.8.0** ([Navigation Releases](https://developer.android.com/jetpack/androidx/releases/navigation#2.8.0)). |
+| **Phase 2: Data & DI** ([`room.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/data-and-di/room.md)) | Calling `dao.withTransaction { }` on a DAO. | **Compile Error:** `withTransaction` is an extension function on `RoomDatabase`, not on a `@Dao` interface ([Room withTransaction](https://developer.android.com/reference/kotlin/androidx/room/package-summary#withTransaction(androidx.room.RoomDatabase,kotlin.coroutines.SuspendFunction1))). |
+| **Phase 2: Data & DI** ([`room.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/data-and-di/room.md)) | `@Relation` runs 1 query per child (N+1 query problem). | **Incorrect:** Room's `@Relation` generates **two queries total**: one for the parents and one for all child records using an `IN` clause ([Room One-to-Many](https://developer.android.com/training/data-storage/room/relationships/one-to-many)). |
+| **Phase 2: Data & DI** ([`room.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/data-and-di/room.md)) | Projecting fewer columns prevents `Flow` from re-emitting on unchanged data. | **Incorrect:** Room's invalidation tracker works at the **table level**, not column level. Any write to the table triggers an invalidation; column projection only reduces mapping overhead ([Observable Room Queries](https://developer.android.com/training/data-storage/room/async-queries#observable-queries)). |
+| **Phase 2: Data & DI** ([`components.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/data-and-di/components.md)) | `@HiltViewModel` instances live in `ActivityRetainedComponent`. | **Incorrect:** ViewModels are injected by **`ViewModelComponent`** (which is a child of `ActivityRetainedComponent`) ([Hilt Component Lifetimes](https://developer.android.com/training/dependency-injection/hilt-android#component-lifetimes)). |
+| **Phase 4: Concurrency** ([`services.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/concurrency/services.md)) | `flow { withContext(Dispatchers.IO) { emit(data) } }` | **Crash at Runtime:** Emitting from a different `CoroutineContext` inside a `flow { }` builder violates Flow context preservation and throws `IllegalStateException`. Must use `.flowOn(Dispatchers.IO)` ([Kotlin Flow Context Preservation](https://kotlinlang.org/docs/flow.html#flow-context)). |
+| **Phase 4: Concurrency** ([`workmanager.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/concurrency/workmanager.md)) | Expedited work uses `setExpedited(true)` and runs instantly. | **Incorrect API:** The API is `setExpedited(OutOfQuotaPolicy)`. It does not guarantee immediate execution; it is subject to system quota and app standby buckets ([Define Expedited Work](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work#expedited)). |
+| **Phase 4: Concurrency** ([`battery-optimizations.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/concurrency/battery-optimizations.md)) | Android 14 introduced `SCHEDULE_EXACT_ALARM`. | **Correction:** `SCHEDULE_EXACT_ALARM` was introduced in **Android 12**. Android 14 changed the behavior by **denying it by default** for newly installed apps targeting API 34+ ([Android 14 Exact Alarms](https://developer.android.com/about/versions/14/changes/schedule-exact-alarms)). |
+| **Phase 7: Performance** ([`startup.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/performance/startup.md)) | App startup stages and 16KB page size. | Ensure the 16KB ELF alignment requirements from Android 15 ([16KB Page Sizes](https://developer.android.com/guide/practices/page-sizes)) are prominently connected to native libraries and memory profiling. |
+
+---
+
+## 5. Full Kotlin Topics Content Audit
+
+Auditing the Kotlin chapters against official Kotlin language specifications and standard library sources:
+
+1. **Collections & Immutability ([`variables.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook-website/website/reviews/corrections-triage.md#L48)):**
+   * *Claim:* `val list: List<T> = listOf(...)` is immutable.
+   * *Reality:* `List<T>` is a **read-only interface**, not an immutable structure. On the JVM, `listOf()` returns an unmodifiable or standard `java.util.List` or `ArrayList`. Downcasting `(list as MutableList)[0] = x` can mutate it unless defensively copied. Emphasize `kotlinx.collections.immutable` (`PersistentList`) for true structural immutability in Compose.
+2. **Top-Level `lateinit` ([`variables.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook-website/website/reviews/corrections-triage.md#L51)):**
+   * *Claim:* `lateinit` cannot be used on top-level properties.
+   * *Reality:* Top-level `lateinit var` has been fully supported in Kotlin since Kotlin 1.2.
+3. **`const val` Inlining & Binary Compatibility ([`variables.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook-website/website/reviews/corrections-triage.md#L53-L58)):**
+   * *Claim:* `const val` is binary-incompatible if its value changes.
+   * *Reality:* Changing the value of a `const val` does not fail JVM class linking (it is binary-compatible), but dependent pre-compiled modules will continue using the **old inlined constant value** until recompiled, causing silent stale-state bugs.
+4. **`by lazy` Synchronization ([`variables.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook-website/website/reviews/corrections-triage.md#L55)):**
+   * *Claim:* `by lazy` synchronizes on every read.
+   * *Reality:* `SynchronizedLazyImpl` uses a double-checked lock: the monitor lock is only acquired once during initialization. Subsequent reads are simple volatile reads without monitor contention.
+5. **Kotlin 2.0+ Language Features:**
+   * Ensure coverage reflects the **K2 compiler frontend**, improved smart casting (smart casts on local variables across closures), and the evolution of context receivers into **context parameters** in upcoming releases.
+
+---
+
+## 6. Actionable Recommendations & Roadmap
+
+### Priority 1: Immediate Content & Interactive Fixes (PR #1)
+1. **Fix Section Heading / Mode Discrepancy in [`shared-flow-and-state-flow.blend`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook-website/website/content/blend/android/shared-flow-and-state-flow.blend):**
+   - Either change `### One navigation event, three ways` to `### One navigation event: StateFlow vs SharedFlow`, OR (recommended) add the 3rd mode: **`Channel`** to demonstrate queue handoff and consumption without replay bugs.
+2. **Harden Compose Flow Collection Examples:**
+   - In [`shared-flow-and-state-flow.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/concurrency/shared-flow-and-state-flow.md#L315), replace `LaunchedEffect(viewModel)` with `repeatOnLifecycle(Lifecycle.State.STARTED)` or emphasize the Event-as-State pattern.
+3. **Clarify `tryEmit` Zero-Buffer Precondition:**
+   - Explicitly note in the table and text that returning `true` without subscribers applies specifically to an unbuffered flow (`replay=0`, `extraBufferCapacity=0`).
+
+### Priority 2: Design System Polish
+1. **Enhance Callout Styling:** Add colored 3px accent borders and role badges to `.blend` callouts to match the visual punch of the AirBridge technical articles.
+2. **Enlarge Mobile Touch Targets:** Ensure `.pb-progress` step pills and navigation buttons maintain a 48×48px accessible touch envelope.
+3. **Expand Syntax Highlighting:** Add annotations (`@Composable`, `@HiltViewModel`, `@Inject`) and Flow types to `tokenPattern` in [`app.js`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook-website/website/app.js).
+
+### Priority 3: Long-term Features
+1. **Interactive Playground:** Integrate the official Kotlin Playground embed for Kotlin language and coroutine chapters.
+2. **Sticky TOC & Reading Indicator:** Implement scrollspy reading progress in the right rail for chapters exceeding 3,000 words.
+
+---
+
+### Conclusion
+The new website build in PR #1 is a masterclass in static site performance, zero-dependency engineering, and visual technical storytelling. Resolving the few technical nuances identified above and tightening the interactive scenes will firmly establish this website as the definitive, industry-standard Android Staff Engineer learning experience.

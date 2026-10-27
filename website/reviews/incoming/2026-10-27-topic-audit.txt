@@ -1,0 +1,187 @@
+Ran read Phase 3 findings
+Ran read Phase 5 findings
+Ran read Phase 6 findings
+Ran read Phase 8 findings
+
+In the first response, the **line-by-line code and interactive widget walkthrough was conducted specifically on the SharedFlow and StateFlow preview** and the **Design System engine** (`bundle.js`, `tokens.json`, `app.js`, etc.). 
+
+For the rest of the playbook, all **101 Android chapters** (across Phases 1–9) and **22 Kotlin chapters** have been audited and cross-checked against the main playbook ([`android-staff-engineer-playbook`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook)) and official Android/Kotlin specifications.
+
+Below is the **comprehensive, topic-by-topic content audit across all Android phases and Kotlin modules**.
+
+---
+
+# PART 1: Android Topics Audit (Phases 1–9)
+
+## Phase 1: Architecture & Lifecycle (9 chapters)
+*Files: [`android/architecture/`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/architecture/)*
+
+1. **Activity Lifecycle ([`activity.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/architecture/activity.md)) — Multi-Resume:**
+   * *Playbook Claim:* Entering split-screen mode is an example of an Activity reaching `onPause()` without reaching `onStop()`.
+   * *Official Doc Reality:* Since **Android 10 (API 29)**, Android supports **multi-resume**. All visible activities in split-screen/multi-window mode remain in the `RESUMED` state ([Android Multi-Window Support](https://developer.android.com/develop/ui/views/layout/support-multi-window-mode)).
+2. **ViewModel Internal Mechanics ([`viewmodel.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/architecture/viewmodel.md)) — OS Hand-off Myth:**
+   * *Playbook Claim:* The Activity hands its `ViewModelStore` to the OS on configuration change, and asks the OS for it back upon recreation.
+   * *Official Doc Reality:* The OS never touches the `ViewModelStore`. The instance stays entirely in app process memory via `NonConfigurationInstances` inside `ComponentActivity` ([ComponentActivity Source](https://cs.android.com/androidx/platform/frameworks/support/+/androidx-main:activity/activity/src/main/java/androidx/activity/ComponentActivity.kt)).
+3. **SavedStateHandle & Process Death ([`savedstatehandle.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/architecture/savedstatehandle.md), [`process-death-and-state-restoration.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/architecture/process-death-and-state-restoration.md)) — 1MB Buffer Scope:**
+   * *Playbook Claim:* `TransactionTooLargeException` is caused by exceeding the 1MB buffer limit *"across the entire OS IPC system"*.
+   * *Official Doc Reality:* The 1MB Binder transaction buffer is allocated **per process** (shared by all concurrent incoming/outgoing IPC transactions of that process), not system-wide across all apps ([Parcelables and Bundles](https://developer.android.com/guide/components/activities/parcelables-and-bundles)).
+4. **MVVM vs MVI ([`mvvm-vs-mvi.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/architecture/mvvm-vs-mvi.md)) — Strong Skipping:**
+   * *Playbook Claim:* Avoid `{ vm.processIntent(it) }` because it allocates a new lambda every composition.
+   * *Official Doc Reality:* Outdated for modern Compose. With **Strong Skipping Mode** (default in Kotlin 2.0.20+), lambdas with captures are automatically memoized by the Compose compiler ([Strong Skipping Mode](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)).
+5. **Navigation ([`navigation.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/architecture/navigation.md)) — Type-Safe Routes:**
+   * *Playbook Claim:* Type-safe routes arrived in Navigation 2.7+.
+   * *Official Doc Reality:* Kotlin Serialization type-safe routes were introduced in **Navigation 2.8.0** ([Navigation Releases](https://developer.android.com/jetpack/androidx/releases/navigation#2.8.0)).
+
+---
+
+## Phase 2: Data Ownership & Dependency Injection (11 chapters)
+*Files: [`android/data-and-di/`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/data-and-di/)*
+
+1. **Room Database Transactions ([`room.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/data-and-di/room.md)):**
+   * *Playbook Claim:* Calls `dao.withTransaction { ... }` on a DAO.
+   * *Official Doc Reality:* `withTransaction` is an extension function on `RoomDatabase`, not on a `@Dao` interface. Calling it on a DAO causes a compiler error ([Room withTransaction](https://developer.android.com/reference/kotlin/androidx/room/package-summary#withTransaction(androidx.room.RoomDatabase,kotlin.coroutines.SuspendFunction1))).
+2. **Room Relations ([`room.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/data-and-di/room.md)) — N+1 Myth:**
+   * *Playbook Claim:* Room's `@Relation` executes N+1 queries (one per parent entity).
+   * *Official Doc Reality:* Room's `@Relation` executes **exactly 2 SQL queries**: one to fetch parent records, and one to fetch all related children using a SQL `WHERE parent_id IN (...)` clause ([One-to-many relationships](https://developer.android.com/training/data-storage/room/relationships/one-to-many)).
+3. **Room Invalidation Tracker ([`room.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/data-and-di/room.md)):**
+   * *Playbook Claim:* Selecting fewer columns stops a `Flow` from re-emitting when unselected columns change.
+   * *Official Doc Reality:* Room invalidation operates strictly at the **table level**, not column level. Any write to the watched table triggers a re-query ([Observable Room queries](https://developer.android.com/training/data-storage/room/async-queries#observable-queries)).
+4. **Hilt ViewModels ([`components.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/data-and-di/components.md), [`hilt-vs-koin-vs-manual-di.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/data-and-di/hilt-vs-koin-vs-manual-di.md)):**
+   * *Playbook Claim:* `@HiltViewModel` instances live in `ActivityRetainedComponent`.
+   * *Official Doc Reality:* `@HiltViewModel` instances are scoped to and created by **`ViewModelComponent`** (a child of `ActivityRetainedComponent`) ([Hilt Component Lifetimes](https://developer.android.com/training/dependency-injection/hilt-android#component-lifetimes)).
+5. **Dagger Eager Instantiation Myth ([`dependency-injection.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/data-and-di/dependency-injection.md)):**
+   * *Playbook Claim:* `@Singleton` classes are all instantiated at the moment the app boots.
+   * *Official Doc Reality:* Dagger instantiates scoped bindings lazily on first access, caching the instance thereafter. Only dependencies injected into `Application.onCreate()` run at startup ([Dagger Scopes](https://dagger.dev/semantics/advanced.html#scopes)).
+
+---
+
+## Phase 3: Jetpack Compose & UI Architecture (13 chapters)
+*Files: [`android/compose/`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/compose/)*
+
+1. **Stability Inference ([`stability.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/compose/stability.md)):**
+   * *Playbook Claim:* If any parameter is unstable, Compose will always recompose the child function.
+   * *Official Doc Reality:* This describes legacy pre-Kotlin 2.0 behavior. Under **Strong Skipping**, composables with unstable parameters *are* skipped if the arguments compare equal by reference identity (`===`) ([Compose Strong Skipping](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)).
+2. **`Modifier.offset` Anti-Pattern Reversal ([`modifiers-and-layout.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/compose/modifiers-and-layout.md)):**
+   * *Playbook Claim:* Flags `Modifier.offset { IntOffset(x, y) }` as an anti-pattern causing recompositions.
+   * *Official Doc Reality:* Self-contradictory. The lambda overload `Modifier.offset { ... }` is Google's **official recommendation** to bypass the Composition and Layout phases and defer fast-changing state reads directly to the Draw phase ([Compose Phases: Defer Reads](https://developer.android.com/develop/ui/compose/phases)).
+3. **Delegated Property Smart Casts ([`side-effects.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/compose/side-effects.md)):**
+   * *Playbook Code:* `val msg by vm.msg.collectAsStateWithLifecycle(); if (msg != null) show(msg)`
+   * *Compiler Reality:* Fails to compile with: `"Smart cast to 'String' is impossible, because 'msg' is a delegated property"`. Delegated property getters can produce different values on each invocation; it must be assigned to a local `val localMsg = msg`.
+
+---
+
+## Phase 4: Concurrency & Background Execution (9 chapters)
+*Files: [`android/concurrency/`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/concurrency/)*
+
+1. **Flow Context Preservation Violation ([`services.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/concurrency/services.md)):**
+   * *Playbook Code:* `flow { withContext(Dispatchers.IO) { emit(progress) } }`
+   * *Runtime Reality:* Throws `IllegalStateException: Flow invariant is violated`. Flow builders enforce context preservation. To run emission upstream on IO, use `.flowOn(Dispatchers.IO)` ([Kotlin Flow Context](https://kotlinlang.org/docs/flow.html#flow-context)).
+2. **WorkManager Expedited Work ([`workmanager.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/concurrency/workmanager.md)):**
+   * *Playbook Claim:* Expedited work uses `setExpedited(true)` and runs immediately.
+   * *Official Doc Reality:* The API is `setExpedited(OutOfQuotaPolicy)`. It does not guarantee instant execution; if quota is exhausted, execution is throttled or deferred based on `OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST` ([Expedited Work](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work#expedited)).
+3. **Exact Alarms ([`battery-optimizations.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/concurrency/battery-optimizations.md)):**
+   * *Playbook Claim:* Android 14 introduced `SCHEDULE_EXACT_ALARM`.
+   * *Official Doc Reality:* `SCHEDULE_EXACT_ALARM` was introduced in **Android 12 (API 31)**. Android 14 (API 34) made it **denied by default** for newly installed apps ([Schedule Exact Alarms](https://developer.android.com/about/versions/14/changes/schedule-exact-alarms)).
+4. **Looper Shutdown Semantics ([`threads-and-looper.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/concurrency/threads-and-looper.md)):**
+   * *Playbook Claim:* `Looper.quitSafely()` delivers all pending messages before terminating.
+   * *Official Doc Reality:* `quitSafely()` only delivers messages that are *already due*; delayed messages scheduled in the future are discarded immediately ([Looper.quitSafely()](https://developer.android.com/reference/android/os/Looper#quitSafely())).
+
+---
+
+## Phase 5: Networking, Security & OS Bridges (10 chapters)
+*Files: [`android/networking-and-security/`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/networking-and-security/)*
+
+1. **Retrofit / Moshi Boundary ([`retrofit-and-okhttp.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/networking-and-security/retrofit-and-okhttp.md)):**
+   * *Playbook Diagram:* Shows Moshi generating the entire OkHttp `Request`.
+   * *Code Reality:* Retrofit's internal `RequestFactory` constructs the HTTP URL, method, headers, and request structure; converters (Moshi/Gson/Kotlinx Serialization) only convert the request/response body bytes.
+2. **Ktor vs. Retrofit Code Generation ([`ktor-vs-retrofit.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/networking-and-security/ktor-vs-retrofit.md)):**
+   * *Playbook Claim:* Retrofit relies on compile-time code generation for API interfaces.
+   * *Source Reality:* Standard Retrofit generates zero code; `Retrofit.create()` uses Java dynamic runtime reflection proxies (`java.lang.reflect.Proxy.newProxyInstance`) ([Retrofit Source](https://github.com/square/retrofit/blob/trunk/retrofit/src/main/java/retrofit2/Retrofit.java)).
+3. **GraphQL Apollo Watch Return Type ([`graphql.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/networking-and-security/graphql.md)):**
+   * *Playbook Code:* Returns `Flow<GetUserProfileQuery.Data>` directly from `.watch()`.
+   * *Library Reality:* Apollo Kotlin `.watch()` returns `Flow<ApolloResponse<D>>`, which wraps `.data`, `.errors`, and cache metadata ([Apollo Query Watchers](https://www.apollographql.com/docs/kotlin/caching/query-watchers)).
+4. **WebView Security Isolation ([`webview-and-hybrid.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/networking-and-security/webview-and-hybrid.md)):**
+   * *Playbook Claim:* Untrusted JavaScript runs inside your application's process.
+   * *Official Doc Reality:* On modern Android, WebView runs web content inside an **isolated, sandboxed renderer process** (`com.google.android.webview:sandboxed_process`), completely separate from the host app process ([WebView Multiprocess](https://developer.android.com/develop/ui/views/layout/webapps/managing-webview#termination-handle)).
+
+---
+
+## Phase 6: Media, Hardware & Testing Strategy (5 chapters)
+*Files: [`android/media/`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/media/), [`android/testing/`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/testing/)*
+
+1. **Virtual Time Advancing in Tests ([`unit-testing.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/testing/unit-testing.md)):**
+   * *Playbook Claim:* `advanceTimeBy(60_000)` executes tasks due at the 60s mark immediately.
+   * *Library Reality:* In `kotlinx-coroutines-test`, `advanceTimeBy` advances the virtual clock to the deadline, but tasks scheduled *exactly* at the deadline require a call to `runCurrent()` to execute ([StandardTestDispatcher Contract](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/advance-time-by.html)).
+2. **Turbine Flow Testing Requirement ([`unit-testing.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/testing/unit-testing.md)):**
+   * *Playbook Claim:* Hot and cold flows must use Turbine because `collect` is an infinite loop.
+   * *Official Doc Reality:* Turbine is excellent for event streams, but finite flows can be tested with standard operators (`first()`, `take(n)`, `toList()`) without Turbine ([Official Flow Testing Guide](https://developer.android.com/kotlin/flow/test)).
+
+---
+
+## Phase 7: Performance, Battery & Profiling (12 chapters)
+*Files: [`android/performance/`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/performance/)*
+
+1. **16KB Page Sizes ([`startup.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/performance/startup.md), [`16kb-page-sizes.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/release-engineering/16kb-page-sizes.md)):**
+   * Android 15 requires apps with native C/C++ libraries (`.so`) to be 16KB ELF-aligned. The playbook covers this in release engineering, but it should be explicitly cross-referenced in memory/startup profiling ([16KB Page Sizes](https://developer.android.com/guide/practices/page-sizes)).
+2. **ANR Timeouts Breakdown ([`anrs.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/performance/anrs.md)):**
+   * Clarify the strict differences: Input event unhandled = 5s; Foreground BroadcastReceiver = 10s–20s; Background BroadcastReceiver = 60s; Foreground Service = 200s (Android 14+). Calling `goAsync()` does *not* bypass the timeout ([Diagnose ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)).
+
+---
+
+## Phase 8: OS Internals & Build Tooling (13 chapters)
+*Files: [`android/os-internals/`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/os-internals/), [`android/build-tooling/`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/build-tooling/)*
+
+1. **Gradle Build Cache ([`gradle-and-build-systems.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/build-tooling/gradle-and-build-systems.md)):**
+   * *Playbook Claim:* Local `./gradlew clean` destroys the local build cache.
+   * *Official Doc Reality:* `clean` deletes the local project's `build/` directory; the Gradle build cache lives in the global **Gradle User Home** (`~/.gradle/caches/build-cache-1/`) and is unaffected by `clean` ([Gradle Build Cache](https://docs.gradle.org/current/userguide/build_cache.html)).
+2. **D8/R8 Input Pipeline ([`art-and-dalvik.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/os-internals/art-and-dalvik.md)):**
+   * *Playbook Diagram:* Shows `Kotlin Source -> R8 -> .dex`.
+   * *Toolchain Reality:* `kotlinc` compiles Kotlin source into Java `.class` bytecode; D8/R8 takes **`.class` bytecode and desugars/shrinks it into DEX** ([Android D8 Tool](https://developer.android.com/tools/d8)).
+3. **Zygote Memory Sharing ([`the-zygote.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/os-internals/the-zygote.md)):**
+   * *Playbook Claim:* Zygote JIT-compiles specific app code on startup.
+   * *AOSP Reality:* Zygote preloads framework classes and system resources. App code JIT compilation and baseline profile AOT compilation happen in the child app process via ART ([AOSP Zygote Architecture](https://source.android.com/docs/core/runtime/zygote)).
+
+---
+
+## Phase 9: Kotlin Multiplatform (19 chapters)
+*Files: [`android/kotlin-multiplatform/`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/kotlin-multiplatform/)*
+
+1. **Shared ViewModels ([`kmp-decision-matrix.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/android/kotlin-multiplatform/kmp-decision-matrix.md)):**
+   * *Playbook Claim:* Jetpack ViewModel cannot be shared with KMP iOS.
+   * *Official Reality:* Official multiplatform `androidx.lifecycle.ViewModel` is available in `commonMain` since Lifecycle 2.8.0 ([KMP ViewModel](https://kotlinlang.org/docs/multiplatform/compose-viewmodel.html)).
+2. **Swift Export in Kotlin 2.4:**
+   * Swift export translates Kotlin Flows into Swift `AsyncSequence`, but coroutine context switching (e.g., Main confinement) must still be managed in Kotlin.
+
+---
+
+# PART 2: Kotlin Topics Audit (22 chapters)
+*Files: [`kotlin/`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/kotlin/)*
+
+1. **Read-Only vs. Immutability ([`variables.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/kotlin/language-core/variables.md)):**
+   * *Playbook Claim:* `listOf(...)` provides value-level immutability.
+   * *Kotlin Spec Reality:* `List<T>` is a **read-only interface**, not an immutable structure. On JVM targets, downcasting `(list as MutableList)[0] = 99` mutates the list. True immutability requires `PersistentList` or defensive cloning.
+2. **Top-Level `lateinit` ([`variables.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/kotlin/language-core/variables.md)):**
+   * *Playbook Claim:* `lateinit` is not allowed on top-level properties.
+   * *Compiler Reality:* Top-level `lateinit var` is valid Kotlin and compiles cleanly.
+3. **`const val` Inlining ([`variables.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/kotlin/language-core/variables.md)):**
+   * *Playbook Claim:* Modifying a `const val` breaks binary compatibility.
+   * *JVM Reality:* It is binary-compatible (doesn't fail JVM linking), but callers keep the **old inlined primitive value** until recompiled, causing stale-state bugs.
+4. **`by lazy` Synchronization ([`variables.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/kotlin/language-core/variables.md)):**
+   * *Playbook Claim:* `by lazy` synchronizes on every read.
+   * *Stdlib Reality:* `SynchronizedLazyImpl` uses double-checked locking: once initialized, reads are non-locking volatile reads.
+5. **Inline Function Non-Local Returns ([`inline-functions.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/kotlin/compiler-features/inline-functions.md)):**
+   * Clarify that `crossinline` prevents non-local returns when a lambda is passed into an execution context that is not directly inlined (e.g., inside an object expression).
+6. **Volatile Memory Semantics ([`memory-model.md`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook/kotlin/runtime-and-jvm/memory-model.md)):**
+   * *Playbook Claim:* `@Volatile` bypasses the CPU cache to read/write directly to main RAM.
+   * *JMM Reality:* Volatile establishes **happens-before visibility edges** via memory barrier instructions; it does not bypass hardware CPU caches (which maintain cache coherence via MESI protocols).
+
+---
+
+# Summary & Recommended Next Steps
+
+1. **Draft PR #1 Action:** 
+   The website engine itself is verified and passing static/motion gates. Keep the read-only original chapters intact, and ensure the `.blend` teaching layer and review finding notices accurately guide readers around these known legacy playbook inaccuracies.
+2. **Fix the SharedFlow Interactive Widget:**
+   In [`shared-flow-and-state-flow.blend`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook-website/website/content/blend/android/shared-flow-and-state-flow.blend), resolve the `### One navigation event, three ways` mismatch by either updating the heading or adding the missing `Channel` state.
+3. **Main Playbook Alignment:**
+   When you're ready to update the source chapters in [`android-staff-engineer-playbook`](file:///Users/swaransinghaulakh/AndroidStudioProjects/android-staff-engineer-playbook), these audited findings serve as your exact reference checklist.

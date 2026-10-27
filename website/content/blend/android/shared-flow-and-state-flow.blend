@@ -13,7 +13,7 @@ Both bugs come from the **delivery contract**: what happens to a value when nobo
 <figure class="viz"><div class="viz-grid" style="--cols:3"><div class="node is-key"><strong><code>StateFlow</code></strong><small>always a value · new collectors get the latest · equal values skipped · slow collectors skip ahead</small></div><div class="node"><strong><code>SharedFlow</code></strong><small>broadcast to active collectors · replay 0…n · no value kept without replay</small></div><div class="node"><strong><code>Channel</code></strong><small>a queue · each value goes to one receiver · can buffer while nobody receives</small></div></div><figcaption>State, broadcast and hand-off are different promises; pick the one the feature actually needs.</figcaption></figure>
 
 <!-- @after The Single-Event Problem :: animation -->
-### One navigation event, three ways
+### One navigation event: StateFlow and SharedFlow
 
 <section class="pb-figure" data-pb-flow="scene" aria-label="State is retained; an unbuffered event is not">
 <h3>State is retained; an unbuffered event is not</h3>
