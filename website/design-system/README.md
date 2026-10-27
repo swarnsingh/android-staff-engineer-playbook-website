@@ -6,11 +6,11 @@ The look and behaviour of the Android Engineering Playbook reader: a calm, profe
 
 ## Principles
 
-1. **Read first, decorate second.** Lessons run 3,000 to 6,000 words. Running text uses a plain sans face at a comfortable size and measure; personality lives in diagrams and a few annotations.
+1. **Read first, decorate second.** Lessons run 3,000 to 6,000 words. Running text uses a calm text face at a comfortable size and a measure of about 70 characters; personality lives in diagrams and a few annotations.
 2. **Show the mechanism moving, with consequences.** When a section is about direction, rate or order, the diagram animates it, and a packet that arrives changes what it reaches: a thread turns busy, a queue grows, a caller unblocks. A lesson's main mechanism is one system stepped through (FlowScene); short direction loops use FlowDiagram; structure stays static.
 3. **One frame, not boxes in boxes.** The page is a canvas; the lesson sits on one sheet; blocks inside the sheet are tints, never cards with their own shadow.
 4. **Every theme is designed.** Light, dark, sepia and high contrast each get their own values. Text meets 4.5:1 on its ground in all four.
-5. **The reader is in control.** Font, size, theme and motion settings override these defaults.
+5. **The reader is in control.** Reading font, size, theme and motion settings override these defaults.
 
 ## Surfaces (elevation)
 
@@ -46,14 +46,29 @@ Actor colours have a separate role: `scene-client` (blue devices), `scene-runtim
 
 | Style | `Typography` slot | Face |
 |---|---|---|
-| `displayLarge`, `headlineMedium` | `displayLarge`, `headlineMedium` | Inter: lesson and phase titles |
-| `titleLarge`, `titleMedium` | `titleLarge`, `titleMedium` | Inter: H2 and H3 |
-| `bodyLarge`, `bodyMedium` | `bodyLarge`, `bodyMedium` | Inter: running text, captions |
+| `displayLarge`, `headlineMedium` | `displayLarge`, `headlineMedium` | Inter 700 / 650: lesson and phase titles |
+| `titleLarge`, `titleMedium` | `titleLarge`, `titleMedium` | Inter 650: H2 and H3 |
+| `bodyLarge` | `bodyLarge` | The reader's prose font (`--font-prose`): 18px, line height 1.7, weight 400, paragraphs 1.1em apart |
+| `bodyMedium` | `bodyMedium` | Inter: captions, table cells, labels |
 | `labelLarge`, `labelSmall` | `labelLarge`, `labelSmall` | Inter: controls, eyebrows |
-| `codeBlock`, `codeInline` | (none) | JetBrains Mono, ligatures off |
+| `codeBlock`, `codeInline` | (none) | JetBrains Mono at 0.86em / 0.85em, line height 1.6, ligatures off |
 | `handNode`, `handNote` | (none) | Patrick Hand: diagrams and one annotation per diagram |
 
-Five families, self-hosted from `fonts/` (Latin subsets, SIL Open Font License): Inter variable 400–700 (48KB), Source Serif 4 SemiBold (21KB), JetBrains Mono variable 400–500 (31KB) and Patrick Hand (63KB), plus Shantell Sans variable 400–600 for the reader's handwritten setting. Shantell Sans was designed for on-screen reading, but it is about 25% wider than Patrick Hand, so animated diagram labels stay in Patrick Hand to fit their boxes; static structure diagrams use Inter. Nothing loads from a font CDN. Handwriting never carries an answer, a finding, an Under review note or code.
+**Two roles, kept apart.** Inter is the interface face: navigation, buttons, tabs, labels, headings, tables, captions and diagram text. The reader's chosen font sets prose only: paragraphs, list items, blockquotes, callout text and Q&A. Headings, code, data tables and diagrams never follow the reading font, so switching it changes how the lesson reads, not how the page is organised.
+
+**Five reading fonts** (`type.prose` in `tokens.json`), each a token swap on `html[data-reader-font]`:
+
+| Option | Face | Measure |
+|---|---|---|
+| Modern Sans (default) | Playbook Sans, the Source Sans 3 subset | 33em |
+| Book Serif | Playbook Serif, the Source Serif 4 subset | 34em |
+| Classic Serif | Times New Roman from the device (nothing bundled) | 34em |
+| Handwritten | Shantell Sans | 34.5em |
+| Easy Read | Atkinson Hyperlegible Next, developed to increase legibility for readers with low vision through distinctive letterforms. It is offered as an alternative some readers find easier, not as a better default for everyone. | 31em |
+
+Each option has its own measure, calibrated by rendering lesson paragraphs so every font sets a median of about 70 characters a line. Prose and prose-only callouts take that measure; code, tables and diagrams keep the full 760px column. `font-size-adjust` gives every prose font the same x-height, so "18px" looks the same size whichever font is chosen; Times New Roman, which is small on its body, is the only one visibly scaled. Saved choices from the earlier four-font setting map to their successors (`sans`, `serif`, `times`, `hand`); a reader who never chose a font follows the default and nothing is saved for them.
+
+Self-hosted from `fonts/` as Latin WOFF2 subsets under the SIL Open Font License, with each licence beside the files. Adobe reserves the name "Source", so the two Adobe subsets are renamed Playbook Sans and Playbook Serif; see [fonts/README.md](fonts/README.md) for sources, versions, hashes and the build tool. Each face has a metric-matched local fallback, so text barely moves when the web font arrives. Only Inter and the active prose font are preloaded; other fonts and italics load when used. Nothing loads from a font CDN. Shantell Sans is about 25% wider than Patrick Hand, so animated diagram labels stay in Patrick Hand to fit their boxes; static structure diagrams use Inter. The design itself never sets an answer, a finding, an Under review note or code in handwriting; a reader who picks Handwritten chooses it for all their prose.
 
 ## Shapes and spacing
 
@@ -81,14 +96,14 @@ FlowDiagram, FlowScene and WideDiagram share one runtime, `components/bundle.js`
 ## Applied to the reader
 
 - The text column is capped at `measure-text` and centred on a sheet, instead of spanning the space between the rails.
-- Body text defaults to Inter instead of the handwritten face; handwriting moves into diagrams.
+- Body text defaults to Modern Sans (Source Sans 3) at a textbook measure; Inter stays for headings and the interface, and handwriting lives in diagrams unless the reader chooses it.
 - Callouts use a restrained role accent, clear label and tinted ground.
 - Flow diagrams animate packets along their connectors instead of showing static arrows, and each lesson's main mechanism becomes one stepped FlowScene instead of separate small visuals.
 
 ## Established defaults
 
 1. **Accent hue: green (default).** It keeps the playbook's identity. A blue or teal accent would need the `event` colour to change too, so the two directions stay distinct.
-2. **Title face: Inter.** Headings use the shared sans family for the AirBridge article hierarchy. Source Serif 4 remains available as a reading preference.
+2. **Title face: Inter.** Headings use the shared sans family for the AirBridge article hierarchy and do not follow the reading font. Book Serif (Source Serif 4) remains available for prose.
 3. **Default theme: light.** The reader can switch. Dark is a deep navy page (`canvas` #0a0f1e) with a slate sheet and two faint glows behind it (in the style of the AlgoInsight reference); every text and outline pair passes 4.5:1 and 3:1 on all three dark surfaces. The AlgoInsight reference is dark-first.
 
 ## Website-wide learning standard

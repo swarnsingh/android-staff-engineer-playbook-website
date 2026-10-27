@@ -6,12 +6,13 @@ window.runBinderAudit = async () => {
   const d=frame.contentDocument,w=frame.contentWindow;
   const tick=()=>new Promise(resolve=>w.requestAnimationFrame(()=>w.requestAnimationFrame(()=>w.requestAnimationFrame(resolve))));
   const scene=d.querySelector('[data-pb-flow=scene]');
-  const fonts={sans:'Inter,sans-serif',serif:'"Source Serif 4",serif',times:'"Times New Roman",serif',hand:'"Shantell Sans",sans-serif'};
-  for(const theme of ['light','dark','sepia','contrast']) for(const [font,family] of Object.entries(fonts)) for(const size of [15,22]) {
+  // Every reading font the panel offers (ids come from the generated options).
+  const fonts=[...d.querySelectorAll('#font-family option')].map(option=>option.value);
+  for(const theme of ['light','dark','sepia','contrast']) for(const font of fonts) for(const size of [15,22]) {
     d.documentElement.dataset.theme=theme;
-    d.documentElement.style.setProperty('--reader-font',family);
+    d.documentElement.dataset.readerFont=font;
     d.documentElement.style.setProperty('--reader-size',size/16+'rem');
-    await d.fonts.load(size+'px '+family.split(',')[0]);await d.fonts.ready;
+    await d.fonts.load(size+'px '+w.getComputedStyle(d.documentElement).getPropertyValue('--font-prose'));await d.fonts.ready;
     for(const width of [320,390,768,1181,1280,1439,1440]) for(const view of ['content','qa']) {
       frame.style.width=width+'px';w.setView(view,{writeHistory:false,restore:false});await tick();
       const problems=[];
@@ -40,8 +41,9 @@ window.runBinderAudit = async () => {
         d.documentElement.classList.remove('reduce-motion');
       }
       if(view==='qa') {
-        const items=[...d.querySelectorAll('#section-answer-key > ol > li')];
-        if(!items.length||items.some(li=>!li.querySelector('.qa-answer-label'))||d.querySelectorAll('#panel-qa .qa-answer-label').length!==13)problems.push('answer labels');
+        // Answers sit beside their questions: every pair keeps its Answer heading and its original answer-key item.
+        const pairs=[...d.querySelectorAll('#panel-qa .qa-answer-pair')];
+        if(!pairs.length||pairs.some(pair=>!pair.querySelector(':scope > .qa-answer-label')||!pair.querySelector('[data-original-section="section-answer-key"]'))||d.querySelectorAll('#panel-qa .qa-answer-label').length!==13)problems.push('answer labels');
       }
       result.checks.push({theme,font,size,width,view,ok:!problems.length});
       if(problems.length)result.problems.push({theme,font,size,width,view,problems:[...new Set(problems)]});

@@ -178,7 +178,7 @@ Keep Mermaid and local assets consistent with [the repository's visual/attributi
 
 ### Reading choices
 
-Retain the requested choice of sans serif, book serif, Times New Roman, and handwriting-style reading fonts as optional preferences, with a sensible default. Keep code independently monospaced. Explain platform font differences; consistent self-hosted fonts require appropriate assets and licensing. A choice should improve reader control, not promise a medical or learning benefit without evidence.
+Retain the requested choice of sans serif (the default), book serif, Times New Roman, handwriting-style and legibility-oriented reading fonts as optional preferences. The choice changes prose only; headings, interface, tables and diagrams keep their faces. Keep code independently monospaced. Explain platform font differences; consistent self-hosted fonts require appropriate assets and licensing. A choice should improve reader control, not promise a medical or learning benefit without evidence.
 
 Offer light, dark, sepia, and high-contrast themes, text resizing, motion controls, and focus mode. Reading size must support more than paragraphs: code, captions, diagram labels, Q&A, and tables also need to remain legible. Prefer relative units and respect browser zoom/default-font settings. Settings should preview their effect and remain discoverable at every width. Browser-local persistence does not imply accounts or cross-device sync.
 

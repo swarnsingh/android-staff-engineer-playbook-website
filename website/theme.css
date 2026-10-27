@@ -142,7 +142,7 @@ html[data-theme=contrast] .blend > .blend-label { border: 1px solid var(--ink); 
 .decision-card { margin: 0!important; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--sheet-sunken); }
 .decision-card .decision-number { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; color: var(--on-accent); background: var(--accent); font: 650 13px var(--font-sans); }
 .decision-card h4 { font: 650 18px/1.4 var(--font-sans); margin: 12px 0 8px; }
-.decision-card p { font: 400 max(15px,.92em)/1.75 var(--reader-font); margin: 0; }
+.decision-card p { font: 400 max(15px,.92em)/var(--prose-leading) var(--font-prose); margin: 0; }
 .decision-card:last-child:nth-child(odd) { grid-column: 1 / -1; border-inline-start: 3px solid var(--accent); }
 @media(max-width:640px){.lesson-hero{padding:24px 0 16px}.lesson-hero h1{font-size:clamp(2rem,7vw,2.65rem)}.lesson-section{padding-top:2.75rem}.decision-grid{grid-template-columns:minmax(0,1fr)}}
 @media(max-height:500px),print{.reading-progress{display:none}}
@@ -151,3 +151,19 @@ html[data-theme=contrast] .blend > .blend-label { border: 1px solid var(--ink); 
 .viz > table { table-layout: fixed; }
 .viz > table th, .viz > table td { min-width: 0; overflow-wrap: anywhere; }
 .viz > table th[scope=row] { width: 3rem; }
+
+/* Typography (tokens in design-system/tokens.json). Inter carries the interface, headings, tables, captions and labels.
+   The reader's chosen font (--font-prose) carries prose only: paragraphs, list items, blockquotes, callout text and Q&A.
+   Diagrams, tables, code and lesson furniture keep their own faces whatever the reader picks.
+   font-size-adjust gives every prose font the same x-height, so the size setting means the same thing in each.
+   Prose keeps its own measure (about 70 characters a line); code, tables and diagrams keep the full text column. */
+.reading-content :where(p, li, blockquote, dd, dt):not(:where(figure, table, .viz, .stepper, .pb-figure, .code-card, .model, .panel-intro, .part-band, .lesson-footer, .chapter-navigation) *, :where(.part-promise)),
+.reading-content .blend[data-kind=check] summary, .settings-preview p {
+  font-family: var(--font-prose); font-size-adjust: var(--prose-x-height); line-height: var(--prose-leading);
+}
+.reading-content :where(p, blockquote, li:not(:has(> .code-card, > pre, > figure, > table, > .blend, > details))):not(:where(figure, table, .viz, .stepper, .pb-figure, .code-card, .model) *) { max-width: var(--measure-prose); }
+/* Boxes that hold only prose take the prose measure too, so their text never floats in an empty box. */
+.reading-content :is(.blend, .qa-answer-pair):not(:has(figure, table, pre, .code-card, .pb-figure, .stepper, .decision-map)) { max-width: var(--measure-prose); }
+:where(.reading-content) :where(p, ul, ol, blockquote):not(:where(figure, table, .viz, .stepper, .pb-figure, .code-card, .model) *) { margin-block: var(--prose-spacing); }
+:where(.reading-content) pre { font-size: var(--code-size); line-height: var(--code-leading); }
+.reader-settings .font-description { margin: -.7rem 0 1.2rem; }

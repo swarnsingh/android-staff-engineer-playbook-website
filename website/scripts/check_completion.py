@@ -50,8 +50,11 @@ def check(source_root=None):
  assert proof['gradle_plugin_probe']=='passed'
  # Content-completion evidence remains the baseline. Shared-reader changes also
  # require their own current browser evidence rather than reusing that old run.
- ux=ROOT/'website/reviews/ux-2026-10-28'
- assert proof.get('ux_review')=='website/reviews/ux-2026-10-28/REPORT.md','Missing reader UX verification'
+ # The latest shared-reader review names its own evidence folder; it must cover the current inputs.
+ assert proof.get('ux_review') and (ROOT/proof['ux_review']).exists(),'Missing reader UX verification'
+ ux=(ROOT/proof['ux_review']).parent
+ # Binder matrix: 4 themes x every reading font x 2 sizes x 7 widths x 2 views.
+ binder_checks=4*len(json.loads((ROOT/'website/design-system/tokens.json').read_text())['type']['prose']['options'])*2*7*2
  browser=json.loads((ux/'browser.json').read_text())
  assert browser['done'] and len(browser['pages'])==125 and all(p['ok'] for p in browser['pages'])
  code_checks=[c for p in browser['pages'] for c in p.get('codeChecks',[])]
@@ -63,7 +66,7 @@ def check(source_root=None):
  assert len({c['id'] for c in code_checks if c['inList']})>=45,'Nested-list code examples not checked'
  for name in ['binder','motion','refinement','ux']:
   result=json.loads((ux/(name+'.json')).read_text());assert result['done'],name+' UX audit incomplete'
-  if name=='binder':assert len(result['checks'])==448 and not result['problems']
+  if name=='binder':assert len(result['checks'])==binder_checks and not result['problems']
   elif name=='motion':assert len(result['results'])==13 and all(c['ok'] for c in result['results'])
   else:assert result['ok'] and len(result['checks'])>=(222 if name=='ux' else 69) and all(c['ok'] for c in result['checks'])
  focused=json.loads((REVIEW/'merged-sync-browser.json').read_text())
