@@ -8,9 +8,6 @@
 
 Both fixes chose a scope by trial and error. In Hilt, a scope is a promise about **which container holds the instance**, and each container is created and destroyed with a specific Android lifetime. This chapter maps every standard component to that lifetime, shows how a request finds its binding, and covers the escape hatches for code Hilt does not create.
 
-<!-- @before The Seven Standard Components :: review -->
-Several passages in the next sections say `@HiltViewModel` ViewModels live in, or are scoped to, `ActivityRetainedComponent` (the table's "Default for" column, the `ActivityRetainedComponent` drill-down, one Failure Modes row and answer 5). They are under technical review. A correction is pending the owner's approval.
-
 <!-- @after The Hierarchy (Visualized) :: animation -->
 ### Resolving a request walks up, never down
 
@@ -50,15 +47,6 @@ The introductory ViewComponent parent description is under technical review (C2)
 
 <!-- @before The Hierarchy (Visualized) :: review -->
 The Fragment-to-ViewComponent edge in the original diagram is under technical review (C2). A correction is pending the owner's approval.
-
-<!-- @before Drill-Down on Each Component :: review -->
-The ActivityRetainedComponent description of ViewModel placement is under technical review (C1). A correction is pending the owner's approval.
-
-<!-- @before Failure Modes :: review -->
-The row associating a ViewModel's lifetime with ActivityRetainedComponent is under technical review (C1). A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-Answer 5's ViewModel-component description is under technical review (C1). A correction is pending the owner's approval.
 
 <!-- @before Custom Components with @DefineComponent :: review -->
 The SessionManager example's instance-sharing and component ownership are under technical review (SS1). A correction is pending the owner's approval.

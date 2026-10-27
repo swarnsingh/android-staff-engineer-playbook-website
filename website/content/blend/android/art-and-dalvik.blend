@@ -8,7 +8,7 @@
 
 ART runs DEX bytecode in several ways: interpreted, compiled while running (JIT) and compiled ahead of time (AOT). Profiles of what actually runs decide what gets compiled later. This chapter traces how Dalvik became ART and how today's mix of modes works. The additions here follow one journey across several runs, so you can tell a runtime-state change from a change in your code.
 
-<!-- @diagram 00cb847fc6aa283a -->
+<!-- @diagram 60c0861cc5c7f00c -->
 ### Execution modes and the profile loop
 
 <figure class="viz"><div class="viz-flow"><div class="node"><strong>Kotlin code</strong></div><div class="node"><strong>R8 compiler</strong></div><div class="node"><strong><code>.dex</code> bytecode</strong></div><div class="node is-key"><strong>Device execution</strong><small>available compiled code, interpretation or JIT</small></div><div class="node"><strong>Runtime profile</strong><small>selected hot methods and classes</small></div></div><div class="viz-flow"><div class="node"><strong>When eligible</strong><small>the platform invokes <code>dex2oat</code></small></div><div class="node"><strong>ART AOT compiler</strong><small>uses DEX and the profile</small></div><div class="node" data-state="done"><strong>Compiled code</strong><small>later runs need less runtime compilation</small></div></div><figcaption>Redrawn from the original diagram. The loop explains why the same build can behave differently over its first days on a device.</figcaption></figure>
@@ -55,9 +55,3 @@ Primary sources for the added layer: [ART JIT compiler (AOSP)](https://source.an
 ### Three ways the same method can run
 
 <figure class="viz"><div class="viz-cols" style="--cols:3"><div class="col"><span class="col-title">Interpreted</span><div class="node"><strong>When</strong><small>no compiled code exists yet for the method</small></div><div class="node" data-state="warn"><strong>Cost</strong><small>slowest per call, nothing to compile first</small></div></div><div class="col"><span class="col-title">JIT</span><div class="node"><strong>When</strong><small>a method turns hot while the app runs</small></div><div class="node"><strong>Leaves behind</strong><small>a profile file listing the hot code</small></div></div><div class="col"><span class="col-title">AOT (speed-profile)</span><div class="node is-key"><strong>When</strong><small>at install from a cloud profile, or when the device is idle and charging</small></div><div class="node is-key"><strong>Leaves behind</strong><small>an <code>.oat</code> file of compiled methods</small></div></div></div><figcaption>The profile is the link between the columns: JIT records what ran, and dex2oat compiles those methods ahead of time for later launches.</figcaption></figure>
-
-<!-- @before First Principles :: review -->
-The description of what d8/R8 take as input (ART1) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Architecture :: review -->
-The diagram's first step, from Kotlin code to DEX (ART1), is under technical review. A correction is pending the owner's approval.

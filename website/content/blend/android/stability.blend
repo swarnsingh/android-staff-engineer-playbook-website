@@ -69,9 +69,6 @@ Whether Compose can skip a child depends on how it compares that child's argumen
 
 <figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title"><code>@Immutable</code></span><div class="node"><strong>Promise</strong><small>no observable property ever changes after construction</small></div><div class="node" data-state="warn"><strong>If broken</strong><small>Compose skips a call whose data changed in place: stale UI</small></div></div><div class="col"><span class="col-title"><code>@Stable</code></span><div class="node"><strong>Promise</strong><small><code>equals</code> is consistent, and any change to public state is observable through snapshot state</small></div><div class="node" data-state="warn"><strong>If broken</strong><small>the same: skipped updates you expected to see</small></div></div></div><figcaption>Annotations override inference, much like <code>!!</code> overrides null checks: the compiler trusts them, and does not verify them.</figcaption></figure>
 
-<!-- @before Failure Modes :: review -->
-The unstable List/Map skipping rows and the row saying `@Immutable` has no effect on a class with a `var` are under technical review. Corrections are pending the owner's approval.
-
 <!-- @after Common Pitfalls :: check -->
 **Stable or not?** Decide before opening each answer.
 
@@ -87,14 +84,8 @@ Unstable (the `List` interface could be mutable), but still skippable under stro
 
 
 
-<!-- @before The Skipping Decision — Compose Compiler Output :: review -->
-The blanket non-skippability rule and generated-code explanation in this section is under technical review. A correction is pending the owner's approval.
-
 <!-- @before What's Inferred Unstable :: review -->
-The non-skippable List/Map examples and explanation about compilation order in this section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Reading the Compose Compiler Metrics :: review -->
-The unstable-parameter/skippability interpretation of the reports in this section is under technical review. A correction is pending the owner's approval.
+The explanation about compilation order in this section remains under technical review (ST4). A correction is pending the owner's approval.
 
 <!-- @before Collections: ImmutableList and PersistentList :: review -->
 The unconditional “fully stable” description of these collection types is under technical review. A correction is pending the owner's approval.

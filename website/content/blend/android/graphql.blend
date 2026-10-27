@@ -11,9 +11,6 @@ The comment syntax in the GetUserProfile.graphql block (GQ1) is under technical 
 
 <figure class="viz"><div class="viz-stack"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Schema input</strong><small>reviewed build artifact</small></div><div class="node"><strong>Operation document</strong><small>selected fields</small></div></div><div class="down"></div><div class="node is-key"><strong>Apollo compiler</strong><small>validates operations → generates operation models</small></div><div class="viz-grid" style="--cols:2"><div class="node"><strong>ApolloClient ↔ server</strong><small>runtime operation and response</small></div><div class="node"><strong>Generated models</strong><small>used to parse that response</small></div></div><div class="node"><strong>Optional normalized cache</strong><small>client writes response records</small></div></div><figcaption>The runtime server is separate from the pinned schema used during the build. The original diagram remains available below.</figcaption></figure>
 
-<!-- @before Production Example :: review -->
-The declared Flow element type in observeUser (GQ2) is under technical review. A correction is pending the owner's approval.
-
 <!-- @after Production Example :: animation -->
 ### The same user through two selections
 

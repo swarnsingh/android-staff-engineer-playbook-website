@@ -6,7 +6,9 @@
     "reason": "Read-only collections and val do not establish thread safety; a JVM probe mutated a multi-element listOf through a MutableList cast.",
     "sources": [
       "https://kotlinlang.org/docs/collections-overview.html"
-    ]
+    ],
+    "status": "approved",
+    "approval": "Owner requested official-source fixes and publication, 2026-10-27; only verified collection, lateinit, const-value and JVM lazy claims."
   },
   {
     "path": "kotlin/language-core/variables.md",
@@ -15,7 +17,9 @@
     "reason": "A List interface does not prevent mutation through another alias.",
     "sources": [
       "https://kotlinlang.org/docs/collections-overview.html"
-    ]
+    ],
+    "status": "approved",
+    "approval": "Owner requested official-source fixes and publication, 2026-10-27; only verified collection, lateinit, const-value and JVM lazy claims."
   },
   {
     "path": "kotlin/language-core/variables.md",
@@ -24,7 +28,9 @@
     "reason": "Read-only and immutable collections are different contracts.",
     "sources": [
       "https://kotlinlang.org/docs/collections-overview.html"
-    ]
+    ],
+    "status": "approved",
+    "approval": "Owner requested official-source fixes and publication, 2026-10-27; only verified collection, lateinit, const-value and JVM lazy claims."
   },
   {
     "path": "kotlin/language-core/variables.md",
@@ -33,7 +39,9 @@
     "reason": "Official properties documentation and Kotlin/JVM 2.2.21 compilation confirm top-level and local lateinit.",
     "sources": [
       "https://kotlinlang.org/docs/properties.html"
-    ]
+    ],
+    "status": "approved",
+    "approval": "Owner requested official-source fixes and publication, 2026-10-27; only verified collection, lateinit, const-value and JVM lazy claims."
   },
   {
     "path": "kotlin/language-core/variables.md",
@@ -43,7 +51,9 @@
     "sources": [
       "https://kotlinlang.org/docs/collections-overview.html",
       "https://kotlinlang.org/docs/data-classes.html"
-    ]
+    ],
+    "status": "approved",
+    "approval": "Owner requested official-source fixes and publication, 2026-10-27; only verified collection, lateinit, const-value and JVM lazy claims."
   },
   {
     "path": "kotlin/language-core/variables.md",
@@ -62,7 +72,9 @@
     "sources": [
       "https://kotlinlang.org/docs/properties.html",
       "https://kotlinlang.org/docs/compatibility-guide-17.html"
-    ]
+    ],
+    "status": "approved",
+    "approval": "Owner requested official-source fixes and publication, 2026-10-27; only verified collection, lateinit, const-value and JVM lazy claims."
   },
   {
     "path": "kotlin/language-core/variables.md",
@@ -71,7 +83,9 @@
     "reason": "JVM SynchronizedLazyImpl avoids locking once initialized.",
     "sources": [
       "https://github.com/JetBrains/kotlin/blob/v2.2.21/libraries/stdlib/jvm/src/kotlin/util/LazyJVM.kt"
-    ]
+    ],
+    "status": "approved",
+    "approval": "Owner requested official-source fixes and publication, 2026-10-27; only verified collection, lateinit, const-value and JVM lazy claims."
   },
   {
     "path": "kotlin/language-core/variables.md",
@@ -80,7 +94,9 @@
     "reason": "Correct the lock-on-every-read claim using stdlib implementation.",
     "sources": [
       "https://github.com/JetBrains/kotlin/blob/v2.2.21/libraries/stdlib/jvm/src/kotlin/util/LazyJVM.kt"
-    ]
+    ],
+    "status": "approved",
+    "approval": "Owner requested official-source fixes and publication, 2026-10-27; only verified collection, lateinit, const-value and JVM lazy claims."
   },
   {
     "path": "kotlin/language-core/variables.md",
@@ -89,7 +105,9 @@
     "reason": "Repeat of incorrect JVM lazy locking claim.",
     "sources": [
       "https://github.com/JetBrains/kotlin/blob/v2.2.21/libraries/stdlib/jvm/src/kotlin/util/LazyJVM.kt"
-    ]
+    ],
+    "status": "approved",
+    "approval": "Owner requested official-source fixes and publication, 2026-10-27; only verified collection, lateinit, const-value and JVM lazy claims."
   },
   {
     "path": "kotlin/language-core/variables.md",
@@ -98,7 +116,9 @@
     "reason": "Distinguish binary linkage from inlined behavioral compatibility.",
     "sources": [
       "https://kotlinlang.org/docs/properties.html"
-    ]
+    ],
+    "status": "approved",
+    "approval": "Owner requested official-source fixes and publication, 2026-10-27; only verified collection, lateinit, const-value and JVM lazy claims."
   },
   {
     "path": "kotlin/language-core/variables.md",

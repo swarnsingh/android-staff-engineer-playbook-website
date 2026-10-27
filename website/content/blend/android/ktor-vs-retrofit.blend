@@ -4,10 +4,7 @@
 <p class="story-lead">The Android app already works with Retrofit. Now the team wants to share business logic with iOS. Replacing annotations with client calls is the visible part; the harder part is keeping authentication, serialization, cancellation and failure behaviour consistent across platforms. Start by deciding which code needs to be shared.</p>
 
 <!-- @before Architecture at a Glance :: review -->
-The Retrofit implementation and OkHttp protocol descriptions in the next section (KT1–KT2) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Declarative vs Imperative :: review -->
-The description of how Retrofit creates its implementation in the next section (KT1) is under technical review. A correction is pending the owner's approval.
+The OkHttp protocol description in the next section remains under technical review (KT2). The Retrofit implementation description has been corrected. A correction is pending the owner's approval.
 
 <!-- @after KMP — The Decisive Factor :: visual -->
 ### Choose the boundary before the library

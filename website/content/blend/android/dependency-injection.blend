@@ -24,9 +24,6 @@ The fix is to stop letting classes build their own collaborators. With dependenc
 {"label":"Process killed","caption":"Only now does the application component disappear, and with it every @Singleton instance.","state":{"single":"error"},"text":{"singleV":"gone with the process"}}
 ]</script><figcaption>A scope annotation ties an instance to one of these lifetimes. Without a scope, every request gets a new instance.</figcaption></figure>
 
-<!-- @before Failure Modes :: review -->
-The over-scoping item in the next section (and answer 6 of the Answer Key) says `@Singleton` classes are instantiated "from the moment the app boots". That is under technical review. A correction is pending the owner's approval.
-
 <!-- @after Common Misconceptions :: check -->
 **Which scope?** Decide before opening each answer.
 
@@ -50,9 +47,6 @@ The Repository placement in the diagram and the scoped Repository in the product
 
 <!-- @before Production Example :: review -->
 The Repository scope and its placement in the preceding architecture diagram are under technical review (DI2). A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-Answer 6's claim about the creation time of all singleton bindings is under technical review (DI1). A correction is pending the owner's approval.
 
 <!-- @before Tradeoffs :: review -->
 The Koin missing-definition exception name in this section is under technical review (KO1). A correction is pending the owner's approval.

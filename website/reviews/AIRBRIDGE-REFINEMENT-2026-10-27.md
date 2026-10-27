@@ -38,3 +38,9 @@ Publication uses the existing branch and PR #1, followed by GitHub Pages from th
 - Documentation gates and all 15 checker unit tests passed; JavaScript syntax and diff whitespace checks passed. Static preservation checked all 15,572 source units and 125 source-page hashes. Phone landing and Binder, tablet navy styling, and desktop article/decision layouts received visual inspection in Chrome. These checks are browser viewport simulations, not a physical-device certification.
 
 The website repository is public and Pages uses the workflow build type. Its deployment environment permits `main` and `codex/android-completion`. The original repository remains private. Deployment and live provenance results are recorded after the publishing workflow completes.
+
+### First verified public deployment
+
+[Website build and deployment](https://github.com/swarnsingh/android-staff-engineer-playbook-website/actions/runs/40464596578) and [documentation checks](https://github.com/swarnsingh/android-staff-engineer-playbook-website/actions/runs/40464604024) passed for product commit `d23f3b1e492ea2f72d386ecbc44d3be39f329437`. Live `build-info.json` matched that commit. The landing page, both learning paths, design gallery, Binder, Room and Kotlin Channel lessons returned HTTP 200 without authentication. Chrome rendered the live landing and gallery successfully. The gallery's introductory count was then updated to reflect the three static conversions.
+
+Live website: https://swarnsingh.github.io/android-staff-engineer-playbook-website/ . Live gallery: https://swarnsingh.github.io/android-staff-engineer-playbook-website/design-system/ . The original repository was rechecked as private. [The incoming-review disposition](REVIEW-DISPOSITION-2026-10-27.md) explicitly separates fixed reader requests, pending original corrections, recommendations needing qualification and the optional Playground request.

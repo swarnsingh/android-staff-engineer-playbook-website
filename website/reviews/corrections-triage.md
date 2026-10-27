@@ -1,6 +1,9 @@
 # Corrections Triage
 
-Codex proposed 292 corrections to the original chapters, stored in `website/content/corrections-*.json`. None is applied until the owner approves it. Approved corrections appear on the website only, visibly marked; the original Markdown is never edited.
+**Approval update, 27 October 2026:** The owner explicitly requested the official-source fixes and source PR. Ten existing proposals in `corrections-language.json` are now approved and applied, alongside 76 targeted review replacements. [The verification report](OFFICIAL-CONTENT-VERIFICATION-2026-10-27.md) defines this subset. The older verdicts below remain review recommendations for the other proposals; they are not blanket approvals.
+
+
+Codex proposed 292 corrections to the original chapters, stored in `website/content/corrections-*.json`. Application requires owner approval; the dated subset above now has that approval. Approved corrections appear on the website only, visibly marked; the original Markdown is never edited.
 
 **Verdicts**
 

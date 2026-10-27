@@ -1,5 +1,8 @@
 # Android Phase 9 (Kotlin Multiplatform): possible errors in the original chapters
 
+**Subsequent verified-fix update, 27 October 2026:** Selected issues from the incoming reports are now corrected under the owner's explicit fix-and-publish instruction and proposed in [source PR #57](https://github.com/swarnsingh/android-staff-engineer-playbook/pull/57). [The exact verification inventory](OFFICIAL-CONTENT-VERIFICATION-2026-10-27.md) and approved JSON records identify the applied subset. Historical “none applied” statements below refer to the earlier review date; unrelated findings remain pending.
+
+
 Findings for the owner's review, not approved corrections. The original Markdown is unchanged and nothing has been added to `content/corrections-*.json`. Each finding has an **Under review** note before every affected H2. The note identifies the passage in words and does not state the replacement.
 
 **How these were established.** The teaching layer and its notes were drafted on 2026-10-25. An independent review (2026-10-26) reconstructed and checked every note against primary sources: kotlinlang.org, kotlinx.coroutines and Ktor source, the SKIE and KMMBridge docs, the kotlinx-datetime README, GitHub Actions docs and developer.android.com. Nothing was compiled; the disputed Ktor, coroutines and Kotlin/Native behaviour needs targets that cannot be built here. IDs are unique per chapter: architecture uses KAR and adoption uses KAD, replacing an earlier duplicated KA1.

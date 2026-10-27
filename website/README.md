@@ -8,6 +8,8 @@ For the next AirBridge-style refinement pass, start with [HANDOVER-REFINEMENT-20
 
 The quantity-first pass across all 122 remaining step-throughs is recorded in [illustrated-coverage-2026-10-27.md](reviews/illustrated-coverage-2026-10-27.md). The visual redesign and website-wide standard are recorded in [website-experience-2026-10-27.md](reviews/website-experience-2026-10-27.md). The preceding continuation is [CONTINUATION-2026-10-26.md](reviews/CONTINUATION-2026-10-26.md), covering all 17 authored scenes, the seven KMP reworks, Phase 7 staff notes, candidate follow-ups and measured publication status.
 
+The owner subsequently approved the verified technical fixes and requested a source-repository PR. [The official-source verification report](reviews/OFFICIAL-CONTENT-VERIFICATION-2026-10-27.md) records 86 replacements across 31 chapters, applied as labelled website corrections and proposed in [original-source PR #57](https://github.com/swarnsingh/android-staff-engineer-playbook/pull/57). Older statements that no correction is approved describe the earlier handover state. Other findings remain separate.
+
 Publication follows [DEPLOYMENT.md](DEPLOYMENT.md) and rulebook section 19. All website work and deployment configuration stay in this repository; old Claude artifacts and the ChatGPT-hosted reader are historical snapshots. The round-4 review supersedes earlier audit claims where it identifies narrower coverage.
 
 

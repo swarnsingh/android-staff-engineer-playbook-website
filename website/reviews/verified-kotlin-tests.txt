@@ -1,0 +1,6 @@
+PASS top-level and local lateinit
+PASS exact corrected service Flow, flowOn and invalid-context rejection
+PASS virtual deadline exclusion and runCurrent endpoint assertions
+PASS default unbuffered SharedFlow and retained replay distinction
+PASS bounded Flow testing without Turbine
+PASS delegated nullable property smart-cast rejection

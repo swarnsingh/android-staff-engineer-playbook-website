@@ -75,9 +75,6 @@ The passages on recompiling a single large module and on unchanged modules (GB3,
 <!-- @before Failure Modes :: review -->
 The fix proposed for transitive dependency conflicts (GB5) is under technical review. A correction is pending the owner's approval.
 
-<!-- @before Common Misconceptions :: review -->
-The passage on what <code>clean</code> deletes (GB6) is under technical review. A correction is pending the owner's approval.
-
 <!-- @before Answer Key :: review -->
 Answers 3, 4, 5 and 6 in this section (GB7, GB2, GB3, GB4) are under technical review. A correction is pending the owner's approval.
 

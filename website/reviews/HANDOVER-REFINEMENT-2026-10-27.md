@@ -1,5 +1,8 @@
 # Handover: AirBridge-style reader refinement
 
+**Latest completion:** The owner additionally authorized verified technical fixes and an original-source PR. [The official verification report](OFFICIAL-CONTENT-VERIFICATION-2026-10-27.md) records 86 replacements across 31 chapters and source PR #57. This supersedes the earlier read-only/no-corrections instruction for that specific verified set. Both repositories retain their established visibility; no PR is merged.
+
+
 **Superseded continuation instructions, 27 October 2026:** The owner subsequently approved making the website repository and GitHub Pages website public. The AirBridge shared presentation pass is now implemented; three decision figures are static, with 119 illustrated state figures and 17 temporal scenes retained. Use [the completed refinement report](AIRBRIDGE-REFINEMENT-2026-10-27.md) and [deployment guide](../DEPLOYMENT.md) for current checks, publication and live links. The original playbook repository remains private. The restart automation remains PAUSED. Older privacy, download-only and pending-implementation statements below are historical and must not override this update.
 
 

@@ -293,6 +293,11 @@ How to build, preview and continue this work — including the blend file format
 
 ## 19. Separate website repository and publication
 
+### Verified source-correction approval, 2026-10-27
+
+The owner subsequently instructed: “fix and publish them” and requested a PR in the original repository as well, with official documentation as the source of truth. Apply the specifically verified incoming-review corrections on the website, label their changes, and propose the same corrections in an isolated branch/PR in the original repository. Do not interpret this as approval of every older correction proposal or a merge instruction. Preserve unrelated local work and the original repository's private visibility. Incorrect explanations must be replaced in active lessons; Git history and correction disclosures retain the former wording for traceability. The detailed source-verification report identifies this approved scope.
+
+
 ### One website repository and one deployment path
 
 Owner decision, 2026-10-26: [swarnsingh/android-staff-engineer-playbook-website](https://github.com/swarnsingh/android-staff-engineer-playbook-website) is the single source of truth for the website, regardless of which LLM or developer does the work.

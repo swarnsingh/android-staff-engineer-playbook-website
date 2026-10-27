@@ -14,8 +14,6 @@ Rotation destroys the activity, and in this app the network request lived inside
 <figure class="viz"><div class="viz-lanes"><div class="lane"><span class="lane-label">Activity / Fragment / UI</span><div class="track"><span class="mark" style="--at:0%;--len:30%">instance #1</span><span class="mark" style="--at:34%;--len:30%">#2 after rotation</span></div></div><div class="lane"><span class="lane-label">ViewModel</span><div class="track"><span class="mark" style="--at:0%;--len:64%">one instance until the screen is finished</span></div></div><div class="lane"><span class="lane-label">Repository / data layer</span><div class="track"><span class="mark" style="--at:0%;--len:100%">the whole process, or longer if persisted</span></div></div></div><figcaption>Put each piece of state in the shortest lifetime that is still long enough. Rotation ends only the top lane.</figcaption></figure>
 
 <!-- @before Internal Mechanics :: review -->
-One paragraph in the next section describes the `ViewModelStore` being handed to the OS during rotation. That description is under technical review. A correction is pending the owner's approval.
-
 The explanations of `onCleared()` ordering and Back in the next section (VM2, VM3) are also under technical review. Corrections are pending the owner's approval.
 
 <!-- @after Internal Mechanics :: animation -->

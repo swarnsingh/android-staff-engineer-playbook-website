@@ -1,5 +1,8 @@
 # Android Phase 8: possible errors in the original chapters
 
+**Subsequent verified-fix update, 27 October 2026:** Selected issues from the incoming reports are now corrected under the owner's explicit fix-and-publish instruction and proposed in [source PR #57](https://github.com/swarnsingh/android-staff-engineer-playbook/pull/57). [The exact verification inventory](OFFICIAL-CONTENT-VERIFICATION-2026-10-27.md) and approved JSON records identify the applied subset. Historical “none applied” statements below refer to the earlier review date; unrelated findings remain pending.
+
+
 Found while writing the teaching layer for Android Phase 8 (build tooling and OS internals: the 13 chapters listed in Phase 8 of `android.md`). These are **findings for the owner's review**, not approved corrections. The original Markdown is unchanged and nothing has been added to `content/corrections-*.json`.
 
 Each finding is flagged on its page with an **Under review** note before every affected H2 section. The note identifies the passage and says a correction is pending; it does not state the replacement. No teaching in the active blends depends on an unapproved correction.

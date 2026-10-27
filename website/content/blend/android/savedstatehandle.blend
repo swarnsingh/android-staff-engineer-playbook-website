@@ -27,9 +27,6 @@ For a Compose text editor, the IME-facing value must update synchronously. Do no
 
 <figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title">App process: dies and restarts</span><div class="node"><strong>Activity / Fragment</strong><small>observes the ViewModel</small></div><div class="node"><strong>ViewModel</strong><small>reads and writes the handle</small></div><div class="node is-key"><strong><code>SavedStateHandle</code></strong><small>a provider in the owner's <code>SavedStateRegistry</code></small></div></div><div class="col"><span class="col-title">System process: survives</span><div class="node" data-state="done"><strong>Saved-state Bundle</strong><small>serialized when the activity stops; handed back when it is recreated</small></div></div></div><figcaption>The Bundle crosses the process boundary through Binder, which is why its size is limited.</figcaption></figure>
 
-<!-- @before Tradeoffs :: review -->
-The size limit sentence in the next section ("1MB across the entire OS IPC system") is under technical review. A correction is pending the owner's approval.
-
 <!-- @after Common Misconceptions :: check -->
 **Handle, ViewModel field, or database?** Decide before opening each answer.
 

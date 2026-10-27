@@ -46,11 +46,5 @@ The new request is dropped and the queued one stays, so taps do not stack up dup
 WorkManager creates workers with its default factory, which cannot supply those dependencies, so creating the worker fails. Use `HiltWorkerFactory` and on-demand initialization.
 </details>
 
-<!-- @before Tradeoffs :: review -->
-The expedited-work history, timing guarantee and setExpedited(true) API spelling are under technical review (WM1). A correction is pending the owner's approval.
-
-<!-- @before Answer Key :: review -->
-Answer 5's expedited-work history and timing explanation is under technical review (WM1). A correction is pending the owner's approval.
-
 <!-- @before Production Example :: review -->
 The worker's broad exception handler and its handling of cancellation are under technical review (WM2). A correction is pending the owner's approval.

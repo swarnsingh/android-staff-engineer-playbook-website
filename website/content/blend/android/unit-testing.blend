@@ -44,16 +44,13 @@ Only confidence against the fake model. Add contract or integration evidence for
 
 
 <!-- @before Coroutines Testing :: review -->
-The polling assertions, the scope of virtual-delay skipping and the claim that eager dispatch completes work in this section (UT1–UT3) are under technical review. A correction is pending the owner's approval.
+The scope of virtual-delay skipping and the claim that eager dispatch completes work in this section remain under technical review (UT2–UT3). A correction is pending the owner's approval.
 
 <!-- @before Flow Testing with Turbine :: review -->
-The statements that collect always hangs, that Turbine is mandatory, and the sample's end-of-block behaviour in this section (UT4, UT7) are under technical review. A correction is pending the owner's approval.
+The sample's end-of-block behavior remains under technical review (UT7). A correction is pending the owner's approval.
 
 <!-- @before Failure Modes :: review -->
-The Flow collection prescription, the nested-test setup explanation, the runTest exception row and the MockK strict-mode rows in this section (UT4–UT6, UT8) are under technical review. A correction is pending the owner's approval.
-
-<!-- @before Probing Questions :: review -->
-The collection-lifetime premise of Question 5 (UT4) is under technical review. A correction is pending the owner's approval.
+The nested-test setup explanation, runTest exception row and MockK strict-mode rows remain under technical review (UT5–UT6, UT8). A correction is pending the owner's approval.
 
 <!-- @before Answer Key :: review -->
-Answer 3's virtual-time step and the answers about eager execution, delay skipping, Flow collection and lifecycle setup (UT1–UT5) are under technical review. A correction is pending the owner's approval.
+The answers about eager execution, delay skipping and lifecycle setup remain under technical review (UT2–UT3, UT5). A correction is pending the owner's approval.

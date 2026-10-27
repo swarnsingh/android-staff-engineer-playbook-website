@@ -12,9 +12,6 @@ Follow the read path, a durable outbox write, and the merge policy. Decide which
 
 <figure class="viz"><div class="viz-flow"><div class="node"><strong>Network</strong><small><code>api.getProducts()</code></small></div><div class="node"><strong><code>refreshProducts()</code></strong><small>writes rows in one transaction</small></div><div class="node is-key"><strong>Room</strong><small>the source of truth for the screen</small></div><div class="node" data-state="done"><strong><code>observeProducts()</code></strong><small>Flow re-emits when the table changes</small></div><div class="node"><strong>UI</strong><small>renders whatever Room holds</small></div></div><figcaption>A failed refresh writes nothing, so the last committed rows stay on screen. The UI never waits on, or is blanked by, the network.</figcaption></figure>
 
-<!-- @before Offline-First Read Pattern :: review -->
-The example in the next section calls `dao.withTransaction { … }` on a DAO. That line is under technical review. A correction is pending the owner's approval.
-
 <!-- @after Network-Bound Resource, Staff Version :: visual -->
 ### Data and sync status are separate axes
 

@@ -1,5 +1,8 @@
 # Android Phase 2: possible errors in the original chapters
 
+**Subsequent verified-fix update, 27 October 2026:** Selected issues from the incoming reports are now corrected under the owner's explicit fix-and-publish instruction and proposed in [source PR #57](https://github.com/swarnsingh/android-staff-engineer-playbook/pull/57). [The exact verification inventory](OFFICIAL-CONTENT-VERIFICATION-2026-10-27.md) and approved JSON records identify the applied subset. Historical “none applied” statements below refer to the earlier review date; unrelated findings remain pending.
+
+
 Found while writing the teaching layer for Android Phase 2 (data ownership and dependency boundaries: the ten chapters listed in Phase 2 of `android.md`). These are **findings for the owner's review**, not approved corrections. The original Markdown is unchanged and nothing has been added to `content/corrections-*.json`.
 
 On the website, each finding is shown as an **Under review** note before the section that contains it. The teaching layer avoids restating these claims.

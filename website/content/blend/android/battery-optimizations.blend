@@ -24,9 +24,6 @@ Android assumes background work can wait, and enforces it with **Doze**, which d
 
 <figure class="viz"><div class="viz-stack"><div class="viz-flow"><div class="node"><strong>Screen off</strong></div><div class="node"><strong>Unplugged</strong></div><div class="node"><strong>Stationary</strong></div><div class="node is-key"><strong>Timer expires → Doze</strong></div></div><div class="viz-grid" style="--cols:3"><div class="node" data-state="warn"><strong>Ordinary network restricted</strong><small>non-exempt apps; temporary exceptions exist</small></div><div class="node" data-state="warn"><strong>Alarms deferred</strong><small>wake locks ignored</small></div><div class="node" data-state="warn"><strong>Jobs queued</strong><small>WorkManager waits</small></div></div><div class="node" data-state="done"><strong>Maintenance window</strong><small>brief, batched wake-up; then back to Doze</small></div></div><figcaption>Doze is device-wide, but exemptions and special-purpose APIs change what an individual app may do. Maintenance windows let deferred work proceed subject to the remaining rules.</figcaption></figure>
 
-<!-- @before Tradeoffs :: review -->
-The permission history in the next section's exact-alarm paragraph is under technical review. A correction is pending the owner's approval.
-
 <!-- @after Common Misconceptions :: check -->
 **Which mechanism?** Decide before opening each answer.
 
@@ -58,4 +55,4 @@ The caught-exception control flow in the wake-lock leak example is under technic
 The claim that foreground-service use prevents process death is under technical review (BO5). A correction is pending the owner's approval.
 
 <!-- @before Answer Key :: review -->
-Answer 4's exact-alarm permission account and answer 9's service-process survival guarantee are under technical review (BO1, BO5). A correction is pending the owner's approval.
+Answer 9's service-process survival guarantee remains under technical review (BO5). A correction is pending the owner's approval.

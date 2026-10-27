@@ -24,9 +24,6 @@ A `Service` is not a thread. It is a **declaration to the system**: this process
 {"label":"Do the work off the main thread","caption":"onStartCommand returns quickly; a coroutine scope owned by the service records locations. When the workout ends, the service stops itself and the notification disappears.","add":["work"],"state":{"fg":"done","work":"done"},"text":{"workV":"coroutine in the service's scope; stopSelf() at the end"}}
 ]</script><figcaption>This scenario assumes Android 14+ and target SDK 34+. A legal foreground-service start still does not make the process immune to termination.</figcaption></figure>
 
-<!-- @before Production Example :: review -->
-The Flow in the next section's example is under technical review. A correction is pending the owner's approval.
-
 <!-- @after Tradeoffs :: check -->
 **Service or WorkManager?** Decide before opening each answer.
 

@@ -96,11 +96,6 @@ The app never computed a wrong price. It exposed the promo code and the total as
 
 <figure class="viz"><div class="viz-stack"><div class="node is-key"><strong>Did the action start in the UI and stay there?</strong><small>e.g. a tap that opens help</small></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>Yes → handle it in the UI</strong><small>no ViewModel round trip</small></div><div class="node"><strong>No → the ViewModel produced it</strong><small>e.g. "payment confirmed, leave this screen"</small></div></div><div class="down"></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="done"><strong>Losing it would be wrong → state</strong><small>put it in UI state; the UI acts on it, then reports it consumed</small></div><div class="node" data-state="warn"><strong>Losing it is acceptable → best-effort effect</strong><small>a <code>Channel</code> for process-local effects, accepting that one can be dropped</small></div></div></div><figcaption>The state-first branch follows Android's UI events guidance. The best-effort Channel branch is the chapter's explicit policy for effects whose loss is acceptable, not an Android recommendation.</figcaption></figure>
 
-<!-- @before Compose Integration :: review -->
-Point 2 in the next section ("Avoid <code>{ vm.processIntent(it) }</code>, which allocates a new lambda each composition") is under technical review. A correction is pending the owner's approval.
-
-The lifecycle restart wording in point 1 (MV3) is also under technical review. A correction is pending the owner's approval.
-
 <!-- @before Failure Modes :: review -->
 The first row of the next table ("Toast re-fires after rotation → Move to <code>Channel&lt;Effect&gt;</code>") is under technical review. A correction is pending the owner's approval.
 

@@ -26,9 +26,6 @@ Nothing in the app's code asked for that. While the camera was in front, Android
 Nothing runs. The system kills the process, not the activity, so no `onDestroy()` is called. When the user returns, a new process calls `onCreate()` with the saved instance state.
 </details>
 
-<!-- @before Internal Mechanics: The Lifecycle :: review -->
-The split-screen example of `onPause()` in the next section (and in answer 1 of the Answer Key) is under technical review. A correction is pending the owner's approval.
-
 <!-- @after Internal Mechanics: The Lifecycle :: animation -->
 ### A day in the life of one screen
 
@@ -45,7 +42,7 @@ Follow one activity through the events a real user produces. Watch which callbac
 {"label":"Return from Recents","caption":"The user expects the same screen. A new process starts and the system recreates the activity with the saved bundle. The ViewModel starts empty, which is why the courier's note was lost: it lived only in memory.","state":{"stopped":"ghost","started":"done","resumed":"active","instance":"done","vm":"warn","process":"done","saved":"done"},"text":{"calls":"new process → onCreate(bundle) → onStart() → onResume()","instanceNote":"instance #3","vmNote":"new and empty","savedNote":"restored into onCreate","processNote":"new process"}}
 ]</script><figcaption>The opening story is the last two steps: the note lived in memory, and memory was taken away without a callback.</figcaption></figure>
 
-<!-- @diagram f692d8c740ce7db1 -->
+<!-- @diagram 78af522b6d8797b3 -->
 ### The lifecycle as states, plus the exit nobody announces
 
 <figure class="viz"><div class="viz-stack"><div class="viz-flow"><div class="node"><strong>Created</strong><small><code>onCreate()</code>: build the UI</small></div><div class="node"><strong>Started</strong><small><code>onStart()</code>: visible</small></div><div class="node is-key"><strong>Resumed</strong><small><code>onResume()</code>: in focus, interactive</small></div></div><div class="viz-grid" style="--cols:2"><div class="node" data-state="warn"><strong><code>onPause()</code> → Started</strong><small>Lost focus, often still visible. <code>onResume()</code> returns.</small></div><div class="node"><strong><code>onStop()</code> → Stopped</strong><small>Not visible. <code>onRestart()</code> → <code>onStart()</code> returns.</small></div><div class="node"><strong><code>onDestroy()</code> → Destroyed</strong><small>Activity finish or a configuration change; Back does not always finish an activity.</small></div><div class="node" data-state="error"><strong>Process killed → nothing</strong><small>In the background the system can kill the whole process. No callback runs.</small></div></div></div><figcaption>The bottom-right exit is the one that loses data: it has no callback, so restoration depends on the last saved state and durable data.</figcaption></figure>
@@ -62,12 +59,3 @@ Follow one activity through the events a real user produces. Watch which callbac
 
 <!-- @after Common Misconceptions :: staff -->
 **Review question to ask:** "If the process dies right after this screen stops, what does the user lose?" If the answer is anything they typed or chose, it must already be in saved state or the data layer by the time its state is saved. The next chapters show where each kind of state belongs: [ViewModel](viewmodel.md), [SavedStateHandle](savedstatehandle.md) and [Process Death & State Restoration](process-death-and-state-restoration.md).
-
-<!-- @before Answer Key :: review -->
-Answer 1 in the next section is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Mental Model :: review -->
-The next section uses a dialog as the example of pausing an activity. That example (A2) is under technical review. A correction is pending the owner's approval.
-
-<!-- @before Architecture :: review -->
-The diagram labels activity pause/resume transitions with “Dialog appears” and “Dialog dismissed”. Those labels (A2) are under technical review. A correction is pending the owner's approval.
