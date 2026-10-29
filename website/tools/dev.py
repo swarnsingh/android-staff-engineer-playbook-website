@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """One entry point for routine website work, with short summaries instead of long logs.
 
-    python3 website/tools/dev.py build              # local build; skips only the publication gate
+    python3 website/tools/dev.py build [--pending]  # local build; skips only the publication gate (--pending: allow unfinished figures)
     python3 website/tools/dev.py figures            # check every FigureMap model; list all problems
     python3 website/tools/dev.py frames             # in Chrome: figures framed, nothing scrolls, labels fit (after build)
     python3 website/tools/dev.py audit NAME         # run the six browser audits into website/reviews/NAME/
@@ -179,6 +179,8 @@ def ci():
 
 if __name__ == '__main__':
     command, args = (sys.argv[1] if len(sys.argv) > 1 else ''), sys.argv[2:]
+    if command == 'build' and '--pending' in args:
+        os.environ['WEBSITE_PENDING_FIGURES'] = '1'  # local only: other chapters' figures may still be missing
     actions = {'build': lambda: build(), 'figures': figures, 'frames': frames, 'ci': ci,
                'audit': lambda: audit(args[0]) if args else sys.exit('usage: dev.py audit REVIEW-FOLDER-NAME'),
                'gate': lambda: gate(args[0]) if args else sys.exit('usage: dev.py gate REVIEW-FOLDER-NAME')}

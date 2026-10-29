@@ -36,6 +36,21 @@ Shared reader files are CSS, JS, templates, design tokens, `build.py` and diagra
 
 Content-only edits to blend files also change fingerprints, so they follow the same steps.
 
+## Parallel work (several chats or LLMs at once)
+
+- **One integrator owns the shared files and the publish:**
+  - `build.py` and the `TREES` registration;
+  - `nav-data.js` and the tree intro JSON;
+  - `source-snapshot.json`;
+  - `reviews/completion/validation.json` and the audit evidence;
+  - pushing to `main`.
+- **Each worker owns only its chapters.** It edits only `website/content/blend/<tree>/<chapter>.blend` and `website/content/diagram-models/figures/<tree>-<chapter>.json`.
+  - It works on its own branch cut from the integration branch, and commits only there.
+  - It runs `dev.py build --pending`, `figures` and `frames`.
+  - It never touches the gate or pushes to `main`.
+- **New diagrams follow the no-Mermaid rule.** A worker writes a Mermaid fence in its blend file and a FigureMap model, keyed by the first 16 hex characters of the SHA-256 of that Mermaid source, in its own figure file. `dev.py figures` validates the model.
+- **The integrator finishes.** It merges the worker branches, then runs `dev.py audit`, writes the report, runs `dev.py gate` and publishes.
+
 ## Rulebook map (`content-rulebook.md`)
 
 | Topic | Section |

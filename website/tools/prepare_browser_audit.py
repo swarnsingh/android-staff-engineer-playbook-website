@@ -66,7 +66,7 @@ def source_pair_manifest(output, pages):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('output', type=Path)
-    parser.add_argument('--tree', choices=['all','kotlin','android','engineering-fundamentals'], default='all')
+    parser.add_argument('--tree', choices=['all','kotlin','android','engineering-fundamentals','computer-science'], default='all')
     args = parser.parse_args()
     output = args.output.resolve()
     if output == ROOT or output == ROOT/'website/dist' or output in ROOT.parents:

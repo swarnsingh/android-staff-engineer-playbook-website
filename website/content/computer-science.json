@@ -1,0 +1,15 @@
+{
+  "computer-science/big-o.md": "An algorithm that is fast on your test data can stall on real input. Learn to read growth rates and upper bounds, and when constant factors still decide.",
+  "computer-science/arrays-and-strings.md": "Contiguous memory makes indexing cheap and insertion costly. Learn the patterns, two pointers, sliding windows and prefix sums, that turn quadratic scans into linear ones.",
+  "computer-science/linked-lists-stacks-queues.md": "Some problems need order, not random access. Learn when linked structures, stacks and queues fit, and the pointer techniques interviews keep returning to.",
+  "computer-science/hashing.md": "Constant-time lookup is a promise with conditions. Learn how hash tables work, what collisions and resizing cost, and how hashing collapses search problems.",
+  "computer-science/trees.md": "Hierarchies and ordered data both become trees. Learn traversals, binary search trees and the recursive reasoning most tree problems need.",
+  "computer-science/graphs.md": "Dependencies, networks and grids are graphs in disguise. Learn representations, breadth- and depth-first search and the shortest-path and ordering patterns built on them.",
+  "computer-science/heaps-and-priority-queues.md": "Sometimes you only need the next most important item. Learn how heaps keep that cheap and where top-k and scheduling problems use them.",
+  "computer-science/sorting-and-searching.md": "Order is often the cheapest structure to add. Learn the sorting trade-offs and binary search on values as well as on positions.",
+  "computer-science/recursion-backtracking.md": "Some problems are easiest to state as smaller copies of themselves. Learn recursion, its stack cost and backtracking through choices with pruning.",
+  "computer-science/dynamic-programming.md": "Brute force that repeats work can often remember it instead. Learn to spot overlapping subproblems, define state and build answers bottom-up.",
+  "computer-science/greedy-and-intervals.md": "A locally best choice is sometimes globally right. Learn when greedy choices are provably safe, and the interval patterns built on sorting.",
+  "computer-science/system-complexity.md": "Data-structure choices reappear as production behaviour. Reconnect algorithmic cost to memory, latency and scale in real systems.",
+  "computer-science.md": "Data structures and algorithms in the order interviews and production code use them: structures first, then the algorithms that operate on them, then their cost in real systems."
+}
