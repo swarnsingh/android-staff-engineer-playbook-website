@@ -1,0 +1,580 @@
+[
+ {
+  "id": "computer-science:CSH01",
+  "severity": "high",
+  "path": "computer-science/hashing.md",
+  "old": "Modern JVMs randomize `String.hashCode()` (since Java 8) or use treeified bins in `HashMap` (since Java 8 also) to mitigate this.",
+  "new": "`String.hashCode()` is not randomized; its formula is part of the Java specification. Java 7 updates briefly added an alternative String hashing mode for hash maps, but Java 8 removed it and instead turns heavily collided `HashMap` bins into balanced trees to mitigate this.",
+  "reason": "String.hashCode is specified and deterministic; JEP 180 replaced the alternative hashing with tree bins.",
+  "sources": [
+   "https://openjdk.org/jeps/180",
+   "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html#hashCode()"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSH02",
+  "severity": "high",
+  "path": "computer-science/hashing.md",
+  "old": "Mitigation: randomized seeds (JDK does this), treeified bins (JDK 8+), or cryptographic hash for the lookup table.",
+  "new": "Mitigation: keyed or randomly seeded hash functions (Python and Rust use SipHash), treeified bins (JDK 8+, which does not randomize `String` hashing), or limits on how many untrusted keys one request may add.",
+  "reason": "The JDK does not use randomized seeds for String keys.",
+  "sources": [
+   "https://openjdk.org/jeps/180"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSH03",
+  "severity": "high",
+  "path": "computer-science/hashing.md",
+  "old": "For SHA-256, there are 2^256 possible outputs — more than the number of atoms in the observable universe.",
+  "new": "For SHA-256, there are 2^256 possible outputs — about 10^77, close to common estimates of the number of atoms in the observable universe (about 10^78 to 10^82).",
+  "reason": "2^256 is about 1.16 × 10^77, which is below common atom-count estimates.",
+  "sources": [
+   "Arithmetic: 2^256 = 1.158 × 10^77"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSH04",
+  "severity": "high",
+  "path": "computer-science/hashing.md",
+  "old": "For 32-bit hashes over arbitrary input, collisions are surprisingly common — about 1 in 65,000 for random pairs (birthday bound).",
+  "new": "For 32-bit hashes over arbitrary input, collisions are surprisingly common. One random pair collides with probability about 1 in 4.3 billion, but by the birthday bound a set of only about 77,000 values is more likely than not to contain a collision.",
+  "reason": "The birthday bound concerns set size (about 2^16), not the probability for a single pair (2^-32).",
+  "sources": [
+   "Birthday problem: n ≈ 1.1774 × sqrt(2^32) ≈ 77,163 for a 50% chance"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSH05",
+  "severity": "high",
+  "path": "computer-science/hashing.md",
+  "old": "During TLS handshake, OkHttp checks that one of the certificates in the chain has a SHA-256 hash matching the pin.",
+  "new": "During the TLS handshake, OkHttp checks that one of the certificates in the chain has a public key (its Subject Public Key Info) whose SHA-256 hash matches the pin.",
+  "reason": "OkHttp pins hash the Subject Public Key Info, not the whole certificate.",
+  "sources": [
+   "https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/CertificatePinner.kt"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSH06",
+  "severity": "high",
+  "path": "computer-science/hashing.md",
+  "old": "When the user taps a link, Android hashes the installed app's certificate using SHA-256 and compares to the published fingerprint. If they match, the link opens the app directly; if not, the disambiguation dialog appears.",
+  "new": "When the app is installed (Android 6.0 and later), the system fetches `assetlinks.json` and compares the SHA-256 fingerprint of the app's signing certificate with the published ones. If verification succeeds, links open the app directly. If it fails, on Android 12 and later a generic web link opens in the user's default browser unless the user has approved the app for that domain.",
+  "reason": "Verification runs at install time, and Android 12 changed the fallback from a chooser to the default browser.",
+  "sources": [
+   "https://developer.android.com/training/app-links/verify-android-applinks",
+   "https://developer.android.com/about/versions/12/behavior-changes-all"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSH07",
+  "severity": "high",
+  "path": "computer-science/hashing.md",
+  "old": "A single SHA-1 collision proved sufficient to break the Git ecosystem's security model for repositories using SHA-1. Migrate fully to SHA-256.",
+  "new": "After the 2017 SHAttered collision, Git 2.13 and later switched to a hardened SHA-1 that is not vulnerable to that attack. Git is still moving to SHA-256 because SHA-1 remains weak; for new security designs, use SHA-256 or stronger.",
+  "reason": "Git documents that its hardened SHA-1 is not vulnerable to SHAttered.",
+  "sources": [
+   "https://git-scm.com/docs/hash-function-transition"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSH08",
+  "severity": "medium",
+  "path": "computer-science/hashing.md",
+  "old": "JDK's `HashMap` uses separate chaining with treeification: chains of length > 8 are converted to red-black trees, giving O(log n) worst-case lookup even under collision attacks.",
+  "new": "JDK's `HashMap` uses separate chaining with treeification: a bin becomes a red-black tree when it reaches 8 entries and the table has at least 64 slots (smaller tables resize instead). Lookups in that bin are then O(log n) when the colliding keys are `Comparable`, as `String` keys are.",
+  "reason": "TREEIFY_THRESHOLD is 8 and MIN_TREEIFY_CAPACITY is 64; ordering within tree bins relies on Comparable keys.",
+  "sources": [
+   "https://github.com/openjdk/jdk/blob/master/src/java.base/share/classes/java/util/HashMap.java"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSH09",
+  "severity": "medium",
+  "path": "computer-science/hashing.md",
+  "old": "Internally, Compose stores items in a hash-keyed slot table. If `key` is not stable (e.g., uses the index), reordering causes wrong items to be recomposed, animated, or recycled. The Compose key contract is exactly `hashCode()` + `equals()` — the same contract as `HashMap`.",
+  "new": "Without a key, each item's state is keyed by its position, so reordering can attach remembered state to the wrong item. Keys must be stable and unique, and on Android their type must be one that `Bundle` can store, so `rememberSaveable` state inside the item can be restored.",
+  "reason": "The official guidance describes position-based default keys and the Bundle constraint; it does not describe a hash-keyed slot table.",
+  "sources": [
+   "https://developer.android.com/develop/ui/compose/lists"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSH10",
+  "severity": "low",
+  "path": "computer-science/hashing.md",
+  "old": "hash(\"hello\") = 5d41402abc4b2a76b9719d911017c592\nhash(\"hellp\") = 1f6f4862cf94bdcc83c8bf2017a85d4f",
+  "new": "md5(\"hello\") = 5d41402abc4b2a76b9719d911017c592\nmd5(\"hellp\") = c983190483df167d2a3841463c2a9341",
+  "reason": "The values are MD5 digests; the second one was not the MD5 of \"hellp\".",
+  "sources": [
+   "Computed with md5 on macOS"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSH11",
+  "severity": "low",
+  "path": "computer-science/hashing.md",
+  "old": "A hash table at 99% load factor blocks while resizing, copying all entries.",
+  "new": "A large hash table blocks while resizing, copying all entries (`HashMap` resizes once it passes its 0.75 load factor).",
+  "reason": "With the default load factor a HashMap never reaches 99% load.",
+  "sources": [
+   "https://github.com/openjdk/jdk/blob/master/src/java.base/share/classes/java/util/HashMap.java"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CST01",
+  "severity": "high",
+  "path": "computer-science/trees.md",
+  "old": "This is why `git commit --amend` rewrites every subsequent commit hash.",
+  "new": "This is why rewriting an old commit, for example with an interactive rebase, changes the hash of every commit after it.",
+  "reason": "`--amend` replaces only the latest commit, which has no later commits.",
+  "sources": [
+   "https://git-scm.com/docs/git-commit"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CST02",
+  "severity": "high",
+  "path": "computer-science/trees.md",
+  "old": "SHA-1 collisions allowed Bitcoin and Git's models to be questioned; migration to SHA-256 is in progress.",
+  "new": "SHA-1 collisions led Git to harden its SHA-1 and begin migrating to SHA-256. Bitcoin has used SHA-256 from the start.",
+  "reason": "Bitcoin never used SHA-1.",
+  "sources": [
+   "https://git-scm.com/docs/hash-function-transition",
+   "https://bitcoin.org/bitcoin.pdf"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CST03",
+  "severity": "high",
+  "path": "computer-science/trees.md",
+  "old": "The Android rendering pipeline traverses this tree three times per frame: `onMeasure` (DFS computing sizes), `onLayout` (DFS positioning children), `onDraw` (DFS painting). A tree 20 layers deep magnifies the per-node cost 20x. The `Layout Inspector` and `Hierarchy Viewer` tools visualize the tree and surface depth issues.",
+  "new": "The View system walks this tree depth-first in three passes: measure (sizes), layout (positions) and draw. Measure and layout run when a view requests a new layout, not on every frame, and with hardware acceleration only invalidated views re-record their drawing. A deep hierarchy makes each pass more expensive, especially when nested layouts measure their children more than once. Android Studio's Layout Inspector shows the tree and deep nesting.",
+  "reason": "Layout runs on request, not every frame; Hierarchy Viewer is deprecated.",
+  "sources": [
+   "https://developer.android.com/topic/performance/rendering/optimizing-view-hierarchies",
+   "https://developer.android.com/reference/android/view/View"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CST04",
+  "severity": "high",
+  "path": "computer-science/trees.md",
+  "old": "Lookup is bounded by prefix length, not dataset size. Performance is constant as the dataset grows.",
+  "new": "Finding the prefix node is bounded by prefix length, but this `wordsWithPrefix` collects every match before `take(limit)`, so its cost grows with the number of matching words. Store top-ranked completions per node, or stop after `limit` results, to keep each keystroke bounded.",
+  "reason": "The shown code walks the whole matching subtree.",
+  "sources": [
+   "Code inspection of the chapter's Trie.wordsWithPrefix"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CST05",
+  "severity": "medium",
+  "path": "computer-science/trees.md",
+  "old": "A 100,000-node tree traversed recursively blows the JVM stack (~10K frames typical).",
+  "new": "A tree that is tens of thousands of levels deep can overflow the thread's stack when traversed recursively. The limit depends on stack and frame size, and it is depth, not node count, that matters: a balanced tree of 100,000 nodes is only about 17 levels deep.",
+  "reason": "Recursion depth equals tree height, not node count.",
+  "sources": [
+   "log2(100,000) ≈ 16.6"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CST06",
+  "severity": "medium",
+  "path": "computer-science/trees.md",
+  "old": "Deep trees (e.g. 10K+ nodes) exceed the stack limit.",
+  "new": "Deep trees (thousands of levels, not just many nodes) can exceed the stack limit.",
+  "reason": "Same depth-versus-size correction as CST05.",
+  "sources": [
+   "log2(100,000) ≈ 16.6"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CST07",
+  "severity": "medium",
+  "path": "computer-science/trees.md",
+  "old": "For B-trees and SQLite indexes, monitor average tree depth — drift up means rebalancing isn't keeping pace.",
+  "new": "B-trees stay height-balanced, so depth grows only with the logarithm of the row count; for SQLite indexes, watch index size and query plans (`EXPLAIN QUERY PLAN`) instead.",
+  "reason": "B-tree insertion keeps all leaves at the same depth; there is no lagging rebalancing.",
+  "sources": [
+   "https://www.sqlite.org/fileformat2.html",
+   "https://www.sqlite.org/eqp.html"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CST08",
+  "severity": "low",
+  "path": "computer-science/trees.md",
+  "old": "This is \"surgical recomposition\" — a tree edit at logarithmic cost.",
+  "new": "This is \"surgical recomposition\": an update limited to the groups that read the changed state.",
+  "reason": "No logarithmic bound is documented.",
+  "sources": [
+   "https://developer.android.com/develop/ui/compose/lifecycle"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CST09",
+  "severity": "low",
+  "path": "computer-science/trees.md",
+  "old": "Writes are O(1) amortized, reads are O(log n × log levels).",
+  "new": "Writes are cheap appends to memory and a log; a read may check each level, roughly O(L × log n) for L levels, which Bloom filters reduce in practice.",
+  "reason": "Read cost scales with the number of levels, not the log of it.",
+  "sources": [
+   "https://github.com/facebook/rocksdb/wiki/RocksDB-Overview"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSG01",
+  "severity": "medium",
+  "path": "computer-science/graphs.md",
+  "old": "A misconfigured Gradle build with a wide diamond dependency runs in O(n²) compile units. A Dagger graph with deeply nested dependencies takes seconds to wire on app startup.",
+  "new": "A change to a widely used module recompiles every module that depends on it. Dagger resolves and validates its graph at compile time, but eagerly creating a deep graph of objects at startup still costs launch time.",
+  "reason": "Dagger wiring is generated at compile time; the O(n²) claim has no source.",
+  "sources": [
+   "https://dagger.dev/dev-guide/"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSG02",
+  "severity": "medium",
+  "path": "computer-science/graphs.md",
+  "old": "The result: build `:core:network` and `:core:database` first (in parallel — no dependency between them)",
+  "new": "The result: build `:core:network` and `:core:database` first (in parallel when parallel execution is enabled — there is no dependency between them)",
+  "reason": "Cross-project parallelism needs org.gradle.parallel or the configuration cache.",
+  "sources": [
+   "https://docs.gradle.org/current/userguide/performance.html#parallel_execution"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSG03",
+  "severity": "medium",
+  "path": "computer-science/graphs.md",
+  "old": "Gradle's build planner refuses to compile and prints the cycle: \"Circular dependency between :app, :feature:checkout.\"",
+  "new": "Gradle refuses to run the build and reports a circular dependency, listing the tasks involved.",
+  "reason": "The quoted message is not what Gradle prints; Gradle reports a task cycle.",
+  "sources": [
+   "https://docs.gradle.org/current/userguide/build_lifecycle.html"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSG04",
+  "severity": "medium",
+  "path": "computer-science/graphs.md",
+  "old": "For LinkedIn's scale, this is implemented with optimized graph databases (Neo4j, ArangoDB) or specialized in-memory engines (Facebook's TAO).",
+  "new": "At that scale, it runs on specialized in-house graph systems, such as LinkedIn's LIquid or Facebook's TAO.",
+  "reason": "LinkedIn documents its own graph database, LIquid.",
+  "sources": [
+   "https://engineering.linkedin.com/blog/2020/liquid-the-soul-of-a-new-graph-database-part-1"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSG05",
+  "severity": "low",
+  "path": "computer-science/graphs.md",
+  "old": "The 2014 Facebook Cambridge Analytica scandal exemplified the failure",
+  "new": "The Cambridge Analytica case (data collected in 2014, made public in 2018) exemplified the failure",
+  "reason": "The scandal broke in 2018.",
+  "sources": [
+   "https://en.wikipedia.org/wiki/Facebook%E2%80%93Cambridge_Analytica_data_scandal"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSG06",
+  "severity": "low",
+  "path": "computer-science/graphs.md",
+  "old": "Compose tooling (`androidx.compose.runtime.tooling`) reports counts per node",
+  "new": "Android Studio's Layout Inspector shows recomposition and skip counts per composable",
+  "reason": "Recomposition counts are a Layout Inspector feature.",
+  "sources": [
+   "https://developer.android.com/develop/ui/compose/tooling/layout-inspector"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSG07",
+  "severity": "low",
+  "path": "computer-science/graphs.md",
+  "old": "Five edges: A-B, A-C, B-C, B-D, and so on.",
+  "new": "Four edges: A-B, A-C, B-C and B-D.",
+  "reason": "The diagram shows four edges.",
+  "sources": [
+   "Diagram inspection"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSG08",
+  "severity": "low",
+  "path": "computer-science/graphs.md",
+  "old": "If a cycle exists, no node ever reaches in-degree zero and the sort fails",
+  "new": "If a cycle exists, the nodes on it never reach in-degree zero, so the output is shorter than the vertex count and the sort fails",
+  "reason": "Nodes outside the cycle can still be emitted; the code already checks the output size.",
+  "sources": [
+   "Code inspection"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSS01",
+  "severity": "high",
+  "path": "computer-science/system-complexity.md",
+  "old": "A function with cyclomatic complexity 20 has roughly 4x the defect rate of one with complexity 5 — not 4x, exponentially worse.",
+  "new": "The size of that effect varies between studies, so treat any single ratio with caution.",
+  "reason": "The sentence states a ratio and contradicts it, with no source.",
+  "sources": [
+   "Internal consistency"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSS02",
+  "severity": "high",
+  "path": "computer-science/system-complexity.md",
+  "old": "Engineering productivity research showing low-complexity, fast-feedback codebases produce 2-4x more output than complexity-burdened ones.",
+  "new": "Research on software delivery performance (deployment frequency, lead time, change failure rate and time to restore) that identifies loosely coupled architecture as one of the capabilities that predict it.",
+  "reason": "Accelerate measures delivery performance, not code complexity or output.",
+  "sources": [
+   "https://dora.dev/research/",
+   "https://itrevolution.com/product/accelerate/"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSS03",
+  "severity": "medium",
+  "path": "computer-science/system-complexity.md",
+  "old": "Empirical industry data shows ~exponential relationship past complexity 10.",
+  "new": "Studies report a positive correlation; its shape and strength vary by codebase.",
+  "reason": "No source for an exponential relationship.",
+  "sources": [
+   "Same basis as CSS01"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSS04",
+  "severity": "high",
+  "path": "computer-science/system-complexity.md",
+  "old": "- Add 1 for each break-in-flow (`if`, `else`, `for`, `while`, `try`, `catch`, `switch`).\n- Add 1 extra for each level of nesting beyond the first.",
+  "new": "- Add 1 for each break in flow (`if`, `else if`, `else`, `for`, `while`, `catch`, `switch`/`when`); `try` and `finally` add nothing.\n- A nested structure also adds its nesting level: 1 inside one structure, 2 inside two.",
+  "reason": "The Cognitive Complexity specification ignores try/finally and adds the current nesting level.",
+  "sources": [
+   "https://www.sonarsource.com/docs/CognitiveComplexity.pdf"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSS05",
+  "severity": "medium",
+  "path": "computer-science/system-complexity.md",
+  "old": "- Lambdas without nested control flow add 0.",
+  "new": "- Lambdas and nested functions add nothing themselves, but they increase the nesting level of the code inside them.",
+  "reason": "Per the specification, lambdas raise nesting.",
+  "sources": [
+   "https://www.sonarsource.com/docs/CognitiveComplexity.pdf"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSS06",
+  "severity": "high",
+  "path": "computer-science/system-complexity.md",
+  "old": "it causes broader recompositions because Compose's analysis can't determine stability.",
+  "new": "it is harder to split so that state reads stay local. Skipping depends on whether parameters are stable and unchanged, not on how complex the function body is.",
+  "reason": "Stability is a property of parameter types.",
+  "sources": [
+   "https://developer.android.com/develop/ui/compose/performance/stability"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSS07",
+  "severity": "medium",
+  "path": "computer-science/system-complexity.md",
+  "old": "The compose runtime can confidently skip recomposition when `state` is unchanged.",
+  "new": "If `CheckoutState` is stable, or with strong skipping (the default since Kotlin 2.0.20, which compares unstable parameters by instance), the runtime can skip recomposition when `state` is unchanged.",
+  "reason": "Skipping depends on stability or strong skipping.",
+  "sources": [
+   "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSS08",
+  "severity": "medium",
+  "path": "computer-science/system-complexity.md",
+  "old": "        .filter { it.path in featurePaths }",
+  "new": "        .filter { file -> featurePaths.any { file.path.contains(it) } }",
+  "reason": "A full file path never equals a fragment such as \"/feature/checkout/\", so the test checked no files and always passed.",
+  "sources": [
+   "Code inspection; https://docs.konsist.lemonappdev.com/"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSS09",
+  "severity": "medium",
+  "path": "computer-science/system-complexity.md",
+  "old": "                feature != file.path && file.imports",
+  "new": "                !file.path.contains(feature) && file.imports",
+  "reason": "Same path-comparison bug as CSS08.",
+  "sources": [
+   "Code inspection"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSS10",
+  "severity": "medium",
+  "path": "computer-science/system-complexity.md",
+  "old": "**Detekt** reports per-module coupling via `:detektMetrics`.",
+  "new": "**Detekt** reports complexity metrics such as cyclomatic and cognitive complexity, but not module coupling.",
+  "reason": "Detekt has no coupling task or metric.",
+  "sources": [
+   "https://detekt.dev/docs/rules/complexity"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSS11",
+  "severity": "low",
+  "path": "computer-science/system-complexity.md",
+  "old": "Gradle's `:moduleDependencies` task and `--scan` reveal",
+  "new": "Gradle's `dependencies` task and build scans reveal",
+  "reason": "There is no built-in moduleDependencies task.",
+  "sources": [
+   "https://docs.gradle.org/current/userguide/viewing_debugging_dependencies.html"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSS12",
+  "severity": "low",
+  "path": "computer-science/system-complexity.md",
+  "old": "Detekt's default threshold is 15 for functions and 600 for files.",
+  "new": "By default, Detekt flags functions with cyclomatic complexity above 14 and classes longer than 600 lines.",
+  "reason": "Current defaults: allowedComplexity 14, LargeClass allowedLines 600 (per class).",
+  "sources": [
+   "https://detekt.dev/docs/rules/complexity"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSS13",
+  "severity": "low",
+  "path": "computer-science/system-complexity.md",
+  "old": "(higher than cyclomatic ~3 because of nesting)",
+  "new": "(higher than cyclomatic 4 because of nesting)",
+  "reason": "Three decision points plus one is 4.",
+  "sources": [
+   "Count of decision points"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSA01",
+  "severity": "medium",
+  "path": "computer-science/arrays-and-strings.md",
+  "old": "Compose relies on reference equality to detect changes. Mutating the same list instance means the reference doesn't change, causing Compose to skip recomposition.",
+  "new": "`mutableStateOf` compares old and new values with `equals()` by default, and a list always equals itself, so writing back the same mutated instance records no change and Compose does not recompose. Snapshot state also cannot see in-place changes to a plain list.",
+  "reason": "The default mutation policy is structuralEqualityPolicy (==).",
+  "sources": [
+   "https://github.com/androidx/androidx/blob/androidx-main/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotState.kt"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSO01",
+  "severity": "low",
+  "path": "computer-science/sorting-and-searching.md",
+  "old": "The array must be strictly sorted according to the exact same comparator",
+  "new": "The array must be sorted according to the exact same comparator",
+  "reason": "Binary search works with duplicates; lowerBound and upperBound in this chapter rely on that.",
+  "sources": [
+   "Chapter's own lowerBound/upperBound"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ },
+ {
+  "id": "computer-science:CSP01",
+  "severity": "low",
+  "path": "computer-science/heaps-and-priority-queues.md",
+  "old": "More overhead; not stdlib-friendly in Kotlin",
+  "new": "More overhead; on the JVM use `java.util.TreeMap`/`TreeSet` (Kotlin's common stdlib has no tree map)",
+  "reason": "TreeMap and TreeSet are available on the JVM and Android.",
+  "sources": [
+   "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/TreeMap.html"
+  ],
+  "status": "approved",
+  "validation": "Owner approved all proposals on 2026-10-29. Verified against official documentation, specifications, source code or arithmetic; exact original text occurs once in the source snapshot."
+ }
+]

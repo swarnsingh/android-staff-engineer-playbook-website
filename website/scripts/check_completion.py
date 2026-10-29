@@ -7,7 +7,7 @@ import build
 ROOT=build.ROOT;REVIEW=ROOT/'website/reviews/completion'
 def digest(value):return hashlib.sha256(value.encode()).hexdigest()
 def fingerprints():
- files=['website/scripts/check_fundamentals_kotlin.py','website/tests/FundamentalsRegression.kt','website/content/engineering-fundamentals.json','website/content/corrections-engineering-fundamentals.json','source-snapshot.json','website/scripts/check_scene_routes.py','website/content/corrections-z-completion.json','website/reviews/completion/source-sync.json',
+ files=['website/scripts/check_fundamentals_kotlin.py','website/tests/FundamentalsRegression.kt','website/content/engineering-fundamentals.json','website/content/corrections-engineering-fundamentals.json','website/content/corrections-computer-science.json','source-snapshot.json','website/scripts/check_scene_routes.py','website/content/corrections-z-completion.json','website/reviews/completion/source-sync.json',
   'website/scripts/build.py','website/scripts/diagram_models.py','website/scripts/figure_maps.py','website/sequence.css','website/scripts/check_completion.py','website/scripts/check_preservation.py',
   'website/scripts/generate_android_validation.py','website/scripts/browser_preservation.js',
   'website/tools/qa_fixture_runner.js','website/styles.css','website/blend.css',
