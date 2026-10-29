@@ -407,6 +407,22 @@ All reading-width, visual-breakout, frame, padding and responsive layout rules b
 
 Owner approved the shared layout draft on29 October 2026: prose fills the existing760px reading column; wide visuals use padded, rounded frames and symmetric bounded extension. This replaces the earlier font-specific narrower prose measure. Implement once in design-system tokens and ReadingSheet shared components.
 
+### Content is the only per-topic layer · 29 October 2026
+
+Owner rule, 29 October 2026. Each topic contributes only its content: text, models, labels, captions, data, sources and the choice of which component to use. Everything else is customizable from the design system with a single change:
+- the design system itself and its tokens;
+- page and visual layout, widths and heights;
+- every kind of box (callouts, frames, cards, disclosures and any new box type);
+- animations and step-throughs;
+- diagram drawing and FigureMap geometry;
+- typography, colour, shapes and spacing.
+
+Rules:
+- **Tokens and shared components hold every value and behaviour.** Put values in `website/design-system/tokens.json` and behaviour in shared components under `website/design-system/components/`. FigureMap geometry, type sizes and frame widths are tokens, read by both the CSS and the renderer.
+- **Lesson files carry no styling.** No inline `style` attributes, hard-coded colours, sizes or one-off CSS in blend files, models or components. A content parameter is allowed when it is data, such as a timeline position, a column count or a step. Express it as a declared component attribute, not as raw CSS.
+- **New layout boxes and custom components are added once.** Each one gets a README, tokens and a gallery entry, and lessons use it by name. Changing the component changes every topic that uses it.
+- **The build enforces the boundary.** It rejects styling inside lesson content, such as inline styles and raw colours. Shared components may use only token values.
+
 ### Designed visuals only · 29 October 2026
 
 Owner rule, 29 October 2026. It applies to every current and future topic and tree, and supersedes any earlier guidance that allowed default renderings:

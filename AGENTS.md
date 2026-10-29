@@ -44,6 +44,7 @@ Content-only edits to blend files also change fingerprints, so they follow the s
 | Diagrams: no Mermaid, no colourless diagrams, no ordinary animation; styling only in the design system | §20 "Designed visuals only" |
 | Diagram meaning: labelled arrows, true owners, colour never the only cue | §20 "Approved diagram direction" |
 | Layout widths and frames live in shared tokens and components | §20 "Shared layout ownership" |
+| Only content is per topic; every style, layout, box, animation, diagram, size and font comes from the design system | §20 "Content is the only per-topic layer" |
 | Lesson quality: concise additions, labelled fragments, exactness | §18 |
 | Animation and accessibility basics | §8, §9 |
 | Mobile review timing (consolidated review only at the end) | §20 "Mobile review timing" |
@@ -60,6 +61,12 @@ Content-only edits to blend files also change fingerprints, so they follow the s
 - **Evidence.** `website/reviews/<topic>-<date>/`; the latest folder is named by `ux_review` in `website/reviews/completion/validation.json`.
 
 ## Known open work
+
+- **Centralization debt (§20 "Content is the only per-topic layer"):**
+  - 318 inline styles in lesson files (227 grid column counts, 83 timeline positions, 8 raw margins or widths);
+  - 458 CSS lines outside the design system, with 72 hard-coded colours in `styles.css`;
+  - about 50 raw px font sizes;
+  - FigureMap geometry constants in Python rather than in `tokens.json`.
 
 - 181 teaching-layer HTML diagrams in Kotlin and Android lessons still use neutral cards. Under §20 they need role colours, legends and numbered captions.
 - Some lessons may exceed the §18 length target; review them before trimming.
