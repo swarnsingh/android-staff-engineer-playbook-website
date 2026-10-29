@@ -1,0 +1,1995 @@
+{
+  "pages": [
+    {
+      "href": "/engineering-fundamentals/sync-vs-async/",
+      "preservation": {
+        "views": [
+          {
+            "source": "engineering-fundamentals/sync-vs-async.md",
+            "view": "content",
+            "checked": 382,
+            "units": 129,
+            "diagrams": 5,
+            "loadedDiagrams": 5,
+            "diagramResources": [
+              {
+                "source": "/diagrams/c74f38f0216b377f.svg",
+                "status": "loaded"
+              },
+              {
+                "source": "/diagrams/9d238d439c785157.svg",
+                "status": "loaded"
+              },
+              {
+                "source": "/diagrams/0dfcd495b25d4489.svg",
+                "status": "loaded"
+              },
+              {
+                "source": "/diagrams/d44ee641447978f2.svg",
+                "status": "loaded"
+              },
+              {
+                "source": "/diagrams/b9528a4d8ad32fd2.svg",
+                "status": "loaded"
+              }
+            ],
+            "pairChecks": [],
+            "problems": []
+          },
+          {
+            "source": "engineering-fundamentals/sync-vs-async.md",
+            "view": "qa",
+            "checked": 72,
+            "units": 22,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "pairChecks": [
+              {
+                "number": 1,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 2,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 3,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 4,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 5,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 6,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 7,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 8,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 9,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 10,
+                "ok": true,
+                "problems": []
+              }
+            ],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 151,
+        "diagrams": 5,
+        "loadedDiagrams": 5
+      },
+      "steppers": 0,
+      "ready": 0,
+      "scenes": 1,
+      "sceneReady": 1,
+      "runtimeErrors": [],
+      "sceneChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "mode": "blocking",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "mode": "suspending",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "mode": "blocking",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "mode": "suspending",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "mode": "blocking",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "mode": "suspending",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "mode": "blocking",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 1,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 2,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 3,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 4,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "mode": "suspending",
+          "step": 5,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "illustratedChecks": [],
+      "codeChecks": [
+        {
+          "theme": "light",
+          "id": "engineering-fundamentalssync-vs-asyncmd-code-0",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "light",
+          "id": "engineering-fundamentalssync-vs-asyncmd-code-3",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "light",
+          "id": "engineering-fundamentalssync-vs-asyncmd-code-4",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "light",
+          "id": "engineering-fundamentalssync-vs-asyncmd-code-8",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "dark",
+          "id": "engineering-fundamentalssync-vs-asyncmd-code-0",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "dark",
+          "id": "engineering-fundamentalssync-vs-asyncmd-code-3",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "dark",
+          "id": "engineering-fundamentalssync-vs-asyncmd-code-4",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "dark",
+          "id": "engineering-fundamentalssync-vs-asyncmd-code-8",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "sepia",
+          "id": "engineering-fundamentalssync-vs-asyncmd-code-0",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "sepia",
+          "id": "engineering-fundamentalssync-vs-asyncmd-code-3",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "sepia",
+          "id": "engineering-fundamentalssync-vs-asyncmd-code-4",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "sepia",
+          "id": "engineering-fundamentalssync-vs-asyncmd-code-8",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "contrast",
+          "id": "engineering-fundamentalssync-vs-asyncmd-code-0",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "contrast",
+          "id": "engineering-fundamentalssync-vs-asyncmd-code-3",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "contrast",
+          "id": "engineering-fundamentalssync-vs-asyncmd-code-4",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "contrast",
+          "id": "engineering-fundamentalssync-vs-asyncmd-code-8",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    },
+    {
+      "href": "/engineering-fundamentals/immutability/",
+      "preservation": {
+        "views": [
+          {
+            "source": "engineering-fundamentals/immutability.md",
+            "view": "content",
+            "checked": 239,
+            "units": 59,
+            "diagrams": 1,
+            "loadedDiagrams": 1,
+            "diagramResources": [
+              {
+                "source": "/diagrams/65c2bd4e9404f910.svg",
+                "status": "loaded"
+              }
+            ],
+            "pairChecks": [],
+            "problems": []
+          },
+          {
+            "source": "engineering-fundamentals/immutability.md",
+            "view": "qa",
+            "checked": 87,
+            "units": 23,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "pairChecks": [
+              {
+                "number": 1,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 2,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 3,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 4,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 5,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 6,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 7,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 8,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 9,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 10,
+                "ok": true,
+                "problems": []
+              }
+            ],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 82,
+        "diagrams": 1,
+        "loadedDiagrams": 1
+      },
+      "steppers": 0,
+      "ready": 0,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [],
+      "codeChecks": [
+        {
+          "theme": "light",
+          "id": "engineering-fundamentalsimmutabilitymd-code-0",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "light",
+          "id": "engineering-fundamentalsimmutabilitymd-code-1",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "light",
+          "id": "engineering-fundamentalsimmutabilitymd-code-2",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "light",
+          "id": "engineering-fundamentalsimmutabilitymd-code-5",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "light",
+          "id": "engineering-fundamentalsimmutabilitymd-code-6",
+          "inList": true,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "light",
+          "id": "engineering-fundamentalsimmutabilitymd-code-7",
+          "inList": true,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "dark",
+          "id": "engineering-fundamentalsimmutabilitymd-code-0",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "dark",
+          "id": "engineering-fundamentalsimmutabilitymd-code-1",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "dark",
+          "id": "engineering-fundamentalsimmutabilitymd-code-2",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "dark",
+          "id": "engineering-fundamentalsimmutabilitymd-code-5",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "dark",
+          "id": "engineering-fundamentalsimmutabilitymd-code-6",
+          "inList": true,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "dark",
+          "id": "engineering-fundamentalsimmutabilitymd-code-7",
+          "inList": true,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "sepia",
+          "id": "engineering-fundamentalsimmutabilitymd-code-0",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "sepia",
+          "id": "engineering-fundamentalsimmutabilitymd-code-1",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "sepia",
+          "id": "engineering-fundamentalsimmutabilitymd-code-2",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "sepia",
+          "id": "engineering-fundamentalsimmutabilitymd-code-5",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "sepia",
+          "id": "engineering-fundamentalsimmutabilitymd-code-6",
+          "inList": true,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "sepia",
+          "id": "engineering-fundamentalsimmutabilitymd-code-7",
+          "inList": true,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "contrast",
+          "id": "engineering-fundamentalsimmutabilitymd-code-0",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "contrast",
+          "id": "engineering-fundamentalsimmutabilitymd-code-1",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "contrast",
+          "id": "engineering-fundamentalsimmutabilitymd-code-2",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "contrast",
+          "id": "engineering-fundamentalsimmutabilitymd-code-5",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "contrast",
+          "id": "engineering-fundamentalsimmutabilitymd-code-6",
+          "inList": true,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "contrast",
+          "id": "engineering-fundamentalsimmutabilitymd-code-7",
+          "inList": true,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    }
+  ],
+  "done": true,
+  "widths": [
+    320,
+    390,
+    768,
+    1181,
+    1280,
+    1439,
+    1440
+  ],
+  "textSize": 22,
+  "font": "Shantell Sans"
+}

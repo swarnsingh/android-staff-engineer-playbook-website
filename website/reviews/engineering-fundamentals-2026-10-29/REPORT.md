@@ -10,7 +10,7 @@ Each Fundamentals chapter has a concise, labelled teaching layer. Static diagram
 
 ## Content corrections
 
-The 291 approved exact replacements in `website/content/corrections-engineering-fundamentals.json` were verified against official project documentation, owning implementations, standards or original papers. Batch records retain the sources and reasons. The same inventory replays into the13 original source chapters, with verification references appended there. Across the existing canonical 743 replacements and this new inventory, the website and source branch match exactly in97 corrected chapters, excluding appended reference sections.
+The 293 approved exact replacements in `website/content/corrections-engineering-fundamentals.json` were verified against official project documentation, owning implementations, standards or original papers. Batch records retain the sources and reasons. The same inventory replays into the13 original source chapters, with verification references appended there. Across the existing canonical 743 replacements and this new inventory, the website and source branch match exactly in97 corrected chapters, excluding appended reference sections.
 
 Review fixed complete answer paragraphs rather than inserting revised answers above obsolete ones. The reader keeps answers immediately beneath their corresponding questions. Correction details remain in optional history, rather than repeated warnings throughout the lesson.
 
@@ -30,4 +30,6 @@ The initial browser run exposed incorrectly classified teaching diagrams and und
 
 Full manual mobile review remains deferred until every website topic tree is integrated, as the owner requested. Current work uses automated mobile regressions and manual desktop/tablet inspection. Browser checks do not certify physical devices, other browser engines or screen-reader behavior. Independent Gemini review remains useful after publication, with its findings treated as new evidence rather than presumed completed work.
 
-Independent PR58 review follow-up: fixed all reported example/question contradictions, the Android vitals TTID reference, clock hierarchy and formatting, mathematical notation and duplicate reading links. The seven changed chapters pass a targeted browser rerun. The final inventory contains291 exact replacements; source PR58 includes commit7d56159.
+Independent PR58 review follow-up: fixed all reported example/question contradictions, the Android vitals TTID reference, clock hierarchy and formatting, mathematical notation and duplicate reading links. The seven changed chapters pass a targeted browser rerun. The final inventory contains293 exact replacements; source PR58 includes commit7d56159.
+
+Final owner-requested text follow-up: the immediate-completion answer and immutable-values pronoun are corrected in source commit e5336a7 and the website overlay. The two changed pages pass the targeted browser check.

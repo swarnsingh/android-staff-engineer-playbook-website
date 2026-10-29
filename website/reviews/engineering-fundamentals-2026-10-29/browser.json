@@ -47837,7 +47837,7 @@
           {
             "source": "engineering-fundamentals/sync-vs-async.md",
             "view": "qa",
-            "checked": 73,
+            "checked": 72,
             "units": 22,
             "diagrams": 0,
             "loadedDiagrams": 0,
@@ -96434,6 +96434,7 @@
     "full_run": "browser-full-final.json",
     "targeted_run": "browser-table-delta.json",
     "targeted_scope": "Both pages containing direct teaching-callout tables; no other page matches the changed selector.",
-    "independent_review_followup": "browser-review58-delta.json"
+    "independent_review_followup": "browser-review58-delta.json",
+    "final_text_followup": "browser-final-text-delta.json"
   }
 }

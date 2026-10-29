@@ -3594,5 +3594,29 @@
     ],
     "status": "approved",
     "validation": "Verified against the cited primary contract; follow-up consistency fix from independent PR58 review."
+  },
+  {
+    "id": "fundamentals:review58:10",
+    "path": "engineering-fundamentals/sync-vs-async.md",
+    "old": "When it hits a suspension point, it returns a special `COROUTINE_SUSPENDED` token to release the calling thread. Later, when the awaited result is ready, the continuation is invoked, effectively \"resuming\" and returning the final result.",
+    "new": "A call to a suspend function may complete without suspending: if the result is already available, it returns that value directly. Only when it actually suspends does it return the COROUTINE_SUSPENDED marker, releasing the calling thread. Its continuation holds the state machine's label and locals; when the awaited result is ready, resuming the continuation re-enters the function at that label and eventually delivers the final result to the caller's continuation.",
+    "reason": "Cover immediate completion as well as actual suspension in interview answer5.",
+    "sources": [
+      "https://kotlinlang.org/spec/asynchronous-programming-with-coroutines.html"
+    ],
+    "status": "approved",
+    "validation": "Owner-specified follow-up wording; exact span occurs once and the two requested edits are in separate chapters."
+  },
+  {
+    "id": "fundamentals:review58:11",
+    "path": "engineering-fundamentals/immutability.md",
+    "old": "It simplifies shared snapshots",
+    "new": "They simplify shared snapshots",
+    "reason": "Match the plural immutable-values subject.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/state"
+    ],
+    "status": "approved",
+    "validation": "Owner-specified follow-up wording; exact span occurs once and the two requested edits are in separate chapters."
   }
 ]
