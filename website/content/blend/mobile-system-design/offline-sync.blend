@@ -8,7 +8,7 @@
      Source PR #61 (merged as fe82316) resolved findings OS1 and OS2: unique push work uses KEEP, every op including delete
      carries a clientId, and a foreground check plus a periodic outbox sweep reschedule pushes the enqueue missed.
      The two queued ops stay illustrative upserts, one per note, matching source PR #62 (one op per note per batch;
-     dirty clears only when no op for the note remains). -->
+     dirty clears only when no op for the note remains; a conflict removes the note's queued ops, already kept in the conflict copy). -->
 
 <!-- @after 7. Deep Dive: Outbox + Conflict Resolution (15 min) :: animation -->
 ### Replay the outbox after the network returns
@@ -66,7 +66,7 @@
   },
   {
     "label": "Keep both copies",
-    "caption": "In the same transaction, the outbox row named by the clientId the server echoes is deleted. The resolver saves the local copy as a conflict copy, accepts the server state and adds an entry to the Conflicts inbox.",
+    "caption": "In the same transaction, the worker removes every queued op for n_51; here there is only the one the server rejected. The resolver saves the local copy as a conflict copy, accepts the server state and adds an entry to the Conflicts inbox.",
     "state": {"notes": "warn", "outbox": "done"},
     "text": {"notesV": "n_51 = server v5 · local kept as conflict copy", "outboxV": "empty", "uiV": "Conflicts inbox: 1", "eventV": "nothing silently destroyed"},
     "visuals": {"outbox": {"count": 0}}

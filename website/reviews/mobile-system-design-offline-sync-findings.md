@@ -12,7 +12,7 @@ These were findings for the owner's review, not approved corrections. Website wo
 | OS3 | 10. Follow-up Questions (five edits) and the §6 probing question | "5 outbox ops in order, each with `baseVersion = previous_known_version`. Server applies them serially"; "3 ops with 3 client IDs and the server resolves in order" | Under the chapter's own `VERSION_MISMATCH` rule, the second op conflicts as soon as the first applies, because both carry the same last server-known version | Internal consistency of `offline-sync.md`, sections 4, 6 and 10 |
 | OS4 | 7. Deep Dive, push path | `noteDao.updateVersion(applied.id, applied.newVersion, dirty = false)` | An ack clears `dirty` even when a newer edit to that note is still queued | Internal consistency with the `dirty`/outbox follow-up answer |
 
-**OS3 and OS4: correction raised as source PR #62** (one op per note per batch, rebase the next op onto the acknowledged `newVersion`, clear `dirty` only when no op for the note remains). The website branch carries the PR's version of the chapter for preview only. Re-sync from the merge commit once the PR is merged.
+**OS3 and OS4: correction raised as source PR #62** (one op per note per batch; rebase the next op onto the acknowledged `newVersion`; clear `dirty` only when no op for the note remains). Review follow-up: the worker now calls `compactUnsentUpserts()`, and a conflict removes every queued op for that note, because those edits are already in the conflict copy. The website branch carries the PR's version of the chapter for preview only. Re-sync from the merge commit once the PR is merged.
 
 ## Proposed wording, for owner approval only
 

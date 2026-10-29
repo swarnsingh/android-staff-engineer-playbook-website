@@ -276,6 +276,7 @@ The Room transaction commits the note and outbox row together. WorkManager's enq
 
 ```kotlin
 override suspend fun doWork(): Result {
+    outboxDao.compactUnsentUpserts()              // merge never-sent upserts per note
     val batch = outboxDao.takeOldestPerNote(100)  // at most one op per note
     if (batch.isEmpty()) return Result.success()
     val resp = api.push(PushReq(batch.toOps()))
@@ -288,7 +289,8 @@ override suspend fun doWork(): Result {
             noteDao.updateVersion(applied.id, applied.newVersion, dirty = stillQueued)
         }
         resp.conflicts.forEach { conflict ->
-            outboxDao.delete(conflict.clientId)
+            // Later queued edits are already in the local row the resolver keeps.
+            outboxDao.deleteAllFor(conflict.id)
             resolver.handle(conflict)            // see below
         }
     }
@@ -297,6 +299,10 @@ override suspend fun doWork(): Result {
 ```
 
 Each op is written with the last server-known `baseVersion`, so two ops for one note in the same batch would conflict: once the first is applied, the second's `baseVersion` is stale and the server returns `VERSION_MISMATCH`. The worker therefore takes the oldest op per note, rebases that note's next op onto the returned `newVersion`, and clears `dirty` only when no op for the note remains. A rebased op still conflicts if another device changed the note in between.
+
+Before taking a batch, the worker merges adjacent upserts to the same note that have never been sent into one op: it keeps the oldest row's `clientId` and `baseVersion` and the newest payload. A row that was sent once is never merged, because the server may already have applied it under its `clientId`.
+
+When an op conflicts, the worker removes every queued op for that note, not only the conflicted one. Those later edits were made on top of the losing local state, and they are already in the local row that the resolver keeps as the conflict copy, so nothing is lost. Resolving the conflict in the Conflicts inbox (keep mine or merge) enqueues one new upsert based on `serverVersion`.
 
 `PushWorker` is unique-named with `KEEP`, so a new trigger does not cancel an active push. The worker checks for remaining rows, while foreground and periodic recovery cover a missed trigger. Backoff is exponential with jitter; max 5 attempts per row before flipping to a `FAILED_PERMANENT` state.
 
@@ -458,7 +464,7 @@ Offline sync has three version boundaries: the app binary, the local database sc
 > `dirty=true` is a UI hint ("this note has unsynced edits — show a dot"). The outbox is the durable queue of ops to send. They can diverge: the worker may be mid-push, in which case the row is still dirty until the ack for its last queued op lands.
 
 > **Q: A user edits the same note 5 times offline — what does the server see?**
-> Usually one op. Each edit is written with the last server-known `baseVersion`, so five ops sent together would conflict after the first one applies. Before a push, the client compacts adjacent upserts to the same note that have never been sent into the latest payload (a sent op may already be applied under its `clientId`). Ops that remain go one per note at a time, each rebased onto the `newVersion` from the previous ack, so the server applies them in order and the last one wins.
+> Usually one op. Each edit is written with the last server-known `baseVersion`, so five ops sent together would conflict after the first one applies. Before each push, the worker calls `compactUnsentUpserts()`, which merges never-sent upserts to the same note into one op with the latest payload; a sent op is never merged, because it may already be applied under its `clientId`. If one edit was already sent, the rest go one per note at a time, each rebased onto the `newVersion` from the previous ack, so the server applies them in order and the last one wins.
 
 > **Q: How do you guarantee no duplicates if push retries after a timeout?**
 > Each op has `clientId`. Server returns the same `newVersion` for the same `clientId`. Client deletes the outbox row on success — retries are idempotent.
