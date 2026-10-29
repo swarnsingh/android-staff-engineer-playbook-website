@@ -1,0 +1,35 @@
+<!-- Website teaching layer; original recursion-backtracking.md remains unchanged. -->
+<!-- @opening -->
+<p class="story-lead">A form must suggest every valid combination of three add-ons that fits a budget. Writing nested loops works for three add-ons and breaks when the number changes. Backtracking writes the choice once and lets recursion repeat it.</p>
+
+Recursion solves a problem by solving a smaller copy of it. Backtracking is recursion over choices: make a choice, explore what follows, then undo the choice and try the next one. Pruning stops exploring a branch as soon as it cannot succeed.
+
+<!-- @before Backtracking Pattern :: guide -->
+### The three questions every backtracking solution answers
+
+1. **What is the state?** Usually the partial answer so far, plus where the next choice starts.
+2. **What are the choices from here?** Each candidate that keeps the partial answer valid.
+3. **When is it finished?** Record a copy of the answer at that point, because the shared list will keep changing.
+
+Then: choose, recurse, undo. Without the undo step, one branch's choices leak into the next.
+
+Typical sizes: subsets are 2ⁿ, permutations are n!. Pruning does not change the worst case, but it often decides whether the real input finishes.
+
+<!-- @after Backtracking Pattern :: check -->
+**Predict the output.** Decide before opening each answer.
+
+<details><summary>A subsets function adds <code>current</code> to the result instead of <code>current.toList()</code>. What does it return?</summary>
+
+Every entry is the same list object, which ends empty after all the undo steps. Add a copy at the moment the answer is complete.
+</details>
+
+<details><summary>Combinations summing to a target from positive, sorted candidates. Where can you prune?</summary>
+
+Stop the loop as soon as a candidate exceeds the remaining target. Because the list is sorted and values are positive, every later candidate is too large as well.
+</details>
+
+<!-- @after Kotlin Tail Recursion :: check -->
+<details><summary>Can <code>tailrec</code> optimise a recursive tree depth function that returns <code>1 + max(depth(left), depth(right))</code>?</summary>
+
+No. The recursive calls are not the last operation, because `max` and the addition run after them. The compiler warns and keeps ordinary recursion. Deep trees need an explicit stack instead.
+</details>

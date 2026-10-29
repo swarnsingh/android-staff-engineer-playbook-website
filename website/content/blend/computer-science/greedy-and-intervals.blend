@@ -1,0 +1,29 @@
+<!-- Website teaching layer; original greedy-and-intervals.md remains unchanged. -->
+<!-- @opening -->
+<p class="story-lead">A calendar app must fit the most meetings into one room. Picking the shortest meetings first looks sensible and is wrong. Picking the meeting that ends earliest is right, and the difference is a proof, not a hunch.</p>
+
+A greedy algorithm makes the locally best choice and never revisits it. It is fast and simple, but it is correct only when you can show an earlier choice never needs undoing. Interval problems are where greedy choices are easiest to prove.
+
+<!-- @before Core Patterns :: guide -->
+### Sort first, then sweep
+
+- **Most non-overlapping intervals:** sort by end time and keep each interval that starts at or after the last kept end.
+- **Merge overlapping intervals:** sort by start time and extend the current interval while the next one starts inside it.
+- **Minimum rooms needed:** sort by start time and keep a min-heap of end times; the heap's largest size is the answer.
+- **Decide the boundary rule early:** does a meeting ending at 10:00 conflict with one starting at 10:00? Write it down before writing comparisons.
+
+<!-- @after Core Patterns :: check -->
+**Prove or break the greedy choice.** Decide before opening each answer.
+
+<details><summary>Meetings [1, 10], [2, 3], [4, 5]. What does shortest-first pick, and what does earliest-end pick?</summary>
+
+Both pick two meetings here, [2, 3] and [4, 5]. A counterexample for shortest-first is [1, 5], [4, 7], [6, 10]: the shortest, [4, 7], overlaps both others, giving one meeting, while earliest-end picks [1, 5] and [6, 10].
+</details>
+
+<details><summary>Merge [1, 3], [2, 6], [8, 10], [9, 12].</summary>
+
+[1, 6] and [8, 12]. After sorting by start, [2, 6] begins inside [1, 3] and extends it; [9, 12] begins inside [8, 10] and extends it.
+</details>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+**Review question to ask:** "What is the argument that the greedy choice is safe?" If nobody can state an exchange argument, test against a brute-force solution on small random inputs before shipping.

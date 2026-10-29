@@ -1,0 +1,31 @@
+<!-- Website teaching layer; original system-complexity.md remains unchanged. -->
+<!-- @opening -->
+<p class="story-lead">A one-line change to the checkout screen takes three days: two days to understand what the function does, one to convince yourself the change is safe. The algorithm was never the problem. The cost was in reading.</p>
+
+Algorithmic complexity measures how running time grows with input. System complexity measures how human effort grows with change. Both can be measured, and both get worse silently when nobody watches them.
+
+<!-- @before Internal Mechanics :: guide -->
+### What the common metrics count
+
+- **Cyclomatic complexity:** the number of independent paths through a function, roughly decision points plus one. It estimates how many tests full branch coverage needs.
+- **Cognitive complexity:** how hard code is to follow. Each break in linear flow adds to the score, and nesting adds more, so a deeply nested `if` costs more than a flat one.
+- **Coupling and cohesion:** how many other modules a change touches, and how related a module's contents are.
+- **Architectural measures:** module count, dependency depth and breadth across the whole codebase.
+
+No single number is the truth. Use them as alarms that point to code worth reading.
+
+<!-- @after Internal Mechanics :: check -->
+**Read the signal.** Decide before opening each answer.
+
+<details><summary>A <code>when</code> with 12 flat branches and a function with four nested <code>if</code>s. Which scores higher on cognitive complexity?</summary>
+
+Usually the nested function. Cognitive complexity counts a flat `when` once, while each nested `if` adds a nesting penalty. Cyclomatic complexity would rank the `when` higher because it has more paths.
+</details>
+
+<details><summary>A team caps cyclomatic complexity at 10, and functions start splitting into many tiny helpers. Is complexity lower?</summary>
+
+Maybe not. Local scores fall, but readers now jump between helpers, and coupling can rise. Check the module and system level too, not just the per-function metric.
+</details>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+**Review question to ask:** "Is this metric a trend or a gate?" Thresholds work best on new and changed code; failing builds on legacy totals usually produces suppressions instead of simpler code.

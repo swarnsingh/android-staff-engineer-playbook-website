@@ -1,0 +1,28 @@
+<!-- Website teaching layer; original trees.md remains unchanged. -->
+<!-- @opening -->
+<p class="story-lead">A screen is a tree before it is pixels: a root layout holds rows, rows hold text and images. Measuring, drawing and accessibility all walk that tree. When one screen nests twenty levels deep, every pass pays for the depth.</p>
+
+A tree is a set of nodes where each node has one parent, except the root. That single rule gives trees their useful properties: no cycles, exactly one path between any two nodes, and work that can be split by subtree.
+
+<!-- @before Internal Mechanics :: guide -->
+### Three ideas carry most tree questions
+
+- **Recursion follows the shape.** Most answers are "solve the left subtree, solve the right subtree, combine". The combine step is the whole problem.
+- **Order matters for traversal.** Pre-order visits a node before its children (copying a tree), post-order after them (sizes, deletion), in-order between them (a binary search tree in sorted order), level order with a queue (closest node first).
+- **Height decides cost.** Search, insert and delete in a binary search tree are O(height). Balanced trees keep height near log n; inserting sorted keys into an unbalanced tree builds a list with height n.
+
+<!-- @after Internal Mechanics :: check -->
+**Predict the answer.** Decide before opening each answer.
+
+<details><summary>Is a tree a valid BST if every node is greater than its left child and less than its right child?</summary>
+
+Not necessarily. Every node in the left subtree, not just the child, must be smaller. Validate by passing an allowed (min, max) range down the recursion, or check that an in-order traversal is strictly increasing.
+</details>
+
+<details><summary>Keys 1, 2, 3, 4, 5 are inserted in order into a plain BST. What is the search cost for 5?</summary>
+
+O(n). Each key becomes the right child of the previous one, so the tree is a linked list of height 5. Self-balancing trees such as red-black trees, used by Java's `TreeMap`, prevent this.
+</details>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+**Review question to ask:** "What bounds the depth?" Recursive walks over user-shaped data, such as nested comments or a deep view hierarchy, can overflow the stack; an explicit stack or queue makes the limit a design choice.

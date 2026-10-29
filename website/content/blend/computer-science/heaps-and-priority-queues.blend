@@ -1,0 +1,36 @@
+<!-- Website teaching layer; original heaps-and-priority-queues.md remains unchanged. -->
+<!-- @opening -->
+<p class="story-lead">An image loader has 300 requests queued and the user just scrolled. The requests for visible rows should go first, and new ones keep arriving. Sorting the whole queue on every arrival is wasteful; a heap keeps only the next item ready.</p>
+
+A binary heap is a complete tree stored in an array, where each parent is no larger than its children (a min-heap). It does not sort everything. It guarantees only that the smallest item is at the top, which is exactly what a scheduler needs.
+
+<!-- @before Core Patterns :: guide -->
+### What a heap costs
+
+| Operation | `java.util.PriorityQueue` |
+|---|---|
+| `peek` | O(1) |
+| `offer` / `poll` | O(log n) |
+| `remove(item)` / `contains` | O(n) |
+| Build from a collection | O(n) |
+
+- **Top k largest:** keep a min-heap of size k. Each new item replaces the top only if it is larger. O(n log k), not O(n log n).
+- **Merge k sorted lists:** a heap holds the current head of each list.
+- **Running median:** a max-heap for the lower half, a min-heap for the upper half, kept within one element in size.
+- Iterating a `PriorityQueue` does not return items in priority order; only repeated `poll` does.
+
+<!-- @after Core Patterns :: check -->
+**Predict the result.** Decide before opening each answer.
+
+<details><summary>Find the 10 most frequent words in a 1-million-word log.</summary>
+
+Count with a hash map, then keep a min-heap of 10 entries keyed by count. When a larger count arrives, poll the top and offer the new entry. Total cost is O(n + m log 10) for m distinct words.
+</details>
+
+<details><summary>You print a <code>PriorityQueue</code> of 5, 1, 4, 2 and the output is not sorted. Is the queue broken?</summary>
+
+No. `toString` and iteration walk the backing array, which only satisfies the heap property. Only `poll` returns items in priority order.
+</details>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+**Review question to ask:** "Can low-priority work starve?" A strict priority queue never runs low-priority items while higher ones keep arriving; production schedulers often age priorities or reserve capacity.

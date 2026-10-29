@@ -1,0 +1,29 @@
+<!-- Website teaching layer; original arrays-and-strings.md remains unchanged. -->
+<!-- @opening -->
+<p class="story-lead">A product search checks every pair of products to find two prices that add up to a gift-card value. With 10,000 products that is about 50 million pairs. A sorted array and two pointers, or one hash set, does it in a single pass.</p>
+
+Arrays give constant-time access by index because elements sit next to each other in memory. Most array interview patterns trade that layout for fewer passes: move two indices instead of nesting two loops, keep a running window instead of recomputing it, or precompute prefix sums once.
+
+<!-- @before Core Patterns :: guide -->
+### Pick the pattern from the question's shape
+
+- **Pairs in sorted data** (two values meeting a target): two pointers moving inward, O(n) after sorting.
+- **Best contiguous range** (longest substring, maximum window): sliding window that grows on the right and shrinks on the left, O(n).
+- **Many range-sum queries**: prefix sums, O(n) once, then O(1) per query.
+- **Counting or matching characters**: a fixed-size count array or a hash map instead of nested scans.
+
+<!-- @after Core Patterns :: check -->
+**Choose the pattern.** Decide before opening each answer.
+
+<details><summary>Longest substring without repeating characters.</summary>
+
+Sliding window with a map of each character's last index. When a repeat appears inside the window, move the left edge past its previous position. Each index enters and leaves the window at most once: O(n).
+</details>
+
+<details><summary>Product of the array except self, without division.</summary>
+
+Two passes of running products: left-to-right products before each index, then multiply by right-to-left products after it. O(n) time and O(1) extra space besides the output.
+</details>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+**Review question to ask:** "What is the largest input this runs on in production?" An O(n²) scan over a 20-item list is fine; the same code over a chat history or contact list is a latent ANR.

@@ -1,0 +1,30 @@
+<!-- Website teaching layer; original linked-lists-stacks-queues.md remains unchanged. -->
+<!-- @opening -->
+<p class="story-lead">An editor needs undo: the most recent change must be reversed first. A download manager needs the opposite: the oldest request should start first. Same data, different order of removal, and that order is the whole design decision.</p>
+
+A stack removes the newest item (last in, first out); a queue removes the oldest (first in, first out). Linked lists make insertion and removal at a known node cheap, at the cost of slow access by position.
+
+<!-- @before Common Patterns :: guide -->
+### Recognise the structure from the problem
+
+- **"Match the most recent open item"** (brackets, nested tags, undo): stack.
+- **"Next greater or smaller element"** (daily temperatures): a monotonic stack that keeps unresolved indices.
+- **"Process in arrival order" or level by level**: queue, `ArrayDeque` in Kotlin.
+- **"Detect a cycle or find the middle"**: fast and slow pointers on a linked list.
+- **"Least recently used"**: hash map for lookup plus a doubly linked list for order; `LinkedHashMap` with access order does both.
+
+<!-- @after Common Patterns :: check -->
+**Predict the structure.** Decide before opening each answer.
+
+<details><summary>Valid parentheses for "([)]".</summary>
+
+Invalid. Push each opener; on a closer, the top of the stack must be its matching opener. At ")" the top is "[", so it fails. The string must also end with an empty stack.
+</details>
+
+<details><summary>An LRU cache with O(1) get and put.</summary>
+
+A hash map from key to node, and a doubly linked list ordered by recency. `get` moves the node to the front; `put` inserts at the front and evicts from the back when over capacity. Both are O(1).
+</details>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+**Review question to ask:** "What happens when this queue grows faster than it drains?" An unbounded queue turns a slow consumer into memory growth; see [Backpressure](../engineering-fundamentals/backpressure.md).

@@ -1,0 +1,29 @@
+<!-- Website teaching layer; original hashing.md remains unchanged. -->
+<!-- @opening -->
+<p class="story-lead">Checking whether a username is taken by scanning a list costs more with every new user. A hash set answers the same question in roughly constant time on average, by jumping straight to the bucket where that name would live.</p>
+
+A hash function turns a key into a number; the table uses that number to pick a bucket. Lookups stay fast while keys spread evenly and the table resizes before buckets fill. The "O(1)" is an average that depends on the hash function, not a guarantee.
+
+<!-- @before Internal Mechanics :: guide -->
+### What "constant time" depends on
+
+- **Good distribution:** keys should spread across buckets; many collisions turn a bucket into a long search.
+- **Resizing:** the table grows when its load factor passes a threshold, which rehashes every entry. That single insert is O(n), but the average cost per insert stays O(1) (amortized).
+- **Correct equality:** keys that are `equals` must have the same `hashCode`. Mutating a field used by `hashCode` while the key is in the map makes it unfindable.
+- **Collision worst case:** Java's `HashMap` converts a heavily collided bucket into a balanced tree, limiting that bucket's search to O(log n) when keys are comparable.
+
+<!-- @after Internal Mechanics :: check -->
+**Predict the outcome.** Decide before opening each answer.
+
+<details><summary>Group anagrams such as "eat", "tea" and "ate".</summary>
+
+Use a canonical key per word, either the sorted letters or a 26-count signature, and map each key to its list of words. With bounded word length this is linear in the total number of characters.
+</details>
+
+<details><summary>A data class key is put in a HashMap, then one of its properties is changed.</summary>
+
+Lookups now usually miss. The entry stays in the bucket for its old hash, but the changed key hashes elsewhere. Keep map keys immutable.
+</details>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+**Review question to ask:** "Who controls these keys?" When an attacker can choose keys, many colliding values can degrade a table; non-cryptographic hashes for speed and cryptographic hashes for integrity are different tools.

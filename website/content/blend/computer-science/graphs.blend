@@ -1,0 +1,35 @@
+<!-- Website teaching layer; original graphs.md remains unchanged. -->
+<!-- @opening -->
+<p class="story-lead">A Gradle build fails with a dependency cycle between two feature modules. Nobody drew a graph, but one existed: modules were nodes and every `implementation(project(...))` was an edge. Graph algorithms answer the build's questions: what order, what depends on what, and where the loop is.</p>
+
+A graph is nodes plus edges, with no rule about parents. That freedom models networks, module dependencies, navigation and social connections, and it brings cycles and unreachable nodes that trees never had.
+
+<!-- @before Internal Mechanics :: guide -->
+### Match the algorithm to the question
+
+- **Fewest hops** with unweighted edges: breadth-first search with a queue, O(V + E).
+- **Can I reach it, or find every connected piece:** depth-first or breadth-first search with a visited set.
+- **Cheapest path** with non-negative weights: Dijkstra's algorithm with a priority queue, O((V + E) log V). Negative weights need Bellman-Ford.
+- **Valid build or task order:** topological sort of a directed acyclic graph. If Kahn's algorithm cannot remove every node, the leftovers sit on a cycle.
+- **Are these two items connected,** asked many times while edges are added: union-find.
+
+<!-- @after Internal Mechanics :: check -->
+**Choose the algorithm.** Decide before opening each answer.
+
+<details><summary>Minimum number of moves for a knight on an empty chessboard.</summary>
+
+Breadth-first search from the start square. Every move costs one, so the first time BFS reaches the target is the minimum.
+</details>
+
+<details><summary>Order 40 modules so each builds after its dependencies, and report a cycle if there is one.</summary>
+
+Topological sort. With Kahn's algorithm, repeatedly take modules with no remaining incoming edges. If some modules are never taken, they are part of or blocked by a cycle.
+</details>
+
+<details><summary>Why does a DFS on a graph need a visited set when a DFS on a tree does not?</summary>
+
+A graph can contain cycles and several paths to the same node. Without a visited set the search revisits nodes repeatedly and can loop forever.
+</details>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+**Review question to ask:** "Is this dependency graph enforced or just drawn?" Module boundaries hold only when tooling rejects forbidden edges; see [Coupling vs Cohesion](../engineering-fundamentals/coupling-vs-cohesion.md).

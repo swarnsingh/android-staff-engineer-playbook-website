@@ -1,0 +1,31 @@
+<!-- Website teaching layer; original dynamic-programming.md remains unchanged. -->
+<!-- @opening -->
+<p class="story-lead">A recursive Fibonacci for n = 50 makes billions of calls, almost all of them repeats of the same small questions. Saving each answer the first time turns that into 50 calls. Dynamic programming is that idea applied deliberately.</p>
+
+Dynamic programming fits when a problem has overlapping subproblems (the same smaller question appears many times) and optimal substructure (the best answer is built from best answers to smaller questions). The hard part is choosing the state, not writing the table.
+
+<!-- @before State Design :: guide -->
+### Designing the state in four steps
+
+1. **State:** what is the smallest set of facts that fully describes a subproblem? For edit distance it is `(i, j)`, the prefixes compared so far.
+2. **Transition:** how does a state's answer follow from smaller states? Write it as a formula before writing code.
+3. **Base cases:** the states whose answers you know directly, such as an empty string.
+4. **Order:** memoization computes states on demand; tabulation fills them in an order where dependencies are already done.
+
+Cost is roughly the number of states times the work per transition.
+
+<!-- @after State Design :: check -->
+**Find the state.** Decide before opening each answer.
+
+<details><summary>Fewest coins to make an amount with coins {1, 3, 4} and amount 6.</summary>
+
+State: `dp[a]`, the fewest coins for amount `a`. Transition: `dp[a] = 1 + min(dp[a - c])` over coins `c ≤ a`, with `dp[0] = 0`. The answer is 2 (3 + 3). Greedy picks 4 + 1 + 1, which uses three coins.
+</details>
+
+<details><summary>A 2D table <code>dp[i][j]</code> only ever reads row <code>i - 1</code>. How much memory do you need?</summary>
+
+Two rows, or one row updated in the correct direction. Space drops from O(n·m) to O(m) without changing the time.
+</details>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+**Review question to ask:** "Is the cache bounded?" Memoizing over user input without a size limit is a memory leak with a nicer name; the same reasoning applies to [Caching](../engineering-fundamentals/caching.md).

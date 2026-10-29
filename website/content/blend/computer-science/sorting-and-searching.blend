@@ -1,0 +1,30 @@
+<!-- Website teaching layer; original sorting-and-searching.md remains unchanged. -->
+<!-- @opening -->
+<p class="story-lead">A contacts screen crashes only for some users with "Comparison method violates its general contract!". The sort algorithm is fine. The comparator gave inconsistent answers, and the sort is allowed to throw when it notices.</p>
+
+Sorting buys order once so that later work, such as binary search, merging, deduplication or two pointers, becomes cheap. Searching sorted data halves the range at every step, which is why a million items need only about 20 comparisons.
+
+<!-- @before Binary Search :: guide -->
+### Binary search without off-by-one bugs
+
+- **Decide the invariant first,** for example "the answer is always in `[lo, hi)`". Every update must keep it true.
+- **Take the midpoint safely:** `lo + (hi - lo) / 2` or `(lo + hi) ushr 1`, not `(lo + hi) / 2`, which can overflow.
+- **Search for a boundary, not a value:** "first index where `x >= target`" handles duplicates and missing values with the same loop.
+- **Binary search on the answer:** when a yes/no check is monotonic, such as "can we ship within capacity C?", search over C itself.
+- Kotlin's `List.binarySearch` returns `-(insertionPoint) - 1` when the key is absent.
+
+<!-- @after Binary Search :: check -->
+**Predict the result.** Decide before opening each answer.
+
+<details><summary>A comparator sorts by price, and returns 0 when either price is null. What can go wrong?</summary>
+
+It breaks transitivity: null equals 5 and null equals 9, yet 5 is less than 9. TimSort may detect the violation and throw, or quietly produce an inconsistent order. Put nulls first or last explicitly with `nullsFirst` or `nullsLast`.
+</details>
+
+<details><summary>Messages sorted by time are then sorted by sender. Do messages from the same sender stay in time order?</summary>
+
+Yes with Kotlin's `sortedBy` and `sortedWith` on lists of objects, because they are stable. With an unstable sort, sort by the full key instead: `compareBy({ it.sender }, { it.time })`.
+</details>
+
+<!-- @after Staff Engineer Thinking :: staff -->
+**Review question to ask:** "Where does this sort run, and how often?" Sorting a list inside a composable or adapter bind on every update repeats O(n log n) work; sort once where the data changes.
