@@ -39,6 +39,8 @@ STALE_DAYS = 180
 THIN_FILE_ALLOWLIST: set[str] = {
     # Reproduction commands and evidence boundaries for fixtures, not a knowledge chapter.
     "website/validation/README.md",
+    # Agent skill instructions stay short so they cost few tokens on every load.
+    ".claude/skills/publish-website/SKILL.md",
     # Component contracts are short references; the 400-word chapter floor does not apply.
     "website/design-system/components/Checkpoint/README.md",
     "website/design-system/components/ReadingSheet/README.md",
