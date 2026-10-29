@@ -426,3 +426,4 @@ Owner rule, 29 October 2026. It applies to every current and future topic and tr
   - Text follows the design-system figure type scale: card titles 15px, secondary text and arrow labels 13px. Relationship maps beside a step-through display every label at 15px or more.
   - Labels are never clipped; the build rejects clipped or overlapping labels.
   - On narrow screens, use a labelled local scroll rather than shrinking text.
+- **Nothing outside its box.** Owner rule, 29 October 2026. Text, figures, cards, legends and captions stay inside the visible box that contains them: lesson additions, callouts, figure frames, scenes, code cards, Q&A blocks and disclosures. Only content inside a labelled scroll area may extend past its box. Wide visuals carry their own shared frame when they extend beyond the reading column. Fix violations in the shared design system, never per lesson. Before publishing, `website/tools/dev.py frames` checks every page.

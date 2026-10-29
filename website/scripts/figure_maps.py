@@ -13,7 +13,7 @@ import json, math
 WEB = Path(__file__).resolve().parents[1]
 ROLES = {'client': 'Devices and clients', 'runtime': 'Execution', 'storage': 'Stored data',
          'queue': 'Queued work', 'neutral': 'Sources and structure'}
-CARD_W, MARGIN, GRID = 220, 20, (260, 120)
+CARD_W, MARGIN, GRID = 220, 8, (260, 120)  # the shared visual frame supplies the outer padding
 # Conservative glyph widths (px) for the faces bundle.css assigns; used to reject clipped labels.
 GLYPH = {'title': 8.7, 'detail': 7.9, 'label': 7.3, 'note': 7.9}
 LINE = 18
@@ -314,7 +314,7 @@ def auto_layout(row, key):
         # Columns that would make the figure wider than its frame continue on a band below.
         band, xs, x = [0] * len(columns), [0] * len(columns), 0
         for c in range(len(columns)):
-            if c and x + colw[c] > row.get('max_w', 900):
+            if c and x + colw[c] > row.get('max_w', 780):
                 band[c], x = band[c - 1] + 1, 0
             elif c:
                 band[c] = band[c - 1]
@@ -465,7 +465,7 @@ def place_flow(row, nodes, rank):
     """Layered rows for trees and fan-outs, or a wrapped snake for long pipelines."""
     w = max(180, min(330, math.ceil(max([width(t, 'title') + 28 for n in nodes for t in lines(n['title'])] +
                                         [width(d, 'detail') + 28 for n in nodes for d in lines(n.get('detail'))]))))
-    max_w = row.get('max_w', 900)
+    max_w = row.get('max_w', 820)
     if row['layout'] == 'snake':
         gap_x, gap_y = row.get('gap_x', 190), row.get('gap_y', 90)
         per = max(1, int((max_w + gap_x) // (w + gap_x)))
@@ -515,10 +515,34 @@ def group_box(g, nodes, groups):
     return min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes)
 
 
+# Progressively tighter spacing for automatic layouts, until the figure fits the shared frame.
+FIT_STEPS = [{}, {'gap_x': 180}, {'gap_x': 180, 'max_w': 640}, {'gap_x': 140, 'max_w': 560}, {'gap_x': 120, 'max_w': 480}]
+FRAME_W = 880
+
+
 def render_map(row, key):
+    if all('x' in n or 'col' in n for n in row['nodes']):
+        return draw_map(row, key)
+    best, error = None, None
+    for step in FIT_STEPS:
+        try:
+            c = draw_map(auto_layout(dict(row, **{k: v for k, v in step.items() if k not in row}), key), key)
+            c.verify()
+        except ValueError as problem:
+            error = problem
+            continue
+        w = c.box[2] - c.box[0] + 2 * MARGIN
+        if w <= row.get('frame_w', FRAME_W):
+            return c
+        if best is None or w < best[0]:
+            best = (w, c)
+    if best:
+        return best[1]
+    raise error
+
+
+def draw_map(row, key):
     c = Canvas(key)
-    if not all('x' in n or 'col' in n for n in row['nodes']):
-        row = auto_layout(row, key)
     gx, gy = row.get('grid', GRID)
     nodes = {}
     for n in row['nodes']:
@@ -595,48 +619,73 @@ def render_map(row, key):
 
 
 def render_sequence(row, key):
+    """Lanes fit the shared frame: spacing shrinks to max_w and long labels wrap instead of widening it."""
     c = Canvas(key)
-    gap = row.get('lane_gap', 420)
-    lanes = {p['id']: 20 + CARD_W / 2 + i * gap for i, p in enumerate(row['participants'])}
+    n = len(row['participants'])
+    max_w = row.get('max_w', 880)
+    gap = min(row.get('lane_gap', 420), (max_w - CARD_W - 16) / (n - 1)) if n > 1 else 0
+    card_w = min(CARD_W, gap - 16) if n > 1 else CARD_W
+    left = 8 + card_w / 2
+    lanes = {p['id']: left + i * gap for i, p in enumerate(row['participants'])}
+    right_edge = left + (n - 1) * gap + card_w / 2
+    fit = lambda text, room: wrap_label(text, max(10, int((room - 42) / GLYPH['label'])))
     participants = []
     for p in row['participants']:
         p = dict(p)
-        if any(width(t, 'title') + 28 > CARD_W for t in lines(p['title'])):
-            p['title'] = [part for t in lines(p['title']) for part in lines(wrap_label(t, 20))]
+        if any(width(t, 'title') + 28 > card_w for t in lines(p['title'])):
+            p['title'] = [part for t in lines(p['title']) for part in lines(wrap_label(t, max(8, int((card_w - 28) / GLYPH['title']))))]
+        if any(width(d, 'detail') + 28 > card_w for d in lines(p.get('detail'))):
+            p['detail'] = [part for d in lines(p['detail']) for part in lines(wrap_label(d, max(8, int((card_w - 28) / GLYPH['detail']))))]
         participants.append(p)
     row = dict(row, participants=participants)
     for p in participants:
-        card(c, dict(p, x=lanes[p['id']] - CARD_W / 2, y=0, w=CARD_W, h=card_height(p)))
+        card(c, dict(p, x=lanes[p['id']] - card_w / 2, y=0, w=card_w, h=card_height(p)))
     head = max(card_height(p) for p in participants)
     y, number, body = head + 44, 0, []
     for event in row['events']:
         tallest = 0
         for e in event if isinstance(event, list) else [event]:
             if 'over' in e:
-                w = width(e['text'], 'note') + 32
                 over = e['over'] if isinstance(e['over'], list) else [e['over']]
                 centre = sum(lanes[o] for o in over) / len(over)
-                x = centre - w / 2
-                body.append(f'<g class="fm-note actor-{e.get("role", "storage")}"><rect x="{x:.1f}" y="{y-17}" width="{w:.1f}" height="34" rx="9"/>'
-                            f'<text x="{centre}" y="{y}" dominant-baseline="central">{escape(e["text"])}</text></g>')
-                c.grow(x, y - 17, x + w, y + 17)
-                tallest = max(tallest, 34)
+                span = max(lanes[o] for o in over) - min(lanes[o] for o in over)
+                room = min(max(span + card_w, gap * 1.6, 240), max_w - 16)
+                text = lines(wrap_label(e['text'], max(12, int((room - 32) / GLYPH['note']))))
+                w = max(width(t, 'note') for t in text) + 32
+                h = 34 + LINE * (len(text) - 1)
+                x = min(max(centre - w / 2, 0), right_edge - w)
+                rows_ = ''.join(f'<text x="{x + w / 2:.1f}" y="{y - h / 2 + 17 + i * LINE:.1f}" dominant-baseline="central">{escape(t)}</text>'
+                                for i, t in enumerate(text))
+                body.append(f'<g class="fm-note actor-{e.get("role", "storage")}"><rect x="{x:.1f}" y="{y - h / 2:.1f}" width="{w:.1f}" height="{h}" rx="9"/>{rows_}</g>')
+                c.grow(x, y - h / 2, x + w, y + h / 2)
+                tallest = max(tallest, h)
             elif 'at' in e:
                 number += 1
                 lx = lanes[e['at']]
                 body.append(f'<path class="fm-edge" d="M{lx} {y-14} C{lx+70} {y-18} {lx+70} {y+18} {lx+4} {y+16}" marker-end="url(#{key}-head)"/>')
                 c.grow(lx, y - 18, lx + 60, y + 18)
-                pill_x = lx + 74 + (30 + width(e['label'], 'label') + 12) / 2
-                body.append(('pill', pill_x, y, number, e['label']))
-                tallest = max(tallest, 40)
+                room = right_edge - (lx + 74)
+                if room >= 150:
+                    label = fit(e['label'], room)
+                    w, h = pill_size(label)
+                    pill_x = lx + 74 + w / 2
+                else:
+                    # No room on the right of the last lane: put the label on the left of the loop.
+                    label = fit(e['label'], min(gap, lx) - 16)
+                    w, h = pill_size(label)
+                    pill_x = lx - 10 - w / 2
+                body.append(('pill', pill_x, y, number, label))
+                tallest = max(tallest, max(40, h + 10))
             else:
                 number += 1
                 x0, x1 = lanes[e['from']], lanes[e['to']]
                 step = 6 if x1 > x0 else -6
                 dashed = ' is-dashed' if e.get('style') == 'dashed' else ''
+                label = fit(e['label'], max(abs(x1 - x0) - 16, 170))
+                w, h = pill_size(label)
                 body.append(f'<path class="fm-edge{dashed}" d="M{x0+step} {y+8} L{x1-step} {y+8}" marker-end="url(#{key}-head)"/>')
-                body.append(('pill', (x0 + x1) / 2, y - 12, number, e['label']))
-                tallest = max(tallest, 48)
+                body.append(('pill', (x0 + x1) / 2, y + 8 - h / 2 - 6, number, label))
+                tallest = max(tallest, h + 22)
         y += tallest + 26
     end = y - 10
     lifelines = [f'<line class="fm-lifeline" x1="{lanes[p["id"]]}" y1="{card_height(p)+2}" x2="{lanes[p["id"]]}" y2="{end}"/>'

@@ -85,7 +85,9 @@ def enhance(article,path,out,base,authored):
         figure={'path':row['path'],'diagram':digest,'kind':'map','number':1,'title':row['problem'],'caption':row['reading'],
                 'nodes':[{'id':n['id'],'title':f"{i} · "+(row.get('labels',{}).get(n['id']) or n['label'] or n['id']).strip(),
                           'role':n['role'] if n['role'] in figure_maps.ROLES else 'neutral'} for i,n in enumerate(nodes,1)],
-                'groups':row.get('groups',[]),'edges':[dict(e) for e in row.get('edges',[])],'sources':row['sources']}
+                'groups':row.get('groups',[]),'edges':[dict(e) for e in row.get('edges',[])],'sources':row['sources'],
+                # Drawn at 1.25x below, so lay out for the frame width divided by that scale.
+                'frame_w':700}
         figure_maps.check(figure)
         svg=figure_maps.render_map(figure,digest).svg('fm-'+digest,row['problem'],row['reading'])
         # Maps beside a step-through keep every label at 15px or more on screen: draw them at 1.25x.

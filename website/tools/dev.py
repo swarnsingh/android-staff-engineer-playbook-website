@@ -3,6 +3,7 @@
 
     python3 website/tools/dev.py build              # local build; skips only the publication gate
     python3 website/tools/dev.py figures            # check every FigureMap model; list all problems
+    python3 website/tools/dev.py frames             # in Chrome: figures framed, nothing scrolls, labels fit (after build)
     python3 website/tools/dev.py audit NAME         # run the six browser audits into website/reviews/NAME/
     python3 website/tools/dev.py gate NAME          # point the gate at reviews/NAME, refresh fingerprints, real build
     python3 website/tools/dev.py ci                 # unit tests, docs check and browser-script syntax, as CI runs them
@@ -145,6 +146,26 @@ def gate(name):
     return report('real build with publication gate', *run('gate-build', [PY, 'website/scripts/build.py'], {'SITE_BASE': PROJECT_BASE}))
 
 
+def frames():
+    """Real-browser layout check of every built chapter page at desktop width."""
+    with socket.socket() as s:
+        s.bind(('127.0.0.1', 0))
+        port = s.getsockname()[1]
+    server = subprocess.Popen([PY, '-m', 'http.server', str(port), '--bind', '127.0.0.1', '--directory', str(WEB / 'dist')],
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        time.sleep(1)
+        ok, lines, log = run('frames', ['node', str(WEB / 'tools/frame_check.mjs'), puppeteer_dir(), f'http://127.0.0.1:{port}/', str(WEB / 'dist/nav-data.js')])
+    finally:
+        server.terminate()
+    result = json.loads(lines[-1]) if ok and lines else None
+    clean = bool(result) and not result['kinds']
+    print(f'{"PASS" if clean else "FAIL"}  frames: ' + (f'{result["pages"]} pages, {result["figs"]} figures, {result["maps"]} maps, {result["labels"]} labels; problems {result["kinds"] or "none"}' if result else f'see {log.relative_to(ROOT)}'))
+    for line in (result or {}).get('sample', []):
+        print('      ' + line)
+    return clean
+
+
 def ci():
     ok = report('website unit tests', *run('tests-website', [PY, '-m', 'unittest', 'discover', '-s', 'website/scripts', '-p', 'test_*.py']))
     ok &= report('docs unit tests', *run('tests-docs', [PY, '-m', 'unittest', 'discover', '--start-directory', 'scripts', '--pattern', 'test_*.py']))
@@ -158,7 +179,7 @@ def ci():
 
 if __name__ == '__main__':
     command, args = (sys.argv[1] if len(sys.argv) > 1 else ''), sys.argv[2:]
-    actions = {'build': lambda: build(), 'figures': figures, 'ci': ci,
+    actions = {'build': lambda: build(), 'figures': figures, 'frames': frames, 'ci': ci,
                'audit': lambda: audit(args[0]) if args else sys.exit('usage: dev.py audit REVIEW-FOLDER-NAME'),
                'gate': lambda: gate(args[0]) if args else sys.exit('usage: dev.py gate REVIEW-FOLDER-NAME')}
     if command not in actions:

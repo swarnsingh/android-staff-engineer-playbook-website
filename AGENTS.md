@@ -18,6 +18,7 @@ Use a Python with `website/requirements.txt` installed (the owner's venv: `../an
 |---|---|
 | Local build (all checks except the publication gate) | `python3 website/tools/dev.py build` |
 | Check every FigureMap diagram model | `python3 website/tools/dev.py figures` |
+| In Chrome: nothing outside its box, no sideways scroll, labels fit (after `build`) | `python3 website/tools/dev.py frames` |
 | Everything CI runs (tests, docs check, script syntax) | `python3 website/tools/dev.py ci` |
 | Fresh browser evidence (six audits) | `python3 website/tools/dev.py audit <review-folder>` |
 | Refresh the gate and run the real build | `python3 website/tools/dev.py gate <review-folder>` |
@@ -27,7 +28,7 @@ Use a Python with `website/requirements.txt` installed (the owner's venv: `../an
 
 Shared reader files are CSS, JS, templates, design tokens, `build.py` and diagram models. After changing any of them, the publication gate fails until fresh evidence exists:
 
-1. Run `dev.py build`, `dev.py figures` and `dev.py ci`.
+1. Run `dev.py build`, `dev.py figures`, `dev.py frames` and `dev.py ci`.
 2. Run `dev.py audit <topic>-<date>`. Fix anything that fails.
 3. Write `website/reviews/<topic>-<date>/REPORT.md`, a short summary of the scope, results and limits.
 4. Run `dev.py gate <topic>-<date>`.
