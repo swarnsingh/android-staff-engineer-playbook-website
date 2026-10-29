@@ -66,7 +66,7 @@ def check(source_root=None):
  code_checks=[c for p in browser['pages'] for c in p.get('codeChecks',[])]
  assert code_checks and all(c['ok'] for c in code_checks),'Code readability or contrast regression'
  pairs=[c for p in browser['pages'] for v in p['preservation']['views'] for c in v.get('pairChecks',[])]
- core_pairs=[c for p in browser['pages'] if '/engineering-fundamentals/' not in p['href'] and '/computer-science/' not in p['href'] for v in p['preservation']['views'] for c in v.get('pairChecks',[])]
+ core_pairs=[c for p in browser['pages'] if all('/'+tree+'/' not in p['href'] for tree in ('engineering-fundamentals','computer-science','platform-engineering')) for v in p['preservation']['views'] for c in v.get('pairChecks',[])]
  fundamentals_pairs=[c for p in browser['pages'] if '/engineering-fundamentals/' in p['href'] for v in p['preservation']['views'] for c in v.get('pairChecks',[])]
  # Kotlin/Android and Fundamentals counts are fixed; newer trees add pairs that must all pass.
  assert len(core_pairs)==928 and len(fundamentals_pairs)==130 and all(c['ok'] for c in pairs),'Question/answer pairing failed'

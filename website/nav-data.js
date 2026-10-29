@@ -1126,20 +1126,12 @@ window.PLAYBOOK_CATALOG = [
     "icon": "▧",
     "chapters": [
       {
-        "title": "Platform Engineering: Build Graph Scaling & Profiling",
-        "path": "platform-engineering/build-graph-scaling.md"
-      },
-      {
-        "title": "Custom Lint Rules & Static Analysis as Platform Leverage",
-        "path": "platform-engineering/custom-lint-and-static-analysis.md"
+        "title": "Platform Engineering: Internal Developer Platforms (IDP)",
+        "path": "platform-engineering/internal-developer-platforms.md"
       },
       {
         "title": "Platform Engineering: Design Systems Architecture",
         "path": "platform-engineering/design-systems-architecture.md"
-      },
-      {
-        "title": "Platform Engineering: Internal Developer Platforms (IDP)",
-        "path": "platform-engineering/internal-developer-platforms.md"
       },
       {
         "title": "Platform Engineering: Library Versioning & Dependency Management",
@@ -1148,6 +1140,14 @@ window.PLAYBOOK_CATALOG = [
       {
         "title": "Platform Engineering: SDK Distribution & Publishing",
         "path": "platform-engineering/sdk-distribution.md"
+      },
+      {
+        "title": "Custom Lint Rules & Static Analysis as Platform Leverage",
+        "path": "platform-engineering/custom-lint-and-static-analysis.md"
+      },
+      {
+        "title": "Platform Engineering: Build Graph Scaling & Profiling",
+        "path": "platform-engineering/build-graph-scaling.md"
       }
     ]
   },

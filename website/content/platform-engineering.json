@@ -1,0 +1,9 @@
+{
+  "platform-engineering/internal-developer-platforms.md": "A platform succeeds when product teams choose its paved road. Learn how to design services, ownership and feedback loops that make that choice worthwhile.",
+  "platform-engineering/design-systems-architecture.md": "One shared design vocabulary can replace hundreds of local UI decisions. Learn how primitive, semantic and component tokens support consistent Android experiences.",
+  "platform-engineering/library-versioning.md": "A library version is a promise to every consumer. Learn dependency governance, compatibility checks and migration plans that keep upgrades safe.",
+  "platform-engineering/sdk-distribution.md": "Publishing an Android SDK creates a contract beyond its source code. Learn what an AAR carries and how to package, publish and support it.",
+  "platform-engineering/custom-lint-and-static-analysis.md": "Repeated review feedback belongs in a repeatable check. Learn when to write custom lint rules, how to distribute them and how to roll them out.",
+  "platform-engineering/build-graph-scaling.md": "A deep dependency chain leaves build workers idle. Learn to profile the critical path, widen the graph and improve build feedback.",
+  "platform-engineering.md": "Build internal platforms that teams willingly use: start with paved roads and shared interfaces, then govern distribution, automate checks and shorten build feedback."
+}

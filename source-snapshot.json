@@ -166,5 +166,14 @@
     "computer-science/sorting-and-searching.md": "fd0b724867a2f1c0ca1df905712e558422188f2fb54184291883dd0d58eeba13",
     "computer-science/system-complexity.md": "4bd2a461a3ecee58d36d5781f9ee7c3684e526c40935ea74f810601a96704771",
     "computer-science/trees.md": "441617a4e8a4e03d45c50072bdeea6f6dff41f4436e58ec89aa5d8570650485c"
+  },
+  "platform-engineering_sha256": {
+    "platform-engineering.md": "5b9fa4a130b4577c497f8dcc7d9efc759d2ae9f678be1b4431b051db175284a2",
+    "platform-engineering/build-graph-scaling.md": "13ec1acdf8c3019b1f0c2f25459cf34a9d249343cb4cdb6929f68c96e4abcb27",
+    "platform-engineering/custom-lint-and-static-analysis.md": "ae6a33932a23ddb64afe45673fcb69e2d779d3d712b8f0cbdc6f2ab4a2d3d154",
+    "platform-engineering/design-systems-architecture.md": "4972c8041547ad23cde3ebe87723d38b5ef1f7836b4fdc9fb3e37525a339852d",
+    "platform-engineering/internal-developer-platforms.md": "d38c114e1a8b0ac8f4023e18e506816ab2c711151547149a0b4222eccc09e1d8",
+    "platform-engineering/library-versioning.md": "ff3793830ba47f8c311b18732fe97a295875c99620e25dbe94086847cef9784f",
+    "platform-engineering/sdk-distribution.md": "3fc689ea225b3d2755e0f42a152a649bbe97fd53a515a0ce2725bc3a4e8b02ef"
   }
 }
