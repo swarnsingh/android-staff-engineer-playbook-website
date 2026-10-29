@@ -371,6 +371,11 @@ blockquote.pushback>p>strong:first-child{display:block;margin-bottom:var(--space
 /* Recap: added by this site, the few lines to say before the interview ends. */
 .blend[data-kind=recap]{border-left-width:4px;background:var(--accent-soft)}
 .blend[data-kind=recap] li+li{margin-top:var(--space-1)}
+/* Compact current-step chip in the sticky "On this page" summary (below 1181px, where that summary shows). */
+.mobile-outline summary>.wt-chip{flex:none;max-width:none;padding:2px var(--space-2);border:1px solid var(--accent);border-radius:var(--radius-pill);background:var(--accent-soft);color:var(--ink);font:700 var(--ui-2xs)/1.4 var(--font-sans);white-space:nowrap}
+.mobile-outline summary>.wt-chip[hidden]{display:none}
+.mobile-outline summary:has(>.wt-chip:not([hidden])){white-space:nowrap}
+.mobile-outline summary:has(>.wt-chip:not([hidden]))>#mobile-current{flex:1 1 auto;min-width:0;max-width:none}
 @media(max-width:640px){
  .wt-timeline{padding:var(--space-3) var(--space-4)}
  .wt-progress{display:none}

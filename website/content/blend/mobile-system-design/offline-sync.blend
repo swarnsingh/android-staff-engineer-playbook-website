@@ -5,8 +5,9 @@
      Verified 2026-10-29 against offline-sync.md (§4 Idempotency, §6, §7 write/push paths, sync triggers, failure modes,
      tombstones, protocol evolution) and the official WorkManager guide ("tasks persist across app restarts and device
      reboots") and offline-first guide (local data source is the source of truth; queued writes drained by WorkManager).
-     Findings OS1 (REPLACE vs "coalesce") and OS2 (delete op without clientId) are open in
-     website/reviews/mobile-system-design-offline-sync-findings.md: this layer restates neither claim, so both queued ops are upserts. -->
+     Source PR #61 (merged as fe82316) resolved findings OS1 and OS2: unique push work uses KEEP, every op including delete
+     carries a clientId, and a foreground check plus a periodic outbox sweep reschedule pushes the enqueue missed.
+     The two queued ops stay illustrative upserts. -->
 
 <!-- @after 7. Deep Dive: Outbox + Conflict Resolution (15 min) :: animation -->
 ### Replay the outbox after the network returns
@@ -35,9 +36,9 @@
   },
   {
     "label": "Killed mid-push",
-    "caption": "The server applies n_42 as version 8, but the app is killed before it deletes any outbox row. Both rows are still in Room, and WorkManager keeps the work scheduled.",
+    "caption": "The server applies n_42 as version 8, but the app is killed before it deletes any outbox row. Both rows are still in Room. In this scenario the push was already running as persisted WorkManager work, so WorkManager still holds the request. Had the app died before the enqueue was persisted, the foreground check or periodic outbox sweep would schedule the push instead.",
     "state": {"worker": "warn", "ui": "ghost", "server": "done"},
-    "text": {"workerV": "killed · work still scheduled", "uiV": "(app not running)", "serverV": "n_42 v8 · n_51 v5", "eventV": "no outbox row lost"},
+    "text": {"workerV": "killed · request still persisted", "uiV": "(app not running)", "serverV": "n_42 v8 · n_51 v5", "eventV": "no outbox row lost"},
     "visuals": {"ui": {"visible": false}}
   },
   {
@@ -64,7 +65,7 @@
   },
   {
     "label": "Keep both copies",
-    "caption": "In the same transaction, the conflicted outbox row is deleted. The resolver saves the local copy as a conflict copy, accepts the server state and adds an entry to the Conflicts inbox.",
+    "caption": "In the same transaction, the outbox row named by the clientId the server echoes is deleted. The resolver saves the local copy as a conflict copy, accepts the server state and adds an entry to the Conflicts inbox.",
     "state": {"notes": "warn", "outbox": "done"},
     "text": {"notesV": "n_51 = server v5 · local kept as conflict copy", "outboxV": "empty", "uiV": "Conflicts inbox: 1", "eventV": "nothing silently destroyed"},
     "visuals": {"outbox": {"count": 0}}
@@ -81,8 +82,8 @@
 ### Say these in the interview
 
 - **Room is the only thing the UI reads.** Each edit writes the note and its outbox op in one transaction.
-- **WorkManager drains the outbox.** Its work persists across app restarts and device reboots, so a killed push is retried.
-- **Each upsert carries a `clientId`.** The server dedupes on it, so a replayed upsert never applies twice.
+- **WorkManager drains the outbox; sweeps back it up.** Persisted work survives app restarts and reboots. The enqueue is outside the Room transaction, so a foreground check and a periodic sweep reschedule the push for rows left behind.
+- **Every op, deletes included, carries a stable `clientId`.** The server dedupes on it, so a replay never applies twice.
 - **`baseVersion` exposes conflicts.** The losing copy is kept and surfaced, never silently dropped.
 - **Pull only deltas, over an opaque `nextToken`.** On `TOKEN_EXPIRED`, wipe the token, not the database, then run a paginated full pull.
 - **Deletes are tombstones.** They stay about 30 days, so other devices can pull them.

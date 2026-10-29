@@ -1,6 +1,8 @@
 # Mobile System Design, Offline Sync: possible errors in the original chapter
 
-These are findings for the owner's review, not approved corrections. The original Markdown is unchanged, and nothing has been added to `content/corrections-*.json`. Under the owner decision of 28 October 2026, published pages carry no review notices, so findings are tracked only here. The teaching layer does not restate either claim.
+**Status, 29 October 2026: both findings are resolved at source** by playbook PR #61 (merged as `fe82316`). The website copy of `offline-sync.md` and its `source-snapshot.json` hash were refreshed from that commit; the teaching layer now follows the corrected chapter. The original text below is kept as the record.
+
+These were findings for the owner's review, not approved corrections. Website work never edited the original Markdown, and nothing was added to `content/corrections-*.json`. Under the owner decision of 28 October 2026, published pages carry no review notices, so findings are tracked only here. The teaching layer does not restate either claim.
 
 | ID | Section | Original says | Problem | Evidence |
 |---|---|---|---|---|
@@ -12,10 +14,10 @@ These are findings for the owner's review, not approved corrections. The origina
 - **OS1.** Either change the example to `ExistingWorkPolicy.KEEP` and keep "concurrent edits coalesce", or keep `REPLACE` and write: "`PushWorker` is unique-named with `REPLACE`, so a new edit cancels an in-flight push and the replacement run retries the outbox."
 - **OS2.** Add `"clientId"` to the delete op in the push example, and change "Every `upsert` carries `clientId`" to "Every op carries `clientId`". Alternatively, state that deletes are idempotent by tombstone and need no key.
 
-## What the teaching layer says until these are resolved
+## What the teaching layer says now
 
-- **Step-through.** It no longer claims that triggers coalesce. Both queued ops are upserts, so the replay story relies only on the upsert `clientId` contract that the chapter states consistently.
-- **Recap.** It says each upsert carries a `clientId`, not every op.
+- **Step-through.** It does not claim that triggers coalesce. Its two queued ops are illustrative upserts. The kill-mid-push step states its scenario: the push was already persisted WorkManager work. It also names the foreground check and periodic sweep for the case where the enqueue was never persisted.
+- **Recap.** It says every op, deletes included, carries a stable `clientId`, and that a foreground check and periodic sweep back up WorkManager. Both follow the corrected chapter.
 
 ## Claims the teaching layer makes, and what they were checked against
 

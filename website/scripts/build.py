@@ -402,7 +402,9 @@ def render_chapter(path, raw, is_course=False):
         body=first_band+f'<section class="lesson-section lesson-start" id="problem"><h2>Start here</h2>{wrap("story", blend[("opening","")], env)}<div class="original-opening">{opening}</div></section>'
     else:
         desc=intro(path)
-        body=first_band+f'<section class="lesson-section lesson-start" id="problem"><span class="eyebrow">START WITH THE NEED</span><h2>Why this topic matters</h2><p>{escape(desc)}</p><div class="original-opening">{opening}</div></section>'
+        # A walkthrough's hero already carries this description; do not repeat it above the chapter's opening.
+        lead='' if steps else f'<p>{escape(desc)}</p>'
+        body=first_band+f'<section class="lesson-section lesson-start" id="problem"><span class="eyebrow">START WITH THE NEED</span><h2>Why this topic matters</h2>{lead}<div class="original-opening">{opening}</div></section>'
     if path.endswith('/coroutines.md'):
         body += '<section class="lesson-section" id="experiment">' + added('try', '<h2>Watch independent waits overlap</h2><p>A profile needs a name and an avatar. Waiting for one request before starting the other adds avoidable waiting. Run the example, switch <code>concurrent</code> from <code>true</code> to <code>false</code>, and compare the start messages.</p>' + (WEB/'content/coroutine-experiment.html').read_text() + '<p>In Playground output, <code>main @coroutine#2</code> means thread <code>main</code>, coroutine #2. Different coroutine numbers can share the same thread.</p>') + '</section>'
     part_index = 0

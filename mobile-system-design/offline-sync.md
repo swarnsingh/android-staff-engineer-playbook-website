@@ -80,7 +80,7 @@ POST /v1/sync/push
   "ops": [
     { "op": "upsert", "clientId": "8f7…uuid", "id": "n_42",
       "title": "Groceries", "body": "milk\neggs", "baseVersion": 7, "updatedAt": 1750000000 },
-    { "op": "delete", "id": "n_99", "baseVersion": 3 }
+    { "op": "delete", "clientId": "c92…uuid", "id": "n_99", "baseVersion": 3 }
   ]
 }
 
@@ -90,7 +90,7 @@ POST /v1/sync/push
     { "clientId": "8f7…", "id": "n_42", "newVersion": 8 }
   ],
   "conflicts": [
-    { "id": "n_99", "reason": "VERSION_MISMATCH", "serverVersion": 5,
+    { "clientId": "c92…uuid", "id": "n_99", "reason": "VERSION_MISMATCH", "serverVersion": 5,
       "serverState": { "title": "...", "body": "...", "updatedAt": ... } }
   ]
 }
@@ -113,7 +113,7 @@ GET /v1/sync/pull?since=ct_8f3a&limit=100
 ```
 
 ### Idempotency
-- Every `upsert` carries `clientId` (UUID). Server dedupes on retry.
+- Every operation, including `delete`, carries a stable `clientId` (UUID). The server dedupes retries by that ID and echoes it in the result so the client can resolve the exact outbox row.
 - Every record has a monotonic `version`. Client sends `baseVersion`; server rejects with `VERSION_MISMATCH` if it advanced.
 - Server returns a `nextToken` (opaque change cursor) for the next pull.
 
@@ -249,23 +249,28 @@ data class SyncStateEntity(
 ### Write path (online or offline, same code)
 
 ```kotlin
-suspend fun update(id: String, title: String, body: String) = db.withTransaction {
-    val current = noteDao.get(id)
-    val updated = current.copy(title = title, body = body,
-                               updatedAt = clock.now(), dirty = true)
-    noteDao.upsert(updated)                       // UI sees it immediately
-    outboxDao.insert(OutboxEntry(
-        clientId = UUID.randomUUID().toString(),
-        noteId = id, opType = OpType.UPSERT,
-        baseVersion = current.version,             // server-known version at enqueue
-        payloadJson = json.encodeToString(updated),
-        attempts = 0, firstAttemptedAt = null,
-    ))
-    workManager.enqueueUniqueWork("push", REPLACE, pushWorkRequest())
+suspend fun update(id: String, title: String, body: String) {
+    db.withTransaction {
+        val current = noteDao.get(id)
+        val updated = current.copy(title = title, body = body,
+                                   updatedAt = clock.now(), dirty = true)
+        noteDao.upsert(updated)                   // UI sees it immediately
+        outboxDao.insert(OutboxEntry(
+            clientId = UUID.randomUUID().toString(),
+            noteId = id, opType = OpType.UPSERT,
+            baseVersion = current.version,         // server-known version at enqueue
+            payloadJson = json.encodeToString(updated),
+            attempts = 0, firstAttemptedAt = null,
+        ))
+    }
+    workManager.enqueueUniqueWork("push", ExistingWorkPolicy.KEEP, pushWorkRequest())
 }
 ```
+
+The Room transaction commits the note and outbox row together. WorkManager's enqueue is a separate asynchronous operation, so it cannot be part of that transaction. On app foreground, check for pending outbox rows and schedule the push again. A periodic outbox sweep provides recovery if the process dies after the Room commit but before WorkManager persists the request, or if `KEEP` ignores a trigger while a worker finishes. A sweep schedules work only when rows remain; it does not create duplicate operations.
+
 > [!WARNING]
-> **The Outbox Flaw:** It is extremely tempting to replace `workManager.enqueue...` with a simple `CoroutineScope.launch { upload() }` for lower latency. Do not do this. If the network call succeeds but the OS kills your app *before* you can delete the Outbox row, the record remains in the database. Without WorkManager, that row is permanently stuck. With WorkManager, it will be retried on the next launch. Furthermore, because it will be retried, the `clientId` acts as an **idempotency key** so the server safely drops the duplicate upload.
+> **The Outbox Flaw:** A `CoroutineScope.launch { upload() }` alone loses its work when the process dies. If the server applies an operation but the app dies before deleting its outbox row, the next push must replay that same row. A persisted WorkManager request can run later under its constraints; the foreground check and periodic sweep also recover rows whose push was never scheduled. The stable `clientId` lets the server return the previous result instead of applying a replay twice.
 
 ### Push path (`PushWorker`, `@HiltWorker`)
 
@@ -280,7 +285,7 @@ override suspend fun doWork(): Result {
             noteDao.updateVersion(applied.id, applied.newVersion, dirty = false)
         }
         resp.conflicts.forEach { conflict ->
-            outboxDao.delete(conflictedClientIdsFor(conflict.id))
+            outboxDao.delete(conflict.clientId)
             resolver.handle(conflict)            // see below
         }
     }
@@ -288,7 +293,7 @@ override suspend fun doWork(): Result {
 }
 ```
 
-`PushWorker` is unique-named so concurrent edits coalesce. Backoff is exponential with jitter; max 5 attempts per row before flipping to a `FAILED_PERMANENT` state.
+`PushWorker` is unique-named with `KEEP`, so a new trigger does not cancel an active push. The worker checks for remaining rows, while foreground and periodic recovery cover a missed trigger. Backoff is exponential with jitter; max 5 attempts per row before flipping to a `FAILED_PERMANENT` state.
 
 ### Pull path (`PullWorker`, periodic + on FCM hint)
 
@@ -368,16 +373,17 @@ Offline sync has three version boundaries: the app binary, the local database sc
 | Trigger | Worker |
 |---|---|
 | User edit | `PushWorker` (debounced 2s) |
-| App foreground | `PullWorker` (one-shot) |
+| App foreground | `PullWorker` (one-shot); check pending outbox rows and schedule `PushWorker` |
 | FCM "sync hint" data message | `PullWorker` (one-shot, expedited) |
 | Periodic | `PullWorker` every 30 min (`PeriodicWorkRequest`) |
+| Periodic outbox sweep | Check pending rows and schedule `PushWorker` if needed |
 | Reconnect | `PushWorker` + `PullWorker` (chain) |
 
 ### Failure modes
 
 | What breaks | Behavior |
 |---|---|
-| App killed mid-push | Outbox rows persist; next launch retries |
+| App killed mid-push | Outbox rows persist; pending work or a foreground/periodic sweep schedules a retry |
 | Server returns 409 conflict | Resolver writes conflict copy + surfaces in inbox |
 | Token store wiped | Pull falls back to full sync (paginated) |
 | Clock skew (laptop in past) | HLC or server-side timestamp wins |
@@ -474,6 +480,8 @@ Offline sync has three version boundaries: the app binary, the local database sc
 
 - [weeeBox/mobile-system-design](https://github.com/weeeBox/mobile-system-design) — reference format.
 - [Android Developers — WorkManager guide](https://developer.android.com/topic/libraries/architecture/workmanager) — official guide; expedited + constraints.
+- [Android Developers — ExistingWorkPolicy](https://developer.android.com/reference/androidx/work/ExistingWorkPolicy) — `KEEP` leaves existing pending work in place; `REPLACE` cancels it.
+- [Android Developers — WorkManager Operation](https://developer.android.com/reference/androidx/work/Operation) — enqueue is asynchronous and returns an operation that reports completion.
 - [Local-first software (Ink & Switch)](https://www.inkandswitch.com/local-first/) — manifesto behind offline-first design.
 - [Hybrid Logical Clocks paper](https://cse.buffalo.edu/tech-reports/2014-04.pdf) — the HLC algorithm.
 - [Yjs CRDT docs](https://docs.yjs.dev/) — when you need real concurrent merge.
