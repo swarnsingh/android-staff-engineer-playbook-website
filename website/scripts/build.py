@@ -23,6 +23,7 @@ FIGURES_USED = set()
 TREES = {
     'engineering-fundamentals': {'title': 'Engineering Fundamentals', 'phases': None},
     'computer-science': {'title': 'Computer Science', 'phases': None},
+    'platform-engineering': {'title': 'Platform Engineering', 'phases': None},
     'kotlin': {'title': 'Kotlin', 'phases': None},
     'android': {'title': 'Android', 'phases': [1, 2, 3, 4, 5, 6, 7, 8, 9]},
 }
@@ -38,6 +39,10 @@ def phases(slug):
         sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
         paths=re.findall(r'\]\((computer-science/[^)#]+\.md)\)',sequence)
         return [('Phase 1 — Data structures',paths[:7]),('Phase 2 — Algorithms',paths[7:11]),('Phase 3 — Systems',paths[11:])]
+    if slug == 'platform-engineering':
+        sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
+        paths=re.findall(r'\]\((platform-engineering/[^)#]+\.md)\)',sequence)
+        return [('Phase 1 — Paved roads and shared UI',paths[:2]),('Phase 2 — Distribution and guardrails',paths[2:5]),('Phase 3 — Build feedback',paths[5:])]
     result = []
     for block in re.split(r'^### ', (ROOT/f'{slug}.md').read_text(), flags=re.M)[1:]:
         heading, _, body = block.partition('\n')
@@ -583,7 +588,7 @@ INTRO = {
 
 def intro(path):
     extras={}
-    for name in ('engineering-fundamentals','computer-science'):
+    for name in ('engineering-fundamentals','computer-science','platform-engineering'):
         extras.update(json.loads((WEB/f'content/{name}.json').read_text()))
     return extras.get(path) or INTRO.get(path) or INTRO[Path(path).stem]
 

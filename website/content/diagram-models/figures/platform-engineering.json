@@ -1,0 +1,403 @@
+[
+  {
+    "path": "platform-engineering/internal-developer-platforms",
+    "diagram": "bb8df3e104dc905c",
+    "number": 1,
+    "title": "Two routes, two owners",
+    "caption": "The feature team can take the platform-maintained default or justify a team-maintained alternative. Each boundary shows who owns upgrades and support; the arrows show choices, not containment.",
+    "sources": [
+      "https://developer.android.com/topic/modularization",
+      "https://developer.android.com/build/build-logic"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "team",
+        "title": "Feature team",
+        "role": "client",
+        "key": true
+      },
+      {
+        "id": "coroutines",
+        "title": "Coroutines",
+        "role": "runtime"
+      },
+      {
+        "id": "hilt",
+        "title": "Hilt",
+        "role": "runtime"
+      },
+      {
+        "id": "compose",
+        "title": "Compose",
+        "role": "runtime"
+      },
+      {
+        "id": "room",
+        "title": "Room",
+        "role": "runtime"
+      },
+      {
+        "id": "work",
+        "title": "WorkManager",
+        "role": "runtime"
+      },
+      {
+        "id": "rx",
+        "title": "RxJava",
+        "role": "runtime"
+      },
+      {
+        "id": "koin",
+        "title": "Koin",
+        "role": "runtime"
+      },
+      {
+        "id": "views",
+        "title": "Views",
+        "role": "runtime"
+      },
+      {
+        "id": "sql",
+        "title": "SQLDelight",
+        "role": "runtime"
+      }
+    ],
+    "groups": [
+      {
+        "id": "platform",
+        "label": "Paved road · platform owned",
+        "nodes": [
+          "coroutines",
+          "hilt",
+          "compose",
+          "room",
+          "work"
+        ]
+      },
+      {
+        "id": "feature",
+        "label": "Dirt road · feature team owned",
+        "nodes": [
+          "rx",
+          "koin",
+          "views",
+          "sql"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "team",
+        "to": "coroutines",
+        "label": "default route"
+      },
+      {
+        "from": "team",
+        "to": "rx",
+        "label": "RFC exception"
+      },
+      {
+        "from": "coroutines",
+        "to": "hilt",
+        "label": "paired with DI"
+      },
+      {
+        "from": "hilt",
+        "to": "compose",
+        "label": "supports UI"
+      },
+      {
+        "from": "compose",
+        "to": "room",
+        "label": "pairs with storage"
+      },
+      {
+        "from": "room",
+        "to": "work",
+        "label": "pairs with background work"
+      },
+      {
+        "from": "rx",
+        "to": "koin",
+        "label": "alternative DI"
+      },
+      {
+        "from": "koin",
+        "to": "views",
+        "label": "alternative UI"
+      },
+      {
+        "from": "views",
+        "to": "sql",
+        "label": "alternative storage"
+      }
+    ],
+    "layout": "columns"
+  },
+  {
+    "path": "platform-engineering/design-systems-architecture",
+    "diagram": "c527e69216f16332",
+    "number": 1,
+    "title": "Three tiers of design tokens",
+    "caption": "Primitive values feed semantic intent, which feeds a component-specific decision. A brand or theme change can therefore update the shared alias without rewriting every button.",
+    "sources": [
+      "https://m3.material.io/foundations/design-tokens/overview",
+      "https://developer.android.com/develop/ui/compose/designsystems/material3"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "primitive",
+        "title": "Primitive token",
+        "role": "storage",
+        "detail": "raw color value"
+      },
+      {
+        "id": "semantic",
+        "title": "Semantic alias",
+        "role": "runtime",
+        "detail": "colorPrimary",
+        "key": true
+      },
+      {
+        "id": "component",
+        "title": "Component token",
+        "role": "client",
+        "detail": "buttonPrimaryBg"
+      }
+    ],
+    "groups": [],
+    "edges": [
+      {
+        "from": "primitive",
+        "to": "semantic",
+        "label": "aliases a value"
+      },
+      {
+        "from": "semantic",
+        "to": "component",
+        "label": "supplies component intent"
+      }
+    ],
+    "layout": "layers"
+  },
+  {
+    "path": "platform-engineering/sdk-distribution",
+    "diagram": "9724565d53eb4479",
+    "number": 1,
+    "title": "What an Android archive carries",
+    "caption": "An AAR is a package boundary around bytecode, Android resources, metadata and optional native code. Its published dependency information is supplied separately as Maven metadata.",
+    "sources": [
+      "https://developer.android.com/studio/projects/android-library",
+      "https://developer.android.com/build/publish-library"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "manifest",
+        "title": "AndroidManifest.xml",
+        "role": "storage",
+        "detail": "merged by consumer"
+      },
+      {
+        "id": "classes",
+        "title": "classes.jar",
+        "role": "storage",
+        "detail": "compiled bytecode"
+      },
+      {
+        "id": "resources",
+        "title": "res/",
+        "role": "storage",
+        "detail": "Android resources"
+      },
+      {
+        "id": "assets",
+        "title": "assets/",
+        "role": "storage",
+        "detail": "raw assets"
+      },
+      {
+        "id": "libs",
+        "title": "libs/",
+        "role": "storage",
+        "detail": "bundled JARs"
+      },
+      {
+        "id": "native",
+        "title": "jni/",
+        "role": "storage",
+        "detail": "native code by ABI"
+      },
+      {
+        "id": "proguard",
+        "title": "proguard.txt",
+        "role": "storage",
+        "detail": "consumer R8 rules"
+      },
+      {
+        "id": "symbols",
+        "title": "R.txt",
+        "role": "storage",
+        "detail": "resource symbols"
+      }
+    ],
+    "groups": [
+      {
+        "id": "aar",
+        "label": "auth-sdk-1.4.0.aar",
+        "nodes": [
+          "manifest",
+          "classes",
+          "resources",
+          "assets",
+          "libs",
+          "native",
+          "proguard",
+          "symbols"
+        ]
+      }
+    ],
+    "edges": [],
+    "layout": "columns"
+  },
+  {
+    "path": "platform-engineering/build-graph-scaling",
+    "diagram": "2bc3797b636ffc51",
+    "number": 1,
+    "title": "A deep chain makes each module wait",
+    "caption": "The five-module dependency chain gives compilation a five-stage critical path; downstream modules cannot compile before upstream modules are ready.",
+    "sources": [
+      "https://docs.gradle.org/current/userguide/multi_project_builds.html",
+      "https://docs.gradle.org/current/userguide/performance.html"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "core",
+        "title": ":core",
+        "role": "storage"
+      },
+      {
+        "id": "network",
+        "title": ":network",
+        "role": "runtime"
+      },
+      {
+        "id": "data",
+        "title": ":data",
+        "role": "runtime"
+      },
+      {
+        "id": "cart",
+        "title": ":feature:cart",
+        "role": "runtime"
+      },
+      {
+        "id": "app",
+        "title": ":app",
+        "role": "client",
+        "key": true
+      }
+    ],
+    "groups": [],
+    "edges": [
+      {
+        "from": "core",
+        "to": "network",
+        "label": "used by"
+      },
+      {
+        "from": "network",
+        "to": "data",
+        "label": "used by"
+      },
+      {
+        "from": "data",
+        "to": "cart",
+        "label": "used by"
+      },
+      {
+        "from": "cart",
+        "to": "app",
+        "label": "used by"
+      }
+    ],
+    "layout": "layers"
+  },
+  {
+    "path": "platform-engineering/build-graph-scaling",
+    "diagram": "bbc40b76f58cdbeb",
+    "number": 2,
+    "title": "A thin core allows parallel features",
+    "caption": "Three feature modules can compile after the same thin core is ready, then converge at the app. The longest chain is three modules rather than five.",
+    "sources": [
+      "https://docs.gradle.org/current/userguide/multi_project_builds.html",
+      "https://docs.gradle.org/current/userguide/performance.html"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "core",
+        "title": ":core",
+        "role": "storage",
+        "key": true
+      },
+      {
+        "id": "cart",
+        "title": ":feature:cart",
+        "role": "runtime"
+      },
+      {
+        "id": "checkout",
+        "title": ":feature:checkout",
+        "role": "runtime"
+      },
+      {
+        "id": "profile",
+        "title": ":feature:profile",
+        "role": "runtime"
+      },
+      {
+        "id": "app",
+        "title": ":app",
+        "role": "client"
+      }
+    ],
+    "groups": [],
+    "edges": [
+      {
+        "from": "core",
+        "to": "cart",
+        "label": "used by"
+      },
+      {
+        "from": "core",
+        "to": "checkout",
+        "label": "used by"
+      },
+      {
+        "from": "core",
+        "to": "profile",
+        "label": "used by"
+      },
+      {
+        "from": "cart",
+        "to": "app",
+        "label": "assembled into"
+      },
+      {
+        "from": "checkout",
+        "to": "app",
+        "label": "assembled into"
+      },
+      {
+        "from": "profile",
+        "to": "app",
+        "label": "assembled into"
+      }
+    ],
+    "layout": "layers"
+  }
+]
