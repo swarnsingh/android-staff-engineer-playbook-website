@@ -39,6 +39,7 @@ Content-only edits to blend files also change fingerprints, so they follow the s
 ## Parallel work: one LLM owns one whole topic
 
 - **Ownership.** Each chat or LLM owns one topic tree (for example `computer-science` or `platform-engineering`) from start to publish. A topic is never split between LLMs.
+- **Separate folders.** Each LLM works in its own git worktree, for example `git worktree add ../android-staff-engineer-playbook-website-<tree> -b <tree>-site main`. It never switches branches in a folder another chat is using; two chats in one checkout overwrite each other's builds and gate evidence.
 - **Branches.** Work on a branch named `<tree>-site`, cut from the latest `main`.
 - **Registering a topic** touches these shared files; copy how `computer-science` is registered:
   - `TREES` and `phases()` in `website/scripts/build.py`;
