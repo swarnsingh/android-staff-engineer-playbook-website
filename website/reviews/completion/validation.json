@@ -167,7 +167,7 @@
     "website/navigation.css": "c37d94ae9cd0823331baf2362983f664a65eba5e47a73d774ff67ad21b7a107a",
     "website/reviews/completion/source-sync.json": "a0a34cb5277b3d53fafd83b085acf0faed817be015a5f49d8742b8a4e388ed34",
     "website/scripts/browser_preservation.js": "8a8138d7463aed71c0a4afba735ec07fe7de528c4bcd27c451f18473b64ca342",
-    "website/scripts/build.py": "a7474798ca449737708857d8f67fb4cec2a9b3579f9c7bcc3ff275f40da159e6",
+    "website/scripts/build.py": "0fe6d0277dc8b78c9528a27c61bd16883c1559ea4a41a5c7d76f1723ca244397",
     "website/scripts/check_completion.py": "ba13ca1e4a01fda103e470c6a82052269967728fea59cbfce6c7818c35dd595b",
     "website/scripts/check_fundamentals_kotlin.py": "d4b0206d37bd067f382a06d67de1829899fff290bea4e2d82f47961f988caa6f",
     "website/scripts/check_preservation.py": "754ac7d56e3858865781f9ec5d08befd2943c464dda7648a31dfbedd47f69883",
@@ -352,7 +352,7 @@
   ],
   "source_merge": "b8b56170e3b78f26ad73807b626acfb9530deb47",
   "final_affected_pages": 16,
-  "ux_review": "website/reviews/platform-engineering-2026-10-29/REPORT.md",
+  "ux_review": "website/reviews/platform-engineering-2026-10-29-navigation/REPORT.md",
   "ux_review_date": "2026-10-29",
   "fundamentals": {
     "chapters": 13,
