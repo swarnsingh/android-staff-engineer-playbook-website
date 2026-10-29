@@ -29,3 +29,12 @@ Owner rule, 29 October 2026 (rulebook §20): everything except topic content is 
 
 - Syntax-highlight colours now use the existing code tokens, so some shades shift slightly.
 - Shared stylesheets outside `design-system/` still exist as files, but they read only tokens; relocating them is cosmetic.
+
+## How to change a design value now
+
+- **Colours, shadows and type sizes:** edit the matching token in `website/design-system/tokens.json`. The build regenerates `tokens.css`, and every theme and topic picks up the change.
+- **Figure geometry:** edit the `figure-*` tokens, such as card width, line pitch, frame width or map scale. FigureMap reads the same values the CSS uses, so layouts and their collision checks stay consistent.
+- **Box, grid, timeline and node styles:** edit the shared component rules once. Lessons only name a component and its declared parameters, for example `data-cols="3"` or `data-at="25%"`.
+- **New components or layout boxes:** add them to the design system with tokens and a README, then use them by name in lesson content.
+
+Run `website/tools/dev.py build`, `frames` and `ci`, then follow the publishing steps in `AGENTS.md`. The boundary check in `build.py` reports any styling that leaks back into lesson files.
