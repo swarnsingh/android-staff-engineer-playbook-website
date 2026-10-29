@@ -36,20 +36,26 @@ Shared reader files are CSS, JS, templates, design tokens, `build.py` and diagra
 
 Content-only edits to blend files also change fingerprints, so they follow the same steps.
 
-## Parallel work (several chats or LLMs at once)
+## Parallel work: one LLM owns one whole topic
 
-- **One integrator owns the shared files and the publish:**
-  - `build.py` and the `TREES` registration;
-  - `nav-data.js` and the tree intro JSON;
-  - `source-snapshot.json`;
-  - `reviews/completion/validation.json` and the audit evidence;
-  - pushing to `main`.
-- **Each worker owns only its chapters.** It edits only `website/content/blend/<tree>/<chapter>.blend` and `website/content/diagram-models/figures/<tree>-<chapter>.json`.
-  - It works on its own branch cut from the integration branch, and commits only there.
-  - It runs `dev.py build --pending`, `figures` and `frames`.
-  - It never touches the gate or pushes to `main`.
-- **New diagrams follow the no-Mermaid rule.** A worker writes a Mermaid fence in its blend file and a FigureMap model, keyed by the first 16 hex characters of the SHA-256 of that Mermaid source, in its own figure file. `dev.py figures` validates the model.
-- **The integrator finishes.** It merges the worker branches, then runs `dev.py audit`, writes the report, runs `dev.py gate` and publishes.
+- **Ownership.** Each chat or LLM owns one topic tree (for example `computer-science` or `platform-engineering`) from start to publish. A topic is never split between LLMs.
+- **Branches.** Work on a branch named `<tree>-site`, cut from the latest `main`.
+- **Registering a topic** touches these shared files; copy how `computer-science` is registered:
+  - `TREES` and `phases()` in `website/scripts/build.py`;
+  - the tree entry in `website/nav-data.js`;
+  - `website/content/<tree>.json` (one intro line per chapter and for the learning path);
+  - the `<tree>_sha256` hashes in `source-snapshot.json`;
+  - the tree list in `website/scripts/check_review_data.py`;
+  - the `--tree` choices in `website/tools/prepare_browser_audit.py`;
+  - the pair-count split in `website/scripts/check_completion.py`.
+- **Topic files** are `website/content/blend/<tree>/*.blend` and `website/content/diagram-models/figures/<tree>.json`. Every original Mermaid diagram needs a FigureMap model there.
+- **While building**, use `dev.py build --pending` until all of your figures exist. Never publish with pending figures.
+- **Publishing happens one topic at a time:**
+  1. Run `git pull --rebase` from `main` and resolve conflicts in the shared files by keeping both topics.
+  2. Run `dev.py audit <tree>-<date>`, write the `REPORT.md`, then run `dev.py gate <tree>-<date>`. The evidence must cover the latest `main` plus your topic.
+  3. Push to `main` and confirm the deploy.
+
+  If `main` moves while you are publishing, repeat from step 1.
 
 ## Rulebook map (`content-rulebook.md`)
 

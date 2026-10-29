@@ -1,0 +1,634 @@
+[
+ {
+  "path": "computer-science/graphs",
+  "diagram": "d190649b8f4ed40d",
+  "number": 1,
+  "title": "Graph variants and their algorithms",
+  "caption": "Each graph variant suggests its typical algorithms: BFS for shortest hops, DFS for cycles and components, topological sort and SCC checks for dependency order, and Dijkstra or A* when edges carry weights.",
+  "sources": [
+   "https://xlinux.nist.gov/dads/HTML/breadthfirst.html",
+   "https://xlinux.nist.gov/dads/HTML/depthfirst.html",
+   "https://xlinux.nist.gov/dads/HTML/dijkstraalgo.html",
+   "https://xlinux.nist.gov/dads/HTML/topologicalSort.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "Undirected",
+    "title": "Undirected",
+    "role": "storage"
+   },
+   {
+    "id": "Directed",
+    "title": "Directed",
+    "role": "storage"
+   },
+   {
+    "id": "DAG",
+    "title": "DAG: directed + acyclic",
+    "role": "storage"
+   },
+   {
+    "id": "Weighted",
+    "title": "Weighted (numeric edges",
+    "role": "storage"
+   },
+   {
+    "id": "BFS",
+    "title": "BFS — shortest hops, level order",
+    "role": "runtime"
+   },
+   {
+    "id": "DFS",
+    "title": "DFS — cycles, components, topo sort",
+    "role": "runtime"
+   },
+   {
+    "id": "Dijkstra",
+    "title": "Dijkstra — shortest weighted path",
+    "role": "runtime"
+   },
+   {
+    "id": "AStar",
+    "title": "A* — heuristic shortest path",
+    "role": "runtime"
+   },
+   {
+    "id": "TopoSort",
+    "title": "Topological sort — build / DI order",
+    "role": "runtime"
+   },
+   {
+    "id": "Tarjan",
+    "title": "Tarjan SCC — cycle detection",
+    "role": "runtime"
+   }
+  ],
+  "groups": [
+   {
+    "id": "g_Variants",
+    "label": "Graph variants",
+    "nodes": [
+     "Undirected",
+     "Directed",
+     "DAG",
+     "Weighted"
+    ]
+   },
+   {
+    "id": "g_Algorithms",
+    "label": "Common algorithms",
+    "nodes": [
+     "BFS",
+     "DFS",
+     "Dijkstra",
+     "AStar",
+     "TopoSort",
+     "Tarjan"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "Undirected",
+    "to": "BFS",
+    "label": "explored with"
+   },
+   {
+    "from": "Directed",
+    "to": "DFS",
+    "label": "explored with"
+   },
+   {
+    "from": "DAG",
+    "to": "TopoSort",
+    "label": "ordered by"
+   },
+   {
+    "from": "DAG",
+    "to": "Tarjan",
+    "label": "acyclicity checked by"
+   },
+   {
+    "from": "Weighted",
+    "to": "Dijkstra",
+    "label": "shortest path by"
+   },
+   {
+    "from": "Weighted",
+    "to": "AStar",
+    "label": "heuristic search by"
+   }
+  ],
+  "layout": "columns"
+ },
+ {
+  "path": "computer-science/hashing",
+  "diagram": "06fc0d2cee3290d8",
+  "number": 1,
+  "title": "What a hash function is for",
+  "caption": "A hash function maps input of any size to a fixed-size value. Which property matters most, speed, distribution or cryptographic security, depends on the use, from hash maps and cache keys to signatures.",
+  "sources": [
+   "https://xlinux.nist.gov/dads/HTML/hashtab.html",
+   "https://csrc.nist.gov/pubs/fips/180-4/upd1/final"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "Input",
+    "title": "Input: any size data",
+    "role": "storage"
+   },
+   {
+    "id": "Hash",
+    "title": "Hash function",
+    "role": "runtime",
+    "key": true
+   },
+   {
+    "id": "Output",
+    "title": "Output: fixed-size hash",
+    "role": "storage"
+   },
+   {
+    "id": "Speed",
+    "title": "Speed: MurmurHash, xxHash",
+    "role": "neutral"
+   },
+   {
+    "id": "Distribution",
+    "title": "Distribution: avalanche, low collision",
+    "role": "neutral"
+   },
+   {
+    "id": "Security",
+    "title": "Security: SHA-256, BLAKE3",
+    "role": "neutral"
+   },
+   {
+    "id": "Map",
+    "title": "Hash maps / sets",
+    "role": "client"
+   },
+   {
+    "id": "Cache",
+    "title": "Cache keys",
+    "role": "client"
+   },
+   {
+    "id": "Sharding",
+    "title": "Consistent hashing",
+    "role": "client"
+   },
+   {
+    "id": "Integrity",
+    "title": "Integrity / checksum",
+    "role": "client"
+   },
+   {
+    "id": "Sig",
+    "title": "Signatures / certificates",
+    "role": "client"
+   }
+  ],
+  "groups": [
+   {
+    "id": "g_Properties",
+    "label": "Properties depending on use case",
+    "nodes": [
+     "Speed",
+     "Distribution",
+     "Security"
+    ]
+   },
+   {
+    "id": "g_Uses",
+    "label": "Applications",
+    "nodes": [
+     "Map",
+     "Cache",
+     "Sharding",
+     "Integrity",
+     "Sig"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "Input",
+    "to": "Hash",
+    "label": "fed to"
+   },
+   {
+    "from": "Hash",
+    "to": "Output",
+    "label": "produces"
+   },
+   {
+    "from": "Hash",
+    "to": "Speed",
+    "label": "non-crypto",
+    "style": "dashed"
+   },
+   {
+    "from": "Hash",
+    "to": "Distribution",
+    "label": "all",
+    "style": "dashed"
+   },
+   {
+    "from": "Hash",
+    "to": "Security",
+    "label": "crypto",
+    "style": "dashed"
+   },
+   {
+    "from": "Output",
+    "to": "Map",
+    "label": "used for"
+   },
+   {
+    "from": "Output",
+    "to": "Cache",
+    "label": "used for"
+   },
+   {
+    "from": "Output",
+    "to": "Sharding",
+    "label": "used for"
+   },
+   {
+    "from": "Output",
+    "to": "Integrity",
+    "label": "used for"
+   },
+   {
+    "from": "Output",
+    "to": "Sig",
+    "label": "used for"
+   }
+  ],
+  "layout": "columns"
+ },
+ {
+  "path": "computer-science/system-complexity",
+  "diagram": "3455cd6c393494ba",
+  "number": 1,
+  "title": "How complexity compounds",
+  "caption": "Complexity compounds upward: local code complexity aggregates into module cohesion and coupling, and those into system-level structure, which shows up as slower teams, more defects and longer onboarding.",
+  "sources": [
+   "https://www.nist.gov/publications/structured-testing-testing-methodology-using-cyclomatic-complexity-metric",
+   "https://developer.android.com/topic/modularization"
+  ],
+  "kind": "map",
+  "layout": "layers",
+  "nodes": [
+   {
+    "id": "local",
+    "title": "Local complexity",
+    "detail": [
+     "cyclomatic: paths",
+     "cognitive: readability"
+    ],
+    "role": "runtime"
+   },
+   {
+    "id": "module",
+    "title": "Module complexity",
+    "detail": [
+     "cohesion: internal relatedness",
+     "coupling: external dependencies"
+    ],
+    "role": "runtime"
+   },
+   {
+    "id": "system",
+    "title": "System complexity",
+    "detail": [
+     "module count, graph depth,",
+     "API surface, dependency cycles"
+    ],
+    "role": "runtime",
+    "key": true
+   },
+   {
+    "id": "velocity",
+    "title": "Team velocity",
+    "role": "neutral"
+   },
+   {
+    "id": "defects",
+    "title": "Defect rate",
+    "role": "neutral"
+   },
+   {
+    "id": "onboarding",
+    "title": "Onboarding time",
+    "role": "neutral"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "local",
+    "to": "module",
+    "label": "aggregates into"
+   },
+   {
+    "from": "module",
+    "to": "system",
+    "label": "aggregates into"
+   },
+   {
+    "from": "system",
+    "to": "velocity",
+    "label": "impacts",
+    "style": "dashed"
+   },
+   {
+    "from": "system",
+    "to": "defects",
+    "label": "impacts",
+    "style": "dashed"
+   },
+   {
+    "from": "system",
+    "to": "onboarding",
+    "label": "impacts",
+    "style": "dashed"
+   }
+  ]
+ },
+ {
+  "path": "computer-science/system-complexity",
+  "diagram": "6e4d2b9b90664476",
+  "number": 2,
+  "title": "A modular app's module graph",
+  "caption": "The app module assembles the feature modules, while the core and shared groups provide UI, networking, data, domain types, analytics and logging.",
+  "sources": [
+   "https://developer.android.com/topic/modularization"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "app",
+    "title": ":app",
+    "role": "client"
+   },
+   {
+    "id": "home",
+    "title": ":feature:home",
+    "role": "runtime"
+   },
+   {
+    "id": "checkout",
+    "title": ":feature:checkout",
+    "role": "runtime"
+   },
+   {
+    "id": "profile",
+    "title": ":feature:profile",
+    "role": "runtime"
+   },
+   {
+    "id": "core",
+    "title": ":core",
+    "role": "runtime"
+   },
+   {
+    "id": "ui",
+    "title": ":core:ui",
+    "role": "runtime",
+    "detail": "design system"
+   },
+   {
+    "id": "network",
+    "title": ":core:network",
+    "role": "runtime",
+    "detail": "Retrofit setup"
+   },
+   {
+    "id": "data",
+    "title": ":core:data",
+    "role": "runtime",
+    "detail": "Room setup"
+   },
+   {
+    "id": "domain",
+    "title": ":core:domain",
+    "role": "runtime",
+    "detail": "shared business types"
+   },
+   {
+    "id": "shared",
+    "title": ":shared",
+    "role": "runtime"
+   },
+   {
+    "id": "analytics",
+    "title": ":shared:analytics",
+    "role": "runtime"
+   },
+   {
+    "id": "logging",
+    "title": ":shared:logging",
+    "role": "runtime"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "app",
+    "to": "home",
+    "label": "includes"
+   },
+   {
+    "from": "app",
+    "to": "checkout",
+    "label": "includes"
+   },
+   {
+    "from": "app",
+    "to": "profile",
+    "label": "includes"
+   },
+   {
+    "from": "core",
+    "to": "ui",
+    "label": "includes"
+   },
+   {
+    "from": "core",
+    "to": "network",
+    "label": "includes"
+   },
+   {
+    "from": "core",
+    "to": "data",
+    "label": "includes"
+   },
+   {
+    "from": "core",
+    "to": "domain",
+    "label": "includes"
+   },
+   {
+    "from": "shared",
+    "to": "analytics",
+    "label": "includes"
+   },
+   {
+    "from": "shared",
+    "to": "logging",
+    "label": "includes"
+   }
+  ],
+  "layout": "layers"
+ },
+ {
+  "path": "computer-science/trees",
+  "diagram": "f6fdb34e4cf697c1",
+  "number": 1,
+  "title": "Tree variants and where they run",
+  "caption": "Different trees trade lookup, ordering, disk and write costs: balanced in-memory trees back TreeMap, B-trees back database indexes, tries power autocomplete, Merkle trees verify content and LSM trees favour writes.",
+  "sources": [
+   "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/TreeMap.html",
+   "https://www.sqlite.org/fileformat2.html",
+   "https://github.com/facebook/rocksdb/wiki/RocksDB-Overview"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "BST",
+    "title": "Binary Search Tree",
+    "role": "storage",
+    "detail": "(in-memory, ordered"
+   },
+   {
+    "id": "RBT",
+    "title": "Red-Black Tree",
+    "role": "storage",
+    "detail": "(balanced BST"
+   },
+   {
+    "id": "BTree",
+    "title": "B-Tree",
+    "role": "storage",
+    "detail": "(disk-optimized"
+   },
+   {
+    "id": "BPlusTree",
+    "title": "B+ Tree",
+    "role": "storage",
+    "detail": "(disk, leaves-only data"
+   },
+   {
+    "id": "Trie",
+    "title": "Trie",
+    "role": "storage",
+    "detail": "(prefix lookup"
+   },
+   {
+    "id": "Merkle",
+    "title": "Merkle Tree",
+    "role": "storage",
+    "detail": "(hash-verified"
+   },
+   {
+    "id": "LSM",
+    "title": "LSM Tree",
+    "role": "storage",
+    "detail": "(write-optimized"
+   },
+   {
+    "id": "Map",
+    "title": "JDK TreeMap",
+    "role": "client"
+   },
+   {
+    "id": "DB",
+    "title": "SQLite / Room indexes",
+    "role": "client"
+   },
+   {
+    "id": "Auto",
+    "title": "Autocomplete",
+    "role": "client"
+   },
+   {
+    "id": "Git",
+    "title": "Git, Bitcoin, BitTorrent",
+    "role": "client"
+   },
+   {
+    "id": "Cache",
+    "title": "RocksDB, LevelDB",
+    "role": "client"
+   }
+  ],
+  "groups": [
+   {
+    "id": "g_Trees",
+    "label": "Tree variants",
+    "nodes": [
+     "BST",
+     "RBT",
+     "BTree",
+     "BPlusTree",
+     "Trie",
+     "Merkle",
+     "LSM"
+    ]
+   },
+   {
+    "id": "g_Uses",
+    "label": "Applications",
+    "nodes": [
+     "Map",
+     "DB",
+     "Auto",
+     "Git",
+     "Cache"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "BST",
+    "to": "Map",
+    "label": "used in"
+   },
+   {
+    "from": "RBT",
+    "to": "Map",
+    "label": "used in"
+   },
+   {
+    "from": "BTree",
+    "to": "DB",
+    "label": "used in"
+   },
+   {
+    "from": "BPlusTree",
+    "to": "DB",
+    "label": "used in"
+   },
+   {
+    "from": "Trie",
+    "to": "Auto",
+    "label": "used in"
+   },
+   {
+    "from": "Merkle",
+    "to": "Git",
+    "label": "used in"
+   },
+   {
+    "from": "LSM",
+    "to": "Cache",
+    "label": "used in"
+   }
+  ],
+  "layout": "columns"
+ }
+]
