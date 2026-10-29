@@ -309,3 +309,70 @@ html[data-theme=contrast] .fm-group rect { fill: none; stroke: var(--ink); }
     #vm-lesson-draft .mode-note{font-size:var(--ui-sm);color:var(--vm-sub);margin:8px 0 0}
     #vm-lesson-draft[data-monochrome="true"]{--vm-ui:var(--vm-soft);--vm-store:var(--vm-paper);--vm-model:var(--vm-soft);--vm-scope:var(--vm-paper)}
     @media(max-width:700px){#vm-lesson-draft .sequence{grid-template-columns:1fr;gap:0}#vm-lesson-draft .owner{min-height:0}#vm-lesson-draft .location{width:100%}#vm-lesson-draft .connector{padding:14px 0;flex-direction:row;justify-content:center;gap:18px}#vm-lesson-draft .connector svg{transform:rotate(90deg);width:40px;height:30px;flex:0 0 40px}#vm-lesson-draft .connector .arrow-label{max-width:200px;text-align:left;font-size:var(--ui-md)}#vm-lesson-draft .moment{margin:10px 0 5px}#vm-lesson-draft .owner-sub{margin-bottom:7px}#vm-lesson-draft .empty{margin:8px 0}#vm-lesson-draft .scene{padding:13px;min-width:0}#vm-lesson-draft .object-name{font-size:var(--ui-lg)}#vm-lesson-draft .object-detail,#vm-lesson-draft .scope{font-size:var(--ui-md)}#vm-lesson-draft .explanation{min-height:0}}
+
+/* InterviewWalkthrough: system-design chapters as timed interview walkthroughs (scripts/walkthrough.py builds the markup).
+   Timeline, pacing bar, try-first prompts, decision cards and pushback checks. Position never carries meaning alone:
+   steps are numbered and named, the chosen option keeps its verdict text, and borders differ as well as colour. */
+.wt-timeline{margin:var(--space-6) 0 var(--space-3);padding:var(--space-4) var(--space-6) var(--space-6);border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--sheet-sunken)}
+.wt-heading{margin:0;font:700 var(--ui-xs)/1.4 var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.wt-note{margin:var(--space-1) 0 var(--space-4);font:var(--ui-sm)/1.5 var(--font-sans);color:var(--ink-muted)}
+.reading-content .wt-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,var(--walkthrough-step-min)),1fr));gap:var(--space-2)}
+.wt-steps li{margin:0}
+.wt-steps a{box-sizing:border-box;height:100%;min-height:44px;display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:var(--space-3);align-items:start;align-content:start;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--sheet);color:var(--ink);text-decoration:none}
+.wt-steps a:hover{border-color:var(--accent)}
+.wt-number{grid-row:span 2;display:grid;place-items:center;min-width:1.75rem;height:1.75rem;border:1px solid var(--line-strong);border-radius:var(--radius-pill);font:700 var(--ui-sm)/1 var(--font-sans)}
+.wt-title{font:600 var(--ui-sm)/1.35 var(--font-sans);overflow-wrap:anywhere}
+.wt-time{font:var(--ui-xs)/1.4 var(--font-sans);color:var(--ink-muted)}
+.wt-steps li[aria-current] a{border:2px solid var(--accent);padding:calc(var(--space-2) - 1px) calc(var(--space-3) - 1px)}
+.wt-steps li[aria-current] .wt-number{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.wt-progress{margin:0 0 var(--space-6);padding:var(--space-2) 0;background:var(--sheet)}
+.reading-content .wt-bar{list-style:none;display:flex;gap:2px;margin:0;padding:0}
+.wt-bar li{flex:var(--minutes) 1 0;min-width:1.75rem;margin:0}
+.wt-bar span{display:grid;place-items:center;height:1.75rem;border:1px solid var(--line-strong);border-radius:var(--radius-sm);background:var(--accent-soft);color:var(--ink);font:700 var(--ui-xs)/1 var(--font-sans)}
+.wt-bar li.is-current span{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.wt-now{margin:var(--space-1) 0 0;font:var(--ui-sm)/1.4 var(--font-sans);color:var(--ink-muted)}
+.wt-now:has(.wt-now-text:empty){visibility:hidden}
+.wt-now-label{font:700 var(--ui-2xs)/1.4 var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+@media(min-width:1181px){
+ .wt-progress{position:sticky;top:var(--walkthrough-sticky-top);z-index:5;isolation:isolate}
+ /* Wide visuals scroll under the bar; its surface spans the same bleed as the lesson tabs. */
+ .wt-progress::before{content:'';position:absolute;inset-block:0;left:50%;transform:translateX(-50%);z-index:-1;width:min(var(--measure-visual),calc(100% + var(--visual-bleed)*2),var(--visual-available));background:var(--sheet);border-bottom:1px solid var(--line);pointer-events:none}
+ html:has(.wt-progress){scroll-padding-top:calc(var(--walkthrough-sticky-top) + var(--walkthrough-progress-height))}
+}
+/* Try first: an added prompt before the chapter's own answer, which stays fully visible below it. */
+.blend[data-kind=tryfirst] .tf-question{margin:0 0 var(--space-1);font:700 var(--ui-lg)/1.4 var(--font-sans)}
+.blend[data-kind=tryfirst] .tf-hints{margin-top:var(--space-2)}
+.blend[data-kind=tryfirst] .tf-hints summary{min-height:44px;align-content:center;font-weight:600}
+.blend[data-kind=tryfirst] .tf-next{margin:var(--space-2) 0 0;font:var(--ui-sm)/1.5 var(--font-sans);color:var(--ink-muted)}
+/* Decision cards: the chapter's trade-off table, unchanged in content and order, laid out one card per option. */
+.reading-content table.decision-cards{display:block;width:auto;max-width:100%;overflow:visible;border:0;margin:var(--space-4) 0 var(--space-6)}
+table.decision-cards thead{display:block}
+table.decision-cards thead tr{display:flex;flex-wrap:wrap;gap:var(--space-1) var(--space-2);margin-bottom:var(--space-2);padding:0;border:0;background:none}
+table.decision-cards th{display:block;flex:none;width:auto;min-width:0;padding:0;border:0;background:none;text-align:left;font:700 var(--ui-2xs)/1.4 var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-muted)}
+table.decision-cards th+th::before{content:'·';margin-right:var(--space-2)}
+table.decision-cards tbody{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,var(--walkthrough-card-min)),1fr));gap:var(--space-3)}
+table.decision-cards tbody tr{display:flex;flex-direction:column;gap:var(--space-2);padding:var(--space-3) var(--space-4);border:1px dashed var(--line-strong);border-radius:var(--radius-md);background:var(--sheet)}
+table.decision-cards tbody tr[data-chosen]{border:2px solid var(--accent);background:var(--accent-soft)}
+table.decision-cards td{display:block;padding:0;border:0;background:none;overflow-wrap:anywhere}
+table.decision-cards td[data-cell=option]{font:700 var(--ui-base)/1.4 var(--font-sans)}
+table.decision-cards td:is([data-cell=detail],[data-cell=verdict])::before{content:attr(data-label);display:block;font:700 var(--ui-2xs)/1.4 var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-muted)}
+table.decision-cards td[data-cell=verdict]{margin-top:auto;padding-top:var(--space-2);border-top:1px solid var(--line);font-weight:600}
+/* Pushback checks: the chapter's follow-up question and its answer, with an added label. */
+blockquote.pushback{margin:var(--space-4) 0;padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-left:4px solid var(--scene-runtime);border-radius:0 var(--radius-md) var(--radius-md) 0;background:var(--sheet-sunken)}
+blockquote.pushback>.blend[data-kind=pushback]{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 var(--space-2);margin:0 0 var(--space-2);padding:0;border:0;border-radius:0;background:none}
+blockquote.pushback>.blend[data-kind=pushback]>.blend-label{margin:0}
+.pushback-hint{font:var(--ui-xs)/1.4 var(--font-sans);color:var(--ink-muted)}
+blockquote.pushback>p>strong:first-child{display:block;margin-bottom:var(--space-1)}
+/* Recap: added by this site, the few lines to say before the interview ends. */
+.blend[data-kind=recap]{border-left-width:4px;background:var(--accent-soft)}
+.blend[data-kind=recap] li+li{margin-top:var(--space-1)}
+@media(max-width:640px){
+ .wt-timeline{padding:var(--space-3) var(--space-4) var(--space-4)}
+ .reading-content .wt-steps{gap:0}
+ .wt-steps a{grid-template-columns:auto minmax(0,1fr) auto;align-items:center;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;padding:var(--space-1) 0}
+ .wt-number{grid-row:auto}
+ .wt-time{text-align:right}
+ .wt-steps li[aria-current] a{border:0;border-bottom:1px solid var(--line);padding:var(--space-1) 0}
+}
+@media print{.wt-progress{position:static}.wt-now{display:none}}
+[data-theme="contrast"] :is(.wt-timeline,.wt-steps a,table.decision-cards tbody tr,blockquote.pushback){background:transparent}

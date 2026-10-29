@@ -1,0 +1,36 @@
+[
+  {
+    "path": "mobile-system-design/offline-sync",
+    "diagram": "844279b637ab9e25",
+    "number": 1,
+    "title": "Every edit lands in Room before the network sees it",
+    "caption": "The UI writes the note and its outbox operation in one Room transaction and reads only Room. The sync engine drains the outbox to the Sync API and writes the server's answers back into Room. The server side is named, not designed.",
+    "sources": [
+      "https://developer.android.com/topic/architecture/data-layer/offline-first",
+      "https://developer.android.com/topic/libraries/architecture/workmanager"
+    ],
+    "kind": "map",
+    "nodes": [
+      {"id": "ui", "title": "Android UI", "detail": "Compose screens", "role": "client"},
+      {"id": "notes", "title": "Notes table", "detail": ["source of truth", "the UI reads"], "role": "storage", "key": true},
+      {"id": "outbox", "title": "Outbox table", "detail": ["one durable op", "per edit"], "role": "queue"},
+      {"id": "sync", "title": "Sync engine", "detail": ["PushWorker and", "PullWorker"], "role": "runtime"},
+      {"id": "api", "title": "Sync API", "detail": "/push and /pull", "role": "runtime"},
+      {"id": "store", "title": "Versioned store", "detail": ["per-record", "versions"], "role": "storage"}
+    ],
+    "groups": [
+      {"id": "device", "label": "Android app on the device", "nodes": ["ui", "sync"]},
+      {"id": "room", "label": "Room database", "parent": "device", "nodes": ["notes", "outbox"]},
+      {"id": "server", "label": "Server · named, not designed", "nodes": ["api", "store"]}
+    ],
+    "edges": [
+      {"from": "ui", "to": "notes", "label": "edit writes note"},
+      {"from": "notes", "to": "outbox", "label": "same transaction queues op"},
+      {"from": "outbox", "to": "sync", "label": "pending ops drained"},
+      {"from": "sync", "to": "api", "label": "push ops · pull since token"},
+      {"from": "api", "to": "sync", "label": "conflicts + new change token", "style": "dashed"},
+      {"from": "api", "to": "store", "label": "applies ops"},
+      {"from": "sync", "to": "notes", "label": "writes canonical state"}
+    ]
+  }
+]

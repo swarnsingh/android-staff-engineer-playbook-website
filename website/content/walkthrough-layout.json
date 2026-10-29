@@ -1,0 +1,67 @@
+{
+  "about": "Which chapters use the interview-walkthrough layout. Groups are content, not code: the build reads this file, then still checks each listed chapter's own numbered headings and falls back to the normal chapter layout when they do not match. Only listed chapters are affected. Sketch status, 29 October 2026: one prototype chapter enabled; the other groups are named for review and stay empty until the owner approves the format.",
+  "groups": [
+    {
+      "id": "foundations",
+      "title": "Foundations",
+      "layout": "chapter",
+      "note": "Method and NFR chapters (Design Framework, Non-Functional Requirements and similar) do not follow the 12-section interview template; they keep the normal chapter layout.",
+      "chapters": []
+    },
+    {
+      "id": "infrastructure-components",
+      "title": "Infrastructure components",
+      "layout": "walkthrough",
+      "note": "Bounded libraries and data-delivery problems, for example image loading, caching, pagination and file download.",
+      "chapters": []
+    },
+    {
+      "id": "full-apps",
+      "title": "Full apps",
+      "layout": "walkthrough",
+      "note": "Complete product systems, for example offline sync, feeds, chat, payments and media.",
+      "chapters": [
+        "mobile-system-design/offline-sync.md"
+      ]
+    },
+    {
+      "id": "sdk-and-platform-features",
+      "title": "SDK and platform features",
+      "layout": "walkthrough",
+      "note": "Platform layers and SDKs, for example authentication, analytics, telemetry, flags and deep links.",
+      "chapters": []
+    }
+  ],
+  "try_first": {
+    "requirements": {
+      "question": "What would you say?",
+      "prompt": "The interviewer gives you a one-line product prompt. Before reading on, say what the system must do, which qualities it must keep, and what you will leave out.",
+      "covers": [
+        "Functional requirements: the user actions that must work, including without a network.",
+        "Non-functional requirements: latency, consistency, battery and data use.",
+        "Out of scope: name it, so the interviewer can redirect you early."
+      ]
+    },
+    "clarifying": {
+      "question": "What would you ask?",
+      "prompt": "Which questions would change your design? Ask them before you draw anything.",
+      "covers": [
+        "Who shares the data, and on how many devices.",
+        "Data size and volume per user.",
+        "How often conflicts or failures are expected.",
+        "Deletion, retention and compliance rules.",
+        "How fresh background data must be."
+      ]
+    },
+    "api": {
+      "question": "What would you say?",
+      "prompt": "Sketch the requests and responses between the app and the server. Which fields make a retried request safe?",
+      "covers": [
+        "Each endpoint and its payload.",
+        "An idempotency key on every mutation.",
+        "Versions or cursors that detect conflicts and fetch only changes.",
+        "How the contract keeps working for older installed app versions."
+      ]
+    }
+  }
+}

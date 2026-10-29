@@ -1,0 +1,72 @@
+[
+  {
+    "path": "mobile-system-design/offline-sync",
+    "figure": 0,
+    "problem": "How does the outbox recover after the network returns, even if the app dies mid-push?",
+    "reading": "Room holds the notes and the outbox. PushWorker drains the outbox to the Sync API and writes the answers back in one transaction. The clientId makes a replayed op safe; that is this design's server contract, not a WorkManager guarantee.",
+    "groups": [
+      {
+        "id": "database",
+        "label": "Room database",
+        "nodes": [
+          "notes",
+          "outbox"
+        ]
+      },
+      {
+        "id": "app",
+        "label": "App UI and background work",
+        "nodes": [
+          "ui",
+          "worker"
+        ]
+      },
+      {
+        "id": "remote",
+        "label": "Server",
+        "nodes": [
+          "server"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "notes",
+        "label": "reads only Room"
+      },
+      {
+        "from": "worker",
+        "to": "outbox",
+        "label": "takes up to 100 ops"
+      },
+      {
+        "from": "worker",
+        "to": "server",
+        "label": "sends ops with clientId"
+      },
+      {
+        "from": "server",
+        "to": "worker",
+        "label": "applied + conflicts"
+      },
+      {
+        "from": "worker",
+        "to": "notes",
+        "label": "writes versions, conflict copies"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/architecture/data-layer/offline-first",
+      "https://developer.android.com/topic/libraries/architecture/workmanager"
+    ],
+    "labels": {
+      "notes": "notes table",
+      "outbox": "outbox table",
+      "server": "Sync API",
+      "ui": "Notes UI",
+      "worker": "PushWorker",
+      "event": "What happens"
+    }
+  }
+]

@@ -15,17 +15,20 @@ SOURCE_ROOT = 'https://github.com/swarnsingh/android-staff-engineer-playbook-web
 MD = MarkdownIt('commonmark', {'html': True}).enable(['table', 'strikethrough'])
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import figure_maps
+import walkthrough
 # Designed figures that replace rendered Mermaid pictures, keyed by original diagram hash.
 FIGURES = figure_maps.load()
 FIGURES_USED = set()
 # Topic trees rendered as lessons, in site order. `phases` lists the guided-reading phases a pilot
-# renders (None renders the whole tree); chapters outside them keep linking to GitHub.
+# renders (None renders the whole tree); chapters outside them keep linking to GitHub. `pilot`, when
+# present, narrows those phases to the listed chapters (a local prototype, never a publishable tree).
 TREES = {
     'engineering-fundamentals': {'title': 'Engineering Fundamentals', 'phases': None},
     'computer-science': {'title': 'Computer Science', 'phases': None},
     'platform-engineering': {'title': 'Platform Engineering', 'phases': None},
     'kotlin': {'title': 'Kotlin', 'phases': None},
     'android': {'title': 'Android', 'phases': [1, 2, 3, 4, 5, 6, 7, 8, 9]},
+    'mobile-system-design': {'title': 'Mobile System Design', 'phases': [4], 'pilot': ['mobile-system-design/offline-sync.md']},
 }
 
 
@@ -61,6 +64,7 @@ for _slug, _tree in TREES.items():
         if _tree['phases'] is None or int(re.match(r'Phase (\d+)', _heading)[1]) in _tree['phases']:
             ORDER[_slug] += [p for p in _chapters if p not in ORDER[_slug]]
             for p in _chapters: SECTION.setdefault(p, _heading)  # the first phase listing a chapter owns it
+    if _tree.get('pilot'): ORDER[_slug] = [p for p in ORDER[_slug] if p in _tree['pilot']]
     # A chapter's first phase owns it; the rendered reading sequence must not return to an earlier group.
     _phase_positions = {heading: index for index, (heading, _) in enumerate(phases(_slug))}
     _group_numbers = [_phase_positions[SECTION[p]] for p in ORDER[_slug]]
@@ -218,7 +222,8 @@ def classify_part(heading):
 
 
 BLEND_LABELS = {'story': 'Start here', 'guide': 'In plain words', 'visual': 'See it', 'animation': 'Step through it',
-                'check': 'Check yourself', 'deeper': 'Under the hood', 'staff': 'Staff lens', 'try': 'Try it', 'review': 'Under review', 'bridge': ''}
+                'check': 'Check yourself', 'deeper': 'Under the hood', 'staff': 'Staff lens', 'try': 'Try it', 'review': 'Under review', 'bridge': '',
+                'tryfirst': 'Try first', 'pushback': 'Interviewer pushes back', 'recap': 'Interview recap · added by this site'}
 
 
 def load_blend(path):
@@ -346,6 +351,9 @@ def render_chapter(path, raw, is_course=False):
             if token.tag == 'h2': sections.append((i,heading,anchor))
         if token.type == 'fence': codes.append({'language':token.info,'text':token.content})
     link_rules(path)
+    # Interview walkthrough (system-design chapters): derived from the numbered H2 headings, or None.
+    steps = None if is_course else walkthrough.plan(path, [(clean(h), a) for _, h, a in sections])
+    step_of = {s['anchor']: s for s in steps or []}
     blend = load_blend(path)
     used = set()
     diagram_count = [0]
@@ -386,8 +394,9 @@ def render_chapter(path, raw, is_course=False):
     def band(number, index):
         key, title_text, promise = PARTS[index]
         return f'<div class="part-band" data-part-band="{key}"><span class="part-number">PART {number}</span><span class="part-name">{title_text}</span><p class="part-promise">{promise}</p></div>'
-    # The opening story always belongs to the first part of the chapter.
-    first_band = '' if is_course else band(1, 0)
+    # The opening story always belongs to the first part of the chapter. A walkthrough is paced by
+    # its interview timeline instead of story parts.
+    first_band = walkthrough.timeline(steps) if steps else '' if is_course else band(1, 0)
     if ('opening', '') in blend:
         used.add(('opening', ''))
         body=first_band+f'<section class="lesson-section lesson-start" id="problem"><h2>Start here</h2>{wrap("story", blend[("opening","")], env)}<div class="original-opening">{opening}</div></section>'
@@ -407,7 +416,7 @@ def render_chapter(path, raw, is_course=False):
         # Parts only move forward, so the story reads as one progression.
         wanted = PART_KEYS.index(blend[('part', name)]) if ('part', name) in blend else classify_part(name)
         if ('part', name) in blend: used.add(('part', name))
-        if wanted > part_index and not is_course:
+        if wanted > part_index and not is_course and not steps:
             part_index = wanted
             bands += 1
             body += band(bands, part_index)
@@ -415,7 +424,13 @@ def render_chapter(path, raw, is_course=False):
         before = ''.join(wrap(kind, html, env) for key, html in blend.items() if len(key) == 3 and key[0] == 'before' and key[1] == name for kind in [key[2]])
         after = ''.join(wrap(kind, html, env) for key, html in blend.items() if len(key) == 3 and key[0] == 'after' and key[1] == name for kind in [key[2]])
         used.update(k for k in blend if k[:2] in (('before', name), ('after', name)))
-        body += before + f'<section class="lesson-section" id="section-{anchor}" data-part="{part}" data-source-order="{j+1}"{qa}>{rendered}{after}</section>'
+        step = step_of.get(anchor)
+        if step:
+            if step['role'] in walkthrough.TRY_FIRST: before = walkthrough.try_first(step['role']) + before
+            if step['role'] == 'tradeoffs': rendered = walkthrough.decision_cards(rendered)
+            if step['role'] == 'followups': rendered = walkthrough.pushbacks(rendered)
+        interview = f' data-interview-step="{step["number"]}"' if step else ''
+        body += before + f'<section class="lesson-section" id="section-{anchor}" data-part="{part}" data-source-order="{j+1}"{interview}{qa}>{rendered}{after}</section>'
         if path.endswith('/coroutines.md') and heading=='How `suspend` Works (Mental Model + Mechanism)':
             body += added('deeper', (WEB/'content/coroutine-internals.html').read_text())
         if path.endswith('/coroutines.md') and heading=='Exception Handling Patterns':
@@ -439,7 +454,7 @@ def render_chapter(path, raw, is_course=False):
         outline.append(f'<a href="#{anchor}">{escape(unescape(clean(match[3])))}</a>')
     rendered_text = re.sub('<[^>]+>',' ',body)
     source_headings=[t.content for i,t in enumerate(tokens) if t.type=='inline' and i>0 and tokens[i-1].type=='heading_open' and tokens[i-1].tag!='h1']
-    report={'source':path,'source_sha256':hashlib.sha256(raw.encode()).hexdigest(),'source_words':len(raw.split()),'headings':headings,'original_sections':len(sections),'code_blocks':len(codes),'diagrams':diagram_count[0],'corrections':len(fixes),'source_content':'Full corrected Markdown token stream rendered; no section or code-block selection.'}
+    report={'layout':'walkthrough' if steps else 'chapter','source':path,'source_sha256':hashlib.sha256(raw.encode()).hexdigest(),'source_words':len(raw.split()),'headings':headings,'original_sections':len(sections),'code_blocks':len(codes),'diagrams':diagram_count[0],'corrections':len(fixes),'source_content':'Full corrected Markdown token stream rendered; no section or code-block selection.'}
     return body, ''.join(outline), report
 
 
@@ -588,7 +603,7 @@ INTRO = {
 
 def intro(path):
     extras={}
-    for name in ('engineering-fundamentals','computer-science','platform-engineering'):
+    for name in ('engineering-fundamentals','computer-science','platform-engineering','mobile-system-design'):
         extras.update(json.loads((WEB/f'content/{name}.json').read_text()))
     return extras.get(path) or INTRO.get(path) or INTRO[Path(path).stem]
 
@@ -799,6 +814,8 @@ def build(skip_diagrams=False):
                 action='Start this phase' if slug=='engineering-fundamentals' else 'View sequence'
                 cards.append(f'<li><a href="{target}"><span class="phase-number">Phase {index}</span><strong>{escape(label)}</strong><span class="phase-count">{len(paths)} {"chapter" if len(paths)==1 else "chapters"} · {action} →</span></a></li>')
             path_overview='<section class="path-overview" id="path-phases" aria-labelledby="path-phases-title"><h2 id="path-phases-title">Choose your next phase</h2><p>Follow the phases in order, or use the checkpoints in the full sequence below to find your starting point.</p><ol class="path-phase-grid">'+''.join(cards)+'</ol></section>'
+        elif report['layout']=='walkthrough':
+            hero=f'<div class="lesson-hero"><span class="eyebrow">{escape(tree.upper())} · INTERVIEW WALKTHROUGH</span><h1>{escape(name)}</h1><p>{escape(intro(path))}</p><div class="lesson-meta"><span id="reading-time">Read at your pace · time hints are guidance</span><button id="bookmark" class="text-button" aria-pressed="false">☆ Save lesson</button></div></div>'
         else:
             hero=f'<div class="lesson-hero"><span class="eyebrow">{escape(tree.upper())} · BEGINNER TO STAFF</span><h1>{escape(name)}</h1><p>{escape(intro(path))}</p><div class="lesson-meta"><span id="reading-time">Read at your pace · experiments extra</span><button id="bookmark" class="text-button" aria-pressed="false">☆ Save lesson</button></div></div>'
         values={'title':escape(name),'description':escape(intro(path)),'tree_title':escape(tree),'tree_route':route(f'{slug}.md'),'tree_eyebrow':escape(tree.upper()),'article':article,'outline':outline,'source':path,'source_url':SOURCE_ROOT+path,'category':escape(category),'chapter_navigation':navigation,'lesson_scripts':scripts,'playground_panel':playground,'page_kind':page_kind,'page_label':'learning path' if is_index else 'lesson','page_hero':hero,'page_tabs':tabs,'path_overview':path_overview,'qa_panel':qa_panel,'resources_panel':resources,'correction_history':correction_note(page_fixes),'outline_label':'ON THIS PATH' if is_index else 'ON THIS PAGE','content_semantics':'role="region" aria-label="Learning path"' if is_index else 'role="tabpanel" aria-labelledby="tab-content"'}
