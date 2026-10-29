@@ -454,7 +454,7 @@ def render_chapter(path, raw, is_course=False):
         outline.append(f'<a href="#{anchor}">{escape(unescape(clean(match[3])))}</a>')
     rendered_text = re.sub('<[^>]+>',' ',body)
     source_headings=[t.content for i,t in enumerate(tokens) if t.type=='inline' and i>0 and tokens[i-1].type=='heading_open' and tokens[i-1].tag!='h1']
-    report={'layout':'walkthrough' if steps else 'chapter','source':path,'source_sha256':hashlib.sha256(raw.encode()).hexdigest(),'source_words':len(raw.split()),'headings':headings,'original_sections':len(sections),'code_blocks':len(codes),'diagrams':diagram_count[0],'corrections':len(fixes),'source_content':'Full corrected Markdown token stream rendered; no section or code-block selection.'}
+    report={'layout':'walkthrough' if steps else 'chapter','pacing':walkthrough.pacing(steps) if steps else '','source':path,'source_sha256':hashlib.sha256(raw.encode()).hexdigest(),'source_words':len(raw.split()),'headings':headings,'original_sections':len(sections),'code_blocks':len(codes),'diagrams':diagram_count[0],'corrections':len(fixes),'source_content':'Full corrected Markdown token stream rendered; no section or code-block selection.'}
     return body, ''.join(outline), report
 
 
@@ -704,14 +704,31 @@ def design_gallery(asset_version):
         if not scene: raise ValueError('Gallery illustrated stepper missing: '+name)
         sample=diagram_models.enhance(steps_as_text(scene[0]),name+'.md',OUT,BASE,diagram_models.models())
         samples.append('<section class="demo"><h3>'+label+'</h3>'+sample+'</section>')
+    page_walkthrough=walkthrough_gallery()
     prose=tokens['type']['prose']
     fonts=''.join(f'<figure class="specimen" style="--specimen:var(--font-{o["family"]});--measure-prose:{o["measure"]}"><figcaption><strong>{escape(o["label"])}</strong> · {escape(o["description"])}</figcaption>'
                   '<p>A suspended call gives its thread back. When the result arrives, the coroutine resumes where it stopped, with its state intact.</p></figure>' for o in prose['options'])
-    page=(DESIGN/'gallery.html').read_text().replace('{{swatches}}',swatches).replace('{{fonts}}',fonts).replace('{{scenes}}',''.join(samples))
+    page=(DESIGN/'gallery.html').read_text().replace('{{swatches}}',swatches).replace('{{fonts}}',fonts).replace('{{scenes}}',''.join(samples)).replace('{{walkthrough}}',page_walkthrough)
     for asset in ('styles.css','blend.css','theme.css','tokens.css','flow.css','sequence.css','flow.js','blend.js'):page=page.replace('"/'+asset+'"','"'+BASE+asset+'?v='+asset_version+'"')
     page=page.replace('href="/android/"','href="'+route('android.md')+'"')
     destination=OUT/'design-system';destination.mkdir(exist_ok=True)
     (destination/'index.html').write_text(page)
+
+def walkthrough_gallery():
+    """InterviewWalkthrough samples generated from Offline Sync by the same functions the lesson uses."""
+    path='mobile-system-design/offline-sync.md'
+    source=(ROOT/path).read_text(); tokens=MD.parse(source); names=[]; counts={}
+    for i,token in enumerate(tokens):
+        if token.type=='heading_open' and token.tag=='h2':
+            heading=tokens[i+1].content; base=slug(heading); n=counts.get(base,0); counts[base]=n+1
+            names.append((clean(heading),base if not n else f'{base}-{n}'))
+    steps=walkthrough.plan(path,names)
+    if not steps: raise ValueError('Gallery walkthrough sample missing: '+path)
+    table=re.search(r'^### Sync strategy\n\n(\|.*?)\n\n',source,re.S|re.M)
+    question=re.search(r'^(> \*\*Q:.*?)\n\n',source,re.S|re.M)
+    if not table or not question: raise ValueError('Gallery walkthrough sample text missing: '+path)
+    parts=[walkthrough.timeline(steps),walkthrough.try_first('clarifying'),walkthrough.decision_cards(MD.render(table[1])),walkthrough.pushbacks(MD.render(question[1]))]
+    return '<section class="demo"><div class="reading-content">'+''.join(parts)+'</div></section>'
 
 SHARED_CSS=['styles.css','blend.css','theme.css','sequence.css','learning-path.css','navigation.css','design-system/components/bundle.css']
 
@@ -815,7 +832,7 @@ def build(skip_diagrams=False):
                 cards.append(f'<li><a href="{target}"><span class="phase-number">Phase {index}</span><strong>{escape(label)}</strong><span class="phase-count">{len(paths)} {"chapter" if len(paths)==1 else "chapters"} · {action} →</span></a></li>')
             path_overview='<section class="path-overview" id="path-phases" aria-labelledby="path-phases-title"><h2 id="path-phases-title">Choose your next phase</h2><p>Follow the phases in order, or use the checkpoints in the full sequence below to find your starting point.</p><ol class="path-phase-grid">'+''.join(cards)+'</ol></section>'
         elif report['layout']=='walkthrough':
-            hero=f'<div class="lesson-hero"><span class="eyebrow">{escape(tree.upper())} · INTERVIEW WALKTHROUGH</span><h1>{escape(name)}</h1><p>{escape(intro(path))}</p><div class="lesson-meta"><span id="reading-time">Read at your pace · time hints are guidance</span><button id="bookmark" class="text-button" aria-pressed="false">☆ Save lesson</button></div></div>'
+            hero=f'<div class="lesson-hero"><span class="eyebrow">{escape(tree.upper())} · INTERVIEW WALKTHROUGH</span><h1>{escape(name)}</h1><p>{escape(intro(path))}</p><div class="lesson-meta"><span id="reading-time" data-pacing>{escape(report['pacing'])}</span><button id="bookmark" class="text-button" aria-pressed="false">☆ Save lesson</button></div></div>'
         else:
             hero=f'<div class="lesson-hero"><span class="eyebrow">{escape(tree.upper())} · BEGINNER TO STAFF</span><h1>{escape(name)}</h1><p>{escape(intro(path))}</p><div class="lesson-meta"><span id="reading-time">Read at your pace · experiments extra</span><button id="bookmark" class="text-button" aria-pressed="false">☆ Save lesson</button></div></div>'
         values={'title':escape(name),'description':escape(intro(path)),'tree_title':escape(tree),'tree_route':route(f'{slug}.md'),'tree_eyebrow':escape(tree.upper()),'article':article,'outline':outline,'source':path,'source_url':SOURCE_ROOT+path,'category':escape(category),'chapter_navigation':navigation,'lesson_scripts':scripts,'playground_panel':playground,'page_kind':page_kind,'page_label':'learning path' if is_index else 'lesson','page_hero':hero,'page_tabs':tabs,'path_overview':path_overview,'qa_panel':qa_panel,'resources_panel':resources,'correction_history':correction_note(page_fixes),'outline_label':'ON THIS PATH' if is_index else 'ON THIS PAGE','content_semantics':'role="region" aria-label="Learning path"' if is_index else 'role="tabpanel" aria-labelledby="tab-content"'}

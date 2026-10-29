@@ -56,22 +56,34 @@ def plan(path, names):
     return steps
 
 
+def pacing(steps):
+    """The hero's pacing line, derived from the time hints; it never promises a total interview length."""
+    timed = [x for x in steps if x['minutes']]
+    return (f'Interview walkthrough · time hints on {len(timed)} of {len(steps)} sections, '
+            f'about {sum(x["minutes"] for x in timed)} min')
+
+
 def timeline(steps):
-    """The interview timeline: a proportional bar of the timed steps, then every step as a linked list."""
-    timed = [s for s in steps if s['minutes']]
-    # The minutes are a declared component parameter (like the teaching timeline's data-at), applied as a CSS variable.
-    bar = ''.join(f'<li data-step="{s["number"]}" style="--minutes:{s["minutes"]}"><span>{s["number"]}</span></li>' for s in timed)
+    """A compact overview: a one-line summary, every step as a linked list behind a disclosure, and a pacing bar.
+
+    The page outline already lists the sections, so the full list is optional here. The bar shows every step
+    in order; timed steps are sized by their minutes through the shared component (data-minutes).
+    """
+    timed = [x for x in steps if x['minutes']]
+    bar = ''.join(f'<li data-step="{x["number"]}"' + (f' data-minutes="{x["minutes"]}"' if x['minutes'] else ' data-untimed')
+                  + f'><span>{x["number"]}</span></li>' for x in steps)
     items = ''.join(
-        f'<li data-step="{s["number"]}"><a href="#section-{s["anchor"]}"><span class="wt-number">{s["number"]}</span>'
-        f'<span class="wt-title">{escape(s["title"])}</span>'
-        f'<span class="wt-time">{"~" + str(s["minutes"]) + " min" if s["minutes"] else "No time hint"}</span></a></li>'
-        for s in steps)
+        f'<li data-step="{x["number"]}"><a href="#section-{x["anchor"]}"><span class="wt-number">{x["number"]}</span>'
+        f'<span class="wt-title">{escape(x["title"])}</span>'
+        f'<span class="wt-time">{"~" + str(x["minutes"]) + " min" if x["minutes"] else "No time hint"}</span></a></li>'
+        for x in steps)
     return ('<nav class="wt-timeline" id="interview-timeline" aria-labelledby="wt-heading">'
             '<p class="wt-heading" id="wt-heading">Interview timeline</p>'
-            f'<p class="wt-note">Built from the chapter\'s {len(steps)} numbered sections. Time hints come from its headings; '
-            'they are guidance for pacing, not a schedule.</p>'
-            f'<ol class="wt-steps">{items}</ol></nav>'
-            # The bar is a pacing picture only; the list above is the accessible version.
+            f'<p class="wt-note">{len(steps)} numbered sections. {len(timed)} carry time hints from the chapter, about '
+            f'{sum(x["minutes"] for x in timed)} min in all; they are pacing guidance, not a schedule.</p>'
+            f'<details class="wt-all"><summary>All {len(steps)} steps with their time hints</summary>'
+            f'<ol class="wt-steps">{items}</ol></details></nav>'
+            # A pacing picture only; the list above is the accessible version.
             f'<div class="wt-progress" aria-hidden="true"><ol class="wt-bar">{bar}</ol>'
             '<p class="wt-now"><span class="wt-now-label">Now</span> <span class="wt-now-text"></span></p></div>')
 

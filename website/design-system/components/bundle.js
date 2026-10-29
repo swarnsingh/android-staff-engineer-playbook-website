@@ -611,7 +611,10 @@
 /* InterviewWalkthrough: mark the interview step being read. No motion; without JavaScript the timeline is a plain linked list. */
 (() => {
   const timeline = document.querySelector('.wt-timeline');
-  if (!timeline || !('IntersectionObserver' in window)) return;
+  if (!timeline) return;
+  // Declared minutes become the bar's sizing variable; without this script the timed steps share the width equally.
+  document.querySelectorAll('.wt-bar li[data-minutes]').forEach(li => li.style.setProperty('--minutes', li.dataset.minutes));
+  if (!('IntersectionObserver' in window)) return;
   const sections = [...document.querySelectorAll('section[data-interview-step]')];
   const items = new Map([...timeline.querySelectorAll('.wt-steps li')].map(li => [li.dataset.step, li]));
   const bars = new Map([...document.querySelectorAll('.wt-bar li')].map(li => [li.dataset.step, li]));

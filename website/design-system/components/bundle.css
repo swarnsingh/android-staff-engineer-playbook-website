@@ -313,10 +313,11 @@ html[data-theme=contrast] .fm-group rect { fill: none; stroke: var(--ink); }
 /* InterviewWalkthrough: system-design chapters as timed interview walkthroughs (scripts/walkthrough.py builds the markup).
    Timeline, pacing bar, try-first prompts, decision cards and pushback checks. Position never carries meaning alone:
    steps are numbered and named, the chosen option keeps its verdict text, and borders differ as well as colour. */
-.wt-timeline{margin:var(--space-6) 0 var(--space-3);padding:var(--space-4) var(--space-6) var(--space-6);border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--sheet-sunken)}
+.wt-timeline{margin:var(--space-6) 0 var(--space-3);padding:var(--space-4) var(--space-6);border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--sheet-sunken)}
 .wt-heading{margin:0;font:700 var(--ui-xs)/1.4 var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
-.wt-note{margin:var(--space-1) 0 var(--space-4);font:var(--ui-sm)/1.5 var(--font-sans);color:var(--ink-muted)}
-.reading-content .wt-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,var(--walkthrough-step-min)),1fr));gap:var(--space-2)}
+.wt-note{margin:var(--space-1) 0 var(--space-2);font:var(--ui-sm)/1.5 var(--font-sans);color:var(--ink-muted)}
+.wt-all summary{min-height:44px;align-content:center;font:600 var(--ui-sm)/1.4 var(--font-sans);color:var(--accent)}
+.reading-content .wt-steps{list-style:none;margin:var(--space-2) 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,var(--walkthrough-step-min)),1fr));gap:var(--space-2)}
 .wt-steps li{margin:0}
 .wt-steps a{box-sizing:border-box;height:100%;min-height:44px;display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:var(--space-3);align-items:start;align-content:start;padding:var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--sheet);color:var(--ink);text-decoration:none}
 .wt-steps a:hover{border-color:var(--accent)}
@@ -327,7 +328,11 @@ html[data-theme=contrast] .fm-group rect { fill: none; stroke: var(--ink); }
 .wt-steps li[aria-current] .wt-number{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .wt-progress{margin:0 0 var(--space-6);padding:var(--space-2) 0;background:var(--sheet)}
 .reading-content .wt-bar{list-style:none;display:flex;gap:2px;margin:0;padding:0}
-.wt-bar li{flex:var(--minutes) 1 0;min-width:1.75rem;margin:0}
+/* Timed steps grow by their minutes (data-minutes, applied as --minutes by the component script; equal without it).
+   Untimed steps keep a narrow dashed slot, so the bar still shows every step in order. */
+.wt-bar li{flex:var(--minutes,1) 1 0;min-width:1.75rem;margin:0}
+.wt-bar li[data-untimed]{flex:0 0 1.5rem;min-width:0}
+.wt-bar li[data-untimed] span{border-style:dashed;background:var(--sheet);color:var(--ink-muted);font-weight:600}
 .wt-bar span{display:grid;place-items:center;height:1.75rem;border:1px solid var(--line-strong);border-radius:var(--radius-sm);background:var(--accent-soft);color:var(--ink);font:700 var(--ui-xs)/1 var(--font-sans)}
 .wt-bar li.is-current span{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .wt-now{margin:var(--space-1) 0 0;font:var(--ui-sm)/1.4 var(--font-sans);color:var(--ink-muted)}
@@ -367,7 +372,8 @@ blockquote.pushback>p>strong:first-child{display:block;margin-bottom:var(--space
 .blend[data-kind=recap]{border-left-width:4px;background:var(--accent-soft)}
 .blend[data-kind=recap] li+li{margin-top:var(--space-1)}
 @media(max-width:640px){
- .wt-timeline{padding:var(--space-3) var(--space-4) var(--space-4)}
+ .wt-timeline{padding:var(--space-3) var(--space-4)}
+ .wt-progress{display:none}
  .reading-content .wt-steps{gap:0}
  .wt-steps a{grid-template-columns:auto minmax(0,1fr) auto;align-items:center;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;padding:var(--space-1) 0}
  .wt-number{grid-row:auto}

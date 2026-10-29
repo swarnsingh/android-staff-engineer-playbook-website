@@ -3,7 +3,7 @@
     "path": "mobile-system-design/offline-sync",
     "figure": 0,
     "problem": "How does the outbox recover after the network returns, even if the app dies mid-push?",
-    "reading": "Room holds the notes and the outbox. PushWorker drains the outbox to the Sync API and writes the answers back in one transaction. The clientId makes a replayed op safe; that is this design's server contract, not a WorkManager guarantee.",
+    "reading": "Room holds the notes and the outbox. PushWorker drains the outbox to the Sync API and writes the answers back in one transaction. The upsert's clientId makes a replay safe; that is this design's server contract, not a WorkManager guarantee.",
     "groups": [
       {
         "id": "database",

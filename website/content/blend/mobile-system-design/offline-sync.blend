@@ -4,15 +4,17 @@
      Hand-authored here: the recovery step-through and the end recap.
      Verified 2026-10-29 against offline-sync.md (§4 Idempotency, §6, §7 write/push paths, sync triggers, failure modes,
      tombstones, protocol evolution) and the official WorkManager guide ("tasks persist across app restarts and device
-     reboots") and offline-first guide (local data source is the source of truth; queued writes drained by WorkManager). -->
+     reboots") and offline-first guide (local data source is the source of truth; queued writes drained by WorkManager).
+     Findings OS1 (REPLACE vs "coalesce") and OS2 (delete op without clientId) are open in
+     website/reviews/mobile-system-design-offline-sync-findings.md: this layer restates neither claim, so both queued ops are upserts. -->
 
 <!-- @after 7. Deep Dive: Outbox + Conflict Resolution (15 min) :: animation -->
 ### Replay the outbox after the network returns
 
-<figure class="stepper" data-illustrated><span class="stepper-title">Outbox replay and recovery</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="notes" data-art="database" data-art-role="storage"><strong>notes table</strong><small data-text="notesV">n_42 v7 dirty · n_99 deleted</small></div><div class="node" data-el="outbox" data-art="queue" data-art-role="queue"><strong>outbox table</strong><small data-text="outboxV">upsert n_42 · delete n_99</small></div><div class="node" data-el="server" data-art="server" data-art-role="runtime"><strong>Sync API</strong><small data-text="serverV">unreachable</small></div></div><div class="viz-grid" data-cols="2"><div class="node" data-el="ui" data-art="phone" data-art-role="client"><strong>Notes UI</strong><small data-text="uiV">unsynced dot on n_42</small></div><div class="node" data-el="worker" data-art="worker" data-art-role="runtime"><strong>PushWorker</strong><small data-text="workerV">waiting for network</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+<figure class="stepper" data-illustrated><span class="stepper-title">Outbox replay and recovery</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="notes" data-art="database" data-art-role="storage"><strong>notes table</strong><small data-text="notesV">n_42 v7 dirty · n_51 v3 dirty</small></div><div class="node" data-el="outbox" data-art="queue" data-art-role="queue"><strong>outbox table</strong><small data-text="outboxV">upsert n_42 · upsert n_51</small></div><div class="node" data-el="server" data-art="server" data-art-role="runtime"><strong>Sync API</strong><small data-text="serverV">unreachable</small></div></div><div class="viz-grid" data-cols="2"><div class="node" data-el="ui" data-art="phone" data-art-role="client"><strong>Notes UI</strong><small data-text="uiV">unsynced dots on n_42, n_51</small></div><div class="node" data-el="worker" data-art="worker" data-art-role="runtime"><strong>PushWorker</strong><small data-text="workerV">waiting for network</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
   {
     "label": "Offline",
-    "caption": "Two edits wait in the outbox: an upsert of n_42 with base version 7 and a delete of n_99 with base version 3. The UI already shows both, because it reads only Room.",
+    "caption": "Two edits wait in the outbox: upserts of n_42 with base version 7 and n_51 with base version 3, each with its own clientId. The UI already shows both, because it reads only Room. Another device has also edited n_51.",
     "add": ["notes", "outbox", "server", "ui", "worker", "event"],
     "state": {"notes": "done", "outbox": "warn", "ui": "done"},
     "text": {"eventV": "offline · 2 ops pending"},
@@ -20,7 +22,7 @@
   },
   {
     "label": "Network returns",
-    "caption": "Reconnect triggers PushWorker, then PullWorker. PushWorker is unique-named, so overlapping triggers coalesce into one run.",
+    "caption": "Reconnect triggers PushWorker, then PullWorker.",
     "state": {"worker": "active"},
     "text": {"workerV": "running", "serverV": "reachable", "eventV": "reconnect → push, then pull"}
   },
@@ -35,36 +37,36 @@
     "label": "Killed mid-push",
     "caption": "The server applies n_42 as version 8, but the app is killed before it deletes any outbox row. Both rows are still in Room, and WorkManager keeps the work scheduled.",
     "state": {"worker": "warn", "ui": "ghost", "server": "done"},
-    "text": {"workerV": "killed · work still scheduled", "uiV": "(app not running)", "serverV": "n_42 v8 · n_99 v5", "eventV": "no outbox row lost"},
+    "text": {"workerV": "killed · work still scheduled", "uiV": "(app not running)", "serverV": "n_42 v8 · n_51 v5", "eventV": "no outbox row lost"},
     "visuals": {"ui": {"visible": false}}
   },
   {
     "label": "Replay",
-    "caption": "WorkManager runs PushWorker again. It sends the same rows with the same clientIds; nothing new was invented on retry.",
+    "caption": "WorkManager runs PushWorker again. It resends the same rows with the same clientIds.",
     "state": {"worker": "active", "server": "active", "ui": "done"},
-    "text": {"workerV": "retrying the same batch", "uiV": "unsynced dot on n_42", "eventV": "same clientIds resent"},
+    "text": {"workerV": "retrying the same batch", "uiV": "unsynced dots on n_42, n_51", "eventV": "same clientIds resent"},
     "visuals": {"ui": {"visible": true}},
     "handoff": {"from": "worker", "to": "server", "kind": "page", "label": "same 2 ops"}
   },
   {
     "label": "Server answers",
-    "caption": "For n_42 the server recognises the clientId and returns the same newVersion, 8, instead of applying it twice. For n_99 the server is at version 5, so it reports VERSION_MISMATCH with its state.",
+    "caption": "For n_42 the server recognises the clientId and returns the same newVersion, 8, instead of applying it twice. For n_51 the server is already at version 5, so it reports VERSION_MISMATCH with its state.",
     "state": {"server": "done"},
-    "text": {"eventV": "applied: n_42 v8 · conflict: n_99"},
+    "text": {"eventV": "applied: n_42 v8 · conflict: n_51"},
     "handoff": {"from": "server", "to": "worker", "kind": "rows", "label": "applied + conflicts"}
   },
   {
     "label": "Apply the ack",
     "caption": "In one Room transaction, PushWorker deletes n_42's outbox row and records version 8 with dirty = false. The unsynced dot disappears.",
     "state": {"notes": "active", "outbox": "active"},
-    "text": {"notesV": "n_42 v8 synced", "outboxV": "delete n_99", "uiV": "n_42 synced", "eventV": "same transaction: ack applied"},
+    "text": {"notesV": "n_42 v8 synced", "outboxV": "upsert n_51", "uiV": "n_42 synced", "eventV": "same transaction: ack applied"},
     "visuals": {"outbox": {"count": 1}}
   },
   {
     "label": "Keep both copies",
     "caption": "In the same transaction, the conflicted outbox row is deleted. The resolver saves the local copy as a conflict copy, accepts the server state and adds an entry to the Conflicts inbox.",
     "state": {"notes": "warn", "outbox": "done"},
-    "text": {"notesV": "n_99 = server v5 · local kept as conflict copy", "outboxV": "empty", "uiV": "Conflicts inbox: 1", "eventV": "nothing silently destroyed"},
+    "text": {"notesV": "n_51 = server v5 · local kept as conflict copy", "outboxV": "empty", "uiV": "Conflicts inbox: 1", "eventV": "nothing silently destroyed"},
     "visuals": {"outbox": {"count": 0}}
   },
   {
@@ -80,7 +82,7 @@
 
 - **Room is the only thing the UI reads.** Each edit writes the note and its outbox op in one transaction.
 - **WorkManager drains the outbox.** Its work persists across app restarts and device reboots, so a killed push is retried.
-- **Every op carries a `clientId`.** The server dedupes on it, so a replay never applies twice.
+- **Each upsert carries a `clientId`.** The server dedupes on it, so a replayed upsert never applies twice.
 - **`baseVersion` exposes conflicts.** The losing copy is kept and surfaced, never silently dropped.
 - **Pull only deltas, over an opaque `nextToken`.** On `TOKEN_EXPIRED`, wipe the token, not the database, then run a paginated full pull.
 - **Deletes are tombstones.** They stay about 30 days, so other devices can pull them.
