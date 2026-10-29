@@ -15,7 +15,7 @@
     "id": "fundamentals:CX02",
     "path": "engineering-fundamentals/complexity-analysis.md",
     "old": "1.  **Focus on the Growth Rate:** Complexity is about *scaling*, not absolute speed. An $O(N^2)$ algorithm might be faster than an $O(N)$ algorithm for $N=10$, but the $O(N)$ algorithm will always win as $N \\rightarrow \\infty$.",
-    "new": "1.  **Focus on the Growth Rate:** Complexity describes scaling, not measured speed. Big-O is an asymptotic upper bound, so an algorithm with linear growth is also O(N²). Compare tight bounds, such as Θ(N) and Θ(N²), before claiming that one eventually grows more slowly.",
+    "new": "1.  **Focus on the Growth Rate:** Complexity describes scaling, not measured speed. Big-O is an asymptotic upper bound, so an algorithm with linear growth is also $O(N^2)$. Compare tight bounds, such as $\\Theta(N)$ and $\\Theta(N^2)$, before claiming that one eventually grows more slowly.",
     "reason": "Big-O alone cannot establish the claimed eventual ordering.",
     "sources": [
       "https://xlinux.nist.gov/dads/HTML/bigOnotation.html"
@@ -51,7 +51,7 @@
     "id": "fundamentals:CX05",
     "path": "engineering-fundamentals/complexity-analysis.md",
     "old": "**Diffing Lists for RecyclerView**\n\nBefore `DiffUtil`, updating a `RecyclerView` often meant calling `notifyDataSetChanged()`, forcing the entire list to re-render: $O(N)$ layout passes.\n\nTo be smarter, you could compare the old list and new list to find the exact insertions and deletions. If you do this naively (nested loops comparing every old item to every new item), it's $O(N^2)$. For a list of 10,000 items, that's 100,000,000 operations—a guaranteed ANR.\n\nAndroid's `DiffUtil` uses Eugene Myers' difference algorithm to calculate the minimal number of updates in $O(N + D^2)$ time (where $N$ is total items and $D$ is the number of modifications). By offloading this to a background thread, the UI thread only receives the exact updates, keeping the render pass $O(D)$.\n\n",
-    "new": "**Diffing Lists for RecyclerView**\n\n`notifyDataSetChanged()` invalidates the data set; RecyclerView must rebind and relayout visible views, not perform one layout pass for every item in the full list.\n\nA naive old-by-new comparison can perform N×M comparisons. At 10,000 items on each side that is 100,000,000 comparisons; whether this causes an ANR depends on the work, calling thread and elapsed time.\n\n`DiffUtil` documents O(N) space and expected O(N + D²) time for its Myers-based difference calculation. Move detection can add O(M×N) work for added and removed items. Calculate large diffs off the main thread; precise adapter updates do not guarantee O(D) layout or drawing time.\n\n",
+    "new": "**Diffing Lists for RecyclerView**\n\n`notifyDataSetChanged()` invalidates the data set; RecyclerView must rebind and relayout visible views, not perform one layout pass for every item in the full list.\n\nA naive old-by-new comparison can perform N×M comparisons. At 10,000 items on each side that is 100,000,000 comparisons; whether this causes an ANR depends on the work, calling thread and elapsed time.\n\n`DiffUtil` documents $O(N)$ space and expected $O(N + D^2)$ time for its Myers-based difference calculation. Move detection can add $O(M \\times N)$ work for added and removed items. Calculate large diffs off the main thread; precise adapter updates do not guarantee $O(D)$ layout or drawing time.\n\n",
     "reason": "Correct DiffUtil bounds, move-detection cost and unsupported rendering/ANR guarantees.",
     "sources": [
       "https://github.com/androidx/androidx/blob/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/DiffUtil.java",
@@ -76,7 +76,7 @@
     "id": "fundamentals:CX07",
     "path": "engineering-fundamentals/complexity-analysis.md",
     "old": "- **String Concatenation in Loops:** Strings are immutable in Kotlin/Java. Doing `str += \"a\"` in a loop of size $N$ doesn't just take $O(N)$ time; it creates a new string object and copies the characters every iteration, making it $O(N^2)$ time and $O(N^2)$ space (garbage collection nightmare). (Fix: Use `StringBuilder`).",
-    "new": "- **String Concatenation in Loops:** Repeatedly appending a fixed-size fragment to an immutable String can copy 1 + 2 + … + N characters: O(N²) total copying and allocation. Peak live storage can remain O(N) if older strings are not retained. Use a StringBuilder to avoid copying the full prefix on every append.",
+    "new": "- **String Concatenation in Loops:** Repeatedly appending a fixed-size fragment to an immutable String can copy 1 + 2 + … + N characters: $O(N^2)$ total copying and allocation. Peak live storage can remain $O(N)$ if older strings are not retained. Use a StringBuilder to avoid copying the full prefix on every append.",
     "reason": "Distinguish cumulative allocation from peak auxiliary space.",
     "sources": [
       "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/StringBuilder.html"
@@ -88,7 +88,7 @@
     "id": "fundamentals:CX08",
     "path": "engineering-fundamentals/complexity-analysis.md",
     "old": "An $O(N)$ algorithm that makes an IPC call (like reading `SharedPreferences` or querying the `ContentResolver`) on each iteration will freeze the app.",
-    "new": "An O(N) loop that performs ContentResolver IPC or repeated storage work can have a large elapsed cost. SharedPreferences reads normally use an in-process map, although they can wait for its initial load; they are not themselves Binder IPC.",
+    "new": "An $O(N)$ loop that performs ContentResolver IPC or repeated storage work can have a large elapsed cost. SharedPreferences reads normally use an in-process map, although they can wait for its initial load; they are not themselves Binder IPC.",
     "reason": "SharedPreferences getters were incorrectly classified as IPC.",
     "sources": [
       "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/app/SharedPreferencesImpl.java"
@@ -100,7 +100,7 @@
     "id": "fundamentals:CX09",
     "path": "engineering-fundamentals/complexity-analysis.md",
     "old": "`StringBuilder` modifies an underlying character array directly ($O(1)$ per append), whereas `String` is immutable, meaning every append creates a new copy of the entire string up to that point ($O(K)$ per iteration), leading to an $O(N^2)$ total runtime.",
-    "new": "For fixed-size fragments, a growing StringBuilder has amortized constant append cost; a resize can copy the buffer. Repeated immutable-string concatenation copies the growing prefix, giving O(N²) total copied characters for this loop. Appending a fragment of length K still costs at least O(K).",
+    "new": "For fixed-size fragments, a growing StringBuilder has amortized constant append cost; a resize can copy the buffer. Repeated immutable-string concatenation copies the growing prefix, giving $O(N^2)$ total copied characters for this loop. Appending a fragment of length K still costs at least $O(K)$.",
     "reason": "Append cost depends on fragment length and occasional resizing.",
     "sources": [
       "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/StringBuilder.html"
@@ -112,7 +112,7 @@
     "id": "fundamentals:CX10",
     "path": "engineering-fundamentals/complexity-analysis.md",
     "old": "Both perform disk I/O. `apply()` does it asynchronously in the background (returning instantly, appearing $O(1)$ to the calling thread), while `commit()` does it synchronously, blocking the thread until disk I/O completes ($O(1)$ disk operation but with massive constant-time overhead).",
-    "new": "Both first apply edits to the in-memory preferences. apply() schedules persistence asynchronously and does not report a disk-write result; commit() waits for persistence and returns success. Neither API promises O(1) caller work or an instant return: cost depends on edits, map size, synchronization and persistence work.",
+    "new": "Both first apply edits to the in-memory preferences. apply() schedules persistence asynchronously and does not report a disk-write result; commit() waits for persistence and returns success. Neither API promises $O(1)$ caller work or an instant return: cost depends on edits, map size, synchronization and persistence work.",
     "reason": "The APIs specify persistence behavior, not constant-time complexity.",
     "sources": [
       "https://developer.android.com/reference/android/content/SharedPreferences.Editor",
@@ -125,7 +125,7 @@
     "id": "fundamentals:CX11",
     "path": "engineering-fundamentals/complexity-analysis.md",
     "old": "Adding an element to an `ArrayList` is usually $O(1)$. When it hits capacity, it must copy all elements to a new array ($O(N)$). However, because it doubles in size, this expensive operation happens rarely, so the *average* cost per addition over time remains $O(1)$.",
-    "new": "Appending is amortized O(1): occasional growth copies existing elements, but a sequence of N appends takes O(N) total work. The Java API does not specify a doubling growth factor. Amortized cost is a bound over a sequence, not a probabilistic average-case claim.",
+    "new": "Appending is amortized $O(1)$: occasional growth copies existing elements, but a sequence of N appends takes $O(N)$ total work. The Java API does not specify a doubling growth factor. Amortized cost is a bound over a sequence, not a probabilistic average-case claim.",
     "reason": "ArrayList does not promise a doubling capacity policy.",
     "sources": [
       "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/ArrayList.html"
@@ -210,13 +210,13 @@
     "id": "fundamentals:LT07",
     "path": "engineering-fundamentals/latency-vs-throughput.md",
     "old": "**Startup latency:** cold start should complete in 5 seconds; warm start in 2; hot resume in 1. These are latency SLOs visible to the user.",
-    "new": "**Startup latency:** Android vitals classifies slow startup using TTID thresholds, including 5 seconds for cold and 2 seconds for warm starts. The Android Developers page lists 1.5 seconds for hot starts. These are diagnostic thresholds, not recommended product SLOs; set tighter experience goals appropriate to the app.",
+    "new": "**Startup latency:** Android vitals considers TTID excessive at 5 seconds or longer for cold starts, 2 seconds or longer for warm starts, and 1.5 seconds or longer for hot starts. These are diagnostic thresholds, not recommended product SLOs; set tighter experience goals appropriate to the app.",
     "reason": "Distinguish slow-start thresholds and TTID from product latency objectives.",
     "sources": [
-      "https://developer.android.com/topic/performance/issues/launch-time"
+      "https://developer.android.com/google/play/vitals/launch-time"
     ],
     "status": "approved",
-    "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    "validation": "Verified all three excessive-startup TTID thresholds on the official Android vitals page,29October2026."
   },
   {
     "id": "fundamentals:LT08",
@@ -2950,7 +2950,7 @@
     "id": "fundamentals:TC22",
     "path": "engineering-fundamentals/time-and-clocks.md",
     "old": "        Logical[\"Logical clock<br/>Lamport / Vector / HLC\"]",
-    "new": "        Logical[\"Causal metadata<br/>Lamport / Vector\"]\n        Hybrid[\"Hybrid logical clock<br/>physical component + logical counter\"]",
+    "new": "        Logical[\"Causal metadata<br/>Lamport / Vector\"]\n        Hybrid[\"Hybrid logical clock<br/>physical component + logical counter\"]\n        Events[\"Local events and received causal metadata\"]\n        Events -->|\"advance / merge\"| Logical\n        Events -->|\"advance / merge\"| Hybrid",
     "reason": "Lamport/vector algorithms do not require wall-clock input; HLC does.",
     "sources": [
       "https://lamport.azurewebsites.net/pubs/time-clocks.pdf",
@@ -3039,7 +3039,7 @@
     "id": "fundamentals:TC29",
     "path": "engineering-fundamentals/time-and-clocks.md",
     "old": "**Monotonic clock overflow.** `System.nanoTime()` returns a `Long`, which overflows after ~292 years. Not a practical concern per JVM instance, but subtracting two values from different JVM starts is undefined.",
-    "new": "- **Monotonic clock arithmetic.** nanoTime may already be negative because its origin is arbitrary. Differences within one JVM instance are useful, but intervals spanning more than about 292 years exceed signed-Long difference arithmetic. Use elapsed differences rather than comparing now with start + timeout, which can overflow sooner. Never compare readings from unrelated JVM instances.",
+    "new": "**Monotonic clock arithmetic.** nanoTime may already be negative because its origin is arbitrary. Differences within one JVM instance are useful, but intervals spanning more than about 292 years exceed signed-Long difference arithmetic. Use elapsed differences rather than comparing now with start + timeout, which can overflow sooner. Never compare readings from unrelated JVM instances.",
     "reason": "Oracle specifies arbitrary possibly negative origins and the safe timeout-subtraction idiom.",
     "sources": [
       "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/System.html"
@@ -3486,5 +3486,113 @@
     ],
     "status": "approved",
     "validation": "Independent primary-source review on 2026-10-29: Timestamp freshness bounds a replay window; it does not universally prevent replay within that window or define every OAuth flow."
+  },
+  {
+    "id": "fundamentals:review58:1",
+    "path": "engineering-fundamentals/backpressure.md",
+    "old": "val uploadQueue = MutableSharedFlow<UploadJob>(",
+    "new": "val progressUpdates = MutableSharedFlow<UploadProgress>(",
+    "reason": "Use lossy active-subscriber progress broadcasts rather than implying durable upload job delivery.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/"
+    ],
+    "status": "approved",
+    "validation": "Verified against the cited primary contract; follow-up consistency fix from independent PR58 review."
+  },
+  {
+    "id": "fundamentals:review58:2",
+    "path": "engineering-fundamentals/backpressure.md",
+    "old": "See [`../android/architecture/flow.md`](../android/architecture/flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md).",
+    "new": "See [`../android/architecture/flow.md`](../android/architecture/flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md).",
+    "reason": "Remove the repeated link in the same reading list.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/"
+    ],
+    "status": "approved",
+    "validation": "Verified against the cited primary contract; follow-up consistency fix from independent PR58 review."
+  },
+  {
+    "id": "fundamentals:review58:3",
+    "path": "engineering-fundamentals/backpressure.md",
+    "old": "- [`../android/architecture/flow.md`](../android/architecture/flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md) — Android-specific Flow operators.",
+    "new": "- [`../android/architecture/flow.md`](../android/architecture/flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md) — Android-specific Flow operators.",
+    "reason": "Remove the repeated link in the same reading list.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/"
+    ],
+    "status": "approved",
+    "validation": "Verified against the cited primary contract; follow-up consistency fix from independent PR58 review."
+  },
+  {
+    "id": "fundamentals:review58:4",
+    "path": "engineering-fundamentals/time-and-clocks.md",
+    "old": "10. CockroachDB quarantines nodes whose clocks drift too far. Why is this better than silently tolerating drift?",
+    "new": "10. CockroachDB crashes nodes whose clocks drift too far. Why is this better than silently tolerating drift?",
+    "reason": "Align the question with the documented node-crash behavior and its corrected answer.",
+    "sources": [
+      "https://docs.cockroachlabs.com/docs/stable/architecture/transaction-layer"
+    ],
+    "status": "approved",
+    "validation": "Verified against the cited primary contract; follow-up consistency fix from independent PR58 review."
+  },
+  {
+    "id": "fundamentals:review58:5",
+    "path": "engineering-fundamentals/time-and-clocks.md",
+    "old": "10. **CockroachDB quarantines nodes whose clocks drift too far. Why is this better than silently tolerating drift?**",
+    "new": "10. **CockroachDB crashes nodes whose clocks drift too far. Why is this better than silently tolerating drift?**",
+    "reason": "Align the question with the documented node-crash behavior and its corrected answer.",
+    "sources": [
+      "https://docs.cockroachlabs.com/docs/stable/architecture/transaction-layer"
+    ],
+    "status": "approved",
+    "validation": "Verified against the cited primary contract; follow-up consistency fix from independent PR58 review."
+  },
+  {
+    "id": "fundamentals:review58:6",
+    "path": "engineering-fundamentals/sync-vs-async.md",
+    "old": "5. Explain how a `suspend fun` returns \"twice\" — once when it suspends, once when it resumes.",
+    "new": "5. Explain immediate completion versus actual suspension in a `suspend fun`. How does its continuation support later resumption?",
+    "reason": "Do not imply every suspend call suspends or a function literally returns twice.",
+    "sources": [
+      "https://kotlinlang.org/spec/asynchronous-programming-with-coroutines.html"
+    ],
+    "status": "approved",
+    "validation": "Verified against the cited primary contract; follow-up consistency fix from independent PR58 review."
+  },
+  {
+    "id": "fundamentals:review58:7",
+    "path": "engineering-fundamentals/sync-vs-async.md",
+    "old": "5.  **Explain how a `suspend fun` returns \"twice\" — once when it suspends, once when it resumes.**",
+    "new": "5.  **Explain immediate completion versus actual suspension in a `suspend fun`. How does its continuation support later resumption?**",
+    "reason": "Do not imply every suspend call suspends or a function literally returns twice.",
+    "sources": [
+      "https://kotlinlang.org/spec/asynchronous-programming-with-coroutines.html"
+    ],
+    "status": "approved",
+    "validation": "Verified against the cited primary contract; follow-up consistency fix from independent PR58 review."
+  },
+  {
+    "id": "fundamentals:review58:8",
+    "path": "engineering-fundamentals/coupling-vs-cohesion.md",
+    "old": "The coupling was high, but invisible to the compiler.",
+    "new": "The coupling was high, but partly invisible to the compiler.",
+    "reason": "Resource references can fail compilation while hierarchy mismatches can remain runtime failures.",
+    "sources": [
+      "https://developer.android.com/topic/libraries/view-binding"
+    ],
+    "status": "approved",
+    "validation": "Verified against the cited primary contract; follow-up consistency fix from independent PR58 review."
+  },
+  {
+    "id": "fundamentals:review58:9",
+    "path": "engineering-fundamentals/immutability.md",
+    "old": "In modern Android engineering, immutability is the absolute bedrock of robust architecture.",
+    "new": "In modern Android engineering, immutable values help make state changes easier to reason about.",
+    "reason": "Avoid contradicting the supported observable mutable-state mechanisms described immediately afterward.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/state"
+    ],
+    "status": "approved",
+    "validation": "Verified against the cited primary contract; follow-up consistency fix from independent PR58 review."
   }
 ]

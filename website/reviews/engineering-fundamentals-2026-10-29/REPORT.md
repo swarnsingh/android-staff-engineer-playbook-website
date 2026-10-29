@@ -10,7 +10,7 @@ Each Fundamentals chapter has a concise, labelled teaching layer. Static diagram
 
 ## Content corrections
 
-The 282 approved exact replacements in `website/content/corrections-engineering-fundamentals.json` were verified against official project documentation, owning implementations, standards or original papers. Batch records retain the sources and reasons. The same inventory replays into the13 original source chapters, with verification references appended there. Across the existing canonical 743 replacements and this new inventory, the website and source branch match exactly in97 corrected chapters, excluding appended reference sections.
+The 291 approved exact replacements in `website/content/corrections-engineering-fundamentals.json` were verified against official project documentation, owning implementations, standards or original papers. Batch records retain the sources and reasons. The same inventory replays into the13 original source chapters, with verification references appended there. Across the existing canonical 743 replacements and this new inventory, the website and source branch match exactly in97 corrected chapters, excluding appended reference sections.
 
 Review fixed complete answer paragraphs rather than inserting revised answers above obsolete ones. The reader keeps answers immediately beneath their corresponding questions. Correction details remain in optional history, rather than repeated warnings throughout the lesson.
 
@@ -29,3 +29,5 @@ Exact corrected Lamport, vector-clock, HLC, LRU and retry fragments compile with
 The initial browser run exposed incorrectly classified teaching diagrams and undersized queue-item labels; both shared causes were repaired before final verification. One initial Activity image-readiness failure passed its isolated retry. Two teaching tables also needed a shared local-scroll boundary. The full139-page run and the targeted rerun of both matching pages are retained; final `browser.json` contains139 passing pages and1058 passing original answer pairs. All other focused suites pass. Publication is gated by these current results and input fingerprints.
 
 Full manual mobile review remains deferred until every website topic tree is integrated, as the owner requested. Current work uses automated mobile regressions and manual desktop/tablet inspection. Browser checks do not certify physical devices, other browser engines or screen-reader behavior. Independent Gemini review remains useful after publication, with its findings treated as new evidence rather than presumed completed work.
+
+Independent PR58 review follow-up: fixed all reported example/question contradictions, the Android vitals TTID reference, clock hierarchy and formatting, mathematical notation and duplicate reading links. The seven changed chapters pass a targeted browser rerun. The final inventory contains291 exact replacements; source PR58 includes commit7d56159.

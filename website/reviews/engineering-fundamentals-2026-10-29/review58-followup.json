@@ -1,0 +1,124 @@
+{
+  "additional_records": [
+    {
+      "id": "fundamentals:review58:1",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "val uploadQueue = MutableSharedFlow<UploadJob>(",
+      "new": "val progressUpdates = MutableSharedFlow<UploadProgress>(",
+      "reason": "Use lossy active-subscriber progress broadcasts rather than implying durable upload job delivery.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary contract; follow-up consistency fix from independent PR58 review."
+    },
+    {
+      "id": "fundamentals:review58:2",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "See [`../android/architecture/flow.md`](../android/architecture/flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md).",
+      "new": "See [`../android/architecture/flow.md`](../android/architecture/flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md).",
+      "reason": "Remove the repeated link in the same reading list.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary contract; follow-up consistency fix from independent PR58 review."
+    },
+    {
+      "id": "fundamentals:review58:3",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "- [`../android/architecture/flow.md`](../android/architecture/flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md) — Android-specific Flow operators.",
+      "new": "- [`../android/architecture/flow.md`](../android/architecture/flow.md), [`../android/concurrency/shared-flow-and-state-flow.md`](../android/concurrency/shared-flow-and-state-flow.md) — Android-specific Flow operators.",
+      "reason": "Remove the repeated link in the same reading list.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary contract; follow-up consistency fix from independent PR58 review."
+    },
+    {
+      "id": "fundamentals:review58:4",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "10. CockroachDB quarantines nodes whose clocks drift too far. Why is this better than silently tolerating drift?",
+      "new": "10. CockroachDB crashes nodes whose clocks drift too far. Why is this better than silently tolerating drift?",
+      "reason": "Align the question with the documented node-crash behavior and its corrected answer.",
+      "sources": [
+        "https://docs.cockroachlabs.com/docs/stable/architecture/transaction-layer"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary contract; follow-up consistency fix from independent PR58 review."
+    },
+    {
+      "id": "fundamentals:review58:5",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "10. **CockroachDB quarantines nodes whose clocks drift too far. Why is this better than silently tolerating drift?**",
+      "new": "10. **CockroachDB crashes nodes whose clocks drift too far. Why is this better than silently tolerating drift?**",
+      "reason": "Align the question with the documented node-crash behavior and its corrected answer.",
+      "sources": [
+        "https://docs.cockroachlabs.com/docs/stable/architecture/transaction-layer"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary contract; follow-up consistency fix from independent PR58 review."
+    },
+    {
+      "id": "fundamentals:review58:6",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "5. Explain how a `suspend fun` returns \"twice\" — once when it suspends, once when it resumes.",
+      "new": "5. Explain immediate completion versus actual suspension in a `suspend fun`. How does its continuation support later resumption?",
+      "reason": "Do not imply every suspend call suspends or a function literally returns twice.",
+      "sources": [
+        "https://kotlinlang.org/spec/asynchronous-programming-with-coroutines.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary contract; follow-up consistency fix from independent PR58 review."
+    },
+    {
+      "id": "fundamentals:review58:7",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "5.  **Explain how a `suspend fun` returns \"twice\" — once when it suspends, once when it resumes.**",
+      "new": "5.  **Explain immediate completion versus actual suspension in a `suspend fun`. How does its continuation support later resumption?**",
+      "reason": "Do not imply every suspend call suspends or a function literally returns twice.",
+      "sources": [
+        "https://kotlinlang.org/spec/asynchronous-programming-with-coroutines.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary contract; follow-up consistency fix from independent PR58 review."
+    },
+    {
+      "id": "fundamentals:review58:8",
+      "path": "engineering-fundamentals/coupling-vs-cohesion.md",
+      "old": "The coupling was high, but invisible to the compiler.",
+      "new": "The coupling was high, but partly invisible to the compiler.",
+      "reason": "Resource references can fail compilation while hierarchy mismatches can remain runtime failures.",
+      "sources": [
+        "https://developer.android.com/topic/libraries/view-binding"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary contract; follow-up consistency fix from independent PR58 review."
+    },
+    {
+      "id": "fundamentals:review58:9",
+      "path": "engineering-fundamentals/immutability.md",
+      "old": "In modern Android engineering, immutability is the absolute bedrock of robust architecture.",
+      "new": "In modern Android engineering, immutable values help make state changes easier to reason about.",
+      "reason": "Avoid contradicting the supported observable mutable-state mechanisms described immediately afterward.",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/state"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary contract; follow-up consistency fix from independent PR58 review."
+    }
+  ],
+  "amended_records": [
+    "fundamentals:LT07",
+    "fundamentals:TC22",
+    "fundamentals:TC29",
+    "fundamentals:CX02",
+    "fundamentals:CX05",
+    "fundamentals:CX07",
+    "fundamentals:CX08",
+    "fundamentals:CX09",
+    "fundamentals:CX10",
+    "fundamentals:CX11"
+  ]
+}

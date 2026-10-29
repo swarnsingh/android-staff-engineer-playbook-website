@@ -71472,7 +71472,7 @@
           {
             "source": "engineering-fundamentals/backpressure.md",
             "view": "content",
-            "checked": 409,
+            "checked": 405,
             "units": 148,
             "diagrams": 3,
             "loadedDiagrams": 3,
@@ -74697,13 +74697,13 @@
           {
             "source": "engineering-fundamentals/time-and-clocks.md",
             "view": "content",
-            "checked": 591,
+            "checked": 590,
             "units": 163,
             "diagrams": 2,
             "loadedDiagrams": 2,
             "diagramResources": [
               {
-                "source": "/diagrams/4e480a99d9b812af.svg",
+                "source": "/diagrams/b9ef1fa3869db6f2.svg",
                 "status": "loaded"
               },
               {
@@ -96433,6 +96433,7 @@
   "evidence": {
     "full_run": "browser-full-final.json",
     "targeted_run": "browser-table-delta.json",
-    "targeted_scope": "Both pages containing direct teaching-callout tables; no other page matches the changed selector."
+    "targeted_scope": "Both pages containing direct teaching-callout tables; no other page matches the changed selector.",
+    "independent_review_followup": "browser-review58-delta.json"
   }
 }
