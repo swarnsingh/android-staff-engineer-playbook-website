@@ -1,0 +1,3659 @@
+[
+ {
+  "path": "android/architecture/state-management",
+  "diagram": "c8223138b4d691e4",
+  "number": 1,
+  "title": "Unidirectional data flow",
+  "caption": "State flows down from the repository through the ViewModel to the UI; events flow back up to the ViewModel, which calls the repository's suspending APIs.",
+  "sources": [
+   "https://developer.android.com/develop/ui/compose/state",
+   "https://developer.android.com/topic/architecture/ui-layer"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "Repository",
+    "title": "Repository",
+    "role": "storage",
+    "detail": "data source"
+   },
+   {
+    "id": "VM",
+    "title": "ViewModel",
+    "role": "runtime",
+    "detail": "screen state holder",
+    "key": true
+   },
+   {
+    "id": "UI",
+    "title": "Composable",
+    "role": "client",
+    "detail": "renders state"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "Repository",
+    "to": "VM",
+    "label": "Flow mapped or shared in ViewModel"
+   },
+   {
+    "from": "VM",
+    "to": "UI",
+    "label": "StateFlow"
+   },
+   {
+    "from": "UI",
+    "to": "VM",
+    "label": "events / intents"
+   },
+   {
+    "from": "VM",
+    "to": "Repository",
+    "label": "suspend calls"
+   }
+  ],
+  "layout": "layers"
+ },
+ {
+  "path": "android/build-tooling/gradle-and-build-systems",
+  "diagram": "d711cb1c5521a00a",
+  "number": 1,
+  "title": "Configuration, then execution",
+  "caption": "Configuration evaluates every build script into one task graph. Execution then checks each task's inputs: a cache hit restores outputs instead of running the task, and a miss runs it.",
+  "sources": [
+   "https://docs.gradle.org/current/userguide/build_cache.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "B1",
+    "title": "app/build.gradle",
+    "role": "storage"
+   },
+   {
+    "id": "DAG",
+    "title": "Task Graph",
+    "role": "runtime",
+    "key": true
+   },
+   {
+    "id": "B2",
+    "title": "library/build.gradle",
+    "role": "storage"
+   },
+   {
+    "id": "T1",
+    "title": "Task: compileKotlin",
+    "role": "runtime"
+   },
+   {
+    "id": "T2",
+    "title": "Task: mergeResources",
+    "role": "runtime"
+   },
+   {
+    "id": "Cache1",
+    "title": "Check Cache",
+    "role": "neutral"
+   },
+   {
+    "id": "Skip1",
+    "title": "Restore outputs - FROM-CACHE",
+    "role": "storage"
+   },
+   {
+    "id": "Run1",
+    "title": "Execute Kotlin Compiler",
+    "role": "runtime"
+   },
+   {
+    "id": "Cache2",
+    "title": "Check Cache",
+    "role": "neutral"
+   },
+   {
+    "id": "Skip2",
+    "title": "Restore outputs - FROM-CACHE",
+    "role": "storage"
+   }
+  ],
+  "groups": [
+   {
+    "id": "g_g0",
+    "label": "Configuration Phase",
+    "nodes": [
+     "B1",
+     "DAG",
+     "B2"
+    ]
+   },
+   {
+    "id": "g_g1",
+    "label": "Execution Phase",
+    "nodes": [
+     "T1",
+     "T2",
+     "Cache1",
+     "Skip1",
+     "Run1",
+     "Cache2",
+     "Skip2"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "B1",
+    "to": "DAG",
+    "label": "Evaluated"
+   },
+   {
+    "from": "B2",
+    "to": "DAG",
+    "label": "Evaluated"
+   },
+   {
+    "from": "DAG",
+    "to": "T1",
+    "label": "schedules"
+   },
+   {
+    "from": "DAG",
+    "to": "T2",
+    "label": "schedules"
+   },
+   {
+    "from": "T1",
+    "to": "Cache1",
+    "label": "Inputs unchanged?"
+   },
+   {
+    "from": "Cache1",
+    "to": "Skip1",
+    "label": "Cache Hit"
+   },
+   {
+    "from": "Cache1",
+    "to": "Run1",
+    "label": "Cache Miss"
+   },
+   {
+    "from": "T2",
+    "to": "Cache2",
+    "label": "Inputs unchanged?"
+   },
+   {
+    "from": "Cache2",
+    "to": "Skip2",
+    "label": "Cache Hit"
+   }
+  ],
+  "layout": "columns"
+ },
+ {
+  "path": "android/concurrency/services",
+  "diagram": "c2877ffbe98949a6",
+  "number": 1,
+  "title": "Binding across processes",
+  "caption": "Binding to a service in another process goes through Binder: the activity calls bindService(), the service receives onBind() in its own process, and long work moves to a background thread there.",
+  "sources": [
+   "https://developer.android.com/develop/background-work/services/fgs/service-types"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "Act",
+    "title": "Activity",
+    "role": "client"
+   },
+   {
+    "id": "Binder",
+    "title": "Binder IPC",
+    "role": "runtime",
+    "key": true
+   },
+   {
+    "id": "Svc",
+    "title": "Bound Service",
+    "role": "runtime"
+   },
+   {
+    "id": "Thread",
+    "title": "Background Thread",
+    "role": "runtime"
+   }
+  ],
+  "groups": [
+   {
+    "id": "g_g0",
+    "label": "UI Process",
+    "nodes": [
+     "Act"
+    ]
+   },
+   {
+    "id": "g_g1",
+    "label": "OS Kernel",
+    "nodes": [
+     "Binder"
+    ]
+   },
+   {
+    "id": "g_g2",
+    "label": "Service Process",
+    "nodes": [
+     "Svc",
+     "Thread"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "Act",
+    "to": "Binder",
+    "label": "bindService()"
+   },
+   {
+    "from": "Binder",
+    "to": "Svc",
+    "label": "onBind()"
+   },
+   {
+    "from": "Svc",
+    "to": "Thread",
+    "label": "Delegates work",
+    "style": "dashed"
+   }
+  ],
+  "layout": "columns"
+ },
+ {
+  "path": "android/concurrency/synchronization-and-mutex",
+  "diagram": "ba208c04d568f5fe",
+  "number": 1,
+  "title": "Suspending versus blocking",
+  "caption": "A coroutine Mutex queues waiting coroutines as suspended continuations and resumes one when the lock is released; a synchronized block instead blocks each waiting thread.",
+  "sources": [
+   "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "Lock",
+    "title": "Mutex Lock",
+    "role": "runtime"
+   },
+   {
+    "id": "Q",
+    "title": "Suspended Continuation Queue",
+    "role": "queue",
+    "key": true
+   },
+   {
+    "id": "C1",
+    "title": "Coroutine 1",
+    "role": "runtime"
+   },
+   {
+    "id": "C2",
+    "title": "Coroutine 2",
+    "role": "runtime"
+   },
+   {
+    "id": "C3",
+    "title": "Coroutine 3",
+    "role": "runtime"
+   },
+   {
+    "id": "Sync",
+    "title": "Synchronized Block",
+    "role": "runtime"
+   },
+   {
+    "id": "T1",
+    "title": "Thread 1",
+    "role": "runtime"
+   },
+   {
+    "id": "T2",
+    "title": "Thread 2",
+    "role": "runtime"
+   }
+  ],
+  "groups": [
+   {
+    "id": "g_g0",
+    "label": "Coroutine Mutex",
+    "nodes": [
+     "Lock",
+     "Q",
+     "C1",
+     "C2",
+     "C3"
+    ]
+   },
+   {
+    "id": "g_g1",
+    "label": "Thread Blocking (Legacy)",
+    "nodes": [
+     "Sync",
+     "T1",
+     "T2"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "C1",
+    "to": "Lock",
+    "label": "Acquires"
+   },
+   {
+    "from": "C2",
+    "to": "Q",
+    "label": "Suspends & Queues"
+   },
+   {
+    "from": "C3",
+    "to": "Q",
+    "label": "Suspends & Queues"
+   },
+   {
+    "from": "Lock",
+    "to": "Q",
+    "label": "Releases & Resumes",
+    "style": "dashed"
+   },
+   {
+    "from": "T1",
+    "to": "Sync",
+    "label": "Acquires"
+   },
+   {
+    "from": "T2",
+    "to": "Sync",
+    "label": "HALTED BY OS"
+   }
+  ],
+  "layout": "columns"
+ },
+ {
+  "path": "android/data-and-di/components",
+  "diagram": "de9009a36b07a791",
+  "number": 1,
+  "title": "Hilt component hierarchy",
+  "caption": "Hilt's generated components form a hierarchy: each child component can use its parents' bindings, and each one lives as long as the owner it is named after.",
+  "sources": [
+   "https://dagger.dev/hilt/components.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "Singleton",
+    "title": "SingletonComponent",
+    "role": "runtime",
+    "detail": "app lifetime",
+    "key": true
+   },
+   {
+    "id": "ActRet",
+    "title": "ActivityRetainedComponent",
+    "role": "runtime",
+    "detail": "survives rotation"
+   },
+   {
+    "id": "Activity",
+    "title": "ActivityComponent",
+    "role": "runtime",
+    "detail": "activity instance"
+   },
+   {
+    "id": "VM",
+    "title": "ViewModelComponent",
+    "role": "runtime",
+    "detail": "per-ViewModel"
+   },
+   {
+    "id": "Fragment",
+    "title": "FragmentComponent",
+    "role": "runtime",
+    "detail": "fragment instance"
+   },
+   {
+    "id": "View",
+    "title": "ViewComponent",
+    "role": "runtime",
+    "detail": "view instance"
+   },
+   {
+    "id": "FragmentView",
+    "title": "ViewWithFragmentComponent",
+    "role": "runtime",
+    "detail": "view using fragment bindings"
+   },
+   {
+    "id": "Service",
+    "title": "ServiceComponent",
+    "role": "runtime",
+    "detail": "service instance"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "Singleton",
+    "to": "ActRet",
+    "label": "parent of"
+   },
+   {
+    "from": "ActRet",
+    "to": "Activity",
+    "label": "parent of"
+   },
+   {
+    "from": "ActRet",
+    "to": "VM",
+    "label": "parent of"
+   },
+   {
+    "from": "Activity",
+    "to": "Fragment",
+    "label": "parent of"
+   },
+   {
+    "from": "Activity",
+    "to": "View",
+    "label": "parent of"
+   },
+   {
+    "from": "Fragment",
+    "to": "FragmentView",
+    "label": "parent of"
+   },
+   {
+    "from": "Singleton",
+    "to": "Service",
+    "label": "parent of"
+   }
+  ],
+  "layout": "layers"
+ },
+ {
+  "path": "android/data-and-di/dependency-injection",
+  "diagram": "384bdfc05b82ac72",
+  "number": 1,
+  "title": "Bindings in their components",
+  "caption": "Bindings live in components with matching lifetimes: the database and network client are app-wide singletons, the ViewModel requests the repository, and the activity requests its ViewModel.",
+  "sources": [
+   "https://dagger.dev/hilt/components.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "App",
+    "title": "Application",
+    "role": "runtime"
+   },
+   {
+    "id": "DB",
+    "title": "Room Database",
+    "role": "storage"
+   },
+   {
+    "id": "Net",
+    "title": "Retrofit Network",
+    "role": "client"
+   },
+   {
+    "id": "Repo",
+    "title": "Repository",
+    "role": "runtime"
+   },
+   {
+    "id": "VM",
+    "title": "ViewModel",
+    "role": "runtime"
+   },
+   {
+    "id": "Act",
+    "title": "Activity",
+    "role": "client"
+   }
+  ],
+  "groups": [
+   {
+    "id": "g_g0",
+    "label": "SingletonComponent",
+    "nodes": [
+     "App",
+     "DB",
+     "Net",
+     "Repo"
+    ]
+   },
+   {
+    "id": "g_g1",
+    "label": "ViewModelComponent",
+    "nodes": [
+     "VM"
+    ]
+   },
+   {
+    "id": "g_g2",
+    "label": "ActivityComponent",
+    "nodes": [
+     "Act"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "App",
+    "to": "DB",
+    "label": "Owns"
+   },
+   {
+    "from": "App",
+    "to": "Net",
+    "label": "Owns"
+   },
+   {
+    "from": "VM",
+    "to": "Repo",
+    "label": "Requests",
+    "style": "dashed"
+   },
+   {
+    "from": "Repo",
+    "to": "DB",
+    "label": "Requests",
+    "style": "dashed"
+   },
+   {
+    "from": "Repo",
+    "to": "Net",
+    "label": "Requests",
+    "style": "dashed"
+   },
+   {
+    "from": "Act",
+    "to": "VM",
+    "label": "Requests",
+    "style": "dashed"
+   }
+  ],
+  "layout": "columns"
+ },
+ {
+  "path": "android/kotlin-multiplatform/binary-compatibility-api-evolution",
+  "diagram": "225457e8885cf0ed",
+  "number": 1,
+  "title": "One change, every consumer",
+  "caption": "A public change is reviewed against every consumer surface: JVM and KLib ABIs, the generated Swift API, stored schemas and behaviour contracts all feed one versioned release decision.",
+  "sources": [
+   "https://kotlinlang.org/docs/api-guidelines-backward-compatibility.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "change",
+    "title": "Proposed public change",
+    "role": "neutral"
+   },
+   {
+    "id": "common",
+    "title": "Common Kotlin API review",
+    "role": "runtime",
+    "key": true
+   },
+   {
+    "id": "jvm",
+    "title": "JVM ABI + source consumers",
+    "role": "runtime"
+   },
+   {
+    "id": "klib",
+    "title": "KLib ABI + native consumers",
+    "role": "runtime"
+   },
+   {
+    "id": "swift",
+    "title": "Generated Swift API + Xcode fixture",
+    "role": "client"
+   },
+   {
+    "id": "schema",
+    "title": "Stored/network schema",
+    "role": "storage"
+   },
+   {
+    "id": "behavior",
+    "title": "Behavior and lifecycle contracts",
+    "role": "runtime"
+   },
+   {
+    "id": "release",
+    "title": "Versioned release decision",
+    "role": "neutral"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "change",
+    "to": "common",
+    "label": "reviewed as"
+   },
+   {
+    "from": "common",
+    "to": "jvm",
+    "label": "checked for"
+   },
+   {
+    "from": "common",
+    "to": "klib",
+    "label": "checked for"
+   },
+   {
+    "from": "common",
+    "to": "swift",
+    "label": "checked for"
+   },
+   {
+    "from": "common",
+    "to": "schema",
+    "label": "checked for"
+   },
+   {
+    "from": "common",
+    "to": "behavior",
+    "label": "checked for"
+   },
+   {
+    "from": "jvm",
+    "to": "release",
+    "label": "informs"
+   },
+   {
+    "from": "klib",
+    "to": "release",
+    "label": "informs"
+   },
+   {
+    "from": "swift",
+    "to": "release",
+    "label": "informs"
+   },
+   {
+    "from": "schema",
+    "to": "release",
+    "label": "informs"
+   },
+   {
+    "from": "behavior",
+    "to": "release",
+    "label": "informs"
+   }
+  ],
+  "layout": "layers"
+ },
+ {
+  "path": "android/kotlin-multiplatform/ecosystem/dependency-injection",
+  "diagram": "d09ada291b52cfb2",
+  "number": 1,
+  "title": "Composition at the platform edge",
+  "caption": "Each platform's composition root supplies its target bindings, which complete the shared graph; pure domain classes receive dependencies through constructors and never touch the container.",
+  "sources": [
+   "https://dagger.dev/hilt/components.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "android",
+    "title": "Android composition root",
+    "role": "client",
+    "detail": "Application / ViewModelStoreOwner"
+   },
+   {
+    "id": "ios",
+    "title": "iOS composition root",
+    "role": "client",
+    "detail": "SwiftUI App / ViewModelStoreOwner"
+   },
+   {
+    "id": "platform",
+    "title": "Target bindings",
+    "role": "runtime",
+    "detail": "Context, paths, engines, drivers, native services"
+   },
+   {
+    "id": "shared",
+    "title": "Shared graph",
+    "role": "runtime",
+    "detail": "repositories, use cases, ViewModels",
+    "key": true
+   },
+   {
+    "id": "domain",
+    "title": "Pure domain constructors",
+    "role": "neutral",
+    "detail": "no container access"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "android",
+    "to": "platform",
+    "label": "provides"
+   },
+   {
+    "from": "ios",
+    "to": "platform",
+    "label": "provides"
+   },
+   {
+    "from": "platform",
+    "to": "shared",
+    "label": "completes"
+   },
+   {
+    "from": "shared",
+    "to": "domain",
+    "label": "constructs"
+   }
+  ],
+  "layout": "layers"
+ },
+ {
+  "path": "android/kotlin-multiplatform/ecosystem/libraries-ecosystem",
+  "diagram": "feac988fe84cf816",
+  "number": 1,
+  "title": "One common API, one variant per target",
+  "caption": "A commonMain API needs an implementation for every target: the JVM variant may use java.*, the Apple variant Foundation or POSIX, and the JS or Wasm variant web APIs.",
+  "sources": [
+   "https://kotlinlang.org/docs/multiplatform/multiplatform-add-dependencies.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "Common",
+    "title": "commonMain API",
+    "role": "runtime",
+    "key": true
+   },
+   {
+    "id": "JVM",
+    "title": "JVM/Android variant",
+    "role": "runtime",
+    "detail": "may use java.*"
+   },
+   {
+    "id": "Apple",
+    "title": "Apple variant",
+    "role": "runtime",
+    "detail": "may use Foundation/POSIX"
+   },
+   {
+    "id": "Web",
+    "title": "JS/Wasm variant",
+    "role": "runtime",
+    "detail": "may use web APIs"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "Common",
+    "to": "JVM",
+    "label": "implemented by"
+   },
+   {
+    "from": "Common",
+    "to": "Apple",
+    "label": "implemented by"
+   },
+   {
+    "from": "Common",
+    "to": "Web",
+    "label": "implemented by"
+   }
+  ],
+  "layout": "layers"
+ },
+ {
+  "path": "android/kotlin-multiplatform/foundations/architecture-and-module-boundaries",
+  "diagram": "0fe3387556adb14b",
+  "number": 1,
+  "title": "Logic-only sharing",
+  "caption": "Networking, persistence, domain rules and observable state are shared; each platform keeps its own native UI on top of that shared state.",
+  "sources": [
+   "https://kotlinlang.org/docs/api-guidelines-build-for-multiplatform.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "Domain",
+    "title": "Shared domain and use cases",
+    "role": "runtime",
+    "key": true
+   },
+   {
+    "id": "Network",
+    "title": "Shared networking",
+    "role": "client"
+   },
+   {
+    "id": "Database",
+    "title": "Shared persistence",
+    "role": "storage"
+   },
+   {
+    "id": "State",
+    "title": "Shared state / StateFlow",
+    "role": "storage"
+   },
+   {
+    "id": "Android",
+    "title": "Android UI",
+    "role": "client",
+    "detail": "Compose + Android integrations"
+   },
+   {
+    "id": "IOS",
+    "title": "iOS UI",
+    "role": "client",
+    "detail": "SwiftUI + Apple integrations"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "Network",
+    "to": "Domain",
+    "label": "supplies data"
+   },
+   {
+    "from": "Database",
+    "to": "Domain",
+    "label": "supplies data"
+   },
+   {
+    "from": "Domain",
+    "to": "State",
+    "label": "updates"
+   },
+   {
+    "from": "State",
+    "to": "Android",
+    "label": "rendered by"
+   },
+   {
+    "from": "State",
+    "to": "IOS",
+    "label": "rendered by"
+   }
+  ],
+  "layout": "layers"
+ },
+ {
+  "path": "android/kotlin-multiplatform/foundations/architecture-and-module-boundaries",
+  "diagram": "b13e7f6b197326da",
+  "number": 2,
+  "title": "Module graph of a KMP project",
+  "caption": "Build-logic conventions configure the modules; feature modules build on core capabilities, and thin Android and iOS app shells assemble both.",
+  "sources": [
+   "https://kotlinlang.org/docs/api-guidelines-build-for-multiplatform.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "Logic",
+    "title": "build-logic conventions",
+    "role": "neutral"
+   },
+   {
+    "id": "Core",
+    "title": "core-* shared capabilities",
+    "role": "runtime"
+   },
+   {
+    "id": "Feature",
+    "title": "feature-* shared logic",
+    "role": "runtime"
+   },
+   {
+    "id": "Android",
+    "title": "androidApp shell",
+    "role": "client"
+   },
+   {
+    "id": "IOS",
+    "title": "iosApp shell",
+    "role": "client"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "Logic",
+    "to": "Core",
+    "label": "configures",
+    "style": "dashed"
+   },
+   {
+    "from": "Logic",
+    "to": "Feature",
+    "label": "configures",
+    "style": "dashed"
+   },
+   {
+    "from": "Core",
+    "to": "Feature",
+    "label": "used by"
+   },
+   {
+    "from": "Feature",
+    "to": "Android",
+    "label": "assembled into"
+   },
+   {
+    "from": "Feature",
+    "to": "IOS",
+    "label": "assembled into"
+   },
+   {
+    "from": "Core",
+    "to": "Android",
+    "label": "assembled into"
+   },
+   {
+    "from": "Core",
+    "to": "IOS",
+    "label": "assembled into"
+   }
+  ],
+  "layout": "layers"
+ },
+ {
+  "path": "android/kotlin-multiplatform/foundations/overview-and-k1-vs-k2",
+  "diagram": "ebfa6336f4d1836b",
+  "number": 1,
+  "title": "From commonMain to two apps",
+  "caption": "The same commonMain code is compiled by the Kotlin/JVM backend for Android and by Kotlin/Native into a framework that the iOS app uses.",
+  "sources": [
+   "https://kotlinlang.org/docs/multiplatform/multiplatform-hierarchy.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "common",
+    "title": "commonMain",
+    "role": "runtime",
+    "detail": "shared Kotlin APIs and logic",
+    "key": true
+   },
+   {
+    "id": "androidBackend",
+    "title": "Kotlin/JVM backend",
+    "role": "runtime"
+   },
+   {
+    "id": "nativeBackend",
+    "title": "Kotlin/Native backend",
+    "role": "runtime"
+   },
+   {
+    "id": "androidApp",
+    "title": "Android app",
+    "role": "client",
+    "detail": "Compose or Views"
+   },
+   {
+    "id": "framework",
+    "title": "iOS framework or Swift-exported modules",
+    "role": "storage"
+   },
+   {
+    "id": "iosApp",
+    "title": "iOS app",
+    "role": "client",
+    "detail": "SwiftUI, UIKit, or shared Compose UI"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "common",
+    "to": "androidBackend",
+    "label": "compiled by"
+   },
+   {
+    "from": "common",
+    "to": "nativeBackend",
+    "label": "compiled by"
+   },
+   {
+    "from": "androidBackend",
+    "to": "androidApp",
+    "label": "produces"
+   },
+   {
+    "from": "nativeBackend",
+    "to": "framework",
+    "label": "produces"
+   },
+   {
+    "from": "framework",
+    "to": "iosApp",
+    "label": "used by"
+   }
+  ],
+  "layout": "layers"
+ },
+ {
+  "path": "android/kotlin-multiplatform/foundations/overview-and-k1-vs-k2",
+  "diagram": "7f205fbb5f1f6f43",
+  "number": 2,
+  "title": "Source sets in shared/src",
+  "caption": "commonMain holds platform-independent code, platform source sets add SDK access, appleMain shares code that iosMain and macosMain inherit, and test source sets sit beside the code they test.",
+  "sources": [
+   "https://kotlinlang.org/docs/multiplatform/multiplatform-hierarchy.html"
+  ],
+  "kind": "map",
+  "layout": "columns",
+  "reading": "Each boundary is a source set; its cards are the folders or files it contains.",
+  "nodes": [
+   {
+    "id": "domain",
+    "title": "kotlin/domain/",
+    "detail": "use cases and entities",
+    "role": "storage"
+   },
+   {
+    "id": "data",
+    "title": "kotlin/data/",
+    "detail": "repository interfaces",
+    "role": "storage"
+   },
+   {
+    "id": "presentation",
+    "title": "kotlin/presentation/",
+    "detail": "StateFlow ViewModels",
+    "role": "storage"
+   },
+   {
+    "id": "androidFile",
+    "title": "Platform.android.kt",
+    "role": "storage"
+   },
+   {
+    "id": "appleFile",
+    "title": "DateFormatter.apple.kt",
+    "detail": "NSDateFormatter",
+    "role": "storage"
+   },
+   {
+    "id": "iosFile",
+    "title": "Platform.ios.kt",
+    "role": "storage"
+   },
+   {
+    "id": "macosFile",
+    "title": "Platform.macos.kt",
+    "role": "storage"
+   },
+   {
+    "id": "jvmFile",
+    "title": "Platform.jvm.kt",
+    "role": "storage"
+   },
+   {
+    "id": "commonTest",
+    "title": "commonTest/",
+    "detail": "shared tests",
+    "role": "runtime"
+   },
+   {
+    "id": "androidTest",
+    "title": "androidUnitTest/",
+    "detail": "Robolectric tests",
+    "role": "runtime"
+   },
+   {
+    "id": "iosTest",
+    "title": "iosTest/",
+    "detail": "iOS simulator tests",
+    "role": "runtime"
+   }
+  ],
+  "groups": [
+   {
+    "id": "common",
+    "label": "commonMain/ · pure Kotlin",
+    "nodes": [
+     "domain",
+     "data",
+     "presentation"
+    ]
+   },
+   {
+    "id": "android",
+    "label": "androidMain/ · full Android SDK",
+    "nodes": [
+     "androidFile"
+    ]
+   },
+   {
+    "id": "apple",
+    "label": "appleMain/ · Foundation, Darwin",
+    "nodes": [
+     "appleFile"
+    ]
+   },
+   {
+    "id": "ios",
+    "label": "iosMain/ · inherits appleMain",
+    "nodes": [
+     "iosFile"
+    ]
+   },
+   {
+    "id": "macos",
+    "label": "macosMain/ · inherits appleMain",
+    "nodes": [
+     "macosFile"
+    ]
+   },
+   {
+    "id": "jvm",
+    "label": "jvmMain/ · server-side JVM",
+    "nodes": [
+     "jvmFile"
+    ]
+   },
+   {
+    "id": "tests",
+    "label": "Test source sets",
+    "nodes": [
+     "commonTest",
+     "androidTest",
+     "iosTest"
+    ]
+   }
+  ],
+  "edges": []
+ },
+ {
+  "path": "android/kotlin-multiplatform/production/ci-cd-for-kmp",
+  "diagram": "75bfab8b671aac69",
+  "number": 1,
+  "title": "What lives in ~/.konan",
+  "caption": "The ~/.konan directory holds the Kotlin/Native compiler distribution, its downloaded toolchain dependencies and an incremental cache; together they run to gigabytes, which is why CI caches them.",
+  "sources": [
+   "https://kotlinlang.org/docs/multiplatform/multiplatform-run-tests.html",
+   "https://kotlinlang.org/docs/native-target-support.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "konan",
+    "title": "~/.konan/",
+    "role": "neutral"
+   },
+   {
+    "id": "deps",
+    "title": "dependencies/ (~2 GB",
+    "role": "storage"
+   },
+   {
+    "id": "llvm",
+    "title": "apple-llvm-20210106/",
+    "role": "storage",
+    "detail": "LLVM for iOS compilation"
+   },
+   {
+    "id": "ffi",
+    "title": "libffi-3.4.4/",
+    "role": "storage"
+   },
+   {
+    "id": "sysroot",
+    "title": "target-sysroot-*/",
+    "role": "storage",
+    "detail": "iOS SDK headers"
+   },
+   {
+    "id": "compiler",
+    "title": "kotlin-native-prebuilt-macos-aarch64-2.0.20/ (~500 MB",
+    "role": "storage"
+   },
+   {
+    "id": "bin",
+    "title": "bin/kotlinc-native",
+    "role": "storage"
+   },
+   {
+    "id": "lib",
+    "title": "lib/",
+    "role": "storage"
+   },
+   {
+    "id": "cache",
+    "title": "cache/",
+    "role": "storage",
+    "detail": "incremental compilation cache"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "konan",
+    "to": "deps",
+    "label": "contains"
+   },
+   {
+    "from": "deps",
+    "to": "llvm",
+    "label": "contains"
+   },
+   {
+    "from": "deps",
+    "to": "ffi",
+    "label": "contains"
+   },
+   {
+    "from": "deps",
+    "to": "sysroot",
+    "label": "contains"
+   },
+   {
+    "from": "konan",
+    "to": "compiler",
+    "label": "contains"
+   },
+   {
+    "from": "compiler",
+    "to": "bin",
+    "label": "contains"
+   },
+   {
+    "from": "compiler",
+    "to": "lib",
+    "label": "contains"
+   },
+   {
+    "from": "konan",
+    "to": "cache",
+    "label": "contains"
+   }
+  ],
+  "layout": "layers"
+ },
+ {
+  "path": "android/kotlin-multiplatform/production/concurrency-and-memory",
+  "diagram": "e3cb53e5fe1604a2",
+  "number": 1,
+  "title": "Sharing under the new memory model",
+  "caption": "Threads share a reference freely; the tracing GC marks everything reachable from roots, so the shared User stays allocated while it is reachable.",
+  "sources": [
+   "https://kotlinlang.org/docs/native-arc-integration.html"
+  ],
+  "kind": "sequence",
+  "participants": [
+   {
+    "id": "A",
+    "title": "Thread A",
+    "role": "runtime"
+   },
+   {
+    "id": "B",
+    "title": "Thread B",
+    "role": "runtime"
+   },
+   {
+    "id": "GC",
+    "title": "GC thread",
+    "role": "runtime"
+   }
+  ],
+  "events": [
+   {
+    "at": "A",
+    "label": "Create User and set name to Alice"
+   },
+   {
+    "from": "A",
+    "to": "B",
+    "label": "Share reference to user",
+    "style": "dashed"
+   },
+   {
+    "at": "B",
+    "label": "Set email through its reference"
+   },
+   {
+    "at": "GC",
+    "label": "Mark phase: walk roots"
+   },
+   {
+    "at": "GC",
+    "label": "Mark user reachable"
+   },
+   {
+    "at": "GC",
+    "label": "Sweep unreachable objects"
+   },
+   {
+    "over": [
+     "A",
+     "GC"
+    ],
+    "text": "User remains allocated because it is reachable"
+   }
+  ],
+  "lane_gap": 260
+ },
+ {
+  "path": "android/kotlin-multiplatform/production/concurrency-and-memory",
+  "diagram": "ab0d748023c8f7e4",
+  "number": 2,
+  "title": "Two memory managers in one process",
+  "caption": "One iOS process runs two memory managers: Swift's ARC frees objects immediately but cannot collect cycles, Kotlin/Native's tracing GC collects cycles in batches, and references across the bridge between them can leak.",
+  "sources": [
+   "https://kotlinlang.org/docs/native-arc-integration.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "swift",
+    "title": "Swift / Objective-C",
+    "role": "runtime",
+    "detail": [
+     "ARC",
+     "deterministic, immediate deallocation",
+     "cycles can leak"
+    ]
+   },
+   {
+    "id": "kotlin",
+    "title": "Kotlin/Native",
+    "role": "runtime",
+    "detail": [
+     "tracing mark-and-sweep GC",
+     "batched, non-deterministic collection",
+     "cycles are collectable"
+    ]
+   }
+  ],
+  "groups": [
+   {
+    "id": "g_process",
+    "label": "iOS app process",
+    "nodes": [
+     "swift",
+     "kotlin"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "swift",
+    "to": "kotlin",
+    "label": "interop bridge<br/>cross-boundary references can leak",
+    "both": true
+   }
+  ],
+  "layout": "columns"
+ },
+ {
+  "path": "android/kotlin-multiplatform/production/testing-and-mocking",
+  "diagram": "02503616a70a434c",
+  "number": 1,
+  "title": "What commonTest compiles to",
+  "caption": "commonTest is compiled separately for every target, and each compilation runs on that target's own test runner.",
+  "sources": [
+   "https://ktor.io/docs/client-testing.html",
+   "https://kotlinlang.org/docs/multiplatform/multiplatform-run-tests.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "CT",
+    "title": "commonTest: shared test source",
+    "role": "storage"
+   },
+   {
+    "id": "AH",
+    "title": "Android host test compilation",
+    "role": "runtime"
+   },
+   {
+    "id": "IOS",
+    "title": "iosSimulatorArm64 test compilation",
+    "role": "runtime"
+   },
+   {
+    "id": "JVM",
+    "title": "JVM test compilation",
+    "role": "runtime"
+   },
+   {
+    "id": "WEB",
+    "title": "JS or Wasm test compilation",
+    "role": "runtime"
+   },
+   {
+    "id": "JR",
+    "title": "JUnit-compatible JVM runner",
+    "role": "runtime"
+   },
+   {
+    "id": "NR",
+    "title": "Kotlin/Native test runner on macOS",
+    "role": "runtime"
+   },
+   {
+    "id": "BR",
+    "title": "Browser or JS runner",
+    "role": "client"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "CT",
+    "to": "AH",
+    "label": "compiled for"
+   },
+   {
+    "from": "CT",
+    "to": "IOS",
+    "label": "compiled for"
+   },
+   {
+    "from": "CT",
+    "to": "JVM",
+    "label": "compiled for"
+   },
+   {
+    "from": "CT",
+    "to": "WEB",
+    "label": "compiled for"
+   },
+   {
+    "from": "AH",
+    "to": "JR",
+    "label": "runs on"
+   },
+   {
+    "from": "IOS",
+    "to": "NR",
+    "label": "runs on"
+   },
+   {
+    "from": "JVM",
+    "to": "JR",
+    "label": "runs on"
+   },
+   {
+    "from": "WEB",
+    "to": "BR",
+    "label": "runs on"
+   }
+  ],
+  "layout": "layers"
+ },
+ {
+  "path": "android/kotlin-multiplatform/tooling/build-system-and-source-sets",
+  "diagram": "411f1d0c02be8a6a",
+  "number": 1,
+  "title": "Variant-aware resolution",
+  "caption": "One commonMain dependency declaration resolves to a different artifact for each compilation: an Android/JVM artifact, a device KLIB and a simulator KLIB.",
+  "sources": [
+   "https://docs.gradle.org/current/userguide/variant_aware_resolution.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "Dependency",
+    "title": "commonMain dependency declaration",
+    "role": "neutral"
+   },
+   {
+    "id": "AndroidVariant",
+    "title": "Android compilation",
+    "role": "storage",
+    "detail": "compatible Android/JVM artifact"
+   },
+   {
+    "id": "DeviceVariant",
+    "title": "iosArm64 compilation",
+    "role": "storage",
+    "detail": "iosArm64 KLIB"
+   },
+   {
+    "id": "SimulatorVariant",
+    "title": "iosSimulatorArm64 compilation",
+    "role": "storage",
+    "detail": "simulator-arm64 KLIB"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "Dependency",
+    "to": "AndroidVariant",
+    "label": "resolves to"
+   },
+   {
+    "from": "Dependency",
+    "to": "DeviceVariant",
+    "label": "resolves to"
+   },
+   {
+    "from": "Dependency",
+    "to": "SimulatorVariant",
+    "label": "resolves to"
+   }
+  ],
+  "layout": "layers"
+ },
+ {
+  "path": "android/kotlin-multiplatform/tooling/build-system-and-source-sets",
+  "diagram": "8a273793a75eaafa",
+  "number": 2,
+  "title": "Two convention plugins",
+  "caption": "Convention plugins bundle build policy: company.kmp.library applies the KMP and Android plugins, target and compiler policy and test policy; company.kmp.sqldelight adds SQLDelight and its drivers.",
+  "sources": [
+   "https://docs.gradle.org/current/userguide/variant_aware_resolution.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "Base",
+    "title": "company.kmp.library",
+    "role": "runtime"
+   },
+   {
+    "id": "BasePlugins",
+    "title": "KMP + Android-KMP plugins",
+    "role": "neutral"
+   },
+   {
+    "id": "Targets",
+    "title": "Supported targets + compiler policy",
+    "role": "neutral"
+   },
+   {
+    "id": "Tests",
+    "title": "Common test policy",
+    "role": "neutral"
+   },
+   {
+    "id": "SQL",
+    "title": "company.kmp.sqldelight",
+    "role": "runtime"
+   },
+   {
+    "id": "SQLPlugin",
+    "title": "SQLDelight plugin + schema tasks",
+    "role": "neutral"
+   },
+   {
+    "id": "SQLDependencies",
+    "title": "Common runtime + platform drivers",
+    "role": "neutral"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "Base",
+    "to": "BasePlugins",
+    "label": "applies"
+   },
+   {
+    "from": "Base",
+    "to": "Targets",
+    "label": "applies"
+   },
+   {
+    "from": "Base",
+    "to": "Tests",
+    "label": "applies"
+   },
+   {
+    "from": "SQL",
+    "to": "SQLPlugin",
+    "label": "applies"
+   },
+   {
+    "from": "SQL",
+    "to": "SQLDependencies",
+    "label": "applies"
+   }
+  ],
+  "layout": "layers"
+ },
+ {
+  "path": "android/kotlin-multiplatform/tooling/ios-distribution",
+  "diagram": "5c628b6b3fce9678",
+  "number": 1,
+  "title": "From sources to iOS consumers",
+  "caption": "The Kotlin/Native compiler produces separate device and simulator framework slices; local integration uses them directly, while remote distribution packages them into an XCFramework, a checksummed ZIP and package metadata.",
+  "sources": [
+   "https://kotlinlang.org/docs/multiplatform/multiplatform-spm-export.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "source",
+    "title": "commonMain + Apple source sets",
+    "role": "storage"
+   },
+   {
+    "id": "compiler",
+    "title": "Kotlin/Native compiler",
+    "role": "runtime",
+    "key": true
+   },
+   {
+    "id": "device",
+    "title": "iOS device framework slice",
+    "role": "storage"
+   },
+   {
+    "id": "simulator",
+    "title": "iOS Simulator framework slice",
+    "role": "storage"
+   },
+   {
+    "id": "local",
+    "title": "Direct or CocoaPods local integration",
+    "role": "client"
+   },
+   {
+    "id": "xcf",
+    "title": "XCFramework bundle",
+    "role": "storage"
+   },
+   {
+    "id": "archive",
+    "title": "ZIP + checksum + package metadata",
+    "role": "storage"
+   },
+   {
+    "id": "remote",
+    "title": "Remote SwiftPM or CocoaPods consumer",
+    "role": "client"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "source",
+    "to": "compiler",
+    "label": "compiled by"
+   },
+   {
+    "from": "compiler",
+    "to": "device",
+    "label": "produces"
+   },
+   {
+    "from": "compiler",
+    "to": "simulator",
+    "label": "produces"
+   },
+   {
+    "from": "device",
+    "to": "local",
+    "label": "used by"
+   },
+   {
+    "from": "simulator",
+    "to": "local",
+    "label": "used by"
+   },
+   {
+    "from": "device",
+    "to": "xcf",
+    "label": "packaged into"
+   },
+   {
+    "from": "simulator",
+    "to": "xcf",
+    "label": "packaged into"
+   },
+   {
+    "from": "xcf",
+    "to": "archive",
+    "label": "zipped into"
+   },
+   {
+    "from": "archive",
+    "to": "remote",
+    "label": "consumed by"
+   }
+  ],
+  "layout": "layers"
+ },
+ {
+  "path": "android/kotlin-multiplatform/tooling/ios-distribution",
+  "diagram": "83fce8b81be94e11",
+  "number": 2,
+  "title": "Inside an XCFramework",
+  "caption": "An XCFramework is a bundle of per-platform slices described by its Info.plist; each slice carries its own framework binary, header and modules.",
+  "sources": [
+   "https://kotlinlang.org/docs/multiplatform/multiplatform-spm-export.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "xcf",
+    "title": "Shared.xcframework",
+    "role": "storage"
+   },
+   {
+    "id": "manifest",
+    "title": "Info.plist",
+    "role": "storage",
+    "detail": "available libraries"
+   },
+   {
+    "id": "device",
+    "title": "ios-arm64",
+    "role": "storage"
+   },
+   {
+    "id": "deviceFramework",
+    "title": "Shared.framework",
+    "role": "storage",
+    "detail": "device binary + header + modules"
+   },
+   {
+    "id": "simulator",
+    "title": "ios-arm64_x86_64-simulator",
+    "role": "storage",
+    "detail": "or ios-arm64-simulator"
+   },
+   {
+    "id": "simulatorFramework",
+    "title": "Shared.framework",
+    "role": "storage",
+    "detail": "Simulator binary + header + modules"
+   },
+   {
+    "id": "optional",
+    "title": "Optional macOS, tvOS, watchOS,",
+    "role": "storage",
+    "detail": "or other Apple variants"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "xcf",
+    "to": "manifest",
+    "label": "contains"
+   },
+   {
+    "from": "xcf",
+    "to": "device",
+    "label": "contains"
+   },
+   {
+    "from": "device",
+    "to": "deviceFramework",
+    "label": "contains"
+   },
+   {
+    "from": "xcf",
+    "to": "simulator",
+    "label": "contains"
+   },
+   {
+    "from": "simulator",
+    "to": "simulatorFramework",
+    "label": "contains"
+   },
+   {
+    "from": "xcf",
+    "to": "optional",
+    "label": "contains"
+   }
+  ],
+  "layout": "layers"
+ },
+ {
+  "path": "android/kotlin-multiplatform/tooling/ios-distribution",
+  "diagram": "a46dfdbb295be6f9",
+  "number": 3,
+  "title": "Remote SwiftPM distribution",
+  "caption": "CI uploads an immutable, checksummed archive and tags a Package.swift that points to it; Xcode resolves the tag, downloads the archive and verifies the checksum before choosing a slice.",
+  "sources": [
+   "https://kotlinlang.org/docs/multiplatform/multiplatform-spm-export.html"
+  ],
+  "kind": "sequence",
+  "participants": [
+   {
+    "id": "CI",
+    "title": "KMP release CI",
+    "role": "runtime"
+   },
+   {
+    "id": "Store",
+    "title": "Artifact storage",
+    "role": "storage"
+   },
+   {
+    "id": "Repo",
+    "title": "Swift package Git repo",
+    "role": "storage"
+   },
+   {
+    "id": "Xcode",
+    "title": "Consumer Xcode",
+    "role": "client"
+   }
+  ],
+  "events": [
+   {
+    "at": "CI",
+    "label": "Assemble and test release XCFramework"
+   },
+   {
+    "at": "CI",
+    "label": "ZIP and compute SHA-256 checksum"
+   },
+   {
+    "from": "CI",
+    "to": "Store",
+    "label": "Upload immutable archive URL"
+   },
+   {
+    "from": "CI",
+    "to": "Repo",
+    "label": "Commit Package.swift with URL + checksum"
+   },
+   {
+    "from": "CI",
+    "to": "Repo",
+    "label": "Create semantic-version Git tag"
+   },
+   {
+    "from": "Xcode",
+    "to": "Repo",
+    "label": "Resolve tagged package"
+   },
+   {
+    "from": "Xcode",
+    "to": "Store",
+    "label": "Download archive"
+   },
+   {
+    "at": "Xcode",
+    "label": "Verify checksum and select matching slice"
+   }
+  ],
+  "lane_gap": 250
+ },
+ {
+  "path": "android/kotlin-multiplatform/tooling/swift-interop",
+  "diagram": "b9d83916366ff1b7",
+  "number": 1,
+  "title": "The Objective-C bridge",
+  "caption": "Swift reaches Kotlin through Objective-C: the compiler emits a binary and an Objective-C header, Swift imports that header, and Objective-C's type and naming rules constrain what Swift sees.",
+  "sources": [
+   "https://kotlinlang.org/docs/native-objc-interop.html",
+   "https://kotlinlang.org/docs/native-swift-export.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "kotlin",
+    "title": "Public Kotlin declarations",
+    "role": "storage"
+   },
+   {
+    "id": "native",
+    "title": "Kotlin/Native compiler",
+    "role": "runtime"
+   },
+   {
+    "id": "binary",
+    "title": "Native framework binary",
+    "role": "storage"
+   },
+   {
+    "id": "header",
+    "title": "Objective-C header",
+    "role": "storage",
+    "key": true
+   },
+   {
+    "id": "importer",
+    "title": "Swift Objective-C importer",
+    "role": "runtime"
+   },
+   {
+    "id": "swift",
+    "title": "Swift call site",
+    "role": "client"
+   },
+   {
+    "id": "limits",
+    "title": "Objective-C type and naming rules",
+    "role": "neutral"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "kotlin",
+    "to": "native",
+    "label": "compiled by"
+   },
+   {
+    "from": "native",
+    "to": "binary",
+    "label": "emits"
+   },
+   {
+    "from": "native",
+    "to": "header",
+    "label": "emits"
+   },
+   {
+    "from": "header",
+    "to": "importer",
+    "label": "imported by"
+   },
+   {
+    "from": "importer",
+    "to": "swift",
+    "label": "exposes to"
+   },
+   {
+    "from": "limits",
+    "to": "header",
+    "label": "constrain",
+    "style": "dashed"
+   }
+  ],
+  "layout": "layers"
+ },
+ {
+  "path": "android/kotlin-multiplatform/ui-sharing/compose-multiplatform",
+  "diagram": "9563f59b21f4d47b",
+  "number": 1,
+  "title": "Shared UI, platform hosts",
+  "caption": "Shared composables, state and navigation run in every host, while each host still supplies platform seams such as permissions, maps, camera and system UI.",
+  "sources": [
+   "https://kotlinlang.org/docs/multiplatform/compose-swiftui-integration.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "common",
+    "title": "commonMain",
+    "role": "runtime",
+    "detail": "composables, state, semantics, navigation routes",
+    "key": true
+   },
+   {
+    "id": "android",
+    "title": "Android host",
+    "role": "client",
+    "detail": "Activity + Jetpack Compose artifacts"
+   },
+   {
+    "id": "ios",
+    "title": "iOS host",
+    "role": "client",
+    "detail": "SwiftUI/UIKit + ComposeUIViewController"
+   },
+   {
+    "id": "desktop",
+    "title": "Desktop host",
+    "role": "client",
+    "detail": "Window + desktop implementation"
+   },
+   {
+    "id": "web",
+    "title": "Web host",
+    "role": "client",
+    "detail": "browser + Wasm/JS implementation"
+   },
+   {
+    "id": "native",
+    "title": "Platform seams",
+    "role": "neutral",
+    "detail": "permissions, maps, camera, system UI, SDKs"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "common",
+    "to": "android",
+    "label": "runs in"
+   },
+   {
+    "from": "common",
+    "to": "ios",
+    "label": "runs in"
+   },
+   {
+    "from": "common",
+    "to": "desktop",
+    "label": "runs in"
+   },
+   {
+    "from": "common",
+    "to": "web",
+    "label": "runs in"
+   },
+   {
+    "from": "native",
+    "to": "android",
+    "label": "integrated in"
+   },
+   {
+    "from": "native",
+    "to": "ios",
+    "label": "integrated in"
+   },
+   {
+    "from": "native",
+    "to": "desktop",
+    "label": "integrated in"
+   },
+   {
+    "from": "native",
+    "to": "web",
+    "label": "integrated in"
+   }
+  ],
+  "layout": "layers"
+ },
+ {
+  "path": "android/kotlin-multiplatform/ui-sharing/compose-multiplatform",
+  "diagram": "dc71edcc861d6794",
+  "number": 2,
+  "title": "Diagnose before you fix",
+  "caption": "Start from the user-visible symptom and collect Compose, platform and dependency evidence before changing code; then fix the measured bottleneck and compare against the baseline.",
+  "sources": [
+   "https://kotlinlang.org/docs/multiplatform/compose-swiftui-integration.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "symptom",
+    "title": "User-visible symptom",
+    "role": "client",
+    "detail": "jank, slow start, memory pressure"
+   },
+   {
+    "id": "compose",
+    "title": "Compose evidence",
+    "role": "runtime",
+    "detail": "recomposition, layout, draw, allocations"
+   },
+   {
+    "id": "platform",
+    "title": "Platform evidence",
+    "role": "runtime",
+    "detail": "Instruments, Perfetto, signposts/traces"
+   },
+   {
+    "id": "dependency",
+    "title": "Dependency evidence",
+    "role": "runtime",
+    "detail": "images, networking, database, native SDK"
+   },
+   {
+    "id": "decision",
+    "title": "Fix measured bottleneck",
+    "role": "neutral",
+    "detail": "then compare to baseline",
+    "key": true
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "symptom",
+    "to": "compose",
+    "label": "investigate"
+   },
+   {
+    "from": "compose",
+    "to": "platform",
+    "label": "correlate with"
+   },
+   {
+    "from": "platform",
+    "to": "dependency",
+    "label": "then check"
+   },
+   {
+    "from": "dependency",
+    "to": "decision",
+    "label": "leads to"
+   }
+  ],
+  "layout": "snake"
+ },
+ {
+  "path": "android/kotlin-multiplatform/ui-sharing/resource-sharing",
+  "diagram": "370534b18b3178d7",
+  "number": 1,
+  "title": "The composeResources directory",
+  "caption": "composeResources groups resources by type and by qualifier: values-fr and values-fr-rCA localize strings, and drawable-dark supplies dark-theme images.",
+  "sources": [
+   "https://kotlinlang.org/docs/multiplatform/compose-multiplatform-resources-setup.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "root",
+    "title": "sharedUI/src/commonMain/composeResources",
+    "role": "neutral"
+   },
+   {
+    "id": "drawable",
+    "title": "drawable/",
+    "role": "storage",
+    "detail": "PNG, JPEG, WebP, BMP, Android XML vectors"
+   },
+   {
+    "id": "font",
+    "title": "font/",
+    "role": "storage",
+    "detail": "TTF, OTF, TTC, variable fonts"
+   },
+   {
+    "id": "values",
+    "title": "values/",
+    "role": "storage",
+    "detail": "strings, arrays, plurals"
+   },
+   {
+    "id": "files",
+    "title": "files/",
+    "role": "storage",
+    "detail": "arbitrary hierarchy and raw files"
+   },
+   {
+    "id": "french",
+    "title": "values-fr/",
+    "role": "storage",
+    "detail": "French strings"
+   },
+   {
+    "id": "canada",
+    "title": "values-fr-rCA/",
+    "role": "storage",
+    "detail": "Canadian French strings"
+   },
+   {
+    "id": "dark",
+    "title": "drawable-dark/",
+    "role": "storage",
+    "detail": "dark-theme images"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "root",
+    "to": "drawable",
+    "label": "contains"
+   },
+   {
+    "from": "root",
+    "to": "font",
+    "label": "contains"
+   },
+   {
+    "from": "root",
+    "to": "values",
+    "label": "contains"
+   },
+   {
+    "from": "root",
+    "to": "files",
+    "label": "contains"
+   },
+   {
+    "from": "root",
+    "to": "french",
+    "label": "contains"
+   },
+   {
+    "from": "root",
+    "to": "canada",
+    "label": "contains"
+   },
+   {
+    "from": "root",
+    "to": "dark",
+    "label": "contains"
+   }
+  ],
+  "layout": "layers"
+ },
+ {
+  "path": "android/kotlin-multiplatform/ui-sharing/resource-sharing",
+  "diagram": "531301468ded90e8",
+  "number": 2,
+  "title": "Resources through the build",
+  "caption": "Resources pass through the Compose Gradle plugin, which generates the Res accessors and packages per-target resources, into the final application, where release checks confirm locales, themes, missing assets and size.",
+  "sources": [
+   "https://kotlinlang.org/docs/multiplatform/compose-multiplatform-resources-setup.html"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "source",
+    "title": "Canonical resources",
+    "role": "storage",
+    "detail": "and generated inputs"
+   },
+   {
+    "id": "gradle",
+    "title": "Compose Gradle plugin",
+    "role": "runtime",
+    "detail": "generate accessors + package target resources"
+   },
+   {
+    "id": "kotlin",
+    "title": "Kotlin compilation",
+    "role": "runtime",
+    "detail": "references generated Res API"
+   },
+   {
+    "id": "artifact",
+    "title": "Target/library artifact",
+    "role": "storage"
+   },
+   {
+    "id": "app",
+    "title": "Final Android/iOS/desktop/web application",
+    "role": "client"
+   },
+   {
+    "id": "verify",
+    "title": "Release verification",
+    "role": "neutral",
+    "detail": "locale, theme, missing asset, size"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "source",
+    "to": "gradle",
+    "label": "input to"
+   },
+   {
+    "from": "gradle",
+    "to": "kotlin",
+    "label": "generates for"
+   },
+   {
+    "from": "kotlin",
+    "to": "artifact",
+    "label": "compiled into"
+   },
+   {
+    "from": "artifact",
+    "to": "app",
+    "label": "packaged into"
+   },
+   {
+    "from": "app",
+    "to": "verify",
+    "label": "checked by"
+   }
+  ],
+  "layout": "snake"
+ },
+ {
+  "path": "android/networking-and-security/ktor-vs-retrofit",
+  "diagram": "95c91bbf599c6786",
+  "number": 1,
+  "title": "Retrofit's layers",
+  "caption": "Your code calls an annotated Retrofit interface, a converter serializes bodies, and OkHttp manages the connection pool, interceptors and the TLS socket.",
+  "sources": [
+   "https://raw.githubusercontent.com/square/retrofit/trunk/retrofit/src/main/java/retrofit2/Retrofit.java"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "Your",
+    "title": "Your code",
+    "role": "client"
+   },
+   {
+    "id": "Iface",
+    "title": "Retrofit interface",
+    "role": "runtime",
+    "detail": "@GET / @POST"
+   },
+   {
+    "id": "Conv",
+    "title": "Converter",
+    "role": "runtime",
+    "detail": "Moshi / kotlinx.serialization"
+   },
+   {
+    "id": "OkHttp",
+    "title": "OkHttpClient",
+    "role": "runtime",
+    "detail": "connection pool + interceptors",
+    "key": true
+   },
+   {
+    "id": "Socket",
+    "title": "TLS socket",
+    "role": "neutral"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "Your",
+    "to": "Iface",
+    "label": "calls"
+   },
+   {
+    "from": "Iface",
+    "to": "Conv",
+    "label": "serializes via"
+   },
+   {
+    "from": "Conv",
+    "to": "OkHttp",
+    "label": "sends through"
+   },
+   {
+    "from": "OkHttp",
+    "to": "Socket",
+    "label": "connects over"
+   }
+  ],
+  "layout": "snake"
+ },
+ {
+  "path": "android/networking-and-security/ktor-vs-retrofit",
+  "diagram": "bb10ac132d1e0fa2",
+  "number": 2,
+  "title": "Ktor's layers",
+  "caption": "Your code calls HttpClient, configured plugins wrap each request, and a pluggable engine such as OkHttp, CIO or Darwin owns the TLS socket.",
+  "sources": [
+   "https://raw.githubusercontent.com/square/retrofit/trunk/retrofit/src/main/java/retrofit2/Retrofit.java"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "Your",
+    "title": "Your code",
+    "role": "client"
+   },
+   {
+    "id": "Client",
+    "title": "HttpClient",
+    "role": "runtime"
+   },
+   {
+    "id": "Plugins",
+    "title": "Plugins",
+    "role": "runtime",
+    "detail": "Auth, Logging, Retry, etc."
+   },
+   {
+    "id": "Engine",
+    "title": "Engine",
+    "role": "runtime",
+    "detail": "OkHttp / CIO / Darwin / JS",
+    "key": true
+   },
+   {
+    "id": "Socket",
+    "title": "TLS socket",
+    "role": "neutral"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "Your",
+    "to": "Client",
+    "label": "calls"
+   },
+   {
+    "from": "Client",
+    "to": "Plugins",
+    "label": "passes through"
+   },
+   {
+    "from": "Plugins",
+    "to": "Engine",
+    "label": "executes on"
+   },
+   {
+    "from": "Engine",
+    "to": "Socket",
+    "label": "connects over"
+   }
+  ],
+  "layout": "snake"
+ },
+ {
+  "path": "android/networking-and-security/retrofit-and-okhttp",
+  "diagram": "236149868228d1d5",
+  "number": 1,
+  "title": "From interface call to server",
+  "caption": "Retrofit turns an annotated call into an OkHttp request, which passes application interceptors, then the HTTP cache, then network interceptors before it reaches the server.",
+  "sources": [
+   "https://raw.githubusercontent.com/square/okhttp/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Authenticator.kt"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "API",
+    "title": "Kotlin @GET Interface",
+    "role": "client"
+   },
+   {
+    "id": "Factory",
+    "title": "Retrofit RequestFactory",
+    "role": "runtime"
+   },
+   {
+    "id": "Req",
+    "title": "OkHttp Request",
+    "role": "neutral"
+   },
+   {
+    "id": "Moshi",
+    "title": "Moshi Converter",
+    "role": "runtime"
+   },
+   {
+    "id": "AppInt",
+    "title": "Application Interceptor: Logging/Auth",
+    "role": "runtime"
+   },
+   {
+    "id": "Cache",
+    "title": "HTTP Cache: Disk entries and validators",
+    "role": "storage"
+   },
+   {
+    "id": "NetInt",
+    "title": "Network Interceptor: Stetho or inspection",
+    "role": "runtime"
+   },
+   {
+    "id": "Server",
+    "title": "Backend Server",
+    "role": "storage"
+   }
+  ],
+  "groups": [
+   {
+    "id": "g_g0",
+    "label": "Retrofit Layer",
+    "nodes": [
+     "API",
+     "Factory",
+     "Req",
+     "Moshi"
+    ]
+   },
+   {
+    "id": "g_g1",
+    "label": "OkHttp Interceptor Chain",
+    "nodes": [
+     "AppInt",
+     "Cache",
+     "NetInt"
+    ]
+   },
+   {
+    "id": "g_g2",
+    "label": "The Internet",
+    "nodes": [
+     "Server"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "API",
+    "to": "Factory",
+    "label": "parsed by"
+   },
+   {
+    "from": "Factory",
+    "to": "Req",
+    "label": "Build URL headers and body"
+   },
+   {
+    "from": "Factory",
+    "to": "Moshi",
+    "label": "Convert body when required"
+   },
+   {
+    "from": "Moshi",
+    "to": "Factory",
+    "label": "Encoded request body"
+   },
+   {
+    "from": "Req",
+    "to": "AppInt",
+    "label": "enters"
+   },
+   {
+    "from": "AppInt",
+    "to": "Cache",
+    "label": "then"
+   },
+   {
+    "from": "Cache",
+    "to": "NetInt",
+    "label": "on a network fetch"
+   },
+   {
+    "from": "NetInt",
+    "to": "Server",
+    "label": "TCP/TLS"
+   },
+   {
+    "from": "Server",
+    "to": "NetInt",
+    "label": "JSON Response",
+    "style": "dashed"
+   }
+  ],
+  "layout": "columns"
+ },
+ {
+  "path": "android/observability/crash-monitoring",
+  "diagram": "af6b3c878dbf7ccb",
+  "number": 1,
+  "title": "From crash to readable report",
+  "caption": "A crash report is persisted on the device when possible and uploaded on a later launch; in the cloud, the build's mapping.txt turns obfuscated stack traces back into readable ones.",
+  "sources": [
+   "https://firebase.google.com/docs/crashlytics/customize-crash-reports?platform=android"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "App",
+    "title": "Your App Code",
+    "role": "runtime"
+   },
+   {
+    "id": "Handler",
+    "title": "Thread.UncaughtExceptionHandler",
+    "role": "runtime"
+   },
+   {
+    "id": "Disk",
+    "title": "Local Disk",
+    "role": "storage"
+   },
+   {
+    "id": "Restart",
+    "title": "App Restarts",
+    "role": "runtime"
+   },
+   {
+    "id": "Firebase",
+    "title": "Firebase Servers",
+    "role": "storage"
+   },
+   {
+    "id": "Deobfuscate",
+    "title": "De-obfuscation Engine",
+    "role": "runtime"
+   },
+   {
+    "id": "Map",
+    "title": "mapping.txt from CI/CD",
+    "role": "storage"
+   },
+   {
+    "id": "Dash",
+    "title": "Crashlytics Dashboard",
+    "role": "client"
+   }
+  ],
+  "groups": [
+   {
+    "id": "g_g0",
+    "label": "Android Device",
+    "nodes": [
+     "App",
+     "Handler",
+     "Disk",
+     "Restart",
+     "Firebase"
+    ]
+   },
+   {
+    "id": "g_g1",
+    "label": "Firebase Cloud",
+    "nodes": [
+     "Deobfuscate",
+     "Map",
+     "Dash"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "App",
+    "to": "Handler",
+    "label": "Throws Exception"
+   },
+   {
+    "from": "Handler",
+    "to": "Disk",
+    "label": "Attempts bounded persistence"
+   },
+   {
+    "from": "Restart",
+    "to": "Disk",
+    "label": "Reads if report persisted"
+   },
+   {
+    "from": "Restart",
+    "to": "Firebase",
+    "label": "Uploads if collection and connectivity allow"
+   },
+   {
+    "from": "Firebase",
+    "to": "Deobfuscate",
+    "label": "sends reports to"
+   },
+   {
+    "from": "Map",
+    "to": "Deobfuscate",
+    "label": "maps symbols for"
+   },
+   {
+    "from": "Deobfuscate",
+    "to": "Dash",
+    "label": "shows in"
+   }
+  ],
+  "layout": "columns"
+ },
+ {
+  "path": "android/observability/logging",
+  "diagram": "6531f86d435ed219",
+  "number": 1,
+  "title": "One log call, two destinations",
+  "caption": "Timber routes one logging call to different trees: a DebugTree writes to logd in debug builds, while a release tree forwards only policy-approved events to crash telemetry.",
+  "sources": [
+   "https://kotlinlang.org/spec/expressions.html#function-calls-and-property-access"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "App",
+    "title": "Kotlin Code",
+    "role": "runtime"
+   },
+   {
+    "id": "Timber",
+    "title": "Timber Core",
+    "role": "runtime",
+    "key": true
+   },
+   {
+    "id": "DTree",
+    "title": "DebugTree",
+    "role": "runtime"
+   },
+   {
+    "id": "RTree",
+    "title": "CrashlyticsTree",
+    "role": "runtime"
+   },
+   {
+    "id": "Logd",
+    "title": "logd daemon ring buffer",
+    "role": "storage"
+   },
+   {
+    "id": "Firebase",
+    "title": "Crashlytics Telemetry",
+    "role": "storage"
+   }
+  ],
+  "groups": [
+   {
+    "id": "g_g0",
+    "label": "Your Code",
+    "nodes": [
+     "App",
+     "Timber"
+    ]
+   },
+   {
+    "id": "g_g1",
+    "label": "Timber Trees",
+    "nodes": [
+     "DTree",
+     "RTree"
+    ]
+   },
+   {
+    "id": "g_g2",
+    "label": "OS Boundaries",
+    "nodes": [
+     "Logd",
+     "Firebase"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "App",
+    "to": "Timber",
+    "label": "Timber.d"
+   },
+   {
+    "from": "Timber",
+    "to": "DTree",
+    "label": "In Debug Build"
+   },
+   {
+    "from": "Timber",
+    "to": "RTree",
+    "label": "In Release Build"
+   },
+   {
+    "from": "DTree",
+    "to": "Logd",
+    "label": "Log.d"
+   },
+   {
+    "from": "RTree",
+    "to": "Firebase",
+    "label": "Policy-approved release events"
+   }
+  ],
+  "layout": "columns"
+ },
+ {
+  "path": "android/observability/mobile-apm-and-rum",
+  "diagram": "68c137360319862d",
+  "number": 1,
+  "title": "From device signals to dashboards",
+  "caption": "An APM or RUM SDK collects frame, network and memory signals in the app and uploads them in batches; the vendor stores them as time series behind dashboards and alerts.",
+  "sources": [
+   "https://www.w3.org/TR/trace-context/",
+   "https://developer.android.com/topic/performance/jankstats"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "UI",
+    "title": "UI Thread / Frame Metrics",
+    "role": "client"
+   },
+   {
+    "id": "Net",
+    "title": "OkHttp / Network",
+    "role": "client"
+   },
+   {
+    "id": "Mem",
+    "title": "Memory Sampling",
+    "role": "runtime"
+   },
+   {
+    "id": "SDK",
+    "title": "APM / RUM SDK",
+    "role": "runtime",
+    "key": true
+   },
+   {
+    "id": "Ingest",
+    "title": "Ingestion Engine",
+    "role": "runtime"
+   },
+   {
+    "id": "DB",
+    "title": "Time-Series Store",
+    "role": "storage"
+   },
+   {
+    "id": "Dash",
+    "title": "Dashboards / Alerts / Queries",
+    "role": "client"
+   }
+  ],
+  "groups": [
+   {
+    "id": "g_g0",
+    "label": "Android Application",
+    "nodes": [
+     "UI",
+     "Net",
+     "Mem",
+     "SDK"
+    ]
+   },
+   {
+    "id": "g_g1",
+    "label": "Vendor Cloud",
+    "nodes": [
+     "Ingest",
+     "DB",
+     "Dash"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "UI",
+    "to": "SDK",
+    "label": "Frame times, ANR signals",
+    "style": "dashed"
+   },
+   {
+    "from": "Net",
+    "to": "SDK",
+    "label": "Latency / status / sizes",
+    "style": "dashed"
+   },
+   {
+    "from": "Mem",
+    "to": "SDK",
+    "label": "Heap samples, low-memory events",
+    "style": "dashed"
+   },
+   {
+    "from": "SDK",
+    "to": "Ingest",
+    "label": "Batched upload (HTTPS)"
+   },
+   {
+    "from": "Ingest",
+    "to": "DB",
+    "label": "stores in"
+   },
+   {
+    "from": "DB",
+    "to": "Dash",
+    "label": "feeds"
+   }
+  ],
+  "layout": "columns"
+ },
+ {
+  "path": "android/performance/anrs",
+  "diagram": "5424ece4d36a8155",
+  "number": 1,
+  "title": "How an ANR is detected",
+  "caption": "When the main thread cannot respond before the system's deadline, the system captures process and thread evidence and handles the ANR.",
+  "sources": [
+   "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+  ],
+  "kind": "sequence",
+  "participants": [
+   {
+    "id": "User",
+    "title": "User",
+    "role": "client"
+   },
+   {
+    "id": "System",
+    "title": "Android system",
+    "role": "runtime"
+   },
+   {
+    "id": "Main",
+    "title": "App main thread",
+    "role": "runtime"
+   },
+   {
+    "id": "Trace",
+    "title": "ANR diagnostics",
+    "role": "storage"
+   }
+  ],
+  "events": [
+   {
+    "from": "User",
+    "to": "System",
+    "label": "input or component operation"
+   },
+   {
+    "from": "System",
+    "to": "Main",
+    "label": "dispatch work"
+   },
+   {
+    "at": "Main",
+    "label": "blocked, overloaded, or deadlocked"
+   },
+   {
+    "at": "System",
+    "label": "responsiveness deadline exceeded"
+   },
+   {
+    "from": "System",
+    "to": "Trace",
+    "label": "capture process and thread evidence"
+   },
+   {
+    "from": "System",
+    "to": "User",
+    "label": "ANR handling",
+    "style": "dashed"
+   }
+  ],
+  "lane_gap": 240
+ },
+ {
+  "path": "android/performance/app-size-and-r8",
+  "diagram": "0cdd14856d4b0fe3",
+  "number": 1,
+  "title": "What R8 takes in and produces",
+  "caption": "R8 consumes compiled app classes, library classes and keep rules, and produces shrunk, obfuscated and optimized DEX plus the mapping.txt needed to read stack traces.",
+  "sources": [
+   "https://developer.android.com/tools/retrace"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "Code",
+    "title": "Kotlin/Java Code",
+    "role": "storage"
+   },
+   {
+    "id": "Javac",
+    "title": "KotlinC / Javac",
+    "role": "runtime"
+   },
+   {
+    "id": "Classes",
+    "title": ".class files",
+    "role": "storage"
+   },
+   {
+    "id": "Libs",
+    "title": "3rd Party AARs",
+    "role": "storage"
+   },
+   {
+    "id": "R8",
+    "title": "R8 Compiler",
+    "role": "runtime",
+    "key": true
+   },
+   {
+    "id": "Rules",
+    "title": "proguard-rules.pro",
+    "role": "neutral"
+   },
+   {
+    "id": "DEX",
+    "title": ".dex files",
+    "role": "storage"
+   },
+   {
+    "id": "Map",
+    "title": "mapping.txt",
+    "role": "storage"
+   }
+  ],
+  "groups": [
+   {
+    "id": "g_g0",
+    "label": "Gradle Build",
+    "nodes": [
+     "Code",
+     "Javac",
+     "Classes",
+     "Libs",
+     "R8",
+     "Rules"
+    ]
+   },
+   {
+    "id": "g_g1",
+    "label": "R8 Output",
+    "nodes": [
+     "DEX",
+     "Map"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "Code",
+    "to": "Javac",
+    "label": "compiled by"
+   },
+   {
+    "from": "Javac",
+    "to": "Classes",
+    "label": "produces"
+   },
+   {
+    "from": "Libs",
+    "to": "Classes",
+    "label": "adds"
+   },
+   {
+    "from": "Classes",
+    "to": "R8",
+    "label": "input to"
+   },
+   {
+    "from": "Rules",
+    "to": "R8",
+    "label": "configures"
+   },
+   {
+    "from": "R8",
+    "to": "DEX",
+    "label": "Shrinks/Obfuscates/Optimizes"
+   },
+   {
+    "from": "R8",
+    "to": "Map",
+    "label": "Generates mapping"
+   }
+  ],
+  "layout": "columns"
+ },
+ {
+  "path": "android/performance/baseline-profiles",
+  "diagram": "10b0253fc9357453",
+  "number": 1,
+  "title": "From benchmark to faster launch",
+  "caption": "A Macrobenchmark run derives profile rules that ship in the release; at install time the system may compile matching code ahead of time, so measured launch paths do less runtime compilation.",
+  "sources": [
+   "https://developer.android.com/topic/performance/baselineprofiles/overview"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "Test",
+    "title": "Macrobenchmark Test",
+    "role": "runtime"
+   },
+   {
+    "id": "Device",
+    "title": "Test Device",
+    "role": "client"
+   },
+   {
+    "id": "Txt",
+    "title": "Generated Rules",
+    "role": "storage"
+   },
+   {
+    "id": "APK",
+    "title": "Release APK/AAB",
+    "role": "storage"
+   },
+   {
+    "id": "Play",
+    "title": "Google Play Install",
+    "role": "client"
+   },
+   {
+    "id": "OS",
+    "title": "Android OS 'dex2oat'",
+    "role": "runtime"
+   },
+   {
+    "id": "ODEX",
+    "title": "Optimized Machine Code",
+    "role": "storage"
+   },
+   {
+    "id": "User",
+    "title": "Taps App Icon",
+    "role": "client"
+   },
+   {
+    "id": "Fast",
+    "title": "Faster measured paths",
+    "role": "neutral"
+   }
+  ],
+  "groups": [
+   {
+    "id": "g_g0",
+    "label": "Developer Machine",
+    "nodes": [
+     "Test",
+     "Device",
+     "Txt",
+     "APK"
+    ]
+   },
+   {
+    "id": "g_g1",
+    "label": "User Device (Installation)",
+    "nodes": [
+     "Play",
+     "OS",
+     "ODEX"
+    ]
+   },
+   {
+    "id": "g_g2",
+    "label": "User Device (App Launch)",
+    "nodes": [
+     "User",
+     "Fast"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "Test",
+    "to": "Device",
+    "label": "Automates UI"
+   },
+   {
+    "from": "Device",
+    "to": "Txt",
+    "label": "Derives profile rules"
+   },
+   {
+    "from": "Txt",
+    "to": "APK",
+    "label": "Rewritten and packaged by build tooling"
+   },
+   {
+    "from": "APK",
+    "to": "Play",
+    "label": "installed via"
+   },
+   {
+    "from": "Play",
+    "to": "OS",
+    "label": "hands to"
+   },
+   {
+    "from": "OS",
+    "to": "ODEX",
+    "label": "May AOT compile matching rules"
+   },
+   {
+    "from": "User",
+    "to": "ODEX",
+    "label": "launch uses"
+   },
+   {
+    "from": "ODEX",
+    "to": "Fast",
+    "label": "Reduces runtime compilation work"
+   }
+  ],
+  "layout": "columns"
+ },
+ {
+  "path": "android/performance/jank",
+  "diagram": "4dd38592eec3285b",
+  "number": 1,
+  "title": "Making the frame deadline",
+  "caption": "A frame is smooth only if main-thread and RenderThread/GPU work finish before the display deadline; a missed deadline repeats or delays the frame, which the frame timeline shows.",
+  "sources": [
+   "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs",
+   "https://developer.android.com/topic/performance/tracing"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "Input",
+    "title": "Input / animation / state change",
+    "role": "client"
+   },
+   {
+    "id": "Main",
+    "title": "Main-thread UI work",
+    "role": "runtime"
+   },
+   {
+    "id": "Render",
+    "title": "RenderThread + GPU work",
+    "role": "runtime"
+   },
+   {
+    "id": "Deadline",
+    "title": "Frame ready before display deadline?",
+    "role": "neutral",
+    "key": true
+   },
+   {
+    "id": "Smooth",
+    "title": "Present new frame",
+    "role": "client"
+   },
+   {
+    "id": "Jank",
+    "title": "Repeat or delay frame",
+    "role": "client"
+   },
+   {
+    "id": "Trace",
+    "title": "Inspect frame timeline",
+    "role": "neutral"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "Input",
+    "to": "Main",
+    "label": "triggers"
+   },
+   {
+    "from": "Main",
+    "to": "Render",
+    "label": "hands off"
+   },
+   {
+    "from": "Render",
+    "to": "Deadline",
+    "label": "checked against"
+   },
+   {
+    "from": "Deadline",
+    "to": "Smooth",
+    "label": "yes"
+   },
+   {
+    "from": "Deadline",
+    "to": "Jank",
+    "label": "no"
+   },
+   {
+    "from": "Jank",
+    "to": "Trace",
+    "label": "investigate in"
+   }
+  ],
+  "layout": "layers"
+ },
+ {
+  "path": "android/performance/memory-management-and-leaks",
+  "diagram": "3898877f44da65cd",
+  "number": 1,
+  "title": "The reference path behind a leak",
+  "caption": "A leak is a reference path from a GC root to something that should be gone: while the path exists, the destroyed Activity and everything it references stay in memory.",
+  "sources": [
+   "https://developer.android.com/studio/profile/capture-heap-dump"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "Root",
+    "title": "GC root",
+    "role": "runtime",
+    "detail": "singleton, thread, native ref"
+   },
+   {
+    "id": "Owner",
+    "title": "Long-lived owner",
+    "role": "runtime"
+   },
+   {
+    "id": "Callback",
+    "title": "Listener / callback / coroutine",
+    "role": "runtime"
+   },
+   {
+    "id": "Activity",
+    "title": "Destroyed Activity or Fragment",
+    "role": "client",
+    "key": true
+   },
+   {
+    "id": "Views",
+    "title": "View hierarchy + bitmaps + resources",
+    "role": "storage"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "Root",
+    "to": "Owner",
+    "label": "keeps alive"
+   },
+   {
+    "from": "Owner",
+    "to": "Callback",
+    "label": "holds"
+   },
+   {
+    "from": "Callback",
+    "to": "Activity",
+    "label": "references"
+   },
+   {
+    "from": "Activity",
+    "to": "Views",
+    "label": "retains"
+   }
+  ],
+  "layout": "snake"
+ },
+ {
+  "path": "android/performance/rendering",
+  "diagram": "1d5aad77c742da60",
+  "number": 1,
+  "title": "One frame through the pipeline",
+  "caption": "One frame runs from the vsync tick through UI-thread input, animation, layout and draw recording, then RenderThread and the GPU, to SurfaceFlinger composition on the display.",
+  "sources": [
+   "https://developer.android.com/develop/ui/views/graphics/hardware-accel",
+   "https://perfetto.dev/docs/data-sources/frametimeline"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "Vsync",
+    "title": "Vsync",
+    "role": "neutral",
+    "detail": "display tick"
+   },
+   {
+    "id": "Input",
+    "title": "Input",
+    "role": "runtime",
+    "detail": "handle touch"
+   },
+   {
+    "id": "Animate",
+    "title": "Animations",
+    "role": "runtime",
+    "detail": "tick choreographer"
+   },
+   {
+    "id": "Measure",
+    "title": "Measure / Layout",
+    "role": "runtime",
+    "detail": "UI thread"
+   },
+   {
+    "id": "Draw",
+    "title": "Record draw commands",
+    "role": "runtime",
+    "detail": "UI thread"
+   },
+   {
+    "id": "Sync",
+    "title": "Sync display list",
+    "role": "runtime",
+    "detail": "to RenderThread"
+   },
+   {
+    "id": "RT",
+    "title": "RenderThread",
+    "role": "runtime",
+    "detail": "translate to GPU"
+   },
+   {
+    "id": "GPU",
+    "title": "GPU executes",
+    "role": "runtime",
+    "detail": "OpenGL / Vulkan"
+   },
+   {
+    "id": "SF",
+    "title": "SurfaceFlinger",
+    "role": "runtime",
+    "detail": "composites layers"
+   },
+   {
+    "id": "Display",
+    "title": "Display",
+    "role": "client"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "Vsync",
+    "to": "Input",
+    "label": "triggers"
+   },
+   {
+    "from": "Input",
+    "to": "Animate",
+    "label": "then"
+   },
+   {
+    "from": "Animate",
+    "to": "Measure",
+    "label": "then"
+   },
+   {
+    "from": "Measure",
+    "to": "Draw",
+    "label": "then"
+   },
+   {
+    "from": "Draw",
+    "to": "Sync",
+    "label": "hands off"
+   },
+   {
+    "from": "Sync",
+    "to": "RT",
+    "label": "to"
+   },
+   {
+    "from": "RT",
+    "to": "GPU",
+    "label": "submits to"
+   },
+   {
+    "from": "GPU",
+    "to": "SF",
+    "label": "renders for"
+   },
+   {
+    "from": "SF",
+    "to": "Display",
+    "label": "composites to"
+   }
+  ],
+  "layout": "snake"
+ },
+ {
+  "path": "android/performance/rendering",
+  "diagram": "f6e32d6fe51c2ec8",
+  "number": 2,
+  "title": "Vsync and Choreographer",
+  "caption": "Each vsync signal starts the main thread's frame work; the display list goes to RenderThread, which hands a rendered buffer to SurfaceFlinger to compose for the next display deadline.",
+  "sources": [
+   "https://developer.android.com/develop/ui/views/graphics/hardware-accel",
+   "https://perfetto.dev/docs/data-sources/frametimeline"
+  ],
+  "kind": "sequence",
+  "participants": [
+   {
+    "id": "Display",
+    "title": "Display",
+    "role": "client"
+   },
+   {
+    "id": "Main",
+    "title": "Main thread / Choreographer",
+    "role": "runtime"
+   },
+   {
+    "id": "Render",
+    "title": "RenderThread",
+    "role": "runtime"
+   },
+   {
+    "id": "SF",
+    "title": "SurfaceFlinger",
+    "role": "runtime"
+   }
+  ],
+  "events": [
+   {
+    "from": "Display",
+    "to": "Main",
+    "label": "vsync signal"
+   },
+   {
+    "at": "Main",
+    "label": "input + animation + measure/layout/draw"
+   },
+   {
+    "from": "Main",
+    "to": "Render",
+    "label": "display list"
+   },
+   {
+    "from": "Render",
+    "to": "SF",
+    "label": "rendered buffer"
+   },
+   {
+    "from": "Display",
+    "to": "SF",
+    "label": "next composition deadline"
+   },
+   {
+    "from": "SF",
+    "to": "Display",
+    "label": "composed frame",
+    "style": "dashed"
+   }
+  ],
+  "lane_gap": 250
+ },
+ {
+  "path": "android/performance/startup",
+  "diagram": "b084371960b0b0eb",
+  "number": 1,
+  "title": "The cold-start pipeline",
+  "caption": "Cold start runs from the icon tap through process fork, class loading, Application and Activity creation and layout to the first visible frame, after which the first network calls and database queries run.",
+  "sources": [
+   "https://developer.android.com/topic/performance/issues/launch-time"
+  ],
+  "kind": "map",
+  "nodes": [
+   {
+    "id": "Tap",
+    "title": "User taps icon",
+    "role": "client"
+   },
+   {
+    "id": "Zygote",
+    "title": "Zygote fork",
+    "role": "runtime",
+    "detail": "kernel"
+   },
+   {
+    "id": "ClassLoad",
+    "title": "Load app classes",
+    "role": "runtime",
+    "detail": "DEX"
+   },
+   {
+    "id": "App",
+    "title": "Application.onCreate",
+    "role": "runtime",
+    "detail": "UI thread"
+   },
+   {
+    "id": "ActStart",
+    "title": "Activity.onCreate",
+    "role": "runtime",
+    "detail": "UI thread"
+   },
+   {
+    "id": "Inflate",
+    "title": "Layout inflate / Compose setup",
+    "role": "runtime"
+   },
+   {
+    "id": "Measure",
+    "title": "Measure / Layout / Draw",
+    "role": "runtime"
+   },
+   {
+    "id": "FirstFrame",
+    "title": "First frame",
+    "role": "client",
+    "detail": "visible to user",
+    "key": true
+   },
+   {
+    "id": "NetworkFetch",
+    "title": "First network calls / DB queries",
+    "role": "neutral"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "Tap",
+    "to": "Zygote",
+    "label": "starts"
+   },
+   {
+    "from": "Zygote",
+    "to": "ClassLoad",
+    "label": "then"
+   },
+   {
+    "from": "ClassLoad",
+    "to": "App",
+    "label": "then"
+   },
+   {
+    "from": "App",
+    "to": "ActStart",
+    "label": "then"
+   },
+   {
+    "from": "ActStart",
+    "to": "Inflate",
+    "label": "then"
+   },
+   {
+    "from": "Inflate",
+    "to": "Measure",
+    "label": "then"
+   },
+   {
+    "from": "Measure",
+    "to": "FirstFrame",
+    "label": "produces"
+   },
+   {
+    "from": "FirstFrame",
+    "to": "NetworkFetch",
+    "label": "followed by"
+   }
+  ],
+  "layout": "snake"
+ }
+]

@@ -162,15 +162,16 @@
     if (status === 'loaded') loadedDiagrams++;
     else report(image, status === 'failed' ? 'original diagram image failed to load' : 'original diagram image has not loaded; resource validation is incomplete');
   }
-  // A designed FigureMap redraw replaces the Mermaid picture of the original diagram whose
-  // preserved source it names; it is inline SVG, so it counts once it has drawn actors.
-  const figures = [...panel.querySelectorAll('figure.fm-figure[data-figure]')]
-    .filter(figure => panel.querySelector(`code[data-original-diagram-source="${figure.dataset.figure}"]`));
-  for (const figure of figures) {
-    const drawn = figure.querySelectorAll('svg.fm-svg .fm-node, svg.fm-svg .fm-note').length > 0;
-    diagramResources.push({source: 'figure:' + figure.dataset.figure, status: drawn ? 'loaded' : 'failed'});
+  // A designed redraw (FigureMap or an authored teaching visual) replaces the Mermaid picture of the
+  // original diagram whose preserved source follows it; the redraw must actually draw something.
+  const figures = [...panel.querySelectorAll('details.original-diagram')]
+    .filter(details => !details.querySelector('img[data-original-diagram]') && details.querySelector('code[data-original-diagram-source]'));
+  for (const details of figures) {
+    const redraw = details.previousElementSibling;
+    const drawn = !!redraw && redraw.matches('.blend') && !!redraw.querySelector('svg.fm-svg .fm-node, svg.fm-svg .fm-note, .viz, figure, svg');
+    diagramResources.push({source: 'redraw:' + details.querySelector('code').dataset.originalDiagramSource, status: drawn ? 'loaded' : 'failed'});
     if (drawn) loadedDiagrams++;
-    else report(figure, 'designed figure for an original diagram has no drawn actors');
+    else report(details, 'original diagram has no designed redraw before its preserved source');
   }
   if (expectedUnits && images.length + figures.length !== expectedUnits.filter(unit => unit.kind === 'diagram').length) problems.push('Original diagram image count does not match the source');
   return {source, view, checked, units: expectedUnits?.length || 0, diagrams: images.length + figures.length, loadedDiagrams, diagramResources, pairChecks, problems};

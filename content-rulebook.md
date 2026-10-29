@@ -422,4 +422,7 @@ Owner rule, 29 October 2026. It applies to every current and future topic and tr
   The approved diagram direction above still applies: colour is never the only cue, and words and border patterns carry the same meaning.
 - **No ordinary animations.** Use motion only where change over time reveals the mechanism. Build it with the shared scene and stepper components, using illustrated actors and visible consequences. Show the picture first; the current caption and the controls follow it, together. A designed static figure remains a complete result when motion adds nothing (section 8). A generic box-highlight stepper is not an acceptable substitute for either.
 - **Design system only.** Colours, card shapes, arrow and label styles, legends, captions and stepper layout live in `website/design-system/tokens.json` and the shared components, so one change applies to all website content. Lesson files supply content: models, labels, captions and sources. They never supply styling.
-- **Every theme, readable labels.** Check each figure in the light, dark, sepia and high-contrast themes. Labels stay at least 14px and are never clipped; on narrow screens, use a labelled local scroll rather than shrinking text.
+- **Every theme, readable labels.** Check each figure in the light, dark, sepia and high-contrast themes.
+  - Text follows the design-system figure type scale: card titles 15px, secondary text and arrow labels 13px. Relationship maps beside a step-through display every label at 15px or more.
+  - Labels are never clipped; the build rejects clipped or overlapping labels.
+  - On narrow screens, use a labelled local scroll rather than shrinking text.

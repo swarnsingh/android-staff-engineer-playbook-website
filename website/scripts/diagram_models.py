@@ -56,32 +56,6 @@ def check():
         if any(not u.startswith('https://') for u in row['sources']):raise ValueError(f'Invalid source URL: {key}')
     return authored
 
-def label(text):
-    # Mermaid quoted labels use entities for quotes and syntax punctuation.
-    return escape(unescape(text),quote=True).replace('\n','<br/>')
-
-def graph(row,nodes):
-    out=['%%{init: {"theme":"base","htmlLabels":false,"themeVariables":{"fontSize":"17px","fontFamily":"Arial"},"flowchart":{"htmlLabels":false,"curve":"linear","rankSpacing":65,"nodeSpacing":40,"padding":18}}}%%','flowchart TB']
-    names={n['id']:'actor'+str(i) for i,n in enumerate(nodes)}
-    groupnames={g['id']:'boundary'+str(i) for i,g in enumerate(row.get('groups',[]))}
-    groups=row.get('groups',[]);owned={n for g in groups for n in g['nodes']};byid={n['id']:n for n in nodes}
-    def actor(n):
-        text=str(next(i for i,a in enumerate(nodes,1) if a['id']==n['id']))+' · '+row.get('labels',{}).get(n['id'],n['label'] or n['id'])
-        out.append(f'  {names[n["id"]]}["{label(text)}"]:::{n["role"]}')
-    def boundary(g):
-        out.append(f'  subgraph {groupnames[g["id"]]}["{label(g["label"])}"]')
-        for nid in g['nodes']:actor(byid[nid])
-        for child in groups:
-            if child.get('parent')==g['id']:boundary(child)
-        out.append('  end')
-    for g in groups:
-        if not g.get('parent'):boundary(g)
-    for n in nodes:
-        if n['id'] not in owned:actor(n)
-    for index,e in enumerate(row.get('edges',[]),1):
-        out.append(f'  {names[e["from"]]} -->|"{index}. {label(e["label"])}"| {names[e["to"]]}')
-    return '\n'.join(out)+'\n'
-
 def enhance(article,path,out,base,authored):
     slug=path.removesuffix('.md')
     if slug.startswith('kotlin/'):slug=slug.removeprefix('kotlin/')
@@ -105,36 +79,26 @@ def enhance(article,path,out,base,authored):
         if row.get('renderer')=='ownership':
             component=(WEB/'content/components/viewmodel-ownership.html').read_text()
             return '<figure class="stepper has-ownership" data-illustrated>'+component+'</figure>'
-        mmd=graph(row,nodes);digest=hashlib.sha256(mmd.encode()).hexdigest()[:16]
-        (out/'diagram-sources'/f'{digest}.mmd').write_text(mmd)
+        # Drawn by the shared FigureMap component: no Mermaid layout or picture.
+        import figure_maps
+        digest=hashlib.sha256(json.dumps([row,nodes],sort_keys=True).encode()).hexdigest()[:16]
+        figure={'path':row['path'],'diagram':digest,'kind':'map','number':1,'title':row['problem'],'caption':row['reading'],
+                'nodes':[{'id':n['id'],'title':f"{i} · "+(row.get('labels',{}).get(n['id']) or n['label'] or n['id']).strip(),
+                          'role':n['role'] if n['role'] in figure_maps.ROLES else 'neutral'} for i,n in enumerate(nodes,1)],
+                'groups':row.get('groups',[]),'edges':[dict(e) for e in row.get('edges',[])],'sources':row['sources']}
+        figure_maps.check(figure)
+        svg=figure_maps.render_map(figure,digest).svg('fm-'+digest,row['problem'],row['reading'])
+        # Maps beside a step-through keep every label at 15px or more on screen: draw them at 1.25x.
+        svg=re.sub(r'(width|height)="([\d.]+)"',lambda m:f'{m[1]}="{float(m[2])*1.25:.0f}"',svg,count=2)
+        svg=re.sub(r'(min-width|max-width):([\d.]+)px',lambda m:f'{m[1]}:{float(m[2])*1.25:.0f}px',svg)
+        roles=list(dict.fromkeys(n['role'] for n in figure['nodes']))
+        legend='<div class="fm-legend">'+''.join(f'<span class="actor-{r}">{figure_maps.ROLES[r]}</span>' for r in roles)+'<em>Numbered arrows name relationships, not time steps.</em></div>'
         problems='<div class="sequence-intro"><p class="sequence-problem"><strong>The problem.</strong> '+escape(row['problem'])+'</p><p class="sequence-reading">'+escape(row['reading'])+'</p></div>'
         hint='Follow the labelled arrowheads.' if row.get('edges') else 'Compare the labelled alternatives; no flow between them is implied.'
-        map_html=f'<div class="relationship-map" data-map="{digest}" role="region" aria-label="Labelled relationships; scroll sideways when needed" tabindex="0"><!--relationship-svg:{digest}--></div><p class="sequence-scroll-hint">{hint} Boundaries group related objects; they are not extra steps. Swipe the diagram sideways when needed.</p>'
+        map_html=f'<div class="relationship-map" data-map="{digest}" role="region" aria-label="Labelled relationships; scroll sideways when needed" tabindex="0">{svg}</div>{legend}<p class="sequence-scroll-hint">{hint} Boundaries group related objects; they are not extra steps. Swipe the diagram sideways when needed.</p>'
         data='<script type="application/json" class="relationship-model">'+json.dumps({**row,'actors':nodes},ensure_ascii=False).replace('</','<\\/')+'</script>'
         links='<details class="relationship-sources"><summary>Diagram sources</summary><ul>'+''.join('<li><a href="'+escape(u)+'" target="_blank" rel="noreferrer">'+escape(u.split('/')[2])+': '+escape(u.split('/')[-1] or 'documentation')+'</a></li>' for u in row['sources'])+'</ul></details>'
         result=match[0].replace('<figure class="stepper"','<figure class="stepper has-relationships"',1)
         result=re.sub(r'(<div class="stage\b)',lambda m:problems+map_html+m[1],result,count=1)
         return result.replace('</figure>',data+links+'</figure>')
     return re.sub(r'<figure class="stepper".*?</figure>',figure,article,flags=re.S)
-
-def inline(out):
-    """Inline trusted build-produced SVG so the site's themes can style its text and edges."""
-    cache={}
-    def embed(match):
-        digest=match[1]
-        if digest not in cache:
-            svg=(out/'diagrams'/f'{digest}.svg').read_text()
-            svg=re.sub(r'<style\b[^>]*>.*?</style>','',svg,flags=re.S)
-            # Each diagram needs unique marker/label IDs even in a gallery of several.
-            ids=re.findall(r'\bid="([^"]+)"',svg)
-            for id in sorted(ids,key=len,reverse=True):
-                svg=svg.replace('id="'+id+'"','id="rel-'+digest+'-'+id+'"').replace('url(#'+id+')','url(#rel-'+digest+'-'+id+')').replace('href="#'+id+'"','href="#rel-'+digest+'-'+id+'"')
-            svg=svg.replace('<svg ','<svg class="relationship-svg" ',1)
-            # Preserve the authored font size: local scrolling, never unreadably shrinking.
-            size=re.search(r'viewBox="[\d.\-]+ [\d.\-]+ ([\d.]+)',svg)
-            if size:svg=re.sub(r'style="[^"]*"','',svg,count=1).replace('<svg ',f'<svg style="width:{float(size[1]):.1f}px;min-width:{float(size[1]):.1f}px" ',1)
-            cache[digest]=svg
-        return cache[digest]
-    for file in out.rglob('*.html'):
-        value=file.read_text()
-        if '<!--relationship-svg:' in value:file.write_text(re.sub(r'<!--relationship-svg:([a-f0-9]+)-->',embed,value))

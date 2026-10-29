@@ -76,10 +76,10 @@ class DiagramModelTest(unittest.TestCase):
             self.assertEqual([r['problem'] for r in payloads], [second['problem'], first['problem']])
             self.assertEqual([[n['id'] for n in r['actors']] for r in payloads],
                              [['closure', 'captured'], ['binding', 'collection']])
-            # The generated image source must carry the same ownership relation.
-            for row, payload in zip([second, first], payloads):
-                sources = [p.read_text() for p in (out/'diagram-sources').glob('*.mmd')]
-                self.assertTrue(any(row['labels'][payload['actors'][0]['id']] in source for source in sources))
+            # Each drawn map must carry its own lesson's labels, in the same order as its payload.
+            maps = re.findall(r'<div class="relationship-map".*?</svg></div>', enhanced, re.S)
+            for row, payload, drawn in zip([second, first], payloads, maps):
+                self.assertIn(row['labels'][payload['actors'][0]['id']], drawn)
 
     def test_missing_actor_binding_fails_instead_of_using_figure_position(self):
         row = model()
@@ -97,21 +97,22 @@ class DiagramModelTest(unittest.TestCase):
                 diagram_models.enhance(figure('owner', 'child'), 'kotlin/language-core/sample.md',
                                        out, '/', diagram_models.check())
 
-    def test_label_text_cannot_inject_html_or_extra_mermaid_statements(self):
+    def test_label_text_cannot_inject_html_into_the_drawn_map(self):
         row = model()
-        malicious = '"][Injected] --> rogue\n<script>alert("x")</script>&'
+        malicious = '"][Injected] --> rogue <script>alert("x")</script>&'
         row['labels']['owner'] = malicious
-        row['groups'] = [{'id': 'scope', 'label': malicious, 'nodes': ['child']}]
+        row['groups'] = [{'id': 'scope', 'label': 'Scope', 'nodes': ['child']}]
         row['edges'][0]['label'] = malicious
-        nodes = [{'id': 'owner', 'label': 'fallback', 'role': 'runtime'},
-                 {'id': 'child', 'label': 'fallback', 'role': 'runtime'}]
-        graph = diagram_models.graph(row, nodes)
-        self.assertNotIn('<script>', graph)
-        self.assertIn('&lt;script&gt;', graph)
-        self.assertIn('&quot;', graph)
-        self.assertEqual(len(re.findall(r'^  actor\d+\[', graph, re.M)), 2)
-        self.assertEqual(len(re.findall(r'^  actor\d+ -->', graph, re.M)), 1)
-        self.assertNotRegex(graph, r'(?m)^\s*rogue\b')
+        with registry([row]) as out:
+            enhanced = diagram_models.enhance(figure('owner', 'child'), 'kotlin/language-core/sample.md',
+                                               out, '/', diagram_models.check())
+        drawn = re.search(r'<div class="relationship-map".*?</svg></div>', enhanced, re.S)[0]
+        self.assertNotIn('<script>', drawn)
+        self.assertIn('&lt;script&gt;', drawn)
+        self.assertIn('&quot;', drawn)
+        # Two actors and one relationship: the label text adds no extra cards or arrows.
+        self.assertEqual(len(re.findall(r'class="fm-node ', drawn)), 2)
+        self.assertEqual(len(re.findall(r'class="fm-edge', drawn)), 1)
 
     def test_script_terminator_in_explanation_stays_json_text(self):
         row = model()
@@ -133,23 +134,18 @@ class DiagramModelTest(unittest.TestCase):
             {'id': 'request-scope', 'label': 'Request subtree', 'nodes': ['request'], 'parent': 'application'},
             {'id': 'workers', 'label': 'Worker children', 'nodes': ['worker'], 'parent': 'request-scope'},
         ]
-        nodes = [{'id': n, 'label': n, 'role': 'runtime'} for n in row['labels']]
-        with registry([row]):
-            checked = diagram_models.check()[('sample', 0)]
-        graph = diagram_models.graph(checked, nodes)
-        stack = []; placement = {}
-        for line in graph.splitlines():
-            group = re.match(r'\s*subgraph (\w+)\[', line)
-            actor = re.match(r'\s*(actor\d+)\[', line)
-            if group: stack.append(group[1])
-            elif line.strip() == 'end': stack.pop()
-            elif actor:
-                self.assertNotIn(actor[1], placement, 'An actor rendered twice suggests conflicting ownership')
-                placement[actor[1]] = tuple(stack)
-        self.assertEqual(placement['actor0'], ('boundary0',))
-        self.assertEqual(placement['actor1'], ('boundary0', 'boundary1'))
-        self.assertEqual(placement['actor2'], ('boundary0', 'boundary1', 'boundary2'))
-        self.assertEqual(stack, [])
+        coverage = [{'path': 'sample', 'figure': 0, 'nodes': [{'id': n, 'kind': 'worker', 'role': 'runtime'} for n in row['labels']]}]
+        with registry([row], coverage) as out:
+            enhanced = diagram_models.enhance(figure('owner', 'request', 'worker'), 'kotlin/language-core/sample.md',
+                                               out, '/', diagram_models.check())
+        drawn = re.search(r'<div class="relationship-map".*?</svg></div>', enhanced, re.S)[0]
+        boxes = {re.sub(r'<[^>]+>', '', m[4]): tuple(float(v) for v in m[:4]) for m in re.findall(
+            r'<g class="fm-group"><rect x="([\d.-]+)" y="([\d.-]+)" width="([\d.]+)" height="([\d.]+)"[^>]*/>(<text.*?</text>)', drawn)}
+        inside = lambda a, b: b[0] <= a[0] and b[1] <= a[1] and a[0] + a[2] <= b[0] + b[2] and a[1] + a[3] <= b[1] + b[3]
+        self.assertTrue(inside(boxes['Request subtree'], boxes['Application scope']))
+        self.assertTrue(inside(boxes['Worker children'], boxes['Request subtree']))
+        for actor in ('Owner instance', 'Worker child'):
+            self.assertEqual(drawn.count('· ' + actor + '<'), 1, 'An actor drawn twice suggests conflicting ownership')
 
     def test_unknown_relationship_endpoint_is_rejected(self):
         row = model(); row['edges'][0]['to'] = 'missing-owner'

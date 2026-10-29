@@ -350,7 +350,8 @@ def render_chapter(path, raw, is_course=False):
             if ('diagram', key) in blend:
                 # A designed redraw leads; the chapter's own diagram stays one tap away.
                 used.add(('diagram', key))
-                return wrap('visual', blend[('diagram', key)], env) + f'<details class="original-diagram"><summary>Original diagram from the chapter</summary>{original}{source}</details>'
+                # Rulebook §20: the original stays as preserved Mermaid source text, never a rendered Mermaid picture.
+                return wrap('visual', blend[('diagram', key)], env) + f'<details class="original-diagram"><summary>Original diagram from the chapter</summary><pre tabindex="0"><code data-{provenance}-diagram-source="{key}">{escape(token.content)}</code></pre></details>'
             return f'<figure class="source-diagram">{original}<figcaption>Concept relationships from this section.</figcaption>{source}</figure>'
         if env.get('blend'):
             label, note = {'kotlin':'Kotlin','java':'Java','text':'Output'}.get(language,language), 'Added example'
@@ -777,9 +778,9 @@ def build(skip_diagrams=False):
     # Each bundled family travels with its SIL Open Font License and provenance.
     shutil.copytree(DESIGN/'fonts/licenses',OUT/'fonts/licenses'); shutil.copy2(DESIGN/'fonts/README.md',OUT/'fonts/README.md')
     design_gallery(asset_version)
-    if not skip_diagrams:
-        render_diagrams()
-        diagram_models.inline(OUT)
+    # Rulebook §20 "Designed visuals only": no page may show a rendered Mermaid picture.
+    mermaid_pages=sorted(str(f.relative_to(OUT)) for f in OUT.rglob('*.html') if re.search(r'<img data-(original|teaching)-diagram=',f.read_text()))
+    if mermaid_pages: raise ValueError(f'Rendered Mermaid pictures remain (add FigureMap models): {mermaid_pages}')
     if set(FIGURES)-FIGURES_USED: raise ValueError(f'Figure models without a matching original diagram: {sorted(set(FIGURES)-FIGURES_USED)}')
     (OUT/'coverage/pages.json').write_text(json.dumps(reports,ensure_ascii=False,indent=2)+'\n')
     (OUT/'coverage/diagram-sources.json').write_text(json.dumps({p.stem:p.read_text() for p in sorted((OUT/'diagram-sources').glob('*.mmd'))},ensure_ascii=False,indent=2)+'\n')

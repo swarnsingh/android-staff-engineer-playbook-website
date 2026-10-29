@@ -127,13 +127,13 @@ window.__runAudit = async (pages, widths = [320, 390, 768, 1181, 1280, 1439, 144
               const model=modelJSON?JSON.parse(modelJSON.textContent):null;
               if(model){
                 const map=figure.querySelector('.relationship-map');
-                if(map.querySelectorAll('g.node').length!==model.actors.length)problems.push('relationship actor count mismatch');
-                if(map.querySelectorAll('g.cluster').length!==(model.groups||[]).length)problems.push('relationship owner count mismatch');
-                if(map.querySelectorAll('.edgePaths path').length!==(model.edges||[]).length)problems.push('relationship arrow count mismatch');
+                if(map.querySelectorAll('g.fm-node').length!==model.actors.length)problems.push('relationship actor count mismatch');
+                if(map.querySelectorAll('g.fm-group').length!==(model.groups||[]).length)problems.push('relationship owner count mismatch');
+                if(map.querySelectorAll('path.fm-edge').length!==(model.edges||[]).length)problems.push('relationship arrow count mismatch');
                 if(!figure.querySelector('.sequence-problem')?.textContent.includes(model.problem))problems.push('missing topic problem');
                 if(!steps.some(s=>Object.hasOwn(s,'add')||Object.hasOwn(s,'remove'))&&figure.querySelectorAll('.stage [data-el].is-off').length)problems.push('static comparison actors hidden');
-                for(const node of map.querySelectorAll('g.node')){
-                  const text=node.querySelector('text')?.getBoundingClientRect(),box=node.querySelector(':scope > rect')?.getBoundingClientRect();
+                for(const node of map.querySelectorAll('g.fm-node')){
+                  const text=node.querySelector('text')?.getBoundingClientRect(),box=node.querySelector(':scope > rect.fm-card')?.getBoundingClientRect();
                   if(text&&box&&(text.left<box.left-.5||text.right>box.right+.5||text.top<box.top-.5||text.bottom>box.bottom+.5))problems.push('relationship label outside actor: '+node.textContent.trim());
                 }
                 for(const t of map.querySelectorAll('text')){

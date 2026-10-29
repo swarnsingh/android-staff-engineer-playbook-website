@@ -153,7 +153,7 @@ python3 -m venv .venv && .venv/bin/pip install -r website/requirements.txt
 python3 -m http.server 4177 --bind 127.0.0.1 --directory website/dist
 ```
 
-Run from the new website repository root. Port 4177 is an example: choose an available port and verify the server serves this checkout’s `website/dist`, rather than reusing a server from the original repository. The build writes `website/dist/` (ignored by git), renders each Mermaid diagram with `npx @mermaid-js/mermaid-cli` (cached in `website/.cache/`; pass `--skip-diagrams` to skip), and then runs the preservation check. It exits non-zero if any original content is missing. Set `SITE_BASE=/android-staff-engineer-playbook-website/` to build for a project path such as GitHub Pages.
+Run from the new website repository root. Port 4177 is an example: choose an available port and verify the server serves this checkout’s `website/dist`, rather than reusing a server from the original repository. The build writes `website/dist/` (ignored by git), draws every diagram with the shared FigureMap component (no Mermaid renderer is needed), fails if any page would still show a rendered Mermaid picture, and then runs the preservation check. It exits non-zero if any original content is missing. Set `SITE_BASE=/android-staff-engineer-playbook-website/` to build for a project path such as GitHub Pages.
 
 ## How a page is assembled
 
@@ -222,7 +222,7 @@ The 28 October diagram pass uses `content/diagram-models/*.json` for 119 authore
 
 Each model names the concrete problem, reading direction, actual actor IDs, optional nested boundaries, explicit labelled relationships and official sources. A relationship arrow is not automatically a transfer or a time step. Comparisons can have no arrows. Actor IDs bind a model to its figure because blend insertion order can differ from file order. The build rejects conflicting ownership, missing actors, invalid endpoints and ambiguous bindings.
 
-Maps retain readable 17px node labels and 15px arrow labels instead of shrinking into phone width. The named walkthrough steps explain time; the map explains relationships; the labelled state list identifies what changed. The no-colour option verifies that colour is optional. Play is walkthrough playback, not a claim that every topic has a physical transport animation.
+Since 29 October 2026 the maps are drawn by the shared FigureMap component with automatic layout: one column per owner boundary, rows in relationship order, routes that avoid cards and labels placed where they cover nothing. Maps retain readable labels instead of shrinking into phone width. The named walkthrough steps explain time; the map explains relationships; the labelled state list identifies what changed. The no-colour option verifies that colour is optional. Play is walkthrough playback, not a claim that every topic has a physical transport animation.
 
 ### Designed figures replace Mermaid · 29 October 2026
 
@@ -236,7 +236,12 @@ Each diagram has a model in `content/diagram-models/figures/engineering-fundamen
 - an actor has two owners;
 - a relationship has no label.
 
-Original diagrams keep their Mermaid source as preserved text under "Original diagram from the chapter". The Kotlin and Android trees still show Mermaid pictures and Mermaid-laid-out relationship maps; they are migrated next under the same rule. The shared FlowScene also changed: the picture comes first, followed by the current caption and a single row of controls.
+Original diagrams keep their Mermaid source as preserved text under "Original diagram from the chapter". The same day, the rule was applied across the whole website:
+- the 41 Android diagrams that were still Mermaid pictures are now FigureMap models in `content/diagram-models/figures/android.json`;
+- the 118 relationship maps are drawn by FigureMap;
+- the 54 originals that already had authored HTML redraws keep only their preserved source text.
+
+The build now fails if any page would show a rendered Mermaid picture. The shared FlowScene also changed: the picture comes first, followed by the current caption and a single row of controls.
 
 ### Engineering Fundamentals rollout ·29 October 2026
 

@@ -23,6 +23,22 @@ The build fails in these cases:
 
 The chapter's Mermaid source stays on the page as preserved text under "Original diagram from the chapter".
 
+## Automatic layout
+
+A model whose cards have no `x`/`y` or `col`/`row` is placed automatically. The model's `layout` field chooses one of three layouts:
+- **`columns`** (the default): one column per top-level owner boundary, with nested boundaries drawn inside their parent, and rows in relationship order. Columns that would exceed `max_w` continue on a band below.
+- **`layers`**: rows by relationship depth, for trees and fan-outs. Several same-label edges from one parent share a bus and one label, and edges to a wrapped row turn in the gap just above it.
+- **`snake`**: wraps a long pipeline into rows that alternate direction.
+
+Routing works the same way in every layout:
+- Each clean route option is scored, and the one with the fewest line crossings and bends wins.
+- Labels are wrapped and placed where they cover no card, boundary label or other label.
+- A model that cannot be placed cleanly fails the build.
+
+The 118 relationship maps and the Android figures use automatic layout.
+
+Use nested boundaries rather than arrows when a diagram shows containment, such as source sets or directories; arrows are for relationships.
+
 ## Layout guidance
 
 - **Run flows top to bottom.** A label pill can sit on any vertical line, because only the pill's height has to fit between two rows. On a horizontal line the whole pill has to fit between two cards. Vertical layouts also stay narrow enough for phones.
