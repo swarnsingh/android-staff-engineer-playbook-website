@@ -1,0 +1,37 @@
+<!-- Website teaching layer; original immutability.md remains unchanged. Primary-source review: batch-1.json. -->
+<!-- @opening -->
+<p class="story-lead">A cart total changes in memory, but the screen still shows the old amount. The code changed a list inside an existing state object. It never published an observable update, so the reader had no signal to reconsider the value.</p>
+
+Separate the data's contents from the mechanism that publishes a new version. Immutable snapshots help preserve what a reader has already received. They do not choose an owner or send an update notification by themselves.
+
+<!-- @after Internal Mechanics :: visual -->
+### A new outer object can still share a mutable child
+
+```mermaid
+flowchart TB
+    subgraph Outer["Two distinct Company objects after copy()"]
+      A["Original Company"]
+      B["Copied Company"]
+    end
+    Shared["One shared MutableList of employees"]
+    Change["Add Charlie through either reference"]
+    A -->|"employees reference"| Shared
+    B -->|"same employees reference"| Shared
+    Change -->|"mutates shared contents"| Shared
+```
+
+`copy()` is shallow. Copying the outer object does not copy its list or freeze the list's elements. The useful boundary is the reachable data the reader is allowed to observe. Copy mutable inputs before publishing, use an appropriate immutable collection, or keep mutation under a clearly defined owner. Each option still needs a safe update path.
+
+[Sources: Kotlin data-class copying](https://kotlinlang.org/docs/data-classes.html), [immutable and persistent collection interfaces](https://github.com/Kotlin/kotlinx.collections.immutable).
+
+<!-- @after Production Example :: guide -->
+### Creation and notification are different steps
+
+For a snapshot-based UI path, follow the whole sequence: accept an event, compute the next state, publish it through observable state, then let the UI read it. A local `old.copy(...)` that is never published stops at the second step. Compose also supports observable mutable state; changing an ordinary mutable field is different from changing supported snapshot state that a composable read.
+
+[Source: Compose's observable-state contract](https://developer.android.com/develop/ui/compose/state).
+
+<!-- @after Staff Engineer Thinking :: staff -->
+### Share unchanged values only when their contents stay stable
+
+Persistent collections can reuse unchanged structure when producing a new collection version. Structural sharing saves copying; it does not turn a mutable element into an immutable value. Check both the collection boundary and the elements reachable through it. A snapshot that cannot be mutated by a consumer is easier to retain for undo, but its freshness relative to a server remains a separate decision.

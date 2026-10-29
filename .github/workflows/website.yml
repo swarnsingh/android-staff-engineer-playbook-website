@@ -43,7 +43,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: website/.cache/diagrams
-          key: website-diagrams-${{ runner.os }}-${{ hashFiles('website/scripts/build.py', 'android/**/*.md', 'kotlin/**/*.md', 'website/content/corrections-*.json', 'website/content/diagram-models/*.json', 'website/scripts/diagram_models.py') }}
+          key: website-diagrams-${{ runner.os }}-${{ hashFiles('website/scripts/build.py', 'android/**/*.md', 'kotlin/**/*.md', 'engineering-fundamentals/**/*.md', 'website/content/corrections-*.json', 'website/content/diagram-models/*.json', 'website/scripts/diagram_models.py') }}
           restore-keys: |
             website-diagrams-${{ runner.os }}-
       - name: Test correction markup boundaries

@@ -1,0 +1,49 @@
+<!-- Website teaching layer; source remains unchanged. Primary-source review: batch-2.json. -->
+<!-- @opening -->
+<p class="story-lead">A product screen starts request A, then the user refreshes and starts request B. B succeeds first. A fails later. If the last callback blindly replaces the screen, the user sees an error even though the current request succeeded.</p>
+
+Naming Loading and Success helps, but it does not identify which request owns the screen. A useful machine carries both its mode and the data needed to judge incoming events. Here that includes a request ID.
+
+<!-- @before Internal Mechanics :: guide -->
+### Write the rule for the late callback
+
+Give each attempt an identity. A completion for A may change state only while A is the current attempt. When B replaces it, A's later completion becomes a deliberate no-op. Cancellation can reduce wasted work; it does not replace that validity check when completions can race.
+
+A pure transition calculation lets a test ask: given Loading(B), what should Failed(A) do? It should retain Loading(B). The effect runner has a different job: execute the requested operation and report its outcome with the same identity.
+
+[Sources: state transitions and conditional guards](https://www.w3.org/TR/scxml/#transition), [state ownership in Android UI](https://developer.android.com/topic/architecture/ui-layer).
+
+<!-- @after Architecture :: visual -->
+### Keep the state owner visible
+
+```mermaid
+flowchart TB
+    Tap["User starts attempt B"]
+    Result["Completion for attempt A"]
+    subgraph Owner["Screen state owner"]
+      Queue["Serialize incoming events"]
+      Guard["Validate event against current mode and request ID"]
+      State["Current mode and request ID"]
+      Effects["Explicit effect instructions"]
+      Ignore["Ignore stale completion; retain B"]
+    end
+    Runner["Effect runner"]
+    Tap -->|"Start B"| Queue
+    Result -->|"Failed A"| Queue
+    Queue -->|"reduce against current state"| Guard
+    State -->|"current identity"| Guard
+    Guard -->|"A differs from B"| Ignore
+    Guard -->|"valid event: next state"| State
+    Guard -->|"valid event may request work"| Effects
+    Effects -->|"execute with operation identity"| Runner
+    Runner -->|"completion becomes a new event"| Queue
+```
+
+The outer box is the ownership boundary. Arrows describe event processing; they do not claim that reading a StateFlow executes an effect exactly once. A state can remain equal while an event still requires a separate action.
+
+<!-- @after Reliability Considerations :: staff -->
+### Recover intent as well as mode
+
+A durable upload needs more than a saved Uploading label. Persist the operation ID, payload reference, progress that can be recovered, and pending effect intent under an atomic local contract. After a crash, reconcile an uncertain server result before repeating sensitive work. Otherwise the machine can restore a plausible state while forgetting the operation it promised to perform.
+
+[Source: transactional outbox and duplicate handling](https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html).

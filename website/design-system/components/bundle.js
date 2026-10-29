@@ -563,7 +563,26 @@
     sync();
   }
 
+  // ReadingSheet owns overflow expansion for allcurrent and future lessons.
+  function ReadingSheet(scope) {
+    var reading=scope.querySelector('.reading-content');
+    if(!reading || reading.__pbLayout)return;reading.__pbLayout=true;
+    var pending;
+    function schedule(){cancelAnimationFrame(pending);pending=requestAnimationFrame(function(){
+      var candidates=Array.from(reading.querySelectorAll('.code-card,table')).filter(function(n){return !n.closest('.blend,.pb-figure,.relationship-map,.source-diagram,.original-diagram,li');});
+      candidates.forEach(function(n){n.classList.remove('content-bleed');});
+      if(!matchMedia('(min-width:641px)').matches)return;
+      var wide=candidates.filter(function(n){var c=n.matches('.code-card')?n.querySelector('pre'):n;return n.getClientRects().length && c && c.scrollWidth>c.clientWidth+2;});
+      wide.forEach(function(n){n.classList.add('content-bleed');});
+    });}
+    addEventListener('resize',schedule,{passive:true});addEventListener('load',schedule,{once:true});
+    if(document.fonts){document.fonts.ready.then(schedule);document.fonts.addEventListener('loadingdone',schedule);}
+    var observer=new MutationObserver(schedule);observer.observe(document.documentElement,{attributes:true});observer.observe(document.body,{attributes:true});
+    scope.addEventListener('change',schedule);scope.addEventListener('input',schedule);
+    scope.addEventListener('click',function(e){if(e.target.closest('[role=tab]'))schedule();});schedule();
+  }
   function mountAll(scope) {
+    ReadingSheet(scope || document);
     (scope || document).querySelectorAll('[data-pb-wide]').forEach(function (root) { if (!root.__pb) { root.__pb = true; WideDiagram(root); } });
     (scope || document).querySelectorAll('[data-pb-flow]').forEach(function (root) {
       if (root.__pb) return; root.__pb = true;

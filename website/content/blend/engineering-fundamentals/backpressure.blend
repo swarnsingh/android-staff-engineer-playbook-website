@@ -1,0 +1,53 @@
+<!-- Website teaching layer; original backpressure.md remains unchanged. Primary-source review: batch-3.json. -->
+<!-- @opening -->
+<p class="story-lead">A sensor produces a hundred updates while an upload consumes ten. Adding coroutines makes the callback return quickly. It also lets unfinished work accumulate. The important question is now where the next update waits, which value may be discarded, and who can see that decision.</p>
+
+Separate demand from overload handling. Suspension or a demand protocol can slow a cooperating producer. Dropping and spilling make different promises; neither turns an uncontrollable source into a slower one.
+
+<!-- @before Internal Mechanics :: guide -->
+### Name what must survive before choosing the buffer
+
+A current position can replace an obsolete pending position. A payment instruction cannot disappear merely because a collector is absent. A bounded channel provides an in-process handoff; it does not survive process death. A replay-zero SharedFlow broadcasts to active subscribers and loses emissions when none exist, even with `SUSPEND` configured. Durable work needs persisted intent, a processing owner and an acknowledgement/reconciliation policy.
+
+[Sources: Reactive Streams' non-blocking demand contract](https://www.reactive-streams.org/), [SharedFlow's absent-subscriber behavior](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/).
+
+<!-- @after Internal Mechanics :: animation -->
+### A two-slot buffer makes the choice visible
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="Same capacity, different contract">
+<h3>Same capacity, different contract</h3><p class="pb-sub">Illustrative values and order, not measured timings.</p>
+<div class="pb-seg" role="group" aria-label="Full-queue policy"><button type="button" data-mode="suspend" aria-pressed="true">Suspend producer</button><button type="button" data-mode="drop" aria-pressed="false">Drop oldest pending</button></div>
+<div class="pb-paper"><svg class="pb-svg" role="img" aria-label="Three named items A, B and C move from a producer to a two-slot queue and then to a consumer. Choose whether a full queue suspends the producer or discards its oldest pending item."></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div>
+<div class="pb-caption"><span class="pb-count"></span><p aria-live="polite"></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">{"illustrated": true, "nodes": [{"id": "producer", "label": "Producer", "art": {"kind": "worker", "role": "runtime"}}, {"id": "queue", "label": "Capacity 2", "art": {"kind": "queue", "role": "queue"}}, {"id": "consumer", "label": "Consumer", "art": {"kind": "worker", "role": "client"}}], "layouts": {"wide": {"size": [760, 330], "nodes": {"producer": {"x": 24, "y": 80, "w": 208, "h": 166}, "queue": {"x": 276, "y": 80, "w": 208, "h": 166}, "consumer": {"x": 528, "y": 80, "w": 208, "h": 166}}, "edges": {"enqueue": "M234 150 C248 150 260 150 274 150", "dequeue": "M486 150 C500 150 512 150 526 150"}, "labels": [{"x": 254, "y": 52, "text": "enqueue"}, {"x": 506, "y": 52, "text": "dequeue"}], "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}, "narrow": {"size": [760, 330], "nodes": {"producer": {"x": 24, "y": 80, "w": 208, "h": 166}, "queue": {"x": 276, "y": 80, "w": 208, "h": 166}, "consumer": {"x": 528, "y": 80, "w": 208, "h": 166}}, "edges": {"enqueue": "M234 150 C248 150 260 150 274 150", "dequeue": "M486 150 C500 150 512 150 526 150"}, "labels": [{"x": 254, "y": 52, "text": "enqueue"}, {"x": 506, "y": 52, "text": "dequeue"}], "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}}, "modes": {"suspend": {"initial": {"nodes": {"producer": ["", "A, then B, then C"], "queue": ["", "0 / 2 pending"], "consumer": ["", "not taking yet"]}, "visuals": {"queue": {"items": [], "count": 0}}}, "steps": [{"caption": "Start with an empty two-slot queue and a consumer that has not taken an item.", "set": {"nodes": {"producer": ["is-active", "A, then B, then C"]}}}, {"caption": "A is accepted. One of two pending slots is occupied.", "set": {"nodes": {"queue": ["is-active", "1 / 2: A"]}, "visuals": {"queue": {"items": ["A"], "count": 1}}}, "packets": [{"edge": "enqueue", "label": "A", "tone": "fwd", "kind": "page"}]}, {"caption": "B is accepted. The queue is now full: A, B.", "set": {"nodes": {"queue": ["is-warn", "2 / 2: A, B"]}, "visuals": {"queue": {"items": ["A", "B"], "count": 2}}}, "packets": [{"edge": "enqueue", "label": "B", "tone": "fwd", "kind": "page"}]}, {"caption": "C cannot be accepted yet. Its producer suspends and holds C; no item travels into the full queue.", "set": {"nodes": {"producer": ["is-warn", "C pending; suspended"]}}}, {"caption": "The consumer takes A. B remains pending; A is now processing outside the queue.", "set": {"nodes": {"queue": ["", "1 / 2: B"], "consumer": ["is-active", "processing A"]}, "visuals": {"queue": {"items": ["B"], "count": 1}}}, "packets": [{"edge": "dequeue", "label": "A", "tone": "fwd", "kind": "page"}]}, {"caption": "The waiting send resumes and C is accepted. Pending items are B, C; A is still the consumer’s current item.", "set": {"nodes": {"producer": ["is-done", "C accepted"], "queue": ["is-active", "2 / 2: B, C"]}, "visuals": {"queue": {"items": ["B", "C"], "count": 2}}}, "packets": [{"edge": "enqueue", "label": "C", "tone": "fwd", "kind": "page"}]}]}, "drop": {"initial": {"nodes": {"producer": ["", "A, then B, then C"], "queue": ["", "0 / 2 pending"], "consumer": ["", "not taking yet"]}, "visuals": {"queue": {"items": [], "count": 0}}}, "steps": [{"caption": "Start with an empty two-slot queue and a consumer that has not taken an item.", "set": {"nodes": {"producer": ["is-active", "A, then B, then C"]}}}, {"caption": "A is accepted. One of two pending slots is occupied.", "set": {"nodes": {"queue": ["is-active", "1 / 2: A"]}, "visuals": {"queue": {"items": ["A"], "count": 1}}}, "packets": [{"edge": "enqueue", "label": "A", "tone": "fwd", "kind": "page"}]}, {"caption": "B is accepted. The queue is now full: A, B.", "set": {"nodes": {"queue": ["is-warn", "2 / 2: A, B"]}, "visuals": {"queue": {"items": ["A", "B"], "count": 2}}}, "packets": [{"edge": "enqueue", "label": "B", "tone": "fwd", "kind": "page"}]}, {"caption": "C arrives under DROP_OLDEST. A is discarded before processing; C is accepted. The producer does not wait.", "set": {"nodes": {"producer": ["is-done", "C accepted"], "queue": ["is-warn", "2 / 2: B, C; A dropped"]}, "visuals": {"queue": {"items": ["B", "C"], "count": 2}}}, "packets": [{"edge": "enqueue", "label": "C", "tone": "fwd", "kind": "page"}]}, {"caption": "The consumer takes B. C remains pending. The dropped A cannot be reconstructed from this queue.", "set": {"nodes": {"queue": ["", "1 / 2: C"], "consumer": ["is-active", "processing B"]}, "visuals": {"queue": {"items": ["C"], "count": 1}}}, "packets": [{"edge": "dequeue", "label": "B", "tone": "fwd", "kind": "page"}]}]}}}</script>
+</section>
+
+The queue's capacity counts pending items, not the item already being processed or held by a suspended producer. This example preserves order among accepted items. Drop-oldest removes an unprocessed item; it does not cancel the consumer's current work.
+
+[Sources: buffer's suspension and overflow rules](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/buffer.html), [conflate's pending-value behavior](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/conflate.html).
+
+<!-- @after Failure Modes :: staff -->
+### Find the boundary that stopped cooperating
+
+```mermaid
+flowchart LR
+    subgraph Callback["Non-suspending source"]
+      Sensor["Sensor callback"]
+    end
+    subgraph Bridge["Explicit admission boundary"]
+      Offer["Try bounded admission"]
+      Decide["Reject, replace or persist according to contract"]
+    end
+    Queue["Bounded pending work"]
+    Consumer["Processing owner"]
+    Sensor -->|"new sample"| Offer
+    Offer -->|"accepted"| Queue
+    Offer -->|"full or unavailable"| Decide
+    Queue -->|"dequeue"| Consumer
+    Consumer -.->|"available capacity controls next admission"| Offer
+```
+
+A dispatcher change is not the boundary that breaks backpressure: a coroutine on another dispatcher can still suspend. An unbounded series of `launch` calls around `send` is different; it relocates the backlog into waiting coroutines. Measure queue age, in-flight work and dropped values, not queue length alone.

@@ -1,0 +1,39 @@
+<!-- Website teaching layer; original coupling-vs-cohesion.md remains unchanged. Primary-source review: batch-1.json. -->
+<!-- @opening -->
+<p class="story-lead">A checkout test needs an Android device, a database and a live server before it can check one price calculation. The calculation is small; constructing its dependencies has pulled the rest of the application into the test.</p>
+
+Follow the dependency a caller must understand, then ask what change would cross that boundary. File count and interface count are clues, not a score for architectural quality.
+
+<!-- @after Internal Mechanics :: visual -->
+### Separate constructing a dependency from using its contract
+
+```mermaid
+flowchart TB
+    subgraph Wiring["Application composition boundary"]
+      Factory["Choose and construct dependencies"]
+      Adapter["Repository implementation"]
+      Transport["HTTP client and local storage"]
+      Adapter -->|"uses implementation details"| Transport
+      Factory -->|"constructs"| Adapter
+    end
+    subgraph Feature["Checkout feature"]
+      VM["Checkout state owner"]
+      Contract["Cart data contract"]
+      VM -->|"load cart; receive application values"| Contract
+    end
+    Factory -->|"supplies dependency"| VM
+    Adapter -.->|"implements"| Contract
+```
+
+The solid arrows name construction or use; the dotted arrow names implementation of the contract. The feature still depends on what the contract promises: values, failure behavior and lifetime. The wiring chooses the implementation. An injected concrete class can be enough when that coupling is intentional; add an interface when substitution or hiding implementation details serves the caller.
+
+[Source: Android's dependency-injection guide](https://developer.android.com/training/dependency-injection).
+
+<!-- @after Staff Engineer Thinking :: staff -->
+### Review a concrete change across the boundary
+
+Try “replace the HTTP client” and “change checkout's discount rule.” The first should stay behind the data contract if callers are meant to be transport-independent. The second belongs with checkout policy; hiding it behind a generic utility name does not make it cohesive.
+
+A transport-specific interface can be useful without being a domain abstraction. Retrofit's annotations declare an HTTP service contract. Add a separate application-facing contract only where callers should be insulated from those HTTP details. Keep the boundary's errors, cancellation and ownership explicit too; an interface name alone does not hide them.
+
+[Source: Retrofit's service declaration model](https://square.github.io/retrofit/).

@@ -134,5 +134,22 @@
   "preserved_website_branches": {
     "codex/reader-website": "60b8c2ad83bc2ab9b476560de29adc2dc99e5318",
     "claude/reader-website-kotlin": "8a77e2254170260eb94a06a7ec72299fe846256e"
-  }
+  },
+  "engineering-fundamentals_sha256": {
+    "engineering-fundamentals/backpressure.md": "7a3c486b7dfcb5864655dc0c0650e4abd2b48a92cc7e647dc47b3b2bbb105f38",
+    "engineering-fundamentals/caching.md": "60483904bd3e10667caa329fef87e94bf414ccca223c6e8009e689c2edef55f1",
+    "engineering-fundamentals/complexity-analysis.md": "5fc0ca091777c43231d07b0caff36f2d1fcec4364726f432ebf192714fc398fe",
+    "engineering-fundamentals/coupling-vs-cohesion.md": "2547bb4354487c8ae85a79b63bfff581da50888268efadf4786bc9f651813f3f",
+    "engineering-fundamentals/event-driven-architecture.md": "260a6d98219ec8ce4a71dfc9bcfc42e46328a76922cf94553769a964ada9f855",
+    "engineering-fundamentals/fault-tolerance.md": "6f7a0bd5bd992cbf6187d621178a865bf12458b1871653a50cee683a8c5a3cba",
+    "engineering-fundamentals/immutability.md": "9dc4257704fa5633b84736b73d1250091591b22ce173d1389a5a8e23b8b92858",
+    "engineering-fundamentals/latency-vs-throughput.md": "eb80707a949a6aaaaf71cde2b299abc0cc84574aa22d0b7fac5d81310b50f7ec",
+    "engineering-fundamentals/queues.md": "e75e67cf09ba10b6599c75e5fc54d14068298cc190f7349c9e3bfda8db83d195",
+    "engineering-fundamentals/serialization.md": "868d7163d5f93197fede92b0501f7d0ebab06544b54ff328b87c8bd69543aac3",
+    "engineering-fundamentals/state-machines.md": "3106a87ffc6090aceb9f09e8fc8287ebb6ecfbf8ba9e16c18344ef289832c182",
+    "engineering-fundamentals/sync-vs-async.md": "468638f84ca99605700425d87fb8ec2b3cdec7d24bf970cdd7e397568e65b465",
+    "engineering-fundamentals/time-and-clocks.md": "0b02301740246f3a36db660abb5920f598eaf3d2aa050dee3c2a52eb62e05731",
+    "engineering-fundamentals.md": "6a1aee224f5fa3d2a115aaf136628413fae38e95278068f338ec93594ef137e0"
+  },
+  "engineering-fundamentals_reference_commit": "b8b56170e3b78f26ad73807b626acfb9530deb47"
 }

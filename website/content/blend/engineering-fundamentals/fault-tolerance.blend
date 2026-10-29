@@ -1,0 +1,48 @@
+<!-- Website teaching layer; original fault-tolerance.md remains unchanged. Primary-source review: batch-3.json. -->
+<!-- @opening -->
+<p class="story-lead">Search becomes slow. Requests accumulate, each layer retries, and soon checkout cannot obtain a connection. The payment service never failed. Its callers spent all the shared capacity trying to recover search.</p>
+
+Fault tolerance starts with a boundary: which fault is contained, which promise still holds, and what work is allowed while recovery is uncertain? Replicas and retries are useful only when those answers survive the actual failure.
+
+<!-- @before Internal Mechanics :: guide -->
+### A timeout is an observation, not a rollback
+
+The caller knows that a response did not arrive within its budget. It may not know whether the server applied the operation. Before retrying a mutation, name the operation ID and the server's duplicate-handling or reconciliation contract. Keep retries inside one overall deadline and one retry budget; independent retries at several layers multiply attempts.
+
+[Source: Amazon's timeout, retry and jitter guidance](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/).
+
+<!-- @after Internal Mechanics :: visual -->
+### Protect the resource, not just a dispatcher name
+
+```mermaid
+flowchart TB
+    subgraph Admission["Separate admission budgets"]
+      Pay["Payments: bounded in-flight operations"]
+      Search["Search: bounded in-flight operations"]
+    end
+    subgraph Shared["Shared resources still need budgets"]
+      CPU["CPU and memory"]
+      Conn["Connection capacity"]
+    end
+    PaymentAPI["Payment dependency"]
+    SearchAPI["Search dependency"]
+    Pay -->|"admitted operation"| PaymentAPI
+    Search -->|"admitted operation"| SearchAPI
+    Pay -->|"consumes"| CPU
+    Search -->|"consumes"| CPU
+    PaymentAPI -->|"uses configured pool"| Conn
+    SearchAPI -->|"uses configured pool"| Conn
+```
+
+A dispatcher view limits how much code executes in parallel. It does not count every coroutine that has suspended while holding a request open. Bound those operations separately, and check whether connection pools, memory or the remote service still couple the paths. Dedicated resources can improve isolation, but shared host limits remain.
+
+[Source: limitedParallelism's concurrency boundary](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/limited-parallelism.html).
+
+<!-- @after Failure Modes :: staff -->
+### Write a recovery claim that can fail a test
+
+“Automatic failover” is too vague. For one chosen fault, record the maximum acceptable data loss, the target time to restore the agreed service, and the checks that establish recovery. Include detection, promotion, fencing of the old primary, routing and usable capacity. A healthy replica does not itself complete that protocol.
+
+Exercise recovery with bounded traffic and explicit abort conditions. Retain user-visible errors and latency during the exercise; a successful health check alone does not establish the recovery time. If fallback serves stale data, label the age and keep authorization requirements intact.
+
+[Sources: PostgreSQL standby and promotion behavior](https://www.postgresql.org/docs/current/warm-standby.html), [AWS recovery objectives](https://docs.aws.amazon.com/wellarchitected/latest/reliability-pillar/plan-for-disaster-recovery-dr.html).

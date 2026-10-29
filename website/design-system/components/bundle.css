@@ -46,7 +46,7 @@
 .pb-art .art-success { fill: var(--accent); }
 .pb-art .art-success-line { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .pb-art .art-count { fill: var(--sheet); font: 700 15px var(--font-sans); }
-.pb-art .art-item { fill: var(--ink); font: 700 12px var(--font-sans); }
+.pb-art .art-item { fill: var(--ink); font: 700 13px var(--font-sans); }
 .pb-pk.is-object { --payload: var(--accent); }
 .pb-pk.is-object.back { --payload: var(--event); }
 .pb-pk.is-object.stuck { --payload: var(--warn); }
@@ -173,3 +173,23 @@ html.reduce-motion .pb-figure * { transition: none; }
 .pb-seg{flex-wrap:wrap;max-width:100%;box-sizing:border-box}
 .pb-seg button{min-height:44px}
 @media(max-width:520px){.pb-interaction .pb-controls .pb-btn{flex:1 1 auto}.pb-interaction .pb-controls .spacer{display:none}}
+
+/* ReadingSheet: owner-approved shared layout,29October2026. */
+.reading-content{--measure-prose:var(--reading-prose-measure)}
+.reading-content .blend:has(> .pb-figure,> .stepper,> .source-diagram){padding:0;border:0;background:transparent;border-radius:0;margin-block:var(--visual-frame-gap)}
+.reading-content .blend:has(> .pb-figure,> .stepper,> .source-diagram) > .blend-label{display:flex;align-items:center;gap:14px;padding:0;background:none;color:var(--accent);border-radius:0;margin-bottom:14px}
+.reading-content .blend:has(> .pb-figure,> .stepper,> .source-diagram) > .blend-label::after{content:'';flex:1;height:1px;background:var(--line)}
+.reading-content :is(.pb-figure,.stepper,.source-diagram,.original-diagram){box-sizing:border-box;border:1px solid var(--line);border-radius:var(--visual-frame-radius);padding:var(--visual-frame-padding);background:var(--sheet-sunken);box-shadow:var(--shadow-visual-frame);margin-block:24px}
+.reading-content .pb-paper{border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--sheet);padding:12px}
+@media(min-width:641px){
+ main:has(.reading-content){--visual-available:calc(100vw - 32px)}
+ .lesson-tabs{isolation:isolate;overflow:visible}
+ .lesson-tabs::before{content:'';position:absolute;inset-block:0;width:min(var(--measure-visual),calc(100% + var(--visual-bleed)*2),var(--visual-available));left:50%;transform:translateX(-50%);z-index:-1;background:var(--sheet);pointer-events:none}
+ .reading-content :is(.blend > .pb-figure,.blend > .stepper,.source-diagram,.original-diagram,.content-bleed){--bleed-width:min(var(--measure-visual),calc(100% + var(--visual-bleed)*2),var(--visual-available));width:var(--bleed-width);max-width:none;margin-inline:calc((100% - var(--bleed-width))/2)}
+}
+@media(min-width:1181px) and (max-width:1439px){main:has(.reading-content){--visual-available:calc(100vw - 210px - 32px)}}
+@media(min-width:1440px){main:has(.reading-content){--visual-available:calc(100vw - 244px - 210px - 32px)}}
+@media(max-width:640px){.reading-content :is(.pb-figure,.stepper,.source-diagram,.original-diagram){padding:16px;border-radius:var(--radius-lg)}.reading-content .pb-paper{padding:4px}}
+
+/* Tables in teaching callouts keep their own readable local scroll boundary. */
+.reading-content .blend > table{display:block;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}

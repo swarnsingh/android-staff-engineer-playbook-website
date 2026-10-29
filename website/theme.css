@@ -17,7 +17,7 @@ main {
 /* Diagrams may use the sheet's full inner width, wider than the text column (ReadingSheet rule).
    main is a size container, so 100cqw is the sheet's inner width; on phones the two widths match and nothing moves. */
 main { container-type: inline-size; }
-.blend:has(.pb-figure), .source-diagram { margin-inline: min(0px, calc((100% - 100cqw) / 2)); }
+
 .lesson-hero { background: none; border: 0; border-radius: 0; padding: 28px 0 8px; }
 h1, .lesson-hero h1 { max-width: 22ch; font: 700 clamp(2rem, 4.2vw, 3.5rem)/1.12 var(--font-sans); letter-spacing: -.04em; text-wrap: balance; }
 .mobile-outline { margin-inline: calc(-1 * var(--sheet-pad)); padding-inline: var(--sheet-pad); background: var(--sheet); }
@@ -156,7 +156,7 @@ html[data-theme=contrast] .blend > .blend-label { border: 1px solid var(--ink); 
    The reader's chosen font (--font-prose) carries prose only: paragraphs, list items, blockquotes, callout text and Q&A.
    Diagrams, tables, code and lesson furniture keep their own faces whatever the reader picks.
    font-size-adjust gives every prose font the same x-height, so the size setting means the same thing in each.
-   Prose keeps its own measure (about 70 characters a line); code, tables and diagrams keep the full text column. */
+   ReadingSheet in the shared design system owns the prose measure and visual layout. */
 .reading-content :where(p, li, blockquote, dd, dt):not(:where(figure, table, .viz, .stepper, .pb-figure, .code-card, .model, .panel-intro, .part-band, .lesson-footer, .chapter-navigation) *, :where(.part-promise)),
 .reading-content .blend[data-kind=check] summary, .settings-preview p {
   font-family: var(--font-prose); font-size-adjust: var(--prose-x-height); line-height: var(--prose-leading);

@@ -7,7 +7,7 @@ import build
 ROOT=build.ROOT;REVIEW=ROOT/'website/reviews/completion'
 def digest(value):return hashlib.sha256(value.encode()).hexdigest()
 def fingerprints():
- files=['website/content/corrections-z-completion.json','website/reviews/completion/source-sync.json',
+ files=['website/scripts/check_fundamentals_kotlin.py','website/tests/FundamentalsRegression.kt','website/content/engineering-fundamentals.json','website/content/corrections-engineering-fundamentals.json','source-snapshot.json','website/scripts/check_scene_routes.py','website/content/corrections-z-completion.json','website/reviews/completion/source-sync.json',
   'website/scripts/build.py','website/scripts/diagram_models.py','website/sequence.css','website/scripts/check_completion.py','website/scripts/check_preservation.py',
   'website/scripts/generate_android_validation.py','website/scripts/browser_preservation.js',
   'website/tools/qa_fixture_runner.js','website/styles.css','website/blend.css',
@@ -20,7 +20,7 @@ def fingerprints():
  files += [str(f.relative_to(ROOT)) for f in (ROOT/'website/content/diagram-models').glob('*.json')]
  files += [str(f.relative_to(ROOT)) for f in (ROOT/'website/content/components').glob('*.html')]
  result={f:digest((ROOT/f).read_text()) for f in sorted(files)}
- for tree in ['kotlin','android']:
+ for tree in build.TREES:
   for file in sorted([ROOT/(tree+'.md'),*(ROOT/tree).rglob('*.md')]):
    path=str(file.relative_to(ROOT));result['corrected:'+path]=digest(build.corrected(file.read_text(),path)[0])
  return result
@@ -35,7 +35,10 @@ def check(source_root=None):
   assert entry.get('primary_sources'),('missing primary evidence',entry['id'])
  rows=json.loads((ROOT/'website/content/corrections-z-completion.json').read_text())
  assert len(rows)==743 and len({r['id'] for r in rows})==743
- assert len(build.APPROVED_CORRECTIONS)==743, 'Canonical inventory must be applied exactly once'
+ assert len([r for r in build.APPROVED_CORRECTIONS if r['path'].split('/')[0] in {'kotlin','android'}])==743, 'Canonical inventory must be applied exactly once'
+ fundamentals=[r for r in build.APPROVED_CORRECTIONS if r['path'].startswith('engineering-fundamentals/')]
+ assert fundamentals and len({r['id'] for r in fundamentals})==len(fundamentals)
+ assert all(r.get('sources') and r.get('validation') for r in fundamentals)
  assert all(r['status']=='approved' and r.get('sources') and 'pending' not in r.get('validation','').lower() for r in rows)
  for file in (ROOT/'website/content/blend').rglob('*.blend'):
   assert not re.search(r'<!--\s*@[^>]*:: review\s*-->',file.read_text()),('resolved review notice remains',file)
@@ -58,11 +61,19 @@ def check(source_root=None):
  # Binder matrix: 4 themes x every reading font x 2 sizes x 7 widths x 2 views.
  binder_checks=4*len(json.loads((ROOT/'website/design-system/tokens.json').read_text())['type']['prose']['options'])*2*7*2
  browser=json.loads((ux/'browser.json').read_text())
- assert browser['done'] and len(browser['pages'])==125 and all(p['ok'] for p in browser['pages'])
+ assert browser['done'] and {p['href'].removeprefix(build.BASE if p['href'].startswith(build.BASE) else '/').strip('/') for p in browser['pages']}=={p.removesuffix('.md') for p in build.PAGES} and all(p['ok'] for p in browser['pages'])
  code_checks=[c for p in browser['pages'] for c in p.get('codeChecks',[])]
  assert code_checks and all(c['ok'] for c in code_checks),'Code readability or contrast regression'
  pairs=[c for p in browser['pages'] for v in p['preservation']['views'] for c in v.get('pairChecks',[])]
- assert len(pairs)==928 and all(c['ok'] for c in pairs),'Legacy question/answer pairing failed'
+ core_pairs=[c for p in browser['pages'] if '/engineering-fundamentals/' not in p['href'] for v in p['preservation']['views'] for c in v.get('pairChecks',[])]
+ assert len(core_pairs)==928 and len(pairs)==1058 and all(c['ok'] for c in pairs),'Question/answer pairing failed'
+ kotlin=json.loads((ux/'kotlin-validation.json').read_text())
+ assert kotlin['status']=='passed' and kotlin['checks']['assertions']==27
+ assert kotlin['fixture_sha256']==digest((ROOT/'website/tests/FundamentalsRegression.kt').read_text())
+ assert len(kotlin['fragments'])==5
+ for needle,expected_hash in kotlin['fragments'].items():
+  fragments=[block for path in build.ORDER['engineering-fundamentals'] for block in re.findall(r'```kotlin\n(.*?)\n```',build.corrected((ROOT/path).read_text(),path)[0],re.S) if needle in block]
+  assert len(fragments)==1 and digest(fragments[0])==expected_hash,('compiled fragment changed',needle)
  fixtures=json.loads((ux/'qa-tampering.json').read_text())
  assert fixtures['done'] and fixtures['ok'] and len(fixtures['checks'])==31 and all(c['ok'] for c in fixtures['checks']),'QA preservation negative fixtures failed'
  assert len({c['id'] for c in code_checks if c['inList']})>=45,'Nested-list code examples not checked'

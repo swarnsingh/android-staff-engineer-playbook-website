@@ -1,0 +1,16 @@
+{
+  "engineering-fundamentals.md": "Build a shared vocabulary for performance, state, coordination and failure. Follow thirteen chapters from the cost of a loop to the boundaries that keep an overloaded system usable.",
+  "engineering-fundamentals/complexity-analysis.md": "Count growing work, expose hidden boundary costs, and separate asymptotic bounds from measured UI deadlines.",
+  "engineering-fundamentals/latency-vs-throughput.md": "Measure request time and completion rate separately, then reason about queueing, tails and saturation.",
+  "engineering-fundamentals/sync-vs-async.md": "Track completion, thread occupancy and task lifetime without assuming that suspend means non-blocking.",
+  "engineering-fundamentals/coupling-vs-cohesion.md": "Design boundaries around changes, dependency contracts and the work that belongs together.",
+  "engineering-fundamentals/immutability.md": "Follow references, published versions and update observation to build state readers can trust.",
+  "engineering-fundamentals/caching.md": "Make cache freshness, stale-fill races and miss-path capacity explicit before trading memory for speed.",
+  "engineering-fundamentals/backpressure.md": "Trace bounded demand, queued items and overload choices from a slow consumer back to its producer.",
+  "engineering-fundamentals/time-and-clocks.md": "Choose a clock for elapsed time, calendar time or causality, and test the assumptions that distinguish them.",
+  "engineering-fundamentals/fault-tolerance.md": "Contain a failed dependency while preserving correctness, bounded work and a measurable recovery contract.",
+  "engineering-fundamentals/state-machines.md": "Make valid modes, transition rules and recoverable effects explicit.",
+  "engineering-fundamentals/queues.md": "Separate admission, processing and acknowledgement without hiding overload.",
+  "engineering-fundamentals/event-driven-architecture.md": "Choose event, command and state contracts that consumers can recover from.",
+  "engineering-fundamentals/serialization.md": "Carry data across boundaries without losing schema or compatibility guarantees."
+}

@@ -1,0 +1,57 @@
+<!-- Website teaching layer; original caching.md remains unchanged. Primary-source review: batch-3.json. -->
+<!-- @opening -->
+<p class="story-lead">A shopper updates a delivery address. The database contains the new address, yet the next screen shows the old one for five minutes. The cache hit is fast. It is also the wrong answer for this action.</p>
+
+Start by separating three questions: who owns the authoritative value, how old a read may be, and what happens when the cache cannot answer. A cache policy is complete only when all three have a deliberate response.
+
+<!-- @before Internal Mechanics :: guide -->
+### A hit is a shortcut, not proof of freshness
+
+A cached value needs an identity and a freshness contract. For an HTTP response, the key and `Vary` rules distinguish representations; authorization and cache-control rules determine whether reuse is permitted. For an application object, define the equivalent rules yourself. A TTL says when this copy expires under that policy; it does not prove that nobody changed the source after the copy was loaded.
+
+[Source: HTTP caching, RFC 9111](https://www.rfc-editor.org/rfc/rfc9111.html).
+
+<!-- @after Internal Mechanics :: visual -->
+### Follow the delayed reader, not just the writer
+
+```mermaid
+sequenceDiagram
+    participant R as Reader
+    participant D as Authoritative database
+    participant W as Writer
+    participant C as Cache
+    R->>D: Start a read of address v1
+    D-->>R: Return v1, reader pauses before filling cache
+    W->>D: Commit address v2
+    W->>C: Invalidate cached address
+    R->>C: Delayed fill tries to store v1
+    Note over C: Without a version or lease check, v1 can return
+```
+
+The dangerous fill arrives **after** invalidation. Deleting before the database write creates another race; it is not a repair. A lease token invalidated by the write can reject the old fill. This is a coordination protocol, not a promise supplied by the word “cache-aside.”
+
+[Sources: cache-aside ordering](https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside), [Facebook's stale-set lease mechanism, §3.2.1](https://www.usenix.org/system/files/conference/nsdi13/nsdi13-final170_update.pdf).
+
+<!-- @after Reliability Considerations :: staff -->
+### Decide what an empty cache is allowed to do
+
+```mermaid
+flowchart TB
+    subgraph App["Application admission boundary"]
+      Request["Read request"]
+      Limit["Miss concurrency budget"]
+    end
+    subgraph Copies["Reconstructible cache"]
+      Cache["Cached representation"]
+    end
+    Source["Authoritative store"]
+    Request -->|"lookup"| Cache
+    Cache -->|"miss or unavailable"| Limit
+    Limit -->|"admitted source read"| Source
+    Source -->|"versioned result"| Request
+    Limit -->|"over budget: explicit rejection or permitted stale read"| Request
+```
+
+An empty cache may turn a small source workload into the entire workload. A rebuildable cache can therefore be a capacity dependency without becoming the data's authority. Test the miss rate and source saturation during restart, then cap concurrent fills. Showing a permitted stale value is a product decision; silently using stale authorization is not the same fallback.
+
+[Source: Google SRE on cold caches and cascading failures](https://sre.google/sre-book/addressing-cascading-failures/).

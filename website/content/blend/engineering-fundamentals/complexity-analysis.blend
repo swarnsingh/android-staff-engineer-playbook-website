@@ -1,0 +1,47 @@
+<!-- Website teaching layer; original complexity-analysis.md remains unchanged. Primary-source review: batch-1.json. -->
+<!-- @opening -->
+<p class="story-lead">A contact search feels instant with fifty saved people. After importing a company directory, typing one letter stalls the screen. The code is unchanged; the number of comparisons is not.</p>
+
+Before measuring, write down what grows: contacts, characters per name, matching rows or combinations. Then count the expensive action at that scale. A complexity bound predicts growth under stated assumptions; a trace tells you whether the current implementation meets its deadline.
+
+<!-- @after Mental Model :: guide -->
+### Count the work before naming the class
+
+For these illustrative loops, every visit or pair comparison has the same assumed cost:
+
+| Input items N | One visit per item: N | Every item against every item: N × N |
+| --- | ---: | ---: |
+| 8 | 8 | 64 |
+| 16 | 16 | 256 |
+| 32 | 32 | 1,024 |
+
+Doubling N doubles the first count and quadruples the second. This is a count of loop-body executions, not a benchmark in milliseconds. State whether you are bounding worst-case work, expected work under a distribution, or amortized work across a sequence. Those are different promises.
+
+<!-- @after Android Example :: visual -->
+### An index helps find rows; returning rows still costs work
+
+```mermaid
+flowchart LR
+    Query["Find users named Smith"]
+    subgraph Lookup["Indexed lookup"]
+      Seek["1. Seek the matching key range"]
+      Match["2. Visit each of K matches"]
+    end
+    subgraph Output["Required result work"]
+      Fetch["3. Fetch table columns if index does not cover them"]
+      Return["4. Return K rows"]
+    end
+    Query -->|"predicate"| Seek
+    Seek -->|"range found"| Match
+    Match -->|"matching row identifiers"| Fetch
+    Fetch -->|"requested columns"| Return
+```
+
+For the same table size N, one matching user and ten thousand matching users do not cost the same. A covering index can avoid the separate table fetch, but it cannot avoid producing the requested output. Compare the chosen query plan, selectivity and returned data before calling a query “logarithmic.”
+
+[Source: SQLite's multiple-result and covering-index explanations](https://www.sqlite.org/queryplanner.html).
+
+<!-- @after Staff Engineer Thinking :: staff -->
+### Keep the count separate from the deadline
+
+Count database calls as well as rows processed. Replacing N individual queries with one query can reduce repeated boundary overhead without making the returned N rows constant-time work. For a UI path, combine the growth bound, maximum supported input and measured elapsed cost. Moving work to a worker protects the UI thread; it does not reduce the algorithm's total work.

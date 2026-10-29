@@ -1,0 +1,42 @@
+<!-- Website teaching layer; original time-and-clocks.md remains unchanged. Primary-source review: batch-3.json. -->
+<!-- @opening -->
+<p class="story-lead">An upload starts at 10:00:00. The device corrects its clock backward while the request is running. The duration metric becomes negative, although the network request still took time. The timestamp answered “what time is it?” when the code needed “how long have I waited?”</p>
+
+Choose the question before the clock: calendar instant, elapsed interval or causal precedence. These are different contracts. Greater numeric precision does not turn one into another.
+
+<!-- @before Internal Mechanics :: guide -->
+### Keep the origin with the value
+
+| Requirement | Appropriate starting point | Boundary to keep explicit |
+| --- | --- | --- |
+| Display when a receipt was issued | An authoritative calendar instant | Timezone changes its presentation; clock adjustments can change later readings |
+| Measure one JVM operation | Differences from `nanoTime`, or `kotlin.time.measureTime` | Both readings belong to the same time source/JVM lifetime |
+| Android timeout that includes deep sleep | `elapsedRealtime` differences | Values restart at boot; this does not make wakeups exact |
+| Explain which message caused an event | Message-aware logical timestamps | Lamport timestamp order alone does not prove causality in reverse |
+
+[Sources: Java elapsed-time contract](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/System.html#nanoTime()), [Android clock and sleep behavior](https://developer.android.com/reference/android/os/SystemClock).
+
+<!-- @after Architecture :: animation -->
+### Only messages carry logical time between processes
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="Local ticks stay local; messages carry timestamps">
+<h3>Local ticks stay local; messages carry timestamps</h3><p class="pb-sub">Illustrative values and order, not measured timings.</p>
+
+<div class="pb-paper"><svg class="pb-svg" role="img" aria-label="Two independent process counters advance locally; only explicitly labelled messages carry a logical timestamp across the process boundary."></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div>
+<div class="pb-caption"><span class="pb-count"></span><p aria-live="polite"></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">{"illustrated": true, "nodes": [{"id": "a", "label": "Process A", "art": {"kind": "server", "role": "client"}}, {"id": "b", "label": "Process B", "art": {"kind": "server", "role": "runtime"}}], "layouts": {"wide": {"size": [760, 330], "nodes": {"a": {"x": 24, "y": 80, "w": 270, "h": 166}, "b": {"x": 450, "y": 80, "w": 270, "h": 166}}, "edges": {"ab": "M296 130 C340 130 404 130 448 130", "ba": "M448 205 C404 205 340 205 296 205"}, "labels": [{"x": 372, "y": 57, "text": "A sends a message to B"}, {"x": 372, "y": 285, "text": "B replies to A"}], "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}, "narrow": {"size": [760, 330], "nodes": {"a": {"x": 24, "y": 80, "w": 270, "h": 166}, "b": {"x": 450, "y": 80, "w": 270, "h": 166}}, "edges": {"ab": "M296 130 C340 130 404 130 448 130", "ba": "M448 205 C404 205 340 205 296 205"}, "labels": [{"x": 372, "y": 57, "text": "A sends a message to B"}, {"x": 372, "y": 285, "text": "B replies to A"}], "pk": {"dx": 0, "dy": -17, "anchor": "middle"}}}, "modes": {"run": {"initial": {"nodes": {"a": ["", "LC = 0"], "b": ["", "LC = 0"]}}, "steps": [{"caption": "Both counters start at zero. These are logical counters, not seconds.", "set": {"nodes": {"a": ["", "LC = 0"], "b": ["", "LC = 0"]}}}, {"caption": "A performs a local event and increments to 1. Nothing is transmitted to B.", "set": {"nodes": {"a": ["is-active", "LC = 1"]}}}, {"caption": "A’s send event increments to 2. Its message carries 2; B receives and sets max(0, 2) + 1 = 3.", "set": {"nodes": {"a": ["is-done", "LC = 2"], "b": ["is-active", "LC = 3"]}}, "packets": [{"edge": "ab", "label": "message: LC 2", "tone": "fwd", "kind": "page"}]}, {"caption": "B performs a local event and increments from 3 to 4. A remains at 2.", "set": {"nodes": {"b": ["is-active", "LC = 4"]}}}, {"caption": "B’s reply increments to 5. A receives that timestamp and sets max(2, 5) + 1 = 6.", "set": {"nodes": {"b": ["is-done", "LC = 5"], "a": ["is-active", "LC = 6"]}}, "packets": [{"edge": "ba", "label": "reply: LC 5", "tone": "back", "kind": "page"}]}]}}}</script>
+</section>
+
+A local tick stays local. A send increments the sender; a receive merges the transmitted timestamp and increments the receiver. The result preserves causal precedence even when physical clocks disagree. Independent events can still receive equal timestamps; add a deterministic tie-breaker only when a total order is required.
+
+[Source: Lamport's original clock condition and algorithm](https://lamport.azurewebsites.net/pubs/time-clocks.pdf).
+
+<!-- @after Reliability Considerations :: staff -->
+### Test the discontinuities deliberately
+
+Inject time into duration and expiry logic. Test a backward wall-clock adjustment, equal consecutive monotonic readings, device sleep and a new boot/process lifetime. A persisted numeric `nanoTime` deadline cannot be interpreted after restart just because it is a `Long`.
+
+For an expiry enforced by a service, preserve the service's authority and clock policy. A client monotonic timer can improve local waiting behavior; it cannot establish the real time of a remote write or make a tampered device trustworthy.

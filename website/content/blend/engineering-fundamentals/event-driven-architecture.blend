@@ -1,0 +1,50 @@
+<!-- Website teaching layer; source remains unchanged. Primary-source review: batch-2.json. -->
+<!-- @opening -->
+<p class="story-lead">Checkout publishes PaymentRequested, and the confirmation screen immediately says “Paid.” The payment subscriber was not running. The event name looked like progress, but nobody had accepted responsibility for charging the card.</p>
+
+Start with the promise to the caller. “Please process this payment” needs a responsible owner and a visible outcome. “Payment processed” is a fact that other components can react to after that outcome exists.
+
+<!-- @before Internal Mechanics :: guide -->
+### Separate three contracts
+
+A **command** requests work, an **event** reports an occurrence, and **state** answers what is true now. They can travel through similar APIs while promising different things. A command queue can be asynchronous. A callback can deliver an event. A current-state flow can let a late UI recover without replaying every notification.
+
+In Kotlin, replay and buffer choices do not turn an in-memory SharedFlow into durable work. Ask separately what happens with no subscriber, a slow subscriber, a restarted collector and a dead process.
+
+[Sources: commands within event-driven systems](https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/event-driven), [SharedFlow replay and absent subscribers](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/).
+
+<!-- @after Architecture :: visual -->
+### Publish the fact after the owner records the outcome
+
+```mermaid
+flowchart TB
+    UI["Checkout UI"]
+    subgraph Payment["Payment owner"]
+      Handler["Accept ProcessPayment with stable operation ID"]
+      Record["Persist payment outcome and publication intent"]
+      Publisher["Publish PaymentProcessed"]
+    end
+    Broker["Event delivery boundary"]
+    Analytics["Analytics subscriber"]
+    Receipt["Receipt subscriber"]
+    UI -->|"command: request a payment"| Handler
+    Handler -->|"confirmed outcome"| Record
+    Record -->|"recoverable publication"| Publisher
+    Record -->|"current pending, succeeded or failed state"| UI
+    Publisher -->|"fact with event ID"| Broker
+    Broker -->|"independent delivery"| Analytics
+    Broker -->|"independent delivery"| Receipt
+```
+
+The UI follows payment state rather than guessing from publication. Subscribers own their processing outcomes. If delivery can repeat, deduplicate using stable event IDs; a broker acknowledgment alone does not prove that a receipt was sent.
+
+[Source: atomic outbox intent and idempotent consumers](https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html).
+
+<!-- @after Failure Modes :: staff -->
+### Make the missing subscriber an explicit test case
+
+For optional live hints, losing an emission may be acceptable. For a payment receipt, decide whether the owner retries, retains intent, records failures or reconciles the result. Write that decision before selecting replay = 1: the last in-memory value is neither a complete pending-work ledger nor protection against duplicate side effects.
+
+For UI actions, a callback to a ViewModel function still follows UDF when the state owner updates observable state and the UI renders it. A generic event bus is not required to keep that direction clear.
+
+[Source: Android UI events and function handlers](https://developer.android.com/topic/architecture/ui-layer/events).

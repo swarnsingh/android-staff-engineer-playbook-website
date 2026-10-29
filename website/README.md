@@ -1,17 +1,17 @@
 # Reader Website: Build Guide and Handover
 
-This folder builds the reader website for the playbook. Read [`../content-rulebook.md`](../content-rulebook.md) first, especially sections 16–20: the original chapters are read-only, every page must contain its original chapter in full, and the website adds a clearly labelled teaching layer on top. This guide explains how the build works and where the work stands, so another model or person can continue it.
+This folder builds the reader website for the playbook. Read [`../content-rulebook.md`](../content-rulebook.md) first, especially sections 16–20: the original chapters are read-only, every page must contain its original chapter in full, and the website adds a clearly labelled teaching layer on top. Owner authorization for verified Fundamentals corrections and original-source PRs is recorded in the rulebook. This guide explains how the build works and where the work stands, so another model or person can continue it.
 
 ## Current state
 
 The current result is recorded in [the completion report](reviews/completion/REPORT.md), with a per-finding [ledger](reviews/completion/backlog.json), pinned Android validation project and browser evidence. It supersedes older handovers and their pending/privacy statements.
 
 - **Website:** one public repository and one [GitHub Pages deployment](https://swarnsingh.github.io/android-staff-engineer-playbook-website/). All models work in this repository; publication follows [DEPLOYMENT.md](DEPLOYMENT.md) and rulebook section 19.
-- **Scope:** 22 Kotlin chapters, 101 Android chapters and both learning paths: 125 pages.
+- **Scope:** 13 Engineering Fundamentals chapters,22 Kotlin chapters,101 Android chapters and three learning paths:139 pages.
 - **Corrections:** approved exact replacements render through content/corrections-*.json with visible original-wording/source disclosures. The website Markdown remains a hash-checked source snapshot; corrected source text is merged by the owner through original-source PR #57 and mirrored from its 743-record canonical inventory.
 - **Review history:** the original 295-row Kotlin triage and nine Android phase reports remain historical evidence. Current dispositions include verified fixes and justified no-change results; superseded Reject decisions are identified in the completion ledger.
 - **Visuals:** 17 full scenes, 119 illustrated state sequences and static decision diagrams. Movement is used for a real temporal mechanism; a decision or comparison does not need an animated packet.
-- **Validation:** real Android/Hilt/Room/Compose compilation and focused runtime regressions complement the 125-page browser sweep. The report distinguishes these checks from device, Apple-runtime and benchmark evidence.
+- **Validation:** real Android/Hilt/Room/Compose compilation and focused runtime regressions complement the 139-page browser sweep. The report distinguishes these checks from device, Apple-runtime and benchmark evidence.
 
 ### Progress by chapter
 
@@ -159,7 +159,7 @@ Run from the new website repository root. Port 4177 is an example: choose an ava
 
 `scripts/build.py` parses each original chapter with markdown-it and renders it into `templates/reader.html`. Sections are grouped into six parts (`PARTS` in the script) by their headings; parts only move forward. Then it adds, in order: the chapter's blend fragments, the Codex coroutine fragments for the coroutines page (each wrapped in a labelled `.blend` container), and approved corrections. Approved corrections read as normal current text. Their reasons, current/original wording and official sources are retained in optional technical correction history under About this lesson.
 
-`scripts/check_preservation.py` reads the original areas of each page (`.original-opening` and `section#section-…`), skipping labelled additions. It checks original units, order, repetitions, heading levels and the title, and rejects concealed HTML containers including `template`, `noscript`, `script` and `style`. Only actual Mermaid source may use a diagram disclosure. It runs 22 tampering fixtures before checking 15,564 original units across 125 pages. It also writes `dist/coverage/original-units.json` from the approved rendering input. The static gate does not evaluate a browser CSS cascade.
+`scripts/check_preservation.py` reads the original areas of each page (`.original-opening` and `section#section-…`), skipping labelled additions. It checks original units, order, repetitions, heading levels and the title, and rejects concealed HTML containers including `template`, `noscript`, `script` and `style`. Only actual Mermaid source may use a diagram disclosure. It runs 22 tampering fixtures before checking 17,330 original units across139 pages. It also writes `dist/coverage/original-units.json` from the approved rendering input. The static gate does not evaluate a browser CSS cascade.
 
 Invoke the read-only `scripts/browser_preservation.js` async function in a rendered Content page with two arguments: parsed `dist/coverage/diagram-sources.json` and parsed `dist/coverage/original-units.json`. The second argument may instead be that page's unit array for a disposable fixture. Both are required for a meaningful preservation result. The audit compares rendered original-area text with the unit manifest in order, excluding labelled additions and folded prose. A default/empty unit manifest is reported as unverified, not success. Whitespace is ignored; this is not a typography or exact-layout comparison.
 
@@ -167,7 +167,7 @@ The browser audit detects the tested hidden styles, transparent text, effective 
 
 Diagram counts and successful image loads are separate fields. Original SVGs load eagerly; the audit calls `decode()` where available, waiting at most five seconds because Chrome can leave `decode()` pending for an off-screen lazy image, and otherwise requires `complete` plus a non-zero natural width. Pending lazy images are reported as unverified rather than passed. This validates resource decoding/readiness, not whether an SVG's artwork faithfully represents its source or is readable in every theme.
 
-`scripts/check_review_data.py` runs before each build. It checks all 295 triage rows against chapter/overall counts, canonical verdict labels, 23 amended IDs / 24 replacements, proposal Markdown/JSON wording, exact source matches, non-overlap and all 125 read-only source hashes (23 Kotlin, 102 Android).
+`scripts/check_review_data.py` runs before each build. It checks all 295 triage rows against chapter/overall counts, canonical verdict labels, 23 amended IDs / 24 replacements, proposal Markdown/JSON wording, exact source matches, non-overlap and all 139 read-only source hashes (14 Fundamentals,23 Kotlin,102 Android).
 
 ## Writing a blend file
 
@@ -196,7 +196,7 @@ Learning paths use phase selection and a start action, without lesson tabs or bo
 
 Diagram controls use consistent Previous, Next and Reset labels. Temporal playback retains Play/Pause, reduced motion and shared motion ownership. The current explanation remains beside the controls; optional help and the full transcript share one disclosure. Fenced code has a continuous code surface, including inside nested lists; inline-code chip styling must not leak into examples.
 
-The static gate checks all 125 pages and 15,564 original units. Browser verification checks actual views, rendered preservation, enlarged text, illustrations, scenes and code presentation. Dedicated motion, Binder, gallery and UX suites complement that sweep. Browser emulation does not certify physical devices, other engines or screen-reader behaviour. Run the documented audits after changing shared reader code and record the tested scope before publication.
+The static gate checks all 139 pages and17,330 original units. Browser verification checks actual views, rendered preservation, enlarged text, illustrations, scenes and code presentation. Dedicated motion, Binder, gallery and UX suites complement that sweep. Browser emulation does not certify physical devices, other engines or screen-reader behaviour. Run the documented audits after changing shared reader code and record the tested scope before publication.
 
 Earlier phase counts, held corrections and pending conversion lists belong to the historical phase reports. They do not describe current work: all nine Android phases and all Kotlin chapters are rendered, and the retained correction backlog has documented dispositions.
 
@@ -223,3 +223,7 @@ The 28 October diagram pass uses `content/diagram-models/*.json` for 119 authore
 Each model names the concrete problem, reading direction, actual actor IDs, optional nested boundaries, explicit labelled relationships and official sources. A relationship arrow is not automatically a transfer or a time step. Comparisons can have no arrows. Actor IDs bind a model to its figure because blend insertion order can differ from file order. The build rejects conflicting ownership, missing actors, invalid endpoints and ambiguous bindings.
 
 Maps retain readable 17px node labels and 15px arrow labels instead of shrinking into phone width. The named walkthrough steps explain time; the map explains relationships; the labelled state list identifies what changed. The no-colour option verifies that colour is optional. Play is walkthrough playback, not a claim that every topic has a physical transport animation.
+
+### Engineering Fundamentals rollout ·29 October 2026
+
+All13 chapters now have concise teaching layers, labelled static diagrams and four temporal scenes where movement teaches the mechanism. The 282 primary-source-backed replacements are in `content/corrections-engineering-fundamentals.json` and original-source PR58. The owner approved a single shared ReadingSheet layout: prose fills the760px reading column; padded visual frames extend symmetrically up to 1000px, respecting rails and viewport limits. Layout tokens and the shared component bundle own this behavior for every current and future topic. See `reviews/engineering-fundamentals-2026-10-29/REPORT.md` for evidence and boundaries.

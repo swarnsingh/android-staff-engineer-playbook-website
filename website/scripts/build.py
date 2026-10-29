@@ -16,6 +16,7 @@ MD = MarkdownIt('commonmark', {'html': True}).enable(['table', 'strikethrough'])
 # Topic trees rendered as lessons, in site order. `phases` lists the guided-reading phases a pilot
 # renders (None renders the whole tree); chapters outside them keep linking to GitHub.
 TREES = {
+    'engineering-fundamentals': {'title': 'Engineering Fundamentals', 'phases': None},
     'kotlin': {'title': 'Kotlin', 'phases': None},
     'android': {'title': 'Android', 'phases': [1, 2, 3, 4, 5, 6, 7, 8, 9]},
 }
@@ -23,6 +24,10 @@ TREES = {
 
 def phases(slug):
     """[(phase heading, chapter paths)] from the `### Phase …` lists of a tree's guided reading sequence."""
+    if slug == 'engineering-fundamentals':
+        sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
+        paths=re.findall(r'\]\((engineering-fundamentals/[^)#]+\.md)\)',sequence)
+        return [('Phase 1 — Core vocabulary',paths[:5]),('Phase 2 — State and coordination',paths[5:9]),('Phase 3 — Production failure behavior',paths[9:])]
     result = []
     for block in re.split(r'^### ', (ROOT/f'{slug}.md').read_text(), flags=re.M)[1:]:
         heading, _, body = block.partition('\n')
@@ -328,8 +333,9 @@ def render_chapter(path, raw, is_course=False):
             key=hashlib.sha256(token.content.encode()).hexdigest()[:16]
             diagram_count[0]+=1
             (OUT/'diagram-sources'/f'{key}.mmd').write_text(token.content)
-            original=f'<img data-original-diagram="{key}" src="{BASE}diagrams/{key}.svg" alt="{escape(env.get("heading","Concept relationships"))}" loading="eager">'
-            source=f'<details class="diagram-source"><summary>Read diagram source</summary><pre tabindex="0"><code data-original-diagram-source="{key}">{escape(token.content)}</code></pre></details>'
+            provenance="teaching" if env.get("blend") else "original"
+            original=f'<img data-{provenance}-diagram="{key}" src="{BASE}diagrams/{key}.svg" alt="{escape(env.get("heading","Concept relationships"))}" loading="eager">'
+            source=f'<details class="diagram-source"><summary>Read diagram source</summary><pre tabindex="0"><code data-{provenance}-diagram-source="{key}">{escape(token.content)}</code></pre></details>'
             if ('diagram', key) in blend:
                 # A designed redraw leads; the chapter's own diagram stays one tap away.
                 used.add(('diagram', key))
@@ -551,7 +557,8 @@ INTRO = {
 
 
 def intro(path):
-    return INTRO.get(path) or INTRO[Path(path).stem]
+    extras=json.loads((WEB/'content/engineering-fundamentals.json').read_text())
+    return extras.get(path) or INTRO.get(path) or INTRO[Path(path).stem]
 
 
 def render_diagrams():
@@ -563,7 +570,8 @@ def render_diagrams():
         if not cached.exists():
             command=shlex.split(MERMAID_RENDERER)+['-i',str(source),'-o',str(cached),'-b','transparent']
             if config.exists(): command+=['-p',str(config)]
-            subprocess.run(command,check=True,capture_output=True,text=True)
+            result=subprocess.run(command,capture_output=True,text=True)
+            if result.returncode: raise RuntimeError(f"Mermaid render failed: {source.name}\n{result.stderr}")
         shutil.copy2(cached,OUT/'diagrams'/cached.name)
     with ThreadPoolExecutor(max_workers=3) as workers:
         list(workers.map(render,sorted((OUT/'diagram-sources').glob('*.mmd'))))
@@ -636,6 +644,11 @@ def design_gallery(asset_version):
         source=(WEB/'content/blend/android'/f'{name}.blend').read_text()
         scene=re.search(r'<section class="pb-figure" data-pb-flow="scene".*?</section>',source,re.S)
         if not scene: raise ValueError('Gallery scene missing: '+name)
+        samples.append('<section class="demo"><h3>'+label+'</h3>'+scene[0]+'</section>')
+    for name,label in [('sync-vs-async','Separate a task from its executing thread'),('queues','Follow an acknowledgement lost after processing'),('backpressure','Compare suspension with dropping pending work'),('time-and-clocks','Follow causality across a message')]:
+        source=(WEB/'content/blend/engineering-fundamentals'/f'{name}.blend').read_text()
+        scene=re.search(r'<section class="pb-figure" data-pb-flow="scene".*?</section>',source,re.S)
+        if not scene: raise ValueError('Fundamentals gallery scene missing: '+name)
         samples.append('<section class="demo"><h3>'+label+'</h3>'+scene[0]+'</section>')
     for name,label in [('channels-and-select','Compare four channel capacities'),('bytecode','Watch an operand stack change'),('android/viewmodel','Follow a retained state owner')]:
         import diagram_models
@@ -726,7 +739,9 @@ def build(skip_diagrams=False):
             cards=[]
             for index,(heading,paths) in enumerate(groups,1):
                 label=re.sub(r'^Phase \d+\s*[—–-]\s*','',heading)
-                cards.append(f'<li><a href="#{slug_heading(heading)}"><span class="phase-number">Phase {index}</span><strong>{escape(label)}</strong><span class="phase-count">{len(paths)} {"chapter" if len(paths)==1 else "chapters"} · View sequence →</span></a></li>')
+                target=route(paths[0]) if slug=='engineering-fundamentals' else '#'+slug_heading(heading)
+                action='Start this phase' if slug=='engineering-fundamentals' else 'View sequence'
+                cards.append(f'<li><a href="{target}"><span class="phase-number">Phase {index}</span><strong>{escape(label)}</strong><span class="phase-count">{len(paths)} {"chapter" if len(paths)==1 else "chapters"} · {action} →</span></a></li>')
             path_overview='<section class="path-overview" id="path-phases" aria-labelledby="path-phases-title"><h2 id="path-phases-title">Choose your next phase</h2><p>Follow the phases in order, or use the checkpoints in the full sequence below to find your starting point.</p><ol class="path-phase-grid">'+''.join(cards)+'</ol></section>'
         else:
             hero=f'<div class="lesson-hero"><span class="eyebrow">{escape(tree.upper())} · BEGINNER TO STAFF</span><h1>{escape(name)}</h1><p>{escape(intro(path))}</p><div class="lesson-meta"><span id="reading-time">Read at your pace · experiments extra</span><button id="bookmark" class="text-button" aria-pressed="false">☆ Save lesson</button></div></div>'
@@ -737,7 +752,7 @@ def build(skip_diagrams=False):
         destination=OUT/route(path)[len(BASE):].strip('/')/'index.html';destination.parent.mkdir(parents=True,exist_ok=True);destination.write_text(html)
         report['url']=route(path);reports.append(report)
         if path=='kotlin.md':(OUT/'index.html').write_text(html)
-    home=(WEB/'templates/home.html').read_text().replace('{{base}}',BASE).replace('{{version}}',asset_version).replace('{{android_count}}',str(len(ORDER['android']))).replace('{{kotlin_count}}',str(len(ORDER['kotlin'])))
+    home=(WEB/'templates/home.html').read_text().replace('{{base}}',BASE).replace('{{version}}',asset_version).replace('{{android_count}}',str(len(ORDER['android']))).replace('{{kotlin_count}}',str(len(ORDER['kotlin']))).replace('{{fundamentals_count}}',str(len(ORDER['engineering-fundamentals'])))
     (OUT/'index.html').write_text(home)
     (OUT/'.nojekyll').touch()
     for name in ['styles.css','blend.css','sequence.css','theme.css','learning-path.css','navigation.css','app.js','blend.js','coroutines.js','lesson-model.js']:

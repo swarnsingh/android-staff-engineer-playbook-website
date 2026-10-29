@@ -190,7 +190,7 @@
 (() => {
   // Mermaid draws text at 16px. Rendering a figure at no less than 0.75 of its drawn width keeps that text at 12px or more;
   // narrower screens scroll the figure sideways instead of shrinking it.
-  document.querySelectorAll('.source-diagram img[data-original-diagram], .original-diagram img[data-original-diagram]').forEach(img => {
+  document.querySelectorAll('.source-diagram img[data-original-diagram], .original-diagram img[data-original-diagram], .source-diagram img[data-teaching-diagram]').forEach(img => {
     const box = img.closest('.source-diagram, .original-diagram');
     fetch(img.src).then(r => r.ok ? r.text() : '').then(svg => {
       const m = /viewBox="[-\d.]+ [-\d.]+ ([\d.]+)/.exec(svg);

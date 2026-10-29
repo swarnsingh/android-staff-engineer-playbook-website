@@ -1,0 +1,1318 @@
+{
+  "chapters": [
+    {
+      "path": "engineering-fundamentals/caching.md",
+      "intro": "Make cache freshness, stale-fill races and miss-path capacity explicit before trading memory for speed.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside",
+        "https://www.usenix.org/system/files/conference/nsdi13/nsdi13-final170_update.pdf",
+        "https://www.rfc-editor.org/rfc/rfc9111.html",
+        "https://github.com/ben-manes/caffeine/wiki/Efficiency"
+      ]
+    },
+    {
+      "path": "engineering-fundamentals/backpressure.md",
+      "intro": "Trace bounded demand, queued items and overload choices from a slow consumer back to its producer.",
+      "sources": [
+        "https://www.reactive-streams.org/",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/buffer.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/",
+        "https://www.rfc-editor.org/rfc/rfc9293.html"
+      ]
+    },
+    {
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "intro": "Choose a clock for elapsed time, calendar time or causality, and test the assumptions that distinguish them.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/System.html",
+        "https://developer.android.com/reference/android/os/SystemClock",
+        "https://lamport.azurewebsites.net/pubs/time-clocks.pdf",
+        "https://cse.buffalo.edu/tech-reports/2014-04.pdf",
+        "https://www.usenix.org/system/files/conference/osdi12/osdi12-final-16.pdf",
+        "https://www.rfc-editor.org/rfc/rfc6238.html"
+      ]
+    },
+    {
+      "path": "engineering-fundamentals/fault-tolerance.md",
+      "intro": "Contain a failed dependency while preserving correctness, bounded work and a measurable recovery contract.",
+      "sources": [
+        "https://sre.google/sre-book/addressing-cascading-failures/",
+        "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/",
+        "https://www.postgresql.org/docs/current/warm-standby.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/limited-parallelism.html"
+      ]
+    }
+  ],
+  "corrections": [
+    {
+      "id": "fundamentals:CA01",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "- **Write-through.** Writes go to the cache and the source-of-truth simultaneously. Cache is always fresh; writes are slower.",
+      "new": "- **Write-through.** The write path updates the source and cache before reporting success. Freshness still depends on coordinating concurrent writes, other writers, failures and cached copies; two stores are not automatically one atomic transaction.",
+      "reason": "A write pattern alone cannot promise global freshness or atomic updates across independent stores.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: A write pattern alone cannot promise global freshness or atomic updates across independent stores."
+    },
+    {
+      "id": "fundamentals:CA02",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "- **Read-through.** On miss, the cache fetches from the source and stores. Always consistent on read.",
+      "new": "- **Read-through.** On a miss, the cache loads and stores the source value. Hits can still be stale, and concurrent loads and writes need a consistency policy.",
+      "reason": "Read-through changes loading responsibility; it does not make cached hits strongly consistent.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Read-through changes loading responsibility; it does not make cached hits strongly consistent."
+    },
+    {
+      "id": "fundamentals:CA03",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "- **Event-driven invalidation.** Cache subscribes to change events; invalidates affected entries. Strong consistency; harder to implement.",
+      "new": "- **Event-driven invalidation.** Change events invalidate affected entries. Delivery delay, event loss and races can leave stale copies; strong consistency requires additional coordination.",
+      "reason": "Asynchronous invalidation does not alone provide linearizable reads; the Memcache paper explicitly handles stale sets with leases.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside",
+        "https://www.usenix.org/system/files/conference/nsdi13/nsdi13-final170_update.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Asynchronous invalidation does not alone provide linearizable reads; the Memcache paper explicitly handles stale sets with leases."
+    },
+    {
+      "id": "fundamentals:CA04",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "This is the most common pattern. It has one subtle bug: if a concurrent reader fetches *between* the source write and the cache invalidate, they can populate the cache with stale data. Two solutions:\n\n- **Invalidate before writing.** Make the cache miss explicit; the writer races against the source change rather than against itself.\n- **Delete-then-write.** Delete the cache entry; do the source write; do not repopulate the cache. The next reader will populate cleanly.",
+      "new": "Commit the source write before invalidating the cache. Deleting first can let a miss refill the old source value before the write commits.\n\nA remaining stale-fill race is different: a reader starts an old source read, the writer commits and invalidates, then the delayed reader fills the cache with its old result. Simply reversing delete/write does not solve that race. Version checks, lease tokens invalidated by writes, or coordinated per-key loading/writing can reject outdated fills. TTL bounds retention under its stated assumptions; it is not a substitute for a consistency protocol.",
+      "reason": "The original race ordering and both proposed fixes were incorrect; Azure requires store-update-before-delete and Facebook leases reject stale sets after invalidation.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside",
+        "https://www.usenix.org/system/files/conference/nsdi13/nsdi13-final170_update.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: The original race ordering and both proposed fixes were incorrect; Azure requires store-update-before-delete and Facebook leases reject stale sets after invalidation."
+    },
+    {
+      "id": "fundamentals:CA05",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "The bet is worth it only when the hit ratio is high enough. A cache with a 10% hit ratio is usually a net loss: 90% of requests pay extra for the lookup, while only 10% benefit from the speed-up. The break-even hit ratio depends on how much faster the cache is than the source. For large speedups (1000×), even a 5% hit ratio is profitable. For small speedups (2×), you need a high hit ratio (~60%+) to come out ahead.",
+      "new": "For a serial lookup model, let cache lookup cost be C, source lookup cost S, and hit ratio h. Expected cost is C + (1 − h)S, versus S without caching, so latency improves when h > C/S. At C = S/1000, the threshold is 0.1%; at C = S/2 it is 50%. These are model results, not universal hit-rate targets: include fill cost, serialization, failures and source-load effects when measuring a real cache.",
+      "reason": "The numeric hit-ratio claims contradict the chapter's additive miss model; the replacement derives the threshold explicitly and bounds its assumptions.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: The numeric hit-ratio claims contradict the chapter's additive miss model; the replacement derives the threshold explicitly and bounds its assumptions."
+    },
+    {
+      "id": "fundamentals:CA06",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "- **GC pressure (JVM).** Large heap-based caches can extend GC pauses. Off-heap caches (Caffeine's options, Chronicle Map) avoid this at the cost of serialization.",
+      "new": "- **GC pressure (JVM).** Large heap-based caches can increase GC work. Caffeine is a heap-based cache, not an off-heap option. Separate off-heap stores move value storage outside the Java heap but introduce their own ownership, serialization and native-memory costs.",
+      "reason": "Caffeine's design uses Java heap objects; attributing an off-heap option to it is incorrect.",
+      "sources": [
+        "https://github.com/ben-manes/caffeine/wiki/Design"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Caffeine's design uses Java heap objects; attributing an off-heap option to it is incorrect."
+    },
+    {
+      "id": "fundamentals:CA07",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "- **View binding cache.** Compose's snapshot system caches composable state across recompositions.",
+      "new": "- **Composition-local retention.** `remember` retains a value while its call remains in the composition; snapshot state makes reads and writes observable. This is not a View binding cache.",
+      "reason": "Compose remember retention and snapshot observation are distinct from View binding.",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/state"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Compose remember retention and snapshot observation are distinct from View binding."
+    },
+    {
+      "id": "fundamentals:CA08",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "- **R8/ProGuard build cache.** Compiled mappings cached between builds.",
+      "new": "- **Gradle build cache.** Eligible task outputs can be reused for matching task inputs. Shrinker mappings belong to their corresponding build outputs; they are not a general cache of mappings to apply to different builds.",
+      "reason": "Gradle caches eligible task outputs by inputs; mappings are build-specific artifacts, not an R8/ProGuard mapping cache API.",
+      "sources": [
+        "https://docs.gradle.org/current/userguide/build_cache.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Gradle caches eligible task outputs by inputs; mappings are build-specific artifacts, not an R8/ProGuard mapping cache API."
+    },
+    {
+      "id": "fundamentals:CA09",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "   Write-through updates the cache and source synchronously (always consistent, slower writes). Write-behind updates the cache and flushes to the source asynchronously (faster writes, risk of data loss). Use write-behind for high-throughput, loss-tolerant metrics; use write-through for standard critical data.",
+      "new": "   Write-through includes source and cache updates in the write path; it still needs coordination and failure handling to provide the promised consistency. Write-behind acknowledges before later source persistence, so its durability depends on the intermediate log or store. Choose by the required acknowledgement, recovery and freshness contract, not by the pattern name alone.",
+      "reason": "The Answer Key repeated the false automatic consistency guarantee.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: The Answer Key repeated the false automatic consistency guarantee."
+    },
+    {
+      "id": "fundamentals:CA10",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "   It's flexible and easy to bolt onto existing code (app writes to DB, then invalidates cache). The most common bug is a race condition where a concurrent read populates the cache with stale data *after* the source write but *before* the invalidation.",
+      "new": "   The application controls source writes and cache invalidation. Write the source first, then invalidate. A stale-fill race can occur when an older read finishes its cache fill after that invalidation; leases, versions or coordinated loading/writing are needed to reject it.",
+      "reason": "The Answer Key must agree with the corrected stale-fill ordering.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside",
+        "https://www.usenix.org/system/files/conference/nsdi13/nsdi13-final170_update.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: The Answer Key must agree with the corrected stale-fill ordering."
+    },
+    {
+      "id": "fundamentals:CA11",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "   Turn it off. If the system goes down entirely instead of just becoming slower (falling back to the database), Redis is a primary store.",
+      "new": "   Test a controlled cache outage and an empty-cache load. If authoritative data exists only there, it is a primary store. If the data can be reconstructed but the source cannot absorb the miss traffic, it is still a cache with an availability/capacity dependency that must be designed and tested.",
+      "reason": "An outage can result from cache-miss overload even when the cache has no authoritative data.",
+      "sources": [
+        "https://sre.google/sre-book/addressing-cascading-failures/"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: An outage can result from cache-miss overload even when the cache has no authoritative data."
+    },
+    {
+      "id": "fundamentals:CA12",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "- **Don't make the cache a single point of failure.** If the cache being down takes the system down, the cache is a primary store, not a cache. Either treat it that way or design for cache outages explicitly (fall back to source, slow but functional).",
+      "new": "- **Design for cache outages.** A reconstructible cache can still be an availability dependency if its source cannot sustain miss traffic. Protect the source with admission limits and load shedding; test fallback capacity rather than assuming it will merely be slower. If the only authoritative data is in the cache, treat it as a primary store.",
+      "reason": "Cache-outage cascading load does not redefine the data authority, and unconditional fallback can overload the source.",
+      "sources": [
+        "https://sre.google/sre-book/addressing-cascading-failures/"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Cache-outage cascading load does not redefine the data authority, and unconditional fallback can overload the source."
+    },
+    {
+      "id": "fundamentals:CA13",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "The fraction of lookups served from the cache. Hit ratio is bounded by *working set fit*: if the actively-used data is bigger than the cache, hit ratio is poor regardless of policy. The relationship is non-linear — increasing cache size has diminishing returns; doubling a cache rarely doubles the hit ratio.",
+      "new": "The fraction of lookups served from the cache. Hit ratio depends on cache capacity, popularity skew, reuse distance, admission and eviction policy. A cache smaller than the full working set can still have a high hit ratio if a small hot subset dominates requests; measure the workload rather than inferring hit rate from size alone.",
+      "reason": "Caffeine's workload simulations show admission/eviction policy and access skew matter; the larger-working-set implies poor-hit-rate assertion is false.",
+      "sources": [
+        "https://github.com/ben-manes/caffeine/wiki/Efficiency"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Caffeine's workload simulations show admission/eviction policy and access skew matter; the larger-working-set implies poor-hit-rate assertion is false."
+    },
+    {
+      "id": "fundamentals:CA14",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "LRU is right almost always. The exceptions are worth knowing.",
+      "new": "LRU is a simple baseline, not a universal winner. Scan-heavy and changing workloads can benefit from admission and frequency-aware policies; compare policies with a representative access trace.",
+      "reason": "Caffeine evaluates scan resistance and frequency-aware admission and does not present LRU as almost universally optimal.",
+      "sources": [
+        "https://github.com/ben-manes/caffeine/wiki/Efficiency"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Caffeine evaluates scan resistance and frequency-aware admission and does not present LRU as almost universally optimal."
+    },
+    {
+      "id": "fundamentals:CA15",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "- **TLRU / ARC** — adaptive policies that balance recency and frequency.",
+      "new": "- **ARC** — an adaptive policy that balances recency and frequency; time-aware expiration policies address a separate concern.",
+      "reason": "ARC balances recency/frequency; grouping time-aware LRU as the same adaptive-frequency policy is misleading.",
+      "sources": [
+        "https://research.ibm.com/publications/arc-a-self-tuning-low-overhead-replacement-cache"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: ARC balances recency/frequency; grouping time-aware LRU as the same adaptive-frequency policy is misleading."
+    },
+    {
+      "id": "fundamentals:BP01",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "For pipelines that must not drop data:\n\n```kotlin",
+      "new": "For an in-memory broadcast to active subscribers, with bounded lag:\n\n```kotlin",
+      "reason": "The following replay-zero SharedFlow is not a lossless durable job queue.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: The following replay-zero SharedFlow is not a lossless durable job queue."
+    },
+    {
+      "id": "fundamentals:BP02",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "    onBufferOverflow = BufferOverflow.SUSPEND  // backpressure all the way up",
+      "new": "    onBufferOverflow = BufferOverflow.SUSPEND  // suspends for slow active subscribers",
+      "reason": "No-subscriber SharedFlow emissions never suspend and extraBufferCapacity is not replay.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: No-subscriber SharedFlow emissions never suspend and extraBufferCapacity is not replay."
+    },
+    {
+      "id": "fundamentals:BP03",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "The `SUSPEND` overflow strategy implements true backpressure — the caller of `emit()` is suspended until space is available. This is the right choice when *every* item must reach the consumer.",
+      "new": "With slow active subscribers, `emit()` can suspend when their allowed lag fills the buffer. With no subscribers, only `replay` values are retained; here `replay = 0`, so emissions are lost. Use a bounded channel for an in-process single-consumer handoff, and persisted operations plus acknowledgements when work must survive collector gaps or process death.",
+      "reason": "SharedFlow documents no-subscriber loss independently of SUSPEND or extra buffer capacity.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: SharedFlow documents no-subscriber loss independently of SUSPEND or extra buffer capacity."
+    },
+    {
+      "id": "fundamentals:BP04",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "**Producer disconnected from backpressure.** A producer running on a separate dispatcher, or fed by a non-suspending source, doesn't see backpressure. Mitigation: end-to-end means *end-to-end* — every stage participates.",
+      "new": "**Producer disconnected from backpressure.** Launching detached per-item work or bridging a non-suspending callback without an explicit overflow response can bypass downstream limits. A dispatcher change by itself does not: a producer on another dispatcher can still suspend on a bounded channel. Trace admission and buffering across every boundary.",
+      "reason": "buffer explicitly separates coroutines while propagating suspension; execution on another dispatcher is not itself a backpressure break.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/buffer.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: buffer explicitly separates coroutines while propagating suspension; execution on another dispatcher is not itself a backpressure break."
+    },
+    {
+      "id": "fundamentals:BP05",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "- **Kafka consumers.** Consumers control their own rate by committing offsets. The broker holds messages; the consumer pulls only as fast as it can process.",
+      "new": "- **Kafka consumers.** Polling, fetch limits and partition pause/resume control consumption; committed offsets record recovery progress. Committing less often does not itself slow fetching or processing.",
+      "reason": "KafkaConsumer distinguishes position from committed recovery offsets and provides pause/resume for flow control.",
+      "sources": [
+        "https://kafka.apache.org/41/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: KafkaConsumer distinguishes position from committed recovery offsets and provides pause/resume for flow control."
+    },
+    {
+      "id": "fundamentals:BP06",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "- Con: producer is slowed down (sometimes blocked) — unacceptable for real-time UI threads.",
+      "new": "- Con: the producing operation waits. Coroutine suspension can release the UI thread; a blocking queue call on that thread cannot. Bound outstanding work and never replace a suspended producer with unbounded per-item launches.",
+      "reason": "Non-blocking backpressure is a stated Reactive Streams goal; suspension must not be confused with blocking a UI thread.",
+      "sources": [
+        "https://www.reactive-streams.org/",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/buffer.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Non-blocking backpressure is a stated Reactive Streams goal; suspension must not be confused with blocking a UI thread."
+    },
+    {
+      "id": "fundamentals:BP07",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "- **Memory:** The dominant cost. A bounded queue's memory ceiling is `capacity × avg_item_size`. Size accordingly.",
+      "new": "- **Memory:** Queue capacity bounds the number of queued references, not total pipeline memory. Budget maximum retained item sizes, in-flight processing, producer-held items, pending sends and every other buffer; `capacity × average_item_size` is only an estimate.",
+      "reason": "A bounded buffer excludes in-flight collector/emitter state; average payload size is not a hard maximum.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/buffer.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: A bounded buffer excludes in-flight collector/emitter state; average payload size is not a hard maximum."
+    },
+    {
+      "id": "fundamentals:BP08",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "**\"Async automatically handles backpressure.\"** Async makes backpressure *possible* but does not provide it. RxJava 1 famously did not — backpressure was added in RxJava 2 because the original assumption \"the consumer can keep up\" was wrong in practice.",
+      "new": "**\"Async automatically handles backpressure.\"** Async does not by itself bound outstanding work. RxJava 1 already had backpressure support and documented which sources/operators honored it; RxJava 2 separated backpressure-aware Flowable from Observable. Inspect the actual API contract.",
+      "reason": "The official RxJava wiki describes backpressure in RxJava1 rather than introducing it only with RxJava2.",
+      "sources": [
+        "https://github.com/ReactiveX/RxJava/wiki/Backpressure"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: The official RxJava wiki describes backpressure in RxJava1 rather than introducing it only with RxJava2."
+    },
+    {
+      "id": "fundamentals:BP09",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "- **Circuit breakers** prevent calling a saturated consumer at all; the breaker trips when downstream queues fill.",
+      "new": "- **Circuit breakers** reject calls after their configured health criteria trip; queue fullness is not an automatic universal trigger. Use explicit concurrency limits or admission control to bound in-flight work as well.",
+      "reason": "Resilience4j breakers use failure/slow-call windows and explicitly do not limit concurrent calls.",
+      "sources": [
+        "https://resilience4j.readme.io/docs/circuitbreaker"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Resilience4j breakers use failure/slow-call windows and explicitly do not limit concurrent calls."
+    },
+    {
+      "id": "fundamentals:BP10",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "- Pro: consumer always sees the most recent value.",
+      "new": "- Pro: pending older values can be replaced by newer ones; an item already being processed is not automatically replaced or cancelled.",
+      "reason": "Conflation affects pending emissions, not cancellation of current collector work; collectLatest has separate cancellation semantics.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/conflate.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/collect-latest.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Conflation affects pending emissions, not cancellation of current collector work; collectLatest has separate cancellation semantics."
+    },
+    {
+      "id": "fundamentals:BP11",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "    \"Conflate\" (Drop old). The UI can only draw 60 frames per second. Processing every location update is wasted CPU, and drawing stale updates introduces lag. Conflation guarantees the next frame gets the freshest location.",
+      "new": "    If only the current position matters, conflate pending updates so the consumer can skip obsolete positions. A value already being rendered is not cancelled by conflate, and neither the operator nor a 60 Hz display guarantees that the next frame uses the newest sample. Preserve all samples when the application needs a complete route or audit trail.",
+      "reason": "Conflate neither cancels an active rendering operation nor establishes frame freshness guarantees.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/conflate.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/collect-latest.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Conflate neither cancels an active rendering operation nor establishes frame freshness guarantees."
+    },
+    {
+      "id": "fundamentals:TC01",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "Then the system's clock jumped — NTP corrected a drift, the user changed the time zone, daylight saving time shifted — and timeouts expired early, caches invalidated prematurely, and events appeared to happen out of order.",
+      "new": "Then the system wall clock was adjusted, for example by an NTP step or manual epoch-time change, and timeouts expired early or late. A timezone or daylight-saving change alters local calendar rendering; it does not by itself change the epoch value returned by currentTimeMillis().",
+      "reason": "System.currentTimeMillis is UTC-epoch based and must be distinguished from local calendar/timezone interpretation.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/System.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: System.currentTimeMillis is UTC-epoch based and must be distinguished from local calendar/timezone interpretation."
+    },
+    {
+      "id": "fundamentals:TC02",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "- **Non-monotonic.** Can jump backward (NTP step correction) or forward (daylight saving, manual adjustment).",
+      "new": "- **Non-monotonic.** Can jump backward or forward when the system epoch clock is adjusted. Local daylight-saving and timezone changes affect calendar representation, not UTC epoch progression by themselves.",
+      "reason": "DST does not itself jump the UTC epoch clock.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/System.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: DST does not itself jump the UTC epoch clock."
+    },
+    {
+      "id": "fundamentals:TC03",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "- **Strictly monotonic.** Never jumps backward. May pause during suspend/hibernate (depends on implementation).",
+      "new": "- **Non-decreasing over its supported interval.** Consecutive reads may be equal because clock resolution is finite. Whether time in suspend/hibernate is counted depends on the particular clock.",
+      "reason": "Monotonic does not promise strict increase for successive reads or a universal sleep policy.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/System.html",
+        "https://developer.android.com/reference/android/os/SystemClock"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Monotonic does not promise strict increase for successive reads or a universal sleep policy."
+    },
+    {
+      "id": "fundamentals:TC04",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "val start = System.nanoTime()  // monotonic, nanosecond resolution",
+      "new": "val start = System.nanoTime()  // elapsed-time source, values expressed in nanoseconds",
+      "reason": "Oracle explicitly distinguishes nanosecond precision from actual clock resolution.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/System.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Oracle explicitly distinguishes nanosecond precision from actual clock resolution."
+    },
+    {
+      "id": "fundamentals:TC05",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "// Kotlin Duration (wraps System.nanoTime)",
+      "new": "// Kotlin Duration: measureTime uses TimeSource.Monotonic; JVM uses nanoTime",
+      "reason": "TimeSource.Monotonic is platform-specific, not universally a wrapper around a JVM API.",
+      "sources": [
+        "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.time/-time-source/-monotonic/"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: TimeSource.Monotonic is platform-specific, not universally a wrapper around a JVM API."
+    },
+    {
+      "id": "fundamentals:TC06",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "// FIX: use monotonic clock\nval elapsed = measureTimeMillis { doExpensiveWork() }\n// Wraps System.nanoTime() — safe",
+      "new": "// FIX: use kotlin.time.measureTime, backed by TimeSource.Monotonic\nval elapsed = kotlin.time.measureTime { doExpensiveWork() }\n// elapsed is a Duration; use elapsed.inWholeMilliseconds when needed",
+      "reason": "measureTimeMillis uses currentTimeMillis and is deprecated; the original purported fix still used wall time.",
+      "sources": [
+        "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.system/measure-time-millis.html",
+        "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.time/-time-source/-monotonic/"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: measureTimeMillis uses currentTimeMillis and is deprecated; the original purported fix still used wall time."
+    },
+    {
+      "id": "fundamentals:TC07",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "   Use `nanoTime`. If you use `currentTimeMillis`, NTP corrections or daylight saving adjustments could cause the measured latency to be wildly inaccurate or even negative.",
+      "new": "   Use nanoTime differences or kotlin.time.measureTime. An epoch-clock adjustment can make currentTimeMillis differences inaccurate or negative; a timezone/DST display change alone does not change the epoch clock.",
+      "reason": "The Answer Key repeated the incorrect DST claim.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/System.html",
+        "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.time/-time-source/-monotonic/"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: The Answer Key repeated the incorrect DST claim."
+    },
+    {
+      "id": "fundamentals:TC08",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "- Pro: strictly increasing, correct for measuring duration.",
+      "new": "- Pro: non-decreasing with finite resolution and designed for elapsed-time measurement; choose a clock whose sleep behavior matches the requirement.",
+      "reason": "Strict increase is not guaranteed.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/System.html",
+        "https://developer.android.com/reference/android/os/SystemClock"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Strict increase is not guaranteed."
+    },
+    {
+      "id": "fundamentals:TC09",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "class VectorClock(private val nodeId: String, private val nodeCount: Int) {\n    private val vector = IntArray(nodeCount)\n    private val nodeIndex: Int = nodeId.hashCode() % nodeCount  // simplified\n\n    @Synchronized\n    fun tick() { vector[nodeIndex]++ }\n\n    @Synchronized\n    fun send(): IntArray {\n        vector[nodeIndex]++\n        return vector.copyOf()\n    }\n\n    @Synchronized\n    fun receive(other: IntArray) {\n        for (i in vector.indices) {\n            vector[i] = maxOf(vector[i], other[i])\n        }\n        vector[nodeIndex]++\n    }\n\n    fun happenedBefore(other: IntArray): Boolean =\n        vector.indices.all { vector[it] <= other[it] } &&\n        vector.indices.any { vector[it] < other[it] }\n\n    fun concurrent(other: IntArray): Boolean =\n        !happenedBefore(other) && !other.let { o ->\n            o.indices.all { o[it] <= vector[it] } &&\n            o.indices.any { o[it] < vector[it] }\n        }\n}\n",
+      "new": "// Each participant needs a unique stable index in the same membership epoch.\n// Snapshot copies from this illustrative clock must use that same index mapping.\nclass VectorClock(private val nodeIndex: Int, private val nodeCount: Int) {\n    init { require(nodeCount > 0 && nodeIndex in 0 until nodeCount) }\n    private val vector = LongArray(nodeCount)\n\n    @Synchronized fun tick() { vector[nodeIndex]++ }\n\n    @Synchronized fun send(): LongArray {\n        vector[nodeIndex]++\n        return vector.copyOf()\n    }\n\n    @Synchronized fun receive(other: LongArray) {\n        require(other.size == nodeCount)\n        for (i in vector.indices) vector[i] = maxOf(vector[i], other[i])\n        vector[nodeIndex]++\n    }\n\n    @Synchronized fun happenedBefore(other: LongArray): Boolean {\n        require(other.size == nodeCount)\n        return vector.indices.all { vector[it] <= other[it] } &&\n            vector.indices.any { vector[it] < other[it] }\n    }\n\n    @Synchronized fun concurrent(other: LongArray): Boolean {\n        require(other.size == nodeCount)\n        return vector.indices.any { vector[it] < other[it] } &&\n            vector.indices.any { vector[it] > other[it] }\n    }\n}\n",
+      "reason": "Hashing identities can collide or produce a negative index; equal vectors are not concurrent. Use a shared unique index mapping, shape checks and strict incomparability.",
+      "sources": [
+        "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Hashing identities can collide or produce a negative index; equal vectors are not concurrent. Use a shared unique index mapping, shape checks and strict incomparability."
+    },
+    {
+      "id": "fundamentals:TC10",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "    A->>B: send(LC=1)\n    Note over B: receive: max(0,1)+1 = LC=2\n    B->>B: local event → LC=3\n    B->>A: send(LC=3)\n    Note over A: receive: max(1,3)+1 = LC=4",
+      "new": "    A->>B: send event increments A to LC=2\n    Note over B: receive: max(0,2)+1 = LC=3\n    B->>B: local event → LC=4\n    B->>A: send event increments B to LC=5\n    Note over A: receive: max(2,5)+1 = LC=6",
+      "reason": "The diagram omitted send-event increments and disagreed with the provided algorithm.",
+      "sources": [
+        "https://lamport.azurewebsites.net/pubs/time-clocks.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: The diagram omitted send-event increments and disagreed with the provided algorithm."
+    },
+    {
+      "id": "fundamentals:TC11",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "- **Kafka.** Uses wall-clock timestamps for message ordering within partitions. Consumer lag is measured in wall time. Cross-partition ordering is undefined.",
+      "new": "- **Kafka.** Partition offsets define record order; producer/broker timestamps are separate metadata and need not increase in offset order. Consumer offset lag counts records/positions, while time-based lag is a separate measurement. There is no single total order across partitions.",
+      "reason": "Kafka orders a partition by offsets rather than wall-clock timestamps; offset lag and time lag are different.",
+      "sources": [
+        "https://kafka.apache.org/41/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Kafka orders a partition by offsets rather than wall-clock timestamps; offset lag and time lag are different."
+    },
+    {
+      "id": "fundamentals:TC12",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "- **Amazon DynamoDB (original Dynamo paper, 2007).** Used vector clocks for conflict detection. When two replicas accepted conflicting writes, vector clocks identified the conflict for application-level resolution. (Later simplified to last-writer-wins in many cases for operational simplicity.)",
+      "new": "- **Amazon Dynamo (2007 research system).** The original Dynamo paper describes vector clocks and application-assisted reconciliation. This is distinct from making a claim about the current Amazon DynamoDB product or its conflict-resolution options.",
+      "reason": "The Dynamo research system must not be conflated with DynamoDB product behavior.",
+      "sources": [
+        "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: The Dynamo research system must not be conflated with DynamoDB product behavior."
+    },
+    {
+      "id": "fundamentals:TC13",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "- **Google Spanner / TrueTime.** GPS receivers and atomic clocks in every datacenter provide a `TT.now()` that returns an interval `[earliest, latest]`. Spanner waits out the uncertainty interval before committing — ensuring that no two transactions have overlapping commit timestamps. Cost: dedicated hardware per datacenter. Benefit: globally-consistent transactions.",
+      "new": "- **Google Spanner / TrueTime.** TrueTime reports a bounded uncertainty interval. For a write transaction, commit-wait delays visibility until its chosen commit timestamp is definitely in the past. Together with the transaction protocol, this supports external consistency; it is not a rule that all concurrent transactions have distinct, non-overlapping timestamps.",
+      "reason": "Spanner commit-wait is defined through TT.after(commitTimestamp), not a no-overlapping-timestamps guarantee.",
+      "sources": [
+        "https://www.usenix.org/system/files/conference/osdi12/osdi12-final-16.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Spanner commit-wait is defined through TT.after(commitTimestamp), not a no-overlapping-timestamps guarantee."
+    },
+    {
+      "id": "fundamentals:TC14",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "- **Latency:** Google TrueTime's `commit-wait` adds up to ~7 ms per transaction (the uncertainty interval). This is the cost of turning physical clocks into a reliable ordering primitive.",
+      "new": "- **Latency:** Spanner commit-wait depends on current TrueTime uncertainty and the chosen commit timestamp; some of it can overlap replication. A fixed maximum such as 7 ms is not a general API guarantee.",
+      "reason": "The paper reports observed uncertainty, while commit-wait and overlap depend on the execution.",
+      "sources": [
+        "https://www.usenix.org/system/files/conference/osdi12/osdi12-final-16.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: The paper reports observed uncertainty, while commit-wait and overlap depend on the execution."
+    },
+    {
+      "id": "fundamentals:TC15",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "- Con: depends on bounded clock skew (nodes with large skew must be quarantined).",
+      "new": "- Con: HLC timestamps can advance ahead of physical time. A database can impose clock-offset limits for additional consistency guarantees; those limits and shutdown policies are system-specific, not the basic HLC causal-ordering rule.",
+      "reason": "HLC preserves causality via logical merging; physical closeness and database linearizability assumptions must be distinguished.",
+      "sources": [
+        "https://cse.buffalo.edu/tech-reports/2014-04.pdf",
+        "https://docs.cockroachlabs.com/docs/stable/architecture/transaction-layer"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: HLC preserves causality via logical merging; physical closeness and database linearizability assumptions must be distinguished."
+    },
+    {
+      "id": "fundamentals:TC16",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "    Because it uses Hybrid Logical Clocks, extreme drift breaks its causal ordering guarantees. Quarantining treats the drifted clock as a faulty component, preserving the integrity of the overall system data.",
+      "new": "    CockroachDB enforces a configured maximum offset for consistency guarantees beyond basic HLC causality, including its real-time ordering assumptions. Its documented response is to crash a node whose offset from at least half the cluster exceeds the enforcement threshold. This is system-specific; HLC message merging alone does not require synchronized physical clocks.",
+      "reason": "Cockroach documentation distinguishes serializability maintained despite skew from single-key linearizability risks, and describes crash enforcement rather than generic quarantine.",
+      "sources": [
+        "https://docs.cockroachlabs.com/docs/stable/architecture/transaction-layer",
+        "https://cse.buffalo.edu/tech-reports/2014-04.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Cockroach documentation distinguishes serializability maintained despite skew from single-key linearizability risks, and describes crash enforcement rather than generic quarantine."
+    },
+    {
+      "id": "fundamentals:TC17",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "   The client will generate a code for the next time window, and the server will reject it. The mitigation is for the server to accept codes from adjacent windows (e.g., ±1 window).",
+      "new": "   With 30-second steps, a device 45 seconds ahead can be one or two steps ahead, depending on the current phase. Acceptance depends on the verifier's configured drift window; ±1 is not guaranteed to cover it. Correct clock drift or use an authenticated resynchronization/recovery path, keep the window bounded, and reject reuse of an already accepted OTP.",
+      "reason": "RFC6238 floor-based time steps make 45 seconds map to one or two windows; validators set bounded drift policies and enforce one-time use.",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc6238.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: RFC6238 floor-based time steps make 45 seconds map to one or two windows; validators set bounded drift policies and enforce one-time use."
+    },
+    {
+      "id": "fundamentals:TC18",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "- **Time-based authentication.** TOTP (Time-based One-Time Password) depends on clock agreement between client and server within a 30-second window. Clock skew beyond that window causes authentication failures. Mitigation: servers accept codes from adjacent windows (±1).",
+      "new": "- **Time-based authentication.** TOTP commonly uses 30-second steps, but acceptance depends on the verifier's bounded drift policy and the current step phase. Enlarging that window increases exposure; use controlled resynchronization and prevent reuse of accepted codes.",
+      "reason": "A fixed ±30-second tolerance is not the TOTP protocol contract.",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc6238.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: A fixed ±30-second tolerance is not the TOTP protocol contract."
+    },
+    {
+      "id": "fundamentals:TC19",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "**\"More precision = more accuracy.\"** Nanosecond resolution does not mean nanosecond accuracy. `System.nanoTime()` has nanosecond *resolution* but microsecond *accuracy* on most hardware. Don't confuse the two.",
+      "new": "**\"More precision = more accuracy.\"** nanoTime values are expressed with nanosecond precision, but actual resolution need not be one nanosecond and absolute wall-clock accuracy is not its contract. Measure the platform's effective resolution; do not assume a universal microsecond accuracy.",
+      "reason": "Oracle explicitly states nanoTime has nanosecond precision but not necessarily nanosecond resolution.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/System.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Oracle explicitly states nanoTime has nanosecond precision but not necessarily nanosecond resolution."
+    },
+    {
+      "id": "fundamentals:FT01",
+      "path": "engineering-fundamentals/fault-tolerance.md",
+      "old": "- A login flow accepts password-only when the 2FA service is down (or fails closed, depending on threat model).",
+      "new": "- A login flow requiring two factors fails closed or uses a pre-established recovery authenticator with the required assurance; an outage does not silently downgrade it to password-only.",
+      "reason": "Fallback must not bypass the authentication assurance the operation requires.",
+      "sources": [
+        "https://pages.nist.gov/800-63-4/sp800-63b.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Fallback must not bypass the authentication assurance the operation requires."
+    },
+    {
+      "id": "fundamentals:FT02",
+      "path": "engineering-fundamentals/fault-tolerance.md",
+      "old": "// Separate thread pools for different downstream services\nval paymentsDispatcher = Dispatchers.IO.limitedParallelism(20)\nval searchDispatcher = Dispatchers.IO.limitedParallelism(50)\n\n// If search is slow and all search dispatcher threads block,\n// payments are unaffected.",
+      "new": "// Separate execution-parallelism limits over shared IO resources.\nval paymentsDispatcher = Dispatchers.IO.limitedParallelism(20)\nval searchDispatcher = Dispatchers.IO.limitedParallelism(50)\n\n// These are dispatcher views, not dedicated thread pools or in-flight limits.\n// Bound suspending requests separately with a Semaphore/admission policy.\n// Shared CPU, memory, connections and upstream services can still couple failures.",
+      "reason": "limitedParallelism shares dispatcher resources and does not limit concurrent suspended operations or guarantee dedicated-pool isolation.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/limited-parallelism.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: limitedParallelism shares dispatcher resources and does not limit concurrent suspended operations or guarantee dedicated-pool isolation."
+    },
+    {
+      "id": "fundamentals:FT03",
+      "path": "engineering-fundamentals/fault-tolerance.md",
+      "old": "   The user-visible Recovery Time Objective (downtime) is near zero if the failover is truly automatic. The human intervention is just background cleanup, not part of the RTO.",
+      "new": "   RTO is the target for restoring the agreed service, not a claim of near-zero measured downtime. Measure detection, promotion, routing changes and recovery to that service level. Human repair is outside the user-visible recovery interval only if the promised service is already restored; otherwise it is part of recovery.",
+      "reason": "Automatic failover still includes detection, promotion and reconnection work; cleanup can be on the user-critical path.",
+      "sources": [
+        "https://www.postgresql.org/docs/current/warm-standby.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Automatic failover still includes detection, promotion and reconnection work; cleanup can be on the user-critical path."
+    },
+    {
+      "id": "fundamentals:FT04",
+      "path": "engineering-fundamentals/fault-tolerance.md",
+      "old": "Synchronous replication is more durable; asynchronous replication is faster but can lose writes during a primary failure.",
+      "new": "Synchronous acknowledgement waits for the configured durability/replica condition and adds that wait to the write path. It need not require every replica. Asynchronous replication can acknowledge sooner but lose recently acknowledged writes if the primary fails before they reach a surviving replica.",
+      "reason": "PostgreSQL supports configured synchronous sets/quorums and acknowledgement levels; all-replica acknowledgement is only one example.",
+      "sources": [
+        "https://www.postgresql.org/docs/current/warm-standby.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: PostgreSQL supports configured synchronous sets/quorums and acknowledgement levels; all-replica acknowledgement is only one example."
+    },
+    {
+      "id": "fundamentals:FT05",
+      "path": "engineering-fundamentals/fault-tolerance.md",
+      "old": "   Synchronous gives up latency (waits for all acks) to guarantee durability. Asynchronous gives up strong durability (writes can be lost if the primary dies before replicating) to achieve lower latency.",
+      "new": "   Synchronous replication waits for its configured acknowledgements and durability level; this may be one replica or a quorum, not every replica. It adds waiting and can reduce availability if that condition is unavailable. Asynchronous acknowledgement can be faster but risks losing acknowledged writes not yet copied to a surviving replica.",
+      "reason": "The Answer Key overgeneralized all-replica acknowledgement and unconditional durability.",
+      "sources": [
+        "https://www.postgresql.org/docs/current/warm-standby.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: The Answer Key overgeneralized all-replica acknowledgement and unconditional durability."
+    },
+    {
+      "id": "fundamentals:FT06",
+      "path": "engineering-fundamentals/fault-tolerance.md",
+      "old": "- **Async replication** adds no latency but loses durability under primary failure.",
+      "new": "- **Async replication** need not wait for replica acknowledgement on the commit path, but still consumes resources and can add overhead or lag. Recently acknowledged writes can be lost on failover if not yet replicated.",
+      "reason": "Not waiting for a replica is not a guarantee of zero latency overhead.",
+      "sources": [
+        "https://www.postgresql.org/docs/current/warm-standby.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Not waiting for a replica is not a guarantee of zero latency overhead."
+    },
+    {
+      "id": "fundamentals:FT07",
+      "path": "engineering-fundamentals/fault-tolerance.md",
+      "old": "Cold failover: secondary boots from scratch — minutes of downtime.\nWarm failover: secondary is running but not serving — seconds of downtime.\nHot failover: secondary serves traffic too — near-zero downtime.",
+      "new": "Cold recovery starts resources when needed; warm recovery keeps some capacity ready; hot/active arrangements keep serving capacity available. These labels do not guarantee a duration. Measure detection, promotion, client reconnection, state recovery and usable capacity for the chosen design.",
+      "reason": "Standby readiness labels alone do not establish downtime or remove promotion/reconnection work.",
+      "sources": [
+        "https://www.postgresql.org/docs/current/warm-standby.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Standby readiness labels alone do not establish downtime or remove promotion/reconnection work."
+    },
+    {
+      "id": "fundamentals:FT08",
+      "path": "engineering-fundamentals/fault-tolerance.md",
+      "old": "The chain runs: fault → failure → outage. Fault tolerance breaks this chain. Faults should not become failures; failures should not become outages.",
+      "new": "A local fault can cause a component failure without causing a service outage. Fault tolerance contains or masks its effect so the service continues to meet its specified behavior for the faults the design covers.",
+      "reason": "A component may fail while the containing system tolerates that failure; preventing every component failure is not the definition.",
+      "sources": [
+        "https://sre.google/sre-book/addressing-cascading-failures/"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: A component may fail while the containing system tolerates that failure; preventing every component failure is not the definition."
+    },
+    {
+      "id": "fundamentals:FT09",
+      "path": "engineering-fundamentals/fault-tolerance.md",
+      "old": "An aircraft.\n\nModern commercial aircraft have multiple engines. The aircraft can fly with one engine out. If both engines fail, the aircraft can still glide to a runway. Hydraulic systems are triple-redundant. Critical avionics are quadruple-redundant. The pilots can fly the aircraft manually if all the electronics fail.\n\nNo single failure can crash the plane.\n\nTwo things to notice:\n\n1. The aircraft is not made of *more reliable* parts than a car. Jet engines fail at roughly the rate of car engines. The reliability comes from *arrangement*.\n2. The aircraft is *heavier* and *more expensive* than it would be without redundancy. This is the cost of fault tolerance.\n\nA software system designed for fault tolerance is the same. The components are normal; the *arrangement* is the technology.",
+      "new": "A service with three application instances.\n\nIf one instance dies, a health-aware router can send new work to the remaining instances. That only preserves the service when surviving capacity, session state, shared storage and retry behavior meet the failure contract. All three instances can still fail together during a bad deployment or shared-database outage.\n\nThe lesson is to name which faults the arrangement covers and test the resulting service behavior. Adding copies covers some failure modes; it does not eliminate shared dependencies or create unlimited capacity.",
+      "reason": "Remove unverified aircraft/engine/avionics guarantees and use a software failure-containment example with explicit shared dependencies and capacity assumptions.",
+      "sources": [
+        "https://sre.google/sre-book/addressing-cascading-failures/"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source review on 2026-10-29: Google SRE cascading-failure guidance establishes capacity and shared-dependency constraints; no aircraft reliability claims retained."
+    },
+    {
+      "id": "fundamentals:FT10",
+      "path": "engineering-fundamentals/fault-tolerance.md",
+      "old": "Notable absence: a single point of failure. The load balancer itself is often paired (active-passive or anycast).",
+      "new": "The diagram is a sketch, not proof that single points of failure are absent. The database primary still needs a tested promotion and fencing protocol; load-balancer, cache and shared infrastructure dependencies need their own failure analysis and capacity limits.",
+      "reason": "A replicated sketch alone does not implement primary promotion, prevent split brain or establish independent load balancers.",
+      "sources": [
+        "https://www.postgresql.org/docs/current/warm-standby.html",
+        "https://sre.google/sre-book/addressing-cascading-failures/"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: A replicated sketch alone does not implement primary promotion, prevent split brain or establish independent load balancers."
+    },
+    {
+      "id": "fundamentals:FT11",
+      "path": "engineering-fundamentals/fault-tolerance.md",
+      "old": "- **Over idempotent operations only.** See [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md).",
+      "new": "- **Safe to repeat under the actual contract.** A naturally idempotent operation, server-enforced operation key, or reconciliation protocol can make retry safe. A timeout does not prove that the prior attempt had no effect. See [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md).",
+      "reason": "Retries can be safe through idempotency keys even for non-idempotent transport operations; timeout ambiguity must be explicit.",
+      "sources": [
+        "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Retries can be safe through idempotency keys even for non-idempotent transport operations; timeout ambiguity must be explicit."
+    },
+    {
+      "id": "fundamentals:FT12",
+      "path": "engineering-fundamentals/fault-tolerance.md",
+      "old": "   Continuously, ideally through automated Chaos Engineering (e.g., Chaos Monkey) running in production, to ensure drift hasn't invalidated your fault-tolerance assumptions.",
+      "new": "   Repeatedly test the specified failure modes and recovery criteria as the system changes. Start with controlled environments and bounded experiments; production fault injection needs an explicit blast radius, monitoring and abort conditions. Frequency and environment follow the risk, not a universal requirement to run chaos continuously in production.",
+      "reason": "Reliability testing must be scoped and controlled; continuous uncontrolled production fault injection is not a universal best practice.",
+      "sources": [
+        "https://sre.google/sre-book/addressing-cascading-failures/"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Reliability testing must be scoped and controlled; continuous uncontrolled production fault injection is not a universal best practice."
+    },
+    {
+      "id": "fundamentals:TC20",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "- **Dangerous for:** nothing — but insufficient for humans who want to know *when* something happened.",
+      "new": "- **Insufficient for:** elapsed durations, calendar deadlines or proving causality from Lamport timestamp order alone. A total order also needs a tie-breaker for equal timestamps.",
+      "reason": "Logical clocks have concrete limits; a Lamport clock's converse condition does not hold.",
+      "sources": [
+        "https://lamport.azurewebsites.net/pubs/time-clocks.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Logical clocks have concrete limits; a Lamport clock's converse condition does not hold."
+    },
+    {
+      "id": "fundamentals:TC21",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "Two machines can have logical clocks that agree perfectly — because agreement is defined by the protocol, not by physics.",
+      "new": "Processes follow a shared timestamp protocol; their counter values need not be equal. Message receipt advances a receiver beyond the received timestamp, preserving happened-before relationships rather than synchronizing every counter.",
+      "reason": "Logical clock correctness is causal order, not perfect equality among clocks.",
+      "sources": [
+        "https://lamport.azurewebsites.net/pubs/time-clocks.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Logical clock correctness is causal order, not perfect equality among clocks."
+    },
+    {
+      "id": "fundamentals:TC22",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "        Logical[\"Logical clock<br/>Lamport / Vector / HLC\"]",
+      "new": "        Logical[\"Causal metadata<br/>Lamport / Vector\"]\n        Hybrid[\"Hybrid logical clock<br/>physical component + logical counter\"]",
+      "reason": "Lamport/vector algorithms do not require wall-clock input; HLC does.",
+      "sources": [
+        "https://lamport.azurewebsites.net/pubs/time-clocks.pdf",
+        "https://cse.buffalo.edu/tech-reports/2014-04.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Lamport/vector algorithms do not require wall-clock input; HLC does."
+    },
+    {
+      "id": "fundamentals:TC23",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "    Wall --> Logical\n    Mono -.->|\"not connected\"| Logical",
+      "new": "    Wall -->|\"physical-time input\"| Hybrid",
+      "reason": "Remove the false wall-clock dependency for Lamport/vector clocks and the non-relationship drawn as an edge.",
+      "sources": [
+        "https://lamport.azurewebsites.net/pubs/time-clocks.pdf",
+        "https://cse.buffalo.edu/tech-reports/2014-04.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Remove the false wall-clock dependency for Lamport/vector clocks and the non-relationship drawn as an edge."
+    },
+    {
+      "id": "fundamentals:TC24",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "- **Idempotency and time.** Idempotency keys with wall-clock-based TTLs are vulnerable to clock jumps. Use monotonic clocks for TTL enforcement; use wall clocks only for the human-readable expiry display.",
+      "new": "- **Idempotency and time.** Use a monotonic elapsed-time source for an in-process retention interval. Persistent or cross-node expiration needs a durable authoritative deadline and a documented clock/restart policy; raw nanoTime values cannot be persisted and compared across JVM starts. Retention must also cover the supported retry/reconciliation horizon.",
+      "reason": "Monotonic readings have an arbitrary process origin; blanket use for durable TTLs is incorrect.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/System.html",
+        "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Monotonic readings have an arbitrary process origin; blanket use for durable TTLs is incorrect."
+    },
+    {
+      "id": "fundamentals:TC25",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "- **Clock manipulation.** On rooted/jailbroken devices, the user can set the wall clock arbitrarily. Any security mechanism based on wall-clock time (trial periods, rate limits) is bypassable. Use server-issued timestamps or monotonic clocks for enforcement.",
+      "new": "- **Clock manipulation.** Client clocks and client-side enforcement are not authoritative against a user controlling the device. Monotonic time helps local duration logic but does not prevent reboot, data rollback or tampering. Enforce security-sensitive expiry and quotas at a trusted service, with a deliberate offline policy.",
+      "reason": "A monotonic clock is not a trust boundary or reboot-persistent anti-abuse mechanism.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/System.html",
+        "https://pages.nist.gov/800-63-4/sp800-63b.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: A monotonic clock is not a trust boundary or reboot-persistent anti-abuse mechanism."
+    },
+    {
+      "id": "fundamentals:TC26",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "   No, unless you know their clock skew is strictly less than 1ms (the gap between T=100 and T=101), which is practically impossible to guarantee without specialized hardware.",
+      "new": "   The timestamp units and error bounds must be known. Disjoint uncertainty intervals can establish physical order; overlapping intervals cannot. Without those bounds, T=100 and T=101 do not prove real order, and timestamp order alone does not establish causality.",
+      "reason": "Do not assume unspecified timestamp units or that only specialized hardware can supply useful bounded uncertainty.",
+      "sources": [
+        "https://lamport.azurewebsites.net/pubs/time-clocks.pdf",
+        "https://www.usenix.org/system/files/conference/osdi12/osdi12-final-16.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Do not assume unspecified timestamp units or that only specialized hardware can supply useful bounded uncertainty."
+    },
+    {
+      "id": "fundamentals:TC27",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "   A vector clock must maintain a counter for every single node in the system to detect concurrency. The practical limit is usually a few dozen to a hundred nodes, beyond which the metadata payload becomes too large.",
+      "new": "   A fixed-membership vector stores one counter per participating process, so metadata grows with that membership. There is no universal hundred-node cutoff. Membership changes, encoding, pruning and the application's bandwidth/storage budget determine the limit; pruning can weaken what historical causality can be distinguished.",
+      "reason": "The Dynamo paper discusses a concrete truncation policy, not a universal maximum node count.",
+      "sources": [
+        "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: The Dynamo paper discusses a concrete truncation policy, not a universal maximum node count."
+    },
+    {
+      "id": "fundamentals:TC28",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "- Don't use vector clocks at large scale (>100 nodes) without pruning.",
+      "new": "- Budget vector metadata for the actual participants and membership policy. Pruning trades metadata size against retained causality; there is no universal 100-node threshold.",
+      "reason": "Remove the arbitrary universal vector-clock limit.",
+      "sources": [
+        "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Remove the arbitrary universal vector-clock limit."
+    },
+    {
+      "id": "fundamentals:TC29",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "**Monotonic clock overflow.** `System.nanoTime()` returns a `Long`, which overflows after ~292 years. Not a practical concern per JVM instance, but subtracting two values from different JVM starts is undefined.",
+      "new": "- **Monotonic clock arithmetic.** nanoTime may already be negative because its origin is arbitrary. Differences within one JVM instance are useful, but intervals spanning more than about 292 years exceed signed-Long difference arithmetic. Use elapsed differences rather than comparing now with start + timeout, which can overflow sooner. Never compare readings from unrelated JVM instances.",
+      "reason": "Oracle specifies arbitrary possibly negative origins and the safe timeout-subtraction idiom.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/System.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Oracle specifies arbitrary possibly negative origins and the safe timeout-subtraction idiom."
+    },
+    {
+      "id": "fundamentals:TC30",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "// Calculate approximate skew\nval skew = response.serverTimeMs - System.currentTimeMillis()\n// Use skew to adjust local timestamps when comparing with server events",
+      "new": "// Rough offset observation; includes response transport/processing delay.\nval observedOffsetMs = response.serverTimeMs - System.currentTimeMillis()\n// Do not treat this as exact skew or proof of cross-machine event ordering.\n// Use a protocol with round-trip/uncertainty bounds for that requirement.",
+      "reason": "One server timestamp received after network delay does not establish exact clock skew.",
+      "sources": [
+        "https://www.usenix.org/system/files/conference/osdi12/osdi12-final-16.pdf",
+        "https://lamport.azurewebsites.net/pubs/time-clocks.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: One server timestamp received after network delay does not establish exact clock skew."
+    },
+    {
+      "id": "fundamentals:TC31",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "5. **Google TrueTime (2012).** Spanner introduced TrueTime, which reports clock time as an *interval* — \\\"the current time is between [earliest, latest]\\\" — and uses GPS receivers and atomic clocks to keep the interval small. The first system to make physical clocks reliable enough for ordering.",
+      "new": "5. **Google TrueTime (2012).** Spanner exposed physical-clock uncertainty as an interval and combined that bound with its transaction protocol and commit-wait to provide externally consistent distributed transactions. GPS and atomic-clock references keep uncertainty small.",
+      "reason": "The Spanner paper's first-at-global-scale claim is narrower than the original claim about all physical-clock ordering.",
+      "sources": [
+        "https://www.usenix.org/system/files/conference/osdi12/osdi12-final-16.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: The Spanner paper's first-at-global-scale claim is narrower than the original claim about all physical-clock ordering."
+    },
+    {
+      "id": "fundamentals:BP12",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "- **Drop count.** Counter for items dropped by the overflow policy. Should be 0 in steady state.",
+      "new": "- **Drop count.** Count or estimate items discarded by each policy and define an acceptable budget. Intentional conflation can discard intermediate values even in healthy steady state; lossless business events need a different contract.",
+      "reason": "Conflation deliberately drops pending values; zero drops is not a universal healthy-state requirement.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/conflate.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Conflation deliberately drops pending values; zero drops is not a universal healthy-state requirement."
+    },
+    {
+      "id": "fundamentals:BP13",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "- **Latency:** A queue near capacity adds latency. The closer to capacity, the more. Operating below 50-70% utilization keeps latency predictable.",
+      "new": "- **Latency:** Queueing depends on burstiness, service-time distribution, admission and utilization. Measure queue age and end-to-end tails for the actual workload; a universal 50–70% utilization band cannot guarantee predictable latency.",
+      "reason": "A fixed utilization band is not a latency guarantee under arbitrary arrivals and service times.",
+      "sources": [
+        "https://sre.google/sre-book/handling-overload/"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: A fixed utilization band is not a latency guarantee under arbitrary arrivals and service times."
+    },
+    {
+      "id": "fundamentals:BP14",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "- **Drop old:** the buffer between stations 2 and 3 evicts old pieces in favor of new ones. Station 3 only ever works on the *latest* piece.",
+      "new": "- **Drop old:** the buffer replaces older pending pieces when full. The piece already at station 3 continues unless a separate cancellation policy stops it.",
+      "reason": "Dropping pending items does not cancel active work.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/conflate.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/collect-latest.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Dropping pending items does not cancel active work."
+    },
+    {
+      "id": "fundamentals:CA16",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "- **Authorization in keys.** Cache keys must include the auth context. A cache keyed only by document ID will serve User A's document to User B.",
+      "new": "- **Authorization and keys.** Authorize every read and partition cached representations by the inputs that change them, such as tenant, user-specific view, locale or permissions. A document-ID cache can be safe when it stores shared object data behind a correct authorization check; a user-specific response keyed as if public can leak data.",
+      "reason": "Representation identity and authorization are separate controls; a cache hit must not bypass access checks, and user ID is not universally required for shared data.",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc9111.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Representation identity and authorization are separate controls; a cache hit must not bypass access checks, and user ID is not universally required for shared data."
+    },
+    {
+      "id": "fundamentals:CA17",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "   Cache poisoning/cross-talk. User A fetches their private data, it gets cached under a generic key, and User B receives User A's data on the next request.",
+      "new": "   If the cached representation is user-specific, omitting the user/tenant context can return one user's response to another. A shared document representation may instead be keyed by document ID if every read is independently authorized. Test both key partitioning and authorization on hits.",
+      "reason": "The Answer Key must distinguish private-response cross-talk from safely shared object caching with access checks.",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc9111.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: The Answer Key must distinguish private-response cross-talk from safely shared object caching with access checks."
+    },
+    {
+      "id": "fundamentals:BP15",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "3. **Drop old.** New items replace the oldest queued items. The consumer always sees the most recent data. Used when only the latest value matters (mouse position, \"current\" telemetry value).",
+      "new": "3. **Drop old.** When the pending buffer is full, a new item replaces its oldest pending item. Work already being processed continues. Used when skipping intermediate pending values is acceptable; cancelling active work is a separate policy.",
+      "reason": "Dropping pending items cannot promise replacement of the item currently being processed.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/conflate.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/collect-latest.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Dropping pending items cannot promise replacement of the item currently being processed."
+    },
+    {
+      "id": "fundamentals:CA18",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "class ImageCache {\n    private val memoryCache = LruCache<String, Bitmap>(maxSize = 50)\n    private val diskCache: DiskLruCache = DiskLruCache.open(...)\n\n    suspend fun load(url: String): Bitmap {\n        memoryCache[url]?.let { return it }            // L1: in-memory\n        diskCache.get(url)?.let {                       // L2: disk\n            memoryCache.put(url, it)\n            return it\n        }\n        val bitmap = network.fetch(url)                 // L3: network\n        memoryCache.put(url, bitmap)\n        diskCache.put(url, bitmap)\n        return bitmap\n    }\n}\n",
+      "new": "// App-owned adapters: implementations must perform blocking I/O off Main.\ninterface BitmapDiskStore {\n    suspend fun read(url: String): android.graphics.Bitmap?\n    suspend fun write(url: String, bitmap: android.graphics.Bitmap)\n}\n\nfun interface BitmapSource {\n    suspend fun fetch(url: String): android.graphics.Bitmap\n}\n\nclass ImageCache(\n    maxBytes: Int,\n    private val disk: BitmapDiskStore,\n    private val source: BitmapSource\n) {\n    private val memory = object : android.util.LruCache<String, android.graphics.Bitmap>(maxBytes) {\n        override fun sizeOf(key: String, value: android.graphics.Bitmap): Int =\n            value.allocationByteCount // API 19+; cache uses bytes, not entry count\n    }\n\n    suspend fun load(url: String): android.graphics.Bitmap {\n        memory.get(url)?.let { return it }\n        disk.read(url)?.let { bitmap ->\n            memory.put(url, bitmap)\n            return bitmap\n        }\n        val bitmap = source.fetch(url)\n        disk.write(url, bitmap)\n        memory.put(url, bitmap)\n        return bitmap\n    }\n}\n",
+      "reason": "The original treats DiskLruCache snapshots as Bitmaps and calls an unspecified put API. Replace with explicitly app-owned typed adapters and byte-weighted Android LruCache; this remains a cache-order sketch, not a complete image pipeline.",
+      "sources": [
+        "https://developer.android.com/reference/android/util/LruCache"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: The original treats DiskLruCache snapshots as Bitmaps and calls an unspecified put API. Replace with explicitly app-owned typed adapters and byte-weighted Android LruCache; this remains a cache-order sketch, not a complete image pipeline."
+    },
+    {
+      "id": "fundamentals:FT13",
+      "path": "engineering-fundamentals/fault-tolerance.md",
+      "old": "- **Circuit breakers** add latency only when tripping; when open, they short-circuit failures with no downstream call.",
+      "new": "- **Circuit breakers** perform admission and outcome accounting on calls. Open breakers reject without a downstream call, but the check itself still has overhead; they do not supply a timeout or concurrency limit automatically.",
+      "reason": "Circuit breaker checks and statistics occur on normal calls too; a breaker does not make resource management free.",
+      "sources": [
+        "https://resilience4j.readme.io/docs/circuitbreaker"
+      ],
+      "status": "approved",
+      "validation": "Verified against primary documentation/paper on 2026-10-29: Circuit breaker checks and statistics occur on normal calls too; a breaker does not make resource management free."
+    },
+    {
+      "id": "fundamentals:CA19",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "Reads of recently-touched files became free.",
+      "new": "Reads of recently touched pages could avoid storage I/O, while still paying memory-copy, lookup and execution costs.",
+      "reason": "A page-cache hit avoids storage access; it does not make a file read free.",
+      "sources": [
+        "https://www.kernel.org/doc/html/latest/mm/page_cache.html"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: A page-cache hit avoids storage access; it does not make a file read free."
+    },
+    {
+      "id": "fundamentals:CA20",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "Most production databases are CPU-bound on cache misses, not disk-bound.",
+      "new": "A buffer-pool miss may require storage I/O; the bottleneck depends on the query, cache residency and storage system.",
+      "reason": "A miss does not imply a universal CPU bottleneck.",
+      "sources": [
+        "https://www.postgresql.org/docs/current/runtime-config-resource.html"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: A miss does not imply a universal CPU bottleneck."
+    },
+    {
+      "id": "fundamentals:CA21",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "- **Time-based (TTL).** Entries expire after T seconds. Stale within that window; consistent eventually. Simplest; most common.",
+      "new": "- **Time-based (TTL).** Entries expire according to a defined lifetime and clock policy. Refresh after expiry can improve freshness, but TTL alone does not guarantee convergence when fills race with writes or read a lagging source.",
+      "reason": "Expiry alone is not an eventual-consistency protocol.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: Expiry alone is not an eventual-consistency protocol."
+    },
+    {
+      "id": "fundamentals:CA22",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "- **Strong:** all readers see the same value at all times. Expensive.",
+      "new": "- **Linearizable reads/writes:** operations appear to take effect in a single order that respects completed operations in real time. Reads concurrent with a write can legitimately observe the old or new value, depending on their place in that order.",
+      "reason": "Strong consistency needs a specified model; simultaneous reads need not return an identical value around a concurrent write.",
+      "sources": [
+        "https://www.cs.cmu.edu/~wing/publications/HerlihyWing90.pdf"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: Strong consistency needs a specified model; simultaneous reads need not return an identical value around a concurrent write."
+    },
+    {
+      "id": "fundamentals:CA23",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "**Push invalidation toward events.** TTL-based invalidation is fine for most things. For high-stakes data (permissions, prices, content moderation), event-driven invalidation prevents stale data from being a liability. The investment pays off when stale-data incidents stop happening.",
+      "new": "**Tie invalidation to the freshness contract.** Events can reduce stale windows, but delayed or lost events and stale-fill races still need handling. For permission revocation or other strict freshness requirements, establish the required coordination or authoritative check; neither a short TTL nor an event bus proves correctness.",
+      "reason": "The staff guidance contradicted the corrected asynchronous-invalidation limitations.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: The staff guidance contradicted the corrected asynchronous-invalidation limitations."
+    },
+    {
+      "id": "fundamentals:CA24",
+      "path": "engineering-fundamentals/caching.md",
+      "old": "**\"LRU is always right.\"** LRU is usually right. For data with a small, stable hot set, LFU beats LRU. For one-shot batch processing, FIFO might beat both.",
+      "new": "**\"LRU is always right.\"** LRU is a useful baseline. Access skew, scans, admission and changing popularity can favor other policies; compare them on a representative trace rather than promising a universal winner.",
+      "reason": "The misconception answer retained an unsupported universal eviction recommendation.",
+      "sources": [
+        "https://github.com/ben-manes/caffeine/wiki/Efficiency"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: The misconception answer retained an unsupported universal eviction recommendation."
+    },
+    {
+      "id": "fundamentals:BP16",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "val queue = LinkedBlockingQueue<Event>(capacity = 100)\n\n// Producer",
+      "new": "val queue = java.util.concurrent.LinkedBlockingQueue<Event>(100)\n\n// Producer",
+      "reason": "Kotlin named arguments are not supported for Java constructors.",
+      "sources": [
+        "https://kotlinlang.org/docs/functions.html#named-arguments"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: Kotlin named arguments are not supported for Java constructors."
+    },
+    {
+      "id": "fundamentals:BP17",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "val queue = LinkedBlockingQueue<Event>(capacity = 100)\n\nfun produce",
+      "new": "val queue = java.util.concurrent.LinkedBlockingQueue<Event>(100)\n\nfun produce",
+      "reason": "The second Java queue constructor had the same Kotlin compilation error.",
+      "sources": [
+        "https://kotlinlang.org/docs/functions.html#named-arguments"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: The second Java queue constructor had the same Kotlin compilation error."
+    },
+    {
+      "id": "fundamentals:BP18",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "- **Bulkheads** isolate failures: each subsystem has its own bounded queue, so a slow consumer in one path can't starve the others.",
+      "new": "- **Bulkheads** reserve or limit resources by subsystem. Separate bounded queues help, but shared executors, connections, memory or downstream capacity can still couple paths; verify the actual isolation boundary.",
+      "reason": "Separate queues alone do not guarantee isolation of shared resources.",
+      "sources": [
+        "https://sre.google/sre-book/addressing-cascading-failures/"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: Separate queues alone do not guarantee isolation of shared resources."
+    },
+    {
+      "id": "fundamentals:BP19",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "    `conflate()` drops intermediate values when the consumer is slow, ensuring only the latest value is processed (capacity 1). `buffer(DROP_OLDEST)` maintains a buffer of N items and drops the oldest when full. Use `conflate` for position data; use `buffer` when you need a window of recent history.",
+      "new": "    `conflate()` retains the latest pending value while current collector work continues. An explicit positive `buffer(capacity = N, onBufferOverflow = DROP_OLDEST)` can retain N pending values and discards the oldest pending value on overflow. Use conflation for replaceable current state; use a bounded recent window only when losing earlier pending values is acceptable.",
+      "reason": "The answer promised only the latest would be processed and omitted explicit capacity; active work is not cancelled by conflation.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/conflate.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/buffer.html"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: The answer promised only the latest would be processed and omitted explicit capacity; active work is not cancelled by conflation."
+    },
+    {
+      "id": "fundamentals:BP20",
+      "path": "engineering-fundamentals/backpressure.md",
+      "old": "[`../patterns/circuit-breaker.md`](../patterns/circuit-breaker.md) — the breaker is triggered by upstream backpressure signals.",
+      "new": "[`../patterns/circuit-breaker.md`](../patterns/circuit-breaker.md) — a separate health-based admission mechanism; it does not automatically propagate demand or bound concurrency.",
+      "reason": "The related-link description contradicted the corrected circuit-breaker contract.",
+      "sources": [
+        "https://resilience4j.readme.io/docs/circuitbreaker"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: The related-link description contradicted the corrected circuit-breaker contract."
+    },
+    {
+      "id": "fundamentals:TC32",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "- **CockroachDB.** Uses Hybrid Logical Clocks for transaction ordering. Stays within a configurable maximum clock offset (default 500 ms); if a node's clock drifts beyond the offset, it self-quarantines. No GPS hardware required.",
+      "new": "- **CockroachDB.** Uses HLC timestamps and enforces a configured clock-offset bound for guarantees beyond basic HLC causality. Its documented enforcement crashes a node that detects offset beyond 80% of that bound from at least half of the cluster. Serializability under SERIALIZABLE isolation is maintained despite skew; excessive skew can violate single-key linearizability assumptions.",
+      "reason": "The production example retained the wrong quarantine description and conflated HLC causality with real-time ordering.",
+      "sources": [
+        "https://docs.cockroachlabs.com/docs/stable/architecture/transaction-layer"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: The production example retained the wrong quarantine description and conflated HLC causality with real-time ordering."
+    },
+    {
+      "id": "fundamentals:TC33",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "- **Clock quarantine.** CockroachDB rejects nodes whose clocks have drifted beyond the configured maximum offset. This is a fault-tolerance mechanism — a drifted clock is a faulty component, and the system tolerates it by excluding it.",
+      "new": "- **Clock-offset enforcement.** Follow the database's actual detection threshold and failure response. CockroachDB documents immediate node crash when its measured offset from at least half the cluster exceeds 80% of the configured maximum; this is not a generic property of HLC.",
+      "reason": "The reliability section repeated the corrected product-specific behavior incorrectly.",
+      "sources": [
+        "https://docs.cockroachlabs.com/docs/stable/architecture/transaction-layer"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: The reliability section repeated the corrected product-specific behavior incorrectly."
+    },
+    {
+      "id": "fundamentals:TC34",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "- **NTP availability is a dependency.** If NTP is unavailable, wall clocks drift. For systems that depend on wall-clock agreement (Cassandra, Kafka), NTP must be treated as critical infrastructure.",
+      "new": "- **Clock synchronization can be a dependency.** If a system relies on bounded wall-clock error, monitor its actual synchronization source and error budget. Kafka partition ordering instead follows offsets; timestamp-based retention and application event-time logic have separate clock assumptions.",
+      "reason": "Kafka partition order does not depend on wall-clock timestamp order.",
+      "sources": [
+        "https://kafka.apache.org/41/design/design/"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: Kafka partition order does not depend on wall-clock timestamp order."
+    },
+    {
+      "id": "fundamentals:TC35",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "- **Logical clock lag.** In systems using HLC or vector clocks, monitor the gap between physical time and logical time. A growing gap means messages are arriving out of order or nodes are partitioned.",
+      "new": "- **Logical-clock health.** For HLC, monitor how far its physical component is ahead of the local wall clock and investigate remote future timestamps or clock adjustments. A vector clock has no physical-time unit to subtract from wall time; use causal progress and replication/backlog metrics appropriate to that protocol. Neither measure alone diagnoses a partition.",
+      "reason": "Vector counters cannot be subtracted from physical time, and HLC lead does not uniquely identify message reordering or partitions.",
+      "sources": [
+        "https://docs.cockroachlabs.com/docs/stable/architecture/transaction-layer",
+        "https://lamport.azurewebsites.net/pubs/time-clocks.pdf"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: Vector counters cannot be subtracted from physical time, and HLC lead does not uniquely identify message reordering or partitions."
+    },
+    {
+      "id": "fundamentals:TC36",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "   It waits out the \"uncertainty interval\" returned by TrueTime (the maximum possible clock skew). This ensures the transaction's commit timestamp is strictly in the past for any subsequent transaction, guaranteeing global consistency.",
+      "new": "   Commit-wait waits until `TT.after(commitTimestamp)` is true: the chosen timestamp is definitely in the past according to TrueTime's uncertainty bound. Combined with Spanner's timestamp assignment and transaction protocol, this supplies external consistency; waiting a fixed uncertainty duration alone is not the complete guarantee.",
+      "reason": "The Answer Key retained an imprecise commit-wait rule despite the corrected main text.",
+      "sources": [
+        "https://www.usenix.org/system/files/conference/osdi12/osdi12-final-16.pdf"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: The Answer Key retained an imprecise commit-wait rule despite the corrected main text."
+    },
+    {
+      "id": "fundamentals:TC37",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "// NEVER for: measuring elapsed time, timeouts, cache TTLs",
+      "new": "// Avoid for elapsed intervals; persistent expiry needs an authoritative deadline policy.",
+      "reason": "The blanket prohibition on wall time for all TTLs contradicted persistent/cross-node expiration requirements.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/System.html"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: The blanket prohibition on wall time for all TTLs contradicted persistent/cross-node expiration requirements."
+    },
+    {
+      "id": "fundamentals:TC38",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "// Use for: timeouts, cache TTLs, AlarmManager.setElapsed*\n// This is the closest Android has to a true monotonic clock",
+      "new": "// Use for: elapsed intervals within one boot, including time spent asleep.\n// AlarmManager uses ELAPSED_REALTIME or ELAPSED_REALTIME_WAKEUP types.",
+      "reason": "AlarmManager has no setElapsed* API, and uptime is also monotonic with a different sleep policy.",
+      "sources": [
+        "https://developer.android.com/reference/android/os/SystemClock",
+        "https://developer.android.com/reference/android/app/AlarmManager"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: AlarmManager has no setElapsed* API, and uptime is also monotonic with a different sleep policy."
+    },
+    {
+      "id": "fundamentals:TC39",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "alarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, fireAt, intent)",
+      "new": "// Assume a permitted exact-alarm use case and a valid PendingIntent.\n// On versions/targets requiring special access, check canScheduleExactAlarms() first.\nalarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, fireAt, intent)",
+      "reason": "The clock-source example needs the exact-alarm permission/use-case precondition.",
+      "sources": [
+        "https://developer.android.com/develop/background-work/services/alarms"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: The clock-source example needs the exact-alarm permission/use-case precondition."
+    },
+    {
+      "id": "fundamentals:FT14",
+      "path": "engineering-fundamentals/fault-tolerance.md",
+      "old": "- **Synchronous replication** adds latency proportional to the slowest replica.",
+      "new": "- **Synchronous replication** adds the wait needed for its configured acknowledgements and durability level. A quorum need not wait for the slowest replica in the full set.",
+      "reason": "The performance section contradicted the corrected configured-quorum contract.",
+      "sources": [
+        "https://www.postgresql.org/docs/current/warm-standby.html"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: The performance section contradicted the corrected configured-quorum contract."
+    },
+    {
+      "id": "fundamentals:FT15",
+      "path": "engineering-fundamentals/fault-tolerance.md",
+      "old": "- **The cost of a 9 grows exponentially.** Going from 99% to 99.9% costs less than going from 99.9% to 99.99%, which costs less than going from 99.99% to 99.999%.",
+      "new": "- **Price the next reliability target explicitly.** Higher targets often require additional isolation, redundancy or operational work, but there is no universal exponential cost law. Estimate the specific failure modes and changes needed to meet the target.",
+      "reason": "A universal exponential cost formula is not an established reliability guarantee.",
+      "sources": [
+        "https://sre.google/sre-book/embracing-risk/"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: A universal exponential cost formula is not an established reliability guarantee."
+    },
+    {
+      "id": "fundamentals:FT16",
+      "path": "engineering-fundamentals/fault-tolerance.md",
+      "old": "**\"More 9's is always better.\"** Each 9 is exponentially expensive. The right question is \"what does the next 9 cost, and is it worth it for our users?\"",
+      "new": "**\"More 9's is always better.\"** Additional reliability has a workload-specific cost. Ask what the next target requires and whether the user benefit justifies that investment.",
+      "reason": "The misconception answer repeated the unsupported exponential cost law.",
+      "sources": [
+        "https://sre.google/sre-book/embracing-risk/"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: The misconception answer repeated the unsupported exponential cost law."
+    },
+    {
+      "id": "fundamentals:FT17",
+      "path": "engineering-fundamentals/fault-tolerance.md",
+      "old": "```kotlin\n// Synchronous replication: write succeeds only if all replicas ack",
+      "new": "```text\n// Conceptual pseudocode: helpers and storage protocol are application-defined.\n// All-replica acknowledgement is one illustrative synchronous policy.",
+      "reason": "The two write functions and undefined parallel helpers are conceptual pseudocode, not one compilable Kotlin program.",
+      "sources": [
+        "https://www.postgresql.org/docs/current/warm-standby.html"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: The two write functions and undefined parallel helpers are conceptual pseudocode, not one compilable Kotlin program."
+    },
+    {
+      "id": "fundamentals:FT18",
+      "path": "engineering-fundamentals/fault-tolerance.md",
+      "old": "suspend fun <T> withRetry(\n    maxAttempts: Int = 3,\n    initialDelay: Duration = 100.milliseconds,\n    factor: Double = 2.0,\n    op: suspend () -> T\n): T {\n    var attempt = 0\n    var delay = initialDelay\n    while (true) {\n        try {\n            return op()\n        } catch (e: TransientException) {\n            attempt++\n            if (attempt >= maxAttempts) throw e\n            delay(delay + jitter(delay))\n            delay = delay * factor\n        }\n    }\n}",
+      "new": "import java.io.IOException\nimport kotlin.random.Random\nimport kotlinx.coroutines.currentCoroutineContext\nimport kotlinx.coroutines.delay\nimport kotlinx.coroutines.ensureActive\n\n// Caller must impose an overall deadline and classify retryable I/O failures.\n// Retry mutations only under an idempotency/reconciliation contract.\nsuspend fun <T> withRetry(\n    maxAttempts: Int = 3,\n    initialDelayMs: Long = 100,\n    maxDelayMs: Long = 5_000,\n    shouldRetry: (IOException) -> Boolean = { true },\n    op: suspend () -> T\n): T {\n    require(maxAttempts > 0)\n    require(initialDelayMs > 0 && maxDelayMs >= initialDelayMs)\n    var attempt = 0\n    var backoffMs = initialDelayMs\n    while (true) {\n        currentCoroutineContext().ensureActive()\n        try {\n            return op()\n        } catch (e: IOException) {\n            currentCoroutineContext().ensureActive()\n            attempt++\n            if (attempt >= maxAttempts || !shouldRetry(e)) throw e\n            delay(Random.nextLong(backoffMs)) // full jitter: [0, backoffMs)\n            backoffMs = if (backoffMs >= maxDelayMs - backoffMs) {\n                maxDelayMs\n            } else {\n                backoffMs * 2\n            }\n        }\n    }\n}",
+      "reason": "Replace undefined TransientException/jitter helpers with explicit IOException classification, capped overflow-safe backoff, argument validation and cooperative cancellation. The caller retains deadline and idempotency responsibility.",
+      "sources": [
+        "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/ensure-active.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/delay.html"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source check on 2026-10-29: Replace undefined TransientException/jitter helpers with explicit IOException classification, capped overflow-safe backoff, argument validation and cooperative cancellation. The caller retains deadline and idempotency responsibility."
+    },
+    {
+      "id": "fundamentals:TC40",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "- Con: cannot detect concurrency (only partial order), no connection to wall time.",
+      "new": "- Con: cannot infer causality or concurrency from timestamp order alone. Add a deterministic tie-breaker to construct a total order that extends causality; there is no elapsed-time meaning.",
+      "reason": "Lamport numeric ordering can be extended to a total order but cannot reconstruct the happened-before relation.",
+      "sources": [
+        "https://lamport.azurewebsites.net/pubs/time-clocks.pdf"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source review on 2026-10-29: Lamport numeric ordering can be extended to a total order but cannot reconstruct the happened-before relation."
+    },
+    {
+      "id": "fundamentals:TC41",
+      "path": "engineering-fundamentals/time-and-clocks.md",
+      "old": "- **Replay protection.** Timestamps in signed requests (AWS SigV4, OAuth) prevent replay by rejecting requests older than N minutes. A client with a skewed clock has its requests rejected.",
+      "new": "- **Signed-request freshness.** Protocols such as AWS SigV4 limit acceptance using signed timestamps and validity rules. This bounds a replay window rather than making an accepted request inherently one-time; nonce, idempotency or duplicate-handling rules depend on the protocol. Clock skew can cause legitimate requests to be rejected.",
+      "reason": "Timestamp freshness bounds a replay window; it does not universally prevent replay within that window or define every OAuth flow.",
+      "sources": [
+        "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv.html"
+      ],
+      "status": "approved",
+      "validation": "Independent primary-source review on 2026-10-29: Timestamp freshness bounds a replay window; it does not universally prevent replay within that window or define every OAuth flow."
+    }
+  ],
+  "notes": [
+    "All four original chapters and complete Answer Keys read. Source Markdown left unchanged; exact approved overlays are ready for the website and original-repository PR.",
+    "Cache expected-latency threshold is an explicit algebraic model, not a measured benchmark.",
+    "Primary-source review distinguishes coroutine suspension from thread blocking, transient in-memory broadcasts from durable delivery, and component failure from service failure.",
+    "Full physical-device/manual mobile validation is deferred per the current publishing scope; new diagrams require automated layout and scene-state checks.",
+    "Independent review rechecked replay, full corrected chapters, two FlowScene state sequences and official contracts. Follow-up rows remove remaining contradictory guarantees and label conceptual application fragments; exact standalone JVM clock/LRU/retry fragments are eligible for compiler fixtures."
+  ]
+}

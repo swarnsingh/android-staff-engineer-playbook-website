@@ -265,6 +265,10 @@ The owner's goal is that a reader can understand a topic from this handbook alon
 
 ## 17. The website layer: original content is read-only
 
+Owner authorization, 29 October 2026: for the Engineering Fundamentals rollout, verify material source errors against official documentation, specifications or original papers, apply the supported corrections on the website, and raise a matching pull request in the original private playbook repository. This scoped instruction supersedes the historical ban on source correction PRs below. Keep the website raw snapshot unchanged so exact correction replay remains auditable. The owner reviews and merges the source PR.
+
+Owner layout direction, 29 October 2026: keep the existing 880px sheet, 760px reading column and prose measure. Only wide diagrams/animations or genuinely overflowing code and tables may extend symmetrically into the margins, by at most 120px per side and up to 1000px total, further limited by the viewport and navigation rails. Do not widen ordinary paragraphs or the whole page.
+
 The original chapters (for example `kotlin/**/*.md`) are the owner's verified "gold" content. They are **never edited** as part of website work — not to fix errors, not to restructure, not through a separate pull request.
 
 The website page for a chapter is a blend of two layers:
@@ -396,3 +400,9 @@ The owner rejected box/highlight-only teaching and approved a problem-first View
 - Keep a complex diagram at a readable size in a labelled local scroll viewport when a phone composition would lose relationships. Do not flatten connected owners into unrelated cards or shrink its text to fit.
 - A static relationship map or comparison is complete when motion adds no teaching value. Keep playback for actual temporal mechanisms, without decorative object bouncing.
 - Author each relationship map in `website/content/diagram-models/`, cite official sources and verify actor IDs, memberships and arrow endpoints in the build. Changes in current state remain available as labelled text and a full transcript.
+
+### Shared layout ownership · 29 October 2026
+
+All reading-width, visual-breakout, frame, padding and responsive layout rules belong to the shared website design system. Define dimensions and surfaces in `website/design-system/tokens.json` and implement their behavior once in the shared components. Every existing and future topic consumes those components. Do not add chapter-specific layout CSS or duplicate the same fix across lesson files. Show proposed visual changes for owner approval when requested before publishing them.
+
+Owner approved the shared layout draft on29 October 2026: prose fills the existing760px reading column; wide visuals use padded, rounded frames and symmetric bounded extension. This replaces the earlier font-specific narrower prose measure. Implement once in design-system tokens and ReadingSheet shared components.

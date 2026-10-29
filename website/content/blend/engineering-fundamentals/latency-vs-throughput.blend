@@ -1,0 +1,37 @@
+<!-- Website teaching layer; original latency-vs-throughput.md remains unchanged. Primary-source review: batch-1.json. -->
+<!-- @opening -->
+<p class="story-lead">An upload service completes more photos each minute after batching is enabled. The first photo now waits longer before it starts. Both reports can be correct: the service improved its completion rate while increasing one photo's wait.</p>
+
+Choose the unit of work and its start and finish points before comparing performance. “Requests per second” and “time per request” describe different observations of that same boundary.
+
+<!-- @after First Principles :: visual -->
+### Draw the boundary before applying Little's Law
+
+```mermaid
+flowchart LR
+    Arrival["Accepted arrivals: average rate λ"]
+    subgraph System["Measured system: queued plus running requests"]
+      Queue["Waiting for capacity"]
+      Service["Receiving service"]
+      Queue -->|"capacity available"| Service
+    end
+    Exit["Accounted departures"]
+    Arrival -->|"start residence-time measurement"| Queue
+    Service -->|"finish residence-time measurement"| Exit
+```
+
+The average population **L** includes both boxes. The mean residence time **W** includes waiting and service. For a stable boundary receiving 1,000 requests per second with a mean residence time of 0.05 seconds, L is 50 requests. A p50 of 0.05 seconds does not supply that mean. Neither does a worker-pool size tell you how many requests are waiting outside its workers.
+
+[Source: Little and Graves on the queue-plus-service boundary](https://web.eng.ucsd.edu/~massimo/ECE158A/Handouts_files/Little.pdf).
+
+<!-- @after Failure Modes :: guide -->
+### A percentile is a threshold, not a complete distribution
+
+Suppose each independent child call exceeds 100 ms with probability 1%. A parent waiting for all ten children has a 1 − 0.99¹⁰ chance, about 9.6%, of waiting for at least one such child. That calculation says how often the threshold is crossed. It does not say whether the slow call takes 101 ms or ten seconds, so it cannot produce a parent p99 in milliseconds.
+
+<!-- @after Reliability Considerations :: staff -->
+### Give retries part of the same time budget
+
+A caller's deadline includes queueing, connection setup, remote work and any retries. Choose an acceptable false-timeout rate from observed distributions, then check the total deadline. A retry that starts after its result has become useless adds load without restoring the user's outcome. Keep attempts bounded and use backoff with jitter where retrying is appropriate.
+
+[Source: AWS Builders' Library on timeout selection and retry load](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/).

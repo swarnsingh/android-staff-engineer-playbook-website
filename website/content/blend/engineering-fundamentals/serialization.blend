@@ -1,0 +1,50 @@
+<!-- Website teaching layer; source remains unchanged. Primary-source review: batch-2.json. -->
+<!-- @opening -->
+<p class="story-lead">The backend adds a harmless-looking field. One installed app ignores it; another rejects the response. Both use JSON. The format name did not define the compatibility contract.</p>
+
+Treat serialization as a boundary between independently changing programs. The bytes must be interpretable, required information must remain meaningful, and readers must reject unsafe data deliberately rather than fail by accident later.
+
+<!-- @before Internal Mechanics :: guide -->
+### Missing, null and unknown are different inputs
+
+An unknown property is present in the payload but absent from the reader's model. A missing property is expected by that model but absent from the payload. An explicit null is a supplied value. Defaults and nullable types do not automatically make these three cases equivalent.
+
+For Kotlinx Json, unknown keys fail by default unless configured otherwise. A nullable property without a default is still required under the ordinary generated-serializer configuration. Test the actual serializer options and adapter rather than relying on a format-level rule.
+
+[Sources: unknown-key policy](https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-json/kotlinx.serialization.json/-json-builder/ignore-unknown-keys.html), [Kotlin serialization optional properties](https://kotlinlang.org/docs/serialization-customization-options.html#optional-properties).
+
+<!-- @after Architecture :: visual -->
+### Validate the boundary before constructing trusted application data
+
+```mermaid
+flowchart LR
+    subgraph Sender["Writer version N plus 1"]
+      Model["Application data"]
+      Encode["Encode agreed schema"]
+    end
+    Wire["Untrusted bytes"]
+    subgraph Reader["Installed reader version N"]
+      Decode["Decode with size and schema policy"]
+      Validate["Validate domain constraints"]
+      Domain["Usable application value"]
+      Failure["Controlled error or supported fallback"]
+    end
+    Model -->|"serializable fields"| Encode
+    Encode -->|"wire representation"| Wire
+    Wire -->|"bounded input"| Decode
+    Decode -->|"supported representation"| Validate
+    Decode -->|"malformed or incompatible"| Failure
+    Validate -->|"valid meaning"| Domain
+    Validate -->|"invalid business value"| Failure
+```
+
+A generated type does not prove that a price is positive or that the caller may access the referenced account. Validation belongs after decoding and before acting on those values. Test old reader/new writer and new reader/old writer separately; the two directions can fail for different reasons.
+
+<!-- @after Failure Modes :: staff -->
+### Separate wire efficiency from UI responsiveness
+
+Measure transfer size, decode work, allocations and the time before a usable screen appears. Compression can change a JSON-versus-binary comparison. Moving CPU-heavy decoding away from Main protects UI scheduling, while blocking input belongs on an I/O dispatcher. Neither change makes an oversized Binder transaction safe.
+
+Pass small IDs or suitable handles across Activity boundaries and define where bulk data lives. Parcelable supports Android IPC; it is not a general-purpose disk or network format.
+
+[Sources: Protobuf wire representation](https://protobuf.dev/programming-guides/encoding/), [coroutine dispatcher responsibilities](https://developer.android.com/kotlin/coroutines/coroutines-best-practices), [Parcel and Bundle scope](https://developer.android.com/guide/components/activities/parcelables-and-bundles).

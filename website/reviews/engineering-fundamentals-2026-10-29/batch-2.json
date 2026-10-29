@@ -1,0 +1,1202 @@
+{
+  "chapters": [
+    {
+      "path": "engineering-fundamentals/state-machines.md",
+      "intro": "Make valid modes, transition rules and recoverable effects explicit.",
+      "sources": [
+        "https://developer.android.com/topic/architecture/ui-layer/events",
+        "https://www.w3.org/TR/scxml/"
+      ]
+    },
+    {
+      "path": "engineering-fundamentals/queues.md",
+      "intro": "Separate admission, processing and acknowledgement without hiding overload.",
+      "sources": [
+        "https://developer.android.com/topic/architecture/data-layer/offline-first",
+        "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html"
+      ]
+    },
+    {
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "intro": "Choose event, command and state contracts that consumers can recover from.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/event-driven",
+        "https://developer.android.com/topic/architecture/ui-layer/events",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/"
+      ]
+    },
+    {
+      "path": "engineering-fundamentals/serialization.md",
+      "intro": "Carry data across boundaries without losing schema or compatibility guarantees.",
+      "sources": [
+        "https://protobuf.dev/programming-guides/encoding/",
+        "https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-json/kotlinx.serialization.json/-json-builder/ignore-unknown-keys.html",
+        "https://developer.android.com/reference/android/os/TransactionTooLargeException"
+      ]
+    }
+  ],
+  "corrections": [
+    {
+      "id": "fundamentals:state-machines:finite-control-states",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "A state machine is a model of computation defined by a finite set of *states*, a finite set of *events*, and a *transition function* that, given the current state and an event, decides the next state. The model is older than programming itself, but it is one of the most underused tools in application code — and one of the highest-leverage tools available to a Staff engineer. Most \"weird bug\" tickets in long-lived mobile systems are state machines that were never written down.",
+      "new": "This chapter focuses on machines with finite, named *control states*, an initial configuration, events and a transition function. Application machines can also carry data, such as a payload or retry deadline; their complete state space is not limited to the number of control-state names. The model is older than programming itself, but it is one of the most underused tools in application code — and one of the highest-leverage tools available to a Staff engineer. Most \"weird bug\" tickets in long-lived mobile systems are state machines that were never written down.",
+      "reason": "Distinguish finite control modes from the potentially unbounded data carried by an extended application state machine.",
+      "sources": [
+        "https://www.w3.org/TR/scxml/"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Distinguish finite control modes from the potentially unbounded data carried by an extended application state machine."
+    },
+    {
+      "id": "fundamentals:state-machines:valid-flag-combinations",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "What was broken before this existed: developers expressed mode logic as a bag of boolean flags (`isLoading`, `isError`, `hasData`, `isPaused`). Booleans compose multiplicatively — five flags is thirty-two possible combinations — and almost none of those combinations are valid. The combinations that are invalid are exactly where bugs live. (\"Why is `isLoading` true and `hasData` true at the same time?\")",
+      "new": "Without an explicit model, mode logic can become independently mutable flags (`isLoading`, `isError`, `hasData`, `isPaused`). Five booleans permit thirty-two combinations. Which combinations are valid depends on the product: `isLoading && hasData` can correctly represent refreshing cached content. Write those invariants before deciding which modes should be mutually exclusive.",
+      "reason": "Loading and existing data can be a valid refresh state; booleans alone do not determine product invariants.",
+      "sources": [
+        "https://www.w3.org/TR/scxml/"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Loading and existing data can be a valid refresh state; booleans alone do not determine product invariants."
+    },
+    {
+      "id": "fundamentals:state-machines:representation-not-proof",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "A state machine replaces the implicit set of \"currently valid flag combinations\" with an explicit set of states and an explicit set of legal transitions. Invalid combinations become unrepresentable.",
+      "new": "A state machine replaces implicit mode rules with named states, data invariants and explicit transitions. A suitable representation can rule out selected invalid combinations; guards, serialized event handling and tests are still needed to enforce valid behavior.",
+      "reason": "A state representation does not automatically prove all transitions or associated data valid.",
+      "sources": [
+        "https://www.w3.org/TR/scxml/"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. A state representation does not automatically prove all transitions or associated data valid."
+    },
+    {
+      "id": "fundamentals:state-machines:effects-optional",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "A state machine has four ingredients. None of them are optional; if any is missing, you have flag soup, not a state machine.",
+      "new": "A practical application machine defines its states, initial configuration, input events and transition rules. Actions or side effects are optional additions; a machine that only changes or recognizes state is still a state machine.",
+      "reason": "Side effects are not a mandatory ingredient of a state machine.",
+      "sources": [
+        "https://www.w3.org/TR/scxml/"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Side effects are not a mandatory ingredient of a state machine."
+    },
+    {
+      "id": "fundamentals:state-machines:control-state-cardinality",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "**1. States.** A finite, named set. `Idle`, `Loading`, `Success`, `Failure`. The cardinality of valid states is `|S|`, not `2^n` for `n` booleans. This collapse is the whole point.",
+      "new": "**1. States.** A named control-state set, such as `Idle`, `Loading`, `Success`, `Failure`. Associated payloads and orthogonal regions also contribute to the complete state space; naming four control modes does not reduce every application state to four values.",
+      "reason": "Control-mode count is not the complete state-space cardinality when data or parallel regions are present.",
+      "sources": [
+        "https://www.w3.org/TR/scxml/"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Control-mode count is not the complete state-space cardinality when data or parallel regions are present."
+    },
+    {
+      "id": "fundamentals:state-machines:internal-events",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "**2. Events.** What can happen. `UserPressedRetry`, `NetworkResponseReceived`, `Timeout`. Events are *inputs* — they arrive from the outside (UI taps, network, timers, sensors).",
+      "new": "**2. Events.** Inputs such as `UserPressedRetry`, `NetworkResponseReceived` or `Timeout`. A machine can receive external events and can also raise internal events or react to completion; events need not all originate outside the machine.",
+      "reason": "SCXML includes internal events and eventless transitions.",
+      "sources": [
+        "https://www.w3.org/TR/scxml/#raise"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. SCXML includes internal events and eventless transitions."
+    },
+    {
+      "id": "fundamentals:state-machines:optional-actions",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "**4. Side effects.** Sometimes called *actions* or *effects*. On entering a state, on leaving a state, or on a specific transition, the machine triggers a side effect: log a metric, fire a network request, vibrate the phone. Side effects are decoupled from the state graph itself — the graph defines *what is true*, the effects define *what to do about it*.",
+      "new": "**4. Optional side effects.** Actions can run on entry, exit or a transition, such as recording a metric or starting an operation. Keeping their execution separate from a pure transition calculation helps testing; entry/exit placement does not itself guarantee exactly-once execution.",
+      "reason": "Actions are optional and their trigger placement is not an execution-delivery guarantee.",
+      "sources": [
+        "https://www.w3.org/TR/scxml/#onentry",
+        "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Actions are optional and their trigger placement is not an execution-delivery guarantee."
+    },
+    {
+      "id": "fundamentals:state-machines:moore-equivalence",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "- **Moore machine.** Outputs depend only on `state`. Entering a state produces the output. Less expressive, easier to reason about.",
+      "new": "- **Moore machine.** Outputs depend only on state. Mealy and Moore machines can represent equivalent finite-state input/output behavior, allowing for the Moore initial output; the conversion can change state count and output timing.",
+      "reason": "Moore machines are not generally less expressive than Mealy machines.",
+      "sources": [
+        "https://www.cs.umd.edu/class/sum2003/cmsc311/Notes/Seq/fsm.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Moore machines are not generally less expressive than Mealy machines."
+    },
+    {
+      "id": "fundamentals:state-machines:parallel-representation",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "- **Parallel / orthogonal regions.** Multiple state machines that run independently and compose. The full app state is the *product* of region states. Used to model \"user is authenticated AND playback is paused AND network is offline\" without an exponential blowup of single states.",
+      "new": "- **Parallel / orthogonal regions.** Concurrent state regions compose as a product. Hierarchical notation can avoid explicitly drawing every combination, but the reachable product state space and cross-region interactions still need analysis.",
+      "reason": "Orthogonal regions compress the notation rather than eliminating product-state complexity.",
+      "sources": [
+        "https://www.w3.org/TR/scxml/#parallel"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Orthogonal regions compress the notation rather than eliminating product-state complexity."
+    },
+    {
+      "id": "fundamentals:state-machines:valid-kotlin-transition",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "fun transition(current: State, event: Event): State = when (current to event) {\n    State.Idle to Event.Load -> State.Loading\n    State.Loading to is Event.Loaded -> State.Success((event as Event.Loaded).data)\n    State.Loading to is Event.Failed -> State.Failure((event as Event.Failed).cause)\n    State.Failure to Event.Retry -> State.Loading\n    else -> current  // ignore illegal events\n}",
+      "new": "fun transition(current: State, event: Event): State = when (current) {\n    State.Idle -> if (event == Event.Load) State.Loading else current\n    State.Loading -> when (event) {\n        is Event.Loaded -> State.Success(event.data)\n        is Event.Failed -> State.Failure(event.cause)\n        else -> current\n    }\n    is State.Failure -> if (event == Event.Retry) State.Loading else current\n    is State.Success -> current\n}",
+      "reason": "The original pair-pattern branches are not Kotlin syntax; use type-checked nested when branches.",
+      "sources": [
+        "https://kotlinlang.org/docs/control-flow.html#when-expressions-and-statements"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. The original pair-pattern branches are not Kotlin syntax; use type-checked nested when branches."
+    },
+    {
+      "id": "fundamentals:state-machines:valid-kotlin-context",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "(The `when` matching above is illustrative; real Kotlin uses `when (val s = current)` with nested branches.)",
+      "new": "The transition function above uses valid Kotlin syntax. `Payload` is an application-defined type, and this example deliberately ignores unhandled events by returning the current state.",
+      "reason": "Remove the pseudocode caveat now that the transition is actual Kotlin; document its no-op policy.",
+      "sources": [
+        "https://kotlinlang.org/docs/control-flow.html#when-expressions-and-statements"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Remove the pseudocode caveat now that the transition is actual Kotlin; document its no-op policy."
+    },
+    {
+      "id": "fundamentals:state-machines:explicit-effect-instructions",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "The cleanest model treats `transition` as a *pure function*. The system around it observes state changes and fires effects:",
+      "new": "A useful model keeps the transition calculation pure. The event processor can produce the next state and explicit effect instructions, then a separate runner executes those instructions. Observing only a conflated state stream is insufficient when an effect is attached to a transition that leaves the state value unchanged.",
+      "reason": "State-only observation can miss transition actions and equal-state transitions.",
+      "sources": [
+        "https://www.w3.org/TR/scxml/#transition",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. State-only observation can miss transition actions and equal-state transitions."
+    },
+    {
+      "id": "fundamentals:state-machines:durable-effect-protocol",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "For long-lived flows that survive process death (uploads, downloads, multi-step purchases), the state must be persisted. The pattern: serialize the current `State` to disk on every transition, restore it on launch. Idempotency of the effects is what makes this safe — see [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md).",
+      "new": "For uploads or purchases that must recover after process death, persist sufficient state and pending-effect intent atomically, for example with an outbox. Execute effects using stable operation IDs, retain outcomes and reconcile uncertain remote results. Persisting a state name alone can leave a crash gap; idempotent retries address duplicates but do not create missing effect records. See [`../distributed-systems/idempotency.md`](../distributed-systems/idempotency.md).",
+      "reason": "Persisted state and idempotency alone do not close the atomic state/effect-intent gap.",
+      "sources": [
+        "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Persisted state and idempotency alone do not close the atomic state/effect-intent gap."
+    },
+    {
+      "id": "fundamentals:state-machines:diagram-not-proof",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "A diagram like this is the *specification* of the system. If the implementation does anything the diagram doesn't allow, the implementation has a bug. This is a stronger guarantee than test coverage.",
+      "new": "A diagram like this can be the reviewed specification. Verify that code and effects obey it using transition tests, invariant checks or model checking as appropriate. Drawing the graph alone provides no stronger correctness guarantee than testing.",
+      "reason": "A diagram is not by itself an enforcement mechanism or proof.",
+      "sources": [
+        "https://www.w3.org/TR/scxml/"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. A diagram is not by itself an enforcement mechanism or proof."
+    },
+    {
+      "id": "fundamentals:state-machines:tcp-model-not-only-formulation",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "- **TCP.** The TCP state diagram is the most-cited automaton in computing. `LISTEN → SYN_RCVD → ESTABLISHED → FIN_WAIT_1 → ...`. It exists because reliable transport over an unreliable network is *only* expressible as a state machine; any other formulation has gaps.",
+      "new": "- **TCP.** RFC 9293 specifies TCP connection states and transitions. The state model makes permitted connection behavior explicit; it does not imply that every other formal description of the same protocol is incomplete.",
+      "reason": "Remove the false assertion that reliable transport is expressible only as a state machine.",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc9293.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Remove the false assertion that reliable transport is expressible only as a state machine."
+    },
+    {
+      "id": "fundamentals:state-machines:jetpack-lifecycle-values",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "**Activity / Fragment lifecycle** is a state machine: `Initialized → Created → Started → Resumed → Paused → Stopped → Destroyed`. The Lifecycle library exposes these as observable states; modern code subscribes instead of overriding lifecycle methods.",
+      "new": "**Activity / Fragment lifecycle** has callbacks and an observable state model. Jetpack `Lifecycle.State` contains `INITIALIZED`, `CREATED`, `STARTED`, `RESUMED` and `DESTROYED`. Pausing moves the owner back toward `STARTED`; stopping moves it toward `CREATED`. `PAUSED` and `STOPPED` are not enum values.",
+      "reason": "Do not confuse Activity callback names with Jetpack Lifecycle.State constants.",
+      "sources": [
+        "https://developer.android.com/reference/androidx/lifecycle/Lifecycle.State"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Do not confuse Activity callback names with Jetpack Lifecycle.State constants."
+    },
+    {
+      "id": "fundamentals:state-machines:invalid-state-advantage",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "- Invalid states become unrepresentable. The class of \"impossible bug\" tickets disappears.",
+      "new": "- Selected invalid mode combinations can become unrepresentable. Other invariants, stale events and incorrect effects still require validation.",
+      "reason": "Sealed-state modeling does not eliminate every impossible-state or behavior defect.",
+      "sources": [
+        "https://www.w3.org/TR/scxml/"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Sealed-state modeling does not eliminate every impossible-state or behavior defect."
+    },
+    {
+      "id": "fundamentals:state-machines:reentry-not-once",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "**Untracked side effects re-run on transition.** A side effect that runs every time you *enter* a state will re-run on persistence-driven recovery. Fix: tag effects as `OnEntry` (run once when entering) vs `OnTransition` (run once on the specific edge) vs `OnExit`. Or — preferred — make all effects idempotent.",
+      "new": "**Effects can repeat or be lost during recovery.** Entry, transition and exit actions describe when an action is triggered, not whether it has already completed durably. Persist pending work with stable identities, make retries idempotent where required, and reconcile uncertain remote outcomes before repeating a sensitive operation.",
+      "reason": "Entry/exit classifications cannot guarantee once-only execution after recovery.",
+      "sources": [
+        "https://www.w3.org/TR/scxml/#onentry",
+        "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Entry/exit classifications cannot guarantee once-only execution after recovery."
+    },
+    {
+      "id": "fundamentals:state-machines:transition-cost-not-fixed",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "State machines are cheap. The transition function is a `when` expression; it runs in nanoseconds. Performance concerns are about the *surrounding* infrastructure:",
+      "new": "A small transition calculation often needs little work, but its actual cost depends on guards, payload handling and the implementation. There is no universal nanosecond timing guarantee. Measure the transition and its surrounding event, persistence and effect pipeline.",
+      "reason": "Remove an unsupported fixed performance claim.",
+      "sources": [
+        "https://kotlinlang.org/docs/control-flow.html#when-expressions-and-statements",
+        "https://www.w3.org/TR/scxml/"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Remove an unsupported fixed performance claim."
+    },
+    {
+      "id": "fundamentals:state-machines:allocation-not-fixed",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "- **Memory.** A sealed-class `State` value is one allocation per transition (or zero if all states are `data object`). Total memory is proportional to the depth of the persistence history if you log transitions.",
+      "new": "- **Memory.** A transition may reuse an existing state value or construct new state and effect data. Allocation count depends on the implementation and optimizations; retained history and queued events also contribute to memory use.",
+      "reason": "A sealed state representation does not require exactly one allocation per transition.",
+      "sources": [
+        "https://kotlinlang.org/docs/control-flow.html#when-expressions-and-statements"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. A sealed state representation does not require exactly one allocation per transition."
+    },
+    {
+      "id": "fundamentals:state-machines:latency-full-path",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "- **Latency.** End-to-end latency in a state-machine-driven system is dominated by the slowest effect, not by the transition.",
+      "new": "- **Latency.** Account for event-queue delay, transition work, persistence and required effects. Any of these can dominate the measured end-to-end operation.",
+      "reason": "The slowest side effect does not universally dominate state-machine latency.",
+      "sources": [
+        "https://www.w3.org/TR/scxml/"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. The slowest side effect does not universally dominate state-machine latency."
+    },
+    {
+      "id": "fundamentals:state-machines:recovery-more-than-state",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "- **Recovery.** Persistence + idempotency = recovery. The state machine defines *what* to recover to; idempotency makes it safe to repeat the entry effects.",
+      "new": "- **Recovery.** Durable state, recoverable effect intent, idempotent or reconciled remote work and an explicit replay policy work together. A state name plus an idempotency claim is not a complete recovery protocol.",
+      "reason": "Recovery also requires durable effect intent and a reconciliation policy.",
+      "sources": [
+        "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Recovery also requires durable effect intent and a reconciliation policy."
+    },
+    {
+      "id": "fundamentals:state-machines:server-authoritative-security",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "**Replay resistance.** Persisted state machines can be tampered with on-device if the persistence is unsigned. For sensitive flows (payments, key exchange), the persisted state needs integrity (HMAC) and freshness (a server-issued nonce per transition). Otherwise an attacker can rewind the machine to a more permissive state.",
+      "new": "**Replay resistance.** Treat persisted client state as untrusted input to privileged server operations. Enforce authorization and sensitive transition validity on the server. Local integrity protection and freshness checks can support a threat model, but a client-held HMAC or a persisted `Authenticated` state is not sufficient authorization; nonce and replay policies must be designed for the actual protocol.",
+      "reason": "Local state integrity cannot replace authoritative server-side authorization or a protocol-specific replay defense.",
+      "sources": [
+        "https://mas.owasp.org/MASTG/0x04e-Testing-Authentication-and-Session-Management/"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Local state integrity cannot replace authoritative server-side authorization or a protocol-specific replay defense."
+    },
+    {
+      "id": "fundamentals:state-machines:expected-ignored-events",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "- **Alerts.** Alert on illegal-event-ignored rate > 0. That rate should be 0 in steady state; non-zero means the machine and the system disagree.",
+      "new": "- **Alerts.** Track ignored events by reason. Alert on unexpected invalid transitions or anomalous rates; deliberately ignored stale completions, duplicate requests and events outside the current mode can be valid policy.",
+      "reason": "A nonzero ignored-event rate is not universally a defect.",
+      "sources": [
+        "https://www.w3.org/TR/scxml/"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. A nonzero ignored-event rate is not universally a defect."
+    },
+    {
+      "id": "fundamentals:state-machines:moore-answer",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "5.  **What is the difference between a Mealy and a Moore machine, and when does it matter in practice?**\n    In a Mealy machine, outputs depend on both state and the event (the transition). In a Moore machine, outputs depend only on the current state (entering the state). Moore is easier to reason about, while Mealy can be more expressive.",
+      "new": "5.  **What is the difference between a Mealy and a Moore machine, and when does it matter in practice?**\n    Mealy output depends on the current state and input; Moore output depends only on the current state. Equivalent finite-state behavior can be represented in either form after accounting for the Moore initial output, with possible differences in state count and timing.",
+      "reason": "Mirror the Mealy/Moore expressiveness correction in the answer.",
+      "sources": [
+        "https://www.cs.umd.edu/class/sum2003/cmsc311/Notes/Seq/fsm.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Mirror the Mealy/Moore expressiveness correction in the answer."
+    },
+    {
+      "id": "fundamentals:state-machines:recovery-answer",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "7.  **A file-upload pipeline persists state on every transition. What property must the side effects have for this to be safe?**\n    Side effects must be idempotent. If the process crashes after a transition but before the effect completes, recovery will re-run the effect. Idempotency ensures this duplicate execution is safe.",
+      "new": "7.  **A file-upload pipeline persists state on every transition. What property must the side effects have for this to be safe?**\n    Recovery must retain enough durable state and effect intent to know what remains to do. Stable operation IDs and idempotent effects make retries safe when execution may have occurred already; uncertain remote outcomes may require reconciliation. State and pending intent should commit atomically so an effect is not lost before it can be retried.",
+      "reason": "Idempotency handles duplicates but does not alone prevent missing effect execution.",
+      "sources": [
+        "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Idempotency handles duplicates but does not alone prevent missing effect execution."
+    },
+    {
+      "id": "fundamentals:state-machines:deadline-answer",
+      "path": "engineering-fundamentals/state-machines.md",
+      "old": "8.  **If your `Retrying` state has a 30-second backoff and the process dies after 5 seconds, what's the correct behavior on restart?**\n    The persisted state should store the `next_retry_at` timestamp. On restart, the system calculates the remaining time (25 seconds) and resumes the timer, rather than starting a fresh 30-second wait or firing immediately.",
+      "new": "8.  **If your `Retrying` state has a 30-second backoff and the process dies after 5 seconds, what's the correct behavior on restart?**\n    Persist a deadline with a defined clock/reboot policy. On restart, recompute max(0, deadline - now); process downtime also counts, so the remainder is not necessarily 25 seconds. A wall-clock deadline must handle clock changes, while elapsedRealtime is monotonic within one boot and cannot be reused unchanged across a reboot.",
+      "reason": "The answer must subtract time elapsed while the process was down and account for the clock domain.",
+      "sources": [
+        "https://developer.android.com/reference/android/os/SystemClock"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. The answer must subtract time elapsed while the process was down and account for the clock domain."
+    },
+    {
+      "id": "fundamentals:queues:ordering-and-durability",
+      "path": "engineering-fundamentals/queues.md",
+      "old": "A Queue is a fundamental data structure and architectural pattern that processes items in a First-In-First-Out (FIFO) manner. In mobile engineering, queues are the primary mechanism for smoothing out unpredictable spikes in user activity, decoupling producers from consumers, and guaranteeing the execution of tasks across unreliable networks (Offline-First).",
+      "new": "A queue holds items until processing. FIFO queues remove items in insertion order; priority and other queue implementations define different ordering. In mobile systems, buffering can absorb bursts and separate producers from consumers. Reliable offline execution additionally needs durable storage, scheduling, retry, acknowledgment and recovery policies.",
+      "reason": "Queue ordering and retention do not automatically guarantee execution.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Queue.html",
+        "https://developer.android.com/topic/architecture/data-layer/offline-first"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Queue ordering and retention do not automatically guarantee execution."
+    },
+    {
+      "id": "fundamentals:queues:burst-not-certain-crash",
+      "path": "engineering-fundamentals/queues.md",
+      "old": "Mobile processors and networks are easily overwhelmed. If a user rapidly taps a \"Like\" button 50 times in 3 seconds, launching 50 concurrent network requests will exhaust the connection pool, spike the CPU, and crash the app with an `OutOfMemoryError`. ",
+      "new": "Rapid user activity can create more concurrent work than the app can usefully process. Fifty taps do not necessarily exhaust a connection pool or crash the app; the risk depends on request cost and resource limits. Bound concurrent work and decide whether repeated Likes represent distinct commands or only the latest desired state.",
+      "reason": "A fixed tap count does not imply OutOfMemoryError; operation semantics determine whether to queue or coalesce.",
+      "sources": [
+        "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. A fixed tap count does not imply OutOfMemoryError; operation semantics determine whether to queue or coalesce."
+    },
+    {
+      "id": "fundamentals:queues:bounded-burst",
+      "path": "engineering-fundamentals/queues.md",
+      "old": "2.  **Rate Limiting / Smoothing:** Queues act as a buffer. Producers can spike to 10,000 items/sec, but the Consumer can safely process them at 10 items/sec.",
+      "new": "2.  **Rate Limiting / Smoothing:** A bounded buffer can absorb a temporary arrival spike. If arrivals remain faster than completion, it eventually fills; the design must suspend, reject, coalesce or drop according to the operation contract.",
+      "reason": "Buffering cannot stabilize sustained overload by itself.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Buffering cannot stabilize sustained overload by itself."
+    },
+    {
+      "id": "fundamentals:queues:durability-not-delivery",
+      "path": "engineering-fundamentals/queues.md",
+      "old": "3.  **Durability:** If the queue is backed by disk (e.g., SQLite), the items survive process death, ensuring guaranteed eventual execution.",
+      "new": "3.  **Durability:** Committed disk-backed items can survive process death while app data remains. Eventual execution still depends on scheduling eligibility, connectivity, successful retries and recovery; uninstalling or clearing data removes local work.",
+      "reason": "Disk persistence does not guarantee eventual remote execution.",
+      "sources": [
+        "https://developer.android.com/topic/architecture/data-layer/offline-first"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Disk persistence does not guarantee eventual remote execution."
+    },
+    {
+      "id": "fundamentals:queues:peek-not-dequeue",
+      "path": "engineering-fundamentals/queues.md",
+      "old": "    // Dequeue: Get the oldest task",
+      "new": "    // Peek only: the row remains until acknowledged. Concurrent workers need an atomic claim.",
+      "reason": "The SELECT method does not remove or exclusively claim the selected task.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Queue.html",
+        "https://www.sqlite.org/lang_transaction.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. The SELECT method does not remove or exclusively claim the selected task."
+    },
+    {
+      "id": "fundamentals:queues:bounded-owned-consumer",
+      "path": "engineering-fundamentals/queues.md",
+      "old": "class AnalyticsTracker(private val api: AnalyticsApi) {\n    \n    // A queue with a buffer of 100 items\n    private val eventChannel = Channel<String>(capacity = 100)\n\n    init {\n        // The Consumer coroutine\n        CoroutineScope(Dispatchers.IO).launch {\n            // Suspends when empty, resumes when items arrive\n            for (event in eventChannel) { \n                api.send(event)\n            }\n        }\n    }\n\n    // The Producer (called from UI thread)\n    fun trackClick(buttonId: String) {\n        CoroutineScope(Dispatchers.Default).launch {\n            eventChannel.send(\"Clicked $buttonId\")\n        }\n    }\n}",
+      "new": "class AnalyticsTracker(private val api: AnalyticsApi) {\n    private val eventChannel = Channel<String>(capacity = 100)\n\n    // One explicit caller owns this suspending consumer and handles its failure.\n    suspend fun consume() {\n        try {\n            // api.send is a main-safe suspend API supplied by the application.\n            for (event in eventChannel) api.send(event)\n        } finally {\n            // Cancellation or failure ends admission and discards pending data.\n            eventChannel.cancel()\n        }\n    }\n\n    // Best-effort analytics: the caller must handle false (full or closed).\n    fun trackClick(buttonId: String): Boolean =\n        eventChannel.trySend(\"Clicked $buttonId\").isSuccess\n\n    // Stop accepting new events; a live consumer can drain accepted events.\n    fun close() { eventChannel.close() }\n}",
+      "reason": "Bound the admission queue and expose a suspending consumer whose caller owns execution, failure and cancellation; do not hide unowned launches behind each callback or class construction.",
+      "sources": [
+        "https://developer.android.com/kotlin/coroutines/coroutines-best-practices",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/"
+      ],
+      "status": "approved",
+      "validation": "Primary coroutine ownership and Channel contracts checked. One explicit caller must invoke consume(); cancellation/failure closes admission, and successful trySend means local acceptance only."
+    },
+    {
+      "id": "fundamentals:queues:handler-anr-boundary",
+      "path": "engineering-fundamentals/queues.md",
+      "old": "**The Main Thread (Looper/Handler)**\n\nEvery time you update a `TextView` or handle an `onClick`, you are interacting with a Queue. \n\nThe Android UI thread is powered by a `Looper`, which loops infinitely over a `MessageQueue`. When you call `view.post { doWork() }`, the `Handler` enqueues your `Runnable` into the `MessageQueue`. The Main Thread dequeues it and executes it. If you enqueue a `Runnable` that takes 5 seconds, the Main Thread is blocked, the queue backs up, and the app ANRs.",
+      "new": "**The Main Thread (Looper/Handler)**\n\nThe UI thread processes scheduled callbacks through its `Looper` and `MessageQueue`. `view.post { doWork() }` schedules a Runnable for that thread; a direct UI-property assignment does not necessarily enqueue a separate message. Messages can be scheduled for future times, so this is not simply insertion-order FIFO.\n\nA long-running callback blocks later work and can contribute to an ANR when an applicable responsiveness timeout is exceeded. Five seconds of work alone is not a universal ANR rule; the operation, target version and system conditions matter.",
+      "reason": "Distinguish direct execution from posted messages and qualify ANR triggers.",
+      "sources": [
+        "https://developer.android.com/reference/android/os/Handler",
+        "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Distinguish direct execution from posted messages and qualify ANR triggers."
+    },
+    {
+      "id": "fundamentals:queues:outcome-not-always-optimistic",
+      "path": "engineering-fundamentals/queues.md",
+      "old": "- **Loss of Synchronicity:** Once a producer drops an item in a queue, it cannot easily get a \"return value\" back. The UI must be optimistically updated.",
+      "new": "- **Asynchronous outcomes:** Acceptance into a queue differs from completion. Expose pending, confirmed or failed outcomes as the product requires; optimistic UI is one choice, not a requirement of queues.",
+      "reason": "Queued work can report asynchronous outcomes without mandating optimistic UI.",
+      "sources": [
+        "https://developer.android.com/topic/architecture/data-layer/offline-first"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Queued work can report asynchronous outcomes without mandating optimistic UI."
+    },
+    {
+      "id": "fundamentals:queues:poison-redelivery",
+      "path": "engineering-fundamentals/queues.md",
+      "old": "- **The Poison Pill:** A malformed payload is placed in the queue. The Consumer dequeues it, tries to parse it, crashes, and restarts. The item is still in the queue. The Consumer reads it again, crashes again. The queue is permanently blocked. *(Fix: Consumers must wrap processing in `try/catch` and discard or move failed items to a \"Dead Letter Queue\" after max retries).*",
+      "new": "- **Poison message / redelivery loop:** A malformed durable item can fail repeatedly if it remains unacknowledged and is redelivered. Bound retries and quarantine or dead-letter permanent failures with diagnostics. An in-memory poll that already removed the item has different loss semantics; some systems use \"poison pill\" for an intentional shutdown sentinel, so document the term.",
+      "reason": "A removed in-memory item is not automatically still queued after a crash; redelivery requires retention/acknowledgment semantics.",
+      "sources": [
+        "https://www.rabbitmq.com/docs/queues",
+        "https://www.rabbitmq.com/docs/dlx"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. A removed in-memory item is not automatically still queued after a crash; redelivery requires retention/acknowledgment semantics."
+    },
+    {
+      "id": "fundamentals:queues:capacity-not-always-fixed",
+      "path": "engineering-fundamentals/queues.md",
+      "old": "- **Queue Overflow:** A Channel or in-memory queue has a fixed capacity. If the Producer is producing at 100/sec and the Consumer is processing at 10/sec, the queue fills up. Does the Producer block? Do new items overwrite old items (`BufferOverflow.DROP_OLDEST`)? This must be explicitly designed. See [`backpressure.md`](backpressure.md).",
+      "new": "- **Queue overflow:** A bounded queue eventually fills under sustained overload. An unbounded queue such as ConcurrentLinkedQueue or Channel.UNLIMITED instead risks memory growth. Select blocking, suspension, rejection, coalescing or dropping explicitly; a bounded channel alone does not bound independently launched producers waiting to send. See [`backpressure.md`](backpressure.md).",
+      "reason": "Not all queues have a fixed capacity, and suspended producer coroutines can exceed channel capacity.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/",
+        "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/ConcurrentLinkedQueue.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Not all queues have a fixed capacity, and suspended producer coroutines can exceed channel capacity."
+    },
+    {
+      "id": "fundamentals:queues:per-key-ordering",
+      "path": "engineering-fundamentals/queues.md",
+      "old": "2.  **Is the queue strictly ordered?** In a chat app, messages *must* be processed in order. If Consumer 1 grabs Message A, and Consumer 2 grabs Message B, and Consumer 2 finishes the network request first, the messages appear out of order on the server. If order matters, you can only have *one* concurrent consumer.",
+      "new": "2.  **Which ordering matters?** FIFO dequeue order does not guarantee completion order with concurrent workers. For per-conversation ordering, serialize processing within each conversation key while allowing independent keys to run concurrently; a global order requires a global serialization boundary or a protocol that reconstructs it.",
+      "reason": "Ordering can be preserved per key with parallelism across keys; one global consumer is not always required.",
+      "sources": [
+        "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/using-messagegroupid-property.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Ordering can be preserved per key with parallelism across keys; one global consumer is not always required."
+    },
+    {
+      "id": "fundamentals:queues:sharedflow-not-work-queue",
+      "path": "engineering-fundamentals/queues.md",
+      "old": "- **\"Coroutines replace Queues.\"** False. Coroutines are the execution mechanism. They heavily *utilize* queues (like `Channel` or `SharedFlow`) to pass data safely between themselves.",
+      "new": "- **\"Coroutines replace queues.\"** Coroutines execute work; channels can distribute queued items among receivers. SharedFlow instead broadcasts to subscribers and has different replay/overflow semantics, so it is not a drop-in competing-consumer work queue.",
+      "reason": "SharedFlow broadcasts rather than distributing each work item to one competing consumer.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. SharedFlow broadcasts rather than distributing each work item to one competing consumer."
+    },
+    {
+      "id": "fundamentals:queues:offline-question",
+      "path": "engineering-fundamentals/queues.md",
+      "old": "4.  Why is a disk-backed queue mandatory for an offline-first mobile architecture?",
+      "new": "4.  When does offline-first work require a durable queue or outbox?",
+      "reason": "Offline-first read capability does not require a pending-write queue; durable unfinished operations do.",
+      "sources": [
+        "https://developer.android.com/topic/architecture/data-layer/offline-first"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Offline-first read capability does not require a pending-write queue; durable unfinished operations do."
+    },
+    {
+      "id": "fundamentals:queues:offline-answer",
+      "path": "engineering-fundamentals/queues.md",
+      "old": "4.  **Why is a disk-backed queue mandatory for an offline-first mobile architecture?**\n    In-memory queues are destroyed when the app is killed. Disk-backed queues persist tasks (like API requests) across process death, ensuring they execute eventually when connectivity is restored.",
+      "new": "4.  **When does offline-first work require a durable queue or outbox?**\n    Use a durable queue or outbox when accepted pending operations must survive process death. An offline-first reader may only need a local database/cache. Durable pending writes also need eligible scheduling, retry, acknowledgments and reconciliation; connectivity returning alone does not guarantee completion.",
+      "reason": "Correct the claim that every offline-first architecture requires a queue or guarantees eventual execution.",
+      "sources": [
+        "https://developer.android.com/topic/architecture/data-layer/offline-first"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Correct the claim that every offline-first architecture requires a queue or guarantees eventual execution."
+    },
+    {
+      "id": "fundamentals:queues:ordering-answer",
+      "path": "engineering-fundamentals/queues.md",
+      "old": "5.  **If a queue has multiple consumers, what guarantees do you have about the execution order of the items?**\n    None. Even though items are dequeued in FIFO order, multiple consumers run concurrently. Consumer B might finish processing the second item before Consumer A finishes processing the first item.",
+      "new": "5.  **If a queue has multiple consumers, what guarantees do you have about the execution order of the items?**\n    With concurrent consumers, FIFO dequeue order does not imply completion order. The queue and consumer protocol determine remaining guarantees; per-key serialization can preserve conversation order while independent keys run in parallel.",
+      "reason": "Distinguish dequeue order, completion order and per-key serialization.",
+      "sources": [
+        "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/using-messagegroupid-property.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. Distinguish dequeue order, completion order and per-key serialization."
+    },
+    {
+      "id": "fundamentals:queues:channel-capacity-answer",
+      "path": "engineering-fundamentals/queues.md",
+      "old": "7.  **What happens in a Kotlin `Channel` if the Producer sends data but no Consumer is actively listening? (Discuss capacity and suspending).**\n    If the channel has capacity (buffered), items are stored until full. Once the buffer is full (or if unbuffered), the producer's `send` call will suspend until a consumer receives an item.",
+      "new": "7.  **What happens in a Kotlin `Channel` if the Producer sends data but no Consumer is actively listening? (Discuss capacity and suspending).**\n    Behavior depends on capacity and overflow policy. Rendezvous send suspends without a receiver; a bounded SUSPEND buffer admits values until full, then suspends. Unlimited buffering does not suspend for space; conflated or dropping configurations can discard values. trySend reports whether immediate admission succeeded rather than suspending.",
+      "reason": "The original answer incorrectly applies suspending overflow behavior to every channel configuration.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. The original answer incorrectly applies suspending overflow behavior to every channel configuration."
+    },
+    {
+      "id": "fundamentals:queues:batch-ack-answer",
+      "path": "engineering-fundamentals/queues.md",
+      "old": "9.  **How would you design a SQLite-backed queue to efficiently allow batching of 50 items at a time?**\n    The Consumer queries for the oldest 50 items (`LIMIT 50`). It processes them in a single batch (e.g., one API call). Upon success, it deletes all 50 items from the table in a single database transaction.",
+      "new": "9.  **How would you design a SQLite-backed queue to efficiently allow batching of 50 items at a time?**\n    Select or atomically claim up to 50 eligible operations in a deterministic order, retain their stable IDs, and send them under a defined per-item or atomic-batch server contract. Acknowledge only confirmed successes in a local transaction. Handle partial responses and uncertain outcomes without deleting unconfirmed operations; concurrent workers need leases or transactional claims.",
+      "reason": "A 50-item response is not necessarily atomic success for every item; claims and acknowledgments must match the server contract.",
+      "sources": [
+        "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html",
+        "https://www.sqlite.org/lang_transaction.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against the cited primary API/specification; exact original text matches once. A 50-item response is not necessarily atomic success for every item; claims and acknowledgments must match the server contract."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:semantics-and-delivery",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "Event-Driven Architecture (EDA) is a design paradigm where the flow of the program is determined by events—messages signifying that a state change has occurred. Instead of components explicitly commanding each other to do work (Command pattern), components emit events and trust that interested parties will react to them.",
+      "new": "Event-Driven Architecture connects producers and consumers through event messages describing occurrences. Publishers need not call every consumer directly, but they still share event contracts and delivery assumptions. Commands can coexist with events; publishing an event does not by itself guarantee that a required action completes.",
+      "reason": "EDA does not prohibit commands or eliminate delivery and schema coupling.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/event-driven"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. EDA does not prohibit commands or eliminate delivery and schema coupling."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:schema-coupling",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "EDA completely severs this direct coupling. The `ShoppingCart` simply broadcasts an `ItemAddedEvent`. It doesn't know or care who is listening. This allows you to add or remove features (like a new `Recommendations` module) without ever touching the core cart logic.",
+      "new": "Publishing an `ItemAddedEvent` can remove direct dependencies on individual subscribers. Consumers still depend on the event schema, meaning, ordering and delivery policy. Adding a subscriber may leave cart code unchanged, while changing those contracts can require coordinated updates.",
+      "reason": "Pub/sub reduces direct dependencies but does not remove semantic coupling.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/event-driven"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Pub/sub reduces direct dependencies but does not remove semantic coupling."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:fire-and-forget-not-universal",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "1.  **Fire and Forget:** The publisher of an event does not wait for a response, nor does it care if anyone is listening.",
+      "new": "1.  **Delivery contract:** Publishing an event and completing downstream work are separate outcomes. Publication can wait for admission or acknowledgment; retries, retention and consumer processing guarantees depend on the transport.",
+      "reason": "Event publication need not be nonblocking or unconcerned with delivery.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/event-driven",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Event publication need not be nonblocking or unconcerned with delivery."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:sharedflow-code-context",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "Using `SharedFlow` to act as an event bus localized to a specific architectural layer (e.g., within a ViewModel or a Singleton Repository).",
+      "new": "The following sketch broadcasts optional in-process notifications. Supply the application-specific `AuthApi`, `Credentials`, `loadProfile` and `clearProfile` implementations. A replay-zero `SharedFlow` is not authoritative authentication state: a late subscriber misses earlier logins, and process death removes the stream. Expose current session state separately when consumers need to recover it.",
+      "reason": "Document absent subscribers and missing application context instead of implying durable authentication delivery.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Document absent subscribers and missing application context instead of implying durable authentication delivery."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:auth-api-dependency",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "class AuthRepository {",
+      "new": "class AuthRepository(private val api: AuthApi) {",
+      "reason": "The example uses api without declaring or injecting it.",
+      "sources": [
+        "https://developer.android.com/topic/architecture/ui-layer/events"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. The example uses api without declaring or injecting it."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:viewmodel-superclass",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "class ProfileViewModel(private val authRepo: AuthRepository) {",
+      "new": "class ProfileViewModel(private val authRepo: AuthRepository) : ViewModel() {",
+      "reason": "viewModelScope requires a ViewModel receiver.",
+      "sources": [
+        "https://developer.android.com/topic/libraries/architecture/coroutines"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. viewModelScope requires a ViewModel receiver."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:udf-allows-functions",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "Modern Android UI architecture is entirely event-driven. \n1. The user clicks a button. The View emits a `UiEvent.SubmitClicked`.\n2. The ViewModel consumes the event, does work, and emits a new `ViewState`.\n3. The View observes the state and re-renders. ",
+      "new": "Unidirectional Data Flow separates user actions from observable UI state. A UI callback can invoke a ViewModel function, the ViewModel updates state, and the UI renders that state. The direction and ownership of data matter more than choosing a generic event-bus API.",
+      "reason": "UDF does not require every interaction to use an event stream.",
+      "sources": [
+        "https://developer.android.com/topic/architecture/ui-layer/events"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. UDF does not require every interaction to use an event stream."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:direct-call-is-event-handler",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "The View never directly commands the ViewModel (`viewModel.doSubmit()`), and the ViewModel never directly commands the View (`view.showLoading()`). They communicate exclusively via Events and State.",
+      "new": "Calling `viewModel.doSubmit()` from a user-action callback is compatible with UDF. The ViewModel should expose state for the UI to render rather than retain a View reference and call `view.showLoading()`.",
+      "reason": "Official architecture guidance explicitly allows UI calls to ViewModel handler functions.",
+      "sources": [
+        "https://developer.android.com/topic/architecture/ui-layer/events"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Official architecture guidance explicitly allows UI calls to ViewModel handler functions."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:broadcast-registration",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "The Android OS uses EDA extensively via `Intents` and `BroadcastReceivers`. When the battery is low, the OS broadcasts `ACTION_BATTERY_LOW`. The OS doesn't know which apps care. If your app registered a receiver for that intent, it wakes up and reacts (e.g., pausing a background download).",
+      "new": "Android uses `Intents` and `BroadcastReceivers` for system and application notifications, such as `ACTION_BATTERY_LOW`. Delivery depends on registration, permissions, target/version restrictions and process state; a receiver does not grant unrestricted background execution, and delivery timing is not guaranteed.",
+      "reason": "System broadcasts are governed by delivery and background-execution restrictions.",
+      "sources": [
+        "https://developer.android.com/develop/background-work/background-tasks/broadcasts"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. System broadcasts are governed by delivery and background-execution restrictions."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:asynchrony-not-inherent",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "- **Asynchrony:** naturally fits with background processing and coroutines.",
+      "new": "- **Asynchronous integration:** A broker or asynchronous stream can let producers and consumers progress separately. EDA alone does not define scheduling: in-process event dispatch can also be synchronous.",
+      "reason": "Architecture style alone does not ensure asynchronous execution.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/event-driven"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Architecture style alone does not ensure asynchronous execution."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:event-storm-not-certain-lockup",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "- **Event Storms:** An event loop where Event A triggers B, B triggers C, and C triggers A. The app locks up immediately.",
+      "new": "- **Event feedback:** A cycle such as A → B → C → A can create repeated work or overload. Trace causation, bound retries and suppress unintended feedback; the severity depends on scheduling, capacity and handlers.",
+      "reason": "A feedback cycle is not guaranteed to lock an app immediately.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/event-driven"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. A feedback cycle is not guaranteed to lock an app immediately."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:event-vs-state-model",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "1.  **Are we using Events or State?** If an event is `CurrentTemperatureEvent(72)`, that is not an event. That is state. A new subscriber needs to know the temperature immediately, even if it didn't change recently. We should use `StateFlow` for state, and `SharedFlow` for one-time events.",
+      "new": "1.  **Does a subscriber need history or current state?** `TemperatureMeasured(72)` can be an event; a new subscriber may instead need the latest temperature. Use an explicit current-state model for that requirement. `StateFlow` holds a current value; `SharedFlow` broadcasts with configured replay and overflow. Neither is a durable event log.",
+      "reason": "The same observed value can participate in an event or state model; StateFlow versus SharedFlow is a delivery contract choice.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. The same observed value can participate in an event or state model; StateFlow versus SharedFlow is a delivery contract choice."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:subscription-lifecycle",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "2.  **What is the lifecycle of the subscriber?** If a Fragment subscribes to a global `UserRepository` event flow, but forgets to unsubscribe in `onDestroy`, the repository will leak the Fragment, crashing the app with an OOM. (Always use `repeatOnLifecycle` or `collectAsStateWithLifecycle`).",
+      "new": "2.  **Who owns collection?** A long-lived collection that retains a destroyed Fragment or its View can leak it. Collect UI state with `collectAsStateWithLifecycle`, or use `viewLifecycleOwner` and `repeatOnLifecycle` for a Fragment View. Scope cancellation and restarting must match the work; a retained reference does not inevitably cause an OOM.",
+      "reason": "Fragment View lifecycle differs from Fragment lifecycle; a leak is a risk rather than a guaranteed crash.",
+      "sources": [
+        "https://developer.android.com/topic/libraries/architecture/coroutines"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Fragment View lifecycle differs from Fragment lifecycle; a leak is a risk rather than a guaranteed crash."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:commands-can-use-messages",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "3.  **Is this a Command or an Event?** Does the publisher *expect* a specific outcome? If the `CheckoutScreen` fires an event, and the developer expects the `PaymentService` to catch it and process payment, it is a Command. If the `PaymentService` is refactored and stops listening, the app breaks silently. Commands require direct calls; Events are for side-effects.",
+      "new": "3.  **Is this a Command or an Event?** `ProcessPayment` requests an action from a responsible owner; `PaymentProcessed` reports an outcome. A command can use a direct call, RPC or queue. Required work needs explicit acceptance, failure and completion handling; an optional broadcast is not a substitute for that protocol.",
+      "reason": "Commands do not require direct calls and events can trigger required business work under an explicit protocol.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/event-driven",
+        "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Commands do not require direct calls and events can trigger required business work under an explicit protocol."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:observer-not-required",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "- **\"Event-Driven Architecture is the same as the Observer pattern.\"** Yes, structurally, EDA is implemented using the Observer pattern. EDA is the *architectural paradigm*; Observer is the *design pattern* used to build it.",
+      "new": "- **\"EDA is the Observer pattern.\"** Observer is one in-process implementation technique. EDA can also use brokers, durable logs and separate services with independent consumer lifecycles.",
+      "reason": "EDA is broader than a mandatory Observer implementation.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/event-driven"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. EDA is broader than a mandatory Observer implementation."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:callbacks-can-carry-events",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "- **\"Callbacks are events.\"** Callbacks (`onSuccess()`) are highly coupled point-to-point communication. Events are 1-to-many broadcasts.",
+      "new": "- **\"Callbacks cannot represent events.\"** A callback can notify a listener that something happened. Event meaning, routing cardinality, timing and durability are separate decisions; neither callbacks nor EDA imply one universal delivery topology.",
+      "reason": "Events are not defined solely by one-to-many delivery; callbacks can be event notifications.",
+      "sources": [
+        "https://developer.android.com/topic/architecture/ui-layer/events",
+        "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/event-driven"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Events are not defined solely by one-to-many delivery; callbacks can be event notifications."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:udf-answer",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "4.  **How does UDF (Unidirectional Data Flow) utilize the principles of EDA?**\n    In UDF, the View emits user intent as events. The ViewModel subscribes to these events and reduces them into a new State, which the View observes. They never command each other directly.",
+      "new": "4.  **How does UDF (Unidirectional Data Flow) utilize the principles of EDA?**\n    User actions reach a state owner, often through callbacks or ViewModel functions. The owner updates observable UI state and the UI renders it. UDF constrains direction and ownership; it does not forbid direct event-handler calls.",
+      "reason": "Keep the answer consistent with the official UDF function-call model.",
+      "sources": [
+        "https://developer.android.com/topic/architecture/ui-layer/events"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Keep the answer consistent with the official UDF function-call model."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:replay-not-durability-answer",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "6.  **If a publisher emits an event, but the primary subscriber hasn't initialized yet, how do you ensure the event isn't lost?**\n    Configure the `SharedFlow` with a `replay` value greater than 0, or cache the event if it's a critical application startup event, ensuring the subscriber receives it upon initialization.",
+      "new": "6.  **If a publisher emits an event, but the primary subscriber hasn't initialized yet, how do you ensure the event isn't lost?**\n    Choose a delivery contract. SharedFlow replay retains only its configured recent values within the live process and can replay them again to a restarted collector. Required work across process death needs durable intent, acknowledgment and duplicate handling; current state may be the appropriate UI model.",
+      "reason": "A replay slot alone does not ensure critical-event delivery across process death or prevent duplicates.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/",
+        "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. A replay slot alone does not ensure critical-event delivery across process death or prevent duplicates."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:sharedflow-stateflow-answer",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "3.  **In Kotlin, what is the difference between `StateFlow` and `SharedFlow` when used in an Event-Driven Architecture?**\n    `StateFlow` represents state (always has a value, emits the latest to new subscribers, conflates updates). `SharedFlow` is for one-time events (no default value, configurable replay, doesn't conflate unless configured).",
+      "new": "3.  **In Kotlin, what is the difference between `StateFlow` and `SharedFlow` when used in an Event-Driven Architecture?**\n    StateFlow exposes a current value and suppresses equal updates. SharedFlow broadcasts with configurable replay and buffering; subscribers may receive history or miss values according to that policy. Both live in memory, so neither alone provides durable exactly-once work.",
+      "reason": "SharedFlow is not intrinsically exactly-once or limited to one-time events.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. SharedFlow is not intrinsically exactly-once or limited to one-time events."
+    },
+    {
+      "id": "fundamentals:serialization:format-not-universal-guarantee",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "In mobile engineering, you cannot send a Kotlin `User` object directly to a Ruby backend. You must serialize it into a universal format (like JSON or Protocol Buffers) first.",
+      "new": "When a Kotlin client exchanges data with a Ruby backend, both sides need an agreed wire representation, such as JSON or Protocol Buffers. They must also agree on field meaning and evolution; serialization preserves the chosen data representation, not arbitrary object identity or executable behavior.",
+      "reason": "An agreed data schema matters; serialization is not universal object transfer.",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc8259",
+        "https://protobuf.dev/programming-guides/encoding/"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. An agreed data schema matters; serialization is not universal object transfer."
+    },
+    {
+      "id": "fundamentals:serialization:compatibility-not-any-new-field-crash",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "If your serialization mechanism is slow, the app drops frames while parsing network responses. If your serialization format is bloated, the user burns through their mobile data cap and waits longer for data to load. If your deserialization logic is brittle, a backend engineer adding a new field will crash your app.",
+      "new": "Parsing large responses on the UI thread can delay rendering. Payload size affects transfer and storage costs. Compatibility depends on the schema and parser policy: adding a field is safe for some readers and rejected by others, so test old-reader/new-writer combinations.",
+      "reason": "A new backend field does not universally crash clients; parser policies differ.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-json/kotlinx.serialization.json/-json-builder/ignore-unknown-keys.html",
+        "https://github.com/google/gson/blob/main/gson/src/main/java/com/google/gson/internal/bind/ReflectiveTypeAdapterFactory.java"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. A new backend field does not universally crash clients; parser policies differ."
+    },
+    {
+      "id": "fundamentals:serialization:size-and-speed-dependent",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "2.  **Size vs. Readability:** Text-based formats (JSON) are easy for humans to debug but consume more bytes. Binary formats (Protobuf) are unreadable without a schema but are incredibly compact and fast.",
+      "new": "2.  **Representation trade-off:** JSON is textual and can be inspected without a binary decoder. Binary formats can save space or parsing work for suitable data, but compactness and speed depend on schema, values, compression and implementation. Measure the actual payload.",
+      "reason": "Binary is not universally smaller or faster than textual formats.",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc8259",
+        "https://protobuf.dev/programming-guides/encoding/"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Binary is not universally smaller or faster than textual formats."
+    },
+    {
+      "id": "fundamentals:serialization:protobuf-wire-fields",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "The compiler generates Kotlin/Java classes from this file. The resulting payload over the wire is stripped of all keys (`\"full_name\"` is not sent, only the data and the index `2` are sent), making it magnitudes smaller.",
+      "new": "The compiler generates classes and builders from the schema. Protobuf binary fields carry a field number and wire type rather than textual field names. Strings, lengths and other data still occupy bytes; size savings depend on the message and comparison format, rather than a fixed orders-of-magnitude guarantee.",
+      "reason": "Explain actual Protobuf tags and remove an unsupported universal size claim.",
+      "sources": [
+        "https://protobuf.dev/programming-guides/encoding/"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Explain actual Protobuf tags and remove an unsupported universal size claim."
+    },
+    {
+      "id": "fundamentals:serialization:ipc-and-parcel-purpose",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "Serialization isn't just for networking; it's how Android components talk to each other. When you pass data between Activities via an `Intent`, it crosses process boundaries (via the Android Binder). The data must be serialized.",
+      "new": "Android also flattens values for Binder transactions and Activity intents, including Activity launches within one app. Parcelable is designed for Android IPC and transient state; Parcel bytes are not a supported general-purpose disk or network format.",
+      "reason": "An Intent does not mean both Activities are in different processes; Parcel is not a stable storage format.",
+      "sources": [
+        "https://developer.android.com/guide/components/activities/parcelables-and-bundles"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. An Intent does not mean both Activities are in different processes; Parcel is not a stable storage format."
+    },
+    {
+      "id": "fundamentals:serialization:serializable-performance-not-contract",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "Historically, Android used `Serializable` (standard Java, uses slow reflection). The production solution is `Parcelable`.",
+      "new": "Java Serializable and Android Parcelable have different contracts and implementations. Parcelable defines how fields are written to and restored from a Parcel; `@Parcelize` generates that code. Java serialization supports object graphs and customization. Avoid universal speed claims and benchmark representative data when the choice affects performance.",
+      "reason": "Remove unsupported claims that one mechanism universally has a fixed reflection or speed cost.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/21/docs/specs/serialization/serial-arch.html",
+        "https://developer.android.com/guide/components/activities/parcelables-and-bundles"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Remove unsupported claims that one mechanism universally has a fixed reflection or speed cost."
+    },
+    {
+      "id": "fundamentals:serialization:protobuf-tradeoff",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "- *Advantages:* Extremely small payloads. Blazing fast parsing (it's just reading byte offsets). Strong typing guaranteed across backend and mobile.",
+      "new": "- *Advantages:* Numeric field tags and typed generated APIs can reduce representation overhead and support schema-aware tooling. The wire format includes tags, variable-length values and lengths; parsing is not simply reading fixed byte offsets, and a schema cannot guarantee business correctness.",
+      "reason": "Protobuf parsing is not merely fixed-offset access; schemas do not universally guarantee correctness.",
+      "sources": [
+        "https://protobuf.dev/programming-guides/encoding/"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Protobuf parsing is not merely fixed-offset access; schemas do not universally guarantee correctness."
+    },
+    {
+      "id": "fundamentals:serialization:serializable-tradeoff",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "- *Serializable:* Zero boilerplate, but uses massive amounts of reflection. Causes GC thrashing and ANRs if passing large objects.",
+      "new": "- *Serializable:* The marker interface can be convenient for supported object graphs; custom handling, class compatibility and runtime cost still need consideration. Large graphs may allocate heavily, but GC thrashing or ANRs are not inevitable.",
+      "reason": "Serializable costs are workload-dependent and may require custom handling.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/21/docs/specs/serialization/serial-arch.html"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Serializable costs are workload-dependent and may require custom handling."
+    },
+    {
+      "id": "fundamentals:serialization:parcelable-not-limits-solution",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "- *Parcelable:* Highly optimized for Android IPC memory limits.",
+      "new": "- *Parcelable:* An Android IPC representation with generated or manual field handling. It does not remove Binder transaction-size constraints and should not be used as a long-term persistence format.",
+      "reason": "Parcelable does not solve Binder limits or supply stable persistence.",
+      "sources": [
+        "https://developer.android.com/guide/components/activities/parcelables-and-bundles",
+        "https://developer.android.com/reference/android/os/TransactionTooLargeException"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Parcelable does not solve Binder limits or supply stable persistence."
+    },
+    {
+      "id": "fundamentals:serialization:unknown-key-defaults",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "- **The Strict Parser Crash:** The backend adds a new field `{\"is_premium\": true}` to the JSON response. The mobile JSON parser (e.g., Gson) encounters an unknown key and throws an exception, crashing the app. *Parsers must be configured to ignore unknown keys for forward compatibility.*",
+      "new": "- **Unknown-field policy:** Gson normally skips unknown object fields, and Moshi normally ignores them unless configured to fail. Kotlinx Json rejects unknown keys by default; configure `ignoreUnknownKeys` where additive-field compatibility is intended. Test the exact adapter and schema rather than assuming every parser is strict.",
+      "reason": "The original incorrectly identifies Gson as rejecting unknown fields by default.",
+      "sources": [
+        "https://github.com/google/gson/blob/main/gson/src/main/java/com/google/gson/internal/bind/ReflectiveTypeAdapterFactory.java",
+        "https://github.com/square/moshi/blob/master/README.md",
+        "https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-json/kotlinx.serialization.json/-json-builder/ignore-unknown-keys.html"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. The original incorrectly identifies Gson as rejecting unknown fields by default."
+    },
+    {
+      "id": "fundamentals:serialization:binder-shared-buffer",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "- **The Parcelable TransactionTooLargeException:** Serializing a 2MB image or a massive list of data into an Intent. The Android Binder has a strict ~1MB limit per process. Passing massive serialized objects between activities crashes the app. (Fix: Pass IDs and load data from a shared Repository).",
+      "new": "- **Oversized Binder transactions:** Binder has a currently documented 1 MB transaction buffer shared by transactions in progress for a process. A large payload, or concurrent smaller transactions, can exceed available capacity. The resulting failure depends on the calling API and handling; it is not automatically an app crash. Prefer small IDs or handles and load bulk data from a suitable store.",
+      "reason": "The buffer is shared and its exhaustion is not a universal per-payload threshold or guaranteed crash.",
+      "sources": [
+        "https://developer.android.com/reference/android/os/TransactionTooLargeException"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. The buffer is shared and its exhaustion is not a universal per-payload threshold or guaranteed crash."
+    },
+    {
+      "id": "fundamentals:serialization:format-selection",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "1.  **Do we own both ends?** If we own the backend and the mobile app, and the data payloads are massive (like a real-time multiplayer game), JSON is a massive waste of resources. We should mandate Protocol Buffers or FlatBuffers.",
+      "new": "1.  **What do measurements and compatibility require?** Owning both ends allows schema and transport changes, but does not mandate Protobuf or FlatBuffers. Compare actual transfer size, parse/access cost, evolution, tooling and operational support before changing formats.",
+      "reason": "Ownership and large payloads alone do not prove JSON wasteful or mandate a binary format.",
+      "sources": [
+        "https://protobuf.dev/programming-guides/encoding/",
+        "https://flatbuffers.dev/white_paper/"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Ownership and large payloads alone do not prove JSON wasteful or mandate a binary format."
+    },
+    {
+      "id": "fundamentals:serialization:codegen-tradeoff",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "2.  **Is code generation optimal?** Reflection-based parsers (Gson) are slow at runtime. Code-generation parsers (Moshi with codegen, Kotlinx.Serialization) are fast at runtime but increase build times. For massive apps, the runtime speed is usually prioritized.",
+      "new": "2.  **Which adapter runs in production?** Code generation can avoid runtime reflective field discovery; reflection can reduce generated-code setup. Actual speed, code size and build impact depend on models and adapters. Benchmark before treating generation as universally faster.",
+      "reason": "Code generation is an implementation trade-off, not a universal runtime performance guarantee.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-core/kotlinx.serialization/-serializable/",
+        "https://github.com/square/moshi/blob/master/README.md"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Code generation is an implementation trade-off, not a universal runtime performance guarantee."
+    },
+    {
+      "id": "fundamentals:serialization:json-data-model",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "- **\"JSON is an object.\"** False. JSON is a String. It only becomes an object after your CPU spends millions of cycles parsing it.",
+      "new": "- **\"JSON text is already a Kotlin object.\"** JSON is a textual interchange format whose values can include objects, arrays and scalars. A reader must parse the text before using a typed Kotlin model; the cost depends on the input and implementation.",
+      "reason": "JSON is not exclusively a string-valued model or exclusively an object, and cycle counts are not fixed.",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc8259"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. JSON is not exclusively a string-valued model or exclusively an object, and cycle counts are not fixed."
+    },
+    {
+      "id": "fundamentals:serialization:parsing-dispatcher",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "- **\"Serialization is fast enough that it doesn't matter.\"** False. Deserializing a 500kb JSON payload on the Main Thread is a guaranteed way to drop 10-20 frames and cause visible UI stutter. Always deserialize on a background thread (`Dispatchers.IO`).",
+      "new": "- **\"Serialization cost never matters.\"** Large or frequent decoding can delay UI work, but a 500 KB response does not imply a fixed number of dropped frames. Measure it. Move substantial CPU decoding to an appropriate background dispatcher, commonly Default; use IO for blocking I/O. A suspend function alone does not move work off Main.",
+      "reason": "Remove invented frame counts and the rule that all decoding belongs on Dispatchers.IO.",
+      "sources": [
+        "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Remove invented frame counts and the rule that all decoding belongs on Dispatchers.IO."
+    },
+    {
+      "id": "fundamentals:serialization:parcelable-question",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "1.  Why is Android's `Parcelable` significantly faster than Java's `Serializable`?",
+      "new": "1.  How do Android Parcelable and Java Serializable differ, and how should you compare their costs?",
+      "reason": "Do not bake an unmeasured speed guarantee into the question.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/21/docs/specs/serialization/serial-arch.html",
+        "https://developer.android.com/guide/components/activities/parcelables-and-bundles"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Do not bake an unmeasured speed guarantee into the question."
+    },
+    {
+      "id": "fundamentals:serialization:parcelable-answer",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "1. **Why is Android's `Parcelable` significantly faster than Java's `Serializable`?**\n   `Serializable` relies on heavy Java reflection to inspect object graphs at runtime, whereas `Parcelable` requires explicit, compiled code to write/read specific fields directly to a memory buffer.",
+      "new": "1. **How do Android Parcelable and Java Serializable differ, and how should you compare their costs?**\n   Parcelable writes a defined representation to an Android Parcel; Parcelize can generate the field-handling code. Java serialization traverses supported object graphs with its own compatibility and customization rules. Compare representative models and usage rather than assuming a fixed speed ratio; keep IPC payloads small.",
+      "reason": "Mirror the corrected performance and contract distinction.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/21/docs/specs/serialization/serial-arch.html",
+        "https://developer.android.com/guide/components/activities/parcelables-and-bundles"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Mirror the corrected performance and contract distinction."
+    },
+    {
+      "id": "fundamentals:serialization:unknown-keys-answer",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "2. **Explain the concept of Forward Compatibility in JSON parsing. How do you prevent an old app from crashing when a new field is added?**\n   Forward compatibility means an older client can handle newer data structures. You prevent crashes by configuring your JSON parser (e.g., Moshi) to explicitly ignore unknown keys rather than throwing an exception.",
+      "new": "2. **Explain the concept of Forward Compatibility in JSON parsing. How do you prevent an old app from crashing when a new field is added?**\n   Test that the old reader accepts the intended new payload. Gson and Moshi generally ignore unknown keys; Kotlinx Json requires an appropriate unknown-key policy. Ignoring extra fields does not make removed required fields or incompatible type changes safe.",
+      "reason": "Default unknown-key handling differs among adapters; additive compatibility is not all schema compatibility.",
+      "sources": [
+        "https://github.com/google/gson/blob/main/gson/src/main/java/com/google/gson/internal/bind/ReflectiveTypeAdapterFactory.java",
+        "https://github.com/square/moshi/blob/master/README.md",
+        "https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-json/kotlinx.serialization.json/-json-builder/ignore-unknown-keys.html"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Default unknown-key handling differs among adapters; additive compatibility is not all schema compatibility."
+    },
+    {
+      "id": "fundamentals:serialization:binder-answer",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "4. **Why must you never pass a massive serialized object (like a Bitmap) between Activities via an Intent? What is the architectural solution?**\n   Intents pass through the OS Binder, which has a strict ~1MB limit per process; exceeding it causes a `TransactionTooLargeException` crash. The solution is to pass a lightweight ID and read the data from a shared cache or Repository.",
+      "new": "4. **Why must you never pass a massive serialized object (like a Bitmap) between Activities via an Intent? What is the architectural solution?**\n   Activity launch data travels through Binder, whose currently documented 1 MB buffer is shared across in-progress transactions for a process. Avoid bulk payloads; pass a small stable ID or suitable handle and load the data from a store with defined lifetime and access control. Failure is not a guaranteed crash at one fixed object size.",
+      "reason": "Mirror shared-buffer and failure semantics in the answer.",
+      "sources": [
+        "https://developer.android.com/reference/android/os/TransactionTooLargeException",
+        "https://developer.android.com/guide/components/activities/parcelables-and-bundles"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Mirror shared-buffer and failure semantics in the answer."
+    },
+    {
+      "id": "fundamentals:serialization:codegen-answer",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "5. **What is the difference between Reflection-based serialization (e.g., standard Gson) and Code-Generation serialization (e.g., Kotlinx.serialization)?**\n   Reflection parses objects dynamically at runtime, which is CPU intensive. Code-generation creates static parsing code at compile time, resulting in much faster runtime performance at the cost of slightly longer build times.",
+      "new": "5. **What is the difference between Reflection-based serialization (e.g., standard Gson) and Code-Generation serialization (e.g., Kotlinx.serialization)?**\n   Reflective adapters discover or access members at runtime; generated serializers encode model handling ahead of time. Setup, supported model features, generated code and runtime costs differ. Test the actual adapters and payloads rather than assuming a universal performance result.",
+      "reason": "Replace the universal performance assertion with the supported implementation distinction.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-core/kotlinx.serialization/-serializable/",
+        "https://github.com/square/moshi/blob/master/README.md"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Replace the universal performance assertion with the supported implementation distinction."
+    },
+    {
+      "id": "fundamentals:serialization:flatbuffers-answer",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "9. **What is FlatBuffers, and how does its \"zero-copy\" deserialization differ from standard Protobufs or JSON?**\n   FlatBuffers allows accessing serialized data directly from the byte buffer without parsing it into intermediate objects in memory, skipping the CPU and memory allocation costs entirely.",
+      "new": "9. **What is FlatBuffers, and how does its \"zero-copy\" deserialization differ from standard Protobufs or JSON?**\n   FlatBuffers supports reading fields from a serialized buffer without first constructing a complete intermediate object graph. Buffer access, bounds/validity checks and application work still cost CPU; APIs that materialize strings or copy data may allocate. Keep the buffer alive for the views that use it.",
+      "reason": "Direct buffer access does not skip all CPU or allocations.",
+      "sources": [
+        "https://flatbuffers.dev/white_paper/"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Direct buffer access does not skip all CPU or allocations."
+    },
+    {
+      "id": "fundamentals:serialization:parsing-answer",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "10. **Describe the impact of performing JSON deserialization on the Main Thread vs the IO Thread.**\n    Deserializing a large payload on the Main Thread blocks the UI, causing frame drops (jank) or ANRs. Deserializing on the IO Thread frees the Main Thread to maintain 60fps animations while the data is processed.",
+      "new": "10. **Describe the impact of performing JSON deserialization on the Main Thread vs the IO Thread.**\n    Substantial decoding on Main delays other UI work. Move CPU-heavy decoding to a suitable background dispatcher, commonly Default; use IO for blocking I/O and measure the complete pipeline. Offloading improves responsiveness but does not guarantee a specific frame rate or eliminate contention.",
+      "reason": "Do not promise 60fps or classify all CPU parsing as blocking I/O.",
+      "sources": [
+        "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. Do not promise 60fps or classify all CPU parsing as blocking I/O."
+    },
+    {
+      "id": "fundamentals:serialization:proxy-answer",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "8. **How does a tool like Charles Proxy intercept and display HTTPS traffic, and why is this harder to do if you use Protocol Buffers instead of JSON?**\n   Charles acts as a Man-in-the-Middle by replacing SSL certificates. It's harder with Protobufs because the intercepted binary payload is unreadable without the specific `.proto` schema file to decode it.",
+      "new": "8. **How does a tool like Charles Proxy intercept and display HTTPS traffic, and why is this harder to do if you use Protocol Buffers instead of JSON?**\n   An inspection proxy can terminate and re-establish TLS only when the test client trusts its certificate configuration and no other policy blocks it. JSON text is usually easier to inspect; Protobuf values need schema-aware interpretation to recover field names and types. Binary encoding is not encryption.",
+      "reason": "TLS interception is conditional on trust and client policy; Protobuf is not confidentiality protection.",
+      "sources": [
+        "https://developer.android.com/privacy-and-security/security-config",
+        "https://protobuf.dev/programming-guides/encoding/"
+      ],
+      "status": "approved",
+      "validation": "Checked against the cited primary API, specification or owner documentation; exact original text matches once. TLS interception is conditional on trust and client policy; Protobuf is not confidentiality protection."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:bus-types-and-ownership-answer",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "1.  **Why has the Android community moved away from global Event Buses toward scoped `SharedFlow`?**\n    Global event buses lead to spaghetti code, are not type-safe, and make tracking execution flow nearly impossible. Scoped `SharedFlow` provides type safety, scoped lifecycles, and predictable domains.",
+      "new": "1.  **Why has the Android community moved away from global Event Buses toward scoped `SharedFlow`?**\n    Domain-scoped typed streams can narrow dependencies and make ownership explicit. Global buses can also use typed event classes; SharedFlow does not automatically choose a lifecycle or prevent broad coupling. The publisher and collection owners still define scope, cancellation and replay policy.",
+      "reason": "Do not claim every global bus is untyped or that SharedFlow chooses the owner lifecycle.",
+      "sources": [
+        "https://github.com/greenrobot/EventBus",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/"
+      ],
+      "status": "approved",
+      "validation": "Primary-source check and complete-answer replay verified. Do not claim every global bus is untyped or that SharedFlow chooses the owner lifecycle."
+    },
+    {
+      "id": "fundamentals:event-driven-architecture:command-event-naming-answer",
+      "path": "engineering-fundamentals/event-driven-architecture.md",
+      "old": "7.  **Why should events be named in the past tense? (e.g., `PaymentProcessed` vs `ProcessPayment`).**\n    To reinforce the conceptual model that events represent immutable facts of the past. Present-tense verbs imply commands, which violate the decoupling principle of EDA.",
+      "new": "7.  **Why should events be named in the past tense? (e.g., `PaymentProcessed` vs `ProcessPayment`).**\n    Past-tense names make it clear that the message reports an occurrence. ProcessPayment instead requests work from an owner. Commands can coexist with events in EDA; the name should expose the intended responsibility and outcome contract.",
+      "reason": "Commands do not violate EDA merely by existing.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/event-driven"
+      ],
+      "status": "approved",
+      "validation": "Primary-source check and complete-answer replay verified. Commands do not violate EDA merely by existing."
+    },
+    {
+      "id": "fundamentals:serialization:missing-field-policy",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "- **Implicit Nulls:** The backend drops a field from the JSON. The Kotlin parser creates the object using reflection and leaves a non-nullable Kotlin `String` as `null` in memory. The moment the app touches it, a `NullPointerException` brings the app down.",
+      "new": "- **Missing, null and unsafe reflection:** Behavior depends on the adapter. Kotlinx generated serializers reject missing required properties under their default policy; nullable without a default is still required with the default explicitNulls setting. Reflective Gson may create values that violate Kotlin nullability, so validate its output or use a Kotlin-aware adapter. Defaults handle omission only where the serializer contract defines them.",
+      "reason": "Not every Kotlin parser uses unsafe reflection, and nullable alone does not normally make a Kotlinx property optional.",
+      "sources": [
+        "https://kotlinlang.org/docs/serialization-customization-options.html#optional-properties",
+        "https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-json/kotlinx.serialization.json/-json-builder/explicit-nulls.html",
+        "https://github.com/google/gson/blob/main/README.md"
+      ],
+      "status": "approved",
+      "validation": "Primary-source check and complete-answer replay verified. Not every Kotlin parser uses unsafe reflection, and nullable alone does not normally make a Kotlinx property optional."
+    },
+    {
+      "id": "fundamentals:serialization:protobuf-size-question",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "3.  What are Protocol Buffers, and why do they generate significantly smaller network payloads than JSON?",
+      "new": "3.  How do Protocol Buffers encode fields, and when can they reduce payload size compared with JSON?",
+      "reason": "Payload-size savings are dependent on the data and encoding, not a universal guarantee.",
+      "sources": [
+        "https://protobuf.dev/programming-guides/encoding/"
+      ],
+      "status": "approved",
+      "validation": "Primary-source check and complete-answer replay verified. Payload-size savings are dependent on the data and encoding, not a universal guarantee."
+    },
+    {
+      "id": "fundamentals:serialization:protobuf-size-answer",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "3. **What are Protocol Buffers, and why do they generate significantly smaller network payloads than JSON?**\n   Protobuf is a binary serialization format. It is smaller because it omits text-based keys entirely, transmitting only the raw binary data alongside a numeric index defined by a shared `.proto` schema.",
+      "new": "3. **How do Protocol Buffers encode fields, and when can they reduce payload size compared with JSON?**\n   Protobuf binary fields use numeric field tags and wire types instead of textual names, with encodings such as varints and length-delimited values. This can save space for suitable schemas and values. Compare representative payloads, including compression; a fixed or universal size saving is not guaranteed.",
+      "reason": "Align the answer with the actual tag/value wire format and workload-dependent size benefit.",
+      "sources": [
+        "https://protobuf.dev/programming-guides/encoding/"
+      ],
+      "status": "approved",
+      "validation": "Primary-source check and complete-answer replay verified. Align the answer with the actual tag/value wire format and workload-dependent size benefit."
+    },
+    {
+      "id": "fundamentals:serialization:missing-field-answer",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "6. **If a JSON payload omits a field that is defined as non-nullable in your Kotlin `data class`, what happens during deserialization? How do you defend against this?**\n   Depending on the parser, it may crash immediately (Moshi) or silently leave a null in a non-nullable field via reflection/Unsafe (Gson), causing a delayed NullPointerException. Defend by defining optional fields with nullable types (`?`) or providing default values.",
+      "new": "6. **If a JSON payload omits a field that is defined as non-nullable in your Kotlin `data class`, what happens during deserialization? How do you defend against this?**\n   The adapter and configuration decide. Kotlinx normally rejects a missing required field; a declared default makes it optional, while nullable without a default is still required with default explicitNulls. Kotlin-aware Moshi and reflective Gson have different construction rules. Model omission explicitly, validate inputs, and test missing, explicit-null and unknown-field cases separately.",
+      "reason": "Nullable types alone do not solve missing fields under the default Kotlinx contract.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-json/kotlinx.serialization.json/-json-builder/explicit-nulls.html",
+        "https://kotlinlang.org/docs/serialization-customization-options.html#optional-properties",
+        "https://github.com/square/moshi/blob/master/README.md"
+      ],
+      "status": "approved",
+      "validation": "Primary-source check and complete-answer replay verified. Nullable types alone do not solve missing fields under the default Kotlinx contract."
+    },
+    {
+      "id": "fundamentals:serialization:json-cache-query-answer",
+      "path": "engineering-fundamentals/serialization.md",
+      "old": "7. **Explain the tradeoffs of caching raw serialized JSON strings vs caching parsed domain objects in a local database.**\n   Caching raw JSON avoids repeated serialization/deserialization CPU costs if you just need to return the exact response later, but it makes querying individual fields impossible. Caching domain objects in a structured DB (like Room) allows complex queries but requires more upfront processing.",
+      "new": "7. **Explain the tradeoffs of caching raw serialized JSON strings vs caching parsed domain objects in a local database.**\n   Retaining raw JSON can avoid decoding and re-encoding a response that will be reused unchanged; reading it as a domain model still requires decoding. Structured columns support explicit constraints and indexes. JSON fields are also queryable where the store provides JSON functions, including supported SQLite builds; compare query/index support and measured processing cost.",
+      "reason": "Raw JSON is not universally unqueryable, and later domain reads still pay decoding cost.",
+      "sources": [
+        "https://www.sqlite.org/json1.html"
+      ],
+      "status": "approved",
+      "validation": "Primary-source check and complete-answer replay verified. Raw JSON is not universally unqueryable, and later domain reads still pay decoding cost."
+    }
+  ],
+  "notes": [
+    "Original source files remain untouched. Four complete chapters and their Answer Keys were reviewed before authoring.",
+    "The queues AnalyticsTracker correction is explicitly best-effort: true means admission, not remote delivery; an API failure terminates its consumer under the supplied owner policy.",
+    "Queues AnalyticsTracker.consume() must be invoked by one explicit owning coroutine. The example does not launch from construction; its caller observes completion/failure. No kotlinc executable was available in the agent shell; parent validation may supply an existing compiler harness.",
+    "Independent batch review repaired nine heading-only replacements to replace whole Answer Key blocks; seven additional records align residual EDA/serialization answers with the corrected contracts. Queue scene uses supported runtime role and backward reply/ack encoding; state graph validates general events, not only completions."
+  ]
+}

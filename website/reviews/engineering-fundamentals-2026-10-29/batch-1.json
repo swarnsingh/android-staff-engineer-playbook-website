@@ -1,0 +1,1165 @@
+{
+  "chapters": [
+    {
+      "path": "engineering-fundamentals/complexity-analysis.md",
+      "intro": "Count growing work, expose hidden boundary costs, and separate asymptotic bounds from measured UI deadlines.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/app/SharedPreferencesImpl.java",
+        "https://developer.android.com/reference/android/content/SharedPreferences.Editor",
+        "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs",
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/StringBuilder.html",
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/ArrayList.html",
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/HashMap.html",
+        "https://github.com/androidx/androidx/blob/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/DiffUtil.java",
+        "https://www.sqlite.org/queryplanner.html",
+        "https://xlinux.nist.gov/dads/HTML/bigOnotation.html"
+      ]
+    },
+    {
+      "path": "engineering-fundamentals/latency-vs-throughput.md",
+      "intro": "Measure request time and completion rate separately, then reason about queueing, tails and saturation.",
+      "sources": [
+        "https://aws.amazon.com/builders-library/caching-challenges-and-strategies/",
+        "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/",
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work",
+        "https://developer.android.com/develop/ui/compose/state",
+        "https://developer.android.com/kotlin/coroutines/coroutines-best-practices",
+        "https://developer.android.com/topic/performance/issues/launch-time",
+        "https://developer.android.com/topic/performance/rendering",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/coroutine-scope.html",
+        "https://research.google/pubs/the-tail-at-scale/",
+        "https://sre.google/sre-book/monitoring-distributed-systems/",
+        "https://web.eng.ucsd.edu/~massimo/ECE158A/Handouts_files/Little.pdf",
+        "https://xlinux.nist.gov/dads/HTML/bigOnotation.html"
+      ]
+    },
+    {
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "intro": "Track completion, thread occupancy and task lifetime without assuming that suspend means non-blocking.",
+      "sources": [
+        "https://developer.android.com/kotlin/coroutines/coroutines-best-practices",
+        "https://developer.android.com/reference/android/os/AsyncTask",
+        "https://developer.android.com/topic/libraries/architecture/coroutines",
+        "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs",
+        "https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/coroutine-scope.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/ensure-active.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout.html",
+        "https://kotlinlang.org/docs/coroutines-basics.html",
+        "https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/",
+        "https://nginx.org/en/docs/beginners_guide.html",
+        "https://nodejs.org/learn/asynchronous-work/dont-block-the-event-loop"
+      ]
+    },
+    {
+      "path": "engineering-fundamentals/coupling-vs-cohesion.md",
+      "intro": "Design boundaries around changes, dependency contracts and the work that belongs together.",
+      "sources": [
+        "https://developer.android.com/topic/libraries/view-binding",
+        "https://developer.android.com/training/dependency-injection",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html",
+        "https://kotlinlang.org/docs/visibility-modifiers.html",
+        "https://square.github.io/retrofit/"
+      ]
+    },
+    {
+      "path": "engineering-fundamentals/immutability.md",
+      "intro": "Follow references, published versions and update observation to build state readers can trust.",
+      "sources": [
+        "https://aws.amazon.com/builders-library/caching-challenges-and-strategies/",
+        "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping",
+        "https://developer.android.com/develop/ui/compose/state",
+        "https://developer.android.com/topic/architecture/ui-layer",
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/HashMap.html",
+        "https://docs.oracle.com/javase/specs/jls/se25/html/jls-17.html",
+        "https://github.com/Kotlin/kotlinx.collections.immutable",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/",
+        "https://kotlinlang.org/docs/collections-overview.html",
+        "https://kotlinlang.org/docs/data-classes.html",
+        "https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html"
+      ]
+    }
+  ],
+  "corrections": [
+    {
+      "id": "fundamentals:CX01",
+      "path": "engineering-fundamentals/complexity-analysis.md",
+      "old": "Donald Knuth introduced it to computer science in the 1970s.",
+      "new": "Knuth's 1976 paper clarified the use of O, Omega and Theta notation in algorithm analysis.",
+      "reason": "A dated paper supports the notation discussion without making an unsupported first-use claim.",
+      "sources": [
+        "https://xlinux.nist.gov/dads/HTML/bigOnotation.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:CX02",
+      "path": "engineering-fundamentals/complexity-analysis.md",
+      "old": "1.  **Focus on the Growth Rate:** Complexity is about *scaling*, not absolute speed. An $O(N^2)$ algorithm might be faster than an $O(N)$ algorithm for $N=10$, but the $O(N)$ algorithm will always win as $N \\rightarrow \\infty$.",
+      "new": "1.  **Focus on the Growth Rate:** Complexity describes scaling, not measured speed. Big-O is an asymptotic upper bound, so an algorithm with linear growth is also O(N²). Compare tight bounds, such as Θ(N) and Θ(N²), before claiming that one eventually grows more slowly.",
+      "reason": "Big-O alone cannot establish the claimed eventual ordering.",
+      "sources": [
+        "https://xlinux.nist.gov/dads/HTML/bigOnotation.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:CX03",
+      "path": "engineering-fundamentals/complexity-analysis.md",
+      "old": "`HashMap.get()`, reading an array index.",
+      "new": "Average `HashMap.get()` with well-distributed hashes; reading an array index.",
+      "reason": "Hash lookup needs the documented hash-distribution assumption.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/HashMap.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:CX04",
+      "path": "engineering-fundamentals/complexity-analysis.md",
+      "old": "Binary search, looking up a record in an indexed SQLite table.",
+      "new": "Binary search; locating an indexed key before accounting for matching output rows.",
+      "reason": "An indexed multirow query also pays for returned records.",
+      "sources": [
+        "https://www.sqlite.org/queryplanner.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:CX05",
+      "path": "engineering-fundamentals/complexity-analysis.md",
+      "old": "**Diffing Lists for RecyclerView**\n\nBefore `DiffUtil`, updating a `RecyclerView` often meant calling `notifyDataSetChanged()`, forcing the entire list to re-render: $O(N)$ layout passes.\n\nTo be smarter, you could compare the old list and new list to find the exact insertions and deletions. If you do this naively (nested loops comparing every old item to every new item), it's $O(N^2)$. For a list of 10,000 items, that's 100,000,000 operations—a guaranteed ANR.\n\nAndroid's `DiffUtil` uses Eugene Myers' difference algorithm to calculate the minimal number of updates in $O(N + D^2)$ time (where $N$ is total items and $D$ is the number of modifications). By offloading this to a background thread, the UI thread only receives the exact updates, keeping the render pass $O(D)$.\n\n",
+      "new": "**Diffing Lists for RecyclerView**\n\n`notifyDataSetChanged()` invalidates the data set; RecyclerView must rebind and relayout visible views, not perform one layout pass for every item in the full list.\n\nA naive old-by-new comparison can perform N×M comparisons. At 10,000 items on each side that is 100,000,000 comparisons; whether this causes an ANR depends on the work, calling thread and elapsed time.\n\n`DiffUtil` documents O(N) space and expected O(N + D²) time for its Myers-based difference calculation. Move detection can add O(M×N) work for added and removed items. Calculate large diffs off the main thread; precise adapter updates do not guarantee O(D) layout or drawing time.\n\n",
+      "reason": "Correct DiffUtil bounds, move-detection cost and unsupported rendering/ANR guarantees.",
+      "sources": [
+        "https://github.com/androidx/androidx/blob/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/DiffUtil.java",
+        "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:CX06",
+      "path": "engineering-fundamentals/complexity-analysis.md",
+      "old": "By adding an index in Room, SQLite builds a B-Tree. The exact same query now executes in $O(\\log N)$ time. For 1 million users, instead of 1,000,000 reads, it takes roughly 20 reads to find the data.",
+      "new": "The index lets SQLite seek the matching key range. If K rows match, it must still visit and return those rows; a non-covering index also fetches table records. SQLite models this example as roughly (K + 1) log N work, not a fixed 20 disk reads. Inspect the actual query plan and selectivity.",
+      "reason": "The original confuses a binary-search comparison count with B-tree I/O and ignores output cardinality.",
+      "sources": [
+        "https://www.sqlite.org/queryplanner.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:CX07",
+      "path": "engineering-fundamentals/complexity-analysis.md",
+      "old": "- **String Concatenation in Loops:** Strings are immutable in Kotlin/Java. Doing `str += \"a\"` in a loop of size $N$ doesn't just take $O(N)$ time; it creates a new string object and copies the characters every iteration, making it $O(N^2)$ time and $O(N^2)$ space (garbage collection nightmare). (Fix: Use `StringBuilder`).",
+      "new": "- **String Concatenation in Loops:** Repeatedly appending a fixed-size fragment to an immutable String can copy 1 + 2 + … + N characters: O(N²) total copying and allocation. Peak live storage can remain O(N) if older strings are not retained. Use a StringBuilder to avoid copying the full prefix on every append.",
+      "reason": "Distinguish cumulative allocation from peak auxiliary space.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/StringBuilder.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:CX08",
+      "path": "engineering-fundamentals/complexity-analysis.md",
+      "old": "An $O(N)$ algorithm that makes an IPC call (like reading `SharedPreferences` or querying the `ContentResolver`) on each iteration will freeze the app.",
+      "new": "An O(N) loop that performs ContentResolver IPC or repeated storage work can have a large elapsed cost. SharedPreferences reads normally use an in-process map, although they can wait for its initial load; they are not themselves Binder IPC.",
+      "reason": "SharedPreferences getters were incorrectly classified as IPC.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/app/SharedPreferencesImpl.java"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:CX09",
+      "path": "engineering-fundamentals/complexity-analysis.md",
+      "old": "`StringBuilder` modifies an underlying character array directly ($O(1)$ per append), whereas `String` is immutable, meaning every append creates a new copy of the entire string up to that point ($O(K)$ per iteration), leading to an $O(N^2)$ total runtime.",
+      "new": "For fixed-size fragments, a growing StringBuilder has amortized constant append cost; a resize can copy the buffer. Repeated immutable-string concatenation copies the growing prefix, giving O(N²) total copied characters for this loop. Appending a fragment of length K still costs at least O(K).",
+      "reason": "Append cost depends on fragment length and occasional resizing.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/StringBuilder.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:CX10",
+      "path": "engineering-fundamentals/complexity-analysis.md",
+      "old": "Both perform disk I/O. `apply()` does it asynchronously in the background (returning instantly, appearing $O(1)$ to the calling thread), while `commit()` does it synchronously, blocking the thread until disk I/O completes ($O(1)$ disk operation but with massive constant-time overhead).",
+      "new": "Both first apply edits to the in-memory preferences. apply() schedules persistence asynchronously and does not report a disk-write result; commit() waits for persistence and returns success. Neither API promises O(1) caller work or an instant return: cost depends on edits, map size, synchronization and persistence work.",
+      "reason": "The APIs specify persistence behavior, not constant-time complexity.",
+      "sources": [
+        "https://developer.android.com/reference/android/content/SharedPreferences.Editor",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/app/SharedPreferencesImpl.java"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:CX11",
+      "path": "engineering-fundamentals/complexity-analysis.md",
+      "old": "Adding an element to an `ArrayList` is usually $O(1)$. When it hits capacity, it must copy all elements to a new array ($O(N)$). However, because it doubles in size, this expensive operation happens rarely, so the *average* cost per addition over time remains $O(1)$.",
+      "new": "Appending is amortized O(1): occasional growth copies existing elements, but a sequence of N appends takes O(N) total work. The Java API does not specify a doubling growth factor. Amortized cost is a bound over a sequence, not a probabilistic average-case claim.",
+      "reason": "ArrayList does not promise a doubling capacity policy.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/ArrayList.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:LT01",
+      "path": "engineering-fundamentals/latency-vs-throughput.md",
+      "old": "**λ** = throughput (operations arriving per unit time)",
+      "new": "**λ** = long-run average arrival rate across the chosen system boundary (equal to departure throughput in a stable, loss-accounted system)",
+      "reason": "Make arrival/departure accounting and the measurement boundary explicit.",
+      "sources": [
+        "https://web.eng.ucsd.edu/~massimo/ECE158A/Handouts_files/Little.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:LT02",
+      "path": "engineering-fundamentals/latency-vs-throughput.md",
+      "old": "If your concurrency is capped (e.g., by a fixed thread pool), increasing throughput *must* decrease latency or the system saturates.",
+      "new": "For a fixed average number of operations in that boundary, higher throughput implies lower mean time in the system. A thread-pool limit caps running workers, not necessarily queued-plus-running requests; include waiting requests when applying the law.",
+      "reason": "A fixed worker pool does not cap the total queueing-system population.",
+      "sources": [
+        "https://web.eng.ucsd.edu/~massimo/ECE158A/Handouts_files/Little.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:LT03",
+      "path": "engineering-fundamentals/latency-vs-throughput.md",
+      "old": "- **Caching:** improves both for cache hits; degrades both for cache misses (lookup + miss + store).",
+      "new": "- **Caching:** can avoid source work on hits. Misses add cache-path work; the overall latency and throughput effects depend on hit rate, contention, refresh and miss handling.",
+      "reason": "Cache misses do not universally imply lower overall throughput.",
+      "sources": [
+        "https://aws.amazon.com/builders-library/caching-challenges-and-strategies/"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:LT04",
+      "path": "engineering-fundamentals/latency-vs-throughput.md",
+      "old": "In this typical architecture:\n\n- **Cache hit:** ~1 ms latency, very high throughput (cache is in-memory).\n- **Cache miss:** 50-100 ms latency (database query), throughput bounded by database capacity.\n- **Throughput ceiling:** the database. Adding app servers won't help past that point.\n",
+      "new": "In this architecture, measure cache and database latency separately. A hit can avoid a database read; a miss still needs the source lookup and cache-path work. The database is the throughput ceiling only when it is the limiting resource. Adding app servers cannot remove that particular bottleneck.",
+      "reason": "Remove unqualified millisecond values and a universal database bottleneck.",
+      "sources": [
+        "https://aws.amazon.com/builders-library/caching-challenges-and-strategies/"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:LT05",
+      "path": "engineering-fundamentals/latency-vs-throughput.md",
+      "old": "- **Google search.** p50 ~200 ms, p99 measured in milliseconds, billions of queries per day. Latency comes from the user-facing front-end; throughput comes from massively parallel back-end fan-out and per-shard caching.\n- **Netflix streaming.** Stream start latency (how fast playback begins) is the headline metric — sub-2-second start is the target. Throughput per CDN node is in the gigabits per second, but the user only cares about their own stream.\n- **Stripe API.** Public SLO: 99% of API requests complete under 250 ms. Throughput is gated by the database; Stripe runs an enormous Postgres cluster with sharding and read replicas to keep latency low while throughput rises.\n- **High-frequency trading.** Microsecond-level latency dominates everything. Throughput per second is modest; latency per order is everything.\n- **Batch ETL pipelines (e.g., Snowflake nightly jobs).** Throughput is paramount; per-row latency is irrelevant.\n\nThe shared lesson: the right metric depends on the workload. A trading system optimized like an ETL pipeline would fail; an ETL pipeline optimized like a trading system would be absurdly expensive.\n\n---\n\n",
+      "new": "Different workloads need different measurements:\n\n- **Interactive search:** measure end-to-end response latency and sustainable query rate together. *The Tail at Scale* explains why fan-out makes slow individual components important to overall responsiveness.\n- **Streaming:** distinguish playback-start delay, rebuffering and sustained delivery rate. A high transfer rate alone does not describe how quickly playback starts.\n- **Transactional APIs:** define latency and availability objectives for the specific operation and load. Do not treat an uncited company-wide percentile or database architecture as a public guarantee.\n- **Trading and batch processing:** both need capacity and deadlines, but the useful time scale and unit of work differ. A batch completion deadline can matter even when per-row latency does not.\n\nThese are workload categories, not claims about a particular company's current SLO or deployment.\n\n",
+      "reason": "Replace unsupported company-specific latency/SLO/infrastructure claims with explicit measurement contexts.",
+      "sources": [
+        "https://research.google/pubs/the-tail-at-scale/",
+        "https://sre.google/sre-book/monitoring-distributed-systems/"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:LT06",
+      "path": "engineering-fundamentals/latency-vs-throughput.md",
+      "old": "**Frame budget:** 60 fps requires a frame every 16.6 ms. Each frame is a *latency budget*. Anything (layout, draw, decode) that exceeds 16 ms causes a dropped frame — jank. The user perceives 1-2 dropped frames as a glitch and 10+ as broken.",
+      "new": "**Frame budget:** at 60 Hz the display interval is about 16.7 ms; at 120 Hz it is about 8.3 ms. Work on a frame's critical path must meet its deadline. Diagnose late frames with traces rather than assuming every operation has a universal 16 ms allowance or a fixed perceptual threshold.",
+      "reason": "Frame deadlines depend on refresh rate and the actual critical path.",
+      "sources": [
+        "https://developer.android.com/topic/performance/rendering"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:LT07",
+      "path": "engineering-fundamentals/latency-vs-throughput.md",
+      "old": "**Startup latency:** cold start should complete in 5 seconds; warm start in 2; hot resume in 1. These are latency SLOs visible to the user.",
+      "new": "**Startup latency:** Android vitals classifies slow startup using TTID thresholds, including 5 seconds for cold and 2 seconds for warm starts. The Android Developers page lists 1.5 seconds for hot starts. These are diagnostic thresholds, not recommended product SLOs; set tighter experience goals appropriate to the app.",
+      "reason": "Distinguish slow-start thresholds and TTID from product latency objectives.",
+      "sources": [
+        "https://developer.android.com/topic/performance/issues/launch-time"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:LT08",
+      "path": "engineering-fundamentals/latency-vs-throughput.md",
+      "old": "**Background throughput:** WorkManager batches jobs by network availability and charging state. The throughput of background uploads (e.g., a photo backup) is what users notice over hours and days; the latency of any individual upload is not user-facing.",
+      "new": "**Background throughput:** WorkManager can defer work until configured constraints hold; it is not a promise to batch a fixed number of uploads. Measure aggregate progress and any user-visible completion deadline, since an individual requested upload can also be latency-sensitive.",
+      "reason": "WorkManager constraints and user-visible deadlines do not make all background work latency-insensitive.",
+      "sources": [
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:LT09",
+      "path": "engineering-fundamentals/latency-vs-throughput.md",
+      "old": "```kotlin\n// Latency-sensitive path: must finish in <16 ms\n@Composable\nfun ProfileScreen(user: User) {\n    // Anything here runs every frame during recomposition\n    Text(user.displayName)\n}\n\n// Throughput-sensitive path: doesn't matter when each item finishes\nsuspend fun uploadAllPhotos(photos: List<Photo>) {\n    photos.chunked(10).forEach { batch ->\n        batch.map { async { upload(it) } }.awaitAll()\n    }\n}\n```",
+      "new": "```kotlin\n// Recomposition follows observed state changes; it is not a per-frame callback.\n@Composable\nfun ProfileScreen(user: User) {\n    Text(user.displayName)\n}\n\n// Application fragments: Photo and upload are supplied by the app.\n// async needs the CoroutineScope receiver supplied by coroutineScope.\nsuspend fun uploadAllPhotos(photos: List<Photo>) = coroutineScope {\n    photos.chunked(10).forEach { batch ->\n        batch.map { photo -> async { upload(photo) } }.awaitAll()\n    }\n}\n```",
+      "reason": "Correct the recomposition claim and supply the missing structured-concurrency scope.",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/state",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/coroutine-scope.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:LT10",
+      "path": "engineering-fundamentals/latency-vs-throughput.md",
+      "old": "The optimization for each path is different. The first must be O(1) and allocation-free; the second can be O(N) with batching.",
+      "new": "The first path needs sufficiently small measured work for its UI deadline, not a universal O(1) or zero-allocation rule. The upload path bounds concurrency to ten tasks per batch; its appropriate batch size depends on service limits, memory and the completion goal.",
+      "reason": "Asymptotic notation alone does not establish frame-time safety.",
+      "sources": [
+        "https://xlinux.nist.gov/dads/HTML/bigOnotation.html",
+        "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:LT11",
+      "path": "engineering-fundamentals/latency-vs-throughput.md",
+      "old": "**Latency amplification under fan-out.** A request that hits 10 downstream services has tail latency dominated by the slowest of the 10. If each has p99 = 100 ms, the overall p99 is closer to 250-300 ms. Mitigation: parallel fanout; hedged requests; aggressive timeouts on the slowest paths.",
+      "new": "**Latency amplification under fan-out.** When a parent waits for every parallel child, its completion time includes the maximum child latency. With independent children each having a 1% chance of exceeding 100 ms, ten children have a 1 − 0.99¹⁰ ≈ 9.6% chance that at least one exceeds that threshold. Their individual p99 values do not determine the parent p99 in milliseconds; the full distributions and dependence matter.",
+      "reason": "A single child percentile cannot imply a 250–300 ms parent percentile.",
+      "sources": [
+        "https://research.google/pubs/the-tail-at-scale/"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:LT12",
+      "path": "engineering-fundamentals/latency-vs-throughput.md",
+      "old": "- **Timeouts** must be set with the latency distribution in mind. A timeout below p99 will fail 1% of legitimate requests. A timeout above p99.9 fails to protect against pathological tail latency. The right value is usually p99 + headroom.",
+      "new": "- **Timeouts** need an acceptable false-timeout rate, measured latency distribution and an end-to-end deadline. Include network and connection-establishment work. A percentile can inform the choice, but neither p99 + padding nor p99.9 is a universal safe timeout.",
+      "reason": "Reject a universal timeout rule unsupported by the available latency samples.",
+      "sources": [
+        "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:LT13",
+      "path": "engineering-fundamentals/latency-vs-throughput.md",
+      "old": "- **Bottleneck analysis:** which resource is at 100% when the system saturates? That's the bottleneck.",
+      "new": "- **Bottleneck analysis:** inspect queueing, contention and resource demand at saturation. A serialized lock, one saturated core or a downstream concurrency cap can limit throughput while aggregate CPU utilization remains below 100%.",
+      "reason": "Bottlenecks do not require an aggregate utilization metric to show 100%.",
+      "sources": [
+        "https://research.google/pubs/the-tail-at-scale/"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:LT14",
+      "path": "engineering-fundamentals/latency-vs-throughput.md",
+      "old": "2. A system handles 1,000 requests per second with p50 = 50 ms. What's the average concurrency? (Apply Little's Law.)",
+      "new": "2. A stable system handles 1,000 requests per second with mean time in the system = 50 ms. What is its average queued-plus-running concurrency? (Apply Little's Law.)",
+      "reason": "Little's Law requires a mean, not the median.",
+      "sources": [
+        "https://web.eng.ucsd.edu/~massimo/ECE158A/Handouts_files/Little.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:LT15",
+      "path": "engineering-fundamentals/latency-vs-throughput.md",
+      "old": "2. **A system handles 1,000 requests per second with p50 = 50 ms. What's the average concurrency? (Apply Little's Law.)**",
+      "new": "2. **A stable system handles 1,000 requests per second with mean time in the system = 50 ms. What is its average queued-plus-running concurrency? (Apply Little's Law.)**",
+      "reason": "Align the repeated answer prompt with the corrected mean-based exercise.",
+      "sources": [
+        "https://web.eng.ucsd.edu/~massimo/ECE158A/Handouts_files/Little.pdf"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:LT16",
+      "path": "engineering-fundamentals/latency-vs-throughput.md",
+      "old": "It will be higher because the parent request is gated by the *slowest* of the 5 calls. If each independently has a 1% chance of being slow, the chance that *at least one* is slow is much higher (~4.9%), meaning the overall p99 will be substantially worse than 100 ms.",
+      "new": "No numeric parent p99 can be computed from these child p99 values alone. Under independent calls with exactly 1% probability of exceeding 100 ms, at least one exceeds it with probability 1 − 0.99⁵ ≈ 4.9%. The parent tail depends on the rest of the distributions and any correlation or orchestration overhead.",
+      "reason": "Distinguish a threshold-exceedance probability from an inferred latency quantile.",
+      "sources": [
+        "https://research.google/pubs/the-tail-at-scale/"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:LT17",
+      "path": "engineering-fundamentals/latency-vs-throughput.md",
+      "old": "Around 600-700 ms. Setting it above p99 protects 99% of valid requests, but setting it as high as p99.9 (2s) risks tying up client resources for too long on pathological outliers.",
+      "new": "The percentiles alone do not determine one correct timeout. Choose an acceptable false-timeout rate and fit the client's end-to-end deadline, network allowance, connection setup and bounded retry budget. For example, a dependency-only 2-second cutoff corresponds roughly to the supplied p99.9, but may exceed the user-facing deadline.",
+      "reason": "Do not invent a 600–700 ms timeout from three percentiles.",
+      "sources": [
+        "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:CC01",
+      "path": "engineering-fundamentals/coupling-vs-cohesion.md",
+      "old": "If a designer changed the ID or removed the view from XML, the code would compile perfectly but crash at runtime with a `NullPointerException`.",
+      "new": "If an ID disappears from every resource, the generated R reference can fail compilation. If the ID still exists elsewhere but not in the inflated hierarchy, findViewById can return null and fail when used.",
+      "reason": "Separate missing resource symbols from missing runtime views.",
+      "sources": [
+        "https://developer.android.com/topic/libraries/view-binding"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:CC02",
+      "path": "engineering-fundamentals/coupling-vs-cohesion.md",
+      "old": "If we have an `interface UserApi` and the only implementation is `RetrofitUserApi`, and the interface methods are annotated with `@GET` and `@Path`, the interface is useless. It hasn't decoupled anything; it has just added boilerplate.",
+      "new": "A Retrofit service interface annotated with @GET and @Path is useful: it declares the HTTP contract and Retrofit generates its implementation. It is intentionally transport-specific. Add a separate application-facing abstraction when callers should not depend on Retrofit types or HTTP details.",
+      "reason": "Retrofit service interfaces are its required declarative API, not useless boilerplate.",
+      "sources": [
+        "https://square.github.io/retrofit/"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:CC03",
+      "path": "engineering-fundamentals/coupling-vs-cohesion.md",
+      "old": "It injects dependencies through interfaces rather than concrete implementations, preventing classes from being tied to the instantiation and specific types of their dependencies, thus achieving loose coupling.",
+      "new": "Dependency injection supplies dependencies from outside the class instead of having it construct or locate them. Both concrete classes and interfaces can be injected. An interface helps substitution when its contract hides details the caller should not know; DI alone does not guarantee loose coupling.",
+      "reason": "DI does not require interface-typed dependencies.",
+      "sources": [
+        "https://developer.android.com/training/dependency-injection"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:CC04",
+      "path": "engineering-fundamentals/coupling-vs-cohesion.md",
+      "old": "The `internal` keyword restricts visibility to the current module, preventing other modules from directly coupling to implementation details and forcing them to use public interfaces.",
+      "new": "In Kotlin source, internal limits access to the compilation module, with documented friend-compilation exceptions such as tests. It helps hide implementation details; it is not a JVM security boundary, and a module's public API need not be a Kotlin interface declaration.",
+      "reason": "Qualify compilation-module visibility rather than treating internal as an absolute runtime boundary.",
+      "sources": [
+        "https://kotlinlang.org/docs/visibility-modifiers.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:CC05",
+      "path": "engineering-fundamentals/coupling-vs-cohesion.md",
+      "old": "The data layer simply emits a stream of state without knowing who is listening, rather than maintaining a reference to a specific callback interface. The UI layer independently subscribes to the stream.",
+      "new": "A Flow API can expose values without naming a UI consumer; a callback interface can also do that. Both approaches retain contracts about values, errors and lifetime. Flow adds composition and coroutine cancellation conventions, while correct callback registration and cleanup can also preserve low coupling.",
+      "reason": "Observable streams do not uniquely provide decoupling, and callbacks can be interface-based.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:IM01",
+      "path": "engineering-fundamentals/immutability.md",
+      "old": "Without it, Jetpack Compose, Kotlin Coroutines, and Unidirectional Data Flow (UDF) simply do not work reliably.",
+      "new": "It simplifies shared snapshots, but Compose also supports observable mutable state, coroutines can coordinate mutable state, and UDF is primarily an ownership and update-flow discipline.",
+      "reason": "These frameworks do not require every object to be immutable.",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/state",
+        "https://developer.android.com/topic/architecture/ui-layer",
+        "https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:IM02",
+      "path": "engineering-fundamentals/immutability.md",
+      "old": "In UI frameworks like Jetpack Compose, if a UI state object is mutated internally (e.g., changing a property without replacing the object), Compose has no idea the state changed, and the UI will not re-render. Immutability guarantees thread safety and predictable change observation.",
+      "new": "Compose observes reads and writes of supported snapshot state. Mutating an ordinary, unobservable field or MutableList does not notify it, whereas MutableState and snapshot collections can notify observers without replacing the containing object. Immutable snapshots help reasoning; publication and update observation still need their own contracts.",
+      "reason": "Distinguish observable mutation from unobservable fields.",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/state"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:IM03",
+      "path": "engineering-fundamentals/immutability.md",
+      "old": "1.  **Read-Only:** An immutable object has no setters or mutating methods.",
+      "new": "1.  **Read-Only Is Not Enough:** A read-only reference or API can still expose a mutable object graph. Immutability requires that the object's observable state cannot change after construction.",
+      "reason": "An API lacking setters does not prove immutability.",
+      "sources": [
+        "https://kotlinlang.org/docs/collections-overview.html",
+        "https://kotlinlang.org/docs/data-classes.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:IM04",
+      "path": "engineering-fundamentals/immutability.md",
+      "old": "2.  **Thread Safety by Default:** If an object cannot be changed, it can be shared across 1,000 threads simultaneously without any locks, mutexes, or synchronization.",
+      "new": "2.  **Safe Concurrent Reads:** Properly constructed, safely published, deeply immutable values do not need locks to protect their contents from concurrent mutation. Publishing references and coordinating replacement versions remain separate concurrency concerns.",
+      "reason": "Avoid omitting safe publication and version-reference coordination.",
+      "sources": [
+        "https://docs.oracle.com/javase/specs/jls/se25/html/jls-17.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:IM05",
+      "path": "engineering-fundamentals/immutability.md",
+      "old": "3.  **Predictability:** If a function takes an immutable object as an argument, the caller is guaranteed that the object will not be altered by the function. (No side effects).",
+      "new": "3.  **Predictability:** A function cannot mutate the contents of a truly immutable argument. It can still perform other side effects, such as I/O or changing separate mutable state.",
+      "reason": "An immutable argument does not make a function pure.",
+      "sources": [
+        "https://kotlinlang.org/docs/data-classes.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:IM06",
+      "path": "engineering-fundamentals/immutability.md",
+      "old": "Compose relies entirely on object equality (`==`) to know when to redraw the screen (Recomposition). If you mutate an object internally, its memory address doesn't change, and Compose thinks nothing happened.",
+      "new": "Compose tracks snapshot-state reads and invalidates dependent scopes when observable state changes. State mutation policies and composable-parameter skipping are separate checks. Under strong skipping, stable parameters use equals while unstable parameters use identity; recomposition is not determined solely by a containing object's memory address.",
+      "reason": "Correct snapshot observation versus equality/identity skipping.",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/state",
+        "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:IM07",
+      "path": "engineering-fundamentals/immutability.md",
+      "old": "// GOOD: Compose WILL redraw when state is updated via copy()",
+      "new": "// New state must reach observable state collected/read by Compose. copy() alone is not a notification.",
+      "reason": "copy() does not publish state or notify observers.",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/state",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:IM08",
+      "path": "engineering-fundamentals/immutability.md",
+      "old": "- **Zero Synchronization Overhead:** No `synchronized` blocks, no mutexes, no deadlocks.",
+      "new": "- **Simpler Read Sharing:** Deeply immutable contents need no mutation locks. Publication, replacement updates and any surrounding mutable resources can still require synchronization.",
+      "reason": "Immutable values do not eliminate all coordination in a system.",
+      "sources": [
+        "https://docs.oracle.com/javase/specs/jls/se25/html/jls-17.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:IM09",
+      "path": "engineering-fundamentals/immutability.md",
+      "old": "- **Trivial Caching:** You can cache immutable objects forever without worrying that they will become stale or corrupted by another component.",
+      "new": "- **Stable Cached Values:** Another component cannot mutate a truly immutable cached value, but it can still become stale relative to the source. Freshness, invalidation and retention policies remain necessary.",
+      "reason": "Immutability is not freshness.",
+      "sources": [
+        "https://aws.amazon.com/builders-library/caching-challenges-and-strategies/"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:IM10",
+      "path": "engineering-fundamentals/immutability.md",
+      "old": "For strict immutability, external libraries like Kotlinx.Collections.Immutable are required.",
+      "new": "An immutable collection implementation can enforce the collection boundary; Kotlinx.Collections.Immutable is one option. Its elements must also satisfy the required immutability contract. A cast to MutableList is not guaranteed to work for every read-only list implementation.",
+      "reason": "An external library is not the only way to design immutable state, nor does it freeze elements.",
+      "sources": [
+        "https://kotlinlang.org/docs/collections-overview.html",
+        "https://github.com/Kotlin/kotlinx.collections.immutable"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:IM11",
+      "path": "engineering-fundamentals/immutability.md",
+      "old": "This destroys the safety of the `copy()` mechanism and makes it useless as a key in a `HashMap` or a State object in Compose.",
+      "new": "copy() still creates a shallow copy. The risk is that later mutation changes an equality/hash-relevant property or bypasses the observable-state update path; a mutable data class is not automatically unusable in every context.",
+      "reason": "Mutable properties do not disable copy() or make every use invalid.",
+      "sources": [
+        "https://kotlinlang.org/docs/data-classes.html",
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/HashMap.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:IM12",
+      "path": "engineering-fundamentals/immutability.md",
+      "old": "2.  Why is immutability a strict requirement for Unidirectional Data Flow (UDF) architectures?",
+      "new": "2.  How do immutable snapshots support Unidirectional Data Flow (UDF), and which ownership rule must still be enforced?",
+      "reason": "Remove a false strict-requirement premise.",
+      "sources": [
+        "https://developer.android.com/topic/architecture/ui-layer"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:IM13",
+      "path": "engineering-fundamentals/immutability.md",
+      "old": "2.  **Why is immutability a strict requirement for Unidirectional Data Flow (UDF) architectures?**\n    UDF relies on state being a single source of truth that flows in one direction. If state is mutable, components can bypass the flow and modify it directly, leading to race conditions and breaking predictability.",
+      "new": "2.  **How do immutable snapshots support Unidirectional Data Flow (UDF), and which ownership rule must still be enforced?**\n    Immutable snapshots prevent readers from changing published contents. UDF still needs a state owner that accepts events and controls updates. Observable mutable state can also participate when changes go through that owner; immutability alone does not enforce event direction.",
+      "reason": "Answer the corrected ownership-based UDF exercise.",
+      "sources": [
+        "https://developer.android.com/topic/architecture/ui-layer"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:IM14",
+      "path": "engineering-fundamentals/immutability.md",
+      "old": "Compose relies on object equality (`==`). If an object is mutable and modified internally, its reference remains the same, so Compose won't detect the change. Immutability forces a new object creation (`copy`), triggering recomposition.",
+      "new": "Immutable state is useful when new values are published through observable state. Compose observes snapshot-state reads and writes; copy() by itself triggers nothing. MutableStateFlow also suppresses equal assignments, while strong-skipping parameter comparisons depend on stability.",
+      "reason": "Correct the repeated equality-only Compose explanation.",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/state",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/",
+        "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:IM15",
+      "path": "engineering-fundamentals/immutability.md",
+      "old": "Since immutable objects cannot change state, multiple threads can safely read them concurrently. There are no writes after creation, hence no race conditions to synchronize against.",
+      "new": "Properly constructed and safely published immutable contents can be read concurrently without mutation locks. A shared reference that selects the current version, and any other mutable resources used alongside it, still need appropriate visibility and atomic-update rules.",
+      "reason": "Safe reads of immutable contents do not remove publication and update requirements.",
+      "sources": [
+        "https://docs.oracle.com/javase/specs/jls/se25/html/jls-17.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:IM16",
+      "path": "engineering-fundamentals/immutability.md",
+      "old": "It breaks the safety of the `copy()` mechanism and makes the class mutable. Changing the `var` modifies the object in place, undermining value-based equality and hashing guarantees.",
+      "new": "A var makes that property mutable; generated copy() still performs a shallow copy. Changing a primary-constructor property can change generated equals/hashCode results, which is dangerous while the object is a hash key. Mutation must also use an observable or otherwise coordinated update path where required.",
+      "reason": "Correct the repeated claim that var breaks copy().",
+      "sources": [
+        "https://kotlinlang.org/docs/data-classes.html",
+        "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/HashMap.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA01",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "A **synchronous** operation blocks the caller until it produces a result. An **asynchronous** operation returns control to the caller immediately and produces its result later, by some other mechanism (callback, future, suspension point).",
+      "new": "A **synchronous** API completes before the caller continues past that call. An **asynchronous** API separates initiation from completion, often using a callback, future or coroutine continuation. Whether an OS thread blocks is a separate implementation property: asynchronous work may still run blocking I/O on a worker.",
+      "reason": "Completion semantics and thread blocking are different axes.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/",
+        "https://nodejs.org/learn/asynchronous-work/dont-block-the-event-loop"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA02",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "it is \"what does the calling thread do during the wait?\"",
+      "new": "it includes both \"how is completion delivered?\" and \"which thread, if any, waits?\"",
+      "reason": "Align the definition with the blocking/asynchronous distinction.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA03",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "it spends almost all of its life doing nothing — the CPU is parked, holding the thread's stack in memory, contributing zero useful work.",
+      "new": "the waiting thread may be parked while its stack and request state remain allocated. The CPU can run another runnable thread; parking the caller does not park the whole CPU.",
+      "reason": "A parked thread does not imply an idle CPU.",
+      "sources": [
+        "https://nodejs.org/learn/asynchronous-work/dont-block-the-event-loop"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA04",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "every server used \"thread-per-request\" architecture — one OS thread per incoming connection — which meant a 10,000-concurrent-user system needed 10,000 mostly-idle threads.",
+      "new": "a common design used one platform thread per active request. That can consume substantial resources during blocking waits, but a connection, a user and an active request are not interchangeable counts, and thread-per-request is not the only synchronous execution model.",
+      "reason": "Remove unsupported universal server history and user-to-thread equivalence.",
+      "sources": [
+        "https://nodejs.org/learn/asynchronous-work/dont-block-the-event-loop",
+        "https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA05",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "### 2. \"Asynchronous\" means the calling thread can do something else",
+      "new": "### 2. Non-blocking waits let the calling thread do something else",
+      "reason": "Name the property actually discussed.",
+      "sources": [
+        "https://nodejs.org/learn/asynchronous-work/dont-block-the-event-loop"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA06",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "Async does not mean \"faster.\" It means \"the calling thread is not blocked.\" The work itself takes the same time. The difference is what the rest of the program does during that time.",
+      "new": "Asynchrony does not guarantee non-blocking execution or a speedup. A non-blocking wait can release a thread for other work; offloaded blocking I/O instead occupies a worker. Overlapping independent operations can reduce end-to-end latency, while scheduling and contention can add delay.",
+      "reason": "Avoid equating async with non-blocking or identical elapsed time.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/",
+        "https://nodejs.org/learn/asynchronous-work/dont-block-the-event-loop"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA07",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "return httpClient.get(\"/users/$id\")  // blocks until response",
+      "new": "return blockingHttpClient.get(\"/users/$id\")  // API contract: blocking request",
+      "reason": "The contract must identify a genuinely blocking API; suspend is not a magic adapter.",
+      "sources": [
+        "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA08",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "return httpClient.get(\"/users/$id\")  // suspends; thread returns to pool",
+      "new": "return suspendingHttpClient.get(\"/users/$id\")  // API contract: non-blocking suspension",
+      "reason": "The contract must identify a genuinely suspending non-blocking API.",
+      "sources": [
+        "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA09",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "Same wall-clock time per request; vastly more concurrent requests per thread.",
+      "new": "This example assumes the same remote service time in both versions. The difference is thread occupancy during the wait, not a guarantee of identical measured latency or unlimited capacity.",
+      "reason": "Constrain the example rather than asserting a universal timing guarantee.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/",
+        "https://nodejs.org/learn/asynchronous-work/dont-block-the-event-loop"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA10",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "When the parent ends, children are cancelled.",
+      "new": "A normal structured parent waits for its children before completing. Parent cancellation or failure cancels children; ordinary child failure propagation also depends on supervision.",
+      "reason": "Normal structured completion waits; it does not automatically cancel children.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/coroutine-scope.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA11",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "- **nginx.** A handful of worker threads, each running an epoll-based event loop. Handles 100k+ concurrent connections per worker.\n- **Node.js.** One event-loop thread per process; a worker pool for CPU-bound work. Excellent for I/O-heavy workloads; poor for CPU-heavy ones.\n- **Netflix Zuul 2.** The migration from blocking (Zuul 1, thread-per-request) to non-blocking (Zuul 2, async + Netty) is publicly documented. Same throughput, ~50% fewer machines.\n- **Stripe API.** Ruby (sync) at the edge; Go and Java (async) for internal high-fanout services. The choice of sync vs async per service is explicit.\n- **Slack mobile.** Coroutines + Flow for all async work; the old callback-based code paths were systematically migrated.\n\nThe shared observation: at scale, async wins on throughput per machine, and the engineering investment is justified by the hardware savings.\n\n---\n\n",
+      "new": "- **nginx:** its master manages worker processes, and request handling uses an event-driven model. Worker count and achievable connection capacity depend on configuration and workload; there is no universal connections-per-worker guarantee.\n- **Node.js:** JavaScript callbacks generally run on the event-loop thread. Selected blocking native operations use the libuv worker pool; CPU-heavy JavaScript can use worker threads or another execution boundary. Blocking either the event loop or its pool harms progress.\n- **JVM virtual threads:** a synchronous-looking blocking API can run on lightweight virtual threads. Evaluate it alongside non-blocking APIs for the actual workload rather than assuming every synchronous call consumes a dedicated platform thread for its full lifetime.\n\nThese examples describe documented execution models, not an uncited company-wide stack or a promised hardware saving.\n\n",
+      "reason": "Replace incorrect nginx/Node descriptions and unsupported company migration/stack statistics.",
+      "sources": [
+        "https://nginx.org/en/docs/beginners_guide.html",
+        "https://nodejs.org/learn/asynchronous-work/dont-block-the-event-loop",
+        "https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA12",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "Any blocking call on the main thread (network, disk, slow computation) produces an Application Not Responding (ANR) dialog after about 5 seconds.",
+      "new": "Blocking that thread can miss frame deadlines. An input-dispatch timeout is commonly 5 seconds, but ANR categories, device policies and whether input is pending matter; not every blocking call causes a dialog after one universal duration.",
+      "reason": "ANRs have category-specific conditions and thresholds.",
+      "sources": [
+        "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA13",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "            } catch (e: Exception) {\n                _state.value = UiState.Error(e)\n            }",
+      "new": "            } catch (e: CancellationException) {\n                throw e\n            } catch (e: Exception) {\n                _state.value = UiState.Error(e)\n            }",
+      "reason": "Preserve cooperative cancellation instead of presenting it as a UI error.",
+      "sources": [
+        "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA14",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "The ViewModel scope ensures that if the user navigates away, the work is cancelled.",
+      "new": "The ViewModel scope cancels when that ViewModel is cleared, which is not every navigation or background event. Choose a visible-lifecycle collection boundary when that is the required lifetime; a blocking dependency still needs its own cancellation support.",
+      "reason": "ViewModel lifetime is distinct from screen visibility and blocking-call interruption.",
+      "sources": [
+        "https://developer.android.com/topic/libraries/architecture/coroutines",
+        "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA15",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "The legacy alternative (callbacks, `AsyncTask`, `Thread`) is deprecated. Coroutines are the standard.",
+      "new": "AsyncTask is deprecated. Callbacks and Thread are still valid APIs; coroutines often provide a convenient structured interface, including wrappers around correctly cleaned-up callback registrations.",
+      "reason": "Callbacks and Thread are not generally deprecated.",
+      "sources": [
+        "https://developer.android.com/reference/android/os/AsyncTask",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA16",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "- No idle threads consuming memory.",
+      "new": "- Non-blocking waits can reduce platform-thread occupancy; blocking workers and retained coroutine/request state still consume resources.",
+      "reason": "Asynchrony does not remove all waiting threads or memory cost.",
+      "sources": [
+        "https://nodejs.org/learn/asynchronous-work/dont-block-the-event-loop",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA17",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "- The same code can handle 100 or 100,000 concurrent operations without re-architecture.",
+      "new": "- Suspending work can scale concurrency without one platform thread per wait, but memory, connection pools, queues and downstream capacity still require bounds.",
+      "reason": "Remove an unsupported capacity guarantee.",
+      "sources": [
+        "https://kotlinlang.org/docs/coroutines-basics.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA18",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "- CPU-bound work. Async helps when threads are *idle waiting*. If they're busy *computing*, async adds overhead without benefit. CPU-bound work belongs on a thread pool sized to the CPU count.",
+      "new": "- CPU-bound work does not benefit from freeing a thread during an I/O wait, but coroutines can still manage its lifetime and dispatch it to a CPU-oriented pool such as Dispatchers.Default. Measure parallelism and scheduling overhead rather than treating suspend functions as forbidden for computation.",
+      "reason": "CPU-bound coroutine work is valid; suspend alone neither moves nor accelerates it.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html",
+        "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA19",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "Mitigation: use coroutines or weak references for long-lived registrations.",
+      "new": "Mitigation: unregister at the matching lifetime boundary; callbackFlow with awaitClose can express this cleanup. Merely using a coroutine or weakening a reference does not remove the registration.",
+      "reason": "Callbacks need explicit lifecycle cleanup.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA20",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "- **CPU:** Async runtime overhead is small but real — function-call indirection through dispatchers, continuation allocation. For CPU-bound code, this overhead exceeds the benefit; use threads directly.",
+      "new": "- **CPU:** coroutine scheduling and continuation handling can add overhead. CPU work can run inside structured coroutines on Dispatchers.Default; raw threads are not a required optimization, and the trade-off needs measurement.",
+      "reason": "Do not prescribe raw threads instead of valid structured CPU work.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA21",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "- **Memory:** Async drastically reduces memory pressure under high concurrency. 10,000 OS threads is 10-20 GB of stacks; 10,000 coroutines is megabytes.",
+      "new": "- **Memory:** retained coroutine state can be cheaper than one platform thread per blocked request, but neither a fixed per-coroutine size nor 10–20 GB of resident stack memory follows from these counts. Stack reservation, commitment, captured objects and runtime choices matter.",
+      "reason": "Do not equate reserved stack sizes with resident memory or promise a fixed coroutine footprint.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html",
+        "https://kotlinlang.org/docs/coroutines-basics.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA22",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "- **Latency:** Per-operation latency can be slightly higher with async (dispatcher hops add nanoseconds). For interactive systems, this is negligible. For high-frequency trading, it matters.",
+      "new": "- **Latency:** dispatch delay depends on queueing, contention and runtime behavior; it is not universally a nanosecond cost. Overlapping independent work can shorten end-to-end latency, while extra scheduling or saturation can increase it.",
+      "reason": "Remove a fabricated scheduling-cost bound and distinguish service time from end-to-end latency.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html",
+        "https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA23",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "- **Cancellation.** Async work must support cancellation; sync work usually cannot. Kotlin coroutines propagate cancellation through suspension points. Long-running suspend functions should check `ensureActive()` periodically.",
+      "new": "- **Cancellation.** Both synchronous and asynchronous APIs may support cancellation. Kotlin coroutine cancellation is cooperative: cancellable suspensions and explicit checks such as ensureActive() observe it. A CPU loop or blocking library call does not become interruptible merely because its caller is suspend.",
+      "reason": "Cancellation depends on cooperation, not the sync/async label.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/ensure-active.html",
+        "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA24",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "- **Timeouts.** Sync calls can hang indefinitely if the underlying network does. Async calls should always wrap external waits in `withTimeout`.",
+      "new": "- **Timeouts.** Bound remote waits using the client's supported deadlines and an appropriate overall budget. withTimeout cancels cooperatively; it does not forcibly terminate an arbitrary blocking call.",
+      "reason": "Coroutine timeouts do not forcibly interrupt unsupported blocking dependencies.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA25",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "**Don't async-ify CPU-bound work.** A Staff engineer notices when \"we made it async\" gives no measurable benefit. CPU-bound algorithms belong on a fixed-size thread pool, not on the async dispatcher. The general rule: async for waits, threads for work.",
+      "new": "**Separate execution policy from API shape.** CPU-bound work can be a main-safe suspend function that uses an injected CPU dispatcher. Coroutines still execute CPU instructions on threads; the question is which pool, how much parallelism and which owner controls cancellation.",
+      "reason": "Dispatchers.Default supports structured CPU work; async and threads are not mutually exclusive categories.",
+      "sources": [
+        "https://developer.android.com/kotlin/coroutines/coroutines-best-practices",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA26",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "**\"Async is faster than sync.\"** No. Async has the same wall-clock time per operation. Async wins on *throughput* by freeing the thread, not on per-operation speed.",
+      "new": "**\"Async is always faster.\"** No. Non-blocking waits can improve resource utilization, and overlapping independent operations can reduce end-to-end latency. Scheduling, contention and serialization can erase those benefits; measure the complete path.",
+      "reason": "Async does not guarantee either identical or improved elapsed time.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA27",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "**\"If it's slow, make it async.\"** Async helps when threads are idle waiting. If the operation is slow because of computation, async makes it slower (dispatcher overhead) without helping.",
+      "new": "**\"If it's slow, make it async.\"** First identify waiting, computation and contention. Moving CPU work off the UI thread can improve responsiveness without reducing its CPU cost; a blocking wait still occupies whichever thread executes it.",
+      "reason": "Distinguish responsiveness from faster computation.",
+      "sources": [
+        "https://developer.android.com/kotlin/coroutines/coroutines-best-practices",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA28",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "Because `Dispatchers.IO` has a finite thread limit (default 64 or core count). If too many coroutines execute blocking operations simultaneously, they consume all available IO threads, leading to thread pool starvation.",
+      "new": "Dispatchers.IO limits parallel blocking tasks by default to max(64, available processors). Its limitedParallelism views have documented elasticity, so that is not a strict global thread cap. Long-running blocking calls can occupy the available execution slots; bound admission and dependency concurrency rather than enqueueing without limit.",
+      "reason": "Correct the default maximum and distinguish task parallelism from a global thread count.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA29",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "Launch the network request within a structured scope tied to the screen's lifecycle, such as `viewModelScope` or `lifecycleScope`. The cancellation automatically propagates when the scope is destroyed.",
+      "new": "Choose the owner whose end matches the requirement. viewModelScope cancels when the ViewModel is cleared; lifecycleScope cancels when that Lifecycle is destroyed. For work restricted to a visible lifecycle state, use an appropriate repeatOnLifecycle block. The network API must cooperate with cancellation.",
+      "reason": "Navigation alone does not necessarily end a ViewModel or Lifecycle.",
+      "sources": [
+        "https://developer.android.com/topic/libraries/architecture/coroutines"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA30",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "10,000 OS threads will consume gigabytes of memory (typically 1-2 MB per thread stack). 10,000 coroutines only require a few megabytes for their state machines and continuation objects.",
+      "new": "There is no fixed memory total from task counts alone. Platform threads carry stack/runtime costs; coroutines retain continuations and reachable data; virtual threads are another JVM model. Measure resident memory and retained objects under the actual load rather than multiplying an assumed reserved stack size.",
+      "reason": "Correct the repeated unsupported fixed-memory comparison.",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official API documentation, specifications or the named original paper; exact replacement occurs once in the source snapshot."
+    },
+    {
+      "id": "fundamentals:SA31",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "A `suspend` function compiles to a state machine. At each suspension point, the function captures its local state, returns control to the dispatcher, and resumes later when the awaited value is available.\n\n```kotlin\nsuspend fun fetchAndProcess(id: String): Result {\n    val user = httpClient.get(\"/users/$id\")  // suspension point 1\n    val data = database.load(user.id)        // suspension point 2\n    return process(user, data)\n}\n```\n\nInternally, the compiler turns this into approximately:\n\n```kotlin\nfun fetchAndProcess(id: String, continuation: Continuation<Result>): Any {\n    when (continuation.state) {\n        0 -> {\n            continuation.state = 1\n            httpClient.getAsync(\"/users/$id\", continuation)  // returns immediately\n            return SUSPENDED\n        }\n        1 -> {\n            val user = continuation.result as User\n            continuation.state = 2\n            database.loadAsync(user.id, continuation)\n            return SUSPENDED\n        }\n        2 -> {\n            val data = continuation.result as Data\n            return process(user, data)\n        }\n    }\n}\n```\n\nThe function \"returns\" three times and \"resumes\" twice. Between resumes, the calling thread is free to run other coroutines.\n",
+      "new": "A suspending function can compile to a state machine, but calling it does not guarantee suspension. A called operation may produce its result immediately. When it actually suspends, continuation state permits the computation to resume after the awaited result becomes available.\n\n```kotlin\nsuspend fun fetchAndProcess(id: String): Result {\n    val user = httpClient.get(\"/users/$id\")  // suspension point 1\n    val data = database.load(user.id)        // suspension point 2\n    return process(user, data)\n}\n```\n\nThe following pseudocode sketches only an execution where both operations actually suspend. Real generated code also handles immediate completion. The custom continuation fields and `SUSPENDED` name are explanatory placeholders, not an API to paste into Kotlin:\n\n```kotlin\nfun fetchAndProcess(id: String, continuation: Continuation<Result>): Any {\n    when (continuation.state) {\n        0 -> {\n            continuation.state = 1\n            httpClient.getAsync(\"/users/$id\", continuation)  // returns immediately\n            return SUSPENDED\n        }\n        1 -> {\n            val user = continuation.result as User\n            continuation.state = 2\n            database.loadAsync(user.id, continuation)\n            return SUSPENDED\n        }\n        2 -> {\n            val data = continuation.result as Data\n            return process(user, data)\n        }\n    }\n}\n```\n\nIn that chosen execution, two waits suspend and later resume the computation. Either operation could instead complete inline in another execution. An actual non-blocking suspension releases the thread for other work; merely reaching a suspend-function call does not guarantee a dispatch or a thread change.\n",
+      "reason": "A suspending call can complete immediately; the lowering sketch must distinguish actual suspension from a possible suspension point.",
+      "sources": [
+        "https://kotlinlang.org/spec/asynchronous-programming-with-coroutines.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against the Kotlin specification sections on suspending functions, continuation-passing style and coroutine state machines; exact contiguous section occurs once."
+    },
+    {
+      "id": "fundamentals:SA32",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "It shouldn't just be a `suspend fun` without a dispatcher change. Async is for waiting, not computing. It should run on a thread pool sized for CPU work (e.g., `Dispatchers.Default`) because it will occupy a thread for the full 800 ms.",
+      "new": "It can be a main-safe suspend API that moves substantial CPU work to an injected CPU-oriented dispatcher such as Dispatchers.Default. The suspend keyword alone neither changes threads nor reduces CPU cost. The computation still executes on a thread; add cooperative cancellation checks where a long loop needs them.",
+      "reason": "Align the Answer Key with valid main-safe structured coroutine use for CPU-bound work.",
+      "sources": [
+        "https://developer.android.com/kotlin/coroutines/coroutines-best-practices",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against Android main-safe suspend guidance and the Default dispatcher CPU-parallelism contract; exact answer occurs once."
+    },
+    {
+      "id": "fundamentals:SA33",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "### 3. The cost of async is complexity, not throughput\n\nYou buy throughput; you pay in complexity. Async code is harder to debug (stack traces don't go where you expect), harder to reason about (control flow leaves the function and comes back), and harder to test (timing-sensitive). The complexity is the trade.",
+      "new": "### 3. Resource use and complexity need separate evaluation\n\nNon-blocking waits can improve utilization when waiting threads are a bottleneck. They do not guarantee higher throughput: CPU demand, dependency limits, queueing and scheduling overhead still matter. Asynchronous control flow also requires explicit lifetime, error and cancellation handling; measure the workload rather than treating extra concurrency as a performance result.",
+      "reason": "Asynchrony is not a throughput guarantee, and its resource and control-flow trade-offs depend on the workload.",
+      "sources": [
+        "https://nodejs.org/learn/asynchronous-work/dont-block-the-event-loop",
+        "https://kotlinlang.org/docs/coroutines-basics.html"
+      ],
+      "status": "approved",
+      "validation": "Verified against official coroutine/thread, explicit bridge or Android wake-lock contracts as cited; exact source span occurs once."
+    },
+    {
+      "id": "fundamentals:SA34",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "Coroutines are the modern default because they let you write code that *looks* sequential (like thread-per-request) but *executes* non-blocking (like an event loop).",
+      "new": "Coroutines let code express suspending work in a sequential style. Whether a wait releases a thread depends on the called API; a blocking call inside a coroutine still occupies its executing thread. Choose a dispatcher appropriate to the actual work.",
+      "reason": "Coroutine syntax does not guarantee non-blocking execution.",
+      "sources": [
+        "https://kotlinlang.org/docs/coroutines-basics.html",
+        "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+      ],
+      "status": "approved",
+      "validation": "Verified against official coroutine/thread, explicit bridge or Android wake-lock contracts as cited; exact source span occurs once."
+    },
+    {
+      "id": "fundamentals:SA35",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "- Much higher throughput per machine.",
+      "new": "- Potentially better utilization for non-blocking waits when thread occupancy limits the workload; higher throughput still needs measurement.",
+      "reason": "Qualify the repeated unconditional throughput gain.",
+      "sources": [
+        "https://nodejs.org/learn/asynchronous-work/dont-block-the-event-loop"
+      ],
+      "status": "approved",
+      "validation": "Verified against official coroutine/thread, explicit bridge or Android wake-lock contracts as cited; exact source span occurs once."
+    },
+    {
+      "id": "fundamentals:SA36",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "- Async libraries propagate through your codebase. You don't get to be partially async.",
+      "new": "- Integration boundaries: suspending APIs can coexist with callbacks, futures and synchronous callers through explicit adapters. Document which bridges block; a blocking bridge such as runBlocking must not occupy the UI thread.",
+      "reason": "Explicit coroutine bridges permit mixed API models; blocking behavior must remain visible.",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html",
+        "https://developer.android.com/kotlin/coroutines/coroutines-best-practices"
+      ],
+      "status": "approved",
+      "validation": "Verified against official coroutine/thread, explicit bridge or Android wake-lock contracts as cited; exact source span occurs once."
+    },
+    {
+      "id": "fundamentals:SA37",
+      "path": "engineering-fundamentals/sync-vs-async.md",
+      "old": "- **Battery (mobile):** Async correctly used reduces wakelocks and unnecessary CPU spin. Misused, it can fragment work into many tiny pieces, each requiring a wake.",
+      "new": "- **Battery (mobile):** Choosing an asynchronous API does not itself reduce wake locks or device wakeups. Power use depends on the work, scheduling, batching and any API that keeps the device awake. Use the appropriate background-work API and minimize wake-lock duration where one is necessary.",
+      "reason": "Wake locks and wakeup frequency are scheduling/API policies, not properties guaranteed by asynchrony.",
+      "sources": [
+        "https://developer.android.com/develop/background-work/background-tasks/awake/",
+        "https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/"
+      ],
+      "status": "approved",
+      "validation": "Verified against official coroutine/thread, explicit bridge or Android wake-lock contracts as cited; exact source span occurs once."
+    }
+  ],
+  "notes": [
+    "All five complete originals and Answer Keys reviewed before authoring.",
+    "Exact corrections replay once without overlaps. Original Markdown files remain untouched.",
+    "Five concise teaching layers: static labelled relationship/ownership diagrams plus one explicit blocking-versus-suspending scene. Only the actual request and response animate; waiting and thread scheduling are labelled states.",
+    "Primary documentation rechecked during the finishing pass: Kotlin coroutines/coroutineScope/ensureActive/data classes, Android Compose state and DI, SQLite query planner, Java ArrayList, AWS timeout guidance and Little/Graves queueing boundary.",
+    "Website text introduces no measured performance claims; numeric count/probability examples state their assumptions."
+  ]
+}
