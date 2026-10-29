@@ -162,6 +162,16 @@
     if (status === 'loaded') loadedDiagrams++;
     else report(image, status === 'failed' ? 'original diagram image failed to load' : 'original diagram image has not loaded; resource validation is incomplete');
   }
-  if (expectedUnits && images.length !== expectedUnits.filter(unit => unit.kind === 'diagram').length) problems.push('Original diagram image count does not match the source');
-  return {source, view, checked, units: expectedUnits?.length || 0, diagrams: images.length, loadedDiagrams, diagramResources, pairChecks, problems};
+  // A designed FigureMap redraw replaces the Mermaid picture of the original diagram whose
+  // preserved source it names; it is inline SVG, so it counts once it has drawn actors.
+  const figures = [...panel.querySelectorAll('figure.fm-figure[data-figure]')]
+    .filter(figure => panel.querySelector(`code[data-original-diagram-source="${figure.dataset.figure}"]`));
+  for (const figure of figures) {
+    const drawn = figure.querySelectorAll('svg.fm-svg .fm-node, svg.fm-svg .fm-note').length > 0;
+    diagramResources.push({source: 'figure:' + figure.dataset.figure, status: drawn ? 'loaded' : 'failed'});
+    if (drawn) loadedDiagrams++;
+    else report(figure, 'designed figure for an original diagram has no drawn actors');
+  }
+  if (expectedUnits && images.length + figures.length !== expectedUnits.filter(unit => unit.kind === 'diagram').length) problems.push('Original diagram image count does not match the source');
+  return {source, view, checked, units: expectedUnits?.length || 0, diagrams: images.length + figures.length, loadedDiagrams, diagramResources, pairChecks, problems};
 })

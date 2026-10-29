@@ -1,0 +1,3742 @@
+[
+ {
+  "path": "engineering-fundamentals/time-and-clocks",
+  "diagram": "b9ef1fa3869db6f2",
+  "kind": "map",
+  "number": 1,
+  "title": "Where each clock gets its time",
+  "caption": "Physical clocks take their time from hardware and NTP; causal metadata advances only from events and messages. A hybrid logical clock is where the two meet: it takes physical time as an input and merges received timestamps like a logical clock.",
+  "nodes": [
+   {
+    "id": "gps",
+    "title": "GPS receiver",
+    "detail": "reference time",
+    "role": "client",
+    "x": 0,
+    "y": 0,
+    "w": 220
+   },
+   {
+    "id": "atomic",
+    "title": "Atomic clock",
+    "detail": "reference oscillator",
+    "role": "client",
+    "x": 320,
+    "y": 0,
+    "w": 220
+   },
+   {
+    "id": "ntp",
+    "title": "NTP server",
+    "detail": "distributes time",
+    "role": "client",
+    "x": 160,
+    "y": 124,
+    "w": 220
+   },
+   {
+    "id": "quartz",
+    "title": "Quartz oscillator",
+    "detail": "local tick source",
+    "role": "client",
+    "x": 620,
+    "y": 0,
+    "w": 220
+   },
+   {
+    "id": "wall",
+    "title": "Wall clock",
+    "detail": "System.currentTimeMillis",
+    "role": "runtime",
+    "x": 160,
+    "y": 320,
+    "w": 220
+   },
+   {
+    "id": "mono",
+    "title": "Monotonic clock",
+    "detail": "System.nanoTime",
+    "role": "runtime",
+    "x": 620,
+    "y": 320,
+    "w": 220
+   },
+   {
+    "id": "hybrid",
+    "title": "Hybrid logical clock",
+    "detail": "physical part + counter",
+    "role": "storage",
+    "x": 160,
+    "y": 440,
+    "w": 220,
+    "key": true
+   },
+   {
+    "id": "causal",
+    "title": "Causal metadata",
+    "detail": "Lamport / vector",
+    "role": "storage",
+    "x": 430,
+    "y": 440,
+    "w": 220
+   },
+   {
+    "id": "events",
+    "title": "Events and messages",
+    "detail": "local and received",
+    "role": "neutral",
+    "x": 430,
+    "y": 560,
+    "w": 220
+   }
+  ],
+  "groups": [
+   {
+    "id": "physical",
+    "label": "Physical time sources",
+    "nodes": [
+     "gps",
+     "atomic",
+     "ntp",
+     "quartz"
+    ]
+   },
+   {
+    "id": "node",
+    "label": "Each node",
+    "nodes": [
+     "wall",
+     "mono",
+     "hybrid",
+     "causal",
+     "events"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "gps",
+    "to": "ntp",
+    "label": "reference time",
+    "route": "vhv",
+    "mid": 94,
+    "at": 1
+   },
+   {
+    "from": "atomic",
+    "to": "ntp",
+    "label": "reference time",
+    "route": "vhv",
+    "mid": 94,
+    "at": 1
+   },
+   {
+    "from": "ntp",
+    "to": "wall",
+    "label": "sync"
+   },
+   {
+    "from": "quartz",
+    "to": "mono",
+    "label": "counts ticks"
+   },
+   {
+    "from": "wall",
+    "to": "hybrid",
+    "label": "physical-time input"
+   },
+   {
+    "from": "events",
+    "to": "causal",
+    "label": "advance / merge"
+   },
+   {
+    "from": "events",
+    "to": "hybrid",
+    "label": "advance / merge",
+    "route": "hv",
+    "at": 0
+   }
+  ],
+  "sources": [
+   "https://www.rfc-editor.org/rfc/rfc5905",
+   "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/System.html",
+   "https://lamport.azurewebsites.net/pubs/time-clocks.pdf",
+   "https://cse.buffalo.edu/tech-reports/2014-04.pdf"
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/time-and-clocks",
+  "diagram": "3bdebd3a2c6424e4",
+  "kind": "sequence",
+  "number": 2,
+  "title": "Lamport counters across two nodes",
+  "caption": "Each send carries the sender's incremented counter, and each receive jumps past it. The two counters differ, but every receive is numbered after the send that caused it.",
+  "participants": [
+   {
+    "id": "a",
+    "title": "Node A",
+    "detail": "one process",
+    "role": "runtime"
+   },
+   {
+    "id": "b",
+    "title": "Node B",
+    "detail": "another process",
+    "role": "runtime"
+   }
+  ],
+  "events": [
+   [
+    {
+     "over": "a",
+     "text": "LC=0"
+    },
+    {
+     "over": "b",
+     "text": "LC=0"
+    }
+   ],
+   {
+    "at": "a",
+    "label": "local event → LC=1"
+   },
+   {
+    "from": "a",
+    "to": "b",
+    "label": "send event increments A to LC=2"
+   },
+   {
+    "over": "b",
+    "text": "receive: max(0,2)+1 = LC=3"
+   },
+   {
+    "at": "b",
+    "label": "local event → LC=4"
+   },
+   {
+    "from": "b",
+    "to": "a",
+    "label": "send event increments B to LC=5"
+   },
+   {
+    "over": "a",
+    "text": "receive: max(2,5)+1 = LC=6"
+   }
+  ],
+  "sources": [
+   "https://lamport.azurewebsites.net/pubs/time-clocks.pdf"
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/complexity-analysis",
+  "diagram": "47fda54ef40d6aab",
+  "kind": "map",
+  "number": 1,
+  "title": "Two costs of one algorithm",
+  "caption": "Input size drives both kinds of cost. Each growth class describes how time can grow as N grows; Big-O states an upper bound on that growth, not a measured speed.",
+  "nodes": [
+   {
+    "id": "input",
+    "title": "Input size",
+    "role": "neutral",
+    "detail": "N items",
+    "col": 1.5,
+    "row": 0
+   },
+   {
+    "id": "algo",
+    "title": "Algorithm",
+    "role": "runtime",
+    "detail": "the work analysed",
+    "col": 1.5,
+    "row": 1
+   },
+   {
+    "id": "time",
+    "title": "Time complexity",
+    "role": "runtime",
+    "detail": "CPU work",
+    "col": 0.5,
+    "row": 2
+   },
+   {
+    "id": "space",
+    "title": "Space complexity",
+    "role": "storage",
+    "detail": "memory allocated",
+    "col": 2.5,
+    "row": 2
+   },
+   {
+    "id": "c1",
+    "title": "Constant",
+    "role": "neutral",
+    "detail": "O(1)",
+    "col": 0,
+    "row": 3.2
+   },
+   {
+    "id": "cn",
+    "title": "Linear",
+    "role": "neutral",
+    "detail": "O(N)",
+    "col": 1,
+    "row": 3.2
+   },
+   {
+    "id": "cn2",
+    "title": "Quadratic",
+    "role": "neutral",
+    "detail": "O(N²)",
+    "col": 2,
+    "row": 3.2
+   },
+   {
+    "id": "cexp",
+    "title": "Exponential",
+    "role": "neutral",
+    "detail": "O(2ᴺ)",
+    "col": 3,
+    "row": 3.2
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "input",
+    "to": "algo",
+    "label": "size N drives"
+   },
+   {
+    "from": "algo",
+    "to": "time",
+    "label": "uses CPU time",
+    "route": "vhv"
+   },
+   {
+    "from": "algo",
+    "to": "space",
+    "label": "allocates memory",
+    "route": "vhv"
+   },
+   {
+    "from": "time",
+    "to": "cexp",
+    "label": "common growth classes",
+    "route": "vhv",
+    "bus": "cls",
+    "at": 1
+   },
+   {
+    "from": "time",
+    "to": "c1",
+    "label": "common growth classes",
+    "route": "vhv",
+    "bus": "cls"
+   },
+   {
+    "from": "time",
+    "to": "cn",
+    "label": "common growth classes",
+    "route": "vhv",
+    "bus": "cls"
+   },
+   {
+    "from": "time",
+    "to": "cn2",
+    "label": "common growth classes",
+    "route": "vhv",
+    "bus": "cls"
+   }
+  ],
+  "sources": [
+   "https://xlinux.nist.gov/dads/HTML/bigOnotation.html"
+  ],
+  "grid": [
+   230,
+   120
+  ],
+  "card_w": 200
+ },
+ {
+  "path": "engineering-fundamentals/complexity-analysis",
+  "diagram": "f3c98d84c7f1ae7a",
+  "kind": "map",
+  "number": 2,
+  "title": "What an indexed lookup still has to do",
+  "caption": "An index finds where the matches start, but the query still visits each of the K matches and may fetch table columns for each one. The cost grows with K as well as with log N.",
+  "nodes": [
+   {
+    "id": "query",
+    "title": "Query",
+    "role": "client",
+    "detail": "users named Smith",
+    "col": 0,
+    "row": 0
+   },
+   {
+    "id": "seek",
+    "title": "1. Seek key range",
+    "role": "storage",
+    "detail": "index lookup",
+    "col": 0,
+    "row": 1.4
+   },
+   {
+    "id": "match",
+    "title": "2. Visit K matches",
+    "role": "storage",
+    "detail": "each matching entry",
+    "col": 0,
+    "row": 2.4
+   },
+   {
+    "id": "fetch",
+    "title": "3. Fetch columns",
+    "role": "storage",
+    "detail": "if the index lacks them",
+    "col": 0,
+    "row": 4.0
+   },
+   {
+    "id": "ret",
+    "title": "4. Return K rows",
+    "role": "client",
+    "detail": "result to the caller",
+    "col": 0,
+    "row": 5.0
+   }
+  ],
+  "groups": [
+   {
+    "id": "lookup",
+    "label": "Indexed lookup",
+    "nodes": [
+     "seek",
+     "match"
+    ]
+   },
+   {
+    "id": "output",
+    "label": "Required result work",
+    "nodes": [
+     "fetch",
+     "ret"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "query",
+    "to": "seek",
+    "label": "predicate",
+    "t": 0.3
+   },
+   {
+    "from": "seek",
+    "to": "match",
+    "label": "range found"
+   },
+   {
+    "from": "match",
+    "to": "fetch",
+    "label": "matching row identifiers",
+    "t": 0.39
+   },
+   {
+    "from": "fetch",
+    "to": "ret",
+    "label": "requested columns"
+   }
+  ],
+  "sources": [
+   "https://www.sqlite.org/queryplanner.html"
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/latency-vs-throughput",
+  "diagram": "e696b169fbdbf2a2",
+  "kind": "map",
+  "number": 1,
+  "title": "What Little's Law counts",
+  "caption": "Little's Law counts everything inside the measured boundary: requests waiting for capacity as well as requests being served. Mean time in the system starts at admission and ends at departure.",
+  "nodes": [
+   {
+    "id": "arr",
+    "title": "Accepted arrivals",
+    "role": "client",
+    "detail": "average rate λ",
+    "col": 0,
+    "row": 0
+   },
+   {
+    "id": "wait",
+    "title": "Waiting",
+    "role": "queue",
+    "detail": "for capacity",
+    "col": 0,
+    "row": 1.4
+   },
+   {
+    "id": "serve",
+    "title": "Receiving service",
+    "role": "runtime",
+    "col": 0,
+    "row": 2.4
+   },
+   {
+    "id": "exit",
+    "title": "Accounted departures",
+    "role": "neutral",
+    "col": 0,
+    "row": 3.8
+   }
+  ],
+  "groups": [
+   {
+    "id": "sys",
+    "label": "Measured: queued + running",
+    "nodes": [
+     "wait",
+     "serve"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "arr",
+    "to": "wait",
+    "label": "start residence-time measurement",
+    "t": 0.25
+   },
+   {
+    "from": "wait",
+    "to": "serve",
+    "label": "capacity available"
+   },
+   {
+    "from": "serve",
+    "to": "exit",
+    "label": "finish residence-time measurement",
+    "t": 0.62
+   }
+  ],
+  "sources": [
+   "https://web.eng.ucsd.edu/~massimo/ECE158A/Handouts_files/Little.pdf"
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/latency-vs-throughput",
+  "diagram": "ec417d7594eddbac",
+  "kind": "map",
+  "number": 2,
+  "title": "Concurrency past the knee",
+  "caption": "Adding concurrency raises throughput only until a resource saturates. Beyond that point extra work waits in queues: throughput flattens and then falls while latency climbs.",
+  "nodes": [
+   {
+    "id": "low",
+    "title": "Low concurrency",
+    "role": "runtime",
+    "detail": [
+     "throughput: low",
+     "latency: low"
+    ],
+    "col": 0,
+    "row": 0
+   },
+   {
+    "id": "mid",
+    "title": "Optimal concurrency",
+    "role": "runtime",
+    "detail": [
+     "throughput: high",
+     "latency: low"
+    ],
+    "col": 1,
+    "row": 0,
+    "key": true
+   },
+   {
+    "id": "sat",
+    "title": "Saturated",
+    "role": "runtime",
+    "detail": [
+     "throughput: flat",
+     "latency: climbing"
+    ],
+    "col": 1,
+    "row": 1.3
+   },
+   {
+    "id": "over",
+    "title": "Overload",
+    "role": "runtime",
+    "detail": [
+     "throughput: falling",
+     "latency: high"
+    ],
+    "col": 0,
+    "row": 1.3
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "low",
+    "to": "mid",
+    "label": "add concurrency"
+   },
+   {
+    "from": "mid",
+    "to": "sat",
+    "label": "past the knee"
+   },
+   {
+    "from": "sat",
+    "to": "over",
+    "label": "keep adding load"
+   }
+  ],
+  "sources": [
+   "https://web.eng.ucsd.edu/~massimo/ECE158A/Handouts_files/Little.pdf",
+   "https://research.google/pubs/the-tail-at-scale/"
+  ],
+  "grid": [
+   380,
+   120
+  ],
+  "card_w": 200
+ },
+ {
+  "path": "engineering-fundamentals/latency-vs-throughput",
+  "diagram": "6144232070c5bb08",
+  "kind": "map",
+  "number": 3,
+  "title": "Where the throughput ceiling sits",
+  "caption": "A cache hit avoids the database; a miss still needs it. If the database is the limiting resource, adding app servers cannot raise throughput past it.",
+  "nodes": [
+   {
+    "id": "client",
+    "title": "Client",
+    "role": "client",
+    "x": 260,
+    "y": 0
+   },
+   {
+    "id": "lb",
+    "title": "Load balancer",
+    "role": "runtime",
+    "x": 260,
+    "y": 132
+   },
+   {
+    "id": "a1",
+    "title": "App server 1",
+    "role": "runtime",
+    "x": 0,
+    "y": 288
+   },
+   {
+    "id": "a2",
+    "title": "App server 2",
+    "role": "runtime",
+    "x": 520,
+    "y": 288
+   },
+   {
+    "id": "cache",
+    "title": "Cache",
+    "role": "storage",
+    "detail": "in memory",
+    "x": 260,
+    "y": 432
+   },
+   {
+    "id": "db",
+    "title": "Database",
+    "role": "storage",
+    "x": 260,
+    "y": 588,
+    "key": true
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "client",
+    "to": "lb",
+    "label": "request"
+   },
+   {
+    "from": "lb",
+    "to": "a1",
+    "label": "forwards requests",
+    "route": "vhv"
+   },
+   {
+    "from": "lb",
+    "to": "a2",
+    "label": "forwards requests",
+    "route": "vhv"
+   },
+   {
+    "from": "a1",
+    "to": "cache",
+    "label": "lookup",
+    "route": "vhv"
+   },
+   {
+    "from": "a2",
+    "to": "cache",
+    "label": "lookup",
+    "route": "vhv"
+   },
+   {
+    "from": "a1",
+    "to": "db",
+    "label": "reads and writes",
+    "route": "vh"
+   },
+   {
+    "from": "a2",
+    "to": "db",
+    "label": "reads and writes",
+    "route": "vh"
+   },
+   {
+    "from": "cache",
+    "to": "db",
+    "label": "miss reads"
+   }
+  ],
+  "sources": [
+   "https://aws.amazon.com/builders-library/caching-challenges-and-strategies/",
+   "https://web.eng.ucsd.edu/~massimo/ECE158A/Handouts_files/Little.pdf"
+  ],
+  "card_w": 200
+ },
+ {
+  "path": "engineering-fundamentals/coupling-vs-cohesion",
+  "diagram": "32791bd81625cbe0",
+  "kind": "map",
+  "number": 1,
+  "title": "Who constructs, who depends",
+  "caption": "The feature depends only on the cart contract it owns; the composition boundary decides which implementation fulfils it. Transport details stay behind the adapter, so changing them does not ripple into checkout.",
+  "nodes": [
+   {
+    "id": "factory",
+    "title": "Construct dependencies",
+    "role": "neutral",
+    "detail": "choose and wire",
+    "x": 0,
+    "y": 0
+   },
+   {
+    "id": "adapter",
+    "title": "Repository impl",
+    "role": "runtime",
+    "detail": "uses the transport",
+    "x": 0,
+    "y": 156
+   },
+   {
+    "id": "transport",
+    "title": "HTTP + local storage",
+    "role": "client",
+    "detail": "implementation details",
+    "x": 0,
+    "y": 312
+   },
+   {
+    "id": "vm",
+    "title": "Checkout state owner",
+    "role": "runtime",
+    "x": 500,
+    "y": 0
+   },
+   {
+    "id": "contract",
+    "title": "Cart data contract",
+    "role": "neutral",
+    "x": 500,
+    "y": 156,
+    "key": true
+   }
+  ],
+  "groups": [
+   {
+    "id": "wiring",
+    "label": "Composition boundary",
+    "nodes": [
+     "factory",
+     "adapter",
+     "transport"
+    ]
+   },
+   {
+    "id": "feature",
+    "label": "Checkout feature",
+    "nodes": [
+     "vm",
+     "contract"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "factory",
+    "to": "adapter",
+    "label": "constructs"
+   },
+   {
+    "from": "adapter",
+    "to": "transport",
+    "label": "uses implementation details"
+   },
+   {
+    "from": "vm",
+    "to": "contract",
+    "label": [
+     "load cart; receive",
+     "application values"
+    ]
+   },
+   {
+    "from": "factory",
+    "to": "vm",
+    "label": "supplies dependency"
+   },
+   {
+    "from": "adapter",
+    "to": "contract",
+    "label": "implements",
+    "style": "dashed"
+   }
+  ],
+  "sources": [
+   "https://developer.android.com/training/dependency-injection",
+   "https://kotlinlang.org/docs/visibility-modifiers.html"
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/coupling-vs-cohesion",
+  "diagram": "a857514bc34960c9",
+  "kind": "map",
+  "number": 2,
+  "title": "Tangled modules and a narrow seam",
+  "caption": "Left: every module reaches into its neighbours, so one change can ripple through all four. Right: Cart and Checkout meet only at an interface, so each can change behind it.",
+  "nodes": [
+   {
+    "id": "a",
+    "title": "Module A",
+    "role": "runtime",
+    "col": 0,
+    "row": 0
+   },
+   {
+    "id": "b",
+    "title": "Module B",
+    "role": "runtime",
+    "col": 1,
+    "row": 0
+   },
+   {
+    "id": "c",
+    "title": "Module C",
+    "role": "runtime",
+    "col": 0,
+    "row": 1
+   },
+   {
+    "id": "d",
+    "title": "Module D",
+    "role": "runtime",
+    "col": 1,
+    "row": 1
+   },
+   {
+    "id": "cart",
+    "title": "Cart module",
+    "role": "runtime",
+    "col": 2.15,
+    "row": 0
+   },
+   {
+    "id": "checkout",
+    "title": "Checkout module",
+    "role": "runtime",
+    "col": 2.15,
+    "row": 1
+   }
+  ],
+  "groups": [
+   {
+    "id": "tangled",
+    "label": "High coupling",
+    "nodes": [
+     "a",
+     "b",
+     "c",
+     "d"
+    ]
+   },
+   {
+    "id": "seam",
+    "label": "Low coupling",
+    "nodes": [
+     "cart",
+     "checkout"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "a",
+    "to": "b",
+    "label": "depends on",
+    "both": true
+   },
+   {
+    "from": "a",
+    "to": "c",
+    "label": "depends on",
+    "both": true
+   },
+   {
+    "from": "b",
+    "to": "c",
+    "label": "depends on",
+    "both": true
+   },
+   {
+    "from": "b",
+    "to": "d",
+    "label": "depends on",
+    "both": true
+   },
+   {
+    "from": "c",
+    "to": "d",
+    "label": "depends on",
+    "both": true
+   },
+   {
+    "from": "cart",
+    "to": "checkout",
+    "label": "through an interface",
+    "style": "dashed"
+   }
+  ],
+  "sources": [
+   "https://developer.android.com/training/dependency-injection",
+   "https://kotlinlang.org/docs/visibility-modifiers.html"
+  ],
+  "grid": [
+   300,
+   150
+  ],
+  "card_w": 180
+ },
+ {
+  "path": "engineering-fundamentals/immutability",
+  "diagram": "1e675966bd4befcf",
+  "kind": "map",
+  "number": 1,
+  "title": "A shallow copy shares its list",
+  "caption": "copy() creates a second Company, but both still point at one MutableList. A change through either reference is visible through both: a shallow copy is not an immutable snapshot.",
+  "nodes": [
+   {
+    "id": "orig",
+    "title": "Original Company",
+    "role": "storage",
+    "x": 0,
+    "y": 0
+   },
+   {
+    "id": "copy",
+    "title": "Copied Company",
+    "role": "storage",
+    "x": 300,
+    "y": 0
+   },
+   {
+    "id": "list",
+    "title": "One shared list",
+    "role": "storage",
+    "detail": "MutableList of employees",
+    "x": 150,
+    "y": 200,
+    "w": 230,
+    "key": true
+   },
+   {
+    "id": "change",
+    "title": "Add Charlie",
+    "role": "runtime",
+    "detail": "through either reference",
+    "x": 155,
+    "y": 340
+   }
+  ],
+  "groups": [
+   {
+    "id": "objs",
+    "label": "Two objects after copy()",
+    "nodes": [
+     "orig",
+     "copy"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "orig",
+    "to": "list",
+    "label": "employees reference",
+    "route": "vhv",
+    "at": 0,
+    "t": 0.75
+   },
+   {
+    "from": "copy",
+    "to": "list",
+    "label": "same employees reference",
+    "route": "vhv",
+    "at": 0,
+    "t": 0.75
+   },
+   {
+    "from": "change",
+    "to": "list",
+    "label": "mutates shared contents"
+   }
+  ],
+  "sources": [
+   "https://kotlinlang.org/docs/data-classes.html"
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/immutability",
+  "diagram": "65c2bd4e9404f910",
+  "kind": "map",
+  "number": 2,
+  "title": "Racing writers versus shared values",
+  "caption": "With shared mutable state, a writer and a reader race on the same object. With immutable state, readers share one value safely and a change produces a new object; publishing that new reference still needs its own rule.",
+  "nodes": [
+   {
+    "id": "t1",
+    "title": "Thread 1",
+    "role": "runtime",
+    "col": 0,
+    "row": 0
+   },
+   {
+    "id": "t2",
+    "title": "Thread 2",
+    "role": "runtime",
+    "col": 1,
+    "row": 0
+   },
+   {
+    "id": "ms",
+    "title": "Mutable object",
+    "role": "storage",
+    "col": 0.5,
+    "row": 1.3
+   },
+   {
+    "id": "crash",
+    "title": "Data corruption",
+    "role": "neutral",
+    "col": 0.5,
+    "row": 2.6
+   },
+   {
+    "id": "t3",
+    "title": "Thread 3",
+    "role": "runtime",
+    "col": 2.4,
+    "row": 0
+   },
+   {
+    "id": "t4",
+    "title": "Thread 4",
+    "role": "runtime",
+    "col": 3.4,
+    "row": 0
+   },
+   {
+    "id": "copy",
+    "title": "Immutable copy",
+    "role": "storage",
+    "detail": "new object",
+    "col": 2.4,
+    "row": 1.3
+   },
+   {
+    "id": "is",
+    "title": "Immutable object",
+    "role": "storage",
+    "col": 3.4,
+    "row": 1.3
+   }
+  ],
+  "groups": [
+   {
+    "id": "mut",
+    "label": "Shared mutable state",
+    "nodes": [
+     "t1",
+     "t2",
+     "ms",
+     "crash"
+    ]
+   },
+   {
+    "id": "imm",
+    "label": "Immutable state",
+    "nodes": [
+     "t3",
+     "t4",
+     "copy",
+     "is"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "t1",
+    "to": "ms",
+    "label": "writes",
+    "route": "vhv"
+   },
+   {
+    "from": "t2",
+    "to": "ms",
+    "label": "reads",
+    "route": "vhv"
+   },
+   {
+    "from": "ms",
+    "to": "crash",
+    "label": "race condition",
+    "style": "dashed"
+   },
+   {
+    "from": "t3",
+    "to": "is",
+    "label": "reads",
+    "t": 0.7
+   },
+   {
+    "from": "t4",
+    "to": "is",
+    "label": "reads",
+    "t": 0.3
+   },
+   {
+    "from": "t3",
+    "to": "copy",
+    "label": "creates a new copy",
+    "t": 0.3
+   }
+  ],
+  "sources": [
+   "https://docs.oracle.com/javase/specs/jls/se25/html/jls-17.html",
+   "https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html"
+  ],
+  "grid": [
+   200,
+   130
+  ],
+  "card_w": 170
+ },
+ {
+  "path": "engineering-fundamentals/serialization",
+  "diagram": "9501c8f5e9aee098",
+  "kind": "map",
+  "number": 1,
+  "title": "Only the representation crosses the network",
+  "caption": "Serialization flattens an in-memory object into bytes another runtime can read; deserialization rebuilds a separate object on the other side. Only the agreed representation crosses the network.",
+  "nodes": [
+   {
+    "id": "mem1",
+    "title": "In-memory object",
+    "role": "storage",
+    "detail": "server model",
+    "x": 0,
+    "y": 0
+   },
+   {
+    "id": "flat",
+    "title": "JSON or bytes",
+    "role": "neutral",
+    "detail": "flat representation",
+    "x": 0,
+    "y": 168
+   },
+   {
+    "id": "mobile",
+    "title": "Byte stream",
+    "role": "neutral",
+    "detail": "received by the app",
+    "x": 520,
+    "y": 168
+   },
+   {
+    "id": "mem2",
+    "title": "In-memory object",
+    "role": "storage",
+    "detail": "Kotlin model",
+    "x": 520,
+    "y": 0
+   }
+  ],
+  "groups": [
+   {
+    "id": "server",
+    "label": "Backend server (Go/Java)",
+    "nodes": [
+     "mem1",
+     "flat"
+    ]
+   },
+   {
+    "id": "client",
+    "label": "Mobile client (Kotlin)",
+    "nodes": [
+     "mobile",
+     "mem2"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "mem1",
+    "to": "flat",
+    "label": "serialize"
+   },
+   {
+    "from": "flat",
+    "to": "mobile",
+    "label": "network transmission"
+   },
+   {
+    "from": "mobile",
+    "to": "mem2",
+    "label": "deserialize"
+   }
+  ],
+  "sources": [
+   "https://www.rfc-editor.org/rfc/rfc8259",
+   "https://protobuf.dev/programming-guides/encoding/"
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/serialization",
+  "diagram": "35686c4c1c4c63e4",
+  "kind": "map",
+  "number": 2,
+  "title": "An old reader meets new bytes",
+  "caption": "Treat received bytes as untrusted input. An older reader decodes within size and schema limits, validates meaning, and turns anything malformed, incompatible or invalid into a controlled error or a supported fallback.",
+  "nodes": [
+   {
+    "id": "model",
+    "title": "Application data",
+    "role": "storage",
+    "col": 0,
+    "row": 0
+   },
+   {
+    "id": "encode",
+    "title": "Encode agreed schema",
+    "role": "runtime",
+    "col": 0,
+    "row": 1
+   },
+   {
+    "id": "wire",
+    "title": "Untrusted bytes",
+    "role": "neutral",
+    "col": 0,
+    "row": 2.4,
+    "key": true
+   },
+   {
+    "id": "decode",
+    "title": "Decode with limits",
+    "role": "runtime",
+    "detail": "size and schema policy",
+    "col": 0,
+    "row": 3.8
+   },
+   {
+    "id": "validate",
+    "title": "Validate meaning",
+    "role": "runtime",
+    "detail": "domain constraints",
+    "col": 0,
+    "row": 4.8
+   },
+   {
+    "id": "domain",
+    "title": "Usable value",
+    "role": "storage",
+    "detail": "application model",
+    "col": 0,
+    "row": 5.8
+   },
+   {
+    "id": "failure",
+    "title": "Controlled error",
+    "role": "neutral",
+    "detail": "or supported fallback",
+    "x": 480,
+    "y": 576
+   }
+  ],
+  "groups": [
+   {
+    "id": "writer",
+    "label": "Writer version N+1",
+    "nodes": [
+     "model",
+     "encode"
+    ]
+   },
+   {
+    "id": "reader",
+    "label": "Installed reader version N",
+    "nodes": [
+     "decode",
+     "validate",
+     "domain",
+     "failure"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "model",
+    "to": "encode",
+    "label": "serializable fields"
+   },
+   {
+    "from": "encode",
+    "to": "wire",
+    "label": "wire representation",
+    "t": 0.62
+   },
+   {
+    "from": "wire",
+    "to": "decode",
+    "label": "bounded input",
+    "t": 0.245
+   },
+   {
+    "from": "decode",
+    "to": "validate",
+    "label": "supported representation"
+   },
+   {
+    "from": "decode",
+    "to": "failure",
+    "label": "malformed or incompatible",
+    "route": "hv"
+   },
+   {
+    "from": "validate",
+    "to": "domain",
+    "label": "valid meaning"
+   },
+   {
+    "from": "validate",
+    "to": "failure",
+    "label": "invalid business value"
+   }
+  ],
+  "sources": [
+   "https://protobuf.dev/programming-guides/encoding/",
+   "https://www.rfc-editor.org/rfc/rfc8259"
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/sync-vs-async",
+  "diagram": "c74f38f0216b377f",
+  "kind": "map",
+  "number": 1,
+  "title": "A blocking read parks its thread",
+  "caption": "A blocking read() holds its thread until data arrives. The kernel can run other threads meanwhile, but this one stays parked with its stack allocated.",
+  "nodes": [
+   {
+    "id": "thread",
+    "title": "Thread",
+    "role": "runtime",
+    "detail": "platform thread",
+    "col": 0,
+    "row": 0
+   },
+   {
+    "id": "read",
+    "title": "read()",
+    "role": "runtime",
+    "detail": "blocking call",
+    "col": 1,
+    "row": 0
+   },
+   {
+    "id": "park",
+    "title": "Kernel parks thread",
+    "role": "runtime",
+    "detail": "stack stays allocated",
+    "col": 2,
+    "row": 0,
+    "key": true
+   },
+   {
+    "id": "data",
+    "title": "Data arrives",
+    "role": "client",
+    "detail": "from the device",
+    "col": 2,
+    "row": 1.3
+   },
+   {
+    "id": "cont",
+    "title": "Thread continues",
+    "role": "runtime",
+    "detail": "read() returns",
+    "col": 1,
+    "row": 1.3
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "thread",
+    "to": "read",
+    "label": "calls"
+   },
+   {
+    "from": "read",
+    "to": "park",
+    "label": "no data yet"
+   },
+   {
+    "from": "park",
+    "to": "data",
+    "label": "sleeps until"
+   },
+   {
+    "from": "data",
+    "to": "cont",
+    "label": "wakes it"
+   }
+  ],
+  "sources": [
+   "https://man7.org/linux/man-pages/man2/read.2.html"
+  ],
+  "grid": [
+   330,
+   120
+  ],
+  "card_w": 200
+ },
+ {
+  "path": "engineering-fundamentals/sync-vs-async",
+  "diagram": "9d238d439c785157",
+  "kind": "map",
+  "number": 2,
+  "title": "One thread, many descriptors",
+  "caption": "One thread registers interest in many descriptors, waits in poll(), and runs the callback for whichever descriptor is ready before returning to poll() again.",
+  "nodes": [
+   {
+    "id": "loop",
+    "title": "Event loop",
+    "role": "runtime",
+    "detail": "one thread",
+    "col": 0,
+    "row": 0
+   },
+   {
+    "id": "reg",
+    "title": "register(fd, cb)",
+    "role": "neutral",
+    "detail": "interest + callback",
+    "col": 1,
+    "row": 0
+   },
+   {
+    "id": "poll",
+    "title": "poll()",
+    "role": "runtime",
+    "detail": "many descriptors",
+    "col": 2,
+    "row": 0,
+    "key": true
+   },
+   {
+    "id": "cb",
+    "title": "Callback",
+    "role": "runtime",
+    "detail": "handles ready I/O",
+    "col": 2,
+    "row": 1.8
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "loop",
+    "to": "reg",
+    "label": "registers"
+   },
+   {
+    "from": "reg",
+    "to": "poll",
+    "label": "waits in"
+   },
+   {
+    "from": "poll",
+    "to": "cb",
+    "label": "descriptor ready",
+    "from_dx": -40,
+    "to_dx": -40,
+    "t": 0.25
+   },
+   {
+    "from": "cb",
+    "to": "poll",
+    "label": "back to poll()",
+    "route": "curve",
+    "bend": -70,
+    "from_dx": 40,
+    "to_dx": 40
+   }
+  ],
+  "sources": [
+   "https://man7.org/linux/man-pages/man7/epoll.7.html"
+  ],
+  "grid": [
+   330,
+   120
+  ],
+  "card_w": 200
+ },
+ {
+  "path": "engineering-fundamentals/sync-vs-async",
+  "diagram": "0dfcd495b25d4489",
+  "kind": "map",
+  "number": 3,
+  "title": "Thread-per-request",
+  "caption": "Thread-per-request: each request occupies its own thread for the whole I/O wait, so concurrent waits need as many threads.",
+  "nodes": [
+   {
+    "id": "t1",
+    "title": "Thread 1",
+    "role": "runtime",
+    "detail": "handles request 1",
+    "col": 0,
+    "row": 0
+   },
+   {
+    "id": "r1",
+    "title": "Result 1",
+    "role": "neutral",
+    "col": 1,
+    "row": 0
+   },
+   {
+    "id": "t2",
+    "title": "Thread 2",
+    "role": "runtime",
+    "detail": "handles request 2",
+    "col": 0,
+    "row": 1
+   },
+   {
+    "id": "r2",
+    "title": "Result 2",
+    "role": "neutral",
+    "col": 1,
+    "row": 1
+   },
+   {
+    "id": "t3",
+    "title": "Thread 3",
+    "role": "runtime",
+    "detail": "handles request 3",
+    "col": 0,
+    "row": 2
+   },
+   {
+    "id": "r3",
+    "title": "Result 3",
+    "role": "neutral",
+    "col": 1,
+    "row": 2
+   }
+  ],
+  "groups": [
+   {
+    "id": "tpr",
+    "label": "Thread-per-request",
+    "nodes": [
+     "t1",
+     "r1",
+     "t2",
+     "r2",
+     "t3",
+     "r3"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "t1",
+    "to": "r1",
+    "label": "blocks on I/O",
+    "style": "dashed"
+   },
+   {
+    "from": "t2",
+    "to": "r2",
+    "label": "blocks on I/O",
+    "style": "dashed"
+   },
+   {
+    "from": "t3",
+    "to": "r3",
+    "label": "blocks on I/O",
+    "style": "dashed"
+   }
+  ],
+  "sources": [
+   "https://man7.org/linux/man-pages/man2/read.2.html"
+  ],
+  "grid": [
+   380,
+   100
+  ],
+  "card_w": 200
+ },
+ {
+  "path": "engineering-fundamentals/sync-vs-async",
+  "diagram": "d44ee641447978f2",
+  "kind": "map",
+  "number": 4,
+  "title": "Event loop",
+  "caption": "Event loop: one thread waits on many pending operations and runs a short callback whenever one completes. A slow callback delays every other completion.",
+  "nodes": [
+   {
+    "id": "loop",
+    "title": "Event loop",
+    "role": "runtime",
+    "detail": "single thread",
+    "x": 130,
+    "y": 0,
+    "key": true
+   },
+   {
+    "id": "q",
+    "title": "Pending I/O",
+    "role": "queue",
+    "detail": "registered waits",
+    "x": 490,
+    "y": 0
+   },
+   {
+    "id": "cb1",
+    "title": "Callback 1",
+    "role": "runtime",
+    "detail": "runs when ready",
+    "x": 0,
+    "y": 170
+   },
+   {
+    "id": "cb2",
+    "title": "Callback 2",
+    "role": "runtime",
+    "detail": "runs when ready",
+    "x": 260,
+    "y": 170
+   }
+  ],
+  "groups": [
+   {
+    "id": "el",
+    "label": "Event loop",
+    "nodes": [
+     "loop",
+     "q",
+     "cb1",
+     "cb2"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "loop",
+    "to": "q",
+    "label": "waits on"
+   },
+   {
+    "from": "q",
+    "to": "loop",
+    "label": "completions",
+    "route": "curve",
+    "bend": 60
+   },
+   {
+    "from": "loop",
+    "to": "cb1",
+    "label": "runs",
+    "route": "vhv"
+   },
+   {
+    "from": "loop",
+    "to": "cb2",
+    "label": "runs",
+    "route": "vhv"
+   }
+  ],
+  "sources": [
+   "https://man7.org/linux/man-pages/man7/epoll.7.html"
+  ],
+  "card_w": 200
+ },
+ {
+  "path": "engineering-fundamentals/sync-vs-async",
+  "diagram": "b9528a4d8ad32fd2",
+  "kind": "map",
+  "number": 5,
+  "title": "M:N coroutines",
+  "caption": "M:N scheduling: many coroutines share a small pool of N OS threads. A coroutine that suspends releases its thread for another; a blocking call inside one still occupies the thread.",
+  "nodes": [
+   {
+    "id": "pool",
+    "title": "Thread pool",
+    "role": "runtime",
+    "detail": "N OS threads",
+    "col": 0,
+    "row": 0
+   },
+   {
+    "id": "many",
+    "title": "Coroutines",
+    "role": "runtime",
+    "detail": "M in total",
+    "col": 0,
+    "row": 1.3
+   }
+  ],
+  "groups": [
+   {
+    "id": "mn",
+    "label": "M:N coroutines",
+    "nodes": [
+     "pool",
+     "many"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "pool",
+    "to": "many",
+    "label": "runs"
+   },
+   {
+    "from": "many",
+    "to": "many",
+    "label": "suspends and resumes",
+    "style": "dashed"
+   }
+  ],
+  "sources": [
+   "https://kotlinlang.org/docs/coroutines-basics.html",
+   "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html"
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/queues",
+  "diagram": "39b070e4fdc31f4d",
+  "kind": "map",
+  "number": 1,
+  "title": "Producers, a buffer and two workers",
+  "caption": "Producers enqueue at their own pace; workers dequeue and flush to the backend at theirs. The queue absorbs bursts, but with two workers, items can finish out of order.",
+  "nodes": [
+   {
+    "id": "p1",
+    "title": "UI producer",
+    "role": "client",
+    "col": 0,
+    "row": 0
+   },
+   {
+    "id": "p2",
+    "title": "Sensor producer",
+    "role": "client",
+    "col": 1,
+    "row": 0
+   },
+   {
+    "id": "q",
+    "title": "Queue buffer",
+    "role": "queue",
+    "col": 0.5,
+    "row": 1.2,
+    "key": true
+   },
+   {
+    "id": "c1",
+    "title": "Worker 1",
+    "role": "runtime",
+    "detail": "consumer",
+    "col": 0,
+    "row": 2.4
+   },
+   {
+    "id": "c2",
+    "title": "Worker 2",
+    "role": "runtime",
+    "detail": "consumer",
+    "col": 1,
+    "row": 2.4
+   },
+   {
+    "id": "api",
+    "title": "Backend API",
+    "role": "neutral",
+    "col": 0.5,
+    "row": 3.6
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "p1",
+    "to": "q",
+    "label": "enqueue",
+    "route": "vhv"
+   },
+   {
+    "from": "p2",
+    "to": "q",
+    "label": "enqueue",
+    "route": "vhv"
+   },
+   {
+    "from": "q",
+    "to": "c1",
+    "label": "dequeue",
+    "route": "vhv"
+   },
+   {
+    "from": "q",
+    "to": "c2",
+    "label": "dequeue",
+    "route": "vhv"
+   },
+   {
+    "from": "c1",
+    "to": "api",
+    "label": "flush",
+    "route": "vhv"
+   },
+   {
+    "from": "c2",
+    "to": "api",
+    "label": "flush",
+    "route": "vhv"
+   }
+  ],
+  "sources": [
+   "https://kotlinlang.org/docs/channels.html"
+  ],
+  "card_w": 200
+ },
+ {
+  "path": "engineering-fundamentals/backpressure",
+  "diagram": "5cc1a1c6148abefb",
+  "kind": "map",
+  "number": 1,
+  "title": "End-to-end backpressure",
+  "caption": "The slow sink's limit travels upstream one stage at a time until the source slows down. If any stage ignores it, work piles up at that stage instead.",
+  "nodes": [
+   {
+    "id": "src",
+    "title": "Source",
+    "role": "client",
+    "col": 0,
+    "row": 0
+   },
+   {
+    "id": "s1",
+    "title": "Stage 1",
+    "role": "runtime",
+    "col": 0,
+    "row": 1
+   },
+   {
+    "id": "s2",
+    "title": "Stage 2",
+    "role": "runtime",
+    "col": 0,
+    "row": 2
+   },
+   {
+    "id": "s3",
+    "title": "Stage 3",
+    "role": "runtime",
+    "col": 0,
+    "row": 3
+   },
+   {
+    "id": "sink",
+    "title": "Slow sink",
+    "role": "runtime",
+    "col": 0,
+    "row": 4,
+    "key": true
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "src",
+    "to": "s1",
+    "label": "items"
+   },
+   {
+    "from": "s1",
+    "to": "s2",
+    "label": "items"
+   },
+   {
+    "from": "s2",
+    "to": "s3",
+    "label": "items"
+   },
+   {
+    "from": "s3",
+    "to": "sink",
+    "label": "items"
+   },
+   {
+    "from": "sink",
+    "to": "s3",
+    "label": "backpressure",
+    "style": "dashed",
+    "route": "around",
+    "off": 100
+   },
+   {
+    "from": "s3",
+    "to": "s2",
+    "label": "backpressure",
+    "style": "dashed",
+    "route": "around",
+    "off": 100
+   },
+   {
+    "from": "s2",
+    "to": "s1",
+    "label": "backpressure",
+    "style": "dashed",
+    "route": "around",
+    "off": 100
+   },
+   {
+    "from": "s1",
+    "to": "src",
+    "label": "backpressure",
+    "style": "dashed",
+    "route": "around",
+    "off": 100
+   }
+  ],
+  "sources": [
+   "https://www.reactive-streams.org/"
+  ],
+  "grid": [
+   260,
+   110
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/backpressure",
+  "diagram": "3b4efc616b42f367",
+  "kind": "sequence",
+  "number": 2,
+  "title": "TCP flow control",
+  "caption": "The receiver advertises how much buffer space it has left. At window 0 the sender stops and waits; a later window update lets it resume.",
+  "participants": [
+   {
+    "id": "s",
+    "title": "Sender",
+    "role": "client"
+   },
+   {
+    "id": "r",
+    "title": "Receiver",
+    "role": "runtime"
+   }
+  ],
+  "events": [
+   {
+    "over": "r",
+    "text": "Advertised window = 8000"
+   },
+   {
+    "from": "s",
+    "to": "r",
+    "label": "Data"
+   },
+   {
+    "from": "r",
+    "to": "s",
+    "label": "ACK + window = 4000",
+    "style": "dashed"
+   },
+   {
+    "from": "s",
+    "to": "r",
+    "label": "More data"
+   },
+   {
+    "from": "r",
+    "to": "s",
+    "label": "ACK + window = 0",
+    "style": "dashed"
+   },
+   {
+    "over": "s",
+    "text": "Stop and wait",
+    "role": "neutral"
+   },
+   {
+    "from": "r",
+    "to": "s",
+    "label": "ACK + window = 2000",
+    "style": "dashed"
+   },
+   {
+    "over": "s",
+    "text": "Resume sending",
+    "role": "neutral"
+   }
+  ],
+  "sources": [
+   "https://www.rfc-editor.org/rfc/rfc9293"
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/backpressure",
+  "diagram": "5594788b59161df2",
+  "kind": "map",
+  "number": 3,
+  "title": "A policy at every boundary",
+  "caption": "Each boundary can have its own buffer policy: drop the oldest pending events before parsing, bound enrichment work, and conflate before rendering so only the latest value waits.",
+  "nodes": [
+   {
+    "id": "src",
+    "title": "Source",
+    "role": "client",
+    "detail": "e.g. SSE stream",
+    "col": 0,
+    "row": 0
+   },
+   {
+    "id": "parse",
+    "title": "Parse",
+    "role": "runtime",
+    "col": 0,
+    "row": 1
+   },
+   {
+    "id": "enrich",
+    "title": "Enrich",
+    "role": "runtime",
+    "col": 0,
+    "row": 2
+   },
+   {
+    "id": "render",
+    "title": "Render",
+    "role": "runtime",
+    "col": 0,
+    "row": 3
+   },
+   {
+    "id": "ui",
+    "title": "UI",
+    "role": "client",
+    "col": 0,
+    "row": 4
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "src",
+    "to": "parse",
+    "label": "buffer(64, DROP_OLDEST)"
+   },
+   {
+    "from": "parse",
+    "to": "enrich",
+    "label": "buffer(32)"
+   },
+   {
+    "from": "enrich",
+    "to": "render",
+    "label": "conflate"
+   },
+   {
+    "from": "render",
+    "to": "ui",
+    "label": "draws"
+   }
+  ],
+  "sources": [
+   "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/buffer.html",
+   "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/conflate.html"
+  ],
+  "grid": [
+   260,
+   110
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/backpressure",
+  "diagram": "031fc838bd87d201",
+  "kind": "map",
+  "number": 4,
+  "title": "Admission for a source that cannot wait",
+  "caption": "A callback source cannot be suspended, so admission must be explicit: try a bounded offer, and when the queue is full, reject, replace or persist according to the contract. The consumer's free capacity decides what is admitted next.",
+  "nodes": [
+   {
+    "id": "sensor",
+    "title": "Sensor callback",
+    "role": "client",
+    "col": 0,
+    "row": 0
+   },
+   {
+    "id": "offer",
+    "title": "Try bounded admission",
+    "role": "runtime",
+    "col": 0,
+    "row": 1.6
+   },
+   {
+    "id": "decide",
+    "title": "Reject, replace or persist",
+    "role": "neutral",
+    "detail": "per the contract",
+    "x": 480,
+    "y": 192,
+    "w": 260
+   },
+   {
+    "id": "queue",
+    "title": "Bounded pending work",
+    "role": "queue",
+    "col": 0,
+    "row": 3.0,
+    "key": true
+   },
+   {
+    "id": "consumer",
+    "title": "Processing owner",
+    "role": "runtime",
+    "col": 0,
+    "row": 4.2
+   }
+  ],
+  "groups": [
+   {
+    "id": "src",
+    "label": "Non-suspending source",
+    "nodes": [
+     "sensor"
+    ]
+   },
+   {
+    "id": "bridge",
+    "label": "Explicit admission boundary",
+    "nodes": [
+     "offer",
+     "decide"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "sensor",
+    "to": "offer",
+    "label": "new sample",
+    "t": 0.39
+   },
+   {
+    "from": "offer",
+    "to": "queue",
+    "label": "accepted",
+    "t": 0.62
+   },
+   {
+    "from": "offer",
+    "to": "decide",
+    "label": "full or unavailable"
+   },
+   {
+    "from": "queue",
+    "to": "consumer",
+    "label": "dequeue"
+   },
+   {
+    "from": "consumer",
+    "to": "offer",
+    "label": [
+     "available capacity",
+     "controls next admission"
+    ],
+    "style": "dashed",
+    "route": "around",
+    "side": "left",
+    "off": 60,
+    "t": 0.23
+   }
+  ],
+  "sources": [
+   "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html",
+   "https://www.reactive-streams.org/"
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/caching",
+  "diagram": "ba7593ae93525d80",
+  "kind": "map",
+  "number": 1,
+  "title": "Read path with a cache",
+  "caption": "A hit returns straight from the cache. A miss reads the source of truth, fills the cache, then returns the value.",
+  "nodes": [
+   {
+    "id": "app",
+    "title": "Application",
+    "role": "client",
+    "col": 0,
+    "row": 0
+   },
+   {
+    "id": "cache",
+    "title": "Cache",
+    "role": "storage",
+    "col": 0,
+    "row": 1.5,
+    "key": true
+   },
+   {
+    "id": "src",
+    "title": "Source of truth",
+    "role": "storage",
+    "col": 0,
+    "row": 3
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "app",
+    "to": "cache",
+    "label": "get(key)",
+    "from_dx": -60,
+    "to_dx": -60,
+    "t": 0.25
+   },
+   {
+    "from": "cache",
+    "to": "app",
+    "label": "hit: cached value",
+    "t": 0.5
+   },
+   {
+    "from": "cache",
+    "to": "app",
+    "label": "value after fill",
+    "from_dx": 60,
+    "to_dx": 60,
+    "t": 0.25
+   },
+   {
+    "from": "cache",
+    "to": "src",
+    "label": "miss",
+    "from_dx": -40,
+    "to_dx": -40,
+    "t": 0.3
+   },
+   {
+    "from": "src",
+    "to": "cache",
+    "label": "loads value",
+    "from_dx": 40,
+    "to_dx": 40,
+    "t": 0.3
+   }
+  ],
+  "sources": [
+   "https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside"
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/caching",
+  "diagram": "e1efc8ae0dc58571",
+  "kind": "sequence",
+  "number": 2,
+  "title": "Write, then invalidate",
+  "caption": "Write the source of truth first, then invalidate the cache entry, so the next miss reloads the committed value.",
+  "participants": [
+   {
+    "id": "app",
+    "title": "Application",
+    "role": "runtime"
+   },
+   {
+    "id": "src",
+    "title": "Source of truth",
+    "role": "storage"
+   },
+   {
+    "id": "cache",
+    "title": "Cache",
+    "role": "storage"
+   }
+  ],
+  "events": [
+   {
+    "from": "app",
+    "to": "src",
+    "label": "write(key, value)"
+   },
+   {
+    "from": "app",
+    "to": "cache",
+    "label": "invalidate(key)"
+   }
+  ],
+  "sources": [
+   "https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside"
+  ],
+  "lane_gap": 300
+ },
+ {
+  "path": "engineering-fundamentals/caching",
+  "diagram": "04517b4871b7e38a",
+  "kind": "sequence",
+  "number": 3,
+  "title": "The stale-fill race",
+  "caption": "A reader that fetched v1 before the writer committed v2 can store v1 after the invalidation. Version checks or leases reject that late fill.",
+  "participants": [
+   {
+    "id": "c",
+    "title": "Cache",
+    "role": "storage"
+   },
+   {
+    "id": "r",
+    "title": "Reader",
+    "role": "runtime"
+   },
+   {
+    "id": "d",
+    "title": "Authoritative database",
+    "role": "storage"
+   },
+   {
+    "id": "w",
+    "title": "Writer",
+    "role": "runtime"
+   }
+  ],
+  "events": [
+   {
+    "from": "r",
+    "to": "d",
+    "label": "Start a read of address v1"
+   },
+   {
+    "from": "d",
+    "to": "r",
+    "label": "Return v1; reader pauses before filling",
+    "style": "dashed"
+   },
+   {
+    "from": "w",
+    "to": "d",
+    "label": "Commit address v2"
+   },
+   {
+    "from": "w",
+    "to": "c",
+    "label": "Invalidate cached address"
+   },
+   {
+    "from": "r",
+    "to": "c",
+    "label": "Delayed fill tries to store v1"
+   },
+   {
+    "over": "c",
+    "text": "No version or lease check: v1 can return",
+    "role": "neutral"
+   }
+  ],
+  "sources": [
+   "https://www.usenix.org/system/files/conference/nsdi13/nsdi13-final170_update.pdf",
+   "https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside"
+  ],
+  "lane_gap": 230
+ },
+ {
+  "path": "engineering-fundamentals/caching",
+  "diagram": "223a71e8504b8800",
+  "kind": "map",
+  "number": 4,
+  "title": "Caches between a user and the data",
+  "caption": "Each layer can answer a request before it reaches the next. A miss falls through towards the database, whose buffer pool is itself a cache of disk pages.",
+  "nodes": [
+   {
+    "id": "user",
+    "title": "User",
+    "role": "client",
+    "col": 0,
+    "row": 0
+   },
+   {
+    "id": "browser",
+    "title": "Browser cache",
+    "role": "storage",
+    "col": 1,
+    "row": 0
+   },
+   {
+    "id": "cdn",
+    "title": "CDN cache",
+    "role": "storage",
+    "col": 2,
+    "row": 0
+   },
+   {
+    "id": "lb",
+    "title": "Load balancer",
+    "role": "runtime",
+    "col": 2,
+    "row": 1.2
+   },
+   {
+    "id": "app",
+    "title": "App server",
+    "role": "runtime",
+    "col": 1,
+    "row": 1.2
+   },
+   {
+    "id": "local",
+    "title": "Local cache",
+    "role": "storage",
+    "detail": "in-process",
+    "col": 0,
+    "row": 1.2
+   },
+   {
+    "id": "dist",
+    "title": "Distributed cache",
+    "role": "storage",
+    "detail": "Redis / Memcached",
+    "col": 0,
+    "row": 2.4
+   },
+   {
+    "id": "db",
+    "title": "Database",
+    "role": "storage",
+    "col": 1,
+    "row": 2.4,
+    "key": true
+   },
+   {
+    "id": "pool",
+    "title": "Buffer pool",
+    "role": "storage",
+    "detail": "cached disk pages",
+    "col": 2,
+    "row": 2.4
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "user",
+    "to": "browser",
+    "label": "requests"
+   },
+   {
+    "from": "browser",
+    "to": "cdn",
+    "label": "on miss"
+   },
+   {
+    "from": "cdn",
+    "to": "lb",
+    "label": "on miss"
+   },
+   {
+    "from": "lb",
+    "to": "app",
+    "label": "routes to"
+   },
+   {
+    "from": "app",
+    "to": "local",
+    "label": "looks up"
+   },
+   {
+    "from": "local",
+    "to": "dist",
+    "label": "on miss"
+   },
+   {
+    "from": "dist",
+    "to": "db",
+    "label": "on miss"
+   },
+   {
+    "from": "db",
+    "to": "pool",
+    "label": "reads pages"
+   }
+  ],
+  "sources": [
+   "https://www.rfc-editor.org/rfc/rfc9111.html",
+   "https://aws.amazon.com/builders-library/caching-challenges-and-strategies/"
+  ],
+  "grid": [
+   330,
+   120
+  ],
+  "card_w": 200
+ },
+ {
+  "path": "engineering-fundamentals/caching",
+  "diagram": "e3e5cfaad34debb2",
+  "kind": "map",
+  "number": 5,
+  "title": "Protecting the source when the cache fails",
+  "caption": "When the cache misses or fails, a miss budget decides how much load reaches the authoritative store. Requests over budget are rejected explicitly or served a permitted stale value instead of overwhelming the source.",
+  "nodes": [
+   {
+    "id": "req",
+    "title": "Read request",
+    "role": "client",
+    "col": 0,
+    "row": 0
+   },
+   {
+    "id": "limit",
+    "title": "Miss budget",
+    "role": "runtime",
+    "detail": "concurrency limit",
+    "col": 0,
+    "row": 1.6
+   },
+   {
+    "id": "cache",
+    "title": "Cached copy",
+    "role": "storage",
+    "detail": "reconstructible",
+    "x": 480,
+    "y": 0
+   },
+   {
+    "id": "src",
+    "title": "Authoritative store",
+    "role": "storage",
+    "col": 0,
+    "row": 3.0,
+    "key": true
+   }
+  ],
+  "groups": [
+   {
+    "id": "app",
+    "label": "Application admission",
+    "nodes": [
+     "req",
+     "limit"
+    ]
+   },
+   {
+    "id": "copies",
+    "label": "Reconstructible cache",
+    "nodes": [
+     "cache"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "req",
+    "to": "cache",
+    "label": "lookup"
+   },
+   {
+    "from": "cache",
+    "to": "limit",
+    "label": "miss or unavailable",
+    "route": "vh"
+   },
+   {
+    "from": "limit",
+    "to": "src",
+    "label": "admitted source read",
+    "t": 0.62
+   },
+   {
+    "from": "src",
+    "to": "req",
+    "label": "versioned result",
+    "route": "around",
+    "side": "left",
+    "off": 120
+   },
+   {
+    "from": "limit",
+    "to": "req",
+    "label": [
+     "reject explicitly, or",
+     "serve a permitted stale read"
+    ]
+   }
+  ],
+  "sources": [
+   "https://sre.google/sre-book/addressing-cascading-failures/",
+   "https://aws.amazon.com/builders-library/caching-challenges-and-strategies/"
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/state-machines",
+  "diagram": "21d33fc7fbf8bed8",
+  "kind": "map",
+  "number": 1,
+  "title": "Pure transitions, separate effects",
+  "caption": "The transition function only computes the next state and the effects it requests. A separate runner performs logging, network calls and timers, which keeps the transition pure and testable.",
+  "nodes": [
+   {
+    "id": "event",
+    "title": "Event",
+    "role": "neutral",
+    "col": 1,
+    "row": 0
+   },
+   {
+    "id": "state",
+    "title": "New state",
+    "role": "storage",
+    "col": 1,
+    "row": 1
+   },
+   {
+    "id": "runner",
+    "title": "Effect runner",
+    "role": "runtime",
+    "col": 1,
+    "row": 2,
+    "key": true
+   },
+   {
+    "id": "log",
+    "title": "Log",
+    "role": "storage",
+    "col": 0,
+    "row": 3.2
+   },
+   {
+    "id": "net",
+    "title": "Network call",
+    "role": "client",
+    "col": 1,
+    "row": 3.2
+   },
+   {
+    "id": "timer",
+    "title": "Timer",
+    "role": "runtime",
+    "col": 2,
+    "row": 3.2
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "event",
+    "to": "state",
+    "label": "pure transition()"
+   },
+   {
+    "from": "state",
+    "to": "runner",
+    "label": "requests effects"
+   },
+   {
+    "from": "runner",
+    "to": "log",
+    "label": "runs",
+    "route": "vhv"
+   },
+   {
+    "from": "runner",
+    "to": "net",
+    "label": "runs"
+   },
+   {
+    "from": "runner",
+    "to": "timer",
+    "label": "runs",
+    "route": "vhv"
+   }
+  ],
+  "sources": [
+   "https://kotlinlang.org/docs/sealed-classes.html",
+   "https://developer.android.com/topic/architecture/ui-layer/events"
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/state-machines",
+  "diagram": "5a336e5154f2eb22",
+  "kind": "map",
+  "number": 2,
+  "title": "The loop around a state machine",
+  "caption": "Every source feeds one queue, transition() turns each event into the next state, and observers of the stored state can trigger the next events.",
+  "nodes": [
+   {
+    "id": "sources",
+    "title": "Event sources",
+    "role": "client",
+    "detail": [
+     "UI, network,",
+     "timers, sensors"
+    ],
+    "col": 0,
+    "row": 0
+   },
+   {
+    "id": "queue",
+    "title": "Event queue",
+    "role": "queue",
+    "col": 1,
+    "row": 0
+   },
+   {
+    "id": "transition",
+    "title": "transition()",
+    "role": "runtime",
+    "detail": "(state, event)",
+    "col": 2,
+    "row": 0,
+    "key": true
+   },
+   {
+    "id": "next",
+    "title": "New state",
+    "role": "storage",
+    "col": 2,
+    "row": 1.4
+   },
+   {
+    "id": "store",
+    "title": "State store",
+    "role": "storage",
+    "detail": "memory + persisted",
+    "col": 1,
+    "row": 1.4
+   },
+   {
+    "id": "observers",
+    "title": "Observers",
+    "role": "runtime",
+    "detail": "UI, effect runner",
+    "col": 0,
+    "row": 1.4
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "sources",
+    "to": "queue",
+    "label": "events"
+   },
+   {
+    "from": "queue",
+    "to": "transition",
+    "label": "next event"
+   },
+   {
+    "from": "transition",
+    "to": "next",
+    "label": "produces"
+   },
+   {
+    "from": "next",
+    "to": "store",
+    "label": "saved to"
+   },
+   {
+    "from": "store",
+    "to": "observers",
+    "label": "notifies"
+   },
+   {
+    "from": "observers",
+    "to": "sources",
+    "label": "can trigger events"
+   }
+  ],
+  "sources": [
+   "https://kotlinlang.org/docs/sealed-classes.html",
+   "https://developer.android.com/topic/architecture/ui-layer/events"
+  ],
+  "grid": [
+   330,
+   120
+  ],
+  "card_w": 200
+ },
+ {
+  "path": "engineering-fundamentals/state-machines",
+  "diagram": "287ee7c334832b6e",
+  "kind": "map",
+  "number": 3,
+  "title": "Four states and their events",
+  "caption": "Four states and the events that move between them. An event with no arrow from the current state is ignored; that is a deliberate policy of this machine.",
+  "nodes": [
+   {
+    "id": "start",
+    "title": "",
+    "role": "neutral",
+    "x": 348,
+    "y": 0,
+    "shape": "start"
+   },
+   {
+    "id": "idle",
+    "title": "Idle",
+    "role": "runtime",
+    "x": 260,
+    "y": 80
+   },
+   {
+    "id": "loading",
+    "title": "Loading",
+    "role": "runtime",
+    "x": 260,
+    "y": 210
+   },
+   {
+    "id": "success",
+    "title": "Success",
+    "role": "runtime",
+    "x": 0,
+    "y": 360
+   },
+   {
+    "id": "failure",
+    "title": "Failure",
+    "role": "runtime",
+    "x": 520,
+    "y": 360
+   },
+   {
+    "id": "end",
+    "title": "",
+    "role": "neutral",
+    "x": 88,
+    "y": 490,
+    "shape": "end"
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "start",
+    "to": "idle",
+    "label": "initial"
+   },
+   {
+    "from": "idle",
+    "to": "loading",
+    "label": "Load"
+   },
+   {
+    "from": "loading",
+    "to": "success",
+    "label": "Loaded",
+    "route": "vhv"
+   },
+   {
+    "from": "loading",
+    "to": "failure",
+    "label": "Failed",
+    "route": "vhv"
+   },
+   {
+    "from": "failure",
+    "to": "loading",
+    "label": "Retry",
+    "route": "around",
+    "off": 60
+   },
+   {
+    "from": "success",
+    "to": "end",
+    "label": "done"
+   }
+  ],
+  "sources": [
+   "https://kotlinlang.org/docs/sealed-classes.html"
+  ],
+  "card_w": 200
+ },
+ {
+  "path": "engineering-fundamentals/state-machines",
+  "diagram": "83bca1a0ca99a348",
+  "kind": "map",
+  "number": 4,
+  "title": "Ignoring a stale completion",
+  "caption": "Serializing events through one owner lets it compare every completion with the current request ID. A late failure for attempt A is ignored because attempt B is current; only valid events change state or request work.",
+  "nodes": [
+   {
+    "id": "tap",
+    "title": "User starts attempt B",
+    "role": "client",
+    "x": 130,
+    "y": 0
+   },
+   {
+    "id": "result",
+    "title": "Attempt A completes",
+    "role": "neutral",
+    "x": 390,
+    "y": 0
+   },
+   {
+    "id": "queue",
+    "title": "Serialize events",
+    "role": "queue",
+    "detail": "one at a time",
+    "x": 260,
+    "y": 200
+   },
+   {
+    "id": "guard",
+    "title": "Validate event",
+    "role": "runtime",
+    "detail": [
+     "against mode and",
+     "request ID"
+    ],
+    "x": 260,
+    "y": 340,
+    "key": true
+   },
+   {
+    "id": "state",
+    "title": "Current state",
+    "role": "storage",
+    "detail": [
+     "mode and",
+     "request ID"
+    ],
+    "x": 700,
+    "y": 340
+   },
+   {
+    "id": "ignore",
+    "title": "Ignore stale result",
+    "role": "neutral",
+    "detail": "B stays current",
+    "x": 0,
+    "y": 500
+   },
+   {
+    "id": "effects",
+    "title": "Effect instructions",
+    "role": "runtime",
+    "detail": "explicit",
+    "x": 260,
+    "y": 500
+   },
+   {
+    "id": "runner",
+    "title": "Effect runner",
+    "role": "runtime",
+    "x": 260,
+    "y": 650
+   }
+  ],
+  "groups": [
+   {
+    "id": "owner",
+    "label": "Screen state owner",
+    "nodes": [
+     "queue",
+     "guard",
+     "state",
+     "ignore",
+     "effects"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "tap",
+    "to": "queue",
+    "label": "Start B",
+    "route": "vhv",
+    "mid": 100,
+    "at": 1
+   },
+   {
+    "from": "result",
+    "to": "queue",
+    "label": "Failed A",
+    "route": "vhv",
+    "mid": 100,
+    "at": 1
+   },
+   {
+    "from": "queue",
+    "to": "guard",
+    "label": "reduce against current state"
+   },
+   {
+    "from": "state",
+    "to": "guard",
+    "label": "current identity"
+   },
+   {
+    "from": "guard",
+    "to": "state",
+    "label": [
+     "valid event:",
+     "next state"
+    ],
+    "route": "curve",
+    "bend": 80
+   },
+   {
+    "from": "guard",
+    "to": "ignore",
+    "label": "A differs from B",
+    "route": "vhv",
+    "at": 2
+   },
+   {
+    "from": "guard",
+    "to": "effects",
+    "label": "valid event may request work"
+   },
+   {
+    "from": "effects",
+    "to": "runner",
+    "label": "execute with operation identity",
+    "t": 0.64
+   },
+   {
+    "from": "runner",
+    "to": "queue",
+    "label": [
+     "completion becomes",
+     "a new event"
+    ],
+    "route": "around",
+    "side": "left",
+    "off": 300,
+    "t": 0.118
+   }
+  ],
+  "sources": [
+   "https://developer.android.com/topic/architecture/ui-layer/events",
+   "https://kotlinlang.org/docs/sealed-classes.html"
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/event-driven-architecture",
+  "diagram": "5175de4bcf5299f9",
+  "kind": "map",
+  "number": 1,
+  "title": "One event, independent subscribers",
+  "caption": "The publisher emits one OrderPlaced event without calling each module. Analytics, Inventory and Notification each receive it independently, but all still depend on the event's schema and delivery contract.",
+  "nodes": [
+   {
+    "id": "pub",
+    "title": "Publisher module",
+    "role": "runtime",
+    "col": 1,
+    "row": 0
+   },
+   {
+    "id": "event",
+    "title": "OrderPlaced",
+    "role": "queue",
+    "detail": "event",
+    "col": 1,
+    "row": 1.2,
+    "key": true
+   },
+   {
+    "id": "s1",
+    "title": "Analytics module",
+    "role": "runtime",
+    "col": 0,
+    "row": 2.5
+   },
+   {
+    "id": "s2",
+    "title": "Inventory module",
+    "role": "runtime",
+    "col": 1,
+    "row": 2.5
+   },
+   {
+    "id": "s3",
+    "title": "Notification module",
+    "role": "runtime",
+    "col": 2,
+    "row": 2.5
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "pub",
+    "to": "event",
+    "label": "emits"
+   },
+   {
+    "from": "event",
+    "to": "s1",
+    "label": "delivered to each subscriber",
+    "style": "dashed",
+    "route": "vhv",
+    "bus": "d",
+    "at": 1
+   },
+   {
+    "from": "event",
+    "to": "s2",
+    "label": "delivered to each subscriber",
+    "style": "dashed",
+    "route": "vhv",
+    "bus": "d"
+   },
+   {
+    "from": "event",
+    "to": "s3",
+    "label": "delivered to each subscriber",
+    "style": "dashed",
+    "route": "vhv",
+    "bus": "d"
+   }
+  ],
+  "sources": [
+   "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/event-driven"
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/event-driven-architecture",
+  "diagram": "a0d0396fac6081bd",
+  "kind": "map",
+  "number": 2,
+  "title": "A command, a recorded outcome and a fact",
+  "caption": "The command asks the payment owner to act; the event reports what happened. Recording the outcome and the intent to publish together lets publication recover after a crash, and subscribers receive the fact independently.",
+  "nodes": [
+   {
+    "id": "ui",
+    "title": "Checkout UI",
+    "role": "client",
+    "x": 0,
+    "y": 0
+   },
+   {
+    "id": "handler",
+    "title": "Accept ProcessPayment",
+    "role": "runtime",
+    "detail": "stable operation ID",
+    "x": 510,
+    "y": 0
+   },
+   {
+    "id": "record",
+    "title": "Persist outcome",
+    "role": "storage",
+    "detail": "+ publication intent",
+    "x": 510,
+    "y": 156,
+    "key": true
+   },
+   {
+    "id": "publish",
+    "title": "Publish",
+    "role": "runtime",
+    "detail": "PaymentProcessed",
+    "x": 510,
+    "y": 312
+   },
+   {
+    "id": "broker",
+    "title": "Event delivery",
+    "role": "queue",
+    "x": 510,
+    "y": 470
+   },
+   {
+    "id": "analytics",
+    "title": "Analytics subscriber",
+    "role": "runtime",
+    "x": 380,
+    "y": 620
+   },
+   {
+    "id": "receipt",
+    "title": "Receipt subscriber",
+    "role": "runtime",
+    "x": 640,
+    "y": 620
+   }
+  ],
+  "groups": [
+   {
+    "id": "payment",
+    "label": "Payment owner",
+    "nodes": [
+     "handler",
+     "record",
+     "publish"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "ui",
+    "to": "handler",
+    "label": [
+     "command:",
+     "request a payment"
+    ]
+   },
+   {
+    "from": "handler",
+    "to": "record",
+    "label": "confirmed outcome"
+   },
+   {
+    "from": "record",
+    "to": "publish",
+    "label": "recoverable publication"
+   },
+   {
+    "from": "record",
+    "to": "ui",
+    "label": [
+     "current state: pending,",
+     "succeeded or failed"
+    ],
+    "route": "hv"
+   },
+   {
+    "from": "publish",
+    "to": "broker",
+    "label": "fact with event ID",
+    "t": 0.63
+   },
+   {
+    "from": "broker",
+    "to": "analytics",
+    "label": "independent delivery",
+    "route": "vhv",
+    "at": 2
+   },
+   {
+    "from": "broker",
+    "to": "receipt",
+    "label": "independent delivery",
+    "route": "vhv",
+    "at": 2
+   }
+  ],
+  "sources": [
+   "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html",
+   "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/event-driven"
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/fault-tolerance",
+  "diagram": "bbd8e97330d617cb",
+  "kind": "sequence",
+  "number": 1,
+  "title": "Failover to a secondary",
+  "caption": "After the primary crashes, the client's next request goes through the load balancer to the secondary. Requests in flight during the crash still need their own retry and idempotency rules.",
+  "participants": [
+   {
+    "id": "client",
+    "title": "Client",
+    "role": "client"
+   },
+   {
+    "id": "primary",
+    "title": "Primary",
+    "role": "runtime"
+   },
+   {
+    "id": "lb",
+    "title": "Load balancer",
+    "role": "runtime"
+   },
+   {
+    "id": "secondary",
+    "title": "Secondary",
+    "role": "runtime"
+   }
+  ],
+  "events": [
+   {
+    "from": "client",
+    "to": "primary",
+    "label": "request"
+   },
+   {
+    "from": "primary",
+    "to": "client",
+    "label": "response",
+    "style": "dashed"
+   },
+   {
+    "over": "primary",
+    "text": "crashes",
+    "role": "neutral"
+   },
+   {
+    "from": "client",
+    "to": "lb",
+    "label": "request"
+   },
+   {
+    "from": "lb",
+    "to": "secondary",
+    "label": "forward"
+   },
+   {
+    "from": "secondary",
+    "to": "client",
+    "label": "response",
+    "style": "dashed"
+   }
+  ],
+  "sources": [
+   "https://sre.google/sre-book/addressing-cascading-failures/",
+   "https://www.postgresql.org/docs/current/warm-standby.html"
+  ],
+  "lane_gap": 250
+ },
+ {
+  "path": "engineering-fundamentals/fault-tolerance",
+  "diagram": "a9b2705aeeed66c4",
+  "kind": "map",
+  "number": 2,
+  "title": "Circuit breaker states",
+  "caption": "A circuit breaker stops calling a failing dependency once failures exceed its threshold, waits out a reset timeout, then lets a probe decide whether to close again or reopen.",
+  "nodes": [
+   {
+    "id": "start",
+    "title": "",
+    "role": "neutral",
+    "x": 98,
+    "y": 0,
+    "shape": "start"
+   },
+   {
+    "id": "closed",
+    "title": "Closed",
+    "role": "runtime",
+    "detail": "calls pass through",
+    "x": 0,
+    "y": 80
+   },
+   {
+    "id": "open",
+    "title": "Open",
+    "role": "runtime",
+    "detail": "calls rejected",
+    "x": 520,
+    "y": 80
+   },
+   {
+    "id": "half",
+    "title": "Half-open",
+    "role": "runtime",
+    "detail": "trial calls",
+    "x": 260,
+    "y": 320
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "start",
+    "to": "closed",
+    "label": "initial"
+   },
+   {
+    "from": "closed",
+    "to": "open",
+    "label": "failure rate exceeds threshold"
+   },
+   {
+    "from": "open",
+    "to": "half",
+    "label": "reset timeout expires"
+   },
+   {
+    "from": "half",
+    "to": "open",
+    "label": "probe fails",
+    "route": "curve",
+    "bend": 100
+   },
+   {
+    "from": "half",
+    "to": "closed",
+    "label": "probe succeeds"
+   }
+  ],
+  "sources": [
+   "https://resilience4j.readme.io/docs/circuitbreaker"
+  ]
+ },
+ {
+  "path": "engineering-fundamentals/fault-tolerance",
+  "diagram": "60cfe6d5799b386e",
+  "kind": "map",
+  "number": 3,
+  "title": "Bulkheads still share resources",
+  "caption": "Separate admission budgets stop a slow search dependency from using up the payments path. Both paths still share CPU, memory and connection capacity, so those need budgets too.",
+  "nodes": [
+   {
+    "id": "pay",
+    "title": "Payments budget",
+    "role": "runtime",
+    "detail": "bounded in-flight",
+    "x": 0,
+    "y": 0
+   },
+   {
+    "id": "search",
+    "title": "Search budget",
+    "role": "runtime",
+    "detail": "bounded in-flight",
+    "x": 680,
+    "y": 0
+   },
+   {
+    "id": "cpu",
+    "title": "CPU and memory",
+    "role": "neutral",
+    "x": 340,
+    "y": 0
+   },
+   {
+    "id": "conn",
+    "title": "Connection pool",
+    "role": "neutral",
+    "detail": "shared capacity",
+    "x": 340,
+    "y": 200
+   },
+   {
+    "id": "payapi",
+    "title": "Payments API",
+    "role": "client",
+    "detail": "dependency",
+    "x": 0,
+    "y": 200
+   },
+   {
+    "id": "searchapi",
+    "title": "Search API",
+    "role": "client",
+    "detail": "dependency",
+    "x": 680,
+    "y": 200
+   }
+  ],
+  "groups": [
+   {
+    "id": "payg",
+    "label": "Payments admission",
+    "nodes": [
+     "pay"
+    ]
+   },
+   {
+    "id": "searchg",
+    "label": "Search admission",
+    "nodes": [
+     "search"
+    ]
+   },
+   {
+    "id": "shared",
+    "label": "Shared resources",
+    "nodes": [
+     "cpu",
+     "conn"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from": "pay",
+    "to": "payapi",
+    "label": "admitted operation",
+    "t": 0.59
+   },
+   {
+    "from": "search",
+    "to": "searchapi",
+    "label": "admitted operation",
+    "t": 0.59
+   },
+   {
+    "from": "pay",
+    "to": "cpu",
+    "label": "consumes"
+   },
+   {
+    "from": "search",
+    "to": "cpu",
+    "label": "consumes"
+   },
+   {
+    "from": "payapi",
+    "to": "conn",
+    "label": [
+     "uses its",
+     "configured pool"
+    ]
+   },
+   {
+    "from": "searchapi",
+    "to": "conn",
+    "label": [
+     "uses its",
+     "configured pool"
+    ]
+   }
+  ],
+  "sources": [
+   "https://sre.google/sre-book/addressing-cascading-failures/",
+   "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/limited-parallelism.html"
+  ],
+  "card_w": 180
+ },
+ {
+  "path": "engineering-fundamentals/fault-tolerance",
+  "diagram": "3feac83eb71c17c1",
+  "kind": "map",
+  "number": 4,
+  "title": "Redundancy and its shared dependencies",
+  "caption": "Redundant app servers sit behind a health-checking load balancer; the primary database replicates to two replicas, and the cache can fall back to a replica. Each copy covers some failures, while the primary still needs tested promotion.",
+  "nodes": [
+   {
+    "id": "client",
+    "title": "Client",
+    "role": "client",
+    "x": 240,
+    "y": 0
+   },
+   {
+    "id": "lb",
+    "title": "Load balancer",
+    "role": "runtime",
+    "detail": [
+     "health checks",
+     "+ failover"
+    ],
+    "x": 240,
+    "y": 132
+   },
+   {
+    "id": "a1",
+    "title": "App 1",
+    "role": "runtime",
+    "x": 0,
+    "y": 290
+   },
+   {
+    "id": "a2",
+    "title": "App 2",
+    "role": "runtime",
+    "x": 240,
+    "y": 290
+   },
+   {
+    "id": "a3",
+    "title": "App 3",
+    "role": "runtime",
+    "x": 480,
+    "y": 290
+   },
+   {
+    "id": "cache",
+    "title": "Cache",
+    "role": "storage",
+    "x": 0,
+    "y": 440
+   },
+   {
+    "id": "db",
+    "title": "DB primary",
+    "role": "storage",
+    "x": 480,
+    "y": 440,
+    "key": true
+   },
+   {
+    "id": "r1",
+    "title": "DB replica 1",
+    "role": "storage",
+    "x": 240,
+    "y": 600
+   },
+   {
+    "id": "r2",
+    "title": "DB replica 2",
+    "role": "storage",
+    "x": 480,
+    "y": 600
+   }
+  ],
+  "groups": [],
+  "edges": [
+   {
+    "from": "client",
+    "to": "lb",
+    "label": "request"
+   },
+   {
+    "from": "lb",
+    "to": "a1",
+    "label": "routes to healthy apps",
+    "route": "vhv",
+    "bus": "lb",
+    "at": 1
+   },
+   {
+    "from": "lb",
+    "to": "a2",
+    "label": "routes to healthy apps",
+    "route": "vhv",
+    "bus": "lb"
+   },
+   {
+    "from": "lb",
+    "to": "a3",
+    "label": "routes to healthy apps",
+    "route": "vhv",
+    "bus": "lb"
+   },
+   {
+    "from": "a3",
+    "to": "cache",
+    "label": "cache lookups",
+    "route": "vhv",
+    "mid": 378,
+    "bus": "cache",
+    "at": 1,
+    "t": 0.75
+   },
+   {
+    "from": "a1",
+    "to": "cache",
+    "label": "cache lookups",
+    "route": "vhv",
+    "mid": 378,
+    "bus": "cache"
+   },
+   {
+    "from": "a2",
+    "to": "cache",
+    "label": "cache lookups",
+    "route": "vhv",
+    "mid": 378,
+    "bus": "cache"
+   },
+   {
+    "from": "a1",
+    "to": "db",
+    "label": "reads and writes",
+    "route": "vhv",
+    "mid": 410,
+    "bus": "db",
+    "at": 1,
+    "t": 0.75
+   },
+   {
+    "from": "a2",
+    "to": "db",
+    "label": "reads and writes",
+    "route": "vhv",
+    "mid": 410,
+    "bus": "db"
+   },
+   {
+    "from": "a3",
+    "to": "db",
+    "label": "reads and writes",
+    "route": "vhv",
+    "mid": 410,
+    "bus": "db"
+   },
+   {
+    "from": "db",
+    "to": "r2",
+    "label": "replicates",
+    "style": "dashed"
+   },
+   {
+    "from": "db",
+    "to": "r1",
+    "label": "replicates",
+    "style": "dashed",
+    "route": "vhv"
+   },
+   {
+    "from": "cache",
+    "to": "r1",
+    "label": "fallback reads",
+    "style": "dashed",
+    "route": "vh",
+    "at": 0
+   }
+  ],
+  "sources": [
+   "https://www.postgresql.org/docs/current/warm-standby.html",
+   "https://sre.google/sre-book/addressing-cascading-failures/"
+  ],
+  "card_w": 200
+ }
+]

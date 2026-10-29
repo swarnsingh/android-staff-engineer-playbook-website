@@ -13,6 +13,11 @@ OUT = WEB / 'dist'
 CACHE = WEB / '.cache'
 SOURCE_ROOT = 'https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/'
 MD = MarkdownIt('commonmark', {'html': True}).enable(['table', 'strikethrough'])
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import figure_maps
+# Designed figures that replace rendered Mermaid pictures, keyed by original diagram hash.
+FIGURES = figure_maps.load()
+FIGURES_USED = set()
 # Topic trees rendered as lessons, in site order. `phases` lists the guided-reading phases a pilot
 # renders (None renders the whole tree); chapters outside them keep linking to GitHub.
 TREES = {
@@ -336,6 +341,12 @@ def render_chapter(path, raw, is_course=False):
             provenance="teaching" if env.get("blend") else "original"
             original=f'<img data-{provenance}-diagram="{key}" src="{BASE}diagrams/{key}.svg" alt="{escape(env.get("heading","Concept relationships"))}" loading="eager">'
             source=f'<details class="diagram-source"><summary>Read diagram source</summary><pre tabindex="0"><code data-{provenance}-diagram-source="{key}">{escape(token.content)}</code></pre></details>'
+            if key in FIGURES:
+                # Designed figure from the shared FigureMap component; no Mermaid picture is shown.
+                FIGURES_USED.add(key)
+                figure,preserved=figure_maps.render(FIGURES[key],token.content,provenance)
+                # A teaching-layer diagram is already inside its labelled addition.
+                return figure if provenance=='teaching' else wrap('visual', figure, env) + preserved
             if ('diagram', key) in blend:
                 # A designed redraw leads; the chapter's own diagram stays one tap away.
                 used.add(('diagram', key))
@@ -769,6 +780,7 @@ def build(skip_diagrams=False):
     if not skip_diagrams:
         render_diagrams()
         diagram_models.inline(OUT)
+    if set(FIGURES)-FIGURES_USED: raise ValueError(f'Figure models without a matching original diagram: {sorted(set(FIGURES)-FIGURES_USED)}')
     (OUT/'coverage/pages.json').write_text(json.dumps(reports,ensure_ascii=False,indent=2)+'\n')
     (OUT/'coverage/diagram-sources.json').write_text(json.dumps({p.stem:p.read_text() for p in sorted((OUT/'diagram-sources').glob('*.mmd'))},ensure_ascii=False,indent=2)+'\n')
     shutil.copy2(WEB/'content/illustrated-stepper-coverage.json',OUT/'coverage/illustrated-steppers.json')

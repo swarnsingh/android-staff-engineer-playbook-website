@@ -425,9 +425,13 @@
     // full transcript share one disclosure instead of competing with the scene.
     var interaction = document.createElement('div'); interaction.className = 'pb-interaction';
     var caption = root.querySelector('.pb-caption'), progress = root.querySelector('.pb-progress'), controls = root.querySelector('.pb-controls');
-    caption.before(interaction); interaction.append(caption, progress, controls);
-    root.querySelector('.pb-paper').before(interaction);
-    var mapHint=document.createElement('p');mapHint.className='sequence-scroll-hint';mapHint.textContent='Follow the labelled arrowheads and process boundaries. Swipe the diagram sideways on a narrow screen; the labels keep their reading size.';root.querySelector('.pb-paper').after(mapHint);
+    // Picture first; the current caption and one row of controls follow it, together.
+    var paper = root.querySelector('.pb-paper');
+    paper.after(interaction); interaction.append(progress, caption, controls);
+    // The sideways-scroll hint appears only while the scene is actually wider than its frame.
+    var mapHint=document.createElement('p');mapHint.className='sequence-scroll-hint';mapHint.textContent='Swipe the scene sideways to see all of it; the labels keep their reading size.';paper.after(mapHint);
+    function syncHint(){ mapHint.hidden = paper.scrollWidth <= paper.clientWidth + 1; }
+    observeResize(paper, syncHint); syncHint();
     btn.prev.textContent = 'Previous'; btn.next.textContent = 'Next'; btn.reset.textContent = 'Reset';
     var guide = root.querySelector('.pb-steps');
     guide.classList.add('pb-guide');
@@ -533,7 +537,7 @@
       track().steps.forEach(function (s) { var li = document.createElement('li'); li.innerHTML = s.caption; list.appendChild(li); });
       if(data.illustrated){
         var nav=root.querySelector('.pb-step-nav');
-        if(!nav){nav=document.createElement('nav');nav.className='pb-step-nav';nav.setAttribute('aria-label','Scene steps');root.querySelector('.pb-progress').insertAdjacentElement('afterend',nav);}
+        if(!nav){nav=document.createElement('nav');nav.className='pb-step-nav';nav.setAttribute('aria-label','Scene steps');controls.prepend(nav);}
         nav.innerHTML='';
         track().steps.forEach(function(s,i){var b=document.createElement('button');b.type='button';b.dataset.step=i;b.textContent=i+1;b.setAttribute('aria-label','Go to step '+(i+1));b.addEventListener('click',function(){stop();turn.claim();go(i,false);});nav.appendChild(b);});
       }

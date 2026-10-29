@@ -87,7 +87,8 @@ See the **Motion and diagrams** section for the full rules. In short: interface 
 | CodeCard | Kotlin examples, dark in every theme. |
 | Checkpoint | Q&A tab questions with an Answer heading. |
 | FlowDiagram | A short looping diagram that shows direction and blockage. |
-| FlowScene | One system stepped through, where packets land and change state. 17 authored lessons, including Binder, Room, Looper, Flow, build tooling and Media3. |
+| FlowScene | One system stepped through, where packets land and change state. 17 authored lessons, including Binder, Room, Looper, Flow, build tooling and Media3. The picture comes first; the step caption and one row of controls follow it. |
+| FigureMap | The designed redraw of a Mermaid diagram: role-coloured cards, numbered labelled arrows, owner boundaries, a legend, a numbered caption and a text version. Built from models in `content/diagram-models/figures/`; see [components/FigureMap](components/FigureMap/README.md). |
 | Illustrated state stepper | 119 HTML sequences with explicit object choices, authored visual contents and numbered navigation. |
 | WideDiagram | A static diagram that keeps a readable size and scrolls sideways on phones. |
 

@@ -406,3 +406,20 @@ The owner rejected box/highlight-only teaching and approved a problem-first View
 All reading-width, visual-breakout, frame, padding and responsive layout rules belong to the shared website design system. Define dimensions and surfaces in `website/design-system/tokens.json` and implement their behavior once in the shared components. Every existing and future topic consumes those components. Do not add chapter-specific layout CSS or duplicate the same fix across lesson files. Show proposed visual changes for owner approval when requested before publishing them.
 
 Owner approved the shared layout draft on29 October 2026: prose fills the existing760px reading column; wide visuals use padded, rounded frames and symmetric bounded extension. This replaces the earlier font-specific narrower prose measure. Implement once in design-system tokens and ReadingSheet shared components.
+
+### Designed visuals only · 29 October 2026
+
+Owner rule, 29 October 2026. It applies to every current and future topic and tree, and supersedes any earlier guidance that allowed default renderings:
+
+- **No Mermaid on the website.** Do not publish a rendered Mermaid picture, including a default-themed original diagram or a Mermaid-laid-out relationship map. Redraw every original Mermaid diagram as a designed figure built with the shared design system. Keep the chapter's Mermaid source as preserved text in a labelled disclosure, so section 17's "never lost" requirement still holds. Migrate the existing Mermaid-laid-out relationship maps to the shared figure renderer.
+- **No ordinary, colourless diagrams.** Every figure uses the shared role colours from `tokens.json`: blue for devices and clients, purple for execution, teal for stored data, rose for queued work, and neutral for external sources and structure. Each figure has:
+  - title-and-detail cards;
+  - numbered, labelled arrowheads;
+  - explicit owner boundaries;
+  - a legend for the roles it uses;
+  - a numbered caption that states the figure's point.
+
+  The approved diagram direction above still applies: colour is never the only cue, and words and border patterns carry the same meaning.
+- **No ordinary animations.** Use motion only where change over time reveals the mechanism. Build it with the shared scene and stepper components, using illustrated actors and visible consequences. Show the picture first; the current caption and the controls follow it, together. A designed static figure remains a complete result when motion adds nothing (section 8). A generic box-highlight stepper is not an acceptable substitute for either.
+- **Design system only.** Colours, card shapes, arrow and label styles, legends, captions and stepper layout live in `website/design-system/tokens.json` and the shared components, so one change applies to all website content. Lesson files supply content: models, labels, captions and sources. They never supply styling.
+- **Every theme, readable labels.** Check each figure in the light, dark, sepia and high-contrast themes. Labels stay at least 14px and are never clipped; on narrow screens, use a labelled local scroll rather than shrinking text.

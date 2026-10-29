@@ -224,6 +224,20 @@ Each model names the concrete problem, reading direction, actual actor IDs, opti
 
 Maps retain readable 17px node labels and 15px arrow labels instead of shrinking into phone width. The named walkthrough steps explain time; the map explains relationships; the labelled state list identifies what changed. The no-colour option verifies that colour is optional. Play is walkthrough playback, not a claim that every topic has a physical transport animation.
 
+### Designed figures replace Mermaid · 29 October 2026
+
+Rulebook §20, "Designed visuals only", allows no rendered Mermaid picture on the website. All 38 Engineering Fundamentals diagrams are drawn by the shared FigureMap component:
+- 27 original chapter diagrams;
+- 11 diagrams from the teaching layer.
+
+Each diagram has a model in `content/diagram-models/figures/engineering-fundamentals.json`, bound by the diagram source's hash. `scripts/figure_maps.py` lays out the geometry and fails the build in these cases:
+- a label is clipped or overlaps another label or a card;
+- a line passes through a card;
+- an actor has two owners;
+- a relationship has no label.
+
+Original diagrams keep their Mermaid source as preserved text under "Original diagram from the chapter". The Kotlin and Android trees still show Mermaid pictures and Mermaid-laid-out relationship maps; they are migrated next under the same rule. The shared FlowScene also changed: the picture comes first, followed by the current caption and a single row of controls.
+
 ### Engineering Fundamentals rollout ·29 October 2026
 
 All13 chapters now have concise teaching layers, labelled static diagrams and four temporal scenes where movement teaches the mechanism. The 293 primary-source-backed replacements are in `content/corrections-engineering-fundamentals.json` and original-source PR58. The owner approved a single shared ReadingSheet layout: prose fills the760px reading column; padded visual frames extend symmetrically up to 1000px, respecting rails and viewport limits. Layout tokens and the shared component bundle own this behavior for every current and future topic. See `reviews/engineering-fundamentals-2026-10-29/REPORT.md` for evidence and boundaries.

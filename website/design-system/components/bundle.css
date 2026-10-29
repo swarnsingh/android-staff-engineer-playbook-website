@@ -30,6 +30,7 @@
 .actor-runtime { --actor: var(--scene-runtime); }
 .actor-storage { --actor: var(--scene-storage); }
 .actor-queue { --actor: var(--scene-queue); }
+.actor-neutral { --actor: var(--ink-muted); }
 .pb-node.has-art > rect { fill: color-mix(in srgb, var(--actor) 7%, var(--sheet)); stroke: color-mix(in srgb, var(--actor) 55%, var(--line)); }
 .pb-node.has-art.is-active > rect { stroke: var(--actor); stroke-width: 3; }
 .pb-node.has-art.is-warn > rect { stroke: var(--warn); }
@@ -163,10 +164,10 @@ html.reduce-motion .pb-figure * { transition: none; }
 @media(pointer:coarse),(max-width:640px){.pb-btn,.pb-seg button{min-height:48px}.pb-step-nav button{width:48px;height:48px}.stepper-buttons button{min-height:48px}.pb-controls,.stepper-buttons{gap:10px}}
 
 /* Scene feedback and controls stay one visual unit; reusable help is optional. */
-.pb-interaction{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+.pb-interaction{margin-top:12px}
+.pb-interaction .pb-progress{margin:0 0 12px}
 .pb-interaction .pb-caption{margin-top:0;min-height:0;grid-template-columns:minmax(0,1fr);gap:4px}
-.pb-interaction .pb-progress{margin-top:10px}
-.pb-interaction .pb-step-nav{margin:10px 0 0}
+.pb-interaction .pb-step-nav{margin:0 6px 0 0;gap:6px}
 .pb-interaction .pb-controls{margin-top:10px}
 .pb-steps.pb-guide{margin-top:12px;padding-top:0;border-top:0;font:15px/24px var(--font-sans)}
 .pb-steps summary{min-height:44px;align-content:center}
@@ -185,7 +186,7 @@ html.reduce-motion .pb-figure * { transition: none; }
  main:has(.reading-content){--visual-available:calc(100vw - 32px)}
  .lesson-tabs{isolation:isolate;overflow:visible}
  .lesson-tabs::before{content:'';position:absolute;inset-block:0;width:min(var(--measure-visual),calc(100% + var(--visual-bleed)*2),var(--visual-available));left:50%;transform:translateX(-50%);z-index:-1;background:var(--sheet);pointer-events:none}
- .reading-content :is(.blend > .pb-figure,.blend > .stepper,.source-diagram,.original-diagram,.content-bleed){--bleed-width:min(var(--measure-visual),calc(100% + var(--visual-bleed)*2),var(--visual-available));width:var(--bleed-width);max-width:none;margin-inline:calc((100% - var(--bleed-width))/2)}
+ .reading-content :is(.blend > .pb-figure,.blend > .stepper,.blend > .fm-figure,.source-diagram,.original-diagram,.content-bleed){--bleed-width:min(var(--measure-visual),calc(100% + var(--visual-bleed)*2),var(--visual-available));width:var(--bleed-width);max-width:none;margin-inline:calc((100% - var(--bleed-width))/2)}
 }
 @media(min-width:1181px) and (max-width:1439px){main:has(.reading-content){--visual-available:calc(100vw - 210px - 32px)}}
 @media(min-width:1440px){main:has(.reading-content){--visual-available:calc(100vw - 244px - 210px - 32px)}}
@@ -193,3 +194,50 @@ html.reduce-motion .pb-figure * { transition: none; }
 
 /* Tables in teaching callouts keep their own readable local scroll boundary. */
 .reading-content .blend > table{display:block;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+
+/* FigureMap: designed redraws of original chapter diagrams (scripts/figure_maps.py lays out geometry only).
+   Role colour, border pattern and words carry the same meaning, so a figure still reads without colour. */
+.fm-figure { margin: 0; }
+.fm-heading { margin: 0 0 12px; font: 650 17px/24px var(--font-sans); color: var(--ink); }
+.fm-scroll { overflow-x: auto; overscroll-behavior-inline: contain; padding: 4px 0 8px; }
+.fm-scroll:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--radius-md); }
+.fm-svg { display: block; margin: 0 auto; height: auto; max-width: none; }
+.fm-card { fill: color-mix(in srgb, var(--actor) 11%, var(--sheet)); stroke: var(--actor); stroke-width: 1.6; }
+.actor-runtime .fm-card { stroke-width: 2.6; }
+.actor-queue .fm-card { stroke-dasharray: 8 5; }
+.actor-neutral .fm-card { fill: var(--sheet-sunken); stroke-dasharray: 2 4; stroke-linecap: round; }
+.fm-card-inner { fill: none; stroke: var(--actor); stroke-width: 1; opacity: .55; }
+.fm-node.is-key .fm-card { fill: var(--actor); }
+.fm-node.is-key .fm-card-inner { stroke: var(--sheet); opacity: .7; }
+.fm-node.is-key text { fill: var(--sheet); }
+.fm-title { font: 650 15px var(--font-sans); fill: var(--ink); text-anchor: middle; }
+.fm-detail { font: 13px var(--font-mono); font-variant-ligatures: none; fill: var(--ink-muted); text-anchor: middle; }
+.fm-group rect { fill: color-mix(in srgb, var(--ink) 3%, transparent); stroke: var(--line-strong); stroke-width: 1.2; stroke-dasharray: 6 6; }
+.fm-group text { font: 700 12px var(--font-sans); letter-spacing: .08em; text-transform: uppercase; fill: var(--ink-muted); }
+.fm-edge { fill: none; stroke: var(--ink-muted); stroke-width: 1.7; stroke-linejoin: round; }
+.fm-edge.is-dashed { stroke-dasharray: 7 6; }
+.fm-arrowhead { fill: var(--ink-muted); }
+.fm-lifeline { stroke: var(--line-strong); stroke-width: 1.4; stroke-dasharray: 3 6; stroke-linecap: round; }
+.fm-pill rect { fill: var(--sheet); stroke: var(--line-strong); stroke-width: 1.2; }
+.fm-pill circle { fill: var(--accent); }
+.fm-pill .n { font: 700 11px var(--font-sans); fill: var(--on-accent); text-anchor: middle; }
+.fm-pill .l { font: 500 13px var(--font-sans); fill: var(--ink); }
+.fm-note rect { fill: color-mix(in srgb, var(--actor) 14%, var(--sheet)); stroke: var(--actor); stroke-width: 1.3; }
+.fm-note text { font: 600 13px var(--font-mono); font-variant-ligatures: none; fill: var(--ink); text-anchor: middle; }
+.fm-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-top: 10px; font: 13px/20px var(--font-sans); color: var(--ink-muted); }
+.fm-legend span::before { content: ""; display: inline-block; width: 14px; height: 14px; margin-right: 7px; vertical-align: -2px; border-radius: 4px;
+  border: 1.6px solid var(--actor); background: color-mix(in srgb, var(--actor) 11%, var(--sheet)); }
+.fm-legend .actor-queue::before { border-style: dashed; } .fm-legend .actor-neutral::before { border-style: dotted; }
+.fm-legend .actor-storage::before { border-style: double; border-width: 3px; } .fm-legend .actor-runtime::before { border-width: 2.6px; }
+.fm-legend em { font-style: normal; }
+.fm-figure figcaption { margin-top: 10px; font: 15px/24px var(--font-sans); color: var(--ink); }
+.fm-figure figcaption strong { font-weight: 700; }
+.fm-sources { margin-top: 8px; font: 13px/20px var(--font-sans); color: var(--ink-muted); }
+.fm-sources summary { cursor: pointer; }
+.fm-sources ol { margin: 6px 0 8px; padding-left: 22px; color: var(--ink); }
+.fm-sources p { margin: 6px 0 0; font-weight: 600; }
+.fm-start { fill: var(--ink); }
+.fm-end circle:first-child { fill: none; stroke: var(--ink); stroke-width: 2; } .fm-end circle:last-child { fill: var(--ink); }
+html[data-theme=contrast] .fm-card, html[data-theme=contrast] .fm-note rect { fill: var(--sheet); stroke: var(--ink); }
+html[data-theme=contrast] .fm-node.is-key .fm-card { fill: var(--ink); }
+html[data-theme=contrast] .fm-group rect { fill: none; stroke: var(--ink); }
