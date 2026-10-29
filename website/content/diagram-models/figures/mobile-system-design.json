@@ -11,26 +11,268 @@
     ],
     "kind": "map",
     "nodes": [
-      {"id": "ui", "title": "Android UI", "detail": "Compose screens", "role": "client"},
-      {"id": "notes", "title": "Notes table", "detail": ["source of truth", "the UI reads"], "role": "storage", "key": true},
-      {"id": "outbox", "title": "Outbox table", "detail": ["one durable op", "per edit"], "role": "queue"},
-      {"id": "sync", "title": "Sync engine", "detail": ["PushWorker and", "PullWorker"], "role": "runtime"},
-      {"id": "api", "title": "Sync API", "detail": "/push and /pull", "role": "runtime"},
-      {"id": "store", "title": "Versioned store", "detail": ["per-record", "versions"], "role": "storage"}
+      {
+        "id": "ui",
+        "title": "Android UI",
+        "detail": "Compose screens",
+        "role": "client"
+      },
+      {
+        "id": "notes",
+        "title": "Notes table",
+        "detail": [
+          "source of truth",
+          "the UI reads"
+        ],
+        "role": "storage",
+        "key": true
+      },
+      {
+        "id": "outbox",
+        "title": "Outbox table",
+        "detail": [
+          "one durable op",
+          "per edit"
+        ],
+        "role": "queue"
+      },
+      {
+        "id": "sync",
+        "title": "Sync engine",
+        "detail": [
+          "PushWorker and",
+          "PullWorker"
+        ],
+        "role": "runtime"
+      },
+      {
+        "id": "api",
+        "title": "Sync API",
+        "detail": "/push and /pull",
+        "role": "runtime"
+      },
+      {
+        "id": "store",
+        "title": "Versioned store",
+        "detail": [
+          "per-record",
+          "versions"
+        ],
+        "role": "storage"
+      }
     ],
     "groups": [
-      {"id": "device", "label": "Android app on the device", "nodes": ["ui", "sync"]},
-      {"id": "room", "label": "Room database", "parent": "device", "nodes": ["notes", "outbox"]},
-      {"id": "server", "label": "Server · named, not designed", "nodes": ["api", "store"]}
+      {
+        "id": "device",
+        "label": "Android app on the device",
+        "nodes": [
+          "ui",
+          "sync"
+        ]
+      },
+      {
+        "id": "room",
+        "label": "Room database",
+        "parent": "device",
+        "nodes": [
+          "notes",
+          "outbox"
+        ]
+      },
+      {
+        "id": "server",
+        "label": "Server · named, not designed",
+        "nodes": [
+          "api",
+          "store"
+        ]
+      }
     ],
     "edges": [
-      {"from": "ui", "to": "notes", "label": "edit writes note"},
-      {"from": "notes", "to": "outbox", "label": "same transaction queues op"},
-      {"from": "outbox", "to": "sync", "label": "pending ops drained"},
-      {"from": "sync", "to": "api", "label": "push ops · pull since token"},
-      {"from": "api", "to": "sync", "label": "conflicts + new change token", "style": "dashed"},
-      {"from": "api", "to": "store", "label": "applies ops"},
-      {"from": "sync", "to": "notes", "label": "writes canonical state"}
+      {
+        "from": "ui",
+        "to": "notes",
+        "label": "edit writes note"
+      },
+      {
+        "from": "notes",
+        "to": "outbox",
+        "label": "same transaction queues op"
+      },
+      {
+        "from": "outbox",
+        "to": "sync",
+        "label": "pending ops drained"
+      },
+      {
+        "from": "sync",
+        "to": "api",
+        "label": "push ops · pull since token"
+      },
+      {
+        "from": "api",
+        "to": "sync",
+        "label": "conflicts + new change token",
+        "style": "dashed"
+      },
+      {
+        "from": "api",
+        "to": "store",
+        "label": "applies ops"
+      },
+      {
+        "from": "sync",
+        "to": "notes",
+        "label": "writes canonical state"
+      }
     ]
+  },
+  {
+    "path": "mobile-system-design/offline-sync",
+    "diagram": "6d49b5f934d5d2ee",
+    "number": 2,
+    "title": "The repository writes; workers sync; the UI reads Room",
+    "caption": "The repository owns atomic local writes, while workers run durable push and pull without becoming alternate sources of UI state. The ViewModel's data arrives only through the notes Flow from Room.",
+    "sources": [
+      "https://developer.android.com/topic/architecture/data-layer/offline-first",
+      "https://developer.android.com/training/data-storage/room/async-queries"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "ui",
+        "title": "Compose UI",
+        "role": "client"
+      },
+      {
+        "id": "vm",
+        "title": "NoteViewModel",
+        "role": "runtime"
+      },
+      {
+        "id": "repo",
+        "title": "NoteRepository",
+        "detail": [
+          "atomic local",
+          "writes"
+        ],
+        "role": "runtime",
+        "key": true
+      },
+      {
+        "id": "notedao",
+        "title": "NoteDao",
+        "detail": "notes table",
+        "role": "storage"
+      },
+      {
+        "id": "outbox",
+        "title": "OutboxDao",
+        "detail": "outbox table",
+        "role": "queue"
+      },
+      {
+        "id": "engine",
+        "title": "SyncEngine",
+        "role": "runtime"
+      },
+      {
+        "id": "push",
+        "title": "PushWorker",
+        "role": "runtime"
+      },
+      {
+        "id": "pull",
+        "title": "PullWorker",
+        "role": "runtime"
+      }
+    ],
+    "groups": [
+      {
+        "id": "uilayer",
+        "label": "UI layer",
+        "nodes": [
+          "ui",
+          "vm"
+        ]
+      },
+      {
+        "id": "data",
+        "label": "Data layer",
+        "nodes": [
+          "repo"
+        ]
+      },
+      {
+        "id": "room",
+        "label": "Room database",
+        "nodes": [
+          "notedao",
+          "outbox"
+        ]
+      },
+      {
+        "id": "sync",
+        "label": "Background sync",
+        "nodes": [
+          "engine",
+          "push",
+          "pull"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "vm",
+        "label": "user actions"
+      },
+      {
+        "from": "vm",
+        "to": "repo",
+        "label": "create · update · delete"
+      },
+      {
+        "from": "repo",
+        "to": "notedao",
+        "label": "writes note"
+      },
+      {
+        "from": "repo",
+        "to": "outbox",
+        "label": "enqueues op"
+      },
+      {
+        "from": "repo",
+        "to": "engine",
+        "label": "requests sync"
+      },
+      {
+        "from": "engine",
+        "to": "push",
+        "label": "runs push"
+      },
+      {
+        "from": "engine",
+        "to": "pull",
+        "label": "runs pull"
+      },
+      {
+        "from": "push",
+        "to": "outbox",
+        "label": "drains ops"
+      },
+      {
+        "from": "pull",
+        "to": "notedao",
+        "label": "writes deltas"
+      },
+      {
+        "from": "notedao",
+        "to": "vm",
+        "label": "notes Flow"
+      }
+    ],
+    "layout": "layers"
   }
 ]
