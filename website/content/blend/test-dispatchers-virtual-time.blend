@@ -8,7 +8,7 @@ Coroutine code is full of time — retries, debounce windows, timeouts — and f
 <!-- @after The Test Scheduler :: animation -->
 ### Moving the virtual clock by hand
 
-<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">A retry that waits 60 seconds, tested in about a millisecond</span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">Test thread</span><div class="node" data-el="launch" data-art="worker" data-art-role="runtime"><strong><code>launch(StandardTestDispatcher(testScheduler))</code></strong><small>attempt 1, <code>delay(60_000)</code>, attempt 2</small></div><div class="node" data-el="action" data-art="signal" data-art-role="runtime"><strong>Last call</strong><small data-text="actionNote">—</small></div></div><div class="col"><span class="col-title">Scheduler</span><div class="node" data-el="clock" data-art="clock" data-art-role="runtime"><strong>Virtual clock</strong><small data-text="clockNote">0 ms</small></div><div class="node" data-el="queue" data-art="queue" data-art-role="queue"><strong>Queue</strong><small data-text="queueNote">empty</small></div><div class="node" data-el="log" data-art="document" data-art-role="storage"><strong><code>attempts</code></strong><small data-text="logNote">[]</small></div></div></div><script type="application/json" class="steps">[
+<figure class="stepper" data-illustrated data-no-handoff><span class="stepper-title">A 60-second retry without a 60-second test delay</span><div class="stage viz-cols" style="--cols:2"><div class="col"><span class="col-title">Test thread</span><div class="node" data-el="launch" data-art="worker" data-art-role="runtime"><strong><code>launch(StandardTestDispatcher(testScheduler))</code></strong><small>attempt 1, <code>delay(60_000)</code>, attempt 2</small></div><div class="node" data-el="action" data-art="signal" data-art-role="runtime"><strong>Last call</strong><small data-text="actionNote">—</small></div></div><div class="col"><span class="col-title">Scheduler</span><div class="node" data-el="clock" data-art="clock" data-art-role="runtime"><strong>Virtual clock</strong><small data-text="clockNote">0 ms</small></div><div class="node" data-el="queue" data-art="queue" data-art-role="queue"><strong>Queue</strong><small data-text="queueNote">empty</small></div><div class="node" data-el="log" data-art="document" data-art-role="storage"><strong><code>attempts</code></strong><small data-text="logNote">[]</small></div></div></div><script type="application/json" class="steps">[
   {
     "label": "Launch",
     "caption": "With StandardTestDispatcher, launching only queues the coroutine. Nothing has run: attempts is still empty.",
@@ -60,7 +60,7 @@ Coroutine code is full of time — retries, debounce windows, timeouts — and f
   },
   {
     "label": "runCurrent() again",
-    "caption": "Now the task due at 60 000 ms runs and attempt 2 is recorded. Real time spent on the whole test: about a millisecond.",
+    "caption": "Now the task due at 60 000 ms runs and attempt 2 is recorded. The scheduler skipped the virtual delay; actual test duration depends on the work and environment.",
     "state": {
       "log": "done",
       "queue": "",

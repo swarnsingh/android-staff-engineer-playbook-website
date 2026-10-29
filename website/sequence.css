@@ -1,0 +1,52 @@
+/* A labelled map explains relationships; numbered captions explain changes in time. */
+.sequence-intro{margin:1rem 0;font:400 1rem/1.6 var(--font-sans);color:var(--ink)}
+.sequence-intro p{margin:.6rem 0!important}.sequence-reading{color:var(--ink-muted)}
+.relationship-map{max-width:100%;overflow:auto;overscroll-behavior-inline:contain;padding:18px 12px;background:var(--sheet-sunken);border:1px solid var(--line-strong);border-radius:var(--radius-md);scrollbar-gutter:stable}
+.relationship-map:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.relationship-svg{display:block;max-width:none!important;height:auto;margin:auto;overflow:visible}
+.relationship-svg text,.relationship-svg tspan{fill:var(--ink)!important;font:400 17px var(--font-sans)!important}
+.relationship-svg .node .label text,.relationship-svg .cluster-label text{text-anchor:middle}
+.relationship-svg .node>rect,.relationship-svg .node polygon,.relationship-svg .node path{fill:var(--sheet)!important;stroke:var(--line-strong)!important;stroke-width:1.5px!important}
+.relationship-svg .node.client>rect{fill:color-mix(in srgb,var(--scene-client) 17%,var(--sheet))!important}
+.relationship-svg .node.runtime>rect{fill:color-mix(in srgb,var(--scene-runtime) 17%,var(--sheet))!important}
+.relationship-svg .node.storage>rect{fill:color-mix(in srgb,var(--scene-storage) 17%,var(--sheet))!important;stroke-width:2px!important}
+.relationship-svg .node.queue>rect{fill:color-mix(in srgb,var(--scene-queue) 17%,var(--sheet))!important;stroke-dasharray:6 3!important}
+.relationship-svg .cluster rect{fill:color-mix(in srgb,var(--accent) 4%,var(--sheet))!important;stroke:var(--line-strong)!important;stroke-width:1.5px!important;stroke-dasharray:5 4}
+.relationship-svg .cluster-label text{font-weight:650!important}
+.relationship-svg .edgePaths path{fill:none!important;stroke:var(--ink)!important;stroke-width:2px!important}
+.relationship-svg marker path{fill:var(--ink)!important;stroke:var(--ink)!important}
+.relationship-svg .edgeLabel rect,.relationship-svg .labelBkg{fill:var(--sheet)!important;opacity:1!important}
+.relationship-svg .edgeLabel text,.relationship-svg .edgeLabel tspan{font-size:15px!important}
+.relationship-svg .node.is-current>rect{stroke:var(--ink)!important;stroke-width:3px!important}
+.relationship-svg .node{transition:none!important}
+.sequence-scroll-hint{font:400 .8rem/1.5 var(--font-sans);color:var(--ink-muted);margin:.6rem 0 1rem!important}
+.has-relationships .stepper-status{margin:1rem 0;padding:12px 14px;border-inline-start:4px solid var(--ink);background:var(--sheet-sunken)}
+.has-relationships .stepper-count{font-size:.9rem;color:var(--ink);font-weight:650}
+.has-relationships .stepper-caption{font-size:1rem;line-height:1.6;color:var(--ink)}
+.sequence-state-title{font:650 .9rem/1.5 var(--font-sans);margin:1rem 0 .5rem!important;color:var(--ink)}
+.has-relationships .stage.sequence-live{display:block;position:static;border:0;padding:0;min-height:0;background:none}
+.sequence-live .viz-grid,.sequence-live .viz-flow,.sequence-live .viz-cols,.sequence-live .viz-stack,.sequence-live .col{display:contents!important}
+.sequence-live .col-title,.sequence-live .arrow,.sequence-live .down{display:none!important}
+.has-relationships .sequence-live .node{border:0;border-bottom:1px solid var(--line);border-radius:0;box-shadow:none!important;background:none!important;min-height:0;padding:10px 0;transform:none!important;opacity:1!important;transition:none}
+.has-relationships .sequence-live .node::before{content:none!important}
+.sequence-live .node>strong{display:inline;font:650 .95rem/1.5 var(--font-sans);color:var(--ink)}
+.sequence-live .node small{font:400 .95rem/1.55 var(--font-sans);color:var(--ink)}
+.sequence-live .node.is-off>small,.sequence-live .node.is-off>.note{display:none}
+.sequence-live .node.is-off::after{content:'Not shown in this step';display:block;color:var(--ink-muted);font:400 .85rem/1.5 var(--font-sans)}
+.sequence-live .node.is-changed>strong::after{content:' · changed';font:400 .8rem/1.5 var(--font-sans)}
+.sequence-actor-index{font:650 .8rem/1.5 var(--font-mono);color:var(--ink-muted);margin-inline-end:.5rem}
+.has-relationships .pb-step-nav{gap:8px;counter-reset:none}
+.has-relationships .pb-step-nav button{width:auto;height:auto;min-height:44px;padding:7px 12px;border-radius:var(--radius-sm);text-align:left;font:500 .8rem/1.4 var(--font-sans);max-width:100%;white-space:normal}
+.sequence-accessibility{display:flex;align-items:center;gap:9px;margin:12px 0;font:400 .85rem/1.5 var(--font-sans)}
+.sequence-accessibility input{width:20px;height:20px;accent-color:var(--ink);flex:0 0 auto}
+.relationship-sources{font:400 .85rem/1.5 var(--font-sans);margin-top:12px}.relationship-sources summary{min-height:44px;display:flex;align-items:center;cursor:pointer}
+.has-relationships[data-diagram-monochrome=true]{--scene-client:var(--ink);--scene-runtime:var(--ink);--scene-storage:var(--ink);--scene-queue:var(--ink)}
+/* Existing transfer scenes: keep the full authored map at a readable size on phones. */
+.pb-figure[data-pb-flow=scene] .pb-paper{overflow:auto;overscroll-behavior-inline:contain;background-image:none}
+.pb-figure[data-pb-flow=scene] .pb-edge{opacity:1}
+.pb-figure[data-pb-flow=scene] .pb-edge:not(.fwd):not(.back):not(.stuck){stroke-dasharray:none;stroke:var(--ink);stroke-width:2}
+.pb-figure[data-pb-flow=scene] .pb-node .t{font-family:var(--font-sans);font-weight:600}
+.pb-figure[data-pb-flow=scene] .pb-region text{letter-spacing:.02em}
+.pb-figure[data-pb-flow=scene] .pb-node:not(.is-active):not(.is-warn):not(.is-done)>rect{stroke:var(--line-strong)}
+[data-theme=contrast] .relationship-svg .node>rect,[data-theme=contrast] .relationship-svg .cluster rect{fill:var(--sheet)!important;stroke:var(--ink)!important}
+@media(max-width:520px){.relationship-map{padding:12px 8px}.sequence-live .node small{font-size:1rem}.has-relationships .stepper-status{padding:10px}.has-relationships .pb-step-nav button{min-height:48px}.sequence-accessibility{min-height:48px}}

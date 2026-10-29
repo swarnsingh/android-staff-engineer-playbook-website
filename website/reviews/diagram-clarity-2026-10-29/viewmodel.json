@@ -1,0 +1,446 @@
+{
+  "pages": [
+    {
+      "href": "/android/architecture/viewmodel/",
+      "preservation": {
+        "views": [
+          {
+            "source": "android/architecture/viewmodel.md",
+            "view": "content",
+            "checked": 256,
+            "units": 63,
+            "diagrams": 1,
+            "loadedDiagrams": 1,
+            "diagramResources": [
+              {
+                "source": "/diagrams/a81c01eac0dc0de7.svg",
+                "status": "loaded"
+              }
+            ],
+            "pairChecks": [],
+            "problems": []
+          },
+          {
+            "source": "android/architecture/viewmodel.md",
+            "view": "qa",
+            "checked": 70,
+            "units": 22,
+            "diagrams": 0,
+            "loadedDiagrams": 0,
+            "diagramResources": [],
+            "pairChecks": [
+              {
+                "number": 1,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 2,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 3,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 4,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 5,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 6,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 7,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 8,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 9,
+                "ok": true,
+                "problems": []
+              },
+              {
+                "number": 10,
+                "ok": true,
+                "problems": []
+              }
+            ],
+            "problems": []
+          }
+        ],
+        "problems": [],
+        "units": 85,
+        "diagrams": 1,
+        "loadedDiagrams": 1
+      },
+      "steppers": 1,
+      "ready": 1,
+      "scenes": 0,
+      "sceneReady": 0,
+      "runtimeErrors": [],
+      "sceneChecks": [],
+      "illustratedChecks": [
+        {
+          "width": 320,
+          "theme": "light",
+          "figure": 0,
+          "representation": "ownership",
+          "states": 9,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "dark",
+          "figure": 0,
+          "representation": "ownership",
+          "states": 9,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "sepia",
+          "figure": 0,
+          "representation": "ownership",
+          "states": 9,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 320,
+          "theme": "contrast",
+          "figure": 0,
+          "representation": "ownership",
+          "states": 9,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "light",
+          "figure": 0,
+          "representation": "ownership",
+          "states": 9,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "dark",
+          "figure": 0,
+          "representation": "ownership",
+          "states": 9,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "sepia",
+          "figure": 0,
+          "representation": "ownership",
+          "states": 9,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 768,
+          "theme": "contrast",
+          "figure": 0,
+          "representation": "ownership",
+          "states": 9,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "light",
+          "figure": 0,
+          "representation": "ownership",
+          "states": 9,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "dark",
+          "figure": 0,
+          "representation": "ownership",
+          "states": 9,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "sepia",
+          "figure": 0,
+          "representation": "ownership",
+          "states": 9,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1280,
+          "theme": "contrast",
+          "figure": 0,
+          "representation": "ownership",
+          "states": 9,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "light",
+          "figure": 0,
+          "representation": "ownership",
+          "states": 9,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "dark",
+          "figure": 0,
+          "representation": "ownership",
+          "states": 9,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "sepia",
+          "figure": 0,
+          "representation": "ownership",
+          "states": 9,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "width": 1440,
+          "theme": "contrast",
+          "figure": 0,
+          "representation": "ownership",
+          "states": 9,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "codeChecks": [
+        {
+          "theme": "light",
+          "id": "androidarchitectureviewmodelmd-code-0",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "light",
+          "id": "androidarchitectureviewmodelmd-code-2",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "light",
+          "id": "androidarchitectureviewmodelmd-code-3",
+          "inList": true,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "dark",
+          "id": "androidarchitectureviewmodelmd-code-0",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "dark",
+          "id": "androidarchitectureviewmodelmd-code-2",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "dark",
+          "id": "androidarchitectureviewmodelmd-code-3",
+          "inList": true,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "sepia",
+          "id": "androidarchitectureviewmodelmd-code-0",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "sepia",
+          "id": "androidarchitectureviewmodelmd-code-2",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "sepia",
+          "id": "androidarchitectureviewmodelmd-code-3",
+          "inList": true,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "contrast",
+          "id": "androidarchitectureviewmodelmd-code-0",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "contrast",
+          "id": "androidarchitectureviewmodelmd-code-2",
+          "inList": false,
+          "problems": [],
+          "ok": true
+        },
+        {
+          "theme": "contrast",
+          "id": "androidarchitectureviewmodelmd-code-3",
+          "inList": true,
+          "problems": [],
+          "ok": true
+        }
+      ],
+      "layouts": [
+        {
+          "view": "content",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "content",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 320,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 390,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 768,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1181,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1280,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1439,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        },
+        {
+          "view": "qa",
+          "width": 1440,
+          "overflow": false,
+          "clipped": 0,
+          "smallLabels": []
+        }
+      ],
+      "qaSeparation": true,
+      "answerLabels": true,
+      "ok": true
+    }
+  ],
+  "done": true,
+  "widths": [
+    320,
+    390,
+    768,
+    1181,
+    1280,
+    1439,
+    1440
+  ],
+  "textSize": 22,
+  "font": "Shantell Sans"
+}

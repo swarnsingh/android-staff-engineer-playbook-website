@@ -107,7 +107,39 @@ window.__runAudit = async (pages, widths = [320, 390, 768, 1181, 1280, 1439, 144
             frame.style.width=width+'px';d.documentElement.dataset.theme=theme;
             await Promise.race([new Promise(resolve=>w.requestAnimationFrame(()=>w.requestAnimationFrame(resolve))),new Promise(resolve=>setTimeout(resolve,300))]);
             for(const [figureIndex,figure] of illustrated.entries()){
+              if(figure.classList.contains('has-ownership')){
+                const problems=[];
+                for(const scenario of ['rotation','finish','death']){
+                  figure.querySelector('[data-scenario="'+scenario+'"]').click();
+                  for(let i=0;i<3;i++){
+                    if(i)figure.querySelector('#vm-next').click();
+                    if(Number(figure.dataset.step)!==i+1)problems.push('ownership wrong frame '+scenario+' '+i);
+                    if(!figure.querySelector('#vm-explanation').textContent.trim())problems.push('missing ownership explanation');
+                    if(d.documentElement.scrollWidth>d.documentElement.clientWidth+1)problems.push('ownership page overflow');
+                    if(scenario==='rotation'&&figure.querySelectorAll('[data-moving-store]').length!==1)problems.push('ownership identity duplicated');
+                    if(scenario==='death'&&i===2&&!figure.querySelector('#vm-scene').textContent.includes('VM2'))problems.push('process death reused VM1');
+                  }
+                }
+                illustratedChecks.push({width,theme,figure:figureIndex,representation:'ownership',states:9,problems,ok:!problems.length});continue;
+              }
               const steps=JSON.parse(figure.querySelector('script.steps').textContent),problems=[];
+              const modelJSON=figure.querySelector('script.relationship-model');
+              const model=modelJSON?JSON.parse(modelJSON.textContent):null;
+              if(model){
+                const map=figure.querySelector('.relationship-map');
+                if(map.querySelectorAll('g.node').length!==model.actors.length)problems.push('relationship actor count mismatch');
+                if(map.querySelectorAll('g.cluster').length!==(model.groups||[]).length)problems.push('relationship owner count mismatch');
+                if(map.querySelectorAll('.edgePaths path').length!==(model.edges||[]).length)problems.push('relationship arrow count mismatch');
+                if(!figure.querySelector('.sequence-problem')?.textContent.includes(model.problem))problems.push('missing topic problem');
+                if(!steps.some(s=>Object.hasOwn(s,'add')||Object.hasOwn(s,'remove'))&&figure.querySelectorAll('.stage [data-el].is-off').length)problems.push('static comparison actors hidden');
+                for(const node of map.querySelectorAll('g.node')){
+                  const text=node.querySelector('text')?.getBoundingClientRect(),box=node.querySelector(':scope > rect')?.getBoundingClientRect();
+                  if(text&&box&&(text.left<box.left-.5||text.right>box.right+.5||text.top<box.top-.5||text.bottom>box.bottom+.5))problems.push('relationship label outside actor: '+node.textContent.trim());
+                }
+                for(const t of map.querySelectorAll('text')){
+                  const m=t.getScreenCTM();if(parseFloat(w.getComputedStyle(t).fontSize)*Math.hypot(m.a,m.b)<14.95)problems.push('unreadable relationship label');
+                }
+              }
               figure.querySelector('[data-act=reset]').click();
               for(let i=0;i<steps.length;i++){
                 if(i)figure.querySelector('[data-act=next]').click();
@@ -115,6 +147,7 @@ window.__runAudit = async (pages, widths = [320, 390, 768, 1181, 1280, 1439, 144
                 if(figure.querySelector('[aria-current=step]')?.dataset.index!==String(i))problems.push('wrong selected step '+i);
                 for(const node of figure.querySelectorAll('.node[data-art]')){
                   const art=node.querySelector('svg.stepper-art');
+                  if(model){if(!node.querySelector('strong'))problems.push('missing state identity '+node.dataset.el);continue;}
                   if(!art){problems.push('missing art '+node.dataset.el);continue;}
                   const a=art.getBoundingClientRect(),b=node.getBoundingClientRect();
                   if(a.left<b.left-.5||a.right>b.right+.5||a.top<b.top-.5||a.bottom>b.bottom+.5)problems.push('art outside node '+node.dataset.el);

@@ -1,0 +1,2560 @@
+[
+  {
+    "path": "android/activity",
+    "figure": 0,
+    "problem": "A screen survives rotation but loses its in-memory state after process death.",
+    "reading": "The lifecycle boxes are states of one screen, not four Activity objects. Compare the changing Activity identity with the retained ViewModel and the separately restored saved bundle.",
+    "groups": [
+      {
+        "id": "lifecycle",
+        "label": "Activity lifecycle states",
+        "nodes": [
+          "created",
+          "started",
+          "resumed",
+          "stopped"
+        ]
+      },
+      {
+        "id": "volatile",
+        "label": "App-process memory",
+        "nodes": [
+          "process",
+          "instance",
+          "vm"
+        ]
+      },
+      {
+        "id": "restoration",
+        "label": "System-managed saved state",
+        "nodes": [
+          "saved"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "created",
+        "to": "started",
+        "label": "onStart"
+      },
+      {
+        "from": "started",
+        "to": "resumed",
+        "label": "onResume"
+      },
+      {
+        "from": "resumed",
+        "to": "started",
+        "label": "onPause"
+      },
+      {
+        "from": "started",
+        "to": "stopped",
+        "label": "onStop"
+      },
+      {
+        "from": "saved",
+        "to": "instance",
+        "label": "restore bundle in onCreate"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/guide/components/activities/activity-lifecycle",
+      "https://developer.android.com/topic/libraries/architecture/viewmodel"
+    ],
+    "labels": {
+      "created": "Created state",
+      "started": "Started state",
+      "resumed": "Resumed state",
+      "stopped": "Stopped state",
+      "instance": "Activity identity",
+      "saved": "Saved bundle",
+      "process": "App process",
+      "log": "Callback trace"
+    }
+  },
+  {
+    "path": "android/adaptive-compose-large-screens",
+    "figure": 0,
+    "problem": "Unfolding a message screen must not discard its selection or scroll position.",
+    "reading": "One hoisted selection feeds both presentations. A list selection updates that owner; width policy changes visible panes rather than inventing a second selection.",
+    "groups": [
+      {
+        "id": "presentation",
+        "label": "Alternative pane presentations",
+        "nodes": [
+          "list",
+          "detail"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "list",
+        "to": "state",
+        "label": "select message ID"
+      },
+      {
+        "from": "state",
+        "to": "list",
+        "label": "render selected item"
+      },
+      {
+        "from": "state",
+        "to": "detail",
+        "label": "render selected message"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/layouts/adaptive/canonical-layouts"
+    ],
+    "labels": {
+      "state": "Shared selection owner",
+      "list": "Inbox pane",
+      "detail": "Message pane"
+    }
+  },
+  {
+    "path": "android/anrs",
+    "figure": 0,
+    "problem": "The main thread is waiting on a lock while its holder performs disk work.",
+    "reading": "Follow the labelled wait to the holder. The reason and repair boxes are diagnostic context, not extra threads or a runtime message pipeline.",
+    "groups": [
+      {
+        "id": "threads",
+        "label": "Threads in the same process",
+        "nodes": [
+          "main",
+          "holder"
+        ]
+      },
+      {
+        "id": "investigation",
+        "label": "Investigation and repair",
+        "nodes": [
+          "reason",
+          "repair"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "main",
+        "to": "holder",
+        "label": "waits for lock L"
+      },
+      {
+        "from": "reason",
+        "to": "main",
+        "label": "identifies affected operation"
+      },
+      {
+        "from": "holder",
+        "to": "repair",
+        "label": "evidence for reducing lock scope"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+    ]
+  },
+  {
+    "path": "android/app-size-and-r8",
+    "figure": 0,
+    "problem": "An obfuscated crash cannot be diagnosed with a mapping from a different build.",
+    "reading": "The release identity selects the matching mapping. Obfuscated frames and that mapping are both inputs to retracing; a readable trace still needs reproduction.",
+    "groups": [
+      {
+        "id": "release-evidence",
+        "label": "Artifacts tied to one release",
+        "nodes": [
+          "release",
+          "mapping"
+        ]
+      },
+      {
+        "id": "diagnosis",
+        "label": "Crash investigation",
+        "nodes": [
+          "stack",
+          "owner"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "release",
+        "to": "mapping",
+        "label": "match exact build"
+      },
+      {
+        "from": "stack",
+        "to": "owner",
+        "label": "obfuscated frames"
+      },
+      {
+        "from": "mapping",
+        "to": "owner",
+        "label": "retrace with matching map"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/tools/retrace"
+    ],
+    "labels": {
+      "release": "Release build",
+      "stack": "Obfuscated trace",
+      "mapping": "Matching R8 map",
+      "owner": "Readable diagnosis"
+    }
+  },
+  {
+    "path": "android/art-and-dalvik",
+    "figure": 0,
+    "problem": "Two runs of the same APK can differ because ART has learned different hot paths.",
+    "reading": "Execution records selected hot code in a profile. Background compilation can consume that profile; a later run can use compiled code. This is not app-triggered compilation.",
+    "groups": [
+      {
+        "id": "execution",
+        "label": "Executing the same app build",
+        "nodes": [
+          "run",
+          "mode"
+        ]
+      },
+      {
+        "id": "profiled-code",
+        "label": "Profile-guided compilation artifacts",
+        "nodes": [
+          "prof",
+          "aot"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "run",
+        "to": "mode",
+        "label": "executes selected paths"
+      },
+      {
+        "from": "mode",
+        "to": "prof",
+        "label": "records selected hot code"
+      },
+      {
+        "from": "prof",
+        "to": "aot",
+        "label": "guides background AOT"
+      },
+      {
+        "from": "aot",
+        "to": "mode",
+        "label": "compiled code available later"
+      }
+    ],
+    "sources": [
+      "https://source.android.com/docs/core/runtime/jit-compiler"
+    ]
+  },
+  {
+    "path": "android/baseline-profiles",
+    "figure": 0,
+    "problem": "A profile file existing in the build does not prove that a user journey became faster.",
+    "reading": "Read this as a generation-and-verification workflow. Device compilation state is checked before comparing the same journey; arrows are dependencies, not an install trace.",
+    "groups": [
+      {
+        "id": "build",
+        "label": "Profile production",
+        "nodes": [
+          "journey",
+          "artifact"
+        ]
+      },
+      {
+        "id": "verification",
+        "label": "Device-side evidence",
+        "nodes": [
+          "device",
+          "measure"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "journey",
+        "to": "artifact",
+        "label": "generate rules for exercised paths"
+      },
+      {
+        "from": "artifact",
+        "to": "device",
+        "label": "install matching profile"
+      },
+      {
+        "from": "device",
+        "to": "measure",
+        "label": "verify compilation before comparison"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/performance/baselineprofiles/overview"
+    ]
+  },
+  {
+    "path": "android/battery-optimizations",
+    "figure": 0,
+    "problem": "A reminder or sync works with the screen on but is deferred while the device is idle.",
+    "reading": "Device power state gates ordinary jobs, standard alarms and network access. Read each restricted resource against the same Doze state; these resources do not pass work to one another.",
+    "groups": [
+      {
+        "id": "restricted",
+        "label": "Resources subject to Doze policy",
+        "nodes": [
+          "jobs",
+          "alarms",
+          "net"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "phase",
+        "to": "jobs",
+        "label": "defers ordinary jobs in Doze"
+      },
+      {
+        "from": "phase",
+        "to": "alarms",
+        "label": "defers standard alarms in Doze"
+      },
+      {
+        "from": "phase",
+        "to": "net",
+        "label": "restricts network in Doze"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/training/monitoring-device-state/doze-standby"
+    ],
+    "labels": {
+      "phase": "Device power state",
+      "jobs": "Jobs and sync",
+      "alarms": "Alarm policy",
+      "net": "Network access"
+    }
+  },
+  {
+    "path": "android/battery-power-profiling",
+    "figure": 0,
+    "problem": "Repeated retries after login may consume power without delivering useful work.",
+    "reading": "This is an experiment workflow. Observed activity supports a hypothesis; only a controlled repeat can test the policy change. It is not a per-app energy attribution trace.",
+    "groups": [
+      {
+        "id": "experiment",
+        "label": "One controlled power experiment",
+        "nodes": [
+          "scenario",
+          "activity",
+          "change",
+          "compare"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "scenario",
+        "to": "activity",
+        "label": "inspect the defined interval"
+      },
+      {
+        "from": "activity",
+        "to": "change",
+        "label": "form a bounded retry hypothesis"
+      },
+      {
+        "from": "change",
+        "to": "compare",
+        "label": "repeat equivalent conditions"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/studio/profile/power-profiler"
+    ]
+  },
+  {
+    "path": "android/camerax-capture-architecture",
+    "figure": 0,
+    "problem": "A slow image analyzer must not work through every stale camera frame.",
+    "reading": "One ImageProxy is being analyzed. With KEEP_ONLY_LATEST, newer pending frames replace stale ones; closing the current proxy permits delivery of the latest image.",
+    "groups": [
+      {
+        "id": "analysis-use-case",
+        "label": "CameraX image-analysis use case",
+        "nodes": [
+          "analysis",
+          "latest"
+        ]
+      },
+      {
+        "id": "application-output",
+        "label": "Application result",
+        "nodes": [
+          "result"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "latest",
+        "to": "analysis",
+        "label": "deliver latest after current close"
+      },
+      {
+        "from": "analysis",
+        "to": "result",
+        "label": "produce result for analyzed frame"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/reference/androidx/camera/core/ImageAnalysis#STRATEGY_KEEP_ONLY_LATEST"
+    ],
+    "labels": {
+      "analysis": "Analyzer",
+      "latest": "Latest pending image",
+      "result": "Analysis output"
+    }
+  },
+  {
+    "path": "android/components",
+    "figure": 0,
+    "problem": "A ViewModel cannot request an Activity-scoped toolbar controller from a sibling component.",
+    "reading": "Arrows show Hilt component parentage. Bindings are visible through ancestors, not sibling branches. Follow Fragment upward for ImageLoader; ViewModel has no path through ActivityComponent.",
+    "groups": [
+      {
+        "id": "boundary-retained",
+        "label": "Configuration-retained branch",
+        "nodes": [
+          "retained",
+          "vm"
+        ]
+      },
+      {
+        "id": "instance",
+        "label": "Activity-instance branch",
+        "nodes": [
+          "act",
+          "frag"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "single",
+        "to": "retained",
+        "label": "parent component"
+      },
+      {
+        "from": "retained",
+        "to": "vm",
+        "label": "parent component"
+      },
+      {
+        "from": "retained",
+        "to": "act",
+        "label": "parent component"
+      },
+      {
+        "from": "act",
+        "to": "frag",
+        "label": "parent component"
+      }
+    ],
+    "sources": [
+      "https://dagger.dev/hilt/components.html"
+    ],
+    "labels": {
+      "single": "SingletonComponent",
+      "retained": "ActivityRetainedComponent",
+      "vm": "ViewModelComponent",
+      "act": "ActivityComponent",
+      "frag": "FragmentComponent",
+      "result": "Binding resolution"
+    }
+  },
+  {
+    "path": "android/compose-accessibility",
+    "figure": 0,
+    "problem": "Pointer input can open a row while accessibility users cannot activate it.",
+    "reading": "Compare two independent semantics trees. Arrows denote focus or action progression within each tree, not data moving from the broken row into the fixed one.",
+    "groups": [
+      {
+        "id": "faulty",
+        "label": "Faulty pointer-only row",
+        "nodes": [
+          "u1",
+          "u2",
+          "u3",
+          "u4"
+        ]
+      },
+      {
+        "id": "accessible",
+        "label": "Row with merged click semantics",
+        "nodes": [
+          "m1",
+          "m2"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "u1",
+        "to": "u2",
+        "label": "next focus stop"
+      },
+      {
+        "from": "u2",
+        "to": "u3",
+        "label": "next focus stop"
+      },
+      {
+        "from": "u3",
+        "to": "u4",
+        "label": "double-tap has no click action"
+      },
+      {
+        "from": "m1",
+        "to": "m2",
+        "label": "invoke exposed click action"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/accessibility/merging-clearing"
+    ],
+    "labels": {
+      "u1": "Unnamed image stop",
+      "u2": "Sender stop",
+      "u3": "Subject stop",
+      "u4": "No accessibility action",
+      "m1": "One labelled row action",
+      "m2": "Message opens"
+    }
+  },
+  {
+    "path": "android/compose-navigation",
+    "figure": 0,
+    "problem": "Back should remove Profile, and logout should leave no authenticated destination reachable.",
+    "reading": "The app owns a list of destination keys. Home and Profile illustrate push/pop; Login is the replacement signed-out root, not another entry that must remain underneath.",
+    "groups": [
+      {
+        "id": "keys",
+        "label": "Destination keys used in this example",
+        "nodes": [
+          "login",
+          "home",
+          "profile"
+        ]
+      },
+      {
+        "id": "policy",
+        "label": "App-owned stack mutation",
+        "nodes": [
+          "code"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "home",
+        "to": "profile",
+        "label": "navigate: push Profile key"
+      },
+      {
+        "from": "profile",
+        "to": "home",
+        "label": "Back: pop Profile key"
+      },
+      {
+        "from": "code",
+        "to": "login",
+        "label": "logout: replace stack with Login"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/guide/navigation/navigation-3/basics",
+      "https://developer.android.com/guide/navigation/navigation-3/save-state"
+    ],
+    "labels": {
+      "code": "Stack mutation policy"
+    }
+  },
+  {
+    "path": "android/compose-performance-tooling",
+    "figure": 0,
+    "problem": "A stuttering feed may be decoding images on Main rather than recomposing too often.",
+    "reading": "This is a diagnostic workflow: establish a repeatable journey, measure a representative build, locate the expensive phase, then verify one focused repair.",
+    "groups": [
+      {
+        "id": "evidence",
+        "label": "Reproduction and measurement",
+        "nodes": [
+          "s1",
+          "s2",
+          "s3"
+        ]
+      },
+      {
+        "id": "intervention",
+        "label": "Repair and regression protection",
+        "nodes": [
+          "s4",
+          "s5"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "s1",
+        "to": "s2",
+        "label": "measure the reproduced journey"
+      },
+      {
+        "from": "s2",
+        "to": "s3",
+        "label": "inspect corresponding trace"
+      },
+      {
+        "from": "s3",
+        "to": "s4",
+        "label": "fix the evidenced cause"
+      },
+      {
+        "from": "s4",
+        "to": "s5",
+        "label": "benchmark the repaired journey"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance",
+      "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
+    ],
+    "labels": {
+      "s1": "Reproduce journey",
+      "s2": "Measure representative build",
+      "s3": "Locate expensive phase",
+      "s4": "Repair image loading",
+      "s5": "Regression benchmark"
+    }
+  },
+  {
+    "path": "android/content-providers-and-contentresolver",
+    "figure": 0,
+    "problem": "Another app cannot read an invoice by using its private filesystem path.",
+    "reading": "A FileProvider URI names the shareable file; a temporary grant authorizes the recipient. The recipient reads through ContentResolver, without gaining access to every private file.",
+    "groups": [
+      {
+        "id": "sender",
+        "label": "Sending app private data",
+        "nodes": [
+          "file",
+          "uri"
+        ]
+      },
+      {
+        "id": "authorization",
+        "label": "System-mediated access grant",
+        "nodes": [
+          "grant"
+        ]
+      },
+      {
+        "id": "recipient",
+        "label": "Receiving app",
+        "nodes": [
+          "reader"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "file",
+        "to": "uri",
+        "label": "map configured file to content URI"
+      },
+      {
+        "from": "uri",
+        "to": "reader",
+        "label": "share the content URI"
+      },
+      {
+        "from": "grant",
+        "to": "reader",
+        "label": "authorize this URI for reading"
+      },
+      {
+        "from": "file",
+        "to": "reader",
+        "label": "stream through provider after grant"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/training/secure-file-sharing/share-file"
+    ],
+    "labels": {
+      "file": "Private invoice",
+      "uri": "FileProvider content URI",
+      "grant": "Temporary read grant",
+      "reader": "Email recipient"
+    }
+  },
+  {
+    "path": "android/convention-plugins",
+    "figure": 0,
+    "problem": "Copied Gradle settings drift when fifty modules each maintain their own policy.",
+    "reading": "The module resolves a convention plugin from the included build. That plugin composes base and optional capabilities; consumer builds verify the resulting shared policy.",
+    "groups": [
+      {
+        "id": "shared-build-logic",
+        "label": "Included build: build-logic",
+        "nodes": [
+          "id",
+          "lib",
+          "caps"
+        ]
+      },
+      {
+        "id": "consumer",
+        "label": "Consuming project",
+        "nodes": [
+          "module",
+          "proof"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "settings",
+        "to": "id",
+        "label": "makes included plugin build resolvable"
+      },
+      {
+        "from": "module",
+        "to": "id",
+        "label": "requests registered plugin ID"
+      },
+      {
+        "from": "id",
+        "to": "lib",
+        "label": "applies base convention"
+      },
+      {
+        "from": "id",
+        "to": "caps",
+        "label": "composes selected capabilities"
+      },
+      {
+        "from": "module",
+        "to": "proof",
+        "label": "representative consumer build"
+      }
+    ],
+    "sources": [
+      "https://docs.gradle.org/current/userguide/composite_builds.html",
+      "https://docs.gradle.org/current/userguide/implementing_gradle_plugins_convention.html"
+    ],
+    "labels": {
+      "settings": "Root plugin management",
+      "id": "Registered plugin ID",
+      "lib": "Library convention",
+      "caps": "Hilt / Compose conventions",
+      "module": "Module build script",
+      "proof": "Consumer build evidence"
+    }
+  },
+  {
+    "path": "android/crash-monitoring",
+    "figure": 0,
+    "problem": "A low fleet-wide crash rate can hide a severe failure loop in one release cohort.",
+    "reading": "Capture, reporting, impact assessment and response have different responsibilities. Arrows describe the investigation workflow; captured events are not guaranteed to reach a dashboard.",
+    "groups": [
+      {
+        "id": "telemetry",
+        "label": "Configured crash-reporting path",
+        "nodes": [
+          "event",
+          "report"
+        ]
+      },
+      {
+        "id": "response",
+        "label": "Release ownership",
+        "nodes": [
+          "cohort",
+          "action"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "event",
+        "to": "report",
+        "label": "report when capture and delivery succeed"
+      },
+      {
+        "from": "report",
+        "to": "cohort",
+        "label": "segment by release and journey"
+      },
+      {
+        "from": "cohort",
+        "to": "action",
+        "label": "prioritize from affected users"
+      }
+    ],
+    "sources": [
+      "https://firebase.google.com/docs/crashlytics/customize-crash-reports?platform=android"
+    ]
+  },
+  {
+    "path": "android/custom-layout-measurement",
+    "figure": 0,
+    "problem": "An overlapping avatar row must respect constraints and mirror correctly in RTL.",
+    "reading": "The layout measures each child once, selects its own constrained size, then places the same child identities with logical start-relative coordinates.",
+    "groups": [
+      {
+        "id": "children",
+        "label": "Children measured and placed by this layout",
+        "nodes": [
+          "a1",
+          "a2",
+          "a3"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "row",
+        "to": "a1",
+        "label": "measure once; placeRelative"
+      },
+      {
+        "from": "row",
+        "to": "a2",
+        "label": "measure once; placeRelative"
+      },
+      {
+        "from": "row",
+        "to": "a3",
+        "label": "measure once; placeRelative"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/layouts/custom"
+    ],
+    "labels": {
+      "row": "Custom Layout",
+      "a1": "Avatar 1",
+      "a2": "Avatar 2",
+      "a3": "Avatar 3"
+    }
+  },
+  {
+    "path": "android/datastore",
+    "figure": 0,
+    "problem": "Two simultaneous settings edits must not overwrite each other with stale snapshots.",
+    "reading": "Both callers submit transforms to one DataStore instance. Updates are serialized and durably persisted; data Flow exposes committed state, rather than a separate application cache.",
+    "groups": [
+      {
+        "id": "callers",
+        "label": "Concurrent coroutine callers",
+        "nodes": [
+          "a",
+          "b"
+        ]
+      },
+      {
+        "id": "datastore-instance",
+        "label": "One DataStore instance",
+        "nodes": [
+          "store",
+          "flow"
+        ]
+      },
+      {
+        "id": "durable-data",
+        "label": "Persistent backing data",
+        "nodes": [
+          "file"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "a",
+        "to": "store",
+        "label": "submit edit transform"
+      },
+      {
+        "from": "b",
+        "to": "store",
+        "label": "submit edit transform"
+      },
+      {
+        "from": "store",
+        "to": "file",
+        "label": "serialize and persist update"
+      },
+      {
+        "from": "store",
+        "to": "flow",
+        "label": "expose committed data state"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/reference/androidx/datastore/core/DataStore"
+    ],
+    "labels": {
+      "a": "Caller A",
+      "b": "Caller B",
+      "store": "Serialized update owner",
+      "file": "Durable settings file",
+      "flow": "DataStore data Flow"
+    }
+  },
+  {
+    "path": "android/dependency-injection",
+    "figure": 0,
+    "problem": "Rotation recreates Activity-scoped bindings but must preserve retained and ViewModel-scoped bindings.",
+    "reading": "Arrows are component parentage, not callback order. Compare component lifetime labels as the same screen rotates, finishes and finally loses its process.",
+    "groups": [
+      {
+        "id": "application",
+        "label": "Application-process lifetime",
+        "nodes": [
+          "single"
+        ]
+      },
+      {
+        "id": "retained-components",
+        "label": "Retained screen lifetimes",
+        "nodes": [
+          "retained",
+          "vm"
+        ]
+      },
+      {
+        "id": "activity-instance",
+        "label": "Activity-instance lifetime",
+        "nodes": [
+          "act"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "single",
+        "to": "retained",
+        "label": "parent component"
+      },
+      {
+        "from": "retained",
+        "to": "vm",
+        "label": "parent component"
+      },
+      {
+        "from": "retained",
+        "to": "act",
+        "label": "parent component"
+      }
+    ],
+    "sources": [
+      "https://dagger.dev/hilt/components.html"
+    ],
+    "labels": {
+      "single": "SingletonComponent",
+      "retained": "ActivityRetainedComponent",
+      "vm": "ViewModelComponent",
+      "act": "ActivityComponent"
+    }
+  },
+  {
+    "path": "android/device-connectivity-and-location",
+    "figure": 0,
+    "problem": "Finding a BLE device does not mean its measurement stream is ready.",
+    "reading": "User intent governs the session. Scanning, connection and service setup precede a configured subscription; only that ready subscription can deliver measurement values.",
+    "groups": [
+      {
+        "id": "session",
+        "label": "Live BLE session",
+        "nodes": [
+          "radio",
+          "data"
+        ]
+      },
+      {
+        "id": "policy",
+        "label": "Product intent",
+        "nodes": [
+          "intent"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "intent",
+        "to": "radio",
+        "label": "start or stop wanted session"
+      },
+      {
+        "from": "radio",
+        "to": "data",
+        "label": "configured subscription delivers values"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/develop/connectivity/bluetooth/ble/connect-gatt-server"
+    ],
+    "labels": {
+      "radio": "BLE session state",
+      "intent": "Wanted session",
+      "data": "Measurement value"
+    }
+  },
+  {
+    "path": "android/device-connectivity-and-location",
+    "figure": 1,
+    "problem": "A disconnected BLE handle must not become an unbounded reconnect loop.",
+    "reading": "The product intent outlives one connection. A disconnect leads to a policy check; a bounded retry creates a fresh connection only while the feature is still wanted.",
+    "groups": [
+      {
+        "id": "ephemeral",
+        "label": "Ephemeral connection",
+        "nodes": [
+          "link"
+        ]
+      },
+      {
+        "id": "reconnect-policy",
+        "label": "App-owned reconnect policy",
+        "nodes": [
+          "intent",
+          "retry"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "link",
+        "to": "intent",
+        "label": "disconnect: recheck wanted session"
+      },
+      {
+        "from": "intent",
+        "to": "retry",
+        "label": "permit retry only while wanted"
+      },
+      {
+        "from": "retry",
+        "to": "link",
+        "label": "attempt a fresh connection"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/develop/connectivity/bluetooth/ble/connect-gatt-server"
+    ],
+    "labels": {
+      "link": "Current BLE connection",
+      "intent": "Durable sync intent",
+      "retry": "Bounded reconnect policy"
+    }
+  },
+  {
+    "path": "android/fragment",
+    "figure": 0,
+    "problem": "A Fragment can survive on the back stack after its old view is destroyed.",
+    "reading": "Observer lifetime follows its LifecycleOwner. The Fragment-owned registration survives view destruction; a view-owned registration is removed with that view. Callback text is a trace, not another owner.",
+    "groups": [
+      {
+        "id": "fragment-owner",
+        "label": "Fragment lifecycle and its registration",
+        "nodes": [
+          "object",
+          "thisObs"
+        ]
+      },
+      {
+        "id": "view-owner",
+        "label": "View lifecycle and its registration",
+        "nodes": [
+          "view",
+          "viewObs"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "object",
+        "to": "thisObs",
+        "label": "Fragment lifecycle owns registration"
+      },
+      {
+        "from": "view",
+        "to": "viewObs",
+        "label": "View lifecycle owns registration"
+      },
+      {
+        "from": "object",
+        "to": "view",
+        "label": "creates a new view after return"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/guide/fragments/lifecycle"
+    ],
+    "labels": {
+      "object": "Fragment identity",
+      "view": "View identity",
+      "thisObs": "Fragment-owned observer",
+      "viewObs": "View-owned observer",
+      "calls": "Callback trace"
+    }
+  },
+  {
+    "path": "android/graphql",
+    "figure": 0,
+    "problem": "Renaming a user in one operation should update another watcher of the same cached entity.",
+    "reading": "The mutation and watcher meet at one normalized record identity. Notification depends on matching cache IDs and selected fields; unrelated or missing data needs an explicit policy.",
+    "groups": [
+      {
+        "id": "cache",
+        "label": "Normalized cache",
+        "nodes": [
+          "record"
+        ]
+      },
+      {
+        "id": "operations",
+        "label": "GraphQL operation roles",
+        "nodes": [
+          "list",
+          "detail"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "detail",
+        "to": "record",
+        "label": "write returned entity fields"
+      },
+      {
+        "from": "record",
+        "to": "list",
+        "label": "notify affected watcher"
+      }
+    ],
+    "sources": [
+      "https://www.apollographql.com/docs/kotlin/caching/query-watchers"
+    ],
+    "labels": {
+      "list": "User-list watcher",
+      "detail": "Rename mutation",
+      "record": "Shared record User:7"
+    }
+  },
+  {
+    "path": "android/health-connect",
+    "figure": 0,
+    "problem": "Saving Health Connect progress before applying its changes can silently skip records after a crash.",
+    "reading": "The token selects a changes page. This illustrative app transaction commits data and matching progress together; Health Connect does not transact the app-owned database for you.",
+    "groups": [
+      {
+        "id": "local-commit",
+        "label": "App-owned durable commit boundary",
+        "nodes": [
+          "token",
+          "db"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "token",
+        "to": "page",
+        "label": "getChanges with saved token"
+      },
+      {
+        "from": "page",
+        "to": "db",
+        "label": "apply upserts and deletions"
+      },
+      {
+        "from": "db",
+        "to": "token",
+        "label": "commit matching progress with data"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/health-and-fitness/health-connect/sync-data"
+    ],
+    "labels": {
+      "token": "Committed changes token",
+      "page": "Health Connect changes",
+      "db": "Local application data"
+    }
+  },
+  {
+    "path": "android/hilt-vs-koin-vs-manual-di",
+    "figure": 0,
+    "problem": "A missing dependency is detected at different points by different wiring configurations.",
+    "reading": "Compare independent approaches to the same missing binding. No arrow joins them: manual construction, Hilt validation and an unchecked Koin DSL graph are alternatives, not pipeline stages.",
+    "groups": [
+      {
+        "id": "compile-time",
+        "label": "Compile-time wiring in this example",
+        "nodes": [
+          "manual",
+          "hilt"
+        ]
+      },
+      {
+        "id": "runtime-dsl",
+        "label": "Koin DSL without compiler validation",
+        "nodes": [
+          "koin"
+        ]
+      }
+    ],
+    "edges": [],
+    "sources": [
+      "https://dagger.dev/hilt/components.html",
+      "https://insert-koin.io/docs/reference/koin-test/verify/"
+    ],
+    "labels": {
+      "manual": "Manual constructors",
+      "hilt": "Hilt graph validation",
+      "koin": "Unchecked Koin DSL"
+    }
+  },
+  {
+    "path": "android/jank",
+    "figure": 0,
+    "problem": "Shortening drawing code cannot fix a frame whose Main thread is waiting for a lock.",
+    "reading": "The wait edge identifies the dependency in this example. Frame selection and retesting are investigation steps; fewer recompositions alone do not demonstrate smoother frames.",
+    "groups": [
+      {
+        "id": "blocking",
+        "label": "Threads involved in the blocking example",
+        "nodes": [
+          "wait",
+          "owner"
+        ]
+      },
+      {
+        "id": "measurement",
+        "label": "Observed frame and repeat",
+        "nodes": [
+          "frame",
+          "repeat"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "frame",
+        "to": "wait",
+        "label": "inspect main-thread state"
+      },
+      {
+        "from": "wait",
+        "to": "owner",
+        "label": "waits on owned lock"
+      },
+      {
+        "from": "owner",
+        "to": "repeat",
+        "label": "verify the evidenced repair"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs",
+      "https://developer.android.com/topic/performance/tracing"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/binary-compatibility-api-evolution",
+    "figure": 0,
+    "problem": "Recompiled source can pass while an already compiled caller still requests a removed method descriptor.",
+    "reading": "Old binaries and recompiled source are separate compatibility tests against the candidate. The gate combines their evidence; a default argument does not rewrite an existing caller binary.",
+    "groups": [
+      {
+        "id": "consumers",
+        "label": "Distinct compatibility consumers",
+        "nodes": [
+          "old",
+          "source"
+        ]
+      },
+      {
+        "id": "library",
+        "label": "Candidate public API",
+        "nodes": [
+          "candidate"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "old",
+        "to": "candidate",
+        "label": "links to original JVM descriptor"
+      },
+      {
+        "from": "source",
+        "to": "candidate",
+        "label": "recompiles against current API"
+      },
+      {
+        "from": "old",
+        "to": "gate",
+        "label": "old-consumer execution evidence"
+      },
+      {
+        "from": "source",
+        "to": "gate",
+        "label": "source-compatibility evidence"
+      }
+    ],
+    "sources": [
+      "https://kotlinlang.org/docs/api-guidelines-backward-compatibility.html"
+    ],
+    "labels": {
+      "old": "Existing caller binary",
+      "candidate": "New library API",
+      "source": "Recompiled caller source",
+      "gate": "Compatibility decision"
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/ecosystem/dependency-injection",
+    "figure": 0,
+    "problem": "A shared service must not outlive the platform resources injected into it.",
+    "reading": "This illustrative composition root constructs target resources and injects them. The declared graph lifetime determines when those resources are closed; rendering a screen is not automatic teardown.",
+    "groups": [
+      {
+        "id": "root",
+        "label": "Platform composition and lifetime policy",
+        "nodes": [
+          "n0",
+          "n3"
+        ]
+      },
+      {
+        "id": "graph",
+        "label": "Constructed service graph",
+        "nodes": [
+          "n1",
+          "n2"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "n0",
+        "to": "n1",
+        "label": "construct target resources"
+      },
+      {
+        "from": "n0",
+        "to": "n2",
+        "label": "inject declared dependencies"
+      },
+      {
+        "from": "n2",
+        "to": "n1",
+        "label": "use supplied resources"
+      },
+      {
+        "from": "n3",
+        "to": "n1",
+        "label": "close at owned lifetime boundary"
+      }
+    ],
+    "sources": [
+      "https://kotlinlang.org/docs/api-guidelines-build-for-multiplatform.html",
+      "https://ktor.io/docs/client-create-and-configure.html"
+    ],
+    "labels": {
+      "n0": "Platform composition root",
+      "n1": "Engine / driver handles",
+      "n2": "Shared service",
+      "n3": "Graph lifetime owner"
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/ecosystem/libraries-ecosystem",
+    "figure": 0,
+    "problem": "Adding a web target can expose a dependency that never published a compatible implementation.",
+    "reading": "The new target imposes support requirements on the dependency seam. Existing success is separate evidence; the product must choose a supported replacement, adapter or narrower scope.",
+    "groups": [
+      {
+        "id": "targets",
+        "label": "Existing and proposed target requirements",
+        "nodes": [
+          "n0",
+          "n1"
+        ]
+      },
+      {
+        "id": "decision",
+        "label": "Dependency evaluation",
+        "nodes": [
+          "n2",
+          "n3"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "n1",
+        "to": "n2",
+        "label": "requires compatible target support"
+      },
+      {
+        "from": "n2",
+        "to": "n3",
+        "label": "support and cost evidence"
+      },
+      {
+        "from": "n0",
+        "to": "n3",
+        "label": "protect existing consumers"
+      }
+    ],
+    "sources": [
+      "https://kotlinlang.org/docs/multiplatform/multiplatform-add-dependencies.html"
+    ],
+    "labels": {
+      "n0": "Existing shipped targets",
+      "n1": "Proposed new target",
+      "n2": "Replaceable dependency seam",
+      "n3": "Accept or defer target"
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/ecosystem/networking-with-ktor",
+    "figure": 0,
+    "problem": "One shared request API still executes through different platform networking engines.",
+    "reading": "Follow request preparation into the selected engine, then map its response or failure back to the domain boundary. Cancellation and transport behavior require evidence for that engine.",
+    "groups": [
+      {
+        "id": "common",
+        "label": "Shared operation and client policy",
+        "nodes": [
+          "n0",
+          "n1",
+          "n3"
+        ]
+      },
+      {
+        "id": "target",
+        "label": "Target-specific transport",
+        "nodes": [
+          "n2"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "n0",
+        "to": "n1",
+        "label": "build configured request"
+      },
+      {
+        "from": "n1",
+        "to": "n2",
+        "label": "execute with selected engine"
+      },
+      {
+        "from": "n2",
+        "to": "n3",
+        "label": "response or transport failure"
+      },
+      {
+        "from": "n3",
+        "to": "n0",
+        "label": "return domain outcome"
+      }
+    ],
+    "sources": [
+      "https://ktor.io/docs/client-engines.html"
+    ],
+    "labels": {
+      "n0": "Shared repository operation",
+      "n1": "Configured client policy",
+      "n2": "Platform HTTP engine",
+      "n3": "Domain result mapping"
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/ecosystem/persistence",
+    "figure": 0,
+    "problem": "A widget must reject an incomplete or unsupported snapshot rather than display invented consistency.",
+    "reading": "This is an explicit single-writer design, not a guarantee provided by shared Kotlin. The reader validates a complete versioned value and applies its fallback when that value is unusable.",
+    "groups": [
+      {
+        "id": "writer",
+        "label": "Writer role",
+        "nodes": [
+          "n0"
+        ]
+      },
+      {
+        "id": "publication",
+        "label": "Shared snapshot contract",
+        "nodes": [
+          "n1",
+          "n3"
+        ]
+      },
+      {
+        "id": "reader",
+        "label": "Widget reader role",
+        "nodes": [
+          "n2"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "n0",
+        "to": "n1",
+        "label": "publish complete versioned value"
+      },
+      {
+        "from": "n1",
+        "to": "n2",
+        "label": "read supported snapshot"
+      },
+      {
+        "from": "n3",
+        "to": "n2",
+        "label": "fallback when absent or invalid"
+      }
+    ],
+    "sources": [
+      "https://developer.apple.com/documentation/xcode/configuring-app-groups"
+    ],
+    "labels": {
+      "n0": "Application writer",
+      "n1": "Versioned snapshot",
+      "n2": "Widget reader",
+      "n3": "Recovery policy"
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/ecosystem/persistence",
+    "figure": 1,
+    "problem": "A new application must open databases from every still-supported old schema version.",
+    "reading": "The stored version selects the required upgrade path. Migration code transforms existing data, while upgrade tests check preservation; a successful fresh install is a different case.",
+    "groups": [
+      {
+        "id": "on-device",
+        "label": "On-device database upgrade",
+        "nodes": [
+          "db",
+          "app",
+          "mig"
+        ]
+      },
+      {
+        "id": "verification",
+        "label": "Pre-release evidence",
+        "nodes": [
+          "test"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "app",
+        "to": "db",
+        "label": "open expected schema version"
+      },
+      {
+        "from": "db",
+        "to": "mig",
+        "label": "stored version selects upgrade path"
+      },
+      {
+        "from": "mig",
+        "to": "db",
+        "label": "transform existing rows"
+      },
+      {
+        "from": "test",
+        "to": "mig",
+        "label": "exercise supported upgrade paths"
+      }
+    ],
+    "sources": [
+      "https://sqldelight.github.io/sqldelight/2.3.2/android_sqlite/migrations/"
+    ],
+    "labels": {
+      "db": "Persisted database",
+      "app": "New application build",
+      "mig": "Ordered schema migrations",
+      "test": "Upgrade-test evidence"
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/foundations/architecture-and-module-boundaries",
+    "figure": 0,
+    "problem": "A shared weather feature needs location without importing an Android Context or Apple controller.",
+    "reading": "Shared code depends on a platform-neutral contract. The supplied adapter implements that contract; the explicit owner governs construction, cancellation and resource cleanup in this example.",
+    "groups": [
+      {
+        "id": "shared",
+        "label": "Shared feature API boundary",
+        "nodes": [
+          "n0",
+          "n1"
+        ]
+      },
+      {
+        "id": "integration",
+        "label": "Platform integration and lifetime",
+        "nodes": [
+          "n2",
+          "n3"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "n0",
+        "to": "n1",
+        "label": "depends on outcome interface"
+      },
+      {
+        "from": "n2",
+        "to": "n1",
+        "label": "implements platform-neutral contract"
+      },
+      {
+        "from": "n3",
+        "to": "n2",
+        "label": "constructs and ends owned work"
+      }
+    ],
+    "sources": [
+      "https://kotlinlang.org/docs/api-guidelines-build-for-multiplatform.html"
+    ],
+    "labels": {
+      "n0": "Shared weather feature",
+      "n1": "Location outcome contract",
+      "n2": "Platform location adapter",
+      "n3": "Operation lifetime owner"
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/foundations/overview-and-k1-vs-k2",
+    "figure": 0,
+    "problem": "Common Kotlin source does not become one universal Android-and-Apple binary.",
+    "reading": "The same common sources participate in separate target compilations. Each target supplies applicable platform code and produces its own output; Consumer represents the corresponding app role.",
+    "groups": [
+      {
+        "id": "sources",
+        "label": "Platform-neutral source contract",
+        "nodes": [
+          "n0"
+        ]
+      },
+      {
+        "id": "outputs",
+        "label": "Independent target compilations",
+        "nodes": [
+          "n1",
+          "n2"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "n0",
+        "to": "n1",
+        "label": "participates in Android compilation"
+      },
+      {
+        "from": "n0",
+        "to": "n2",
+        "label": "participates in Apple compilation"
+      },
+      {
+        "from": "n1",
+        "to": "n3",
+        "label": "Android artifact for its consumer"
+      },
+      {
+        "from": "n2",
+        "to": "n3",
+        "label": "Native artifact for its consumer"
+      }
+    ],
+    "sources": [
+      "https://kotlinlang.org/docs/multiplatform/multiplatform-hierarchy.html"
+    ],
+    "labels": {
+      "n0": "Common Kotlin sources",
+      "n1": "Android target build",
+      "n2": "Apple target build",
+      "n3": "Platform application consumer"
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/kmp-observability-crash-symbolication",
+    "figure": 0,
+    "problem": "Uploading symbols does not prove that a real crash report can identify a shared-code failure.",
+    "reading": "The controlled event, release identity and matching platform symbols converge at the report. Android mappings and Apple dSYMs remain distinct artifacts, matched to their actual distributed build.",
+    "groups": [
+      {
+        "id": "boundary-release",
+        "label": "Release-associated evidence",
+        "nodes": [
+          "release",
+          "symbols"
+        ]
+      },
+      {
+        "id": "probe",
+        "label": "End-to-end diagnostic probe",
+        "nodes": [
+          "event",
+          "report"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "release",
+        "to": "symbols",
+        "label": "match distributed build identity"
+      },
+      {
+        "from": "event",
+        "to": "report",
+        "label": "capture controlled failure"
+      },
+      {
+        "from": "symbols",
+        "to": "report",
+        "label": "decode matching platform frames"
+      },
+      {
+        "from": "release",
+        "to": "report",
+        "label": "verify reported build"
+      }
+    ],
+    "sources": [
+      "https://developer.apple.com/documentation/xcode/building-your-app-to-include-debugging-information",
+      "https://developer.android.com/tools/retrace"
+    ],
+    "labels": {
+      "release": "Distributed build identity",
+      "symbols": "Matching mapping / dSYM",
+      "event": "Known-location probe",
+      "report": "Actual diagnostic report"
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/production/adoption-and-migration",
+    "figure": 0,
+    "problem": "A shared-code migration needs a reversible pilot rather than an all-at-once rewrite.",
+    "reading": "Both implementations are alternatives behind one product contract. Baseline and pilot evidence inform expansion or rollback; no arrow means copying live state between competing implementations.",
+    "groups": [
+      {
+        "id": "implementations",
+        "label": "Alternative implementations behind one seam",
+        "nodes": [
+          "old",
+          "shared"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "contract",
+        "to": "old",
+        "label": "existing behavior promise"
+      },
+      {
+        "from": "contract",
+        "to": "shared",
+        "label": "same required behavior"
+      },
+      {
+        "from": "old",
+        "to": "evidence",
+        "label": "baseline evidence"
+      },
+      {
+        "from": "shared",
+        "to": "evidence",
+        "label": "bounded pilot evidence"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/kotlin/multiplatform/migrate"
+    ],
+    "labels": {
+      "contract": "Product contract",
+      "old": "Current implementation",
+      "shared": "Shared candidate",
+      "evidence": "Pilot decision evidence"
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/production/ci-cd-for-kmp",
+    "figure": 0,
+    "problem": "A green JVM job cannot establish that a changed Apple consumer still links and behaves correctly.",
+    "reading": "Required target checks feed the release decision independently. Select jobs from affected promises; Apple-capable integration evidence is separate from common-code or JVM success.",
+    "groups": [
+      {
+        "id": "jobs",
+        "label": "Independent target-capable checks",
+        "nodes": [
+          "linux",
+          "apple"
+        ]
+      },
+      {
+        "id": "gate",
+        "label": "Change and release policy",
+        "nodes": [
+          "change",
+          "release"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "change",
+        "to": "linux",
+        "label": "select affected common / JVM checks"
+      },
+      {
+        "from": "change",
+        "to": "apple",
+        "label": "select required Apple checks"
+      },
+      {
+        "from": "linux",
+        "to": "release",
+        "label": "common / JVM evidence"
+      },
+      {
+        "from": "apple",
+        "to": "release",
+        "label": "required Apple consumer evidence"
+      }
+    ],
+    "sources": [
+      "https://kotlinlang.org/docs/multiplatform/multiplatform-run-tests.html",
+      "https://kotlinlang.org/docs/native-target-support.html"
+    ],
+    "labels": {
+      "change": "Affected-contract analysis",
+      "linux": "Common / JVM job",
+      "apple": "Apple-capable job",
+      "release": "Artifact release gate"
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/production/concurrency-and-memory",
+    "figure": 0,
+    "problem": "A dismissed Swift screen can remain retained by its shared observer callback.",
+    "reading": "Arrows are strong references in this illustrative cross-runtime cycle. Ending presentation does not break them; removing the registered callback removes the unwanted ownership path.",
+    "groups": [
+      {
+        "id": "swift-owner",
+        "label": "Swift screen lifetime",
+        "nodes": [
+          "swift"
+        ]
+      },
+      {
+        "id": "observation",
+        "label": "Shared observation registration",
+        "nodes": [
+          "kotlin",
+          "callback"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "swift",
+        "to": "kotlin",
+        "label": "retains shared holder"
+      },
+      {
+        "from": "kotlin",
+        "to": "callback",
+        "label": "retains registered callback"
+      },
+      {
+        "from": "callback",
+        "to": "swift",
+        "label": "captures screen strongly"
+      }
+    ],
+    "sources": [
+      "https://kotlinlang.org/docs/native-arc-integration.html"
+    ],
+    "labels": {
+      "swift": "Swift screen owner",
+      "kotlin": "Shared state holder",
+      "callback": "Registered callback"
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/production/testing-and-mocking",
+    "figure": 0,
+    "problem": "A repository fallback test must control transport failure and cached data without claiming real-platform coverage.",
+    "reading": "The repository calls controlled collaborators and exposes an observable outcome. Assertions cover the declared fallback and request parameters; real engines and exported Apple APIs require separate tests.",
+    "groups": [
+      {
+        "id": "fixtures",
+        "label": "Controlled test collaborators",
+        "nodes": [
+          "api",
+          "store"
+        ]
+      },
+      {
+        "id": "subject",
+        "label": "Public contract under test",
+        "nodes": [
+          "repo"
+        ]
+      },
+      {
+        "id": "observations",
+        "label": "Test observations",
+        "nodes": [
+          "assert"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "repo",
+        "to": "api",
+        "label": "request category X"
+      },
+      {
+        "from": "repo",
+        "to": "store",
+        "label": "read cached fallback"
+      },
+      {
+        "from": "repo",
+        "to": "assert",
+        "label": "observe result and behavior"
+      }
+    ],
+    "sources": [
+      "https://ktor.io/docs/client-testing.html",
+      "https://kotlinlang.org/docs/multiplatform/multiplatform-run-tests.html"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/shared-domain-boundaries",
+    "figure": 0,
+    "problem": "Durable sync intent must survive periods when the platform grants no execution opportunity.",
+    "reading": "The outbox and stored outcome are durable application state. A platform opportunity permits only bounded work; unfinished operations remain for a later allowed opportunity.",
+    "groups": [
+      {
+        "id": "durable",
+        "label": "App-owned durable synchronization state",
+        "nodes": [
+          "n0",
+          "n3"
+        ]
+      },
+      {
+        "id": "execution",
+        "label": "Allowed execution opportunity",
+        "nodes": [
+          "n1",
+          "n2"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "n1",
+        "to": "n2",
+        "label": "permits bounded execution"
+      },
+      {
+        "from": "n0",
+        "to": "n2",
+        "label": "supplies pending operations"
+      },
+      {
+        "from": "n2",
+        "to": "n3",
+        "label": "commit each operation outcome"
+      },
+      {
+        "from": "n3",
+        "to": "n0",
+        "label": "update durable operation status"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/develop/background-work/background-tasks/persistent",
+      "https://kotlinlang.org/docs/api-guidelines-build-for-multiplatform.html"
+    ],
+    "labels": {
+      "n0": "Durable outbox",
+      "n1": "Platform execution opportunity",
+      "n2": "Bounded shared sync engine",
+      "n3": "Committed operation outcome"
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/shared-domain-boundaries",
+    "figure": 1,
+    "problem": "A platform transport exception should become a domain outcome that an iOS screen can handle.",
+    "reading": "Follow the safe mapping path from platform failure to Offline UI. The unsafe exception-escape case in the steps specifically concerns the Objective-C export path; other export bridges have their own contracts.",
+    "groups": [
+      {
+        "id": "platform",
+        "label": "Platform failure boundary",
+        "nodes": [
+          "io",
+          "adapter"
+        ]
+      },
+      {
+        "id": "contract",
+        "label": "Platform-neutral domain outcome",
+        "nodes": [
+          "domain"
+        ]
+      },
+      {
+        "id": "consumer",
+        "label": "Apple UI consumer",
+        "nodes": [
+          "ui"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "io",
+        "to": "adapter",
+        "label": "catch known platform failure"
+      },
+      {
+        "from": "adapter",
+        "to": "domain",
+        "label": "map to domain Offline outcome"
+      },
+      {
+        "from": "domain",
+        "to": "ui",
+        "label": "render handled outcome"
+      }
+    ],
+    "sources": [
+      "https://kotlinlang.org/docs/native-objc-interop.html"
+    ],
+    "labels": {
+      "io": "Platform transport call",
+      "adapter": "Failure-mapping adapter",
+      "domain": "Shared domain outcome",
+      "ui": "iOS screen"
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/tooling/build-system-and-source-sets",
+    "figure": 0,
+    "problem": "Declaring a dependency in commonMain cannot manufacture an unsupported target artifact.",
+    "reading": "Selection combines the requested library, concrete consumer attributes and producer variants. These are converging inputs, not four sequential compilation phases.",
+    "groups": [
+      {
+        "id": "consumer-request",
+        "label": "Consumer dependency request",
+        "nodes": [
+          "n0",
+          "n1"
+        ]
+      },
+      {
+        "id": "producer",
+        "label": "Producer publication",
+        "nodes": [
+          "n2"
+        ]
+      },
+      {
+        "id": "resolution",
+        "label": "Gradle resolution result",
+        "nodes": [
+          "n3"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "n0",
+        "to": "n3",
+        "label": "requested coordinate and version"
+      },
+      {
+        "from": "n1",
+        "to": "n3",
+        "label": "required target attributes"
+      },
+      {
+        "from": "n2",
+        "to": "n3",
+        "label": "compatible published candidates"
+      }
+    ],
+    "sources": [
+      "https://docs.gradle.org/current/userguide/variant_aware_resolution.html"
+    ],
+    "labels": {
+      "n0": "Dependency declaration",
+      "n1": "Target compilation attributes",
+      "n2": "Published library variants",
+      "n3": "Variant selection result"
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/tooling/ios-distribution",
+    "figure": 0,
+    "problem": "A Swift package checksum must describe the exact XCFramework archive that consumers download.",
+    "reading": "A tested release build produces an archive. Reviewed metadata binds its version, URL and checksum; an independent app resolves and exercises that exact artifact.",
+    "groups": [
+      {
+        "id": "production",
+        "label": "Release artifact production",
+        "nodes": [
+          "build",
+          "archive",
+          "manifest"
+        ]
+      },
+      {
+        "id": "consumption",
+        "label": "Independent application consumer",
+        "nodes": [
+          "consumer"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "build",
+        "to": "archive",
+        "label": "package tested platform variants"
+      },
+      {
+        "from": "archive",
+        "to": "manifest",
+        "label": "bind exact archive URL and checksum"
+      },
+      {
+        "from": "manifest",
+        "to": "consumer",
+        "label": "resolve immutable package version"
+      }
+    ],
+    "sources": [
+      "https://kotlinlang.org/docs/multiplatform/multiplatform-spm-export.html"
+    ],
+    "labels": {
+      "build": "Release build variants",
+      "archive": "Exact XCFramework ZIP",
+      "manifest": "Swift package release metadata",
+      "consumer": "Clean app consumer"
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/tooling/swift-interop",
+    "figure": 0,
+    "problem": "Cancelling a Swift Task does not by syntax alone prove that its Kotlin operation stopped.",
+    "reading": "The selected bridge is the cancellation boundary to test. The arrows show the requested propagation path; terminal state and callback cleanup must be observed for that bridge and version.",
+    "groups": [
+      {
+        "id": "swift-side",
+        "label": "Swift owner",
+        "nodes": [
+          "task"
+        ]
+      },
+      {
+        "id": "bridge-boundary",
+        "label": "Selected interoperability contract",
+        "nodes": [
+          "bridge"
+        ]
+      },
+      {
+        "id": "kotlin-side",
+        "label": "Kotlin operation",
+        "nodes": [
+          "job"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "task",
+        "to": "bridge",
+        "label": "request cancellation"
+      },
+      {
+        "from": "bridge",
+        "to": "job",
+        "label": "propagation depends on bridge"
+      },
+      {
+        "from": "job",
+        "to": "evidence",
+        "label": "observe terminal state and cleanup"
+      }
+    ],
+    "sources": [
+      "https://kotlinlang.org/docs/native-objc-interop.html",
+      "https://kotlinlang.org/docs/native-swift-export.html"
+    ],
+    "labels": {
+      "task": "Swift Task owner",
+      "bridge": "Export / bridge boundary",
+      "job": "Owned Kotlin operation",
+      "evidence": "Propagation test evidence"
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/ui-sharing/compose-multiplatform",
+    "figure": 0,
+    "problem": "A shared checkout surface and its native host must not each navigate independently after completion.",
+    "reading": "This illustrative design keeps top-level navigation in the native coordinator. Shared UI owns internal checkout steps and reports one semantic event to that owner.",
+    "groups": [
+      {
+        "id": "native",
+        "label": "Native host and top-level coordinator",
+        "nodes": [
+          "n0",
+          "n3"
+        ]
+      },
+      {
+        "id": "shared",
+        "label": "Bounded shared checkout surface",
+        "nodes": [
+          "n1",
+          "n2"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "n0",
+        "to": "n1",
+        "label": "open checkout with order ID"
+      },
+      {
+        "from": "n1",
+        "to": "n2",
+        "label": "report semantic completion"
+      },
+      {
+        "from": "n2",
+        "to": "n3",
+        "label": "deliver outcome to one owner"
+      },
+      {
+        "from": "n3",
+        "to": "n0",
+        "label": "apply top-level navigation once"
+      }
+    ],
+    "sources": [
+      "https://kotlinlang.org/docs/multiplatform/compose-swiftui-integration.html"
+    ],
+    "labels": {
+      "n0": "Native application host",
+      "n1": "Shared checkout flow",
+      "n2": "Checkout completion event",
+      "n3": "Top-level navigation owner"
+    }
+  },
+  {
+    "path": "android/kotlin-multiplatform/ui-sharing/resource-sharing",
+    "figure": 0,
+    "problem": "A generated resource accessor compiling does not prove that translated text ships and renders correctly.",
+    "reading": "Follow reviewed catalog input through generation and publication into a real consumer. Final-app checks cover locale, placeholders and layout rather than only the library compilation.",
+    "groups": [
+      {
+        "id": "library",
+        "label": "Library resource build and publication",
+        "nodes": [
+          "n0",
+          "n1",
+          "n2"
+        ]
+      },
+      {
+        "id": "app",
+        "label": "Final application integration",
+        "nodes": [
+          "n3"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "n0",
+        "to": "n1",
+        "label": "validated translation inputs"
+      },
+      {
+        "from": "n1",
+        "to": "n2",
+        "label": "generated accessors and payload"
+      },
+      {
+        "from": "n2",
+        "to": "n3",
+        "label": "consume exact published version"
+      }
+    ],
+    "sources": [
+      "https://kotlinlang.org/docs/multiplatform/compose-multiplatform-resources-setup.html"
+    ],
+    "labels": {
+      "n0": "Approved resource catalog",
+      "n1": "Resource generation",
+      "n2": "Published library artifact",
+      "n3": "Final app consumer"
+    }
+  },
+  {
+    "path": "android/logging",
+    "figure": 0,
+    "problem": "A rejected debug log can still pay for an expensive eagerly evaluated argument.",
+    "reading": "The call evaluates its ordinary argument before entering the runtime filter. Only accepted output reaches the sink; a rejected message does not undo the earlier calculation.",
+    "groups": [
+      {
+        "id": "call-evaluation",
+        "label": "Application call-site evaluation",
+        "nodes": [
+          "call",
+          "heavy"
+        ]
+      },
+      {
+        "id": "logging",
+        "label": "Runtime logging policy",
+        "nodes": [
+          "tree",
+          "sink"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "call",
+        "to": "heavy",
+        "label": "evaluate eager message argument"
+      },
+      {
+        "from": "heavy",
+        "to": "tree",
+        "label": "pass already-computed argument"
+      },
+      {
+        "from": "tree",
+        "to": "sink",
+        "label": "write only when policy accepts"
+      }
+    ],
+    "sources": [
+      "https://kotlinlang.org/spec/expressions.html#function-calls-and-property-access"
+    ],
+    "labels": {
+      "call": "Ordinary logging call",
+      "heavy": "Expensive argument work",
+      "tree": "Runtime output filter",
+      "sink": "Log output sink"
+    }
+  },
+  {
+    "path": "android/macrobenchmark-and-perfetto",
+    "figure": 0,
+    "problem": "A faster benchmark number may reflect different device or compilation conditions rather than a real fix.",
+    "reading": "Controls make measurements comparable. A corresponding trace supports one hypothesis, which must be challenged by another controlled run. This is an evidence loop, not an application data pipeline.",
+    "groups": [
+      {
+        "id": "experiment",
+        "label": "Controlled measurement",
+        "nodes": [
+          "control",
+          "metric"
+        ]
+      },
+      {
+        "id": "diagnosis",
+        "label": "Evidence-supported diagnosis",
+        "nodes": [
+          "trace",
+          "hypothesis"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "control",
+        "to": "metric",
+        "label": "hold experiment conditions fixed"
+      },
+      {
+        "from": "metric",
+        "to": "trace",
+        "label": "select corresponding measured interval"
+      },
+      {
+        "from": "trace",
+        "to": "hypothesis",
+        "label": "support a candidate explanation"
+      },
+      {
+        "from": "hypothesis",
+        "to": "metric",
+        "label": "change one cause and repeat"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
+    ],
+    "labels": {
+      "control": "Experiment controls",
+      "metric": "Repeated journey metric",
+      "trace": "Corresponding Perfetto interval",
+      "hypothesis": "One testable cause"
+    }
+  },
+  {
+    "path": "android/memory-management-and-leaks",
+    "figure": 0,
+    "problem": "A long-lived callback registry can keep an obsolete screen strongly reachable.",
+    "reading": "The two reference arrows show why the old screen remains alive. Heap evidence identifies that retaining path; it is not another object that owns the screen.",
+    "groups": [
+      {
+        "id": "registration",
+        "label": "Long-lived registration",
+        "nodes": [
+          "registry",
+          "listener"
+        ]
+      },
+      {
+        "id": "screen-lifetime",
+        "label": "Screen object lifetime",
+        "nodes": [
+          "screen"
+        ]
+      },
+      {
+        "id": "diagnostics",
+        "label": "Memory investigation",
+        "nodes": [
+          "heap"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "registry",
+        "to": "listener",
+        "label": "holds registered callback strongly"
+      },
+      {
+        "from": "listener",
+        "to": "screen",
+        "label": "captures screen strongly"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/studio/profile/capture-heap-dump"
+    ],
+    "labels": {
+      "registry": "Long-lived registry",
+      "listener": "Registered listener",
+      "screen": "Screen identity",
+      "heap": "Retaining-path evidence"
+    }
+  },
+  {
+    "path": "android/mobile-apm-and-rum",
+    "figure": 0,
+    "problem": "A network request finishing is not the same boundary as Checkout becoming useful on screen.",
+    "reading": "Instrumented requests can carry trace context to participating servers. The user interaction ends at its defined ready-UI condition; missing spans and sampling limit correlation evidence.",
+    "groups": [
+      {
+        "id": "client-side",
+        "label": "Client interaction and visible completion",
+        "nodes": [
+          "tap",
+          "client",
+          "ready"
+        ]
+      },
+      {
+        "id": "backend",
+        "label": "Participating backend instrumentation",
+        "nodes": [
+          "server"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "tap",
+        "to": "client",
+        "label": "interaction initiates request"
+      },
+      {
+        "from": "client",
+        "to": "server",
+        "label": "propagate trace context when supported"
+      },
+      {
+        "from": "tap",
+        "to": "ready",
+        "label": "measure until useful UI condition"
+      }
+    ],
+    "sources": [
+      "https://www.w3.org/TR/trace-context/",
+      "https://developer.android.com/topic/performance/jankstats"
+    ],
+    "labels": {
+      "tap": "Checkout interaction start",
+      "client": "Instrumented client request",
+      "server": "Participating server spans",
+      "ready": "Useful UI completion"
+    }
+  }
+]

@@ -15,7 +15,8 @@
   const reducedMotion = () => window.Playbook ? window.Playbook.motion.reduced() : typeof effectiveReducedMotion !== 'undefined' && effectiveReducedMotion;
 
   function frames(steps, ids) {
-    const visible = new Set(), state = {}, text = {}, visuals = {};
+    const hasVisibilitySteps=steps.some(step=>Object.prototype.hasOwnProperty.call(step,'add')||Object.prototype.hasOwnProperty.call(step,'remove'));
+    const visible = new Set(hasVisibilitySteps?[]:ids), state = {}, text = {}, visuals = {};
     return steps.map(step => {
       (step.add || []).forEach(id => visible.add(id));
       (step.remove || []).forEach(id => visible.delete(id));
@@ -28,6 +29,7 @@
   }
 
   function setup(figure) {
+    if(figure.classList.contains('has-ownership'))return; // approved three-scenario ownership scene
     const json = figure.querySelector('script.steps');
     if (!json) return;
     const steps = JSON.parse(json.textContent);
@@ -38,8 +40,21 @@
     const original = Object.fromEntries(texts.map(el => [el.dataset.text, el.textContent]));
     let position = 0, timer = null, shown = 0, flight = null, stateMotion = [];
     const stage = figure.querySelector('.stage');
+    const relationshipJSON = figure.querySelector('script.relationship-model');
+    const relationships = relationshipJSON ? JSON.parse(relationshipJSON.textContent) : null;
+    if (relationships) {
+      stage.classList.add('sequence-live');
+      const heading=document.createElement('p');heading.className='sequence-state-title';heading.textContent='State at this step';stage.before(heading);
+      relationships.actors.forEach((actor,index)=>{
+        const node=byId[actor.id];if(!node)return;
+        const number=document.createElement('span');number.className='sequence-actor-index';number.textContent=String(index+1);node.prepend(number);
+      });
+      const mono=document.createElement('label');mono.className='sequence-accessibility';
+      const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.addEventListener('change',()=>figure.dataset.diagramMonochrome=String(checkbox.checked));
+      mono.append(checkbox,document.createTextNode('View this diagram without colour'));figure.querySelector('.relationship-map').before(mono);
+    }
     const actors = new Map();
-    if(figure.hasAttribute('data-illustrated') && window.Playbook?.Actor) {
+    if(!relationships && figure.hasAttribute('data-illustrated') && window.Playbook?.Actor) {
       figure.classList.add('is-illustrated');
       stage.querySelectorAll('.node[data-art]').forEach(node=>{
         node.classList.add('actor-'+node.dataset.artRole);
@@ -85,30 +100,33 @@
       '<button type="button" class="secondary-button" data-act="next">Next</button>' +
       '<button type="button" class="text-button" data-act="reset">Reset</button></div>';
     figure.querySelector('.stage').after(controls);
+    if(relationships)figure.querySelector('.relationship-map').before(controls.querySelector('.stepper-status'));
     const transcript = figure.querySelector('.steps-text');
     if (transcript) {
       transcript.querySelector('summary').textContent = 'Help & step transcript';
       const help = document.createElement('p');
       help.className = 'diagram-help';
-      help.textContent = 'Use Previous and Next to compare states' + (actors.size ? ', or choose a numbered step. ' : '. ') + 'Reset returns to the first step. Play follows the sequence automatically and starts again after the last step; Pause stops playback. With reduced motion, use the step controls. Every step is listed below.';
+      help.textContent = 'Use Previous and Next to compare states' + (actors.size || relationships ? ', or choose a named step. ' : '. ') + 'Reset returns to the first step. Play follows the sequence automatically and starts again after the last step; Pause stops playback. With reduced motion, use the step controls. Every step is listed below.';
       transcript.querySelector('summary').after(help);
     }
-    const $ = selector => controls.querySelector(selector);
+    const $ = selector => figure.querySelector(selector);
     let stepNav, progress;
-    if(actors.size){
+    if(actors.size || relationships){
       stepNav=document.createElement('nav');stepNav.className='pb-step-nav';stepNav.setAttribute('aria-label','Scene steps');
-      steps.forEach((step,index)=>{const b=document.createElement('button');b.type='button';b.dataset.index=index;b.textContent=index+1;b.setAttribute('aria-label','Go to step '+(index+1)+(step.label?': '+step.label:''));stepNav.appendChild(b);});
-      controls.querySelector('.stepper-status').after(stepNav);
-      const track=document.createElement('div');track.className='pb-progress';track.setAttribute('aria-hidden','true');progress=document.createElement('i');track.appendChild(progress);controls.querySelector('.stepper-status').after(track);
+      steps.forEach((step,index)=>{const b=document.createElement('button');b.type='button';b.dataset.index=index;b.textContent=(index+1)+(relationships&&step.label?' · '+step.label:'');b.setAttribute('aria-label','Go to step '+(index+1)+(step.label?': '+step.label:''));stepNav.appendChild(b);});
+      if(relationships)figure.querySelector('.stepper-status').after(stepNav);else controls.querySelector('.stepper-status').after(stepNav);
+      const track=document.createElement('div');track.className='pb-progress';track.setAttribute('aria-hidden','true');progress=document.createElement('i');track.appendChild(progress);figure.querySelector('.stepper-status').after(track);
       stepNav.addEventListener('click',event=>{const b=event.target.closest('[data-index]');if(!b)return;stop();turn?.claim();position=Number(b.dataset.index);render(false);});
     }
 
     function render(animate) {
       cancelFlight();
       const frame = all[position], before = all[shown];
+      const previousAuthored=all[Math.max(0,position-1)];
       elements.forEach(el => {
         const id = el.dataset.el;
         el.classList.toggle('is-off', !frame.visible.has(id));
+        if(relationships)el.classList.toggle('is-changed',position>0&&(previousAuthored.state[id]!==frame.state[id]||previousAuthored.visible.has(id)!==frame.visible.has(id)||Object.keys(frame.text).some(key=>el.querySelector('[data-text="'+key+'"]')&&previousAuthored.text[key]!==frame.text[key])));
         if (frame.state[id]) el.dataset.state = frame.state[id]; else delete el.dataset.state;
       });
       texts.forEach(el => { const id = el.dataset.text; el.textContent = id in frame.text ? frame.text[id] : original[id]; });
@@ -124,7 +142,7 @@
       $('[data-act=prev]').setAttribute('aria-disabled', position === 0);
       $('[data-act=next]').setAttribute('aria-disabled', position === all.length - 1);
       $('[data-act=play]').setAttribute('aria-disabled', reducedMotion());
-      if (animate && position === shown + 1) handoff(before, frame);
+      if (!relationships && animate && position === shown + 1) handoff(before, frame);
       shown = position;
     }
     function stop() {

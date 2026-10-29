@@ -4,6 +4,7 @@ from pathlib import Path
 from html import escape, unescape
 from urllib.parse import urlsplit, unquote, quote
 import argparse, hashlib, json, os, re, shlex, shutil, subprocess, sys
+from concurrent.futures import ThreadPoolExecutor
 from markdown_it import MarkdownIt
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -557,13 +558,15 @@ def render_diagrams():
     """Render each Mermaid source to diagrams/<hash>.svg, reusing a local cache."""
     cache=CACHE/'diagrams'; cache.mkdir(parents=True,exist_ok=True)
     config=ROOT/'.github/puppeteer-config.json'
-    for source in sorted((OUT/'diagram-sources').glob('*.mmd')):
+    def render(source):
         cached=cache/(source.stem+'.svg')
         if not cached.exists():
             command=shlex.split(MERMAID_RENDERER)+['-i',str(source),'-o',str(cached),'-b','transparent']
             if config.exists(): command+=['-p',str(config)]
             subprocess.run(command,check=True,capture_output=True,text=True)
         shutil.copy2(cached,OUT/'diagrams'/cached.name)
+    with ThreadPoolExecutor(max_workers=3) as workers:
+        list(workers.map(render,sorted((OUT/'diagram-sources').glob('*.mmd'))))
 
 
 DESIGN=WEB/'design-system'
@@ -635,26 +638,30 @@ def design_gallery(asset_version):
         if not scene: raise ValueError('Gallery scene missing: '+name)
         samples.append('<section class="demo"><h3>'+label+'</h3>'+scene[0]+'</section>')
     for name,label in [('channels-and-select','Compare four channel capacities'),('bytecode','Watch an operand stack change'),('android/viewmodel','Follow a retained state owner')]:
+        import diagram_models
         source=(WEB/'content/blend'/f'{name}.blend').read_text()
-        scene=re.search(r'<figure class="stepper".*?</figure>',source,re.S)
+        scene=re.search(r'<figure class="stepper(?: [^"]*)?".*?</figure>',source,re.S)
         if not scene: raise ValueError('Gallery illustrated stepper missing: '+name)
-        samples.append('<section class="demo"><h3>'+label+'</h3>'+scene[0]+'</section>')
+        sample=diagram_models.enhance(steps_as_text(scene[0]),name+'.md',OUT,BASE,diagram_models.models())
+        samples.append('<section class="demo"><h3>'+label+'</h3>'+sample+'</section>')
     prose=tokens['type']['prose']
     fonts=''.join(f'<figure class="specimen" style="--specimen:var(--font-{o["family"]});--measure-prose:{o["measure"]}"><figcaption><strong>{escape(o["label"])}</strong> · {escape(o["description"])}</figcaption>'
                   '<p>A suspended call gives its thread back. When the result arrives, the coroutine resumes where it stopped, with its state intact.</p></figure>' for o in prose['options'])
     page=(DESIGN/'gallery.html').read_text().replace('{{swatches}}',swatches).replace('{{fonts}}',fonts).replace('{{scenes}}',''.join(samples))
-    for asset in ('styles.css','blend.css','theme.css','tokens.css','flow.css','flow.js','blend.js'):page=page.replace('"/'+asset+'"','"'+BASE+asset+'?v='+asset_version+'"')
+    for asset in ('styles.css','blend.css','theme.css','tokens.css','flow.css','sequence.css','flow.js','blend.js'):page=page.replace('"/'+asset+'"','"'+BASE+asset+'?v='+asset_version+'"')
     page=page.replace('href="/android/"','href="'+route('android.md')+'"')
     destination=OUT/'design-system';destination.mkdir(exist_ok=True)
     (destination/'index.html').write_text(page)
 
 def build(skip_diagrams=False):
+    import diagram_models
+    relationship_models=diagram_models.check()
     if OUT.exists(): shutil.rmtree(OUT)
     OUT.mkdir()
     for directory in ['diagram-sources','diagrams','coverage']:(OUT/directory).mkdir(exist_ok=True)
     # Content hash in asset URLs, so browsers never mix a new page with stale CSS or JS.
     tokens_css=design_tokens_css().encode()
-    asset_version=hashlib.sha256(tokens_css+b''.join((WEB/n).read_bytes() for n in ['styles.css','blend.css','theme.css','learning-path.css','navigation.css','app.js','blend.js','coroutines.js','lesson-model.js','design-system/components/bundle.css','design-system/components/bundle.js'])).hexdigest()[:10]
+    asset_version=hashlib.sha256(tokens_css+b''.join((WEB/n).read_bytes() for n in ['styles.css','blend.css','sequence.css','theme.css','learning-path.css','navigation.css','app.js','blend.js','coroutines.js','lesson-model.js','design-system/components/bundle.css','design-system/components/bundle.js'])).hexdigest()[:10]
     font_options,font_head=reader_font_markup()
     template=(WEB/'templates/reader.html').read_text().replace('{{font_head}}',font_head).replace('{{font_options}}',font_options).replace('{{base}}',BASE).replace('{{asset_version}}',asset_version)
     # Generate catalog from checked-in tree indexes, using guided order rather than filenames.
@@ -685,6 +692,7 @@ def build(skip_diagrams=False):
     for path in PAGES:
         slug=tree_of(path); order=ORDER[slug]; is_index=path==f'{slug}.md'
         raw=(ROOT/path).read_text(); article,outline,report=render_chapter(path,raw,is_index)
+        article=diagram_models.enhance(article,path,OUT,BASE,relationship_models)
         name=title(ROOT/path)
         category='Learning path' if is_index else SECTION[path]
         navigation=''
@@ -732,7 +740,7 @@ def build(skip_diagrams=False):
     home=(WEB/'templates/home.html').read_text().replace('{{base}}',BASE).replace('{{version}}',asset_version).replace('{{android_count}}',str(len(ORDER['android']))).replace('{{kotlin_count}}',str(len(ORDER['kotlin'])))
     (OUT/'index.html').write_text(home)
     (OUT/'.nojekyll').touch()
-    for name in ['styles.css','blend.css','theme.css','learning-path.css','navigation.css','app.js','blend.js','coroutines.js','lesson-model.js']:
+    for name in ['styles.css','blend.css','sequence.css','theme.css','learning-path.css','navigation.css','app.js','blend.js','coroutines.js','lesson-model.js']:
         shutil.copy2(WEB/name,OUT/name)
     # The design system is the source for tokens, the diagram runtime and the self-hosted fonts.
     (OUT/'tokens.css').write_bytes(tokens_css)
@@ -743,7 +751,9 @@ def build(skip_diagrams=False):
     # Each bundled family travels with its SIL Open Font License and provenance.
     shutil.copytree(DESIGN/'fonts/licenses',OUT/'fonts/licenses'); shutil.copy2(DESIGN/'fonts/README.md',OUT/'fonts/README.md')
     design_gallery(asset_version)
-    if not skip_diagrams: render_diagrams()
+    if not skip_diagrams:
+        render_diagrams()
+        diagram_models.inline(OUT)
     (OUT/'coverage/pages.json').write_text(json.dumps(reports,ensure_ascii=False,indent=2)+'\n')
     (OUT/'coverage/diagram-sources.json').write_text(json.dumps({p.stem:p.read_text() for p in sorted((OUT/'diagram-sources').glob('*.mmd'))},ensure_ascii=False,indent=2)+'\n')
     shutil.copy2(WEB/'content/illustrated-stepper-coverage.json',OUT/'coverage/illustrated-steppers.json')

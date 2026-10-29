@@ -215,3 +215,11 @@ For browser regressions, create disposable fixtures with `python3 website/script
 ## Browser audit preparation
 
 After building, run `python3 website/tools/prepare_browser_audit.py website/.cache/browser-qa`, then serve that disposable directory on an available localhost port and open `/audit.html`. Press **Start audit** and read its JSON result. The prepared copy loads the read-only audit as a script, without console `eval`; the QA runner uses isolated iframes to check preservation first, then animation readiness and enlarged-text geometry. It does not edit source or the deployable `website/dist` output. Never deploy the instrumented QA directory. The existing API still accepts a subset of routes when a focused sweep is appropriate.
+
+### Labelled diagrams and ownership scenes
+
+The 28 October diagram pass uses `content/diagram-models/*.json` for 119 authored figure models. 118 render as labelled relationship maps; ViewModel uses the approved three-scenario ownership component in `content/components/viewmodel-ownership.html`. The 17 existing transfer scenes retain their actual packet mechanics, and preserve their authored cross-boundary layout through local scrolling when necessary.
+
+Each model names the concrete problem, reading direction, actual actor IDs, optional nested boundaries, explicit labelled relationships and official sources. A relationship arrow is not automatically a transfer or a time step. Comparisons can have no arrows. Actor IDs bind a model to its figure because blend insertion order can differ from file order. The build rejects conflicting ownership, missing actors, invalid endpoints and ambiguous bindings.
+
+Maps retain readable 17px node labels and 15px arrow labels instead of shrinking into phone width. The named walkthrough steps explain time; the map explains relationships; the labelled state list identifies what changed. The no-colour option verifies that colour is optional. Play is walkthrough playback, not a claim that every topic has a physical transport animation.

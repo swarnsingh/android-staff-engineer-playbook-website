@@ -56,3 +56,9 @@ Set `illustrated: true` and give each node `art: {kind, role}`. The renderer sup
 Numbered navigation compares final states without animation; `aria-current="step"` identifies the selected state. It uses the same stop/settle logic as Previous and Reset. All motion ownership, visibility and reduced-motion rules still apply.
 
 The object renderer is also available as `Playbook.Actor` to HTML state figures. A shared object vocabulary does not require converting every comparison or decision into a transport scene. `Playbook.Payload` supplies the same envelope/file/row symbols for explicitly authored HTML transfers.
+
+## Approved clarity direction · 28 October 2026
+
+Keep the mechanism's arrows and ownership boundaries explicit. Current captions and controls lead the drawing, so readers know what to follow before advancing. Transfer scenes preserve the authored wide layout in a labelled local scroll viewport when a smaller composition would lose relationships. Labels retain their reading size. Resting arrows remain visible; packet motion is additional evidence, not the only indication of direction.
+
+The 119 other state figures use topic-authored relationship maps and named walkthrough steps; ViewModel uses a three-scenario nested ownership scene. A state comparison is not a transport animation. See `website/content/diagram-models/` and `website/sequence.css`.

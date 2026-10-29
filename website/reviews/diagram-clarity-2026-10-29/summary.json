@@ -1,0 +1,20 @@
+{
+  "pages": 125,
+  "original_units": 15564,
+  "question_answer_pairs": 928,
+  "models": 119,
+  "maps": 118,
+  "viewmodel_scenarios": 3,
+  "existing_transfer_scenes": 17,
+  "boundaries": 249,
+  "labelled_relationships": 365,
+  "failures": 0,
+  "binder_checks": 560,
+  "motion_checks": 13,
+  "ux_checks": 278,
+  "refinement_checks": 69,
+  "negative_fixture_checks": 31,
+  "diagram_and_renderer_tests": 15,
+  "docs_tests": 31,
+  "date": "2026-10-29"
+}

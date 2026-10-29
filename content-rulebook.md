@@ -374,3 +374,16 @@ Owner direction, 2026-10-27: learn from the whole experience of [ByteByteGo](htt
 The reference review and implementation evidence belong in `website/reviews/website-experience-2026-10-27.md`. Future contributors should use this standard for every new or revised lesson.
 
 The illustrated first pass across all existing step-throughs is recorded in the [122-item coverage report](website/reviews/illustrated-coverage-2026-10-27.md). The owner's subsequent clarification on 2026-10-27 sets the refinement order: assess what each topic needs, retain useful motion, and simplify unnecessary playback into a beautiful static diagram or comparison. The earlier quantity-first pass does not require every topic to become a full animated scene. Preserve the explanatory content when simplifying a visual, and update the coverage manifest and relevant checks with any representation change. Correctness, readable layouts, reduced motion and source preservation remain required.
+
+### Approved diagram direction · 28 October 2026
+
+The owner rejected box/highlight-only teaching and approved a problem-first ViewModel draft. Apply the following to every topic, including future trees:
+
+- Explain the concrete problem before the diagram and what the reader should follow.
+- Draw directional arrowheads with explicit relationship or action labels. Arrow numbering identifies relationships; numbered step captions identify changes over time. Never infer a transfer from box order or an active state.
+- Put members inside their true owner or boundary. Distinguish logical scope from physical object lifetime; retention across recreated owners needs an explicit explanation.
+- Keep object identities and visible consequences clear. Show creation, retention, removal, clearing and restoration with words. Colour and highlighting alone never explain a transition.
+- Use consistent role colours alongside text, border patterns and stable labels. A diagram must remain understandable without colour.
+- Keep a complex diagram at a readable size in a labelled local scroll viewport when a phone composition would lose relationships. Do not flatten connected owners into unrelated cards or shrink its text to fit.
+- A static relationship map or comparison is complete when motion adds no teaching value. Keep playback for actual temporal mechanisms, without decorative object bouncing.
+- Author each relationship map in `website/content/diagram-models/`, cite official sources and verify actor IDs, memberships and arrow endpoints in the build. Changes in current state remain available as labelled text and a full transcript.

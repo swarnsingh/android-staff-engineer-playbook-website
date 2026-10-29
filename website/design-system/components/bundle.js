@@ -152,6 +152,9 @@
   function needScale(key) { return Math.max(MIN.hand / TEXT[key].hand, MIN.sans / TEXT[key].sans); }
   function pickLayout(root, data) {
     if (!data.layouts) data.layouts = autoLayouts(data);
+    // Cross-process/lane scenes keep their authored topology. A local scroll
+    // viewport protects legibility without turning side-by-side owners into a list.
+    if(root.dataset.pbFlow === 'scene')return 'wide';
     var paper = root.querySelector('.pb-paper') || root, size = data.layouts.wide.size[0];
     var scale = Math.min(paper.clientWidth, size * 1.2) / size;
     return scale >= needScale('wide') ? 'wide' : 'narrow';
@@ -208,6 +211,7 @@
     svg.setAttribute('data-layout', key);
     // Never scale far past the drawn size: the stacked layout stops at phone scale, the wide one at 1.2x.
     svg.style.maxWidth = key === 'narrow' ? '440px' : Math.round(L.size[0] * 1.2) + 'px'; svg.style.marginInline = 'auto';
+    if(svg.closest('[data-pb-flow="scene"]'))svg.style.minWidth=Math.ceil(L.size[0]*needScale('wide'))+'px';
     var defs = el('defs', {}, svg);
     var f = el('filter', { id: id + 'r', x: '-4%', y: '-12%', width: '108%', height: '124%' }, defs);
     el('feTurbulence', { type: 'fractalNoise', baseFrequency: '0.035', numOctaves: '2', seed: '5' }, f);
@@ -422,6 +426,8 @@
     var interaction = document.createElement('div'); interaction.className = 'pb-interaction';
     var caption = root.querySelector('.pb-caption'), progress = root.querySelector('.pb-progress'), controls = root.querySelector('.pb-controls');
     caption.before(interaction); interaction.append(caption, progress, controls);
+    root.querySelector('.pb-paper').before(interaction);
+    var mapHint=document.createElement('p');mapHint.className='sequence-scroll-hint';mapHint.textContent='Follow the labelled arrowheads and process boundaries. Swipe the diagram sideways on a narrow screen; the labels keep their reading size.';root.querySelector('.pb-paper').after(mapHint);
     btn.prev.textContent = 'Previous'; btn.next.textContent = 'Next'; btn.reset.textContent = 'Reset';
     var guide = root.querySelector('.pb-steps');
     guide.classList.add('pb-guide');

@@ -1,0 +1,1691 @@
+[
+  {
+    "path": "bytecode",
+    "figure": 0,
+    "problem": "How does adding two Int parameters become the returned value 5?",
+    "reading": "Read one static JVM method invocation. Its local slots keep a=2 and b=3 while iload copies operands onto the stack; iadd replaces them with 5 and ireturn returns that value. These are abstract bytecode operations, not a hardware register diagram.",
+    "groups": [
+      {
+        "id": "frame",
+        "label": "One add(2, 3) invocation",
+        "nodes": [
+          "l0",
+          "l1",
+          "stack"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "l0",
+        "to": "stack",
+        "label": "iload_0 pushes a"
+      },
+      {
+        "from": "l1",
+        "to": "stack",
+        "label": "iload_1 pushes b"
+      },
+      {
+        "from": "pc",
+        "to": "stack",
+        "label": "current instruction reads or changes operands"
+      }
+    ],
+    "labels": {
+      "pc": "Current bytecode instruction",
+      "l0": "Local slot 0 · a",
+      "l1": "Local slot 1 · b",
+      "stack": "Operand stack"
+    },
+    "sources": [
+      "https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-2.html",
+      "https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-6.html"
+    ]
+  },
+  {
+    "path": "callbackflow-and-bridging-callbacks",
+    "figure": 0,
+    "problem": "A screen stops collecting locations. Which registration must stop with it?",
+    "reading": "Follow collection startup to callback registration, then follow location values back to the collector. The cleanup arrow is a separate control relationship: closing or cancelling this collection releases its registered callback through awaitClose.",
+    "groups": [
+      {
+        "id": "collection",
+        "label": "One collection of locations()",
+        "nodes": [
+          "collector",
+          "block",
+          "await"
+        ]
+      },
+      {
+        "id": "callback-api",
+        "label": "Platform callback registration",
+        "nodes": [
+          "listener",
+          "values"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "collector",
+        "to": "block",
+        "label": "collect starts this builder"
+      },
+      {
+        "from": "block",
+        "to": "listener",
+        "label": "registers callback"
+      },
+      {
+        "from": "listener",
+        "to": "values",
+        "label": "callback produces locations"
+      },
+      {
+        "from": "values",
+        "to": "collector",
+        "label": "trySend offers values through the channel"
+      },
+      {
+        "from": "await",
+        "to": "listener",
+        "label": "cleanup unregisters callback"
+      }
+    ],
+    "labels": {
+      "collector": "Location collector",
+      "block": "callbackFlow builder",
+      "await": "awaitClose cleanup",
+      "listener": "Registered location listener",
+      "values": "Callback values"
+    },
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html"
+    ]
+  },
+  {
+    "path": "channels-and-select",
+    "figure": 0,
+    "problem": "A producer outruns its consumer. Will it wait, drop an old value, or retain more work?",
+    "reading": "Compare four alternative channels under the same attempted sends. They are not connected to each other. Read each queue and producer status together: rendezvous waits for a receiver, capacity two can fill, conflation keeps one latest value, and unlimited buffering consumes memory as the backlog grows.",
+    "groups": [
+      {
+        "id": "backpressure",
+        "label": "Producer can wait for capacity",
+        "nodes": [
+          "r",
+          "b"
+        ]
+      },
+      {
+        "id": "no-buffer-wait",
+        "label": "Producer does not wait for buffer space",
+        "nodes": [
+          "c",
+          "u"
+        ]
+      }
+    ],
+    "edges": [],
+    "labels": {
+      "r": "Rendezvous · no buffer",
+      "b": "Buffered · capacity 2",
+      "c": "Conflated · latest value",
+      "u": "Unlimited · growing buffer"
+    },
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/"
+    ],
+    "kind": "comparison"
+  },
+  {
+    "path": "coroutines",
+    "figure": 0,
+    "problem": "Job 4 throws. Which siblings are cancelled, and where does supervision stop the spread?",
+    "reading": "Arrows point from parent jobs to their children. Trace failure upward from Job 4 through ordinary Jobs 2 and 0, then cancellation downward to their other children. The SupervisorJob isolates the other top-level launch; handling the uncaught launch exception is a separate responsibility.",
+    "groups": [
+      {
+        "id": "vm-work",
+        "label": "ViewModel-owned coroutine tree",
+        "nodes": [
+          "root",
+          "j0",
+          "other",
+          "j1",
+          "j2",
+          "j3",
+          "j4"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "root",
+        "to": "j0",
+        "label": "supervised child"
+      },
+      {
+        "from": "root",
+        "to": "other",
+        "label": "independent supervised child"
+      },
+      {
+        "from": "j0",
+        "to": "j1",
+        "label": "ordinary child"
+      },
+      {
+        "from": "j0",
+        "to": "j2",
+        "label": "ordinary child"
+      },
+      {
+        "from": "j2",
+        "to": "j3",
+        "label": "ordinary child"
+      },
+      {
+        "from": "j2",
+        "to": "j4",
+        "label": "ordinary child that fails"
+      }
+    ],
+    "labels": {
+      "root": "viewModelScope SupervisorJob",
+      "j0": "Job 0 · request parent",
+      "other": "Other top-level launch",
+      "j1": "Job 1 · child of Job 0",
+      "j2": "Job 2 · child of Job 0",
+      "j3": "Job 3 · child of Job 2",
+      "j4": "Job 4 · child of Job 2"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/exception-handling.html",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-supervisor-job.html",
+      "https://developer.android.com/topic/libraries/architecture/coroutines#viewmodelscope"
+    ]
+  },
+  {
+    "path": "coroutines",
+    "figure": 1,
+    "problem": "Cancellation reached a suspended load. Can its cleanup still suspend?",
+    "reading": "The ViewModel controls the load job lifetime. The two cleanup nodes are alternative finally bodies, not two jobs that must both execute. Cancellation unwinds the load; a cancellable suspension can fail during ordinary cleanup, while a short withContext(NonCancellable) block can complete needed suspending cleanup.",
+    "groups": [
+      {
+        "id": "screen-owner",
+        "label": "ViewModel work",
+        "nodes": [
+          "owner",
+          "job"
+        ]
+      },
+      {
+        "id": "cleanup-options",
+        "label": "Alternative finally bodies",
+        "nodes": [
+          "fin",
+          "nc"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "owner",
+        "to": "job",
+        "label": "scope cancellation cancels the load"
+      },
+      {
+        "from": "job",
+        "to": "fin",
+        "label": "unwinding enters ordinary finally"
+      },
+      {
+        "from": "job",
+        "to": "nc",
+        "label": "alternative: protected suspending cleanup"
+      }
+    ],
+    "labels": {
+      "owner": "ProfileViewModel scope owner",
+      "job": "Profile load job",
+      "fin": "Ordinary suspending cleanup",
+      "nc": "NonCancellable cleanup"
+    },
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-non-cancellable/",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/"
+    ]
+  },
+  {
+    "path": "coroutines-debugging-and-profiling",
+    "figure": 0,
+    "problem": "Inbox refresh is active but makes no progress. Is it leaked, cancelled, or waiting for a worker?",
+    "reading": "Use the upper questions to establish ownership, cancellation and error handling. Then connect the dispatcher, suspended location and worker evidence. Those lower arrows are diagnostic relationships: queued parsing depends on an available worker, not on a value moving between question cards.",
+    "groups": [
+      {
+        "id": "ownership",
+        "label": "Establish who owns the work",
+        "nodes": [
+          "q1",
+          "q2",
+          "q3"
+        ]
+      },
+      {
+        "id": "execution",
+        "label": "Find why execution cannot proceed",
+        "nodes": [
+          "q4",
+          "q5",
+          "q6"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "q4",
+        "to": "q5",
+        "label": "dispatcher determines where queued work waits"
+      },
+      {
+        "from": "q6",
+        "to": "q5",
+        "label": "occupied workers explain dispatch delay"
+      }
+    ],
+    "labels": {
+      "q1": "Launching owner",
+      "q2": "Cancellation boundary",
+      "q3": "Exception destination",
+      "q4": "Selected dispatcher",
+      "q5": "Current suspension point",
+      "q6": "Worker-pool evidence"
+    },
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-default.html",
+      "https://developer.android.com/kotlin/coroutines/coroutines-best-practices#inject-dispatchers"
+    ]
+  },
+  {
+    "path": "data-classes",
+    "figure": 0,
+    "problem": "Why does changing a cart and assigning a copied state fail to notify StateFlow?",
+    "reading": "The reference arrows describe the broken variant: the old and copied states share list #1. Mutating that list also changes what the old state sees, so equality-based conflation can suppress the assignment. The final step changes the design to a fresh list; its caption distinguishes the old and new contents.",
+    "groups": [
+      {
+        "id": "state-values",
+        "label": "Two CartState values",
+        "nodes": [
+          "old",
+          "new"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "flow",
+        "to": "old",
+        "label": "holds the previous state"
+      },
+      {
+        "from": "old",
+        "to": "list",
+        "label": "broken variant: items references list #1"
+      },
+      {
+        "from": "new",
+        "to": "list",
+        "label": "shallow copy initially shares list #1"
+      },
+      {
+        "from": "new",
+        "to": "flow",
+        "label": "candidate assignment is compared by equals"
+      }
+    ],
+    "labels": {
+      "old": "Old CartState",
+      "new": "Copied CartState",
+      "flow": "MutableStateFlow current value",
+      "list": "Items list · inspect shared contents"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/data-classes.html",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/"
+    ]
+  },
+  {
+    "path": "data-classes",
+    "figure": 1,
+    "problem": "A set still contains the object in memory. Why can contains(item) return false?",
+    "reading": "These are illustrative hash buckets in one set, not pipeline stages. Insertion places the item using its original hash. After a hash-relevant property changes, lookup chooses another bucket; the set has not automatically moved the stored entry. Bucket numbers are illustrative rather than a specified HashSet layout.",
+    "groups": [
+      {
+        "id": "set-table",
+        "label": "One hash-set table · illustrative buckets",
+        "nodes": [
+          "b1",
+          "b2",
+          "b3",
+          "b4"
+        ]
+      }
+    ],
+    "edges": [],
+    "labels": {
+      "b1": "Bucket 1",
+      "b2": "Bucket 2 · stored entry",
+      "b3": "Bucket 3",
+      "b4": "Bucket 4 · later lookup"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/data-classes.html",
+      "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Set.html"
+    ],
+    "kind": "comparison"
+  },
+  {
+    "path": "delegation",
+    "figure": 0,
+    "problem": "The tracker property now points to Mixpanel. Why do delegated calls still reach Firebase?",
+    "reading": "Keep the property and generated delegate field separate. The forwarder calls the delegate captured during construction. Assigning a new tracker changes the public property, not that captured target; the arrow to Mixpanel describes the replacement property value, not a rerouted delegated call.",
+    "groups": [
+      {
+        "id": "screen",
+        "label": "Screen instance",
+        "nodes": [
+          "prop",
+          "hidden",
+          "call"
+        ]
+      },
+      {
+        "id": "analytics-targets",
+        "label": "Analytics implementations",
+        "nodes": [
+          "fb",
+          "mp"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "call",
+        "to": "hidden",
+        "label": "generated forwarder reads captured delegate"
+      },
+      {
+        "from": "hidden",
+        "to": "fb",
+        "label": "construction-time delegate reference"
+      },
+      {
+        "from": "prop",
+        "to": "fb",
+        "label": "initial property reference"
+      },
+      {
+        "from": "prop",
+        "to": "mp",
+        "label": "replacement property reference after assignment"
+      }
+    ],
+    "labels": {
+      "prop": "Current tracker property",
+      "hidden": "Captured delegate field",
+      "call": "Delegated logEvent call",
+      "fb": "Firebase instance",
+      "mp": "Mixpanel instance"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/delegation.html"
+    ]
+  },
+  {
+    "path": "delegation",
+    "figure": 1,
+    "problem": "A property read looks cheap. What work does its delegate actually perform?",
+    "reading": "Compare three separate delegate contracts. Lazy initialization leads to cached reads; observable performs an assignment before its callback; the custom preference getter performs its own work on each access. No arrow connects one delegate family to another.",
+    "groups": [
+      {
+        "id": "lazy",
+        "label": "lazy delegate",
+        "nodes": [
+          "l1",
+          "l2"
+        ]
+      },
+      {
+        "id": "observable",
+        "label": "observable delegate",
+        "nodes": [
+          "o1",
+          "o2"
+        ]
+      },
+      {
+        "id": "custom",
+        "label": "Custom preference delegate",
+        "nodes": [
+          "p1",
+          "p2"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "l1",
+        "to": "l2",
+        "label": "first successful initialization supplies cached result"
+      },
+      {
+        "from": "o1",
+        "to": "o2",
+        "label": "callback runs after assignment"
+      },
+      {
+        "from": "p1",
+        "to": "p2",
+        "label": "getter executes on the calling thread"
+      }
+    ],
+    "labels": {
+      "l1": "Lazy first read",
+      "l2": "Lazy cached reads",
+      "o1": "Observable assignment",
+      "o2": "Observable callback",
+      "p1": "Preference-backed getter",
+      "p2": "Main-thread call site"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/delegated-properties.html",
+      "https://developer.android.com/reference/android/content/SharedPreferences"
+    ],
+    "kind": "comparison"
+  },
+  {
+    "path": "extensions",
+    "figure": 0,
+    "problem": "The object is a Dog but its extension prints the Animal result. Which type selected the call?",
+    "reading": "Compare two resolution paths for the same declared Animal reference. An overridable member dispatches to the runtime object; the top-level extension is selected using the declared receiver type and compiles to a static JVM function. These paths are alternatives, not successive calls.",
+    "groups": [
+      {
+        "id": "member-path",
+        "label": "Overridable member call",
+        "nodes": [
+          "m1",
+          "m2"
+        ]
+      },
+      {
+        "id": "extension-path",
+        "label": "Top-level extension call",
+        "nodes": [
+          "e1",
+          "e2"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "m1",
+        "to": "m2",
+        "label": "virtual call selects runtime override"
+      },
+      {
+        "from": "e1",
+        "to": "e2",
+        "label": "declared receiver fixes extension target"
+      }
+    ],
+    "labels": {
+      "m1": "Member available on Animal",
+      "m2": "Dog override at runtime",
+      "e1": "Animal extension selected",
+      "e2": "Static extension invocation"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/extensions.html",
+      "https://kotlinlang.org/docs/java-to-kotlin-interop.html"
+    ],
+    "kind": "comparison"
+  },
+  {
+    "path": "extensions",
+    "figure": 1,
+    "problem": "Why can adding a library member change which function a recompiled extension call uses?",
+    "reading": "Follow compile-time resolution. An applicable member wins; only the no-member branch reaches the visible extension. Both branches produce a compiled call, but to different targets. A library update changes this choice when the caller is recompiled, not by dynamically overriding an existing extension.",
+    "groups": [
+      {
+        "id": "resolution",
+        "label": "Compiler call resolution",
+        "nodes": [
+          "src",
+          "member",
+          "ext",
+          "out"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "src",
+        "to": "member",
+        "label": "look for an applicable member"
+      },
+      {
+        "from": "member",
+        "to": "ext",
+        "label": "if none applies, consider visible extensions"
+      },
+      {
+        "from": "member",
+        "to": "out",
+        "label": "member match: compile member call"
+      },
+      {
+        "from": "ext",
+        "to": "out",
+        "label": "extension match: compile static call"
+      }
+    ],
+    "labels": {
+      "src": "titleCase call expression",
+      "member": "Applicable member check",
+      "ext": "Visible extension check",
+      "out": "Selected compiled call"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/extensions.html",
+      "https://kotlinlang.org/docs/java-to-kotlin-interop.html"
+    ]
+  },
+  {
+    "path": "flow-operators-and-backpressure",
+    "figure": 0,
+    "problem": "Where does a slow collector make this unbuffered Flow producer wait?",
+    "reading": "Follow one value through map and filter to collect. In this sequential pipeline, downstream processing happens before emit returns; there is no implied queue or new coroutine between these operators. The next value starts only after the current downstream work finishes.",
+    "groups": [
+      {
+        "id": "sequential-flow",
+        "label": "One sequential collection · no buffer operator",
+        "nodes": [
+          "emit",
+          "map",
+          "filter",
+          "collect"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "emit",
+        "to": "map",
+        "label": "emitted value enters map"
+      },
+      {
+        "from": "map",
+        "to": "filter",
+        "label": "transformed value is tested"
+      },
+      {
+        "from": "filter",
+        "to": "collect",
+        "label": "accepted value reaches collector"
+      }
+    ],
+    "labels": {
+      "emit": "Flow producer · emit",
+      "map": "Transform value",
+      "filter": "Accept or reject value",
+      "collect": "Collector · render"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/coroutines-flow.html"
+    ]
+  },
+  {
+    "path": "functions",
+    "figure": 0,
+    "problem": "Two counters use the same lambda body. Why do their numbers advance independently?",
+    "reading": "Each makeCounter invocation creates its own captured count. The arrows connect each returned function to the state it reads and changes; there is no connection between counter a and counter b. The grouping describes closure state, not separate copies of machine code.",
+    "groups": [
+      {
+        "id": "counter-a",
+        "label": "Counter a · first makeCounter call",
+        "nodes": [
+          "aCode",
+          "aState"
+        ]
+      },
+      {
+        "id": "counter-b",
+        "label": "Counter b · second makeCounter call",
+        "nodes": [
+          "bCode",
+          "bState"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "aCode",
+        "to": "aState",
+        "label": "reads and increments a’s captured count"
+      },
+      {
+        "from": "bCode",
+        "to": "bState",
+        "label": "reads and increments b’s captured count"
+      }
+    ],
+    "labels": {
+      "aCode": "Function value a",
+      "aState": "Captured count for a",
+      "bCode": "Function value b",
+      "bState": "Captured count for b"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/lambdas.html"
+    ]
+  },
+  {
+    "path": "functions",
+    "figure": 1,
+    "problem": "Why does a negative element skip the rest of the whole function with one return, but only itself with another?",
+    "reading": "The two groups are alternative implementations. Bare return in this inlined forEach exits process at -1, leaving the remaining suffix unreachable. return@forEach ends only that lambda invocation, so the loop reaches 5 and then Done. Arrows show control progression only where it occurs.",
+    "groups": [
+      {
+        "id": "nonlocal",
+        "label": "Bare return · leaves process",
+        "nodes": [
+          "r3",
+          "rneg",
+          "r5",
+          "rdone"
+        ]
+      },
+      {
+        "id": "local",
+        "label": "Labelled return · leaves this iteration",
+        "nodes": [
+          "l3",
+          "lneg",
+          "l5",
+          "ldone"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "r3",
+        "to": "rneg",
+        "label": "next element triggers function return"
+      },
+      {
+        "from": "l3",
+        "to": "lneg",
+        "label": "next element triggers labelled return"
+      },
+      {
+        "from": "lneg",
+        "to": "l5",
+        "label": "loop continues to next element"
+      },
+      {
+        "from": "l5",
+        "to": "ldone",
+        "label": "loop completes before Done"
+      }
+    ],
+    "labels": {
+      "r3": "Bare-return path · element 3",
+      "rneg": "Bare return at -1",
+      "r5": "Unreached element 5",
+      "rdone": "Unreached Done statement",
+      "l3": "Labelled-return path · element 3",
+      "lneg": "Skip -1 only",
+      "l5": "Continue with element 5",
+      "ldone": "Done after the loop"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html",
+      "https://kotlinlang.org/docs/returns.html"
+    ],
+    "kind": "comparison"
+  },
+  {
+    "path": "generics",
+    "figure": 0,
+    "problem": "The assignment to List<User> succeeds. Why does reading the first user fail later?",
+    "reading": "Trace the failing raw-type route from deserialization to element use. The parser received only List, so the unchecked list cast does not establish the element type. The eventual User cast exposes the mismatch. The fix supplies a complete type token or a suitable serializer at the parsing boundary.",
+    "groups": [
+      {
+        "id": "deserialize",
+        "label": "Parsing boundary",
+        "nodes": [
+          "parse",
+          "maps"
+        ]
+      },
+      {
+        "id": "use",
+        "label": "Typed application use",
+        "nodes": [
+          "assign",
+          "read"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "parse",
+        "to": "maps",
+        "label": "raw List request lacks User element type"
+      },
+      {
+        "from": "maps",
+        "to": "assign",
+        "label": "unchecked cast retains the same elements"
+      },
+      {
+        "from": "assign",
+        "to": "read",
+        "label": "element use requires a User cast"
+      }
+    ],
+    "labels": {
+      "parse": "Raw List deserialization request",
+      "maps": "Map-shaped parsed elements",
+      "assign": "Unchecked List<User> cast",
+      "read": "Read element as User"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html",
+      "https://google.github.io/gson/Troubleshooting.html"
+    ]
+  },
+  {
+    "path": "inline-functions",
+    "figure": 0,
+    "problem": "What remains at this call site after the inline function and lambda are expanded?",
+    "reading": "The arrows describe compiler expansion, not runtime calls. The function supplies the surrounding Start and End statements; the lambda supplies doWork at the invocation point. Read the emitted statements in order and inspect the final note about the absent function-value boundary in this example.",
+    "groups": [
+      {
+        "id": "source",
+        "label": "Source declarations and call",
+        "nodes": [
+          "func",
+          "call"
+        ]
+      },
+      {
+        "id": "expanded",
+        "label": "Expanded caller body",
+        "nodes": [
+          "l1",
+          "l2",
+          "l3",
+          "none"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "func",
+        "to": "l1",
+        "label": "expands the Start statement"
+      },
+      {
+        "from": "call",
+        "to": "l2",
+        "label": "substitutes the lambda body"
+      },
+      {
+        "from": "func",
+        "to": "l3",
+        "label": "expands the End statement"
+      },
+      {
+        "from": "l1",
+        "to": "l2",
+        "label": "then executes doWork"
+      },
+      {
+        "from": "l2",
+        "to": "l3",
+        "label": "then executes End"
+      }
+    ],
+    "labels": {
+      "func": "Inline function source",
+      "call": "Call with doWork lambda",
+      "l1": "Expanded statement · Start",
+      "l2": "Expanded lambda · doWork",
+      "l3": "Expanded statement · End",
+      "none": "Removed call and function-value boundary"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html"
+    ]
+  },
+  {
+    "path": "jvm-interop",
+    "figure": 0,
+    "problem": "Which Kotlin declaration choice determines the Java call surface?",
+    "reading": "Compare four independent Java-facing API shapes. The steps apply the relevant JVM annotation to each declaration. These constructs do not call one another; the point is the member names and available overloads Java callers can actually use.",
+    "groups": [
+      {
+        "id": "singletons",
+        "label": "Singleton-based APIs",
+        "nodes": [
+          "obj",
+          "comp"
+        ]
+      },
+      {
+        "id": "signatures",
+        "label": "File facade and default arguments",
+        "nodes": [
+          "top",
+          "def"
+        ]
+      }
+    ],
+    "edges": [],
+    "labels": {
+      "obj": "Object declaration API",
+      "comp": "Companion object API",
+      "top": "Top-level function facade",
+      "def": "Default-argument overloads"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/java-to-kotlin-interop.html"
+    ],
+    "kind": "comparison"
+  },
+  {
+    "path": "jvm-interop",
+    "figure": 1,
+    "problem": "The Java method returned null. At which Kotlin boundary will that become an error?",
+    "reading": "The four outgoing arrows are alternative call sites consuming the same unannotated Java result. Explicit non-null assignment and non-null arguments introduce checks; inference can defer failure to a later dereference, while a nullable declaration requires explicit null handling.",
+    "groups": [
+      {
+        "id": "java-boundary",
+        "label": "Unannotated Java producer",
+        "nodes": [
+          "src"
+        ]
+      },
+      {
+        "id": "kotlin-choices",
+        "label": "Alternative Kotlin call sites",
+        "nodes": [
+          "declared",
+          "inferred",
+          "arg",
+          "nullable"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "src",
+        "to": "declared",
+        "label": "assign as non-null String"
+      },
+      {
+        "from": "src",
+        "to": "inferred",
+        "label": "retain inferred platform type"
+      },
+      {
+        "from": "src",
+        "to": "arg",
+        "label": "pass to non-null Kotlin parameter"
+      },
+      {
+        "from": "src",
+        "to": "nullable",
+        "label": "accept as nullable String?"
+      }
+    ],
+    "labels": {
+      "src": "Unannotated Java null result",
+      "declared": "Explicit non-null assignment",
+      "inferred": "Inferred platform-type assignment",
+      "arg": "Non-null parameter boundary",
+      "nullable": "Explicit nullable assignment"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/java-interop.html"
+    ],
+    "kind": "comparison"
+  },
+  {
+    "path": "kotlin-2-4-update",
+    "figure": 0,
+    "problem": "A service needs a Tracer. Where does the compiler find that dependency at the call site?",
+    "reading": "Compare an unsatisfied call with a call inside a scope that provides a Tracer. The requirement comes from submit; its available context can also satisfy validate. The explicit named-argument example is a separate language-feature check in the chapter’s Kotlin 2.4 configuration, not an ordinary value argument.",
+    "groups": [
+      {
+        "id": "contract",
+        "label": "Declared requirement",
+        "nodes": [
+          "decl"
+        ]
+      },
+      {
+        "id": "calls",
+        "label": "Alternative caller contexts",
+        "nodes": [
+          "bare",
+          "scoped",
+          "explicit"
+        ]
+      },
+      {
+        "id": "callee-body",
+        "label": "Inside submit",
+        "nodes": [
+          "inner"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "decl",
+        "to": "bare",
+        "label": "requires a matching context value · missing here"
+      },
+      {
+        "from": "decl",
+        "to": "scoped",
+        "label": "matching Tracer is available here"
+      },
+      {
+        "from": "scoped",
+        "to": "inner",
+        "label": "the context value also satisfies validate"
+      }
+    ],
+    "labels": {
+      "decl": "submit requires Tracer context",
+      "bare": "Call without Tracer context",
+      "scoped": "Call inside provided Tracer scope",
+      "inner": "Nested validate call",
+      "explicit": "Explicit-argument feature check"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/context-parameters.html"
+    ],
+    "kind": "comparison"
+  },
+  {
+    "path": "memory-model",
+    "figure": 0,
+    "problem": "A destroyed Activity is still reachable. Which strong-reference chain keeps it alive?",
+    "reading": "Read each arrow as a strong reference, not a data transfer. The long-lived singleton retains a registered callback, which captures the Activity and therefore its views. Unregistering removes the list-to-callback retention edge; collection is possible only once no other live root can reach these objects.",
+    "groups": [
+      {
+        "id": "registration",
+        "label": "Long-lived analytics registration",
+        "nodes": [
+          "root",
+          "list"
+        ]
+      },
+      {
+        "id": "retained-screen",
+        "label": "Callback and retained screen objects",
+        "nodes": [
+          "lambda",
+          "activity",
+          "views"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "root",
+        "to": "list",
+        "label": "singleton retains its listener list"
+      },
+      {
+        "from": "list",
+        "to": "lambda",
+        "label": "retains callback until it is unregistered"
+      },
+      {
+        "from": "lambda",
+        "to": "activity",
+        "label": "captures the Activity"
+      },
+      {
+        "from": "activity",
+        "to": "views",
+        "label": "retains its view tree"
+      }
+    ],
+    "labels": {
+      "root": "GC-rooted analytics singleton",
+      "list": "Registered listeners list",
+      "lambda": "Listener lambda",
+      "activity": "ProfileActivity instance",
+      "views": "Activity views and bitmaps"
+    },
+    "sources": [
+      "https://developer.android.com/topic/performance/memory-overview",
+      "https://developer.android.com/topic/performance/memory-management"
+    ]
+  },
+  {
+    "path": "memory-model",
+    "figure": 1,
+    "problem": "Can a thread see a non-null singleton reference before it sees the writes that initialized the object?",
+    "reading": "Compare visibility across two threads, not a promised physical instruction order. The unsafe steps illustrate missing publication ordering. With volatile publication, constructor writes before the publishing write become visible after the corresponding volatile read; that ordering is what the labelled edge states.",
+    "groups": [
+      {
+        "id": "thread-a",
+        "label": "Thread A · constructing and publishing",
+        "nodes": [
+          "a1",
+          "a2",
+          "a3"
+        ]
+      },
+      {
+        "id": "thread-b",
+        "label": "Thread B · reading and using",
+        "nodes": [
+          "b1",
+          "b2"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "a1",
+        "to": "a3",
+        "label": "object allocation precedes its initialization"
+      },
+      {
+        "from": "a3",
+        "to": "a2",
+        "label": "safe variant: initialize before volatile publish"
+      },
+      {
+        "from": "a2",
+        "to": "b1",
+        "label": "volatile write happens-before subsequent volatile read"
+      },
+      {
+        "from": "b1",
+        "to": "b2",
+        "label": "then use the safely published fields"
+      }
+    ],
+    "labels": {
+      "a1": "Allocate Manager object",
+      "a2": "Publish INSTANCE reference",
+      "a3": "Constructor field writes",
+      "b1": "Read INSTANCE reference",
+      "b2": "Read Manager fields"
+    },
+    "sources": [
+      "https://docs.oracle.com/javase/specs/jls/se25/html/jls-17.html"
+    ],
+    "kind": "comparison"
+  },
+  {
+    "path": "null-safety",
+    "figure": 0,
+    "problem": "An address is absent. Which getters run, and why does the expression still produce a String?",
+    "reading": "Follow the safe-call dependency chain. The address-null branch bypasses the city getter and supplies the Elvis fallback. The city-to-result edge describes the other branch, where a city value is available; it does not mean the skipped getter executes.",
+    "groups": [
+      {
+        "id": "safe-chain",
+        "label": "Nullable property chain",
+        "nodes": [
+          "response",
+          "profile",
+          "address",
+          "city"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "response",
+        "to": "profile",
+        "label": "read profile if receiver is present"
+      },
+      {
+        "from": "profile",
+        "to": "address",
+        "label": "read address if profile is present"
+      },
+      {
+        "from": "address",
+        "to": "city",
+        "label": "read city only if address is non-null"
+      },
+      {
+        "from": "address",
+        "to": "result",
+        "label": "null short-circuits to Elvis fallback"
+      },
+      {
+        "from": "city",
+        "to": "result",
+        "label": "non-null city becomes the result"
+      }
+    ],
+    "labels": {
+      "response": "Response receiver",
+      "profile": "Profile safe-call result",
+      "address": "Address safe-call result",
+      "city": "Conditional city getter",
+      "result": "Non-null result after Elvis"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/null-safety.html"
+    ]
+  },
+  {
+    "path": "null-safety",
+    "figure": 1,
+    "problem": "Why does checking a mutable property for null fail to prove a later property read is safe?",
+    "reading": "Contrast two reads of a changeable property with one captured local value. Another write can intervene between check and use, so the compiler cannot assume the second read matches the first. The local-val alternative supplies one value to both checks and later use.",
+    "groups": [
+      {
+        "id": "unstable-reads",
+        "label": "Repeated property access",
+        "nodes": [
+          "check",
+          "use",
+          "other"
+        ]
+      },
+      {
+        "id": "stable-local",
+        "label": "Single-read alternative",
+        "nodes": [
+          "local"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "check",
+        "to": "use",
+        "label": "a later property read needs a new guarantee"
+      },
+      {
+        "from": "other",
+        "to": "use",
+        "label": "intervening change can invalidate the earlier check"
+      },
+      {
+        "from": "local",
+        "to": "check",
+        "label": "alternative: check the captured local value"
+      }
+    ],
+    "labels": {
+      "check": "First read · null check",
+      "use": "Second property read · length",
+      "local": "Local val snapshot",
+      "other": "Possible intervening property change"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/null-safety.html",
+      "https://kotlinlang.org/docs/typecasts.html"
+    ],
+    "kind": "comparison"
+  },
+  {
+    "path": "null-safety",
+    "figure": 2,
+    "problem": "A required JSON name is missing. Will the parser reject it or will a later dereference fail?",
+    "reading": "Compare the illustrated Gson Unsafe fallback with a configured Kotlin-aware adapter. These are separate parsing routes. The first can bypass constructor checks and leave a null field; the second enforces a required non-null value at the input boundary. Adapter configuration determines the contract.",
+    "groups": [
+      {
+        "id": "reflection",
+        "label": "Gson fallback in this example",
+        "nodes": [
+          "g1",
+          "g2",
+          "g3"
+        ]
+      },
+      {
+        "id": "kotlin-adapter",
+        "label": "Kotlin-aware adapter route",
+        "nodes": [
+          "m1",
+          "m2"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "g1",
+        "to": "g2",
+        "label": "reflection fills only fields present in JSON"
+      },
+      {
+        "from": "g2",
+        "to": "g3",
+        "label": "missing name reaches later dereference"
+      },
+      {
+        "from": "m1",
+        "to": "m2",
+        "label": "required-property check rejects missing name"
+      }
+    ],
+    "labels": {
+      "g1": "Allocate without Kotlin constructor",
+      "g2": "Populate present JSON fields",
+      "g3": "Dereference name later",
+      "m1": "Read declared property contract",
+      "m2": "Reject missing required name"
+    },
+    "sources": [
+      "https://google.github.io/gson/Troubleshooting.html",
+      "https://github.com/square/moshi"
+    ],
+    "kind": "comparison"
+  },
+  {
+    "path": "reified-types",
+    "figure": 0,
+    "problem": "Why does nameOf<List<User>>() report List rather than a class that encodes User?",
+    "reading": "These are separate inline call sites. Each substitutes its own type, but T::class.java asks for a JVM Class, whose identity does not include generic arguments. Compare User, Int and List<User>; choose a richer type representation when nested type arguments matter.",
+    "groups": [
+      {
+        "id": "calls",
+        "label": "Three independent reified call sites",
+        "nodes": [
+          "u",
+          "i",
+          "l"
+        ]
+      }
+    ],
+    "edges": [],
+    "labels": {
+      "u": "User call site · class token",
+      "i": "Int call site · class token",
+      "l": "List<User> call site · raw Class"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html",
+      "https://kotlinlang.org/docs/generics.html"
+    ],
+    "kind": "comparison"
+  },
+  {
+    "path": "sealed-classes",
+    "figure": 0,
+    "problem": "A sealed result gains Cancelled. Which consumers force an explicit decision?",
+    "reading": "The arrows connect the sealed type to three independent when expressions that consume it. Adding a case invalidates exhaustive expressions without else; a catch-all expression still compiles and can hide the missing domain decision. This is a compile-time dependency map, not a runtime event fan-out.",
+    "groups": [
+      {
+        "id": "domain",
+        "label": "Closed result hierarchy",
+        "nodes": [
+          "type"
+        ]
+      },
+      {
+        "id": "consumers",
+        "label": "Independent result consumers",
+        "nodes": [
+          "w1",
+          "w2",
+          "w3"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "type",
+        "to": "w1",
+        "label": "title expression must cover the result cases"
+      },
+      {
+        "from": "type",
+        "to": "w2",
+        "label": "icon expression must cover the result cases"
+      },
+      {
+        "from": "type",
+        "to": "w3",
+        "label": "catch-all expression accepts remaining cases"
+      }
+    ],
+    "labels": {
+      "type": "NetworkResult case set",
+      "w1": "Exhaustive title expression",
+      "w2": "Exhaustive icon expression",
+      "w3": "Event expression with else"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/sealed-classes.html"
+    ]
+  },
+  {
+    "path": "test-dispatchers-virtual-time",
+    "figure": 0,
+    "problem": "Virtual time reached 60 seconds. Why has the task due at that exact instant not run yet?",
+    "reading": "Separate the test action, virtual clock, scheduled work and recorded attempts. Advancing time excludes tasks at the new endpoint; runCurrent then executes work due at that time. Clock movement is not elapsed wall-clock time, and the diagram makes no benchmark claim.",
+    "groups": [
+      {
+        "id": "test",
+        "label": "Test-controlled actions",
+        "nodes": [
+          "launch",
+          "action"
+        ]
+      },
+      {
+        "id": "scheduler",
+        "label": "Shared TestCoroutineScheduler",
+        "nodes": [
+          "clock",
+          "queue"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "launch",
+        "to": "queue",
+        "label": "StandardTestDispatcher queues the coroutine"
+      },
+      {
+        "from": "action",
+        "to": "clock",
+        "label": "advanceTimeBy changes virtual time"
+      },
+      {
+        "from": "action",
+        "to": "queue",
+        "label": "runCurrent executes work due now"
+      },
+      {
+        "from": "queue",
+        "to": "log",
+        "label": "executed coroutine records its attempt"
+      }
+    ],
+    "labels": {
+      "launch": "Retry coroutine under test",
+      "action": "Scheduler-control call",
+      "clock": "Virtual clock",
+      "queue": "Scheduled coroutine work",
+      "log": "Recorded attempts"
+    },
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-test-coroutine-scheduler/",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/-standard-test-dispatcher.html"
+    ]
+  },
+  {
+    "path": "value-classes",
+    "figure": 0,
+    "problem": "Where does a Meters value need a wrapper, and why do two collection slots not imply two wrappers?",
+    "reading": "Compare representation boundaries, not one mandatory execution path. Direct Meters use can keep the underlying value; nullable, generic and supertype uses require boxed representation in the illustrated JVM cases. A generic helper can reuse one already-boxed reference, and later typed use can unbox it. Identity is not the value-class equality contract.",
+    "groups": [
+      {
+        "id": "direct",
+        "label": "Direct value-class use",
+        "nodes": [
+          "self"
+        ]
+      },
+      {
+        "id": "boxed",
+        "label": "Boxed representation boundaries",
+        "nodes": [
+          "nullable",
+          "generic",
+          "reuse",
+          "iface"
+        ]
+      },
+      {
+        "id": "typed-use",
+        "label": "Return to value semantics",
+        "nodes": [
+          "back",
+          "identity"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "generic",
+        "to": "reuse",
+        "label": "generic helper can reuse one boxed reference"
+      },
+      {
+        "from": "generic",
+        "to": "back",
+        "label": "typed element use can unbox the value"
+      }
+    ],
+    "labels": {
+      "self": "Direct Meters parameter",
+      "nullable": "Nullable Meters boundary",
+      "generic": "Generic collection boundary",
+      "reuse": "Reuse of an existing box",
+      "iface": "Any or interface boundary",
+      "back": "Typed read and unboxing",
+      "identity": "Equality and identity rule"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/inline-classes.html"
+    ],
+    "kind": "comparison"
+  },
+  {
+    "path": "variables",
+    "figure": 0,
+    "problem": "The binding is val. How can another reader still observe changed collection contents?",
+    "reading": "Read the arrows as references and operations in the shared-mutable-list variant. val prevents rebinding tags; it does not freeze the target. A read-only List alias sees writes through another mutable alias. The separate final alternative requires an immutable design, not merely a List type or data-class keyword.",
+    "groups": [
+      {
+        "id": "aliases",
+        "label": "Bindings and possible writer",
+        "nodes": [
+          "tags",
+          "reassign",
+          "view",
+          "other"
+        ]
+      },
+      {
+        "id": "collection-choices",
+        "label": "Mutable target and separate immutable-design alternative",
+        "nodes": [
+          "list",
+          "immutable"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "tags",
+        "to": "list",
+        "label": "fixed binding to the mutable list"
+      },
+      {
+        "from": "view",
+        "to": "list",
+        "label": "read-only alias of the same list"
+      },
+      {
+        "from": "other",
+        "to": "list",
+        "label": "mutable alias can change contents"
+      },
+      {
+        "from": "reassign",
+        "to": "tags",
+        "label": "attempted rebinding is rejected"
+      }
+    ],
+    "labels": {
+      "tags": "val tags binding",
+      "reassign": "Attempted reassignment",
+      "view": "Read-only List alias",
+      "other": "Another mutable alias",
+      "list": "Shared mutable-list object",
+      "immutable": "Separate immutable-design alternative"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/collections-overview.html",
+      "https://kotlinlang.org/docs/data-classes.html"
+    ],
+    "kind": "comparison"
+  },
+  {
+    "path": "variables",
+    "figure": 1,
+    "problem": "The function returned. What keeps its mutable captured counter alive?",
+    "reading": "Follow the references from the caller to the returned lambda and its captured mutable cell. The makeCounter stack frame can finish while those heap references remain. Ref.IntRef names the illustrated Kotlin/JVM lowering; this is not a required representation for every backend or optimized compilation.",
+    "groups": [
+      {
+        "id": "invocation",
+        "label": "Creating invocation",
+        "nodes": [
+          "frame"
+        ]
+      },
+      {
+        "id": "escaped-state",
+        "label": "Returned closure and captured cell",
+        "nodes": [
+          "lambda",
+          "ref"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "frame",
+        "to": "ref",
+        "label": "captured var uses a mutable cell in this lowering"
+      },
+      {
+        "from": "caller",
+        "to": "lambda",
+        "label": "retains returned function value"
+      },
+      {
+        "from": "lambda",
+        "to": "ref",
+        "label": "captures the same mutable cell"
+      }
+    ],
+    "labels": {
+      "frame": "makeCounter invocation frame",
+      "caller": "Caller retaining the function",
+      "ref": "Captured counter cell · Ref.IntRef",
+      "lambda": "Returned lambda object"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/lambdas.html",
+      "https://github.com/JetBrains/kotlin/blob/master/libraries/stdlib/jvm/runtime/kotlin/jvm/internal/Ref.java"
+    ]
+  },
+  {
+    "path": "variance",
+    "figure": 0,
+    "problem": "Dog is an Animal. Which generic substitutions preserve that safety?",
+    "reading": "Compare type relationships, not values moving through a system. Starting from Dog <: Animal, an out producer preserves the subtype direction, an in consumer reverses it, and a read/write invariant box permits neither substitution. No edge between the generic alternatives implies inheritance between them.",
+    "groups": [
+      {
+        "id": "premise",
+        "label": "Element subtype premise",
+        "nodes": [
+          "base"
+        ]
+      },
+      {
+        "id": "generic-choices",
+        "label": "Three independent generic contracts",
+        "nodes": [
+          "out",
+          "in",
+          "inv"
+        ]
+      }
+    ],
+    "edges": [],
+    "labels": {
+      "base": "Element relation · Dog <: Animal",
+      "out": "Covariant producer · out T",
+      "in": "Contravariant consumer · in T",
+      "inv": "Invariant read/write box · T"
+    },
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html"
+    ],
+    "kind": "comparison"
+  },
+  {
+    "path": "variance",
+    "figure": 1,
+    "problem": "Why does a Cat write fail at runtime for a Java array, while Kotlin rejects the mutable-list alias earlier?",
+    "reading": "The Java-array path performs a runtime store check after a covariant alias. The Kotlin nodes are separate alternatives: MutableList is invariant, while read-only List is covariant. Comparing their failure boundaries does not turn the collections into stages of one pipeline.",
+    "groups": [
+      {
+        "id": "java",
+        "label": "Java covariant array path",
+        "nodes": [
+          "j1",
+          "j2",
+          "j3"
+        ]
+      },
+      {
+        "id": "kotlin",
+        "label": "Alternative Kotlin collection contracts",
+        "nodes": [
+          "k1",
+          "k2"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "j1",
+        "to": "j2",
+        "label": "covariant alias permits this compile-time write"
+      },
+      {
+        "from": "j2",
+        "to": "j3",
+        "label": "array component check rejects incompatible Cat"
+      }
+    ],
+    "labels": {
+      "j1": "Alias Dog[] as Animal[]",
+      "j2": "Attempt Cat array store",
+      "j3": "Runtime array-store check",
+      "k1": "Invariant MutableList alias",
+      "k2": "Covariant read-only List alias"
+    },
+    "sources": [
+      "https://docs.oracle.com/javase/specs/jls/se25/html/jls-10.html",
+      "https://kotlinlang.org/docs/collections-overview.html"
+    ],
+    "kind": "comparison"
+  }
+]

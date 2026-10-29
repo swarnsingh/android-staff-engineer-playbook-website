@@ -1,0 +1,222 @@
+<div id="vm-lesson-draft">
+  <style>
+    #vm-lesson-draft{--vm-paper:var(--sheet);--vm-ink:var(--ink);--vm-sub:var(--ink-muted);--vm-line:var(--line-strong);--vm-soft:var(--sheet-sunken);--vm-ui:color-mix(in srgb,var(--scene-client) 17%,var(--sheet));--vm-store:color-mix(in srgb,var(--scene-storage) 17%,var(--sheet));--vm-model:color-mix(in srgb,var(--scene-runtime) 17%,var(--sheet));--vm-scope:color-mix(in srgb,var(--scene-queue) 17%,var(--sheet));color:var(--vm-ink);font:16px/1.6 Inter,system-ui,sans-serif;background:var(--vm-paper);padding:12px 0;border-radius:0;text-align:left;box-sizing:border-box}
+    #vm-lesson-draft *{box-sizing:border-box}
+    #vm-lesson-draft [hidden]{display:none!important}
+    #vm-lesson-draft h1{font:500 clamp(29px,4vw,42px)/1.17 Georgia,serif;letter-spacing:-.025em;margin:14px 0 20px;max-width:650px}
+    #vm-lesson-draft h2{font:500 24px/1.3 Georgia,serif;margin:24px 0 12px}
+    #vm-lesson-draft h3{font:500 17px/1.4 Inter,system-ui,sans-serif;margin:0 0 8px}
+    #vm-lesson-draft p{margin:8px 0 16px;max-width:710px}
+    #vm-lesson-draft .crumb{font-size:13px;letter-spacing:.07em;text-transform:uppercase;color:var(--vm-sub);padding-right:75px}
+    #vm-lesson-draft .lead{font-size:18px;max-width:680px}
+    #vm-lesson-draft .section-label{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--vm-sub)}
+    #vm-lesson-draft .problem{border-left:4px solid var(--vm-line);padding-left:18px;margin:24px 0}
+    #vm-lesson-draft .problem h2{margin:0 0 8px}
+    #vm-lesson-draft .problem-flow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0}
+    #vm-lesson-draft .problem-flow span{background:var(--vm-soft);border-radius:6px;padding:9px 12px}
+    #vm-lesson-draft .problem-flow b{font-weight:500}
+    #vm-lesson-draft button{font:500 15px/1.4 Inter,system-ui,sans-serif;color:var(--vm-ink);background:var(--vm-paper);border:1px solid var(--vm-line);border-radius:7px;min-height:44px;padding:10px 15px;white-space:normal;cursor:pointer}
+    #vm-lesson-draft button:focus-visible,#vm-lesson-draft a:focus-visible{outline:3px solid var(--vm-ink);outline-offset:4px}
+    #vm-lesson-draft button:disabled{opacity:.45;cursor:default}
+    #vm-lesson-draft .primary,#vm-lesson-draft button[aria-pressed="true"]{background:var(--vm-ink);color:var(--vm-paper);border-color:var(--vm-ink)}
+    #vm-lesson-draft .scenarios{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+    #vm-lesson-draft .scenarios button{flex:1 1 150px}
+    #vm-lesson-draft .scenario-intro{min-height:54px}
+    #vm-lesson-draft .legend{display:flex;gap:10px 18px;flex-wrap:wrap;font-size:14px;margin:14px 0 18px;color:var(--vm-sub)}
+    #vm-lesson-draft .legend span{display:flex;align-items:center;gap:7px}
+    #vm-lesson-draft .swatch{width:15px;height:15px;border:1px solid var(--vm-line);background:var(--vm-store);display:inline-block}
+    #vm-lesson-draft .swatch.model{background:var(--vm-model);border:3px double var(--vm-line);border-radius:3px}
+    #vm-lesson-draft .swatch.scope{background:var(--vm-scope);border-style:dashed}
+    #vm-lesson-draft .vm-diagram-scroll{max-width:100%;overflow:auto;overscroll-behavior-inline:contain}
+    #vm-lesson-draft .scene{position:relative;border:1.5px solid var(--vm-line);border-radius:10px;padding:18px;background:var(--vm-paper);min-width:900px}
+    #vm-lesson-draft .boundary{font-size:14px;color:var(--vm-sub);margin-bottom:16px}
+    #vm-lesson-draft .sequence{display:grid;grid-template-columns:minmax(0,1fr) 74px minmax(0,1fr) 74px minmax(0,1fr);align-items:start;gap:5px}
+    #vm-lesson-draft .location{min-width:0}
+    #vm-lesson-draft .moment{font-size:13px;color:var(--vm-sub);margin-bottom:10px;min-height:22px}
+    #vm-lesson-draft .owner{border:1.5px solid var(--vm-line);border-radius:8px;padding:12px;background:var(--vm-ui);min-height:314px;overflow-wrap:anywhere}
+    #vm-lesson-draft .owner.retainer{background:var(--vm-soft);border-style:dashed}
+    #vm-lesson-draft .owner.pending{background:var(--vm-paper);border-style:dashed}
+    #vm-lesson-draft .owner.gone{background:repeating-linear-gradient(135deg,var(--vm-paper) 0px,var(--vm-paper) 9px,var(--vm-soft) 9px,var(--vm-soft) 11px);border-style:dashed}
+    #vm-lesson-draft .owner-title{font-weight:600;font-size:16px;margin-bottom:3px}
+    #vm-lesson-draft .owner-sub{font-size:13px;color:var(--vm-sub);margin-bottom:12px}
+    #vm-lesson-draft .empty{font-size:14px;color:var(--vm-sub);margin:18px 0 0}
+    #vm-lesson-draft .store{background:var(--vm-store);padding:11px;border:1px solid var(--vm-line);border-radius:6px;position:relative;z-index:2;overflow-wrap:anywhere}
+    #vm-lesson-draft .object-name{font-weight:600;font-size:15px}
+    #vm-lesson-draft .object-detail{font-size:13px;margin:3px 0 9px}
+    #vm-lesson-draft .model{background:var(--vm-model);border:3px double var(--vm-line);border-radius:6px;padding:10px}
+    #vm-lesson-draft .scope{background:var(--vm-scope);border:1px dashed var(--vm-line);border-radius:4px;padding:8px;margin-top:10px;font-size:13px}
+    #vm-lesson-draft .connector{display:flex;flex-direction:column;align-items:center;padding-top:48px;gap:8px;text-align:center}
+    #vm-lesson-draft .connector svg{width:66px;height:22px;overflow:visible;color:var(--vm-ink)}
+    #vm-lesson-draft .connector .arrow-label{font-size:13px;line-height:1.4;overflow-wrap:anywhere}
+    #vm-lesson-draft .footprint{font-size:14px;margin-top:22px;border-top:1px solid var(--vm-line);padding-top:10px}
+    #vm-lesson-draft .stamp{display:inline-block;font-size:13px;font-weight:600;border:1px solid var(--vm-line);padding:2px 7px;border-radius:3px;margin-bottom:8px}
+    #vm-lesson-draft .controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:18px 0 8px}
+    #vm-lesson-draft .controls .buttons{display:flex;gap:8px}
+    #vm-lesson-draft .step-count{font-size:14px;color:var(--vm-sub)}
+    #vm-lesson-draft .explanation{padding:16px 0 0;min-height:110px}
+    #vm-lesson-draft .explanation h3{margin-bottom:6px}
+    #vm-lesson-draft .explanation p{margin-bottom:8px}
+    #vm-lesson-draft .takeaway{border-top:2px solid var(--vm-line);padding-top:18px;margin-top:20px}
+    #vm-lesson-draft .takeaway b{font-weight:600}
+    #vm-lesson-draft details{border-top:1px solid var(--vm-line);margin-top:24px;padding-top:14px;font-size:14px}
+    #vm-lesson-draft summary{cursor:pointer;font-weight:500}
+    #vm-lesson-draft details li{margin:8px 0}
+    #vm-lesson-draft a{color:var(--vm-ink);text-decoration:underline;text-underline-offset:3px}
+    #vm-lesson-draft .mode-note{font-size:13px;color:var(--vm-sub);margin:8px 0 0}
+    #vm-lesson-draft[data-monochrome="true"]{--vm-ui:var(--vm-soft);--vm-store:var(--vm-paper);--vm-model:var(--vm-soft);--vm-scope:var(--vm-paper)}
+    @media(max-width:700px){#vm-lesson-draft .sequence{grid-template-columns:1fr;gap:0}#vm-lesson-draft .owner{min-height:0}#vm-lesson-draft .location{width:100%}#vm-lesson-draft .connector{padding:14px 0;flex-direction:row;justify-content:center;gap:18px}#vm-lesson-draft .connector svg{transform:rotate(90deg);width:40px;height:30px;flex:0 0 40px}#vm-lesson-draft .connector .arrow-label{max-width:200px;text-align:left;font-size:14px}#vm-lesson-draft .moment{margin:10px 0 5px}#vm-lesson-draft .owner-sub{margin-bottom:7px}#vm-lesson-draft .empty{margin:8px 0}#vm-lesson-draft .scene{padding:13px;min-width:0}#vm-lesson-draft .object-name{font-size:16px}#vm-lesson-draft .object-detail,#vm-lesson-draft .scope{font-size:14px}#vm-lesson-draft .explanation{min-height:0}}
+  </style>
+  <section class="problem" aria-labelledby="vm-problem-title">
+    <div class="section-label">Start with the problem</div>
+    <h2 id="vm-problem-title">You rotate while products are loading.</h2>
+    <p>If the Activity owns the loading state directly, its replacement starts without that in-memory state. A naive <code>onCreate()</code> implementation can launch the request again.</p>
+    <div class="problem-flow" aria-label="Rotation recreates the Activity; Activity-local state is lost">
+      <span>Activity #1: loading</span><b aria-hidden="true">→ rotate →</b><span>Activity #2: state lost</span>
+    </div>
+    <button class="primary" id="vm-reveal" type="button">Explore the solution below ↓</button>
+  </section>
+  <section id="vm-solution" aria-labelledby="vm-solution-title">
+    <div class="section-label">Follow the ownership and the arrows</div>
+    <h2 id="vm-solution-title">Give screen state a lifetime beyond one Activity instance.</h2>
+    <p>In this example, the ViewModel is <b>Activity-scoped</b>. Nested boundaries show ownership. The IDs <b>S1</b> and <b>VM1</b> let you track the same objects.</p>
+    <div class="scenarios" role="group" aria-label="Choose a lifecycle scenario">
+      <button type="button" data-scenario="rotation" aria-pressed="true">1 · Rotate the phone</button>
+      <button type="button" data-scenario="finish" aria-pressed="false">2 · Finish the Activity</button>
+      <button type="button" data-scenario="death" aria-pressed="false">3 · System kills process</button>
+    </div>
+    <p class="scenario-intro" id="vm-intro"></p>
+    <div class="legend" aria-label="Diagram key">
+      <span><i class="swatch" aria-hidden="true"></i>S = ViewModelStore</span>
+      <span><i class="swatch model" aria-hidden="true"></i>VM = ViewModel</span>
+      <span><i class="swatch scope" aria-hidden="true"></i>J = coroutine job</span>
+    </div>
+    <label class="sequence-accessibility"><input type="checkbox" id="vm-no-colour"> View this diagram without colour</label>
+    <div class="vm-diagram-scroll" role="region" tabindex="0" aria-label="Ownership sequence; scroll sideways when needed"><div class="scene" id="vm-scene" aria-label="Lifecycle ownership diagram"></div></div>
+    <div class="controls">
+      <div class="step-count" id="vm-count">Step 1 of 3</div>
+      <div class="buttons">
+        <button type="button" id="vm-prev" data-act="prev" disabled>← Previous</button>
+        <button class="primary" type="button" id="vm-next" data-act="next">Rotate phone →</button>
+      </div>
+    </div>
+    <div class="explanation" aria-live="polite" aria-atomic="true" id="vm-explanation"></div>
+    <div class="takeaway" id="vm-takeaway"></div>
+    <p class="mode-note">Read the labels and object IDs; colour is optional. Motion runs only when you advance a step.</p>
+    <details>
+      <summary>Assumptions and official sources</summary>
+      <ul>
+        <li>Standard Activity recreation on rotation; no custom configuration-change handling. The same owner scope and ViewModel key are used.</li>
+        <li>The example starts one loading job in VM1. Retaining VM1 preserves that job's lifetime; application code must still avoid launching duplicate work.</li>
+        <li>Boundaries show logical ownership, not physical memory allocation. The middle rotation state simplifies Android's non-configuration retention.</li>
+        <li>Cleared objects can remain in memory if other references exist. Clearing is distinct from garbage collection.</li>
+        <li><a href="https://developer.android.com/reference/androidx/lifecycle/ViewModelStore" target="_blank" rel="noopener noreferrer">ViewModelStore: retention and clearing</a></li>
+        <li><a href="https://developer.android.com/topic/libraries/architecture/viewmodel" target="_blank" rel="noopener noreferrer">ViewModel lifecycle and coroutine scope</a></li>
+        <li><a href="https://developer.android.com/topic/libraries/architecture/saving-states" target="_blank" rel="noopener noreferrer">Saving state across process death</a> · <a href="https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-savedstate" target="_blank" rel="noopener noreferrer">SavedStateHandle limitations</a></li>
+      </ul>
+    </details>
+  </section>
+  <noscript><ol><li>Rotation: Activity #1 is destroyed → S1 and VM1 are retained → Activity #2 uses the same store and ViewModel.</li><li>Finishing: owner ends → S1 is cleared → VM1 is cleared and its scope is cancelled.</li><li>System process death: P1 and VM1 are lost → captured saved keys can be restored with the task → P2 creates a new VM2 and new work.</li></ol></noscript>
+  <script>
+  (()=>{
+    const root=document.getElementById('vm-lesson-draft');
+    const figure=root.closest('figure');let turn;
+    const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches||document.documentElement.classList.contains('reduce-motion');
+    const stopMotion=()=>{if(flight){flight.cancel();flight=null;}};
+    document.addEventListener('DOMContentLoaded',()=>{turn=window.Playbook?.registerSteps(stopMotion);window.Playbook?.motion.subscribe(r=>{if(r)stopMotion();});if(typeof animationStops!=='undefined')animationStops.push(stopMotion);});
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)stopMotion();});
+    new IntersectionObserver(entries=>{if(!entries[0].isIntersecting){stopMotion();turn?.release();}}).observe(root);
+    const scene=root.querySelector('#vm-scene');
+    const intro=root.querySelector('#vm-intro');
+    const explanation=root.querySelector('#vm-explanation');
+    const count=root.querySelector('#vm-count');
+    const prev=root.querySelector('#vm-prev');
+    const next=root.querySelector('#vm-next');
+    const takeaway=root.querySelector('#vm-takeaway');
+    const prefs={monochrome:false};
+    let scenario='rotation',step=0,flight=null;
+    const saved=window.openai?.widgetState;
+    if(['rotation','finish','death'].includes(saved?.modelContent?.scenario))scenario=saved.modelContent.scenario;
+    if(Number.isInteger(saved?.privateContent?.step))step=Math.max(0,Math.min(2,saved.privateContent.step));
+    if(saved?.privateContent?.monochrome===true)prefs.monochrome=true;
+    const stories={
+      rotation:{
+        intro:'Rotation changes the UI configuration. Android replaces the Activity while retaining its ViewModelStore.',
+        boundary:'App process P1 · alive throughout all three steps',
+        captions:[['1 · Original owner','Activity #1','Owner of S1'],['2 · Retention bridge','Retained by Android','Between Activity instances'],['3 · Replacement owner','Activity #2','New owner instance, same store']],
+        arrows:['Rotate: destroy old UI; retain S1','Recreate: reattach S1; request same key'],
+        steps:[['Activity #1 requests its ViewModel','The store S1 holds ProductViewModel VM1. Its viewModelScope owns loading job J1. The nesting shows which lifetime each object belongs to.'],['The old Activity is destroyed; S1 is retained','S1, VM1 and J1 remain in the same process. VM1 is not cleared for this configuration change, so the loading work can continue.'],['Activity #2 retrieves the same VM1','The replacement Activity uses S1. Requesting the same ViewModel key returns VM1; the rotation itself does not require a new ViewModel or a restarted request.']],
+        actions:['Rotate phone →','Create Activity #2 →','Replay rotation ↺'],
+        result:'<b>Result:</b> new Activity instance; same store, same ViewModel, same job lifetime.'
+      },
+      finish:{
+        intro:'Finishing permanently ends this Activity owner. Its store is cleared instead of retained for a replacement.',
+        boundary:'App process P1 · may continue running after this Activity finishes',
+        captions:[['1 · Activity owner','Activity #1','Owner of S1'],['2 · Store cleanup','Activity #1','Finishing and being destroyed'],['3 · ViewModel cleanup','Owner has ended','No replacement for this owner']],
+        arrows:['finish(): owner ends; clear S1','Clearing VM1: cancel scope; call onCleared()'],
+        steps:[['VM1 belongs to this Activity owner','The screen still owns store S1. VM1 and its loading job J1 are active.'],['The owner clears its ViewModelStore','When the finishing Activity is destroyed, S1 clears its entries. VM1 is no longer retained for this owner.'],['VM1 is cleared and J1 is cancelled','The default viewModelScope is cancelled as VM1 is cleared; onCleared() runs. Cancellation is cooperative, and clearing does not promise immediate garbage collection.']],
+        actions:['Finish Activity →','Show cleanup →','Replay finishing ↺'],
+        result:'<b>Result:</b> the owner ends; VM1 is cleared and its scope is cancelled.'
+      },
+      death:{
+        intro:'The app is in the background. Android kills its process, then later restores the task. In-memory objects cannot survive.',
+        boundary:'Two different app processes · saved state is restored by the system, outside the old process',
+        captions:[['1 · Old process','Process P1','Activity #1 → S1 → VM1'],['2 · Saved state','Saved UI state','Outside the old app process'],['3 · New process','Process P2','New Activity, S2 and VM2']],
+        arrows:['System kills P1: all its memory is lost','Restore saved keys; create new objects'],
+        steps:[['VM1 exists only in process P1','Assume productId = 42 has already been captured in saved state. That small value can help rebuild the screen; it is not a backup of VM1 or its running work.'],['P1 ends; VM1 and J1 no longer exist','There is no guaranteed onCleared() callback when the process is killed. The saved product ID can remain available for system task restoration.'],['A new VM2 rebuilds state in process P2','SavedStateHandle can restore the captured product ID. VM2 uses it to reload data and starts new work J2. VM1 and J1 do not resume.']],
+        actions:['Kill background process →','Restore task →','Replay process death ↺'],
+        result:'<b>Result:</b> new process, new ViewModel, new job. Saved keys help reconstruct the UI.'
+      }
+    };
+    function objectMarkup(id='1'){
+      return '<div class="store" data-moving-store><div class="object-name">ViewModelStore · S'+id+'</div><div class="object-detail">Stores VM'+id+' by key</div><div class="model"><div class="object-name">ProductViewModel</div><div class="object-detail">VM'+id+' · '+(id==='1'?'original instance':'NEW instance')+'</div><div class="scope"><b>viewModelScope</b><br>Job J'+id+' · '+(id==='1'?'loading':'new loading work')+'</div></div></div>';
+    }
+    function connector(label){return '<div class="connector"><svg viewBox="0 0 66 22" aria-hidden="true"><path d="M2 11 H61 M52 3 L61 11 L52 19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="arrow-label">'+label+'</div></div>';}
+    function slot(index,body,kind=''){
+      const c=stories[scenario].captions[index];
+      return '<div class="location"><div class="moment">'+c[0]+'</div><div class="owner '+kind+'"><div class="owner-title">'+c[1]+'</div><div class="owner-sub">'+c[2]+'</div>'+body+'</div></div>';
+    }
+    function render(animate=false){
+      if(flight){flight.cancel();flight=null;}
+      const old=scene.querySelector('[data-moving-store]');
+      const before=old?.getBoundingClientRect();
+      const oldScenario=scene.dataset.scenario;
+      const s=stories[scenario];
+      root.dataset.monochrome=String(prefs.monochrome);root.querySelector('#vm-no-colour').checked=prefs.monochrome;
+      intro.textContent=s.intro;
+      let cells=[];
+      if(scenario==='rotation'){
+        cells=[slot(0,step===0?objectMarkup():'<span class="stamp">DESTROYED</span><p class="empty">Activity #1 is gone.<br>S1 was retained.</p>',step===0?'':'gone'),slot(1,step===1?objectMarkup():'<p class="empty">'+(step===0?'Next: Android retains S1 while recreating the Activity.':'S1 is now attached to Activity #2.')+'</p>','retainer'),slot(2,step===2?'<span class="stamp">SAME VM1</span>'+objectMarkup():'<p class="empty">Activity #2 has not been created yet.</p>','pending')];
+      }else if(scenario==='finish'){
+        cells=[slot(0,step===0?objectMarkup():'<span class="stamp">OWNER ENDED</span><p class="empty">Activity #1 finishes.</p>',step===0?'':'gone'),slot(1,step>=1?'<div class="store"><div class="object-name">S1 · EMPTY</div><p class="object-detail">Stored entries cleared</p></div>':'<p class="empty">Next: the owner clears S1.</p>','retainer'),slot(2,step===2?'<span class="stamp">CLEARED</span><div class="model"><div class="object-name">VM1 · onCleared()</div><div class="scope">viewModelScope<br>J1 · CANCELLED</div></div><p class="empty">Cleanup record, not a new owner.</p>':'<p class="empty">Then: scope cancelled and onCleared() called.</p>','pending')];
+      }else{
+        cells=[slot(0,step===0?'<div class="owner-title">Activity #1</div>'+objectMarkup():'<span class="stamp">PROCESS ENDED</span><p class="empty">S1, VM1 and J1 are lost.<br>No cleanup callback is guaranteed.</p>',step===0?'':'gone'),slot(1,'<div class="store"><div class="object-name">productId = 42</div><div class="object-detail">Previously captured state</div></div><p class="empty">No VM instance.<br>No running job.</p>','retainer'),slot(2,step===2?'<span class="stamp">NEW VM2</span><div class="owner-title">Activity #2</div>'+objectMarkup('2'):'<p class="empty">P2 will create new objects when the task is restored.</p>','pending')];
+      }
+      scene.dataset.scenario=scenario;
+      scene.innerHTML='<div class="boundary">'+s.boundary+'</div><div class="sequence">'+cells[0]+connector(s.arrows[0])+cells[1]+connector(s.arrows[1])+cells[2]+'</div>';
+      if(scenario==='rotation'&&step===2)scene.querySelectorAll('.owner')[2].classList.remove('pending');
+      if(scenario==='death'&&step===2)scene.querySelectorAll('.owner')[2].classList.remove('pending');
+      const moved=scene.querySelector('[data-moving-store]');
+      if(animate&&scenario==='rotation'&&oldScenario===scenario&&before&&moved&&!reduced()){
+        const after=moved.getBoundingClientRect();
+        const dx=before.left-after.left,dy=before.top-after.top;
+        if(dx||dy)flight=moved.animate([{transform:'translate('+dx+'px,'+dy+'px)'},{transform:'translate(0,0)'}],{duration:750,easing:'cubic-bezier(.22,.65,.25,1)'});
+      }
+      figure.dataset.step=String(step+1);figure.dataset.scenario=scenario;figure.classList.add('is-ready');
+      count.textContent='Step '+(step+1)+' of 3 · '+({rotation:'Rotation',finish:'Finishing',death:'Process death'})[scenario];
+      prev.disabled=step===0;next.textContent=s.actions[step];
+      explanation.innerHTML='<h3>'+String(step+1)+'. '+s.steps[step][0]+'</h3><p>'+s.steps[step][1]+'</p>';
+      takeaway.innerHTML=s.result;
+      root.querySelectorAll('[data-scenario]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.scenario===scenario)));
+    }
+    function save(){window.openai?.setWidgetState?.({modelContent:{scenario},privateContent:{step,monochrome:prefs.monochrome}})?.catch(()=>{});}
+    next.addEventListener('click',()=>{turn?.claim();step=step===2?0:step+1;render(step!==0);save();});
+    prev.addEventListener('click',()=>{step=Math.max(0,step-1);render(true);save();});
+    root.querySelectorAll('[data-scenario]').forEach(b=>b.addEventListener('click',()=>{scenario=b.dataset.scenario;step=0;render();save();}));
+    root.querySelector('#vm-reveal').addEventListener('click',()=>root.querySelector('#vm-solution').scrollIntoView({behavior:reduced()?'instant':'smooth',block:'start'}));
+    window.addEventListener('openai:set_globals',event=>{const state=event.detail?.globals?.widgetState;if(!state)return;if(['rotation','finish','death'].includes(state.modelContent?.scenario))scenario=state.modelContent.scenario;if(Number.isInteger(state.privateContent?.step))step=Math.max(0,Math.min(2,state.privateContent.step));prefs.monochrome=state.privateContent?.monochrome===true;render();});
+    root.querySelector('#vm-no-colour').addEventListener('change',event=>{prefs.monochrome=event.target.checked;render();save();});
+    render();
+    if(globalThis.Tweak){const tweak=new Tweak({container:root,onChange:()=>{render();save();}});tweak.addToggle(prefs,'monochrome',{label:'Preview without colour'});}
+  })();
+  </script>
+</div>

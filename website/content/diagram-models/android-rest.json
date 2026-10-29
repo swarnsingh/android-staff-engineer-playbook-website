@@ -1,0 +1,1680 @@
+[
+  {
+    "path": "android/modifiers-and-layout",
+    "figure": 0,
+    "problem": "Why does the red background stop before the outer padding?",
+    "reading": "Read wrapper arrows outside to inside for constraints, then reverse that direction for measured sizes. The background paints its wrapped bounds; the outer padding stays outside those bounds.",
+    "groups": [],
+    "edges": [
+      {
+        "from": "p1",
+        "to": "bg",
+        "label": "wraps"
+      },
+      {
+        "from": "bg",
+        "to": "p2",
+        "label": "wraps"
+      },
+      {
+        "from": "p2",
+        "to": "text",
+        "label": "wraps"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/layouts/constraints-modifiers"
+    ],
+    "labels": {
+      "p1": "Outer padding: 10 dp",
+      "bg": "Background",
+      "p2": "Inner padding: 5 dp",
+      "text": "Text content"
+    }
+  },
+  {
+    "path": "android/modularization-strategies",
+    "figure": 0,
+    "problem": "Why does a cart implementation edit rebuild unrelated features?",
+    "reading": "Arrows show intended compile-time dependencies, from a consumer to the module it uses. Compare an implementation change with an API change; the final shortcut violates the intended graph.",
+    "groups": [
+      {
+        "id": "contracts",
+        "label": "Feature contracts",
+        "nodes": [
+          "cartApi",
+          "profileApi",
+          "checkoutApi"
+        ]
+      },
+      {
+        "id": "implementations",
+        "label": "Feature implementations",
+        "nodes": [
+          "cartImpl",
+          "profileImpl",
+          "checkoutImpl"
+        ]
+      },
+      {
+        "id": "shared",
+        "label": "Shared model",
+        "nodes": [
+          "model"
+        ]
+      },
+      {
+        "id": "assembly",
+        "label": "Application assembly",
+        "nodes": [
+          "app"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "cartImpl",
+        "to": "cartApi",
+        "label": "uses contract"
+      },
+      {
+        "from": "profileImpl",
+        "to": "profileApi",
+        "label": "uses contract"
+      },
+      {
+        "from": "checkoutImpl",
+        "to": "checkoutApi",
+        "label": "implements checkout"
+      },
+      {
+        "from": "checkoutImpl",
+        "to": "cartApi",
+        "label": "uses cart API"
+      },
+      {
+        "from": "checkoutImpl",
+        "to": "profileApi",
+        "label": "uses profile API"
+      },
+      {
+        "from": "app",
+        "to": "cartImpl",
+        "label": "assembles"
+      },
+      {
+        "from": "app",
+        "to": "profileImpl",
+        "label": "assembles"
+      },
+      {
+        "from": "app",
+        "to": "checkoutImpl",
+        "label": "assembles"
+      },
+      {
+        "from": "cartApi",
+        "to": "model",
+        "label": "uses shared types"
+      },
+      {
+        "from": "profileApi",
+        "to": "model",
+        "label": "uses shared types"
+      },
+      {
+        "from": "checkoutApi",
+        "to": "model",
+        "label": "uses shared types"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/modularization/patterns"
+    ]
+  },
+  {
+    "path": "android/multi-module",
+    "figure": 0,
+    "problem": "How can checkout avoid depending on cart implementation details?",
+    "reading": "Follow dependency arrows from consumer to contract. The graph shows the intended boundary; the shortcut step explains the extra implementation dependency and its repair.",
+    "groups": [
+      {
+        "id": "cart",
+        "label": "Cart feature",
+        "nodes": [
+          "capi",
+          "cimpl"
+        ]
+      },
+      {
+        "id": "checkout",
+        "label": "Checkout feature",
+        "nodes": [
+          "chk"
+        ]
+      },
+      {
+        "id": "assembly",
+        "label": "Application assembly",
+        "nodes": [
+          "app"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "cimpl",
+        "to": "capi",
+        "label": "uses cart contract"
+      },
+      {
+        "from": "chk",
+        "to": "capi",
+        "label": "depends on API"
+      },
+      {
+        "from": "app",
+        "to": "cimpl",
+        "label": "assembles cart"
+      },
+      {
+        "from": "app",
+        "to": "chk",
+        "label": "assembles checkout"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/modularization/patterns"
+    ]
+  },
+  {
+    "path": "android/mvvm-vs-mvi",
+    "figure": 0,
+    "problem": "Can a collector observe a new promo code with an old total?",
+    "reading": "Compare separate property streams with one immutable state value. Arrows show observation relationships, not rendered frames between Main-thread writes. A single state replacement keeps the fields together.",
+    "groups": [
+      {
+        "id": "separate",
+        "label": "Separate property streams",
+        "nodes": [
+          "mPromo",
+          "mTotal",
+          "mLoad",
+          "mUi"
+        ]
+      },
+      {
+        "id": "whole",
+        "label": "One immutable state stream",
+        "nodes": [
+          "iState",
+          "iUi"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "mPromo",
+        "to": "mUi",
+        "label": "observed promo"
+      },
+      {
+        "from": "mTotal",
+        "to": "mUi",
+        "label": "observed total"
+      },
+      {
+        "from": "mLoad",
+        "to": "mUi",
+        "label": "observed loading"
+      },
+      {
+        "from": "iState",
+        "to": "iUi",
+        "label": "observed whole state"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/architecture/ui-layer"
+    ],
+    "labels": {
+      "mUi": "Property-stream collector",
+      "iUi": "Whole-state collector"
+    }
+  },
+  {
+    "path": "android/native-memory-bitmaps",
+    "figure": 0,
+    "problem": "Why can an image feed exhaust memory while the Kotlin heap looks normal?",
+    "reading": "Begin with the pixel dimensions the UI needs. A decode request uses that target, and the cache may retain its result. Process-memory evidence checks the wider cost; it is not another allocation stage.",
+    "groups": [
+      {
+        "id": "pipeline",
+        "label": "Image request and retention",
+        "nodes": [
+          "slot",
+          "decode",
+          "cache"
+        ]
+      },
+      {
+        "id": "evidence",
+        "label": "Whole-process evidence",
+        "nodes": [
+          "pressure"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "slot",
+        "to": "decode",
+        "label": "sets pixel target"
+      },
+      {
+        "from": "decode",
+        "to": "cache",
+        "label": "result may be cached"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/graphics/images/optimization"
+    ]
+  },
+  {
+    "path": "android/navigation",
+    "figure": 0,
+    "problem": "Why do Cart and Payment share one ViewModel while Detail has its own?",
+    "reading": "Boundaries describe back-stack ownership, not Activity instance ownership. Cart and Payment resolve the shared state from the checkout graph entry. Popping that graph clears its owner-scoped state.",
+    "groups": [
+      {
+        "id": "backstack",
+        "label": "Navigation back stack",
+        "nodes": [
+          "root",
+          "home",
+          "list",
+          "detail"
+        ]
+      },
+      {
+        "id": "checkout",
+        "label": "Checkout graph entries",
+        "nodes": [
+          "graph",
+          "cart",
+          "pay"
+        ],
+        "parent": "backstack"
+      }
+    ],
+    "edges": [
+      {
+        "from": "cart",
+        "to": "graph",
+        "label": "resolves graph ViewModel"
+      },
+      {
+        "from": "pay",
+        "to": "graph",
+        "label": "resolves same ViewModel"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/guide/navigation/use-graph/programmatic"
+    ],
+    "labels": {
+      "graph": "Checkout graph owner",
+      "cart": "Cart destination",
+      "pay": "Payment destination"
+    }
+  },
+  {
+    "path": "android/network-radio-wakeups",
+    "figure": 0,
+    "problem": "How do we retry an upload whose server result is unknown?",
+    "reading": "Follow one durable operation through attempts and reconciliation. Arrows name the example retry policy, not guaranteed network delivery. A lost response can leave work unresolved even after the server applied it.",
+    "groups": [
+      {
+        "id": "durable",
+        "label": "Durable intent",
+        "nodes": [
+          "queue"
+        ]
+      },
+      {
+        "id": "delivery",
+        "label": "Attempt and recovery policy",
+        "nodes": [
+          "send",
+          "retry",
+          "done"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "queue",
+        "to": "send",
+        "label": "provides pending operation"
+      },
+      {
+        "from": "send",
+        "to": "retry",
+        "label": "uncertain result needs policy"
+      },
+      {
+        "from": "retry",
+        "to": "send",
+        "label": "permits bounded retry"
+      },
+      {
+        "from": "done",
+        "to": "queue",
+        "label": "retires confirmed work"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/develop/connectivity/network-ops/network-access-optimization",
+      "https://developer.android.com/topic/architecture/data-layer/offline-first"
+    ]
+  },
+  {
+    "path": "android/networkcallback-metered-vpn-captive-portal",
+    "figure": 0,
+    "problem": "Why can an upload fail immediately after the network looked suitable?",
+    "reading": "Network observations inform policy; policy only permits an attempt. The request reports its own result. There is deliberately no edge promising success from an available network.",
+    "groups": [
+      {
+        "id": "observation",
+        "label": "Observed network state",
+        "nodes": [
+          "path"
+        ]
+      },
+      {
+        "id": "application",
+        "label": "Application decision and result",
+        "nodes": [
+          "policy",
+          "call"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "path",
+        "to": "policy",
+        "label": "informs work decision"
+      },
+      {
+        "from": "policy",
+        "to": "call",
+        "label": "permits attempt"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/develop/connectivity/network-ops/reading-network-state"
+    ]
+  },
+  {
+    "path": "android/package-manager-installation-classloading",
+    "figure": 0,
+    "problem": "Why does an installed app crash only when an optional deep link is opened?",
+    "reading": "The route must check whether its on-demand module is available before referencing its screen. Install success alone does not establish that optional code is present; the fallback is an application choice.",
+    "groups": [
+      {
+        "id": "installed",
+        "label": "Installed artifact state",
+        "nodes": [
+          "install"
+        ]
+      },
+      {
+        "id": "routing",
+        "label": "App route and module check",
+        "nodes": [
+          "link",
+          "check",
+          "screen"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "link",
+        "to": "check",
+        "label": "checks module availability"
+      },
+      {
+        "from": "check",
+        "to": "install",
+        "label": "queries installed modules"
+      },
+      {
+        "from": "check",
+        "to": "screen",
+        "label": "opens when available"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/guide/playcore/feature-delivery/on-demand"
+    ]
+  },
+  {
+    "path": "android/permissions-and-app-ops",
+    "figure": 0,
+    "problem": "Why can a granted camera permission still produce a blank scanner?",
+    "reading": "Follow the user action, permission check, actual capture outcome and screen response. Permission enables an attempt; it does not guarantee usable frames. Manual entry is the example fallback.",
+    "groups": [
+      {
+        "id": "intent",
+        "label": "User request",
+        "nodes": [
+          "tap"
+        ]
+      },
+      {
+        "id": "access",
+        "label": "Platform access and actual capture",
+        "nodes": [
+          "perm",
+          "op"
+        ]
+      },
+      {
+        "id": "feedback",
+        "label": "App response",
+        "nodes": [
+          "ui"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "tap",
+        "to": "perm",
+        "label": "requests access in context"
+      },
+      {
+        "from": "perm",
+        "to": "op",
+        "label": "permits capture attempt"
+      },
+      {
+        "from": "op",
+        "to": "ui",
+        "label": "reports usable or blocked result"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/training/permissions/requesting"
+    ]
+  },
+  {
+    "path": "android/process-death-and-state-restoration",
+    "figure": 0,
+    "problem": "Why does rotation pass while returning after process death crashes?",
+    "reading": "Compare two alternative storage strategies. These are before/after observations, not a transfer of singleton objects between processes. Only saved inputs and durable data can rebuild the second app.",
+    "groups": [
+      {
+        "id": "memory",
+        "label": "App A: singleton-only session",
+        "nodes": [
+          "a1",
+          "a2",
+          "a3",
+          "a4"
+        ]
+      },
+      {
+        "id": "durable",
+        "label": "App B: durable session and saved inputs",
+        "nodes": [
+          "b1",
+          "b2",
+          "b3",
+          "b4"
+        ]
+      }
+    ],
+    "edges": [],
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/saving-states"
+    ]
+  },
+  {
+    "path": "android/recomposition-and-state",
+    "figure": 0,
+    "problem": "Why does incrementing a variable leave the counter label unchanged?",
+    "reading": "Compare three alternatives, not a pipeline. Plain variables are not observed; remember retains a value; remembered snapshot state also invalidates its readers when written.",
+    "groups": [
+      {
+        "id": "boundary-plain",
+        "label": "Ordinary local variable",
+        "nodes": [
+          "plain"
+        ]
+      },
+      {
+        "id": "remember",
+        "label": "Remembered ordinary value",
+        "nodes": [
+          "rem"
+        ]
+      },
+      {
+        "id": "observable",
+        "label": "Remembered observable state",
+        "nodes": [
+          "state"
+        ]
+      }
+    ],
+    "edges": [],
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/state"
+    ]
+  },
+  {
+    "path": "android/rendering",
+    "figure": 0,
+    "problem": "Why can a frame appear late after Main has finished recording it?",
+    "reading": "Follow rendering dependencies from draw recording to buffer production and system presentation. Work for different frames can overlap; these arrows do not promise fixed durations or one-frame latency.",
+    "groups": [
+      {
+        "id": "application",
+        "label": "Application rendering",
+        "nodes": [
+          "ui",
+          "render",
+          "buffer"
+        ]
+      },
+      {
+        "id": "system",
+        "label": "System composition and display",
+        "nodes": [
+          "display"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "render",
+        "label": "records draw work for"
+      },
+      {
+        "from": "render",
+        "to": "buffer",
+        "label": "produces rendered buffer"
+      },
+      {
+        "from": "buffer",
+        "to": "display",
+        "label": "provides composition input"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/develop/ui/views/graphics/hardware-accel",
+      "https://perfetto.dev/docs/data-sources/frametimeline"
+    ]
+  },
+  {
+    "path": "android/repository-source-of-truth",
+    "figure": 0,
+    "problem": "How can an offline rename survive process death without being applied twice?",
+    "reading": "The local note and outbox share a transaction. The UI observes local data; the worker drains durable operations toward the server. Idempotency is the example server contract, not a WorkManager guarantee.",
+    "groups": [
+      {
+        "id": "database",
+        "label": "Local database transaction",
+        "nodes": [
+          "note",
+          "outbox"
+        ]
+      },
+      {
+        "id": "app",
+        "label": "App UI and background work",
+        "nodes": [
+          "ui",
+          "worker"
+        ]
+      },
+      {
+        "id": "remote",
+        "label": "Remote authority",
+        "nodes": [
+          "server"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "note",
+        "label": "observes local note"
+      },
+      {
+        "from": "worker",
+        "to": "outbox",
+        "label": "reads pending operations"
+      },
+      {
+        "from": "worker",
+        "to": "server",
+        "label": "sends operation ID"
+      },
+      {
+        "from": "server",
+        "to": "worker",
+        "label": "returns operation result"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/architecture/data-layer/offline-first",
+      "https://developer.android.com/training/data-storage/room/async-queries"
+    ]
+  },
+  {
+    "path": "android/retrofit-and-okhttp",
+    "figure": 0,
+    "problem": "Why should simultaneous expired-token requests avoid simultaneous refreshes?",
+    "reading": "Both failed requests consult shared token storage. In this example one serialized refresh stores T2; the later decision reuses it. Arrows show credential access and refresh relationships, not automatic recovery for every 401.",
+    "groups": [
+      {
+        "id": "requests",
+        "label": "Concurrent API calls",
+        "nodes": [
+          "a",
+          "b"
+        ]
+      },
+      {
+        "id": "credentials",
+        "label": "Shared credential state",
+        "nodes": [
+          "token"
+        ]
+      },
+      {
+        "id": "refresh-client",
+        "label": "Separate refresh client",
+        "nodes": [
+          "refresh"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "a",
+        "to": "token",
+        "label": "checks current token"
+      },
+      {
+        "from": "b",
+        "to": "token",
+        "label": "rechecks current token"
+      },
+      {
+        "from": "a",
+        "to": "refresh",
+        "label": "initiates bounded refresh"
+      },
+      {
+        "from": "refresh",
+        "to": "token",
+        "label": "stores refreshed credential"
+      }
+    ],
+    "sources": [
+      "https://raw.githubusercontent.com/square/okhttp/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Authenticator.kt"
+    ]
+  },
+  {
+    "path": "android/room-vs-datastore",
+    "figure": 0,
+    "problem": "What work does changing one field require in a row store versus a document store?",
+    "reading": "Compare two persistence paths. Arrows inside each alternative name its data dependency; no data moves between the stores. The document path builds and persists a replacement object.",
+    "groups": [
+      {
+        "id": "room",
+        "label": "Room: relational update",
+        "nodes": [
+          "rRead",
+          "rWrite",
+          "rNotify"
+        ]
+      },
+      {
+        "id": "datastore",
+        "label": "Proto DataStore: document update",
+        "nodes": [
+          "dRead",
+          "dBuild",
+          "dWrite",
+          "dNotify"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "rRead",
+        "to": "rWrite",
+        "label": "locates row for update"
+      },
+      {
+        "from": "rWrite",
+        "to": "rNotify",
+        "label": "invalidates observed queries"
+      },
+      {
+        "from": "dRead",
+        "to": "dBuild",
+        "label": "provides current document"
+      },
+      {
+        "from": "dBuild",
+        "to": "dWrite",
+        "label": "provides replacement object"
+      },
+      {
+        "from": "dWrite",
+        "to": "dNotify",
+        "label": "publishes persisted value"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/training/data-storage/room/async-queries",
+      "https://raw.githubusercontent.com/androidx/androidx/androidx-main/datastore/datastore-core/src/commonMain/kotlin/androidx/datastore/core/DataStore.kt"
+    ]
+  },
+  {
+    "path": "android/savedstatehandle",
+    "figure": 0,
+    "problem": "How can a draft return when its ViewModel and process are gone?",
+    "reading": "The ViewModel uses a handle inside the app process; saved values are retained outside that process and later restore a new handle. The ViewModel instance itself never crosses the boundary.",
+    "groups": [
+      {
+        "id": "process",
+        "label": "App process: replaceable objects",
+        "nodes": [
+          "vm",
+          "handle"
+        ]
+      },
+      {
+        "id": "system",
+        "label": "System-retained saved state",
+        "nodes": [
+          "bundle"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "vm",
+        "to": "handle",
+        "label": "reads and writes small inputs"
+      },
+      {
+        "from": "handle",
+        "to": "bundle",
+        "label": "saved values collected"
+      },
+      {
+        "from": "bundle",
+        "to": "handle",
+        "label": "restores values to new handle"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-savedstate",
+      "https://developer.android.com/topic/libraries/architecture/saving-states"
+    ]
+  },
+  {
+    "path": "android/scopes",
+    "figure": 0,
+    "problem": "Why does a singleton sync loop continue after logout?",
+    "reading": "Compare instance lifetimes with work lifetimes. The engine starts its own loop; Hilt scoping does not cancel it. The promo job belongs to the ViewModel scope, while the scoped PricingState is a dependency, not its Job owner.",
+    "groups": [
+      {
+        "id": "singleton",
+        "label": "Process-scoped instance",
+        "nodes": [
+          "engine"
+        ]
+      },
+      {
+        "id": "vm",
+        "label": "Checkout ViewModel lifetime",
+        "nodes": [
+          "pricing",
+          "promoJob"
+        ]
+      },
+      {
+        "id": "custom",
+        "label": "Engine-created work",
+        "nodes": [
+          "syncJob"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "engine",
+        "to": "syncJob",
+        "label": "starts work; must stop it"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/training/dependency-injection/hilt-android",
+      "https://developer.android.com/topic/libraries/architecture/coroutines"
+    ]
+  },
+  {
+    "path": "android/security-and-keystore",
+    "figure": 0,
+    "problem": "Why can restored ciphertext be present while the signed-in session cannot be recovered?",
+    "reading": "Ciphertext and a usable device-bound key are separate requirements. The example recovery flow establishes a new session when decryption is unavailable; restoring bytes does not transfer the original key.",
+    "groups": [
+      {
+        "id": "device-key",
+        "label": "Device-bound key access",
+        "nodes": [
+          "key"
+        ]
+      },
+      {
+        "id": "storage",
+        "label": "App-private stored bytes",
+        "nodes": [
+          "data"
+        ]
+      },
+      {
+        "id": "product",
+        "label": "Application recovery",
+        "nodes": [
+          "session"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "data",
+        "to": "key",
+        "label": "requires usable key to decrypt"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/privacy-and-security/keystore"
+    ]
+  },
+  {
+    "path": "android/security-and-keystore",
+    "figure": 1,
+    "problem": "What should the app do when an authentication-bound key is permanently invalidated?",
+    "reading": "This scenario assumes a key configured to be invalidated by the described authentication change. Its ciphertext needs the original usable key; recovery must follow the product policy rather than retrying that invalid key.",
+    "groups": [
+      {
+        "id": "platform",
+        "label": "Authentication state and bound key",
+        "nodes": [
+          "change",
+          "key"
+        ]
+      },
+      {
+        "id": "application",
+        "label": "Protected record and recovery",
+        "nodes": [
+          "data",
+          "user"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "change",
+        "to": "key",
+        "label": "may invalidate bound key"
+      },
+      {
+        "from": "data",
+        "to": "key",
+        "label": "requires original key"
+      },
+      {
+        "from": "user",
+        "to": "data",
+        "label": "recreates after authentication"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/reference/android/security/keystore/KeyPermanentlyInvalidatedException",
+      "https://developer.android.com/privacy-and-security/keystore"
+    ]
+  },
+  {
+    "path": "android/services",
+    "figure": 0,
+    "problem": "Which prerequisites let this target-34 location service run visibly?",
+    "reading": "Treat declarations, runtime access and foreground-start eligibility as separate prerequisites. After promotion, the service owns its coroutine work; a foreground notification does not make its process immortal.",
+    "groups": [
+      {
+        "id": "eligibility",
+        "label": "Location FGS prerequisites",
+        "nodes": [
+          "manifest",
+          "perm",
+          "start"
+        ]
+      },
+      {
+        "id": "service",
+        "label": "Running service and its work",
+        "nodes": [
+          "fg",
+          "work"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "manifest",
+        "to": "fg",
+        "label": "declares type and permissions"
+      },
+      {
+        "from": "perm",
+        "to": "fg",
+        "label": "provides runtime prerequisite"
+      },
+      {
+        "from": "start",
+        "to": "fg",
+        "label": "starts from eligible context"
+      },
+      {
+        "from": "fg",
+        "to": "work",
+        "label": "service owns work scope"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/develop/background-work/services/fgs/service-types"
+    ]
+  },
+  {
+    "path": "android/side-effects",
+    "figure": 0,
+    "problem": "Why does a profile request restart only when the effect key changes?",
+    "reading": "The effect belongs to its composition position. The same key retains its coroutine; a changed key cancels and replaces it; leaving composition cancels it. The status note explains those transitions.",
+    "groups": [
+      {
+        "id": "composition",
+        "label": "Profile composition position",
+        "nodes": [
+          "screen",
+          "job"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "screen",
+        "to": "job",
+        "label": "effect key controls lifetime"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/side-effects"
+    ]
+  },
+  {
+    "path": "android/snapshot-system",
+    "figure": 0,
+    "problem": "How can count and total change without exposing a mixed pair?",
+    "reading": "Compare private snapshot records with global values. Apply publishes compatible writes together; it is not a per-field network transfer. Readers observe global state after a successful apply.",
+    "groups": [
+      {
+        "id": "private",
+        "label": "Mutable snapshot: private writes",
+        "nodes": [
+          "inCount",
+          "inTotal"
+        ]
+      },
+      {
+        "id": "global",
+        "label": "Global snapshot: visible values",
+        "nodes": [
+          "outCount",
+          "outTotal"
+        ]
+      },
+      {
+        "id": "observer",
+        "label": "Outside reader",
+        "nodes": [
+          "reader"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "inCount",
+        "to": "outCount",
+        "label": "published on successful apply"
+      },
+      {
+        "from": "inTotal",
+        "to": "outTotal",
+        "label": "published on same apply"
+      },
+      {
+        "from": "reader",
+        "to": "outCount",
+        "label": "reads visible count"
+      },
+      {
+        "from": "reader",
+        "to": "outTotal",
+        "label": "reads visible total"
+      }
+    ],
+    "sources": [
+      "https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/snapshots/Snapshot.kt"
+    ]
+  },
+  {
+    "path": "android/stability",
+    "figure": 0,
+    "problem": "Why can rebuilding an equal list stop a composable from skipping?",
+    "reading": "Compare compiler modes and argument identities, not sequential runtime stages. Under strong skipping, reusing the unstable list instance and allocating a new list have different identity-check outcomes.",
+    "groups": [
+      {
+        "id": "legacy",
+        "label": "Without strong skipping",
+        "nodes": [
+          "old"
+        ]
+      },
+      {
+        "id": "same-instance",
+        "label": "Strong skipping: same instance",
+        "nodes": [
+          "same"
+        ]
+      },
+      {
+        "id": "new-instance",
+        "label": "Strong skipping: rebuilt list",
+        "nodes": [
+          "mapped"
+        ]
+      }
+    ],
+    "edges": [],
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ]
+  },
+  {
+    "path": "android/startup",
+    "figure": 0,
+    "problem": "Which startup work delays useful content rather than just the first placeholder?",
+    "reading": "The launch initiates startup work and the app defines its useful-content boundary. Trace evidence measures that journey; it is not another app component after the screen. Repeat the same experiment after a change.",
+    "groups": [
+      {
+        "id": "journey",
+        "label": "One defined launch journey",
+        "nodes": [
+          "launch",
+          "main",
+          "ready"
+        ]
+      },
+      {
+        "id": "measurement",
+        "label": "Evidence retained for comparison",
+        "nodes": [
+          "proof"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "launch",
+        "to": "main",
+        "label": "initiates startup work"
+      },
+      {
+        "from": "main",
+        "to": "ready",
+        "label": "required work delays readiness"
+      },
+      {
+        "from": "proof",
+        "to": "ready",
+        "label": "measures ready boundary"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/performance/issues/launch-time"
+    ]
+  },
+  {
+    "path": "android/state-management",
+    "figure": 0,
+    "problem": "Where should count live when both Counter and Warning need it?",
+    "reading": "Screen is the common owner after hoisting. State goes to both children; Counter sends increment events back. The enclosing boundary describes the example UI subtree, not a requirement to use a ViewModel.",
+    "groups": [
+      {
+        "id": "screen-tree",
+        "label": "Screen subtree",
+        "nodes": [
+          "screen",
+          "counter",
+          "warning"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "screen",
+        "to": "counter",
+        "label": "provides count"
+      },
+      {
+        "from": "screen",
+        "to": "warning",
+        "label": "provides derived visibility"
+      },
+      {
+        "from": "counter",
+        "to": "screen",
+        "label": "reports increment event"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/state",
+      "https://developer.android.com/topic/architecture/ui-layer"
+    ]
+  },
+  {
+    "path": "android/storage-and-content-sharing",
+    "figure": 0,
+    "problem": "Why does storing a picked URI string fail to guarantee a later upload?",
+    "reading": "Compare temporary and persisted access strategies for Photo Picker URIs. The two columns are alternative grants, not copied files or a transfer between apps. Persisted access still needs revocation and missing-item handling.",
+    "groups": [
+      {
+        "id": "temporary",
+        "label": "Temporary grant only",
+        "nodes": [
+          "t1",
+          "t2",
+          "t3",
+          "t4"
+        ]
+      },
+      {
+        "id": "persisted",
+        "label": "Persisted grant requested",
+        "nodes": [
+          "p1",
+          "p2",
+          "p3",
+          "p4"
+        ]
+      }
+    ],
+    "edges": [],
+    "sources": [
+      "https://developer.android.com/training/data-storage/shared/photo-picker"
+    ]
+  },
+  {
+    "path": "android/structured-concurrency",
+    "figure": 0,
+    "problem": "Which coroutines are cancelled when the posts operation fails or the ViewModel is cleared?",
+    "reading": "Boundaries show operation containment. The posts actor collapses its launch and a nested coroutineScope with a new Job. Its async children belong to that scoped Job; the surrounding launch catches the rethrown error. Cancellation follows Job parenthood and requires cooperation from running code.",
+    "groups": [
+      {
+        "id": "owner",
+        "label": "ViewModel-owned work",
+        "nodes": [
+          "vm",
+          "user"
+        ]
+      },
+      {
+        "id": "posts-operation",
+        "label": "Posts coroutineScope and children",
+        "nodes": [
+          "posts",
+          "net",
+          "db"
+        ],
+        "parent": "owner"
+      }
+    ],
+    "edges": [
+      {
+        "from": "vm",
+        "to": "user",
+        "label": "parent Job"
+      },
+      {
+        "from": "vm",
+        "to": "posts",
+        "label": "owns posts operation"
+      },
+      {
+        "from": "posts",
+        "to": "net",
+        "label": "async inside nested coroutineScope"
+      },
+      {
+        "from": "posts",
+        "to": "db",
+        "label": "async inside nested coroutineScope"
+      }
+    ],
+    "sources": [
+      "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html",
+      "https://developer.android.com/topic/libraries/architecture/coroutines",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/coroutine-scope.html"
+    ],
+    "labels": {
+      "posts": "Posts operation: launch + coroutineScope"
+    }
+  },
+  {
+    "path": "android/synchronization-and-mutex",
+    "figure": 0,
+    "problem": "How can three coroutines serialize work without parking waiting threads?",
+    "reading": "Each coroutine acquires the same mutex before entering the critical section. Contenders suspend; dispatcher threads can run other work. The arrows describe lock requests, not a permanent owner relationship.",
+    "groups": [
+      {
+        "id": "coroutines",
+        "label": "Competing coroutine continuations",
+        "nodes": [
+          "c1",
+          "c2",
+          "c3"
+        ]
+      },
+      {
+        "id": "coordination",
+        "label": "Mutual exclusion",
+        "nodes": [
+          "lock"
+        ]
+      },
+      {
+        "id": "execution",
+        "label": "Dispatcher execution capacity",
+        "nodes": [
+          "threads"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "c1",
+        "to": "lock",
+        "label": "acquires before entry"
+      },
+      {
+        "from": "c2",
+        "to": "lock",
+        "label": "waits or acquires"
+      },
+      {
+        "from": "c3",
+        "to": "lock",
+        "label": "waits or acquires"
+      }
+    ],
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/"
+    ]
+  },
+  {
+    "path": "android/testing-strategy",
+    "figure": 0,
+    "problem": "How can a flaky test be investigated without turning a retry into evidence of safety?",
+    "reading": "This is an example governance workflow, not an Android runtime flow. Original failure evidence informs classification; a quarantine gate requires an accountable owner and an explicit risk decision.",
+    "groups": [
+      {
+        "id": "evidence",
+        "label": "Failure evidence and classification",
+        "nodes": [
+          "run",
+          "classify"
+        ]
+      },
+      {
+        "id": "accountability",
+        "label": "Repair and gate policy",
+        "nodes": [
+          "owner",
+          "gate"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "run",
+        "to": "classify",
+        "label": "provides original evidence"
+      },
+      {
+        "from": "gate",
+        "to": "classify",
+        "label": "uses risk classification"
+      },
+      {
+        "from": "gate",
+        "to": "owner",
+        "label": "requires accountable repair"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/training/testing/fundamentals/strategies"
+    ]
+  },
+  {
+    "path": "android/thermal-low-end-device-strategy",
+    "figure": 0,
+    "problem": "How should optional work adapt when a long session loses thermal headroom?",
+    "reading": "Platform pressure observations inform an application policy. Reduced work and recovery are product choices; arrows show that policy, not fixed Android thresholds or guaranteed recovery timing.",
+    "groups": [
+      {
+        "id": "signal",
+        "label": "Observed pressure",
+        "nodes": [
+          "pressure"
+        ]
+      },
+      {
+        "id": "policy",
+        "label": "App-owned quality policy",
+        "nodes": [
+          "normal",
+          "reduced",
+          "recover"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "pressure",
+        "to": "reduced",
+        "label": "informs reduced-work policy"
+      },
+      {
+        "from": "reduced",
+        "to": "recover",
+        "label": "uses recovery policy"
+      },
+      {
+        "from": "recover",
+        "to": "normal",
+        "label": "restores approved experience"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/games/optimize/adpf/thermal"
+    ]
+  },
+  {
+    "path": "android/ui-testing",
+    "figure": 0,
+    "problem": "What proves that the visible Submit button invokes the intended callback?",
+    "reading": "Controlled input renders the screen; the test clicks through semantics and checks the captured order ID. The assertion proves this callback contract, not server payment success.",
+    "groups": [
+      {
+        "id": "screen",
+        "label": "Screen under test",
+        "nodes": [
+          "state",
+          "ui"
+        ]
+      },
+      {
+        "id": "harness",
+        "label": "Controlled test observation",
+        "nodes": [
+          "callback",
+          "assert"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "state",
+        "to": "ui",
+        "label": "renders enabled state"
+      },
+      {
+        "from": "ui",
+        "to": "callback",
+        "label": "click invokes callback"
+      },
+      {
+        "from": "callback",
+        "to": "assert",
+        "label": "provides observed order ID"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/testing/apis"
+    ]
+  },
+  {
+    "path": "android/unit-testing",
+    "figure": 0,
+    "problem": "How do we keep the duplicate-coupon bug reproducible without tapping through the app?",
+    "reading": "The action uses a fresh fake repository and the assertion reads its public result. Retain the same failing case as a regression after the fix; do not assert which private helper ran.",
+    "groups": [
+      {
+        "id": "fixture",
+        "label": "Isolated test fixture",
+        "nodes": [
+          "repo"
+        ]
+      },
+      {
+        "id": "test",
+        "label": "Input and observable result",
+        "nodes": [
+          "act",
+          "assert"
+        ]
+      },
+      {
+        "id": "suite",
+        "label": "Retained regression",
+        "nodes": [
+          "keep"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "act",
+        "to": "repo",
+        "label": "applies coupon twice"
+      },
+      {
+        "from": "repo",
+        "to": "assert",
+        "label": "provides observable total"
+      },
+      {
+        "from": "assert",
+        "to": "keep",
+        "label": "retains regression contract"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/training/testing/local-tests"
+    ]
+  },
+  {
+    "path": "android/view-interop-and-migration",
+    "figure": 0,
+    "problem": "How can a lazy list update and reuse a View without rebuilding it for every item?",
+    "reading": "Factory creates the View, update applies current data, and onReset prepares an eligible instance for reuse. Arrows describe callback responsibilities; they do not promise that every instance will be reused.",
+    "groups": [
+      {
+        "id": "callbacks",
+        "label": "AndroidView callbacks",
+        "nodes": [
+          "factory",
+          "update",
+          "reset"
+        ]
+      },
+      {
+        "id": "instance",
+        "label": "Platform View identity",
+        "nodes": [
+          "view"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "factory",
+        "to": "view",
+        "label": "creates instance"
+      },
+      {
+        "from": "update",
+        "to": "view",
+        "label": "applies current state"
+      },
+      {
+        "from": "reset",
+        "to": "view",
+        "label": "prepares eligible reuse"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose"
+    ]
+  },
+  {
+    "path": "android/viewmodel",
+    "figure": 0,
+    "problem": "Why does rotation keep the load but finishing the Activity clears it?",
+    "reading": "Nested boundaries show the Activity owner scope across recreation, not the lifetime of one Activity instance. The retained store keeps the ViewModel by key; its scope owns the load. Process death replaces the entire in-memory structure.",
+    "groups": [
+      {
+        "id": "owner",
+        "label": "Activity owner scope across recreation",
+        "nodes": [
+          "activity"
+        ]
+      },
+      {
+        "id": "retained-store",
+        "label": "Retained ViewModelStore",
+        "nodes": [
+          "store"
+        ],
+        "parent": "owner"
+      },
+      {
+        "id": "viewmodel",
+        "label": "ProductViewModel lifetime",
+        "nodes": [
+          "vm"
+        ],
+        "parent": "retained-store"
+      },
+      {
+        "id": "work",
+        "label": "viewModelScope work",
+        "nodes": [
+          "job"
+        ],
+        "parent": "viewmodel"
+      }
+    ],
+    "edges": [
+      {
+        "from": "activity",
+        "to": "store",
+        "label": "looks up owner store"
+      },
+      {
+        "from": "store",
+        "to": "vm",
+        "label": "retains by key"
+      },
+      {
+        "from": "vm",
+        "to": "job",
+        "label": "owns coroutine work"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/viewmodel",
+      "https://developer.android.com/topic/libraries/architecture/coroutines"
+    ],
+    "renderer": "ownership"
+  },
+  {
+    "path": "android/webview-and-hybrid",
+    "figure": 0,
+    "problem": "How does a web message cross into native code without granting arbitrary native execution?",
+    "reading": "Treat the content as untrusted. An origin-scoped listener receives the message and source context; the native handler still validates frame, payload and authorization before allowing a bounded operation.",
+    "groups": [
+      {
+        "id": "web-content",
+        "label": "Web content origin",
+        "nodes": [
+          "source"
+        ]
+      },
+      {
+        "id": "boundary",
+        "label": "Origin-scoped bridge",
+        "nodes": [
+          "bridge"
+        ]
+      },
+      {
+        "id": "native-handler",
+        "label": "Native capability policy",
+        "nodes": [
+          "native"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "source",
+        "to": "bridge",
+        "label": "posts message from allowed origin"
+      },
+      {
+        "from": "bridge",
+        "to": "native",
+        "label": "delivers payload and source context"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/reference/androidx/webkit/WebViewCompat"
+    ]
+  }
+]
