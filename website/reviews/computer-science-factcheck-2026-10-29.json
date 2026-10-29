@@ -90,8 +90,8 @@
   "severity": "medium",
   "path": "computer-science/hashing.md",
   "old": "JDK's `HashMap` uses separate chaining with treeification: chains of length > 8 are converted to red-black trees, giving O(log n) worst-case lookup even under collision attacks.",
-  "new": "JDK's `HashMap` uses separate chaining with treeification: a bin becomes a red-black tree when it reaches 8 entries and the table has at least 64 slots (smaller tables resize instead). Lookups in that bin are then O(log n) when the colliding keys are `Comparable`, as `String` keys are.",
-  "reason": "TREEIFY_THRESHOLD is 8 and MIN_TREEIFY_CAPACITY is 64; ordering within tree bins relies on Comparable keys.",
+  "new": "JDK's `HashMap` uses separate chaining with treeification: a bin becomes a red-black tree once it holds more than 8 entries, provided the table has at least 64 slots (smaller tables resize instead). Lookups in that bin are then O(log n) when the colliding keys are `Comparable`, as `String` keys are.",
+  "reason": "`putVal` treeifies when a bin grows past `TREEIFY_THRESHOLD` (8), that is on the ninth entry, and only once the table has `MIN_TREEIFY_CAPACITY` (64) slots; ordering within tree bins relies on Comparable keys. Wording corrected after independent review of the first proposal.",
   "sources": [
    "https://github.com/openjdk/jdk/blob/master/src/java.base/share/classes/java/util/HashMap.java"
   ],
@@ -249,10 +249,11 @@
   "severity": "medium",
   "path": "computer-science/graphs.md",
   "old": "A misconfigured Gradle build with a wide diamond dependency runs in O(n²) compile units. A Dagger graph with deeply nested dependencies takes seconds to wire on app startup.",
-  "new": "A change to a widely used module recompiles every module that depends on it. Dagger resolves and validates its graph at compile time, but eagerly creating a deep graph of objects at startup still costs launch time.",
-  "reason": "Dagger wiring is generated at compile time; the O(n²) claim has no source.",
+  "new": "A change to the public API (the ABI) of a widely used module recompiles every module that depends on it, while changes limited to method bodies or private members let Gradle skip recompiling those dependents. Dagger resolves and validates its graph at compile time, but eagerly creating a deep graph of objects at startup still costs launch time.",
+  "reason": "Dagger wiring is generated at compile time; the O(n²) claim has no source. Gradle compile avoidance recompiles dependents only for ABI changes (qualified after independent review).",
   "sources": [
-   "https://dagger.dev/dev-guide/"
+   "https://dagger.dev/dev-guide/",
+   "https://docs.gradle.org/current/userguide/java_plugin.html#sec:java_compile_avoidance"
   ],
   "status": "proposed"
  },
