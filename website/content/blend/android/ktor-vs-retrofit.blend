@@ -6,7 +6,7 @@
 <!-- @after KMP — The Decisive Factor :: visual -->
 ### Choose the boundary before the library
 
-<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Shared API</strong><small>Domain-facing operations and models used by the product.</small></div><div class="node"><strong>Per-platform configuration</strong><small>Engine, TLS/proxy behaviour and platform lifecycle.</small></div><div class="node"><strong>Compatibility suite</strong><small>Missing/null fields, error contracts, cancellation and streaming.</small></div><div class="node"><strong>Rollout evidence</strong><small>A representative endpoint, telemetry and rollback path.</small></div></div><figcaption>Sharing request code does not remove the need to verify each supported engine and platform.</figcaption></figure>
+<figure class="viz"><div class="viz-grid" data-cols="2"><div class="node"><strong>Shared API</strong><small>Domain-facing operations and models used by the product.</small></div><div class="node"><strong>Per-platform configuration</strong><small>Engine, TLS/proxy behaviour and platform lifecycle.</small></div><div class="node"><strong>Compatibility suite</strong><small>Missing/null fields, error contracts, cancellation and streaming.</small></div><div class="node"><strong>Rollout evidence</strong><small>A representative endpoint, telemetry and rollback path.</small></div></div><figcaption>Sharing request code does not remove the need to verify each supported engine and platform.</figcaption></figure>
 
 <!-- @after Migration Patterns :: visual -->
 ### Migrate one contract, then widen

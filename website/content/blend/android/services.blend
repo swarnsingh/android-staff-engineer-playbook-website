@@ -11,7 +11,7 @@ A `Service` is not a thread. It is a **declaration to the system**: this process
 <!-- @after First Principles :: visual -->
 ### Three kinds of service, three contracts
 
-<figure class="viz"><div class="viz-grid" style="--cols:3"><div class="node" data-state="error"><strong>Background (started)</strong><small>restricted since Android 8: stopped soon after the app leaves the foreground</small></div><div class="node is-key"><strong>Foreground</strong><small>visible notification; type requirements depend on OS/target SDK · higher process priority, not immunity from termination</small></div><div class="node"><strong>Bound</strong><small>lives while clients are bound · a client-server API, often over Binder</small></div></div><figcaption>Whatever its kind, a service's callbacks run on the main thread; the work itself needs its own thread or coroutine scope.</figcaption></figure>
+<figure class="viz"><div class="viz-grid" data-cols="3"><div class="node" data-state="error"><strong>Background (started)</strong><small>restricted since Android 8: stopped soon after the app leaves the foreground</small></div><div class="node is-key"><strong>Foreground</strong><small>visible notification; type requirements depend on OS/target SDK · higher process priority, not immunity from termination</small></div><div class="node"><strong>Bound</strong><small>lives while clients are bound · a client-server API, often over Binder</small></div></div><figcaption>Whatever its kind, a service's callbacks run on the main thread; the work itself needs its own thread or coroutine scope.</figcaption></figure>
 
 <!-- @after Internal Mechanics :: animation -->
 ### Start a location-tracking foreground service, step by step

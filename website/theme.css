@@ -5,7 +5,7 @@
 /* Reading sheet: the page is a tinted canvas and the lesson sits on one sheet. */
 body { background: var(--canvas); color: var(--ink); }
 /* Dark theme: two faint glows on the navy canvas, behind the sheet only. */
-html[data-theme=dark] body { background-image: radial-gradient(80% 50% at 50% -20%, #6366f126, transparent), radial-gradient(60% 40% at 80% 80%, #8b5cf614, transparent); background-attachment: fixed; }
+html[data-theme=dark] body { background-image: radial-gradient(80% 50% at 50% -20%, var(--glow-1), transparent), radial-gradient(60% 40% at 80% 80%, var(--glow-2), transparent); background-attachment: fixed; }
 .topbar { background: var(--sheet); }
 main {
   --sheet-pad: clamp(20px, 4vw, 48px);
@@ -68,16 +68,16 @@ code, pre, kbd, .code-card pre, .model-code pre { font-family: var(--font-mono);
 .source-diagram img.is-sized, .original-diagram img.is-sized { max-height: none; }
 .source-diagram.is-scrollable::before, .original-diagram.is-scrollable::before {
   content: "Scroll sideways to see the whole diagram →"; content: "Scroll sideways to see the whole diagram →" / "";
-  display: block; margin-bottom: .6rem; font: 600 13px/18px var(--font-sans); color: var(--ink-muted);
+  display: block; margin-bottom: .6rem; font: 600 var(--ui-sm)/18px var(--font-sans); color: var(--ink-muted);
 }
 .source-diagram:focus-visible, .original-diagram:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 /* Code cards: when a line runs past the edge, fade the hidden edge and say how to see it (blend.js toggles the classes). */
-.code-card.is-scrollable:not(.at-end) pre { -webkit-mask-image: linear-gradient(to left, transparent, #000 36px); mask-image: linear-gradient(to left, transparent, #000 36px); }
+.code-card.is-scrollable:not(.at-end) pre { -webkit-mask-image: linear-gradient(to left, transparent, black 36px); mask-image: linear-gradient(to left, transparent, black 36px); }
 .code-card.is-scrollable::after {
   content: "Some lines continue past the edge: scroll sideways, or turn on line wrapping in Reading settings.";
   content: "Some lines continue past the edge: scroll sideways, or turn on line wrapping in Reading settings." / "";
-  display: block; padding: 0 1.1rem .8rem; font: 600 12px/16px var(--font-sans); color: var(--code-comment);
+  display: block; padding: 0 1.1rem .8rem; font: 600 var(--ui-xs)/16px var(--font-sans); color: var(--code-comment);
 }
 
 /* Part headers wrap, so a wide reading font never pushes the page sideways. */
@@ -94,8 +94,8 @@ code, pre, kbd, .code-card pre, .model-code pre { font-family: var(--font-mono);
   .blend .pb-figure { padding-inline: 4px; }
   .stepper .viz-grid, .stepper .viz-cols { grid-template-columns: minmax(0, 1fr); }
 }
-.viz, .stepper .stage { font-size: max(18px, .92em); }
-.viz .node small, .stepper .node small { font-size: max(15px, .85em); }
+.viz, .stepper .stage { font-size: max(var(--ui-heading), .92em); }
+.viz .node small, .stepper .node small { font-size: max(var(--ui-base), .85em); }
 
 /* Step-throughs: only an explicitly authored transfer sends a handoff packet. */
 .stepper .stage { position: relative; }
@@ -110,7 +110,7 @@ html[data-theme=contrast] .blend, html[data-theme=contrast] .question, html[data
 html[data-theme=contrast] .blend > .blend-label { border: 1px solid var(--ink); }
 
 @media print {
-  body { background: #fff; }
+  body { background: var(--print-paper); }
   main { box-shadow: none; border-radius: 0; max-width: none; margin: 0; padding: 0; }
   .source-diagram.is-scrollable::before, .original-diagram.is-scrollable::before { display: none; }
 }
@@ -131,18 +131,18 @@ html[data-theme=contrast] .blend > .blend-label { border: 1px solid var(--ink); 
 .blend[data-kind=visual], .blend[data-kind=animation] { border: 1px solid var(--line); background: transparent; }
 .blend[data-kind=bridge] { border: 0; }
 .viz { font-family: var(--font-sans); }
-.viz figcaption, .stepper figcaption { font: 400 max(13px,.85em)/1.7 var(--font-sans); margin-top: 14px; }
+.viz figcaption, .stepper figcaption { font: 400 max(var(--ui-sm),.85em)/1.7 var(--font-sans); margin-top: 14px; }
 .reading-progress { position: absolute; bottom: -1px; left: 0; right: 0; height: 3px; pointer-events: none; }
 .reading-progress i { display: block; height: 100%; width: 0; background: var(--accent); }
 .syntax-annotation { color: var(--code-call); }
 .syntax-type { color: var(--code-call); }
 .decision-map { margin: 20px 0; }
-.decision-map .diagram-context { font: 650 16px/1.6 var(--font-sans); }
+.decision-map .diagram-context { font: 650 var(--ui-lg)/1.6 var(--font-sans); }
 .decision-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; list-style: none; padding: 0!important; margin: 16px 0!important; }
 .decision-card { margin: 0!important; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--sheet-sunken); }
-.decision-card .decision-number { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; color: var(--on-accent); background: var(--accent); font: 650 13px var(--font-sans); }
-.decision-card h4 { font: 650 18px/1.4 var(--font-sans); margin: 12px 0 8px; }
-.decision-card p { font: 400 max(15px,.92em)/var(--prose-leading) var(--font-prose); margin: 0; }
+.decision-card .decision-number { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; color: var(--on-accent); background: var(--accent); font: 650 var(--ui-sm) var(--font-sans); }
+.decision-card h4 { font: 650 var(--ui-heading)/1.4 var(--font-sans); margin: 12px 0 8px; }
+.decision-card p { font: 400 max(var(--ui-base),.92em)/var(--prose-leading) var(--font-prose); margin: 0; }
 .decision-card:last-child:nth-child(odd) { grid-column: 1 / -1; border-inline-start: 3px solid var(--accent); }
 @media(max-width:640px){.lesson-hero{padding:24px 0 16px}.lesson-hero h1{font-size:clamp(2rem,7vw,2.65rem)}.lesson-section{padding-top:2.75rem}.decision-grid{grid-template-columns:minmax(0,1fr)}}
 @media(max-height:500px),print{.reading-progress{display:none}}

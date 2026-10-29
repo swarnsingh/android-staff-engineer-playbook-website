@@ -6,7 +6,7 @@
 <!-- @after 2. Session Layer: Background Playback and External Control :: visual -->
 ### Objects with different jobs
 
-<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Player</strong><small>Playback state and media operations.</small></div><div class="node"><strong>Surface</strong><small>Where video is displayed.</small></div><div class="node"><strong>MediaSession</strong><small>Exposes playback to permitted controllers.</small></div><div class="node"><strong>UI controller</strong><small>Connects the screen to session commands and state.</small></div></div><figcaption>For service-owned playback, the UI can disconnect while the service continues to own playback.</figcaption></figure>
+<figure class="viz"><div class="viz-grid" data-cols="2"><div class="node"><strong>Player</strong><small>Playback state and media operations.</small></div><div class="node"><strong>Surface</strong><small>Where video is displayed.</small></div><div class="node"><strong>MediaSession</strong><small>Exposes playback to permitted controllers.</small></div><div class="node"><strong>UI controller</strong><small>Connects the screen to session commands and state.</small></div></div><figcaption>For service-owned playback, the UI can disconnect while the service continues to own playback.</figcaption></figure>
 
 <!-- @after 6. Player-as-Platform: the Single-Instance Question :: animation -->
 ### Transfer presentation without losing the owner

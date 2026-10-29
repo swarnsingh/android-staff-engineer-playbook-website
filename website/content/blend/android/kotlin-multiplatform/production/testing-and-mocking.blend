@@ -6,7 +6,7 @@
 <!-- @after 1. Understand What commonTest Means :: visual -->
 ### Read the test report as a matrix
 
-<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Common source</strong><small>Reusable test intent and assertions.</small></div><div class="node"><strong>Target execution</strong><small>A concrete compilation, runner and runtime.</small></div><div class="node"><strong>Platform adapter</strong><small>The actual storage, networking or lifecycle boundary.</small></div><div class="node"><strong>Native consumer</strong><small>The API after framework export, linking and Swift import.</small></div></div><figcaption>Record which tasks ran; a missing target report is missing evidence, not an implicit pass.</figcaption></figure>
+<figure class="viz"><div class="viz-grid" data-cols="2"><div class="node"><strong>Common source</strong><small>Reusable test intent and assertions.</small></div><div class="node"><strong>Target execution</strong><small>A concrete compilation, runner and runtime.</small></div><div class="node"><strong>Platform adapter</strong><small>The actual storage, networking or lifecycle boundary.</small></div><div class="node"><strong>Native consumer</strong><small>The API after framework export, linking and Swift import.</small></div></div><figcaption>Record which tasks ran; a missing target report is missing evidence, not an implicit pass.</figcaption></figure>
 
 <!-- @after 4. Test HTTP Contracts With Ktor MockEngine :: animation -->
 ### A fake failure proves a bounded contract

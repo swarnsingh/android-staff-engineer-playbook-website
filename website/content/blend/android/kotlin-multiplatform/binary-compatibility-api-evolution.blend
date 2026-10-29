@@ -6,7 +6,7 @@
 <!-- @after Compatibility Is Multidimensional :: visual -->
 ### One change, different witnesses
 
-<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Source consumer</strong><small>Recompile the existing call site.</small></div><div class="node"><strong>Compiled consumer</strong><small>Exercise the old caller with the candidate library where binary replacement is promised.</small></div><div class="node"><strong>Data contract</strong><small>Read golden and mixed-version payloads.</small></div><div class="node"><strong>Behaviour and export</strong><small>Check lifecycle/error semantics and the generated Swift API.</small></div></div><figcaption>An ABI dump is one witness. It cannot prove every promise listed in the original compatibility table.</figcaption></figure>
+<figure class="viz"><div class="viz-grid" data-cols="2"><div class="node"><strong>Source consumer</strong><small>Recompile the existing call site.</small></div><div class="node"><strong>Compiled consumer</strong><small>Exercise the old caller with the candidate library where binary replacement is promised.</small></div><div class="node"><strong>Data contract</strong><small>Read golden and mixed-version payloads.</small></div><div class="node"><strong>Behaviour and export</strong><small>Check lifecycle/error semantics and the generated Swift API.</small></div></div><figcaption>An ABI dump is one witness. It cannot prove every promise listed in the original compatibility table.</figcaption></figure>
 
 <!-- @after High-Risk Kotlin Changes :: animation -->
 ### Why recompilation can hide a binary break

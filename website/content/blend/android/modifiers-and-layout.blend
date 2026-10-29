@@ -27,7 +27,7 @@ A `Modifier` chain is not a set of attributes; it is an ordered list of wrappers
 <!-- @after Production Example :: visual -->
 ### Same modifiers, two orders
 
-<figure class="viz"><div class="viz-cols" style="--cols:2"><div class="col"><span class="col-title"><code>.padding(16.dp).clickable { }</code></span><div class="node" data-state="warn"><strong>Ripple and touch area</strong><small>only the text: the 16 dp ring is outside <code>clickable</code></small></div></div><div class="col"><span class="col-title"><code>.clickable { }.padding(16.dp)</code></span><div class="node" data-state="done"><strong>Ripple and touch area</strong><small>text plus the 16 dp ring: <code>clickable</code> wraps the padding</small></div></div></div><figcaption>For a larger hit target, put <code>clickable</code> before the padding that should be tappable.</figcaption></figure>
+<figure class="viz"><div class="viz-cols" data-cols="2"><div class="col"><span class="col-title"><code>.padding(16.dp).clickable { }</code></span><div class="node" data-state="warn"><strong>Ripple and touch area</strong><small>only the text: the 16 dp ring is outside <code>clickable</code></small></div></div><div class="col"><span class="col-title"><code>.clickable { }.padding(16.dp)</code></span><div class="node" data-state="done"><strong>Ripple and touch area</strong><small>text plus the 16 dp ring: <code>clickable</code> wraps the padding</small></div></div></div><figcaption>For a larger hit target, put <code>clickable</code> before the padding that should be tappable.</figcaption></figure>
 
 <!-- @after Common Misconceptions :: check -->
 **Read the chain.** Decide before opening each answer.

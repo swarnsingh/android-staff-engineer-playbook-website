@@ -7,7 +7,7 @@ Start with controlled screen state and a captured callback. Move outward to navi
 <!-- @diagram 169407b7471ca5c4 -->
 ### Choose the cheapest layer that can see the failure
 
-<figure class="viz"><div class="node is-key" style="max-width:22rem;margin:0 auto .6rem"><strong>What confidence is needed?</strong></div><div class="viz-cols" style="--cols:4"><div class="node"><strong>State and semantics</strong><small>Compose UI test</small></div><div class="node"><strong>Android integration on the JVM</strong><small>Robolectric</small></div><div class="node"><strong>Visual regression</strong><small>Paparazzi / screenshot test</small></div><div class="node"><strong>Framework + device behaviour</strong><small>instrumented device test, then a small representative device matrix</small></div></div><figcaption>Redrawn from the original decision diagram.</figcaption></figure>
+<figure class="viz"><div class="node is-key is-lead"><strong>What confidence is needed?</strong></div><div class="viz-cols" data-cols="4"><div class="node"><strong>State and semantics</strong><small>Compose UI test</small></div><div class="node"><strong>Android integration on the JVM</strong><small>Robolectric</small></div><div class="node"><strong>Visual regression</strong><small>Paparazzi / screenshot test</small></div><div class="node"><strong>Framework + device behaviour</strong><small>instrumented device test, then a small representative device matrix</small></div></div><figcaption>Redrawn from the original decision diagram.</figcaption></figure>
 
 <!-- @after The UI-Test Landscape :: visual -->
 ### Three different witnesses

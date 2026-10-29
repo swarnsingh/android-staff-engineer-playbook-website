@@ -87,12 +87,12 @@ def enhance(article,path,out,base,authored):
                           'role':n['role'] if n['role'] in figure_maps.ROLES else 'neutral'} for i,n in enumerate(nodes,1)],
                 'groups':row.get('groups',[]),'edges':[dict(e) for e in row.get('edges',[])],'sources':row['sources'],
                 # Drawn at 1.25x below, so lay out for the frame width divided by that scale.
-                'frame_w':700}
+                'frame_w':figure_maps.MAP_FRAME_W}
         figure_maps.check(figure)
         svg=figure_maps.render_map(figure,digest).svg('fm-'+digest,row['problem'],row['reading'])
         # Maps beside a step-through keep every label at 15px or more on screen: draw them at 1.25x.
-        svg=re.sub(r'(width|height)="([\d.]+)"',lambda m:f'{m[1]}="{float(m[2])*1.25:.0f}"',svg,count=2)
-        svg=re.sub(r'(min-width|max-width):([\d.]+)px',lambda m:f'{m[1]}:{float(m[2])*1.25:.0f}px',svg)
+        svg=re.sub(r'(width|height)="([\d.]+)"',lambda m:f'{m[1]}="{float(m[2])*figure_maps.MAP_SCALE:.0f}"',svg,count=2)
+        svg=re.sub(r'(min-width|max-width):([\d.]+)px',lambda m:f'{m[1]}:{float(m[2])*figure_maps.MAP_SCALE:.0f}px',svg)
         roles=list(dict.fromkeys(n['role'] for n in figure['nodes']))
         legend='<div class="fm-legend">'+''.join(f'<span class="actor-{r}">{figure_maps.ROLES[r]}</span>' for r in roles)+'<em>Numbered arrows name relationships, not time steps.</em></div>'
         problems='<div class="sequence-intro"><p class="sequence-problem"><strong>The problem.</strong> '+escape(row['problem'])+'</p><p class="sequence-reading">'+escape(row['reading'])+'</p></div>'

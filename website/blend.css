@@ -23,7 +23,6 @@
 .blend .original-note{font-size:.85em;color:var(--muted)}
 .original-diagram{margin:.8rem 0 0}
 .original-diagram summary{font-size:.9em;color:var(--muted)}
-.original-diagram img{max-width:100%;height:auto;background:#fff;border-radius:.4rem;padding:.5rem}
 
 /* Diagram primitives. All reflow on narrow screens instead of shrinking. */
 .viz{margin:1.25rem 0 .5rem;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:.92em}
@@ -134,3 +133,8 @@
 .steps-text summary{display:list-item;min-height:44px;align-content:center;cursor:pointer}
 .stepper-buttons button[aria-disabled=true]{opacity:.5;cursor:default}
 @media(max-width:520px){.stepper-buttons{gap:.5rem}.stepper-buttons button{flex:1 1 auto}.stepper-buttons .text-button{margin-left:0}.stepper-controls .pb-step-nav{gap:.4rem}}
+
+/* Declared component parameters: lessons set data-cols, never inline CSS. */
+:is(.viz-cols,.viz-grid)[data-cols="1"]{--cols:1}:is(.viz-cols,.viz-grid)[data-cols="2"]{--cols:2}:is(.viz-cols,.viz-grid)[data-cols="3"]{--cols:3}:is(.viz-cols,.viz-grid)[data-cols="4"]{--cols:4}:is(.viz-cols,.viz-grid)[data-cols="5"]{--cols:5}:is(.viz-cols,.viz-grid)[data-cols="6"]{--cols:6}
+/* Shared node variants for lesson figures. */
+.node.is-lead{max-width:24rem;margin:0 auto .6rem}.node.is-spaced{margin-top:.6rem}.node.is-gap-after{margin-bottom:.6rem}

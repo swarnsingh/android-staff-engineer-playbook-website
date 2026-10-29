@@ -291,6 +291,14 @@ def steps_as_text(html):
     return re.sub(r'<section\b[^>]*data-pb-flow="scene"[^>]*>.*?</section>', scene_text, html, flags=re.S)
 
 
+def component_parameters(html):
+    """Declared lesson parameters (data-at/data-len) become the timeline component's variables."""
+    def mark(m):
+        at, length = m.group(2), m.group(3)
+        return m.group(1) + f' style="--at:{at}' + (f';--len:{length}' if length else '') + '"'
+    return re.sub(r'(<[a-z][^<>]*?)\sdata-at="([^"]+)"(?:\s+data-len="([^"]+)")?', mark, html)
+
+
 def wrap(kind, markdown, env):
     """Render an added fragment and label it, so readers can tell it from the original text."""
     # A blank line would end a raw HTML block early; keep blank lines inside figures as newlines.
@@ -305,7 +313,7 @@ def wrap(kind, markdown, env):
         html = MD.render(markdown, env)
     finally:
         env['blend'] = False
-    return added(kind, steps_as_text(timeline_labels(html)))
+    return added(kind, steps_as_text(timeline_labels(component_parameters(html))))
 
 
 def is_question_section(heading):
@@ -614,7 +622,7 @@ def design_tokens_css():
         # A token alias to itself creates a CSS variable cycle and invalidates the real colour.
         props+=[f'--{old}:var(--{new})' for old,new in TOKEN_ALIASES.items() if old != new]
         if theme==themes[0]:
-            for family in ('spacing','radius','layout'): props+=[f'--{x["name"]}:{x["value"]}' for x in tokens[family]['tokens']]
+            for family in ('spacing','radius','layout','figure','uitype'): props+=[f'--{x["name"]}:{x["value"]}' for x in tokens[family]['tokens']]
             props+=[f'--font-{k}:{v}' for k,v in tokens['type']['families'].items()]
             prose=tokens['type']['prose']; body=prose['metrics']
             props+=[f'--font-prose:var(--font-{reader_font(prose,prose["default"])["family"]})','--reader-font:var(--font-prose)',
@@ -678,7 +686,29 @@ def design_gallery(asset_version):
     destination=OUT/'design-system';destination.mkdir(exist_ok=True)
     (destination/'index.html').write_text(page)
 
+SHARED_CSS=['styles.css','blend.css','theme.css','sequence.css','learning-path.css','navigation.css','design-system/components/bundle.css']
+
+
+def check_design_boundary():
+    """Rulebook §20: topics contribute content only; every value lives in tokens and shared components."""
+    problems=[]
+    for f in sorted([*(WEB/'content').rglob('*.blend'),*(WEB/'content').rglob('*.html')]):
+        text=f.read_text()
+        if re.search(r'<[a-zA-Z][^<>]*\sstyle\s*=',text) or re.search(r'<style\b',text):
+            problems.append(f'{f.relative_to(WEB)}: inline style in lesson content (use a declared component parameter)')
+    for name in SHARED_CSS:
+        css=re.sub(r'/\*.*?\*/','',(WEB/name).read_text(),flags=re.S)
+        for decl in re.findall(r'[{;]\s*([a-z-]+\s*:[^;{}]*)',css):
+            if re.search(r'#[0-9a-fA-F]{3,8}\b',decl):
+                problems.append(f'{name}: hard-coded colour in "{decl.strip()[:60]}" (add a colour token)')
+            m=re.match(r'font(-size)?\s*:\s*(.*)',decl.strip())
+            if m and re.search(r'(?<![\d./])\d+(\.\d+)?px(?!\s*\))', m.group(2).split('/')[0]):
+                problems.append(f'{name}: raw font size in "{decl.strip()[:60]}" (use a type token)')
+    if problems: raise ValueError('Design-system boundary:\n  '+'\n  '.join(problems))
+
+
 def build(skip_diagrams=False):
+    check_design_boundary()
     import diagram_models
     relationship_models=diagram_models.check()
     if OUT.exists(): shutil.rmtree(OUT)

@@ -4,7 +4,7 @@
 .relationship-map{max-width:100%;overflow:auto;overscroll-behavior-inline:contain;padding:18px 12px;background:var(--sheet-sunken);border:1px solid var(--line-strong);border-radius:var(--radius-md);scrollbar-gutter:stable}
 .relationship-map:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
 .relationship-svg{display:block;max-width:none!important;height:auto;margin:auto;overflow:visible}
-.relationship-svg text,.relationship-svg tspan{fill:var(--ink)!important;font:400 17px var(--font-sans)!important}
+.relationship-svg text,.relationship-svg tspan{fill:var(--ink)!important;font:400 var(--ui-xl) var(--font-sans)!important}
 .relationship-svg .node .label text,.relationship-svg .cluster-label text{text-anchor:middle}
 .relationship-svg .node>rect,.relationship-svg .node polygon,.relationship-svg .node path{fill:var(--sheet)!important;stroke:var(--line-strong)!important;stroke-width:1.5px!important}
 .relationship-svg .node.client>rect{fill:color-mix(in srgb,var(--scene-client) 17%,var(--sheet))!important}
@@ -16,7 +16,7 @@
 .relationship-svg .edgePaths path{fill:none!important;stroke:var(--ink)!important;stroke-width:2px!important}
 .relationship-svg marker path{fill:var(--ink)!important;stroke:var(--ink)!important}
 .relationship-svg .edgeLabel rect,.relationship-svg .labelBkg{fill:var(--sheet)!important;opacity:1!important}
-.relationship-svg .edgeLabel text,.relationship-svg .edgeLabel tspan{font-size:15px!important}
+.relationship-svg .edgeLabel text,.relationship-svg .edgeLabel tspan{font-size:var(--ui-base)!important}
 .relationship-svg .node.is-current>rect{stroke:var(--ink)!important;stroke-width:3px!important}
 .relationship-svg .node{transition:none!important}
 .sequence-scroll-hint{font:400 .8rem/1.5 var(--font-sans);color:var(--ink-muted);margin:.6rem 0 1rem!important}

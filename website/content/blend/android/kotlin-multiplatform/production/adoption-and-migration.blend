@@ -6,7 +6,7 @@
 <!-- @after 1. When NOT to Use KMP :: visual -->
 ### A pilot has three owners
 
-<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Product outcome</strong><small>The defect, consistency or lead-time change to measure.</small></div><div class="node"><strong>Shared contract</strong><small>Inputs, results, errors, data and lifecycle.</small></div><div class="node"><strong>Platform consumption</strong><small>Android and iOS integration, debugging and release.</small></div><div class="node"><strong>Stop condition</strong><small>Evidence for expanding, repairing, holding or rolling back.</small></div></div><figcaption>Reuse percentage alone does not establish value. Include the new tooling and ownership cost in the comparison.</figcaption></figure>
+<figure class="viz"><div class="viz-grid" data-cols="2"><div class="node"><strong>Product outcome</strong><small>The defect, consistency or lead-time change to measure.</small></div><div class="node"><strong>Shared contract</strong><small>Inputs, results, errors, data and lifecycle.</small></div><div class="node"><strong>Platform consumption</strong><small>Android and iOS integration, debugging and release.</small></div><div class="node"><strong>Stop condition</strong><small>Evidence for expanding, repairing, holding or rolling back.</small></div></div><figcaption>Reuse percentage alone does not establish value. Include the new tooling and ownership cost in the comparison.</figcaption></figure>
 
 <!-- @after 2. The Incremental Migration Path (Strangler Fig) :: animation -->
 ### Replace one dependency through a seam

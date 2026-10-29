@@ -13,10 +13,15 @@ import json, math
 WEB = Path(__file__).resolve().parents[1]
 ROLES = {'client': 'Devices and clients', 'runtime': 'Execution', 'storage': 'Stored data',
          'queue': 'Queued work', 'neutral': 'Sources and structure'}
-CARD_W, MARGIN, GRID = 220, 8, (260, 120)  # the shared visual frame supplies the outer padding
-# Conservative glyph widths (px) for the faces bundle.css assigns; used to reject clipped labels.
-GLYPH = {'title': 8.7, 'detail': 7.9, 'label': 7.3, 'note': 7.9}
-LINE = 18
+# Geometry and type come from the design system (tokens.json "figure"), so one change restyles every figure.
+FIGURE = {t['name']: str(t['value']) for t in json.loads((WEB / 'design-system/tokens.json').read_text())['figure']['tokens']}
+px = lambda name: float(FIGURE[name].removesuffix('px'))
+CARD_W, MARGIN, LINE = px('figure-card-width'), px('figure-margin'), px('figure-line')
+FRAME_W, MAP_SCALE, MAP_FRAME_W = px('figure-frame-width'), float(FIGURE['figure-map-scale']), px('figure-map-frame-width')
+GRID = (CARD_W + 40, 120)
+# Conservative advance widths per em for the faces bundle.css assigns; used to reject clipped labels.
+GLYPH = {'title': .58 * px('figure-title-size'), 'detail': .608 * px('figure-detail-size'),
+         'label': .5615 * px('figure-label-size'), 'note': .608 * px('figure-note-size')}
 
 
 def width(text, kind):
@@ -517,7 +522,6 @@ def group_box(g, nodes, groups):
 
 # Progressively tighter spacing for automatic layouts, until the figure fits the shared frame.
 FIT_STEPS = [{}, {'gap_x': 180}, {'gap_x': 180, 'max_w': 640}, {'gap_x': 140, 'max_w': 560}, {'gap_x': 120, 'max_w': 480}]
-FRAME_W = 880
 
 
 def render_map(row, key):

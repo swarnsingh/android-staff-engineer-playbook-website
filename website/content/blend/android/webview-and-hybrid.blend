@@ -6,7 +6,7 @@
 <!-- @after Mental Model :: visual -->
 ### Audit a capability at both ends
 
-<figure class="viz"><div class="viz-grid" style="--cols:2"><div class="node"><strong>Web content</strong><small>Which origins and frames can send messages?</small></div><div class="node"><strong>Bridge contract</strong><small>Which messages, payloads and versions are accepted?</small></div><div class="node"><strong>Native handler</strong><small>What authorization and validation precede a side effect?</small></div><div class="node"><strong>Lifecycle</strong><small>When is the bridge attached, removed and unavailable?</small></div></div><figcaption>Review the complete capability path; a familiar hostname alone does not answer every trust question.</figcaption></figure>
+<figure class="viz"><div class="viz-grid" data-cols="2"><div class="node"><strong>Web content</strong><small>Which origins and frames can send messages?</small></div><div class="node"><strong>Bridge contract</strong><small>Which messages, payloads and versions are accepted?</small></div><div class="node"><strong>Native handler</strong><small>What authorization and validation precede a side effect?</small></div><div class="node"><strong>Lifecycle</strong><small>When is the bridge attached, removed and unavailable?</small></div></div><figcaption>Review the complete capability path; a familiar hostname alone does not answer every trust question.</figcaption></figure>
 
 <!-- @after Staff Engineer Thinking :: animation -->
 ### A bridge message is a request
