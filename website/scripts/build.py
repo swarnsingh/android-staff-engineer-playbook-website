@@ -726,11 +726,6 @@ def build(skip_diagrams=False):
     if OUT.exists(): shutil.rmtree(OUT)
     OUT.mkdir()
     for directory in ['diagram-sources','diagrams','coverage']:(OUT/directory).mkdir(exist_ok=True)
-    # Content hash in asset URLs, so browsers never mix a new page with stale CSS or JS.
-    tokens_css=design_tokens_css().encode()
-    asset_version=hashlib.sha256(tokens_css+b''.join((WEB/n).read_bytes() for n in ['styles.css','blend.css','sequence.css','theme.css','learning-path.css','navigation.css','app.js','blend.js','coroutines.js','lesson-model.js','design-system/components/bundle.css','design-system/components/bundle.js'])).hexdigest()[:10]
-    font_options,font_head=reader_font_markup()
-    template=(WEB/'templates/reader.html').read_text().replace('{{font_head}}',font_head).replace('{{font_options}}',font_options).replace('{{base}}',BASE).replace('{{asset_version}}',asset_version)
     # Generate catalog from checked-in tree indexes, using guided order rather than filenames.
     # Each chapter carries its guided-reading phase, so wide trees group into sub-sections.
     catalog=json.loads((WEB/'nav-data.js').read_text().split('=',1)[1].strip().rstrip(';'))
@@ -755,6 +750,13 @@ def build(skip_diagrams=False):
             raise ValueError(f'{tree["slug"]} Topics phases are not contiguous')
         tree['chapters']=[{'title':title(ROOT/p),'path':p,'section':section.get(p,'More chapters'),'rendered':p in PATHS} for p in tree_order]
     (OUT/'nav-data.js').write_text('window.PLAYBOOK_CATALOG = '+json.dumps(catalog,ensure_ascii=False)+';\n')
+    # Include the generated catalog in the asset version. A newly rendered tree must
+    # not reuse a cached catalog that still sends its chapters to GitHub.
+    tokens_css=design_tokens_css().encode()
+    asset_inputs=['styles.css','blend.css','sequence.css','theme.css','learning-path.css','navigation.css','app.js','blend.js','coroutines.js','lesson-model.js','design-system/components/bundle.css','design-system/components/bundle.js']
+    asset_version=hashlib.sha256(tokens_css+b''.join((WEB/n).read_bytes() for n in asset_inputs)+(OUT/'nav-data.js').read_bytes()).hexdigest()[:10]
+    font_options,font_head=reader_font_markup()
+    template=(WEB/'templates/reader.html').read_text().replace('{{font_head}}',font_head).replace('{{font_options}}',font_options).replace('{{base}}',BASE).replace('{{asset_version}}',asset_version)
     reports=[]
     for path in PAGES:
         slug=tree_of(path); order=ORDER[slug]; is_index=path==f'{slug}.md'
