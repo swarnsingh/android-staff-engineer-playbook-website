@@ -346,7 +346,16 @@ Owner-approved UX refinement, 2026-10-27:
 - Keep the current diagram state, caption and controls together. Use consistent Previous, Next and Reset labels for equivalent actions; offer Play/Pause for temporal playback. Put reusable help and the full textual transcript in an optional disclosure while keeping the current-step explanation visible.
 - Fenced code uses one continuous code surface in every context, including nested lists. Inline-code chip styling must never apply to a fenced example. Keep code headers concise; retain specific example assumptions near the explanation.
 - Keep editorial provenance, technical correction history and original-source details in an About disclosure. Corrected explanations read normally, without repeated review notices or highlighted replacements. Published reader chrome must not show draft labels.
-- Verify both learning paths and representative lessons at phone, tablet and desktop widths, including keyboard operation, motion preferences, touch controls and enlarged text. Record evidence and limits before publication.
+- Verify learning paths and representative lessons on desktop/tablet and run automated phone regressions, including keyboard operation, motion preferences, touch controls and enlarged text. Follow the mobile review timing below and record evidence and limits before publication.
+
+### Mobile review timing across the whole website
+
+Owner instruction, 2026-10-29; this takes precedence over earlier review-timing guidance:
+
+- Perform **one consolidated full manual mobile visual and interaction review only after all topic trees and planned pages are implemented and integrated into the complete website build**. Completing Android and Kotlin, or any other subset, does not satisfy this condition.
+- While individual topics or tracks are being built, use desktop/tablet reviews and automated mobile regression checks only. Fix failures found by those checks during the current work.
+- Do not repeat full manual mobile reviews after each chapter, track or partial release. Keep the consolidated review deferred until the whole website is ready, and report that status accurately.
+- This rule applies to every current and future topic, and to all models and contributors working on this website.
 
 ### Primary article reference: AirBridge
 
@@ -369,7 +378,7 @@ Owner direction, 2026-10-27: learn from the whole experience of [ByteByteGo](htt
 - **Let readers explore meaningful alternatives.** Use modes or controls when changing an input reveals a different outcome. Make the constraint, action and consequence visible together. Deterministic step-throughs and static structure diagrams remain useful; do not add a simulated control whose outcome the lesson does not explain.
 - **Keep detail progressive.** Make the main diagram understandable at a glance, tie each step to a short caption, and provide the full explanation and sources nearby. Put optional instructions and complete transcripts behind clearly named disclosures. Never hide the original explanatory text to simplify the page.
 - **Protect reading comfort.** Keep the established reading measure, theme/font/text-size controls, keyboard access, readable phone labels, reduced motion and one moving diagram at a time. Adapt the composition to the device rather than shrinking a desktop diagram into unreadable text.
-- **Improve shared components, then inspect real lessons.** Put reusable behaviour in the design system. Review representative structure, time, ownership and failure diagrams on phone, tablet and desktop. Audit the entire rendered tree after shared changes. Record implemented coverage and remaining gaps; do not claim that all state steppers are full animated scenes.
+- **Improve shared components, then inspect real lessons.** Put reusable behaviour in the design system. Review representative structure, time, ownership and failure diagrams on desktop/tablet and use automated phone checks during development. Follow the consolidated manual mobile review timing above. Audit the entire rendered tree after shared changes. Record implemented coverage and remaining gaps; do not claim that all state steppers are full animated scenes.
 
 The reference review and implementation evidence belong in `website/reviews/website-experience-2026-10-27.md`. Future contributors should use this standard for every new or revised lesson.
 
