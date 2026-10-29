@@ -7,7 +7,8 @@
      reboots") and offline-first guide (local data source is the source of truth; queued writes drained by WorkManager).
      Source PR #61 (merged as fe82316) resolved findings OS1 and OS2: unique push work uses KEEP, every op including delete
      carries a clientId, and a foreground check plus a periodic outbox sweep reschedule pushes the enqueue missed.
-     The two queued ops stay illustrative upserts. -->
+     The two queued ops stay illustrative upserts, one per note, matching source PR #62 (one op per note per batch;
+     dirty clears only when no op for the note remains). -->
 
 <!-- @after 7. Deep Dive: Outbox + Conflict Resolution (15 min) :: animation -->
 ### Replay the outbox after the network returns
@@ -58,7 +59,7 @@
   },
   {
     "label": "Apply the ack",
-    "caption": "In one Room transaction, PushWorker deletes n_42's outbox row and records version 8 with dirty = false. The unsynced dot disappears.",
+    "caption": "In one Room transaction, PushWorker deletes n_42's outbox row and records version 8. No other op for n_42 is queued, so dirty becomes false and the unsynced dot disappears.",
     "state": {"notes": "active", "outbox": "active"},
     "text": {"notesV": "n_42 v8 synced", "outboxV": "upsert n_51", "uiV": "n_42 synced", "eventV": "same transaction: ack applied"},
     "visuals": {"outbox": {"count": 1}}

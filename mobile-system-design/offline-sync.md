@@ -238,7 +238,7 @@ data class SyncStateEntity(
 )
 ```
 
-> **Probing Q:** "Why a separate outbox and not just `dirty=true` rows?" Because an outbox op is a snapshot — if the user edits the same note 3 times offline, you get 3 ops with 3 client IDs and the server resolves in order. The `dirty` flag is a UI-side hint; the outbox is the durable transmission queue.
+> **Probing Q:** "Why a separate outbox and not just `dirty=true` rows?" Because an outbox op is a snapshot — if the user edits the same note 3 times offline, you get 3 ops with 3 client IDs, kept in order. The push worker sends one op per note at a time and rebases the next op onto the version the previous ack returned, so the second op does not conflict with the first. The `dirty` flag is a UI-side hint; the outbox is the durable transmission queue.
 
 ---
 
@@ -276,13 +276,16 @@ The Room transaction commits the note and outbox row together. WorkManager's enq
 
 ```kotlin
 override suspend fun doWork(): Result {
-    val batch = outboxDao.take(100)
+    val batch = outboxDao.takeOldestPerNote(100)  // at most one op per note
     if (batch.isEmpty()) return Result.success()
     val resp = api.push(PushReq(batch.toOps()))
     db.withTransaction {
         resp.applied.forEach { applied ->
             outboxDao.delete(applied.clientId)
-            noteDao.updateVersion(applied.id, applied.newVersion, dirty = false)
+            // The next queued op for this note builds on the version this ack created.
+            outboxDao.rebaseNext(applied.id, baseVersion = applied.newVersion)
+            val stillQueued = outboxDao.countFor(applied.id) > 0
+            noteDao.updateVersion(applied.id, applied.newVersion, dirty = stillQueued)
         }
         resp.conflicts.forEach { conflict ->
             outboxDao.delete(conflict.clientId)
@@ -292,6 +295,8 @@ override suspend fun doWork(): Result {
     return if (outboxDao.size() > 0) Result.retry() else Result.success()
 }
 ```
+
+Each op is written with the last server-known `baseVersion`, so two ops for one note in the same batch would conflict: once the first is applied, the second's `baseVersion` is stale and the server returns `VERSION_MISMATCH`. The worker therefore takes the oldest op per note, rebases that note's next op onto the returned `newVersion`, and clears `dirty` only when no op for the note remains. A rebased op still conflicts if another device changed the note in between.
 
 `PushWorker` is unique-named with `KEEP`, so a new trigger does not cancel an active push. The worker checks for remaining rows, while foreground and periodic recovery cover a missed trigger. Backoff is exponential with jitter; max 5 attempts per row before flipping to a `FAILED_PERMANENT` state.
 
@@ -450,10 +455,10 @@ Offline sync has three version boundaries: the app binary, the local database sc
 > Per-record versioning lets the server detect conflicts on the row that changed without locking everything. Global versions force serialization and don't scale.
 
 > **Q: What's the difference between dirty and outbox?**
-> `dirty=true` is a UI hint ("this note has unsynced edits — show a dot"). The outbox is the durable queue of ops to send. They can diverge: the worker may be mid-push, in which case the row is still dirty until the ack lands.
+> `dirty=true` is a UI hint ("this note has unsynced edits — show a dot"). The outbox is the durable queue of ops to send. They can diverge: the worker may be mid-push, in which case the row is still dirty until the ack for its last queued op lands.
 
 > **Q: A user edits the same note 5 times offline — what does the server see?**
-> 5 outbox ops in order, each with `baseVersion = previous_known_version`. Server applies them serially; only the last one wins the final state. We could collapse the queue on the client (debounce), and we do — 2 s coalesce window.
+> Usually one op. Each edit is written with the last server-known `baseVersion`, so five ops sent together would conflict after the first one applies. Before a push, the client compacts adjacent upserts to the same note that have never been sent into the latest payload (a sent op may already be applied under its `clientId`). Ops that remain go one per note at a time, each rebased onto the `newVersion` from the previous ack, so the server applies them in order and the last one wins.
 
 > **Q: How do you guarantee no duplicates if push retries after a timeout?**
 > Each op has `clientId`. Server returns the same `newVersion` for the same `clientId`. Client deletes the outbox row on success — retries are idempotent.
