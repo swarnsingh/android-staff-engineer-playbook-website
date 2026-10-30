@@ -279,6 +279,8 @@ override suspend fun doWork(): Result {
     outboxDao.compactUnsentUpserts()              // merge never-sent upserts per note
     val batch = outboxDao.takeOldestPerNote(100)  // at most one op per note
     if (batch.isEmpty()) return Result.success()
+    // Committed before sending: compaction never merges into a row that may be applied.
+    outboxDao.markAttempted(batch, at = clock.now())
     val resp = api.push(PushReq(batch.toOps()))
     db.withTransaction {
         resp.applied.forEach { applied ->
@@ -300,7 +302,7 @@ override suspend fun doWork(): Result {
 
 Each op is written with the last server-known `baseVersion`, so two ops for one note in the same batch would conflict: once the first is applied, the second's `baseVersion` is stale and the server returns `VERSION_MISMATCH`. The worker therefore takes the oldest op per note, rebases that note's next op onto the returned `newVersion`, and clears `dirty` only when no op for the note remains. A rebased op still conflicts if another device changed the note in between.
 
-Before taking a batch, the worker merges adjacent upserts to the same note that have never been sent into one op: it keeps the oldest row's `clientId` and `baseVersion` and the newest payload. A row that was sent once is never merged, because the server may already have applied it under its `clientId`.
+Before taking a batch, the worker merges adjacent upserts to the same note that have never been sent into one op: it keeps the oldest row's `clientId` and `baseVersion` and the newest payload. "Never sent" is durable state: the worker commits `attempts` and `firstAttemptedAt` for the batch before the request leaves, and compaction skips any row with `attempts > 0`. A response can be lost after the server applied an op; merging a newer payload into that row would make the server return the earlier result for its `clientId` and drop the newer edit.
 
 When an op conflicts, the worker removes every queued op for that note, not only the conflicted one. Those later edits were made on top of the losing local state, and they are already in the local row that the resolver keeps as the conflict copy, so nothing is lost. Resolving the conflict in the Conflicts inbox (keep mine or merge) enqueues one new upsert based on `serverVersion`.
 
