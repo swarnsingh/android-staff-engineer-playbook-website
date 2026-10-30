@@ -186,7 +186,7 @@ html.reduce-motion .pb-figure * { transition: none; }
  main:has(.reading-content){--visual-available:calc(100vw - 32px)}
  .lesson-tabs{isolation:isolate;overflow:visible}
  .lesson-tabs::before{content:'';position:absolute;inset-block:0;width:min(var(--measure-visual),calc(100% + var(--visual-bleed)*2),var(--visual-available));left:50%;transform:translateX(-50%);z-index:-1;background:var(--sheet);pointer-events:none}
- .reading-content :is(.blend > .pb-figure,.blend > .stepper,.blend > .fm-figure,.source-diagram,.original-diagram,.content-bleed){--bleed-width:min(var(--measure-visual),calc(100% + var(--visual-bleed)*2),var(--visual-available));width:var(--bleed-width);max-width:none;margin-inline:calc((100% - var(--bleed-width))/2)}
+ .reading-content :is(.blend > .pb-figure,.blend > .stepper,.blend > .fm-figure,.source-diagram,.content-bleed){--bleed-width:min(var(--measure-visual),calc(100% + var(--visual-bleed)*2),var(--visual-available));width:var(--bleed-width);max-width:none;margin-inline:calc((100% - var(--bleed-width))/2)}
 }
 @media(min-width:1181px) and (max-width:1439px){main:has(.reading-content){--visual-available:calc(100vw - 210px - 32px)}}
 @media(min-width:1440px){main:has(.reading-content){--visual-available:calc(100vw - 244px - 210px - 32px)}}

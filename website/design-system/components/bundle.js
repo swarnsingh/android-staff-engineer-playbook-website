@@ -573,10 +573,11 @@
     if(!reading || reading.__pbLayout)return;reading.__pbLayout=true;
     var pending;
     function schedule(){cancelAnimationFrame(pending);pending=requestAnimationFrame(function(){
-      var candidates=Array.from(reading.querySelectorAll('.code-card,table')).filter(function(n){return !n.closest('.blend,.pb-figure,.relationship-map,.source-diagram,.original-diagram,li');});
+      // Code cards never widen: they stay in the text column and scroll sideways. Only overflowing tables expand.
+      var candidates=Array.from(reading.querySelectorAll('table')).filter(function(n){return !n.closest('.blend,.pb-figure,.relationship-map,.source-diagram,.original-diagram,.code-card,li');});
       candidates.forEach(function(n){n.classList.remove('content-bleed');});
       if(!matchMedia('(min-width:641px)').matches)return;
-      var wide=candidates.filter(function(n){var c=n.matches('.code-card')?n.querySelector('pre'):n;return n.getClientRects().length && c && c.scrollWidth>c.clientWidth+2;});
+      var wide=candidates.filter(function(n){return n.getClientRects().length && n.scrollWidth>n.clientWidth+2;});
       wide.forEach(function(n){n.classList.add('content-bleed');});
     });}
     addEventListener('resize',schedule,{passive:true});addEventListener('load',schedule,{once:true});

@@ -8,7 +8,7 @@ Every lesson page, phase page and landing page. Never nest a sheet inside a shee
 
 ## Rules
 
-- The sheet is at most `measure-wide` (880px) and is centred between the rails. Text inside it is at most `measure-text` (760px). Prose fills the760px reading column. Wide diagrams and overflowing code/tables may extend symmetrically by up to120px per side, capped at1000px and the space available between rails. Visuals use padded, rounded frames with shared surface and shadow tokens. Normal paragraphs keep the original sheet width.
+- The sheet is at most `measure-wide` (880px) and is centred between the rails. Text inside it is at most `measure-text` (760px). Prose fills the760px reading column. Wide diagrams, step-throughs and overflowing tables may extend symmetrically by up to 120px per side, capped at 1000px and the space available between rails. Code blocks never extend: code cards and the original Mermaid source stay inside the 760px text column and scroll sideways (owner rule, 30 October 2026). Visuals use padded, rounded frames with shared surface and shadow tokens. Normal paragraphs keep the original sheet width.
 - The sheet uses `box-sizing: border-box`, so `measure-wide` (880px) includes its padding.
 - Breakpoints come from the space the sheet needs: both rails from 1440px (244 + 880 + 220 + gutters); the outline rail alone from 1181px; below 1181px the outline moves to the top of the sheet and the curriculum lives in the menu.
 - At phone width the sheet's corner radius stays and its side padding drops to 20px; the canvas shows as a thin edge.
