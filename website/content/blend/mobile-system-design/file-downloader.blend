@@ -1,0 +1,180 @@
+<!-- Website teaching layer for mobile-system-design/file-downloader.md (interview walkthrough).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the step-through and the end recap.
+     Verified 2026-10-30 against file-downloader.md at source 035778c (§6 chunk ledger and pinned validator, §7 enqueue, worker, planning, runner, fetch, assembly and failure modes, §8 scheduler, §9 and §10 answers. The 12 MB file and its three 4 MB chunks are illustrative)
+     and against RFC 9110 (§13.1.5 If-Range, §14.2 Range, §14.4 Content-Range, §15.3.7 206, §15.5.17 416), the WorkManager guides for stopping work and long-running workers, and the user-initiated data transfer guide. -->
+
+<!-- @after 7. Deep Dive: Chunked Resumable Download (15 min) :: animation -->
+### Follow a download through a dropped network
+
+<figure class="stepper" data-illustrated><span class="stepper-title">Three chunks, one interruption, no restart</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="caller" data-art="phone" data-art-role="client"><strong>App caller</strong><small data-text="callerV">enqueue(request)</small></div><div class="node" data-el="ledger" data-art="database" data-art-role="storage"><strong>Room ledger</strong><small data-text="ledgerV">empty</small></div><div class="node" data-el="worker" data-art="worker" data-art-role="queue"><strong>DownloadWorker</strong><small data-text="workerV">not started</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="server" data-art="server" data-art-role="runtime"><strong>File server</strong><small data-text="serverV">supports Range</small></div><div class="node" data-el="parts" data-art="document" data-art-role="storage"><strong>Part files</strong><small data-text="partsV">none</small></div><div class="node" data-el="final" data-art="document" data-art-role="storage"><strong>Final file</strong><small data-text="finalV">not present</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Enqueue is durable",
+    "caption": "enqueue() inserts the download row in Room and then enqueues unique work named download-<id> with KEEP. Chunks aren’t planned yet, because the file’s size is still unknown. The queue entry now outlives the process.",
+    "add": [
+      "caller",
+      "ledger",
+      "worker",
+      "server",
+      "parts",
+      "final",
+      "event"
+    ],
+    "state": {
+      "caller": "active",
+      "ledger": "done"
+    },
+    "text": {
+      "ledgerV": "1 download row",
+      "eventV": "durable before any byte moves"
+    },
+    "handoff": {
+      "from": "caller",
+      "to": "ledger",
+      "kind": "rows",
+      "label": "download row"
+    }
+  },
+  {
+    "label": "HEAD, then plan once",
+    "caption": "The worker sends a HEAD request to learn Content-Length, Accept-Ranges and the ETag. It saves a strong ETag together with the chunk rows, so every chunk belongs to one version of the file. Here the file is 12 MB and is split into three 4 MB chunks (illustrative sizes). Without range support or a strong ETag, the download uses one chunk with a plain GET.",
+    "state": {
+      "caller": "done",
+      "worker": "active",
+      "server": "active"
+    },
+    "text": {
+      "workerV": "planning",
+      "serverV": "Accept-Ranges + strong ETag",
+      "ledgerV": "ETag + chunks 0, 1, 2",
+      "eventV": "the plan is pinned to one file version"
+    },
+    "handoff": {
+      "from": "worker",
+      "to": "ledger",
+      "kind": "rows",
+      "label": "chunk rows"
+    }
+  },
+  {
+    "label": "Fetch ranges in parallel",
+    "caption": "A semaphore lets up to three chunks run at once, each with its own Range request and part file. A 206 is appended only if its Content-Range starts at the requested byte and stays inside the chunk. Bytes stream through Okio, so the file is never held in memory. A chunk is marked DONE only when it is complete.",
+    "state": {
+      "server": "done",
+      "parts": "active"
+    },
+    "text": {
+      "workerV": "3 chunks at once",
+      "serverV": "206 Partial Content",
+      "partsV": "part.0, part.1, part.2",
+      "ledgerV": "chunk 0 DONE",
+      "eventV": "check Content-Range, then append"
+    },
+    "handoff": {
+      "from": "server",
+      "to": "parts",
+      "kind": "page",
+      "label": "bytes"
+    }
+  },
+  {
+    "label": "The network drops",
+    "caption": "Chunk 1 is cut off midway. The worker returns Result.retry() and keeps its partial file. If the process is killed instead, nothing is lost either: the ledger is in Room, and no download state lives only in memory.",
+    "state": {
+      "server": "error",
+      "worker": "warn",
+      "parts": "warn"
+    },
+    "text": {
+      "serverV": "connection lost",
+      "workerV": "Result.retry()",
+      "partsV": "part.1 is partial",
+      "eventV": "partial bytes stay on disk"
+    }
+  },
+  {
+    "label": "A later run fetches what’s missing",
+    "caption": "The new run asks the ledger for chunks not marked DONE, so chunk 0 isn’t fetched again. Chunk 1 resumes from its start byte plus the part file’s length, with a new Range request and If-Range carrying the saved ETag. A server that sends less than requested leaves the chunk not DONE, and a later run asks for the rest.",
+    "state": {
+      "server": "done",
+      "worker": "active",
+      "parts": "active"
+    },
+    "text": {
+      "serverV": "206 for the rest",
+      "workerV": "notDoneFor(id)",
+      "partsV": "part.1 growing",
+      "eventV": "resume at a byte offset, not at zero"
+    },
+    "handoff": {
+      "from": "ledger",
+      "to": "worker",
+      "kind": "rows",
+      "label": "chunks not DONE"
+    }
+  },
+  {
+    "label": "The file changes on the server",
+    "caption": "If the file has changed, If-Range fails and the server answers 200 with a new ETag and the whole new file. Combining those bytes would splice two versions, so the partial data is discarded and the download is re-planned against the new ETag. A 416 also re-plans, because the file’s size may have changed.",
+    "state": {
+      "server": "warn",
+      "parts": "warn"
+    },
+    "text": {
+      "serverV": "200 + new ETag, or 416",
+      "partsV": "partial data discarded",
+      "workerV": "re-plan",
+      "eventV": "never splice two versions of a file"
+    }
+  },
+  {
+    "label": "The server breaks its range contract",
+    "caption": "A 200 with the same ETag or none means the server ignored Range. Its bytes start at byte 0, so they are never appended. A 206 for the wrong bytes, or with a missing or invalid Content-Range, writes nothing. In both cases the download falls back to one chunk from the start, and stays that way so it doesn’t re-plan in a loop.",
+    "state": {
+      "server": "warn",
+      "parts": "warn",
+      "worker": "warn"
+    },
+    "text": {
+      "serverV": "200 or a wrong 206",
+      "partsV": "partial data discarded",
+      "workerV": "one chunk from now on",
+      "eventV": "a status code alone proves nothing"
+    }
+  },
+  {
+    "label": "Assemble, rename, verify",
+    "caption": "Assembly starts only after every chunk succeeds and each part’s length matches the ledger. The chunks are concatenated in order into a .tmp file and renamed, so the final name never holds a half-written file. If a checksum was supplied, a mismatch deletes the file and fails without retrying. A full disk also fails permanently and is shown to the user.",
+    "state": {
+      "server": "done",
+      "worker": "done",
+      "parts": "done",
+      "final": "done",
+      "event": "done"
+    },
+    "text": {
+      "workerV": "markCompleted",
+      "ledgerV": "COMPLETED",
+      "finalV": "complete file",
+      "eventV": ".tmp, rename, then Completed"
+    },
+    "handoff": {
+      "from": "parts",
+      "to": "final",
+      "kind": "page",
+      "label": "assembled"
+    }
+  }
+]</script><figcaption>The Room ledger is the truth about which chunks are done. With Range support and a strong ETag, an interruption keeps the partial file and a later run fetches only what is missing; without them, the download restarts. Either way, the final name appears only on a complete file.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **The Room ledger is the truth, not the file.** On resume, any chunk not marked `DONE` is fetched again from its byte offset, and parts are length-checked before assembly.
+- **Resume needs a strong validator.** Save a strong `ETag` with the chunk plan and send it as `If-Range`, so a changed file can’t be spliced. Without one, or without `Range`, use one chunk and restart from zero after an interruption.
+- **Check for Range support, and don’t rely on it.** A server can still ignore a range and answer 200 from byte 0, or send a 206 for other bytes. Check `Content-Range` before appending; if it doesn’t match, fall back to one chunk.
+- **Bound the concurrency.** Three chunks per download and two downloads at once are the defaults, with bytes streamed rather than buffered.
+- **Only a finished file gets the final name.** Chunks are assembled into `.tmp` and renamed; a checksum mismatch deletes the file and fails without an automatic retry.
+- **Retry only what can recover.** A network drop retries and keeps the partial file, a 416 re-plans, and a full disk fails permanently and is shown to the user.
+- **WorkManager can stop a run at any time.** It stops a worker when constraints are lost, and at its 10-minute execution deadline, then retries the work later and ignores the stopped worker’s `Result`. The ledger is what lets that run continue. For a long download the user started, use a user-initiated data transfer job on Android 14+, or a long-running worker with `setForeground` below that.

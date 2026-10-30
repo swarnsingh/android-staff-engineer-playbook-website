@@ -11,7 +11,7 @@
 
 ### Functional Requirements
 - **Queue arbitrary downloads** identified by URL + destination.
-- **Resumable** after pause / network loss / process death.
+- **Resumable** after pause / network loss / process death, when the server offers `Range` and a strong `ETag`.
 - **Progress updates** to the UI.
 - **Concurrency control** — N parallel downloads, M parallel chunks per download.
 - **Priority levels** (foreground user-initiated vs background prefetch).
@@ -37,10 +37,10 @@
 | Question | Why it matters |
 |---|---|
 | Largest file size? | Chunking strategy, disk pre-allocation |
-| Server supports HTTP `Range` requests? | Resumable + parallel chunks |
-| Wi-Fi-only requirement? | WorkManager constraint vs Foreground service |
+| Server supports HTTP `Range` requests and strong ETags? | Resumable + parallel chunks |
+| Wi-Fi-only requirement? | WorkManager constraint vs user-initiated data transfer job or foreground service |
 | Foreground-only downloads or also background? | Notification + service decision |
-| Android API floor? | `setExpedited`, FGS rules |
+| Android API floor? | User-initiated data transfer jobs (14+), `setExpedited`, FGS rules |
 | Need cellular data warnings? | `ConnectivityManager.isActiveNetworkMetered` |
 | Acceptable resume granularity? | Block size for the partial file ledger |
 
@@ -147,7 +147,9 @@ data class DownloadEntity(
     val totalBytes: Long?, val downloadedBytes: Long,
     val priority: Int, val constraintsJson: String,
     val createdAt: Long, val updatedAt: Long,
-    val checksumExpected: String?, val checksumAlgo: String?
+    val checksumExpected: String?, val checksumAlgo: String?,
+    val etag: String?,                          // strong validator pinned when chunks are planned
+    val forceSingleChunk: Boolean               // the server broke its range contract; stop splitting
 )
 
 @Entity(tableName = "chunks",
@@ -196,6 +198,7 @@ suspend fun enqueue(req: DownloadRequest): DownloadId {
 class DownloadWorker @AssistedInject constructor(
     @Assisted ctx: Context, @Assisted params: WorkerParameters,
     private val client: OkHttpClient,
+    private val db: AppDatabase,
     private val dao: DownloadDao,
     private val chunkDao: ChunkDao,
 ) : CoroutineWorker(ctx, params) {
@@ -204,19 +207,30 @@ class DownloadWorker @AssistedInject constructor(
         val id = inputData.getString("id") ?: return Result.failure()
         val entity = dao.get(id) ?: return Result.failure()
 
-        // 1) HEAD to learn content-length + accept-ranges
+        // 1) HEAD with Accept-Encoding: identity. OkHttp otherwise asks for gzip on a request
+        //    without Range, and the length and ETag could then describe the compressed form.
         val head = client.headOrNull(entity.url) ?: return Result.retry()
-        val totalBytes = head.contentLength()
-        val supportsRange = head.acceptsRanges()
-        dao.updateMeta(id, totalBytes, supportsRange)
+        val totalBytes = head.contentLengthOrNull()
+        val validator = head.strongEtagOrNull()      // null when missing or weak (W/"...")
 
-        // 2) Plan chunks (one-time, idempotent)
-        if (chunkDao.countFor(id) == 0) {
-            planChunks(id, totalBytes, supportsRange)
+        // 2) Chunks from an earlier run belong to one version of the file
+        if (chunkDao.countFor(id) > 0 && (validator != entity.etag || totalBytes != entity.totalBytes)) {
+            discardPartsAndReplan(id)
         }
 
-        // 3) Run parallel chunks
-        return runChunks(id, entity)
+        // 3) Plan chunks and pin the validator together (one-time, idempotent).
+        //    Bytes from separate requests can only be combined under a strong validator.
+        if (chunkDao.countFor(id) == 0) {
+            val splittable = validator != null && totalBytes != null &&
+                head.acceptsRanges() && !entity.forceSingleChunk
+            db.withTransaction {
+                dao.updateMeta(id, totalBytes, validator)
+                planChunks(id, totalBytes, splittable)
+            }
+        }
+
+        // 4) Run parallel chunks with the row that holds the pinned validator
+        return runChunks(id, dao.get(id) ?: return Result.failure())
     }
 }
 ```
@@ -224,9 +238,9 @@ class DownloadWorker @AssistedInject constructor(
 ### Chunk planning
 
 ```kotlin
-private suspend fun planChunks(id: String, total: Long?, supportsRange: Boolean) {
-    if (total == null || !supportsRange) {
-        chunkDao.insert(ChunkEntity(id, 0, 0, Long.MAX_VALUE, ChunkState.PENDING))   // one-shot
+private suspend fun planChunks(id: String, total: Long?, splittable: Boolean) {
+    if (total == null || !splittable) {
+        chunkDao.insert(ChunkEntity(id, 0, 0, Long.MAX_VALUE, ChunkState.PENDING))   // one-shot: no resume
         return
     }
     val chunkSize = pickChunkSize(total)        // 1-8 MB based on file size
@@ -253,13 +267,29 @@ private suspend fun runChunks(id: String, entity: DownloadEntity): Result = coro
     }
     val results = jobs.awaitAll()
     when {
+        results.any { it is FetchResult.DiskFull } -> {
+            dao.markFailed(id, "disk full")
+            Result.failure()
+        }
         results.all { it is FetchResult.Ok } -> {
+            if (!partsMatchLedger(id)) {        // a part was truncated after its chunk was marked DONE
+                discardPartsAndReplan(id)
+                return@coroutineScope Result.retry()
+            }
             assemble(id, entity.destPath)
             verifyChecksum(entity)?.let { return@coroutineScope Result.failure() }
             dao.markCompleted(id)
             Result.success()
         }
-        results.any { it is FetchResult.NetworkError } -> Result.retry()
+        results.any { it is FetchResult.RangeIgnored } -> {
+            discardPartsAndReplan(id, forceSingleChunk = true)   // HEAD would keep offering ranges
+            Result.retry()
+        }
+        results.any { it is FetchResult.FileChanged || it is FetchResult.RangeInvalid } -> {
+            discardPartsAndReplan(id)   // the next run plans against the new validator and size
+            Result.retry()
+        }
+        results.any { it is FetchResult.NetworkError || it is FetchResult.Incomplete } -> Result.retry()
         else -> Result.failure()
     }
 }
@@ -270,21 +300,55 @@ private suspend fun runChunks(id: String, entity: DownloadEntity): Result = coro
 ```kotlin
 private suspend fun fetchChunk(id: String, chunk: ChunkEntity, entity: DownloadEntity): FetchResult {
     val partFile = File("${entity.destPath}.part.${chunk.index}")
-    val alreadyWritten = if (partFile.exists()) partFile.length() else 0L
+    val isWholeFileChunk = chunk.endByte == Long.MAX_VALUE
+    val alreadyWritten = if (!isWholeFileChunk && partFile.exists()) partFile.length() else 0L
     val effectiveStart = chunk.startByte + alreadyWritten
-    if (effectiveStart > chunk.endByte) {
-        chunkDao.update(chunk.copy(state = ChunkState.DONE))
-        return FetchResult.Ok
+    if (!isWholeFileChunk) {
+        if (effectiveStart > chunk.endByte + 1) return FetchResult.RangeInvalid   // longer than the chunk
+        if (effectiveStart == chunk.endByte + 1) {
+            chunkDao.update(chunk.copy(state = ChunkState.DONE))
+            return FetchResult.Ok
+        }
     }
     val request = Request.Builder()
         .url(entity.url)
-        .header("Range", "bytes=$effectiveStart-${chunk.endByte}")
+        .apply {
+            if (!isWholeFileChunk) {                       // ranged chunks always have a strong validator
+                header("Range", "bytes=$effectiveStart-${chunk.endByte}")
+                header("If-Range", entity.etag!!)          // file changed? server sends a full 200
+            }
+        }
         .build()
-    return runCatching {
+    return try {
         client.newCall(request).execute().use { resp ->
-            if (resp.code !in setOf(200, 206)) return FetchResult.HttpError(resp.code)
-            partFile.appendingSink().buffer().use { sink ->
-                resp.body!!.source().use { src ->
+            val responseEtag = resp.strongEtagOrNull()
+            val target = when {
+                isWholeFileChunk && resp.code == 200 -> partFile.sink()    // truncates: restart from zero
+                isWholeFileChunk -> return FetchResult.HttpError(resp.code)
+                resp.code == 206 -> {
+                    // The status alone doesn't say which bytes these are. contentRangeOrNull() is
+                    // null for a missing, invalid, multipart or non-bytes Content-Range.
+                    val range = resp.contentRangeOrNull() ?: return FetchResult.RangeIgnored
+                    if (range.first != effectiveStart || range.last > chunk.endByte) {
+                        return FetchResult.RangeIgnored
+                    }
+                    if (range.completeLength.let { it != null && it != entity.totalBytes } ||
+                        responseEtag.let { it != null && it != entity.etag }) {
+                        return FetchResult.FileChanged
+                    }
+                    if (resp.body.contentLength().let { it != -1L && it != range.last - range.first + 1 }) {
+                        return FetchResult.RangeIgnored
+                    }
+                    partFile.appendingSink()
+                }
+                resp.code == 200 ->                                        // full body from byte 0
+                    return if (responseEtag != null && responseEtag != entity.etag) FetchResult.FileChanged
+                    else FetchResult.RangeIgnored
+                resp.code == 416 -> return FetchResult.RangeInvalid
+                else -> return FetchResult.HttpError(resp.code)
+            }
+            target.buffer().use { sink ->
+                resp.body.source().use { src ->
                     while (true) {
                         val read = src.read(sink.buffer, BUFFER)
                         if (read == -1L) break
@@ -293,10 +357,16 @@ private suspend fun fetchChunk(id: String, chunk: ChunkEntity, entity: DownloadE
                     }
                 }
             }
+            // A server may send less than requested; DONE needs every byte of the chunk.
+            if (!isWholeFileChunk && chunk.startByte + partFile.length() - 1 != chunk.endByte) {
+                return FetchResult.Incomplete           // the next run requests the remainder
+            }
             chunkDao.update(chunk.copy(state = ChunkState.DONE))
             FetchResult.Ok
         }
-    }.getOrElse { FetchResult.NetworkError(it) }
+    } catch (e: IOException) {                 // CancellationException must keep propagating
+        if (diskIsFull(partFile)) FetchResult.DiskFull else FetchResult.NetworkError(e)
+    }
 }
 ```
 
@@ -305,13 +375,15 @@ private suspend fun fetchChunk(id: String, chunk: ChunkEntity, entity: DownloadE
 ```kotlin
 private fun assemble(id: String, destPath: String) {
     val dest = File("$destPath.tmp")
+    val chunks = chunkDao.allFor(id).sortedBy { it.index }
     dest.outputStream().use { out ->
-        chunkDao.allFor(id).sortedBy { it.index }.forEach { ck ->
+        chunks.forEach { ck ->
             File("$destPath.part.${ck.index}").inputStream().use { it.copyTo(out) }
         }
     }
     if (!dest.renameTo(File(destPath))) error("rename failed")
-    chunkDao.deleteAllFor(id)        // tidy up partial files
+    chunks.forEach { File("$destPath.part.${it.index}").delete() }   // tidy up partial files
+    chunkDao.deleteAllFor(id)
 }
 ```
 
@@ -321,21 +393,28 @@ private fun assemble(id: String, destPath: String) {
 object progressBus {
     private val flow = MutableSharedFlow<Pair<String, Long>>(extraBufferCapacity = 256)
     fun publish(id: String, bytes: Long) { flow.tryEmit(id to bytes) }
-    fun observe(id: String): Flow<Long> = flow
+    fun observe(id: String, startAt: Long): Flow<Long> = flow
         .filter { it.first == id }
         .map { it.second }
-        .scan(0L) { acc, v -> acc + v }
+        .scan(startAt) { acc, v -> acc + v }
         .sample(250.milliseconds)        // UI updates 4x/sec, not 60x
 }
 ```
+
+`startAt` is the sum of the part-file lengths, so a resumed run doesn't restart at zero. A re-plan starts a new observation, so discarded bytes aren't counted twice.
 
 ### Failure modes
 
 | What breaks | Behavior |
 |---|---|
-| Network drop mid-chunk | Worker returns `Result.retry()`; partial file kept; resume from byte offset |
-| Server returns 200 not 206 | Server ignored Range; restart chunk from start |
+| Network drop mid-chunk | Worker returns `Result.retry()`; partial file kept; resume from byte offset (a one-shot chunk restarts from zero) |
+| Server returns 200 not 206 | The body starts at byte 0, so never append it. Same or no ETag: the server ignored Range, so discard partial data and restart as one chunk |
 | Server returns 416 | Range invalid; re-plan (file size may have changed) |
+| Server returns 206 for other bytes | `Content-Range` missing, invalid or not starting at the requested byte: write nothing; discard partial data and restart as one chunk |
+| Server returns 206 with less than requested | Keep what arrived; the chunk stays not `DONE`, and the next run requests the remainder |
+| File changed on the server | `If-Range` fails, so the server sends a full 200 with a new ETag (or HEAD reports a new ETag or length); discard partial data and re-plan, rather than splicing two versions. Cap repeated re-plans, then fail and surface it |
+| No strong validator (ETag missing or weak) | Bytes from separate requests can't be safely combined, so use one chunk with a plain `GET`. An interruption restarts from zero |
+| Part file shorter than a `DONE` chunk | Found before assembly; discard partial data and re-plan |
 | Process killed | Ledger persists; new worker invocation re-runs `notDoneFor(id)` |
 | Disk full | Worker fails permanently; surface to user |
 | Checksum mismatch | Delete file; mark failed; do not retry automatically |
@@ -349,7 +428,8 @@ object progressBus {
 | Option | Use |
 |---|---|
 | **WorkManager** | Pick — survives reboot, constraints, retry, backoff |
-| Foreground service | Add when user expects continuous progress with notification |
+| User-initiated data transfer job (Android 14+) | Prefer for a long user-started download; requires a notification and must be scheduled while the app is visible |
+| Foreground service | On older versions, when the user expects continuous progress with a notification; `dataSync` is limited to 6 hours in 24 on Android 15+ |
 | AlarmManager | Lower-level; no constraints |
 | `JobScheduler` (raw) | `WorkManager` wraps this; no benefit to use directly |
 
@@ -367,7 +447,7 @@ object progressBus {
 |---|---|
 | **Chunk-level (file-per-chunk)** | Pick — easy ledger, easy resume |
 | Byte-level append to one file | Possible but fragile if assembly truncates |
-| Restart from zero | Awful UX for big files |
+| Restart from zero | Awful UX for big files; the only safe option without a strong validator |
 
 ### HTTP client
 
@@ -384,18 +464,18 @@ object progressBus {
 |---|---|
 | App-private (`context.filesDir`) | Cache / non-user-visible |
 | Scoped storage (Downloads collection) | User-visible files (`MediaStore`) |
-| Pre-allocate with `setLength()` | Avoid file-system fragmentation on large files |
+| `StorageManager.allocateBytes()` | Reserve space for a large file before starting; `setLength()` only changes the file's length |
 
 ---
 
 ## 9. Major Concerns
 
 - **Process death.** Ledger in Room is the truth. Worker invocation replays remaining chunks. No state in memory.
-- **Disk space.** Check `StatFs.getAvailableBytes()` before starting; fail fast if not enough. Pre-allocate large files with `setLength()` for predictability.
-- **Battery.** Use WorkManager constraints (`NetworkType.UNMETERED` for Wi-Fi-only). Foreground service only when user expects active progress.
+- **Disk space.** Check `StorageManager.getAllocatableBytes()` before starting, and reserve with `allocateBytes()`; fail fast if not enough.
+- **Battery.** Use WorkManager constraints (`NetworkType.UNMETERED` for Wi-Fi-only). Use a user-initiated job or foreground service only when the user expects active progress.
 - **Throttling.** Cellular: throttle to N MB/s if needed; surface a "downloading on cellular" banner.
-- **OEM kill.** WorkManager survives. For user-initiated downloads use `setExpedited`; for prefetch use defaults.
-- **Network changes.** `OkHttp` `connectionSpec` handles renegotiation; restart in-flight chunks if the local IP changes mid-stream.
+- **OEM kill.** WorkManager reschedules after process death and reboot, though aggressive OEM policies can delay it. Expedited work suits short tasks that finish within a few minutes, so use `setExpedited` only for small user-initiated downloads. For a long one, use a user-initiated data transfer job on Android 14+, or a long-running worker with `setForeground` below that. For prefetch use defaults.
+- **Network changes.** A connection lost to a network change fails the in-flight chunk with an `IOException`; the worker retries and resumes from the part file's length. (OkHttp's `ConnectionSpec` only configures TLS versions and cipher suites.)
 - **Checksum.** SHA-256 verify on completion (optional). Mismatch = delete + fail.
 - **Privacy.** Don't log URLs with auth tokens; redact in error reports.
 - **Observability.** Total bytes, throughput, retry count surfaced via the same `EventListener` pattern.
@@ -405,10 +485,10 @@ object progressBus {
 ## 10. Follow-up Questions
 
 > **Q: How do you know the server supports Range?**
-> HEAD request; check `Accept-Ranges: bytes`. If absent, fall back to single-chunk download.
+> HEAD request; check `Accept-Ranges: bytes` and a strong `ETag`. If either is absent, fall back to single-chunk download. (A server may support ranges without advertising them, so this is the cautious choice. Advertising isn't proof either, so every 206 is checked against its `Content-Range`.)
 
 > **Q: What if the user starts a 1 GB download and switches to cellular mid-stream?**
-> Honour constraints: if `NetworkType.UNMETERED` was set, worker pauses (`Result.retry()` until constraint satisfied). Without constraint, continue but emit a warning event.
+> Honour constraints: if `NetworkType.UNMETERED` was set, WorkManager stops the worker when the constraint is lost and retries the work when it is met again; the ledger lets that run resume. Without constraint, continue but emit a warning event.
 
 > **Q: How would you support a "pause" button?**
 > `pause(id)` writes a flag in `DownloadEntity` + cancels the work. The worker checks the flag on each chunk boundary. Resume = new `WorkManager` enqueue with the same id; chunks not marked `DONE` re-fetch with their byte offsets.
@@ -420,7 +500,7 @@ object progressBus {
 > Streaming via Okio's `BufferedSource` / `BufferedSink`. No full-file in memory. Each chunk is a sequential write to its part file.
 
 > **Q: How do you test this without a server?**
-> `MockWebServer` from OkHttp; scripted responses (200, 206, 416, 5xx). Property-based test: any sequence of (network drop, resume) eventually produces a file matching the source bytes.
+> `MockWebServer` from OkHttp; scripted responses (200, 206, 416, 5xx), plus a 206 with the wrong or a missing `Content-Range`, a short 206, a weak or missing ETag, and a file that changes between chunks. Property-based test: any sequence of (network drop, resume, file change) eventually produces a file matching one version's source bytes, never a mix.
 
 ---
 

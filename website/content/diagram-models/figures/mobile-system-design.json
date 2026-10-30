@@ -2815,5 +2815,1496 @@
         "label": "sends batch"
       }
     ]
+  },
+  {
+    "path": "mobile-system-design/image-loading",
+    "diagram": "1ae7da91cf009f79",
+    "number": 1,
+    "title": "Three tiers, decoded late",
+    "caption": "A request tries memory, then disk, then the source. Bytes are decoded to the requested size only once they are found or fetched, then transformed, and the result fills the eligible cache tiers before it reaches the target.",
+    "sources": [
+      "https://developer.android.com/reference/android/graphics/ImageDecoder",
+      "https://coil-kt.github.io/coil/"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "req",
+        "title": "ImageRequest",
+        "role": "client"
+      },
+      {
+        "id": "mem",
+        "title": "Memory cache hit?",
+        "role": "storage"
+      },
+      {
+        "id": "disk",
+        "title": "Disk cache hit?",
+        "role": "storage"
+      },
+      {
+        "id": "fetch",
+        "title": "Fetch source",
+        "role": "runtime"
+      },
+      {
+        "id": "decode",
+        "title": "Decode to requested size",
+        "role": "runtime",
+        "key": true
+      },
+      {
+        "id": "trans",
+        "title": "Transformation chain",
+        "role": "runtime"
+      },
+      {
+        "id": "store",
+        "title": "Populate eligible cache tiers",
+        "role": "storage"
+      },
+      {
+        "id": "target",
+        "title": "Render target",
+        "role": "client"
+      }
+    ],
+    "edges": [
+      {
+        "from": "req",
+        "to": "mem",
+        "label": "asks"
+      },
+      {
+        "from": "mem",
+        "to": "target",
+        "label": "yes"
+      },
+      {
+        "from": "mem",
+        "to": "disk",
+        "label": "no"
+      },
+      {
+        "from": "disk",
+        "to": "decode",
+        "label": "yes"
+      },
+      {
+        "from": "disk",
+        "to": "fetch",
+        "label": "no"
+      },
+      {
+        "from": "fetch",
+        "to": "decode",
+        "label": "bytes"
+      },
+      {
+        "from": "decode",
+        "to": "trans",
+        "label": "bitmap"
+      },
+      {
+        "from": "trans",
+        "to": "store",
+        "label": "result"
+      },
+      {
+        "from": "store",
+        "to": "target",
+        "label": "delivers"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/image-loading",
+    "diagram": "ab80fa7b6978b4f8",
+    "number": 2,
+    "title": "One request through the pipeline",
+    "caption": "A memory hit returns straight to the target. Otherwise the loader gets encoded bytes from disk or the network, decodes and transforms them, stores the eligible result in memory and returns it.",
+    "sources": [
+      "https://developer.android.com/reference/android/graphics/ImageDecoder",
+      "https://coil-kt.github.io/coil/"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "target",
+        "title": "Target",
+        "role": "client"
+      },
+      {
+        "id": "loader",
+        "title": "Loader",
+        "role": "runtime"
+      },
+      {
+        "id": "memory",
+        "title": "Memory",
+        "role": "storage"
+      },
+      {
+        "id": "disk",
+        "title": "Disk",
+        "role": "storage"
+      },
+      {
+        "id": "net",
+        "title": "Network",
+        "role": "runtime"
+      }
+    ],
+    "events": [
+      {
+        "from": "target",
+        "to": "loader",
+        "label": "execute request"
+      },
+      {
+        "from": "loader",
+        "to": "memory",
+        "label": "get(key)"
+      },
+      {
+        "over": [
+          "target",
+          "memory"
+        ],
+        "text": "Memory hit: the memory cache returns the drawable to the target, and the request ends here."
+      },
+      {
+        "from": "loader",
+        "to": "disk",
+        "label": "memory miss: open snapshot"
+      },
+      {
+        "from": "disk",
+        "to": "loader",
+        "label": "disk hit: encoded bytes",
+        "style": "dashed"
+      },
+      {
+        "from": "loader",
+        "to": "net",
+        "label": "disk miss: fetch source"
+      },
+      {
+        "from": "net",
+        "to": "loader",
+        "label": "encoded bytes",
+        "style": "dashed"
+      },
+      {
+        "at": "loader",
+        "label": "decode to size + transform"
+      },
+      {
+        "from": "loader",
+        "to": "memory",
+        "label": "store eligible result"
+      },
+      {
+        "from": "loader",
+        "to": "target",
+        "label": "drawable",
+        "style": "dashed"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/file-downloader",
+    "diagram": "8a81263f4b5132df",
+    "number": 1,
+    "title": "Durable from enqueue to final file",
+    "caption": "The queue and chunk progress live in Room, so a killed process resumes verified work rather than restarting. The final file appears only through an atomic assembly and rename, so a partial file is never presented as complete.",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/workmanager",
+      "https://www.rfc-editor.org/rfc/rfc9110#section-14.2"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "app",
+        "title": "App caller",
+        "role": "client"
+      },
+      {
+        "id": "mgr",
+        "title": "DownloadManager API",
+        "role": "runtime"
+      },
+      {
+        "id": "queue",
+        "title": "Durable Room queue",
+        "role": "storage"
+      },
+      {
+        "id": "work",
+        "title": "WorkManager DownloadWorker",
+        "role": "queue"
+      },
+      {
+        "id": "fetch",
+        "title": "Bounded parallel range fetchers",
+        "role": "runtime"
+      },
+      {
+        "id": "part",
+        "title": "Partial files + verified chunk ledger",
+        "role": "storage",
+        "key": true
+      },
+      {
+        "id": "asm",
+        "title": "Atomic assembly / rename",
+        "role": "runtime"
+      },
+      {
+        "id": "final",
+        "title": "Final file",
+        "role": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "app",
+        "to": "mgr",
+        "label": "enqueues"
+      },
+      {
+        "from": "mgr",
+        "to": "queue",
+        "label": "persists"
+      },
+      {
+        "from": "queue",
+        "to": "work",
+        "label": "schedules"
+      },
+      {
+        "from": "work",
+        "to": "fetch",
+        "label": "runs"
+      },
+      {
+        "from": "fetch",
+        "to": "part",
+        "label": "writes"
+      },
+      {
+        "from": "part",
+        "to": "asm",
+        "label": "all chunks ready"
+      },
+      {
+        "from": "asm",
+        "to": "final",
+        "label": "produces"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/file-downloader",
+    "diagram": "3a9aa36716638eb1",
+    "number": 2,
+    "title": "One worker, bounded chunks",
+    "caption": "One worker owns the download’s state and fans out to a bounded set of chunks. Assembly begins only after every required chunk has passed validation.",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/workmanager",
+      "https://www.rfc-editor.org/rfc/rfc9110#section-14.2"
+    ],
+    "kind": "map",
+    "layout": "layers",
+    "nodes": [
+      {
+        "id": "caller",
+        "title": "Caller",
+        "role": "client"
+      },
+      {
+        "id": "mgr",
+        "title": "DownloadManager",
+        "role": "runtime"
+      },
+      {
+        "id": "queue",
+        "title": "Room queue",
+        "role": "storage"
+      },
+      {
+        "id": "sched",
+        "title": "WorkManager",
+        "role": "queue"
+      },
+      {
+        "id": "worker",
+        "title": "DownloadWorker",
+        "role": "queue",
+        "key": true
+      },
+      {
+        "id": "c0",
+        "title": "Chunk 0",
+        "role": "runtime"
+      },
+      {
+        "id": "c1",
+        "title": "Chunk 1",
+        "role": "runtime"
+      },
+      {
+        "id": "c2",
+        "title": "Chunk 2",
+        "role": "runtime"
+      },
+      {
+        "id": "asm",
+        "title": "Assembler",
+        "role": "runtime"
+      },
+      {
+        "id": "final",
+        "title": "Final file",
+        "role": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "caller",
+        "to": "mgr",
+        "label": "enqueues"
+      },
+      {
+        "from": "mgr",
+        "to": "queue",
+        "label": "persists"
+      },
+      {
+        "from": "queue",
+        "to": "sched",
+        "label": "schedules"
+      },
+      {
+        "from": "sched",
+        "to": "worker",
+        "label": "runs"
+      },
+      {
+        "from": "worker",
+        "to": "c0",
+        "label": "fetches"
+      },
+      {
+        "from": "worker",
+        "to": "c1",
+        "label": "fetches"
+      },
+      {
+        "from": "worker",
+        "to": "c2",
+        "label": "fetches"
+      },
+      {
+        "from": "c0",
+        "to": "asm",
+        "label": "ready"
+      },
+      {
+        "from": "c1",
+        "to": "asm",
+        "label": "ready"
+      },
+      {
+        "from": "c2",
+        "to": "asm",
+        "label": "ready"
+      },
+      {
+        "from": "asm",
+        "to": "final",
+        "label": "produces"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/caching-library",
+    "diagram": "3846c5e8cd9c7cd1",
+    "number": 1,
+    "title": "One API, two bounded tiers",
+    "caption": "The public cache coordinates two independently bounded tiers. Memory is there for latency. Disk is there for durability, and its data and index updates must stay recoverable after a crash.",
+    "sources": [
+      "https://developer.android.com/reference/kotlin/androidx/collection/LruCache"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "api",
+        "title": "Cache<K, V>",
+        "role": "client",
+        "key": true
+      },
+      {
+        "id": "mem",
+        "title": "Memory cache",
+        "role": "storage",
+        "detail": "LRU + maxSize"
+      },
+      {
+        "id": "disk",
+        "title": "Disk cache",
+        "role": "storage",
+        "detail": "byte budget + atomic writes"
+      },
+      {
+        "id": "index",
+        "title": "Durable index",
+        "role": "storage",
+        "detail": "key + expiry + size"
+      }
+    ],
+    "edges": [
+      {
+        "from": "api",
+        "to": "mem",
+        "label": "uses"
+      },
+      {
+        "from": "api",
+        "to": "disk",
+        "label": "uses"
+      },
+      {
+        "from": "disk",
+        "to": "index",
+        "label": "tracks entries in"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/caching-library",
+    "diagram": "3671bd24ed4f7a77",
+    "number": 2,
+    "title": "Reads get slower, never staler",
+    "caption": "A read tries the cheapest tier first, and a fresh disk hit repopulates memory. An expired disk entry is a miss, not silently stale data.",
+    "sources": [
+      "https://developer.android.com/reference/kotlin/androidx/collection/LruCache"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "get",
+        "title": "get(key)",
+        "role": "client"
+      },
+      {
+        "id": "mem",
+        "title": "Memory hit?",
+        "role": "storage"
+      },
+      {
+        "id": "disk",
+        "title": "Disk hit and fresh?",
+        "role": "storage"
+      },
+      {
+        "id": "hydrate",
+        "title": "Decode + hydrate memory",
+        "role": "runtime"
+      },
+      {
+        "id": "ret",
+        "title": "Return value",
+        "role": "client",
+        "key": true
+      },
+      {
+        "id": "miss",
+        "title": "Return miss",
+        "role": "neutral"
+      }
+    ],
+    "edges": [
+      {
+        "from": "get",
+        "to": "mem",
+        "label": "checks"
+      },
+      {
+        "from": "mem",
+        "to": "ret",
+        "label": "yes"
+      },
+      {
+        "from": "mem",
+        "to": "disk",
+        "label": "no"
+      },
+      {
+        "from": "disk",
+        "to": "hydrate",
+        "label": "yes"
+      },
+      {
+        "from": "hydrate",
+        "to": "ret",
+        "label": "value"
+      },
+      {
+        "from": "disk",
+        "to": "miss",
+        "label": "no"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/caching-library",
+    "diagram": "795b4f1704f1dfa2",
+    "number": 3,
+    "title": "An index beside opaque files",
+    "caption": "The index owns lookup and eviction metadata. Opaque entry filenames keep raw keys out of the file system.",
+    "sources": [
+      "https://github.com/JakeWharton/DiskLruCache"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "root",
+        "title": "cacheDir/",
+        "role": "neutral"
+      },
+      {
+        "id": "index",
+        "title": "index.bin",
+        "role": "storage",
+        "detail": "key → file, expiry, size",
+        "key": true
+      },
+      {
+        "id": "entries",
+        "title": "entries/",
+        "role": "neutral"
+      },
+      {
+        "id": "files",
+        "title": "Opaque entry files",
+        "role": "storage",
+        "detail": "content-addressed or UUID names"
+      }
+    ],
+    "edges": [
+      {
+        "from": "root",
+        "to": "index",
+        "label": "contains"
+      },
+      {
+        "from": "root",
+        "to": "entries",
+        "label": "contains"
+      },
+      {
+        "from": "entries",
+        "to": "files",
+        "label": "contains"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/pagination",
+    "diagram": "2ef78be0e510ccc2",
+    "number": 1,
+    "title": "Room stays the UI’s source of truth",
+    "caption": "The list reads through the Pager from Room. The mediator fetches from the cursor API and stores each page with its remote keys in one transaction, and the invalidated data drives rendering.",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/paging/v3-network-db"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "ui",
+        "title": "Compose LazyColumn",
+        "role": "client"
+      },
+      {
+        "id": "items",
+        "title": "LazyPagingItems",
+        "role": "client"
+      },
+      {
+        "id": "pager",
+        "title": "Pager",
+        "role": "runtime"
+      },
+      {
+        "id": "source",
+        "title": "Room PagingSource",
+        "role": "runtime"
+      },
+      {
+        "id": "mediator",
+        "title": "RemoteMediator",
+        "role": "queue"
+      },
+      {
+        "id": "api",
+        "title": "Cursor-based API",
+        "role": "runtime"
+      },
+      {
+        "id": "room",
+        "title": "Room",
+        "role": "storage",
+        "key": true
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "items",
+        "label": "reads"
+      },
+      {
+        "from": "items",
+        "to": "pager",
+        "label": "collects"
+      },
+      {
+        "from": "pager",
+        "to": "source",
+        "label": "loads from"
+      },
+      {
+        "from": "pager",
+        "to": "mediator",
+        "label": "triggers"
+      },
+      {
+        "from": "mediator",
+        "to": "api",
+        "label": "fetches"
+      },
+      {
+        "from": "mediator",
+        "to": "room",
+        "label": "transactional page + remote keys"
+      },
+      {
+        "from": "room",
+        "to": "source",
+        "label": "backs"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/pagination",
+    "diagram": "7079929833c84ceb",
+    "number": 2,
+    "title": "Load state belongs to the UI contract",
+    "caption": "Items and load state travel together from the Pager through the ViewModel to the screen. Page rows and remote keys share a transaction, so a retry can’t corrupt the pagination boundary.",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/paging/v3-network-db"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "pager",
+        "title": "Pager",
+        "role": "runtime",
+        "key": true
+      },
+      {
+        "id": "mediator",
+        "title": "RemoteMediator",
+        "role": "queue"
+      },
+      {
+        "id": "net",
+        "title": "Network API",
+        "role": "runtime"
+      },
+      {
+        "id": "room",
+        "title": "Room",
+        "role": "storage"
+      },
+      {
+        "id": "source",
+        "title": "PagingSource",
+        "role": "runtime"
+      },
+      {
+        "id": "vm",
+        "title": "ViewModel",
+        "role": "runtime",
+        "detail": "Flow<PagingData<T>>"
+      },
+      {
+        "id": "ui",
+        "title": "Compose UI",
+        "role": "client",
+        "detail": "items + LoadState"
+      }
+    ],
+    "edges": [
+      {
+        "from": "pager",
+        "to": "mediator",
+        "label": "triggers"
+      },
+      {
+        "from": "mediator",
+        "to": "net",
+        "label": "fetches"
+      },
+      {
+        "from": "mediator",
+        "to": "room",
+        "label": "writes"
+      },
+      {
+        "from": "room",
+        "to": "source",
+        "label": "backs"
+      },
+      {
+        "from": "source",
+        "to": "pager",
+        "label": "supplies pages"
+      },
+      {
+        "from": "pager",
+        "to": "vm",
+        "label": "PagingData"
+      },
+      {
+        "from": "vm",
+        "to": "ui",
+        "label": "observed by"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/typeahead-autocomplete-search",
+    "diagram": "959897e6cd3448b8",
+    "number": 1,
+    "title": "Three sources, one ranked list",
+    "caption": "Only the latest query runs, so a stale response can’t replace newer text. Local and recent results keep latency low while the remote list is on its way.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/debounce.html",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flat-map-latest.html"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "input",
+        "title": "Search text changes",
+        "role": "client"
+      },
+      {
+        "id": "flow",
+        "title": "Query Flow",
+        "role": "runtime",
+        "detail": [
+          "debounce + distinct",
+          "latest only"
+        ],
+        "key": true
+      },
+      {
+        "id": "repo",
+        "title": "TypeaheadRepository",
+        "role": "runtime"
+      },
+      {
+        "id": "remote",
+        "title": "Remote suggestions",
+        "role": "runtime"
+      },
+      {
+        "id": "trie",
+        "title": "Local prefix index",
+        "role": "storage"
+      },
+      {
+        "id": "recents",
+        "title": "Recent queries",
+        "role": "storage"
+      },
+      {
+        "id": "rank",
+        "title": "Merge + dedupe + rank",
+        "role": "runtime"
+      },
+      {
+        "id": "ui",
+        "title": "Suggestion UI",
+        "role": "client"
+      }
+    ],
+    "edges": [
+      {
+        "from": "input",
+        "to": "flow",
+        "label": "emits"
+      },
+      {
+        "from": "flow",
+        "to": "repo",
+        "label": "latest query"
+      },
+      {
+        "from": "repo",
+        "to": "remote",
+        "label": "asks"
+      },
+      {
+        "from": "repo",
+        "to": "trie",
+        "label": "asks"
+      },
+      {
+        "from": "repo",
+        "to": "recents",
+        "label": "asks"
+      },
+      {
+        "from": "remote",
+        "to": "rank",
+        "label": "results"
+      },
+      {
+        "from": "trie",
+        "to": "rank",
+        "label": "results"
+      },
+      {
+        "from": "recents",
+        "to": "rank",
+        "label": "results"
+      },
+      {
+        "from": "rank",
+        "to": "ui",
+        "label": "shows"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/typeahead-autocomplete-search",
+    "diagram": "c0f8198bdd89b803",
+    "number": 2,
+    "title": "Timing in the ViewModel, sources in the repository",
+    "caption": "The ViewModel owns query timing and cancellation. The repository owns its sources, keeping request and cache policy out of composables.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/debounce.html",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flat-map-latest.html"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "ui",
+        "title": "Compose SearchBar",
+        "role": "client"
+      },
+      {
+        "id": "vm",
+        "title": "TypeaheadViewModel",
+        "role": "runtime",
+        "key": true
+      },
+      {
+        "id": "repo",
+        "title": "TypeaheadRepository",
+        "role": "runtime"
+      },
+      {
+        "id": "api",
+        "title": "Suggest API",
+        "role": "runtime"
+      },
+      {
+        "id": "trie",
+        "title": "LocalTrie",
+        "role": "storage"
+      },
+      {
+        "id": "dao",
+        "title": "RecentsDao",
+        "role": "storage"
+      },
+      {
+        "id": "state",
+        "title": "Ranked StateFlow",
+        "role": "runtime"
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "vm",
+        "label": "text"
+      },
+      {
+        "from": "vm",
+        "to": "repo",
+        "label": "debounce + flatMapLatest"
+      },
+      {
+        "from": "repo",
+        "to": "api",
+        "label": "asks"
+      },
+      {
+        "from": "repo",
+        "to": "trie",
+        "label": "asks"
+      },
+      {
+        "from": "repo",
+        "to": "dao",
+        "label": "asks"
+      },
+      {
+        "from": "api",
+        "to": "state",
+        "label": "results"
+      },
+      {
+        "from": "trie",
+        "to": "state",
+        "label": "results"
+      },
+      {
+        "from": "dao",
+        "to": "state",
+        "label": "results"
+      },
+      {
+        "from": "state",
+        "to": "ui",
+        "label": "observed by"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/search",
+    "diagram": "9676bdd45f2cce12",
+    "number": 1,
+    "title": "The client owns the query, the server owns the ranking",
+    "caption": "The client owns the query lifecycle, cached presentation and pagination. Ranking and facets stay a server contract rather than logic duplicated on the client.",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/paging/v3-network-db"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "ui",
+        "title": "Search UI",
+        "role": "client"
+      },
+      {
+        "id": "vm",
+        "title": "SearchViewModel",
+        "role": "runtime"
+      },
+      {
+        "id": "repo",
+        "title": "SearchRepository",
+        "role": "runtime",
+        "key": true
+      },
+      {
+        "id": "pager",
+        "title": "Pager",
+        "role": "runtime"
+      },
+      {
+        "id": "mediator",
+        "title": "RemoteMediator",
+        "role": "queue"
+      },
+      {
+        "id": "api",
+        "title": "Search API",
+        "role": "runtime"
+      },
+      {
+        "id": "svc",
+        "title": "Ranking and faceting service",
+        "role": "neutral"
+      },
+      {
+        "id": "room",
+        "title": "Room result cache",
+        "role": "storage"
+      },
+      {
+        "id": "hist",
+        "title": "Recent and saved searches",
+        "role": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "vm",
+        "label": "input"
+      },
+      {
+        "from": "vm",
+        "to": "repo",
+        "label": "query"
+      },
+      {
+        "from": "repo",
+        "to": "pager",
+        "label": "creates"
+      },
+      {
+        "from": "repo",
+        "to": "hist",
+        "label": "records"
+      },
+      {
+        "from": "pager",
+        "to": "mediator",
+        "label": "triggers"
+      },
+      {
+        "from": "mediator",
+        "to": "api",
+        "label": "searches"
+      },
+      {
+        "from": "api",
+        "to": "svc",
+        "label": "asks"
+      },
+      {
+        "from": "mediator",
+        "to": "room",
+        "label": "writes"
+      },
+      {
+        "from": "room",
+        "to": "pager",
+        "label": "supplies"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/search",
+    "diagram": "f60f3c6b1b22a1c3",
+    "number": 2,
+    "title": "Each query, a new generation",
+    "caption": "Each accepted query creates a new paging generation, so old requests and results can’t leak into the current search.",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/paging/v3-network-db",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flat-map-latest.html"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "ui",
+        "title": "Compose UI",
+        "role": "client"
+      },
+      {
+        "id": "vm",
+        "title": "SearchViewModel",
+        "role": "runtime"
+      },
+      {
+        "id": "query",
+        "title": "Debounced query StateFlow",
+        "role": "runtime"
+      },
+      {
+        "id": "repo",
+        "title": "SearchRepository",
+        "role": "runtime"
+      },
+      {
+        "id": "pager",
+        "title": "Pager",
+        "role": "runtime",
+        "key": true
+      },
+      {
+        "id": "source",
+        "title": "Room PagingSource",
+        "role": "storage"
+      },
+      {
+        "id": "mediator",
+        "title": "RemoteMediator",
+        "role": "queue"
+      },
+      {
+        "id": "results",
+        "title": "PagingData Flow",
+        "role": "runtime"
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "vm",
+        "label": "input"
+      },
+      {
+        "from": "vm",
+        "to": "query",
+        "label": "updates"
+      },
+      {
+        "from": "query",
+        "to": "repo",
+        "label": "accepted query"
+      },
+      {
+        "from": "repo",
+        "to": "pager",
+        "label": "creates"
+      },
+      {
+        "from": "pager",
+        "to": "source",
+        "label": "reads"
+      },
+      {
+        "from": "pager",
+        "to": "mediator",
+        "label": "triggers"
+      },
+      {
+        "from": "pager",
+        "to": "results",
+        "label": "emits"
+      },
+      {
+        "from": "results",
+        "to": "vm",
+        "label": "collected"
+      },
+      {
+        "from": "vm",
+        "to": "ui",
+        "label": "observed by"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/notification-system",
+    "diagram": "b9592de69e7704f8",
+    "number": 1,
+    "title": "Routing is a policy decision",
+    "caption": "The router doesn’t map every event to every channel. It decides from the user’s preferences and consent, the locale, and the frequency and quiet-hours policy.",
+    "sources": [
+      "https://firebase.google.com/docs/cloud-messaging/customize-messages/set-message-type",
+      "https://developer.android.com/develop/ui/views/notifications"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "events",
+        "title": "Domain events",
+        "role": "neutral"
+      },
+      {
+        "id": "svc",
+        "title": "Notification service",
+        "role": "runtime"
+      },
+      {
+        "id": "prefs",
+        "title": "Preferences + consent",
+        "role": "storage"
+      },
+      {
+        "id": "tpl",
+        "title": "Localized templates",
+        "role": "storage"
+      },
+      {
+        "id": "cap",
+        "title": "Frequency + quiet-hours policy",
+        "role": "runtime"
+      },
+      {
+        "id": "route",
+        "title": "Channel routing",
+        "role": "queue",
+        "key": true
+      },
+      {
+        "id": "fcm",
+        "title": "FCM",
+        "role": "runtime"
+      },
+      {
+        "id": "apns",
+        "title": "APNs",
+        "role": "runtime"
+      },
+      {
+        "id": "email",
+        "title": "Email",
+        "role": "runtime"
+      },
+      {
+        "id": "sms",
+        "title": "SMS",
+        "role": "runtime"
+      },
+      {
+        "id": "inbox",
+        "title": "Durable inbox",
+        "role": "storage"
+      }
+    ],
+    "layout": "layers",
+    "edges": [
+      {
+        "from": "events",
+        "to": "svc",
+        "label": "trigger"
+      },
+      {
+        "from": "svc",
+        "to": "prefs",
+        "label": "loads"
+      },
+      {
+        "from": "svc",
+        "to": "tpl",
+        "label": "loads"
+      },
+      {
+        "from": "svc",
+        "to": "cap",
+        "label": "checks"
+      },
+      {
+        "from": "prefs",
+        "to": "route",
+        "label": "informs"
+      },
+      {
+        "from": "tpl",
+        "to": "route",
+        "label": "informs"
+      },
+      {
+        "from": "cap",
+        "to": "route",
+        "label": "informs"
+      },
+      {
+        "from": "route",
+        "to": "fcm",
+        "label": "sends",
+        "bus": "ch"
+      },
+      {
+        "from": "route",
+        "to": "apns",
+        "label": "sends",
+        "bus": "ch"
+      },
+      {
+        "from": "route",
+        "to": "email",
+        "label": "sends",
+        "bus": "ch"
+      },
+      {
+        "from": "route",
+        "to": "sms",
+        "label": "sends",
+        "bus": "ch"
+      },
+      {
+        "from": "route",
+        "to": "inbox",
+        "label": "sends",
+        "bus": "ch"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/notification-system",
+    "diagram": "a32a08d616949afb",
+    "number": 2,
+    "title": "The inbox doesn’t depend on the push",
+    "caption": "The local inbox renders offline. Read state is reconciled through the repository, so the screen isn’t coupled directly to push delivery or REST.",
+    "sources": [
+      "https://developer.android.com/develop/ui/views/notifications"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "push",
+        "title": "PushDispatcher",
+        "role": "runtime"
+      },
+      {
+        "id": "repo",
+        "title": "InboxRepository",
+        "role": "runtime",
+        "key": true
+      },
+      {
+        "id": "room",
+        "title": "Room inbox_items",
+        "role": "storage"
+      },
+      {
+        "id": "ui",
+        "title": "Compose inbox",
+        "role": "client"
+      },
+      {
+        "id": "api",
+        "title": "Inbox API",
+        "role": "runtime"
+      }
+    ],
+    "edges": [
+      {
+        "from": "push",
+        "to": "repo",
+        "label": "new item"
+      },
+      {
+        "from": "repo",
+        "to": "room",
+        "label": "writes"
+      },
+      {
+        "from": "room",
+        "to": "ui",
+        "label": "renders"
+      },
+      {
+        "from": "ui",
+        "to": "repo",
+        "label": "mark read"
+      },
+      {
+        "from": "repo",
+        "to": "api",
+        "label": "syncs"
+      },
+      {
+        "from": "api",
+        "to": "repo",
+        "label": "returns",
+        "route": "curve"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/notification-system",
+    "diagram": "68c3060398433541",
+    "number": 3,
+    "title": "Policy before delivery, inbox either way",
+    "caption": "Idempotency and policy run before any channel delivery. The inbox record doesn’t depend on whether a transient push, email or SMS attempt succeeds, and a channel that policy refuses still leaves a record.",
+    "sources": [
+      "https://firebase.google.com/docs/cloud-messaging/customize-messages/set-message-type",
+      "https://developer.android.com/develop/ui/views/notifications"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "trigger",
+        "title": "Trigger",
+        "role": "neutral"
+      },
+      {
+        "id": "dedupe",
+        "title": "New deduplication key?",
+        "role": "runtime"
+      },
+      {
+        "id": "stop",
+        "title": "Return prior outcome",
+        "role": "neutral"
+      },
+      {
+        "id": "ctx",
+        "title": "Load preferences, locale, timezone",
+        "role": "storage"
+      },
+      {
+        "id": "allowed",
+        "title": "Allowed?",
+        "role": "runtime",
+        "detail": [
+          "channel enabled, under cap,",
+          "quiet-hours policy"
+        ],
+        "key": true
+      },
+      {
+        "id": "inbox",
+        "title": "Persist durable inbox record",
+        "role": "storage"
+      },
+      {
+        "id": "render",
+        "title": "Render localized template",
+        "role": "runtime"
+      },
+      {
+        "id": "route",
+        "title": "Channel router",
+        "role": "queue"
+      }
+    ],
+    "edges": [
+      {
+        "from": "trigger",
+        "to": "dedupe",
+        "label": "checks"
+      },
+      {
+        "from": "dedupe",
+        "to": "stop",
+        "label": "no"
+      },
+      {
+        "from": "dedupe",
+        "to": "ctx",
+        "label": "yes"
+      },
+      {
+        "from": "ctx",
+        "to": "allowed",
+        "label": "context"
+      },
+      {
+        "from": "allowed",
+        "to": "inbox",
+        "label": "no"
+      },
+      {
+        "from": "allowed",
+        "to": "render",
+        "label": "yes"
+      },
+      {
+        "from": "render",
+        "to": "route",
+        "label": "message"
+      },
+      {
+        "from": "route",
+        "to": "inbox",
+        "label": "persists"
+      }
+    ]
   }
 ]

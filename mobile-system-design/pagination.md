@@ -39,7 +39,7 @@
 | Page size expectation? | Network round trips vs perceived smoothness |
 | Personalised order (re-ranks per session)? | Cache invalidation rules |
 | Local SSOT or network-only? | RemoteMediator vs PagingSource |
-| Compose or View? | API shape (`LazyPagingItems` vs `PagedListAdapter`) |
+| Compose or View? | API shape (`LazyPagingItems` vs `PagingDataAdapter`) |
 | Bidirectional? | Hugely complicates; rarely needed |
 | Strict order or "near-real-time"? | Tolerance for shifting indices |
 
@@ -63,7 +63,7 @@ Room remains the UI source of truth: the mediator fetches and transactionally st
 
 **Components:**
 - **`Pager`** — config: page size, prefetch distance, max in-memory pages.
-- **`PagingSource`** — reads from local store; the Pager invalidates this on RemoteMediator events.
+- **`PagingSource`** — reads from local store; Room invalidates it when its tables change, and the Pager creates a new one.
 - **`RemoteMediator`** — fetches network pages, writes to local store, signals end-of-pagination.
 - **`LazyPagingItems` (Compose)** — composable consumer; surfaces `LoadState`.
 
@@ -91,10 +91,10 @@ val pager = Pager(
 ### Network page contract
 
 ```json
-GET /v1/items?cursor=eyJvIjozMH0=&limit=30
+GET /v1/items?cursor=eyJhZnRlciI6ImlfOTkxIn0=&limit=30
 {
   "items": [ { "id": "i_991", ... }, ... ],
-  "nextCursor": "eyJvIjo2MH0=",   // null = end of pagination
+  "nextCursor": "eyJhZnRlciI6ImlfMTAyMCJ9",   // null = end of pagination
   "sessionId": "s_abc"            // optional: stabilises cursor for the session
 }
 ```
@@ -102,10 +102,10 @@ GET /v1/items?cursor=eyJvIjozMH0=&limit=30
 ### LoadState surface
 
 ```kotlin
-sealed class LoadState {
-    object NotLoading : LoadState()
-    object Loading : LoadState()
-    data class Error(val throwable: Throwable) : LoadState()
+sealed class LoadState(val endOfPaginationReached: Boolean) {
+    class NotLoading(endOfPaginationReached: Boolean) : LoadState(endOfPaginationReached)
+    object Loading : LoadState(false)
+    class Error(val error: Throwable) : LoadState(false)
 }
 
 // items.loadState.refresh, items.loadState.append, items.loadState.prepend
@@ -207,8 +207,10 @@ class FeedRemoteMediator(
                 db.remoteKeysDao().insertAll(keys)
             }
             MediatorResult.Success(endOfPaginationReached = resp.nextCursor == null)
-        } catch (t: Throwable) {
-            MediatorResult.Error(t)
+        } catch (e: IOException) {
+            MediatorResult.Error(e)
+        } catch (e: HttpException) {
+            MediatorResult.Error(e)
         }
     }
 }
@@ -244,7 +246,7 @@ fun FeedScreen(vm: FeedViewModel = hiltViewModel()) {
 ### Prefetch + max-size
 
 - `prefetchDistance = 10` triggers `APPEND` when the user is 10 items from the end.
-- `maxSize = 300` drops oldest pages from memory once exceeded — prevents OOM on long scrolls. Items stay in Room.
+- `maxSize = 300` drops pages from the far end of the list once exceeded (best effort) — prevents OOM on long scrolls. Items stay in Room.
 - On scroll-back beyond memory, `PagingSource` re-reads from Room (cheap).
 
 ### Scroll restoration
@@ -283,7 +285,7 @@ PullToRefreshBox(
 | Token expired (401) | Mediator can short-circuit on caller's interceptor; UI shows generic error or triggers re-auth |
 | Server returns dupes | DAO `OnConflictStrategy.REPLACE` upserts by id |
 | Cursor invalidated | Mediator forces a REFRESH |
-| Process death mid-load | Pager re-issues from the last known cursor on relaunch |
+| Process death mid-load | Rows and remote keys survive in Room. `LAUNCH_INITIAL_REFRESH` runs REFRESH first on relaunch; return `SKIP_INITIAL_REFRESH` while the cache is valid to continue from the stored cursor |
 
 ---
 
@@ -312,7 +314,7 @@ PullToRefreshBox(
 |---|---|
 | `pageSize = 30, initialLoadSize = 60` | First paint feels full without over-fetching |
 | `prefetchDistance = 10` | Fetch next page before user reaches end |
-| `maxSize = 9× pageSize` | Bound memory; Room is the backup |
+| `maxSize = 10× pageSize` | Bound memory; Room is the backup |
 
 ### UI
 
@@ -339,7 +341,7 @@ PullToRefreshBox(
 - **Bandwidth.** Don't double-fetch: `cachedIn(viewModelScope)` keeps the Flow alive across config changes.
 - **Cellular.** `RemoteMediator` can check `ConnectivityManager.isActiveNetworkMetered` and skip APPEND prefetch.
 - **Reactive updates.** If the underlying Room data changes, `PagingSource.invalidate()` triggers reload. Pattern: a `Flow<Unit>` invalidation bus.
-- **Process death.** Scroll index in `SavedStateHandle`. Pager re-fetches the cursor for the visible page.
+- **Process death.** Scroll index in `SavedStateHandle`. Rows and remote keys stay in Room, and `initialize()` decides whether to refresh first.
 - **Testing.** Use `Pager.flow.asSnapshot { }` (Paging test library). Fake API returning scripted pages.
 - **Error visibility.** `LoadState` is the single source of truth. Don't try to manage your own "isLoading" boolean in parallel.
 
@@ -381,7 +383,6 @@ PullToRefreshBox(
 
 - [Android Developers — Paging 3 overview](https://developer.android.com/topic/libraries/architecture/paging/v3-overview) — official guide.
 - [Android Developers — Paging with network and database](https://developer.android.com/topic/libraries/architecture/paging/v3-network-db) — RemoteMediator walk-through.
-- [Now in Android sample](https://github.com/android/nowinandroid) — production Pager + Compose feed.
 - [Paging test guide](https://developer.android.com/topic/libraries/architecture/paging/test) — `asSnapshot` and fakes.
 - [Cursor pagination explained](https://shopify.engineering/pagination-relative-cursors) — Shopify engineering blog on cursor schemes.
 

@@ -1,0 +1,134 @@
+<!-- Website teaching layer for mobile-system-design/caching-library.md (interview walkthrough).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the step-through and the end recap.
+     Verified 2026-10-30 against caching-library.md at source 035778c (§6 disk format, §7 get, put, atomic write, eviction, TTL and concurrency, §9 crash safety and serializer drift, §10 write-during-read answer. The user:42 key is illustrative; the one-hour TTL is the §4 builder default)
+     and against AndroidX LruCache (thread safety, sizeOf). -->
+
+<!-- @after 7. Deep Dive: Read/Write Path with Two Tiers (15 min) :: animation -->
+### Follow one entry through both tiers
+
+<figure class="stepper" data-illustrated><span class="stepper-title">Write now, flush later, expire on read</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="caller" data-art="code" data-art-role="client"><strong>Caller</strong><small data-text="callerV">Cache&lt;K, V&gt;</small></div><div class="node" data-el="memory" data-art="memory" data-art-role="storage"><strong>Memory tier</strong><small data-text="memoryV">LRU, bounded</small></div><div class="node" data-el="writer" data-art="worker" data-art-role="queue"><strong>Disk scope</strong><small data-text="writerV">idle</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="tmp" data-art="document" data-art-role="storage"><strong>Temporary file</strong><small data-text="tmpV">none</small></div><div class="node" data-el="entry" data-art="database" data-art-role="storage"><strong>Disk entry</strong><small data-text="entryV">none</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "put() writes to memory first",
+    "caption": "put(\"user:42\", value, 1.hours) stores the value and its absolute expiresAt in memory. Disk work is launched on a separate scope, so the caller doesn’t wait for it. While the entry stays in memory, reads see the new value.",
+    "add": [
+      "caller",
+      "memory",
+      "writer",
+      "tmp",
+      "entry",
+      "event"
+    ],
+    "state": {
+      "caller": "active",
+      "memory": "done",
+      "writer": "active"
+    },
+    "text": {
+      "memoryV": "user:42, expires in 1 h",
+      "writerV": "launched",
+      "eventV": "readable from memory at once"
+    },
+    "handoff": {
+      "from": "caller",
+      "to": "memory",
+      "kind": "parcel",
+      "label": "value"
+    }
+  },
+  {
+    "label": "Death before the flush",
+    "caption": "If the process dies before the disk write finishes, this entry is lost. For a cache that is acceptable: the next read is a miss, and the caller fetches again. Crash safety promises no torn files, not that every write survives.",
+    "state": {
+      "memory": "warn",
+      "writer": "warn"
+    },
+    "text": {
+      "writerV": "write may never run",
+      "eventV": "losing an entry is fine; a torn file is not"
+    }
+  },
+  {
+    "label": "Atomic write to disk",
+    "caption": "The serialized bytes go to a .tmp file, fsync flushes them, and rename puts the file in place. A crash before the rename leaves any earlier entry untouched. The disk mutex lets one operation touch the disk cache at a time, and the byte budget is checked after each write.",
+    "state": {
+      "memory": "done",
+      "writer": "done",
+      "tmp": "active",
+      "entry": "done"
+    },
+    "text": {
+      "writerV": "holds the disk mutex",
+      "tmpV": "written and fsynced",
+      "entryV": "user:42 file",
+      "eventV": ".tmp → fsync → rename"
+    },
+    "handoff": {
+      "from": "tmp",
+      "to": "entry",
+      "kind": "page",
+      "label": "rename"
+    }
+  },
+  {
+    "label": "A memory hit, if still fresh",
+    "caption": "get() checks memory first. An entry that hasn’t expired returns straight away and counts as a hit. An expired one is removed, and the read moves on to disk.",
+    "state": {
+      "caller": "active",
+      "memory": "active",
+      "tmp": "done"
+    },
+    "text": {
+      "memoryV": "hit: not expired",
+      "eventV": "expiry is checked on every read"
+    }
+  },
+  {
+    "label": "A cold read promotes",
+    "caption": "After a restart or an eviction, memory misses. The disk entry is still fresh, so it’s deserialized, placed back in memory with its original expiresAt, and returned. Its age doesn’t reset.",
+    "state": {
+      "memory": "warn",
+      "entry": "active"
+    },
+    "text": {
+      "memoryV": "miss, then promoted",
+      "entryV": "hit: fresh",
+      "eventV": "promotion keeps the original expiry"
+    },
+    "handoff": {
+      "from": "entry",
+      "to": "memory",
+      "kind": "rows",
+      "label": "decoded value"
+    }
+  },
+  {
+    "label": "Expired or unreadable means a miss",
+    "caption": "An hour on, the entry has expired. The read deletes it from disk and returns null rather than stale data. There’s no background sweeper, because lazy expiry costs no wakeups. An envelope with an unknown version is also a miss, not a crash.",
+    "state": {
+      "memory": "ghost",
+      "entry": "error",
+      "caller": "done",
+      "event": "done"
+    },
+    "text": {
+      "memoryV": "no entry",
+      "entryV": "expired: removed",
+      "callerV": "get() returns null",
+      "eventV": "a miss, never silently stale"
+    }
+  }
+]</script><figcaption>A put is visible from memory at once and reaches disk later, off the caller’s coroutine, through an atomic rename. An expired entry is a miss, never silently stale data.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **Two independently bounded tiers.** Memory is an LRU with an entry or size budget, and disk is a byte budget evicted by last access.
+- **A put reaches memory first and disk later.** The caller doesn’t wait for disk, and a process death before the flush loses only a cache entry.
+- **Atomic means `.tmp`, `fsync`, then `rename`.** The index is rewritten the same way, but separately from the entry, so recovery ignores orphan files and rows with no file.
+- **Keep disk operations in order.** An invalidate that overtakes a queued write could bring the removed value back on a later cold read.
+- **Expiry is lazy.** Entries carry an absolute `expiresAt`, checked on each read, so there’s no sweeper and no wakeups. An expired entry is a miss.
+- **A cold read promotes.** A fresh disk hit goes back into memory with its original expiry.
+- **Unknown data is a miss, not a crash.** A versioned envelope turns a serializer change into a cache miss.
+- **Stampedes stay with the caller.** Coalesce concurrent fetches of a missing key, for example with a map of `Deferred` values.

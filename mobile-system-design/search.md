@@ -128,7 +128,7 @@ Each accepted query creates a new paging generation, so old requests and results
 ### Key class signatures
 
 ```kotlin
-data class Query(val text: String, val filters: Filters, val sort: Sort, val ts: Long)
+data class Query(val text: String, val filters: Filters, val sort: Sort)
 
 interface SearchRepository {
     fun search(query: Query): Flow<PagingData<Result>>
@@ -154,9 +154,9 @@ data class RecentQuery(
     val filtersJson: String, val lastUsedAt: Long, val useCount: Int
 )
 
-@Entity(tableName = "search_results_cache")
+@Entity(tableName = "search_results_cache", primaryKeys = ["queryKey", "itemId"])
 data class CachedResult(
-    @PrimaryKey val itemId: String,
+    val itemId: String,
     val queryKey: String,          // hash of (text + filters + sort)
     val rank: Int, val payloadJson: String, val fetchedAt: Long
 )
@@ -182,12 +182,12 @@ class SearchViewModel @Inject constructor(
     savedState: SavedStateHandle,
 ) : ViewModel() {
 
-    val text = savedState.getStateFlow("text", "")
-    val filters = savedState.getStateFlow("filters", Filters.EMPTY)
-    val sort = savedState.getStateFlow("sort", Sort.RELEVANCE)
+    val text = savedState.getMutableStateFlow("text", "")
+    val filters = savedState.getMutableStateFlow("filters", Filters.EMPTY)   // Filters and Sort must be Parcelable
+    val sort = savedState.getMutableStateFlow("sort", Sort.RELEVANCE)
 
     private val query: Flow<Query> = combine(text, filters, sort) { t, f, s ->
-        Query(t.trim(), f, s, clock.now())
+        Query(t.trim(), f, s)        // no timestamp: distinctUntilChanged must see equal queries
     }
         .debounce(250.milliseconds)
         .distinctUntilChanged()
@@ -213,6 +213,10 @@ class SearchRemoteMediator(
     private val query: Query,
 ) : RemoteMediator<Int, CachedResult>() {
 
+    override suspend fun initialize() =
+        if (db.cachedResultsDao().isFresh(query.key(), maxAge = 5.minutes)) InitializeAction.SKIP_INITIAL_REFRESH
+        else InitializeAction.LAUNCH_INITIAL_REFRESH
+
     override suspend fun load(loadType: LoadType, state: PagingState<...>): MediatorResult {
         val cursor = when (loadType) {
             LoadType.REFRESH -> null
@@ -223,14 +227,17 @@ class SearchRemoteMediator(
             val resp = api.search(query.text, query.filters.toQueryString(), query.sort, cursor, PAGE)
             db.withTransaction {
                 if (loadType == LoadType.REFRESH) db.cachedResultsDao().clearForKey(query.key())
+                val firstRank = db.cachedResultsDao().countForKey(query.key())    // ranks continue across pages
                 resp.items.forEachIndexed { i, item ->
-                    db.cachedResultsDao().insert(item.toCached(queryKey = query.key(), rank = i))
+                    db.cachedResultsDao().insert(item.toCached(queryKey = query.key(), rank = firstRank + i))
                 }
                 db.facetsDao().upsert(resp.queryId, resp.facets)
             }
             MediatorResult.Success(endOfPaginationReached = resp.nextCursor == null)
-        } catch (t: Throwable) {
-            MediatorResult.Error(t)
+        } catch (e: IOException) {
+            MediatorResult.Error(e)
+        } catch (e: HttpException) {
+            MediatorResult.Error(e)
         }
     }
 }
@@ -406,10 +413,10 @@ fun onResultClicked(result: Result, position: Int) {
 ## 12. Further Reading
 
 - [Android Developers — Paging 3 with network and DB](https://developer.android.com/topic/libraries/architecture/paging/v3-network-db) — official guide.
-- [Compose docs — collectAsLazyPagingItems](https://developer.android.com/jetpack/compose/libraries) — Compose integration.
+- [Compose and other libraries](https://developer.android.com/jetpack/compose/libraries) — Compose integration, including Paging.
 - [Kotlin Flow — flatMapLatest](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flat-map-latest.html) — cancellation semantics.
-- [Elastic — Designing relevance feedback](https://www.elastic.co/blog/) — vendor blog on click feedback loop.
-- [Mobile UX search patterns](https://www.nngroup.com/articles/mobile-ux/) — Nielsen Norman Group.
+- [Elastic blog](https://www.elastic.co/blog/) — vendor articles on search relevance.
+- [Mobile UX](https://www.nngroup.com/articles/mobile-ux/) — Nielsen Norman Group.
 
 ---
 

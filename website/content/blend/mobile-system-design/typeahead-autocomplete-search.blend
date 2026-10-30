@@ -1,0 +1,150 @@
+<!-- Website teaching layer for mobile-system-design/typeahead-autocomplete-search.md (interview walkthrough).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the step-through and the end recap.
+     Verified 2026-10-30 against typeahead-autocomplete-search.md at source 035778c (§7 ViewModel, repository, cancellation, debounce sizing, rate limiting, recents and failure modes, §9 privacy. The typed text "run" comes from the §4 request; the typing rhythm and rows are illustrative)
+     and against the kotlinx.coroutines debounce and flatMapLatest references and Retrofit KotlinExtensions (invokeOnCancellation cancels the call). -->
+
+<!-- @after 7. Deep Dive: Suggestion Pipeline (15 min) :: animation -->
+### Follow a query through three keystrokes
+
+<figure class="stepper" data-illustrated><span class="stepper-title">Local first, remote refines, the latest wins</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="bar" data-art="screen" data-art-role="client"><strong>Search bar</strong><small data-text="barV">empty</small></div><div class="node" data-el="vm" data-art="clock" data-art-role="runtime"><strong>TypeaheadViewModel</strong><small data-text="vmV">debounce 120 ms</small></div><div class="node" data-el="repo" data-art="code" data-art-role="runtime"><strong>Repository</strong><small data-text="repoV">idle</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="local" data-art="database" data-art-role="storage"><strong>Local sources</strong><small data-text="localV">recents + popular</small></div><div class="node" data-el="api" data-art="server" data-art-role="runtime"><strong>Suggest API</strong><small data-text="apiV">GET /v1/suggest</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Fast typing starts nothing",
+    "caption": "The user types r, then u, quickly. Each change restarts the 120 ms debounce, so while keys arrive faster than that, no query starts. The latest value is always emitted once the typing pauses.",
+    "add": [
+      "bar",
+      "vm",
+      "repo",
+      "local",
+      "api",
+      "event"
+    ],
+    "state": {
+      "bar": "active",
+      "vm": "active"
+    },
+    "text": {
+      "barV": "ru",
+      "vmV": "timer restarted",
+      "eventV": "keys faster than 120 ms: no query"
+    }
+  },
+  {
+    "label": "A pause runs the local sources",
+    "caption": "The user pauses on \"ru\", so the query starts. The repository emits local suggestions first: up to 3 recents and 5 popular entries, de-duplicated and capped at 7. They don’t wait for the network, but they do come after the debounce.",
+    "state": {
+      "vm": "done",
+      "repo": "active",
+      "local": "done",
+      "bar": "done"
+    },
+    "text": {
+      "vmV": "query: ru",
+      "repoV": "local first",
+      "localV": "matches for ru",
+      "barV": "ru + local list",
+      "eventV": "local never blocks on remote"
+    },
+    "handoff": {
+      "from": "vm",
+      "to": "repo",
+      "kind": "parcel",
+      "label": "ru"
+    }
+  },
+  {
+    "label": "The remote request starts",
+    "caption": "The device is online, so the repository also requests /v1/suggest for \"ru\". The local list stays on screen meanwhile.",
+    "state": {
+      "api": "active",
+      "repo": "active"
+    },
+    "text": {
+      "apiV": "ru in flight",
+      "eventV": "the list is already useful"
+    },
+    "handoff": {
+      "from": "repo",
+      "to": "api",
+      "kind": "parcel",
+      "label": "q=ru"
+    }
+  },
+  {
+    "label": "A newer query cancels the old one",
+    "caption": "The user types n. After the debounce, flatMapLatest cancels the \"ru\" flow before starting \"run\". With a Retrofit suspend call, that cancellation also cancels the HTTP call, and a late \"ru\" response can’t replace the newer list.",
+    "state": {
+      "api": "error",
+      "vm": "done",
+      "bar": "active"
+    },
+    "text": {
+      "barV": "run",
+      "apiV": "ru cancelled",
+      "vmV": "query: run",
+      "eventV": "the latest query wins"
+    }
+  },
+  {
+    "label": "Merge: server first, then locals",
+    "caption": "The \"run\" response arrives. Server suggestions take precedence, local ones pad the list, duplicates are removed ignoring case, and the list stops at 7. The list refines in place rather than clearing first.",
+    "state": {
+      "api": "done",
+      "repo": "done",
+      "bar": "done"
+    },
+    "text": {
+      "apiV": "200: suggestions",
+      "repoV": "merge + dedupe",
+      "barV": "run + ranked list",
+      "eventV": "server order, padded with locals"
+    },
+    "handoff": {
+      "from": "api",
+      "to": "repo",
+      "kind": "rows",
+      "label": "suggestions"
+    }
+  },
+  {
+    "label": "Remote trouble keeps the local list",
+    "caption": "On a slow or failing server, local suggestions stay and no error appears. When the local rate limiter trips, the request is skipped and the app relies on local results. When offline, the list is local-only with a subtle badge.",
+    "state": {
+      "api": "warn",
+      "repo": "done",
+      "bar": "done"
+    },
+    "text": {
+      "apiV": "slow, failing or skipped",
+      "barV": "local list stays",
+      "eventV": "no error UI for suggestions"
+    }
+  },
+  {
+    "label": "A tap records and submits",
+    "caption": "Tapping a suggestion updates recents on the device and sends click feedback without waiting for it, then fills the bar and starts the main search. Recents stay on the device unless the user opts in to syncing. If the suggestion no longer matches anything, the main search handles “no results”.",
+    "state": {
+      "api": "done",
+      "bar": "done",
+      "local": "done",
+      "event": "done"
+    },
+    "text": {
+      "barV": "suggestion submitted",
+      "localV": "recents updated",
+      "apiV": "POST /v1/suggest/click",
+      "eventV": "on to search.md’s results screen"
+    }
+  }
+]</script><figcaption>Debounce decides when a query starts, local results appear without waiting for the network, and flatMapLatest stops anything out of date. Remote trouble never removes the local list.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **Use three controls for timing.** `debounce` stops work while keys arrive fast, `distinctUntilChanged` drops repeats, and `flatMapLatest` cancels anything out of date.
+- **Debounce is part of your latency.** Local results don’t wait for the network, but a 120 ms debounce means they appear at least 120 ms after the last keystroke.
+- **Local first, remote second.** Emit recents and popular matches, then merge the server list on top: the server takes precedence, and locals pad it to 7.
+- **Remote failure stays quiet.** A slow server, a 500 or a tripped rate limiter keeps the local list and shows no error; offline adds a subtle badge.
+- **Debounce doesn’t cap the request rate on its own.** A token-bucket interceptor adds a hard limit, and when it trips the app relies on local results.
+- **Recents are private by default.** They show on empty input and stay on the device; cross-device sync requires opt-in, and shared devices namespace them by account.

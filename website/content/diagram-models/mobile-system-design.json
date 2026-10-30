@@ -662,5 +662,508 @@
       "api": "Events API",
       "event": "What happens"
     }
+  },
+  {
+    "path": "mobile-system-design/image-loading",
+    "figure": 0,
+    "problem": "How does one image request move through memory, disk and network without blocking scrolling or reaching the wrong row?",
+    "reading": "The target asks the memory cache first. On a miss the pipeline reads the disk cache or fetches the source, then decodes off the main thread and stores the result in memory before it reaches the target.",
+    "groups": [
+      {
+        "id": "ui",
+        "label": "On the main thread",
+        "nodes": [
+          "target",
+          "memory"
+        ]
+      },
+      {
+        "id": "off",
+        "label": "Off the main thread",
+        "nodes": [
+          "disk",
+          "fetch",
+          "decode"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "target",
+        "to": "memory",
+        "label": "checks key"
+      },
+      {
+        "from": "memory",
+        "to": "disk",
+        "label": "miss"
+      },
+      {
+        "from": "disk",
+        "to": "fetch",
+        "label": "miss"
+      },
+      {
+        "from": "fetch",
+        "to": "decode",
+        "label": "bytes"
+      },
+      {
+        "from": "disk",
+        "to": "decode",
+        "label": "hit: bytes"
+      },
+      {
+        "from": "decode",
+        "to": "memory",
+        "label": "stores result"
+      },
+      {
+        "from": "memory",
+        "to": "target",
+        "label": "drawable"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/reference/android/graphics/ImageDecoder",
+      "https://coil-kt.github.io/coil/upgrading_to_coil2/"
+    ],
+    "labels": {
+      "target": "Feed row",
+      "memory": "Memory cache",
+      "disk": "Disk cache",
+      "fetch": "Fetcher",
+      "decode": "Decoder",
+      "event": "What happens"
+    }
+  },
+  {
+    "path": "mobile-system-design/file-downloader",
+    "figure": 0,
+    "problem": "How does a large download survive a dropped network or a killed process without restarting or exposing a partial file?",
+    "reading": "The caller enqueues into Room. A worker plans chunks in the ledger and fetches them in parallel into part files, then assembles the final file once every chunk is done.",
+    "groups": [
+      {
+        "id": "app",
+        "label": "App process",
+        "nodes": [
+          "caller",
+          "worker"
+        ]
+      },
+      {
+        "id": "disk",
+        "label": "On disk",
+        "nodes": [
+          "ledger",
+          "parts",
+          "final"
+        ]
+      },
+      {
+        "id": "net",
+        "label": "Network",
+        "nodes": [
+          "server"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "caller",
+        "to": "ledger",
+        "label": "enqueues"
+      },
+      {
+        "from": "worker",
+        "to": "ledger",
+        "label": "reads and updates chunks"
+      },
+      {
+        "from": "worker",
+        "to": "server",
+        "label": "Range requests"
+      },
+      {
+        "from": "worker",
+        "to": "parts",
+        "label": "streams bytes"
+      },
+      {
+        "from": "parts",
+        "to": "final",
+        "label": "assembled, renamed"
+      }
+    ],
+    "sources": [
+      "https://www.rfc-editor.org/rfc/rfc9110#section-14.2",
+      "https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/manage-work"
+    ],
+    "labels": {
+      "caller": "App caller",
+      "ledger": "Room ledger",
+      "worker": "DownloadWorker",
+      "server": "File server",
+      "parts": "Part files",
+      "final": "Final file",
+      "event": "What happens"
+    }
+  },
+  {
+    "path": "mobile-system-design/caching-library",
+    "figure": 0,
+    "problem": "How does one cache entry stay fast to read, safe from torn files and honest about expiry?",
+    "reading": "A put writes to memory and hands disk work to a background scope, which renames a temporary file into place. A later read checks memory, then disk, and promotes a fresh disk entry back to memory.",
+    "groups": [
+      {
+        "id": "proc",
+        "label": "In the process",
+        "nodes": [
+          "caller",
+          "memory",
+          "writer"
+        ]
+      },
+      {
+        "id": "disk",
+        "label": "On disk",
+        "nodes": [
+          "tmp",
+          "entry"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "caller",
+        "to": "memory",
+        "label": "put, get"
+      },
+      {
+        "from": "caller",
+        "to": "writer",
+        "label": "launches disk write"
+      },
+      {
+        "from": "writer",
+        "to": "tmp",
+        "label": "writes, fsyncs"
+      },
+      {
+        "from": "tmp",
+        "to": "entry",
+        "label": "renamed into place"
+      },
+      {
+        "from": "entry",
+        "to": "memory",
+        "label": "promoted when fresh"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/reference/kotlin/androidx/collection/LruCache"
+    ],
+    "labels": {
+      "caller": "Caller",
+      "memory": "Memory tier",
+      "writer": "Disk scope",
+      "tmp": "Temporary file",
+      "entry": "Disk entry",
+      "event": "What happens"
+    }
+  },
+  {
+    "path": "mobile-system-design/pagination",
+    "figure": 0,
+    "problem": "How do network pages reach a long list while the list keeps reading only from local storage?",
+    "reading": "The list reads pages from Room through the Pager. When Room runs out, RemoteMediator fetches the next page and writes it to Room in one transaction, and the new rows flow back to the list.",
+    "groups": [
+      {
+        "id": "app",
+        "label": "In the app",
+        "nodes": [
+          "ui",
+          "pager",
+          "mediator"
+        ]
+      },
+      {
+        "id": "local",
+        "label": "Local source of truth",
+        "nodes": [
+          "room"
+        ]
+      },
+      {
+        "id": "net",
+        "label": "Network",
+        "nodes": [
+          "api"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "pager",
+        "label": "reads items"
+      },
+      {
+        "from": "pager",
+        "to": "room",
+        "label": "loads pages"
+      },
+      {
+        "from": "pager",
+        "to": "mediator",
+        "label": "asks for more"
+      },
+      {
+        "from": "mediator",
+        "to": "api",
+        "label": "fetches by cursor"
+      },
+      {
+        "from": "mediator",
+        "to": "room",
+        "label": "writes in a transaction"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/paging/v3-network-db",
+      "https://developer.android.com/topic/libraries/architecture/paging/v3-overview"
+    ],
+    "labels": {
+      "ui": "LazyColumn",
+      "pager": "Pager",
+      "room": "Room",
+      "mediator": "RemoteMediator",
+      "api": "Feed API",
+      "event": "What happens"
+    }
+  },
+  {
+    "path": "mobile-system-design/typeahead-autocomplete-search",
+    "figure": 0,
+    "problem": "How do suggestions stay quick and correct while the text keeps changing and the network may be slow or absent?",
+    "reading": "The ViewModel debounces the text and keeps only the latest query. The repository emits local suggestions first, then merges the remote response if there is one.",
+    "groups": [
+      {
+        "id": "app",
+        "label": "In the app",
+        "nodes": [
+          "bar",
+          "vm",
+          "repo",
+          "local"
+        ]
+      },
+      {
+        "id": "net",
+        "label": "Network",
+        "nodes": [
+          "api"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "bar",
+        "to": "vm",
+        "label": "text changes"
+      },
+      {
+        "from": "vm",
+        "to": "repo",
+        "label": "latest debounced query"
+      },
+      {
+        "from": "repo",
+        "to": "local",
+        "label": "prefix lookup"
+      },
+      {
+        "from": "repo",
+        "to": "api",
+        "label": "suggest if online"
+      },
+      {
+        "from": "repo",
+        "to": "bar",
+        "label": "emits ranked list"
+      }
+    ],
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/debounce.html",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flat-map-latest.html"
+    ],
+    "labels": {
+      "bar": "Search bar",
+      "vm": "TypeaheadViewModel",
+      "repo": "Repository",
+      "local": "Local sources",
+      "api": "Suggest API",
+      "event": "What happens"
+    }
+  },
+  {
+    "path": "mobile-system-design/search",
+    "figure": 0,
+    "problem": "How does one search query move through debounce, paging and cache, and what stops an older query from showing its results?",
+    "reading": "The ViewModel debounces text, filters and sort into a query. Each new query starts a Pager that reads Room by query key, while the mediator fills Room from the search API.",
+    "groups": [
+      {
+        "id": "app",
+        "label": "In the app",
+        "nodes": [
+          "ui",
+          "vm",
+          "pager",
+          "mediator"
+        ]
+      },
+      {
+        "id": "local",
+        "label": "On the device",
+        "nodes": [
+          "room"
+        ]
+      },
+      {
+        "id": "net",
+        "label": "Network",
+        "nodes": [
+          "api"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "vm",
+        "label": "text, filters, sort"
+      },
+      {
+        "from": "vm",
+        "to": "pager",
+        "label": "starts for each query"
+      },
+      {
+        "from": "pager",
+        "to": "room",
+        "label": "reads by query key"
+      },
+      {
+        "from": "pager",
+        "to": "mediator",
+        "label": "asks for more"
+      },
+      {
+        "from": "mediator",
+        "to": "api",
+        "label": "searches"
+      },
+      {
+        "from": "mediator",
+        "to": "room",
+        "label": "writes results and facets"
+      },
+      {
+        "from": "pager",
+        "to": "ui",
+        "label": "PagingData"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/paging/v3-network-db",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flat-map-latest.html"
+    ],
+    "labels": {
+      "ui": "Search screen",
+      "vm": "SearchViewModel",
+      "pager": "Pager",
+      "mediator": "RemoteMediator",
+      "room": "Room result cache",
+      "api": "Search API",
+      "event": "What happens"
+    }
+  },
+  {
+    "path": "mobile-system-design/notification-system",
+    "figure": 0,
+    "problem": "How does a server decide whether, where and when to deliver one notification, and what survives when a channel fails?",
+    "reading": "A trigger passes the duplicate check and then the user’s preferences, cap and quiet hours. Allowed channels get a rendered template; the inbox record is kept whichever way the decision goes.",
+    "groups": [
+      {
+        "id": "server",
+        "label": "Notification service",
+        "nodes": [
+          "trigger",
+          "dedupe",
+          "policy",
+          "render",
+          "inbox"
+        ]
+      },
+      {
+        "id": "channels",
+        "label": "Delivery",
+        "nodes": [
+          "router",
+          "device"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "trigger",
+        "to": "dedupe",
+        "label": "checks key"
+      },
+      {
+        "from": "dedupe",
+        "to": "policy",
+        "label": "new key"
+      },
+      {
+        "from": "policy",
+        "to": "render",
+        "label": "allowed"
+      },
+      {
+        "from": "policy",
+        "to": "inbox",
+        "label": "not allowed: inbox only"
+      },
+      {
+        "from": "render",
+        "to": "router",
+        "label": "rendered message"
+      },
+      {
+        "from": "router",
+        "to": "inbox",
+        "label": "also persists"
+      },
+      {
+        "from": "router",
+        "to": "device",
+        "label": "push"
+      }
+    ],
+    "sources": [
+      "https://firebase.google.com/docs/cloud-messaging/customize-messages/set-message-type",
+      "https://developer.android.com/develop/ui/views/notifications"
+    ],
+    "labels": {
+      "trigger": "Domain event",
+      "dedupe": "Dedup check",
+      "policy": "Policy",
+      "render": "Template renderer",
+      "router": "Channel router",
+      "inbox": "Durable inbox",
+      "device": "Android client",
+      "event": "What happens"
+    }
   }
 ]

@@ -1,0 +1,156 @@
+<!-- Website teaching layer for mobile-system-design/pagination.md (interview walkthrough).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the step-through and the end recap.
+     Verified 2026-10-30 against pagination.md at source 035778c (§4 config values, §6 remote keys, §7 mediator, prefetch and max size, scroll restoration, pull-to-refresh and failure modes, §8 error UX)
+     and against the Paging 3 network and database guide and the PagingConfig source (maxSize is best effort, dropped pages). -->
+
+<!-- @after 7. Deep Dive: Load Orchestration with RemoteMediator (15 min) :: animation -->
+### Follow a feed from launch to a failed page
+
+<figure class="stepper" data-illustrated><span class="stepper-title">Room feeds the list, the mediator feeds Room</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="ui" data-art="screen" data-art-role="client"><strong>LazyColumn</strong><small data-text="uiV">items + LoadState</small></div><div class="node" data-el="pager" data-art="code" data-art-role="runtime"><strong>Pager</strong><small data-text="pagerV">pageSize 30</small></div><div class="node" data-el="room" data-art="database" data-art-role="storage"><strong>Room</strong><small data-text="roomV">cached rows</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="mediator" data-art="worker" data-art-role="queue"><strong>RemoteMediator</strong><small data-text="mediatorV">idle</small></div><div class="node" data-el="api" data-art="server" data-art-role="runtime"><strong>Feed API</strong><small data-text="apiV">GET /v1/items</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Cached rows render first",
+    "caption": "The Pager reads from Room, so any cached rows appear without a network wait. initialize() returns LAUNCH_INITIAL_REFRESH, so a REFRESH starts as well. The list stays on screen with a small refresh indicator, and the full-screen loader appears only when there’s nothing to show.",
+    "add": [
+      "ui",
+      "pager",
+      "room",
+      "mediator",
+      "api",
+      "event"
+    ],
+    "state": {
+      "ui": "active",
+      "pager": "active",
+      "room": "done",
+      "mediator": "active"
+    },
+    "text": {
+      "uiV": "cached rows + indicator",
+      "mediatorV": "REFRESH",
+      "eventV": "no empty-list flash"
+    },
+    "handoff": {
+      "from": "room",
+      "to": "ui",
+      "kind": "rows",
+      "label": "cached rows"
+    }
+  },
+  {
+    "label": "REFRESH swaps in one transaction",
+    "caption": "REFRESH requests with no cursor. Only after the response arrives does one transaction clear items and remote keys and insert the new page, so a failed request leaves the cache untouched. Room then invalidates its PagingSource, and the Pager creates a new one that reads the fresh rows.",
+    "state": {
+      "api": "done",
+      "room": "active",
+      "mediator": "done"
+    },
+    "text": {
+      "apiV": "200, nextCursor",
+      "roomV": "page 1 + remote keys",
+      "pagerV": "new PagingSource",
+      "eventV": "items and cursors commit together"
+    },
+    "handoff": {
+      "from": "api",
+      "to": "room",
+      "kind": "rows",
+      "label": "page + keys"
+    }
+  },
+  {
+    "label": "Scrolling near the end",
+    "caption": "Within 10 items of the loaded end, the Pager prefetches more. It serves that from Room while Room still has rows. Only when Room runs out does it ask the mediator to APPEND.",
+    "state": {
+      "ui": "active",
+      "pager": "active",
+      "room": "warn"
+    },
+    "text": {
+      "uiV": "10 items from the end",
+      "roomV": "out of local rows",
+      "eventV": "Room first, network only when it runs out"
+    }
+  },
+  {
+    "label": "APPEND uses the stored cursor",
+    "caption": "The mediator takes the last item’s row in remote_keys and requests its nextCursor. The page and its keys commit together. A null nextCursor ends pagination, and a duplicate item replaces the existing row by id.",
+    "state": {
+      "mediator": "active",
+      "api": "done",
+      "room": "done"
+    },
+    "text": {
+      "mediatorV": "APPEND",
+      "apiV": "GET ?cursor=…&limit=30",
+      "roomV": "page 2 added",
+      "eventV": "null nextCursor ends pagination"
+    },
+    "handoff": {
+      "from": "mediator",
+      "to": "api",
+      "kind": "parcel",
+      "label": "nextCursor"
+    }
+  },
+  {
+    "label": "An append fails",
+    "caption": "The next APPEND fails. The mediator returns MediatorResult.Error, which sets the append LoadState to Error. Existing items stay, and an inline retry chip appears at the bottom. A full-screen error is only for a first load that fails with nothing cached.",
+    "state": {
+      "api": "error",
+      "mediator": "warn",
+      "ui": "warn"
+    },
+    "text": {
+      "apiV": "request failed",
+      "mediatorV": "MediatorResult.Error",
+      "uiV": "retry chip at the bottom",
+      "eventV": "the error stays with the page that failed"
+    }
+  },
+  {
+    "label": "Long scrolls stay bounded",
+    "caption": "With maxSize at 300, the Pager aims to hold about that many items, dropping pages from the far end of the list as new ones load. maxSize is best effort. Dropped items stay in Room, so scrolling back reads them again without using the network.",
+    "state": {
+      "api": "done",
+      "mediator": "done",
+      "ui": "done",
+      "pager": "active",
+      "room": "done"
+    },
+    "text": {
+      "pagerV": "about 300 in memory",
+      "roomV": "every page kept",
+      "uiV": "scrolling smoothly",
+      "eventV": "memory is bounded; Room is the backup"
+    }
+  },
+  {
+    "label": "After process death",
+    "caption": "Rows and remote keys survive in Room, and the scroll index survives in SavedStateHandle. With LAUNCH_INITIAL_REFRESH the mediator runs REFRESH first, and APPEND waits until it succeeds. To continue from the stored cursor, return SKIP_INITIAL_REFRESH while the cache is still valid.",
+    "state": {
+      "pager": "done",
+      "room": "done",
+      "mediator": "active",
+      "ui": "active",
+      "event": "done"
+    },
+    "text": {
+      "uiV": "index restored",
+      "mediatorV": "REFRESH first",
+      "eventV": "initialize() decides: refresh or continue"
+    }
+  }
+]</script><figcaption>The list only ever reads Room. RemoteMediator writes each network page and its cursor in one transaction, and Room invalidation carries the new rows to the screen. A failed load leaves the items already on screen in place.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **Room is the source of truth.** The list reads Room, the mediator writes Room, and Room’s invalidation carries the update to the screen.
+- **Write each page and its cursor in one transaction.** A retry then can’t leave the pagination boundary wrong, and a failed `REFRESH` leaves the old cache in place.
+- **`PREPEND` ends at once in this forward-only design.** `APPEND` uses the last item’s `nextCursor`, and a null cursor ends pagination.
+- **Prefetch and `maxSize` are separate controls.** `prefetchDistance` decides when to load more, and `maxSize` is a best-effort memory bound. Dropped pages stay in Room.
+- **Match the error UI to what’s on screen.** Use a full-screen error only with nothing cached, an inline chip for a failed append, and a snackbar when a refresh fails over good data.
+- **Use stable keys and one source of load state.** `items.itemKey { it.id }` keeps scroll and animation correct, and `LoadState` replaces any parallel `isLoading` flag.
+- **`initialize()` decides what happens on launch.** `LAUNCH_INITIAL_REFRESH` always refreshes first; `SKIP_INITIAL_REFRESH` keeps a cache that’s still valid.

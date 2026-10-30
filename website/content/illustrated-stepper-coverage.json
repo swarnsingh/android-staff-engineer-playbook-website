@@ -3770,6 +3770,278 @@
           "role": "runtime"
         }
       ]
+    },
+    {
+      "path": "mobile-system-design/image-loading",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "target",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "memory",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "disk",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "fetch",
+          "kind": "cloud",
+          "role": "runtime"
+        },
+        {
+          "id": "decode",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "mobile-system-design/file-downloader",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "caller",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "ledger",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "worker",
+          "kind": "worker",
+          "role": "queue"
+        },
+        {
+          "id": "server",
+          "kind": "server",
+          "role": "runtime"
+        },
+        {
+          "id": "parts",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "final",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "mobile-system-design/caching-library",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "caller",
+          "kind": "code",
+          "role": "client"
+        },
+        {
+          "id": "memory",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "writer",
+          "kind": "worker",
+          "role": "queue"
+        },
+        {
+          "id": "tmp",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "entry",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "mobile-system-design/pagination",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "ui",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "pager",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "room",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "mediator",
+          "kind": "worker",
+          "role": "queue"
+        },
+        {
+          "id": "api",
+          "kind": "server",
+          "role": "runtime"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "mobile-system-design/typeahead-autocomplete-search",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "bar",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "vm",
+          "kind": "clock",
+          "role": "runtime"
+        },
+        {
+          "id": "repo",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "local",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "api",
+          "kind": "server",
+          "role": "runtime"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "mobile-system-design/search",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "ui",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "vm",
+          "kind": "clock",
+          "role": "runtime"
+        },
+        {
+          "id": "pager",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "mediator",
+          "kind": "worker",
+          "role": "queue"
+        },
+        {
+          "id": "room",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "api",
+          "kind": "server",
+          "role": "runtime"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "mobile-system-design/notification-system",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "trigger",
+          "kind": "signal",
+          "role": "runtime"
+        },
+        {
+          "id": "dedupe",
+          "kind": "key",
+          "role": "runtime"
+        },
+        {
+          "id": "policy",
+          "kind": "gate",
+          "role": "runtime"
+        },
+        {
+          "id": "render",
+          "kind": "document",
+          "role": "runtime"
+        },
+        {
+          "id": "router",
+          "kind": "worker",
+          "role": "queue"
+        },
+        {
+          "id": "inbox",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "device",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
     }
   ]
 }

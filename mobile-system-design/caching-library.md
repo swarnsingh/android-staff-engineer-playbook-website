@@ -40,7 +40,7 @@
 | Acceptable cold read latency? | Sync vs async disk reads |
 | Need observability (hit rate)? | Built-in metrics counter |
 | Will it be used from multiple processes? | Lock model |
-| Android API floor? | `LruCache` (4+), `DiskLruCache` (Jake Wharton fork or own) |
+| Android API floor? | AndroidX `LruCache` has no such constraint here; `DiskLruCache` (archived Jake Wharton repository, or own) |
 | Value types primitive or POJO? | Serializer interface |
 
 > **Candidate:** "Assume single-process, read-heavy (~10:1), avg value 1-50 KB, sync API with coroutine wrappers, single-process, Android 9+."
@@ -146,13 +146,14 @@ flowchart TD
     Root --> Entries --> Files
 ```
 
-The index owns lookup and eviction metadata; opaque entry filenames avoid leaking raw keys and are committed atomically with their metadata.
+The index owns lookup and eviction metadata; opaque entry filenames avoid leaking raw keys. An entry file and the index are written atomically but separately, so recovery must ignore orphan files and index rows whose file is missing.
 
 `index.bin` is rewritten atomically on flush. Entry files are written `.tmp` → `fsync` → `rename` for atomicity.
 
 ```kotlin
 internal data class IndexRow(val key: String, val file: String,
-                              val expiresAt: Long, val sizeBytes: Long)
+                              val expiresAt: Long, val sizeBytes: Long,
+                              val lastAccessedAt: Long)
 ```
 
 > **Probing Q:** "Why not use Room?" Because the value is opaque bytes. Room is for queryable structured data. A bytes cache is simpler as files + an index.
@@ -232,8 +233,9 @@ internal fun writeAtomic(file: File, bytes: ByteArray) {
 ### Concurrency
 
 - `MemoryCache` is `LruCache` (synchronized).
-- `DiskCache` is guarded by a `Mutex` (one writer at a time).
-- Reads from disk parallelize via a coroutine dispatcher.
+- `DiskCache` is guarded by a `Mutex`, so one read or write touches it at a time; waiting callers suspend rather than block a thread.
+- Disk work runs on a coroutine dispatcher, off the caller's thread.
+- `invalidate` and `put` must reach disk in order: an invalidate that overtakes a queued disk write would let the removed value come back on a later cold read.
 
 ---
 
@@ -252,7 +254,7 @@ internal fun writeAtomic(file: File, bytes: ByteArray) {
 | Option | Pros | Cons | Verdict |
 |---|---|---|---|
 | **File per entry + index** | Simple, debuggable | Many small files (FS inode pressure) | Pick this |
-| `DiskLruCache` (JW) | Battle-tested in OkHttp | Stale lib, key constraints | Acceptable |
+| `DiskLruCache` (JW) | Proven design; OkHttp keeps its own copy | Repository archived, key constraints | Acceptable |
 | SQLite blob table | Atomic, transactional | Schema overhead for bytes | Skip |
 | MMKV (Tencent) | Fast, mmap-based | Native lib; key-value only | Niche |
 
@@ -290,7 +292,7 @@ internal fun writeAtomic(file: File, bytes: ByteArray) {
 ## 10. Follow-up Questions
 
 > **Q: How do you handle a write while a read is in flight for the same key?**
-> Memory `put` is atomic on `LruCache`. The disk write happens on a dispatched coroutine; if a read fires before the disk write completes, it gets the memory-tier value (which is newer). After the disk write, future cold reads see the new value.
+> Memory `put` is atomic on `LruCache`. The disk write happens on a dispatched coroutine; if a read fires before the disk write completes, it gets the memory-tier value (which is newer), as long as the entry has not been evicted from memory. After the disk write, future cold reads see the new value.
 
 > **Q: What about multi-process access?**
 > Out of scope. If needed: switch the disk index to a `ContentProvider`-fronted SQLite table, or use MMKV with file locks. Don't bolt cross-process onto a single-process design.
@@ -305,7 +307,7 @@ internal fun writeAtomic(file: File, bytes: ByteArray) {
 > Memory: 1/8 of `Runtime.maxMemory()` if values are bitmaps; smaller (200 entries) for POJOs. Disk: 50 MB. Always overridable.
 
 > **Q: How would Coil's image cache compare?**
-> Coil uses the same shape — in-memory bitmap pool + disk bytes — but with bitmap-aware eviction (`sizeOf` per bitmap) and the Coil `MemoryCache.Builder().maxSizePercent(context, 0.25)` helper. Same architecture, image-specialised.
+> Coil uses the same shape — an in-memory cache of bitmaps + disk bytes — but with bitmap-aware eviction (`sizeOf` per bitmap) and the Coil `MemoryCache.Builder().maxSizePercent(context, 0.25)` helper. Same architecture, image-specialised.
 
 ---
 
@@ -324,8 +326,8 @@ internal fun writeAtomic(file: File, bytes: ByteArray) {
 - [weeeBox/mobile-system-design — caching-library](https://github.com/weeeBox/mobile-system-design/blob/master/exercises/caching-library.md) — reference format.
 - [Android Developers — LruCache](https://developer.android.com/reference/kotlin/androidx/collection/LruCache) — canonical in-memory cache.
 - [Jake Wharton — DiskLruCache](https://github.com/JakeWharton/DiskLruCache) — reference for the atomic-rename disk pattern.
-- [Coil 3 — MemoryCache and DiskCache](https://coil-kt.github.io/coil/getting_started/) — image-loader take on the same shape.
-- [Caffeine paper — Window TinyLfu](https://arxiv.org/abs/1512.00727) — for when LRU isn't enough.
+- [Coil 3 — MemoryCache and DiskCache](https://coil-kt.github.io/coil/image_loaders/) — image-loader take on the same shape.
+- [TinyLFU paper (Einziger, Friedman, Manes)](https://arxiv.org/abs/1512.00727) — the admission policy behind Caffeine, for when LRU isn't enough.
 
 ---
 
