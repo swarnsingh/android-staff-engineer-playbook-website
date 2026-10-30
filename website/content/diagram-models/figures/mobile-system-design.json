@@ -1,5 +1,113 @@
 [
   {
+    "path": "mobile-system-design",
+    "diagram": "ff0cab26c39d84a3",
+    "number": 1,
+    "title": "Six phases, each building on the last",
+    "caption": "Start from the prerequisites in other trees, then read the phases in order: a design method, reusable platform blocks, bounded problems, then complete stateful, regulated and organisation-scale systems. Each later phase assumes the contracts and failure vocabulary of the earlier ones.",
+    "sources": [
+      "https://developer.android.com/topic/architecture"
+    ],
+    "kind": "map",
+    "layout": "snake",
+    "nodes": [
+      {
+        "id": "pre",
+        "title": "Prerequisites",
+        "detail": [
+          "Android, distributed systems,",
+          "backend for mobile"
+        ],
+        "role": "neutral"
+      },
+      {
+        "id": "p1",
+        "title": "1. Design method and NFRs",
+        "role": "neutral",
+        "key": true
+      },
+      {
+        "id": "p2",
+        "title": "2. Platform building blocks",
+        "role": "neutral"
+      },
+      {
+        "id": "p3",
+        "title": "3. Bounded data and delivery",
+        "role": "neutral"
+      },
+      {
+        "id": "p4",
+        "title": "4. Offline, feed and real-time",
+        "role": "neutral"
+      },
+      {
+        "id": "p5",
+        "title": "5. Location, money and media",
+        "role": "neutral"
+      },
+      {
+        "id": "p6",
+        "title": "6. Advanced platforms",
+        "detail": "and experimentation",
+        "role": "neutral"
+      }
+    ],
+    "groups": [
+      {
+        "id": "other",
+        "label": "Other trees",
+        "nodes": [
+          "pre"
+        ]
+      },
+      {
+        "id": "tree",
+        "label": "Mobile System Design phases",
+        "nodes": [
+          "p1",
+          "p2",
+          "p3",
+          "p4",
+          "p5",
+          "p6"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "pre",
+        "to": "p1",
+        "label": "read first"
+      },
+      {
+        "from": "p1",
+        "to": "p2",
+        "label": "assumed by"
+      },
+      {
+        "from": "p2",
+        "to": "p3",
+        "label": "assumed by"
+      },
+      {
+        "from": "p3",
+        "to": "p4",
+        "label": "assumed by"
+      },
+      {
+        "from": "p4",
+        "to": "p5",
+        "label": "assumed by"
+      },
+      {
+        "from": "p5",
+        "to": "p6",
+        "label": "assumed by"
+      }
+    ]
+  },
+  {
     "path": "mobile-system-design/offline-sync",
     "diagram": "844279b637ab9e25",
     "number": 1,
