@@ -68,5 +68,122 @@
       "worker": "PushWorker",
       "event": "What happens"
     }
+  },
+  {
+    "path": "mobile-system-design/performance",
+    "figure": 0,
+    "problem": "How does one janky frame on a user’s phone become a measured, fixed and guarded regression?",
+    "reading": "The feed renders on the main thread inside a frame budget set by the refresh rate. JankStats times every frame of the window and reports janky ones, with the current screen, to the telemetry SDK as sampled perf events.",
+    "groups": [
+      {
+        "id": "app",
+        "label": "App UI on the device",
+        "nodes": [
+          "ui",
+          "main",
+          "frame"
+        ]
+      },
+      {
+        "id": "observe",
+        "label": "In-app measurement",
+        "nodes": [
+          "jank",
+          "telem"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "main",
+        "label": "composes items on"
+      },
+      {
+        "from": "main",
+        "to": "frame",
+        "label": "must finish within"
+      },
+      {
+        "from": "jank",
+        "to": "frame",
+        "label": "times every"
+      },
+      {
+        "from": "jank",
+        "to": "telem",
+        "label": "reports janky frames"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/performance/jankstats",
+      "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
+    ],
+    "labels": {
+      "ui": "Feed screen",
+      "main": "Main thread",
+      "frame": "Frame",
+      "jank": "JankStats",
+      "telem": "Telemetry SDK",
+      "event": "What happens"
+    }
+  },
+  {
+    "path": "mobile-system-design/versioning-and-backward-compatibility",
+    "figure": 0,
+    "problem": "How does an installed app decide, at start, between the full app, a deprecation banner and a forced update?",
+    "reading": "The app sends its version to the policy endpoint and caches the answer. AppPolicyGate compares the installed version with the two thresholds and chooses what the user sees; with no reachable endpoint it uses the cached policy, or OK on a first launch.",
+    "groups": [
+      {
+        "id": "device",
+        "label": "On the device",
+        "nodes": [
+          "app",
+          "cache",
+          "gate",
+          "screen"
+        ]
+      },
+      {
+        "id": "server",
+        "label": "Server",
+        "nodes": [
+          "api"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "app",
+        "to": "api",
+        "label": "sends X-App-Version"
+      },
+      {
+        "from": "api",
+        "to": "cache",
+        "label": "policy stored in"
+      },
+      {
+        "from": "gate",
+        "to": "cache",
+        "label": "reads thresholds from"
+      },
+      {
+        "from": "gate",
+        "to": "screen",
+        "label": "chooses"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/guide/playcore/in-app-updates"
+    ],
+    "labels": {
+      "app": "Installed app",
+      "api": "Policy endpoint",
+      "cache": "Cached policy",
+      "gate": "AppPolicyGate",
+      "screen": "What the user sees",
+      "event": "What happens"
+    }
   }
 ]

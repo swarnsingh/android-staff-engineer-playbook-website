@@ -170,7 +170,7 @@ If 6+ dimensions matter, the interviewer is testing you on tradeoffs, not featur
 | "We'll send analytics" — no consent gating | Ask: "GDPR opt-out?" |
 | "Compose feed" — no `key` on items | Ask: "What happens when items are inserted?" |
 | "FCM push" — no OEM-kill caveat | Ask: "Xiaomi / OPPO users?" |
-| "Token in SharedPrefs" — no encryption | Ask: "What if the device is rooted?" |
+| "Token in SharedPrefs" — no encryption | Ask: "What if the file is extracted, or the token is long-lived?" |
 | "Worker fires on launch" — no `WorkManager` constraints | Ask: "What about Doze?" |
 | "All strings in code" — no localization | Ask: "Does this app ship to RTL languages?" |
 | "We'll manually verify prod" — no synthetic monitor | Ask: "How do we know checkout is broken before users do?" |
@@ -242,7 +242,7 @@ The OS imposes constraints that don't exist on backend:
 - **OEM behavior**: Xiaomi/OPPO/Vivo aggressively kill apps; document or mitigate.
 - **Network class**: cellular (metered) vs Wi-Fi vs unmetered; quality varies wildly.
 - **Storage class**: app-private vs scoped vs MediaStore; auto-backup interaction.
-- **Process death**: a foreground app can be killed under memory pressure — design as if it will.
+- **Process death**: once the app is in the background, its process can be reclaimed at any time; when the user returns, Android recreates it from saved state — design as if it will.
 - **OS upgrades**: each Android version tightens permissions; respect API levels gracefully.
 
 ---
@@ -253,7 +253,7 @@ The OS imposes constraints that don't exist on backend:
 > 1. **Battery** — this is a streaming feature, so the foreground/background socket policy matters; we'll close the socket after 30s of background and rely on FCM.
 > 2. **Resilience** — every write needs to survive process death; we'll use Room as the durable queue, not in-memory.
 > 3. **Offline** — UI must work from cached data; Room is single source of truth.
-> 4. **Performance** — list must scroll at 60Hz on mid-tier; Paging 3 + Coil with bounded memory cache.
+> 4. **Performance** — list must scroll without missed frames at the device refresh rate (16.7 ms at 60 Hz, 11.1 ms at 90 Hz) on mid-tier; Paging 3 + Coil with bounded memory cache.
 > 5. **Observability** — every state transition logged via the telemetry SDK.
 > I'll skip security and accessibility this round unless you want to call them in."
 
@@ -267,7 +267,7 @@ This signals: you have a mental checklist, you've prioritised for *this* problem
 - [Material Design — Accessibility](https://m3.material.io/foundations/accessible-design) — pattern library.
 - [Android Vitals](https://developer.android.com/topic/performance/vitals) — Play Console RUM metrics.
 - [WCAG 2.2 for mobile](https://www.w3.org/WAI/standards-guidelines/wcag/) — accessibility standard.
-- [GDPR for mobile apps](https://gdpr.eu/) — consent + data minimisation.
+- [GDPR — Regulation (EU) 2016/679](https://eur-lex.europa.eu/eli/reg/2016/679/oj) — the legal text on consent and data minimisation.
 
 ---
 

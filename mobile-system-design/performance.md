@@ -11,7 +11,7 @@
 
 ### Functional Requirements
 - **Smooth scroll** across all list/feed screens.
-- **Cold start under a budget** (typically < 1.5s on a mid-tier device).
+- **Cold start under a budget** (this design targets < 1.5s TTID on a mid-tier device; Android vitals flags cold starts of 5s or longer as excessive).
 - **Memory pressure handled** (no OOM, no jank from GC).
 - **Battery drain bounded** (no measurable drain at idle).
 - **Network usage minimised** on cellular.
@@ -79,7 +79,9 @@ Performance is a coupled budget rather than a single startup or frame metric: an
 
 ---
 
-## 4. Performance Budgets (per device tier)
+## 4. Example Performance Budgets (per device tier)
+
+These are example product targets for this interview, not platform guarantees; set yours from field data. The only official startup thresholds are Android vitals' "excessive" startup levels, measured on TTID: cold 5s or longer, warm 2s or longer, hot 1.5s or longer ([Android vitals startup time](https://developer.android.com/google/play/vitals/launch-time)).
 
 | Budget | Low-tier | Mid-tier | Flagship |
 |---|---|---|---|
@@ -98,20 +100,19 @@ Performance is a coupled budget rather than a single startup or frame metric: an
 
 ### Rendering
 
-- Compose `key { id }` on list items to prevent recomposition.
+- Pass a stable `key = { it.id }` to lazy `items` so item state and animations follow the item across inserts and reorders.
 - `derivedStateOf` for computed UI state.
 - `LazyColumn` with stable item types, not `Column { items.forEach { } }`.
 - `remember` mutable state at the right scope.
-- Avoid `Modifier.fillMaxSize()` chains that trigger relayout.
-- Stable types (`@Immutable`, `@Stable`) for data classes.
-- Strong-skipping mode (Compose Compiler).
+- Defer fast-changing state reads to the layout or draw phase with lambda modifiers (`Modifier.offset { }`, `drawBehind { }`).
+- Diagnose parameter stability before adding `@Immutable` or `@Stable`; these annotations promise a contract the type must uphold.
+- Check the Compose compiler version before changing skipping settings; strong skipping is on by default with Kotlin 2.0.20+.
 - Baseline profiles for hot startup paths.
 
 ### Memory
 
-- Coil with `MemoryCache.Builder().maxSizePercent(0.25)` — bounded bitmap heap.
-- `DisposableEffect { onDispose { player.release() } }` for ExoPlayer.
-- Room queries return `Flow<List<T>>` not `List<T>` — backpressure.
+- Coil with `MemoryCache.Builder().maxSizePercent(context, 0.25)` — bounded bitmap memory.
+- `DisposableEffect(player) { onDispose { player.release() } }` for ExoPlayer.
 - `LruCache` for any in-memory caches.
 - Profile leaks with LeakCanary; never leak `Activity`/`Context`.
 
@@ -120,7 +121,7 @@ Performance is a coupled budget rather than a single startup or frame metric: an
 - Foreground-only sockets; FCM for background events.
 - WorkManager constraints (NetworkType.CONNECTED, BatteryNotLow) instead of fighting Doze.
 - No `WakeLock`s unless absolutely necessary.
-- `setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)` to opt into expedited only for user-initiated.
+- Use `setExpedited(...)` only for user-initiated, user-visible work; `OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST` makes it fall back to normal work when the expedited quota is exhausted. Below Android 12, expedited workers must implement `getForegroundInfo()`.
 - Throttle quote/location streams when stationary or backgrounded.
 
 ### Network
@@ -130,7 +131,7 @@ Performance is a coupled budget rather than a single startup or frame metric: an
 - Image-tier selection by `ConnectivityManager.isActiveNetworkMetered`.
 - Pagination + cache-first reads.
 - Bundle small updates instead of chatty calls.
-- Single source of truth (Room) so the UI re-renders without re-fetching.
+- Single source of truth (Room) so the UI re-renders without re-fetching; observe Room queries as `Flow` so the UI updates when the data changes.
 
 ---
 
@@ -172,7 +173,7 @@ data class Post(val id: String, val title: String, val author: Author, val creat
 fun PostCard(post: Post, onLike: () -> Unit) { ... }
 ```
 
-`@Immutable` signals to Compose that `Post` never changes — recomposition skips this composable when the same instance is passed. Without it, Compose conservatively recomposes on every parent change.
+`@Immutable` promises that `Post` and its properties will not change after construction; that includes `Author`. Use it only when this contract is true. Check compiler stability reports before adding an annotation: with strong skipping enabled, a restartable composable can also skip when it receives the same instance of an unstable parameter.
 
 ### LazyColumn discipline
 
@@ -189,8 +190,8 @@ LazyColumn(state = listState) {
 }
 ```
 
-- **`key`** — stable identity across data changes; animations + recomposition skip work.
-- **`remember(post.id) { { ... } }`** — lambda identity stable per item; otherwise every recomposition allocates a new lambda and child `PostCard` recomposes.
+- **`key`** — stable identity across data changes, so item state and animations move with the item when the list is reordered.
+- **`remember(post.id) { { ... } }`** — only needed when strong skipping is disabled. With strong skipping (the default on Kotlin 2.0.20+), the compiler remembers lambdas inside composables automatically.
 
 ### derivedStateOf for computed UI
 
@@ -205,7 +206,6 @@ val showFab by remember { derivedStateOf { listState.firstVisibleItemIndex > 5 }
 Baseline profiles are AOT-compiled hot paths shipped with the APK. Generated via `Macrobenchmark`:
 
 ```kotlin
-@OptIn(ExperimentalBaselineProfilesApi::class)
 class BaselineProfileGenerator {
     @get:Rule
     val rule = BaselineProfileRule()
@@ -220,28 +220,24 @@ class BaselineProfileGenerator {
 }
 ```
 
-The output goes into `app/src/main/baseline-prof.txt`. R8 / ART uses it to AOT-compile those methods. Result: 20-40% faster cold start.
+The generated profile is packaged with the app so ART can compile covered paths ahead of time. Measure the cold-start change on representative devices; the gain depends on the paths covered and the app's other startup costs.
 
 ### Strong-skipping mode
 
-Set in `gradle.properties`:
+Strong skipping is enabled by default with Kotlin 2.0.20+. For older Compose compiler setups, follow the official compiler configuration for that version. It makes restartable composables skippable even with unstable parameters; stable parameters use equality, while unstable parameters use instance identity.
 
-```
-android.experimental.composeStrongSkipping=true
-```
-
-Compose Compiler skips recomposition more aggressively when inputs haven't changed.
+See [Android's strong-skipping guide](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping) and [stability guidance](https://developer.android.com/develop/ui/compose/performance/stability/fix).
 
 ### Bitmap memory
 
 ```kotlin
 val imageLoader = ImageLoader.Builder(context)
-    .memoryCache { MemoryCache.Builder().maxSizePercent(0.25).build() }
+    .memoryCache { MemoryCache.Builder().maxSizePercent(context, 0.25).build() }
     .diskCache { DiskCache.Builder().directory(cacheDir.resolve("images")).maxSizeBytes(150 * MB).build() }
     .build()
 ```
 
-Coil 3 binds the memory cache to 25% of heap. Without a budget, the JVM happily allocates bitmaps until OOM. Profile with `Bitmap.getAllocationByteCount()` aggregated.
+This configuration caps Coil's memory cache at 25% of the app's available memory; Coil's default is 20% (15% on low-RAM devices). Give every in-memory cache an explicit budget, and profile with `Bitmap.getAllocationByteCount()` aggregated.
 
 ### Off-screen GPU surfaces
 
@@ -265,7 +261,7 @@ Don't instantiate heavy views off-screen. `LazyColumn` already does this for its
 | Disk (Room) | `Dispatchers.IO` (Room handles internally for suspend DAOs) |
 | Image decode | Coil's decode dispatcher |
 | Cryptographic | `Dispatchers.Default` |
-| WorkManager | Its own dispatcher |
+| WorkManager (`CoroutineWorker`) | `Dispatchers.Default` by default; switch to `Dispatchers.IO` for blocking I/O |
 
 Never `runBlocking` on Main. Use `withContext(Dispatchers.IO)` in repositories.
 
@@ -275,7 +271,7 @@ Never `runBlocking` on Main. Use `withContext(Dispatchers.IO)` in repositories.
 |---|---|
 | Jank during scroll | Profile with Perfetto; suspect bitmap decode, layout passes, GC |
 | OOM | Bound caches; release players; profile Bitmap allocations |
-| Slow cold start | Defer work to `Initializer`, generate baseline profile, audit `Application.onCreate` |
+| Slow cold start | Audit startup providers and `Application.onCreate`; lazily initialize non-critical work and measure a baseline profile |
 | ANR | Profile main-thread work; move I/O off main |
 | Battery drain | Audit sockets, WorkManager, FCM frequency |
 | Network spike | Aggregate analytics; check for chatty endpoints |
@@ -304,10 +300,10 @@ Never `runBlocking` on Main. Use `withContext(Dispatchers.IO)` in repositories.
 
 | Lever | When |
 |---|---|
-| `@Immutable` / `@Stable` | All data classes UI consumes |
-| `key { }` on lists | Always |
+| `@Immutable` / `@Stable` | Only when the type meets the contract and compiler reports show a useful stability issue |
+| `items(key = …)` on lazy lists | Always |
 | `remember { }` for derived state | Yes |
-| Strong-skipping mode | Yes on Compose 1.6+ |
+| Strong-skipping mode | Default with Kotlin 2.0.20+; check compiler version on older builds |
 | Baseline profile | Yes for cold start |
 
 ### Battery measurement
@@ -327,7 +323,7 @@ Never `runBlocking` on Main. Use `withContext(Dispatchers.IO)` in repositories.
 - **Regression gates.** Macrobenchmark in CI flags PR-level regressions before merge.
 - **Background work.** The biggest battery wins come from honouring Doze and not fighting it.
 - **GC pressure.** Allocating in tight loops (e.g., per-frame composable) causes jank from GC pauses; cache where possible.
-- **Cold start budget.** Every `Application.onCreate` line counts. Defer non-critical SDK init via `AppStartup` library.
+- **Cold start budget.** Audit both startup providers and `Application.onCreate`. Disable automatic App Startup discovery for non-critical SDKs and initialize them when needed.
 - **Network in startup.** Don't block first paint on network. Skeleton + async hydrate.
 - **Profile, don't guess.** Perfetto > intuition. Macrobenchmark > stopwatch.
 
@@ -342,10 +338,10 @@ Never `runBlocking` on Main. Use `withContext(Dispatchers.IO)` in repositories.
 > Tiered behavior: smaller image variants, fewer prefetched items, simpler animations. Make the tradeoff explicit; degrade gracefully.
 
 > **Q: Compose recompositions are happening more than expected — how to debug?**
-> Compose Compiler reports + `composableInvocations` tooling shows per-composable recomp counts. Use `Recomposer` logs in debug builds. Add `@Stable`/`@Immutable` where needed.
+> Start with Compose compiler reports and a benchmark of the affected screen. Add `@Stable` or `@Immutable` only when the type fulfills its contract and the change measurably helps.
 
 > **Q: How do you decide between baseline profile and ahead-of-time compilation?**
-> Baseline profile is the standard ART path. AOT is automatic post-install on Android 11+ (when system idle). Baseline profile delivers wins from day 1 for cold start.
+> Baseline Profiles identify code paths for ART to compile ahead of time. Compilation timing depends on Android version and installation route: Google Play can compile profiles during installation or background updates, while other installs may rely on later background optimization. Check the profile's compiled state and measure cold-start performance on the target devices.
 
 > **Q: How is battery drain debugged in production?**
 > Android Vitals shows aggregate. For per-user, request `dumpsys batterystats` on a specific device. The biggest culprits are: wake-locks, JobScheduler abuse, foreground services, background sockets.

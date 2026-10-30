@@ -79,14 +79,16 @@ Validated against: [App startup time](https://developer.android.com/topic/perfor
 
 ## 4. Budgets
 
+These are example targets for this design, not platform guarantees. Android vitals flags cold starts of 5 s or longer as excessive and measures startup as TTID ([Android vitals startup time](https://developer.android.com/google/play/vitals/launch-time)).
+
 | Phase | Mid-tier budget |
 |---|---|
 | Process start (Android) | ~150-300 ms |
 | `Application.onCreate` | < 300 ms |
 | Activity create + first frame | < 400 ms |
-| First frame to interactive | < 600 ms |
-| **Total TTID** | **< 1.5 s** |
-| **Total TTFD** | **< 2.5 s** |
+| **TTID (launch → first frame)** | **≈ 1.0 s, < 1.5 s at worst** |
+| First frame → content ready | < 600 ms |
+| **TTFD (launch → fully drawn)** | **< 2.5 s** |
 
 ---
 
@@ -99,18 +101,19 @@ Validated against: [App startup time](https://developer.android.com/topic/perfor
 class App : Application() {
     @Inject lateinit var crash: Crashlytics
     @Inject lateinit var flags: FlagsRepository
+    @Inject @ApplicationScope lateinit var appScope: CoroutineScope
 
     override fun onCreate() {
         super.onCreate()
         // Critical only — must be done before first frame
         crash.install()
-        flags.bootstrap()                    // sync-from-disk; async refresh
-        // AppStartup will run others later via Initializer chain
+        appScope.launch { flags.bootstrap() } // disk snapshot, then async refresh
+        // Manifest-registered App Startup initializers have already run.
     }
 }
 ```
 
-### `AppStartup` for deferred SDKs
+### App Startup for startup dependencies
 
 ```xml
 <!-- AndroidManifest.xml -->
@@ -119,9 +122,6 @@ class App : Application() {
     android:authorities="${applicationId}.androidx-startup"
     android:exported="false"
     tools:node="merge">
-    <meta-data
-        android:name="com.app.di.HiltInitializer"
-        android:value="androidx.startup" />
     <meta-data
         android:name="com.app.analytics.AnalyticsInitializer"
         android:value="androidx.startup" />
@@ -133,11 +133,11 @@ class AnalyticsInitializer : Initializer<Analytics> {
     override fun create(context: Context): Analytics {
         return Analytics.also { it.init(context, AnalyticsConfig(...)) }
     }
-    override fun dependencies(): List<Class<out Initializer<*>>> = listOf(HiltInitializer::class.java)
+    override fun dependencies(): List<Class<out Initializer<*>>> = emptyList()
 }
 ```
 
-`AppStartup` lets you parallelize independent inits and explicitly state dependencies, avoiding the "init everything in `onCreate`" anti-pattern.
+Manifest-registered App Startup initializers run during process startup, before `Application.onCreate`. The library consolidates startup providers and orders dependencies; registration alone does not defer or parallelize initialization. To defer analytics, override its merged manifest entry with `tools:node="remove"`, then call `AppInitializer.getInstance(context).initializeComponent(AnalyticsInitializer::class.java)` when needed. Simply deleting an entry from the app manifest does not remove one contributed by a library. See the [App Startup guide](https://developer.android.com/topic/libraries/app-startup).
 
 ### Splash screen (SplashScreen API)
 
@@ -162,16 +162,16 @@ The system splash is drawn during the cold-start window — no white flash, no m
 @Composable
 fun FeedScreen(vm: FeedViewModel = hiltViewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
-    when (state) {
+    when (val s = state) {
         Loading -> FeedSkeleton()       // first paint
-        is Ready -> FeedList(state.items)
+        is Ready -> FeedList(s.items)
         is Error -> ErrorState(...)
     }
     ReportDrawnWhen { state is Ready }   // TTFD signal
 }
 ```
 
-`ReportDrawnWhen` (Activity Compose) tells the system "we're fully drawn" — Android Vitals uses it for TTFD.
+`ReportDrawnWhen` (Activity Compose) calls `reportFullyDrawn()` once the condition is true. That defines TTFD for the system log, Perfetto, and Macrobenchmark; Android vitals' startup metric is TTID.
 
 ---
 
@@ -194,7 +194,7 @@ Cold-start telemetry flows through the telemetry SDK as a `cold_start` event wit
 
 ## 7. Deep Dive: Deferred Initialization + Baseline Profile (~15 min)
 
-> *I'd pick this as the deep dive because deferred init + baseline profile is where 60% of the wins live: avoiding work on the cold path and pre-compiling what's left.*
+> *I'd pick this as the deep dive because it tests which work really belongs on the cold path and whether a baseline profile improves the paths that remain.*
 
 ### Audit `Application.onCreate`
 
@@ -204,40 +204,42 @@ Cold-start telemetry flows through the telemetry SDK as a `cold_start` event wit
    - CRITICAL (must be before first frame): crash reporter, flag bootstrap, Hilt graph
    - DEFERRABLE (can be after first frame): analytics, perf monitor, ads SDK, feature SDKs
    - LAZY (init on first use): rare paths
-3. Move DEFERRABLE to AppStartup Initializers.
+3. Disable automatic discovery for DEFERRABLE initializers with a manifest merge removal; call them when needed.
 4. Move LAZY to `lazy { }` or first-call init.
 ```
 
 Common offenders:
 - Image loader SDK (move to lazy)
-- Analytics SDK (defer via AppStartup)
+- Analytics SDK (disable automatic discovery, then initialize when needed)
 - A/B testing SDK (can be flag-bootstrapped earlier and stays lightweight)
 - 3rd-party SDKs (Facebook, Branch, Mixpanel) — defer or lazy
 - Logger / OkHttp (`lazy { }` is fine)
 
-### AppStartup Initializer chain
+### App Startup initializer
 
 ```kotlin
-class HiltInitializer : Initializer<Unit> {
-    override fun create(context: Context) { /* Hilt initializes via @HiltAndroidApp */ }
-    override fun dependencies(): List<Class<out Initializer<*>>> = emptyList()
-}
-
 class AnalyticsInitializer : Initializer<Analytics> {
     override fun create(context: Context): Analytics {
         return Analytics.also { it.init(context, ...) }
     }
-    override fun dependencies() = listOf(HiltInitializer::class.java)
-}
-
-class CrashInitializer : Initializer<Crashlytics> {
-    override fun create(context: Context): Crashlytics =
-        Crashlytics.also { it.install(context) }
-    override fun dependencies() = listOf(HiltInitializer::class.java)
+    override fun dependencies(): List<Class<out Initializer<*>>> = emptyList()
 }
 ```
 
-The `InitializationProvider` runs these in dependency order, possibly in parallel where the graph allows.
+With the manifest entry above, `InitializationProvider` runs analytics during startup. To defer it, add this removal rule to the app manifest and initialize it explicitly later:
+
+```xml
+<provider
+    android:name="androidx.startup.InitializationProvider"
+    android:authorities="${applicationId}.androidx-startup"
+    tools:node="merge">
+    <meta-data
+        android:name="com.app.analytics.AnalyticsInitializer"
+        tools:node="remove" />
+</provider>
+```
+
+If an eager initializer lists analytics in `dependencies()`, App Startup still discovers it at startup; remove that dependency too before treating analytics as deferred.
 
 ### Lazy init for first-use SDKs
 
@@ -255,7 +257,6 @@ Until something calls `doWork`, the SDK never touches disk or threads. Cold star
 ### Baseline profile
 
 ```kotlin
-@OptIn(ExperimentalBaselineProfilesApi::class)
 class BaselineProfileGenerator {
     @get:Rule val rule = BaselineProfileRule()
 
@@ -271,7 +272,7 @@ class BaselineProfileGenerator {
 }
 ```
 
-Generated file goes into `app/src/main/baseline-prof.txt`. ART AOT-compiles those methods on install. Typical wins: 20-40% TTID on cold start.
+The generated profile is packaged with the app so ART can compile covered paths ahead of time. Measure TTID on representative devices; the improvement depends on profile coverage and other startup work.
 
 ### Macrobenchmark gate
 
@@ -311,7 +312,7 @@ The system pre-draws this from manifest before `Application.onCreate` runs — i
 
 ### Compose first-frame composition
 
-- Avoid `LaunchedEffect(Unit) { /* fetch */ }` that drives loading state from cold; prefer the ViewModel constructor (which has fired already on first composition).
+- Avoid `LaunchedEffect(Unit) { /* fetch */ }` that drives loading state from cold; start the load from the ViewModel, which is created when the screen first composes.
 - Use `Modifier.layoutId` + `SubcomposeLayout` only when truly needed.
 - Don't `remember { computeExpensiveThing() }` at the top of a screen — move to ViewModel.
 
@@ -324,7 +325,7 @@ The system pre-draws this from manifest before `Application.onCreate` runs — i
 | What breaks | Behavior |
 |---|---|
 | Hilt graph grows; cold start regresses | Per-Initializer Macrobenchmark; isolate the culprit |
-| SDK init blocks main thread | Move to dispatcher in Initializer |
+| SDK init blocks startup | Remove automatic discovery if safe; initialize at the point of use |
 | Baseline profile stale | Regenerate on major UI changes |
 | Splash screen flashes | Use SplashScreen API, not a custom splash Activity |
 | Crash reporter init fails | App still launches; crash data lost until next launch |
@@ -338,10 +339,11 @@ The system pre-draws this from manifest before `Application.onCreate` runs — i
 
 | Option | When | Verdict |
 |---|---|---|
-| **AppStartup Initializers** | Most SDKs | Pick this |
+| **Automatic App Startup initializers** | Components required during process startup | Use for eager dependencies |
+| Manual App Startup initialization | Components that can wait until needed | Use after disabling automatic discovery |
 | `lazy { }` first-use | Truly rare SDKs | Use for non-critical paths |
 | `Application.onCreate` direct | Critical only (crash, Hilt) | Last resort |
-| `ContentProvider` (vendor SDK pattern) | Vendors love this; pre-Initializer | Avoid; merges all to one provider |
+| Vendor-owned `ContentProvider` | SDK initializes before `Application.onCreate` | Check vendor support before disabling it |
 
 ### Splash screen
 
@@ -366,7 +368,7 @@ The system pre-draws this from manifest before `Application.onCreate` runs — i
 |---|---|
 | **Ship baseline-prof.txt** | Pick — large win, low cost |
 | Rely on ART JIT only | Slow first-few launches |
-| Cloud Profiles (Play Console) | Augment baseline-prof; opt-in |
+| Cloud Profiles (Play) | Aggregated automatically from real usage; arrive hours to days after a release, so Baseline Profiles cover the gap |
 
 ### Multidex
 
@@ -381,7 +383,7 @@ The system pre-draws this from manifest before `Application.onCreate` runs — i
 
 - **Critical path discipline.** Every line in `Application.onCreate` runs on every cold start. Audit ruthlessly.
 - **Don't block first frame.** Skeleton over spinner; render layout structure even when data isn't ready.
-- **Bound init parallelism.** Initializers can run in parallel where dependency graph allows. Don't serialize unless required.
+- **Check provider work.** Automatically discovered initializers add to the startup path even when they are absent from `Application.onCreate`.
 - **Baseline profile must reflect real usage.** Generate from real flows; stale profiles waste compute.
 - **Splash misuse.** Don't use a splash Activity to hide slow start. Fix the start.
 - **Measurement matters.** Both lab (Macrobenchmark) and real (Vitals) are needed. Lab catches regressions; real measures user impact.
@@ -393,7 +395,7 @@ The system pre-draws this from manifest before `Application.onCreate` runs — i
 ## 10. Follow-up Questions
 
 > **Q: What's the single biggest cold-start win you can do today?**
-> Ship a baseline profile. It's a one-time setup with a 20-40% TTID improvement on cold start, broadly across the user base.
+> Ship a baseline profile for measured hot paths, then compare cold-start TTID on representative devices. Keep auditing initialization; a profile cannot remove unnecessary startup work.
 
 > **Q: How do you decide what's "critical" vs "deferred"?**
 > Critical = needed before first frame draws (Hilt graph, crash reporter, flag snapshot). Everything else defers. If you're unsure, defer; if you missed something, it'll surface on the first interaction.
@@ -405,7 +407,7 @@ The system pre-draws this from manifest before `Application.onCreate` runs — i
 > Wrap each Initializer in a trace span. Compare cumulative duration across builds. Macrobenchmark validates net impact on TTID.
 
 > **Q: A vendor SDK is slow in `Application.onCreate` — what do you do?**
-> Move to AppStartup Initializer with dependencies. If they ship as a ContentProvider, override via `tools:node="remove"` and call their init explicitly. Talk to the vendor.
+> Check whether the SDK supports lazy initialization. If its provider can safely be disabled, use `tools:node="remove"` in the app manifest so the merged provider is removed, then initialize the SDK when needed; confirm the vendor's supported setup first.
 
 > **Q: Why does cold start vary so much between users?**
 > Device CPU + thermals, foreground/background memory state, ART optimisation level (post-install AOT), system load. Use p95, not avg.

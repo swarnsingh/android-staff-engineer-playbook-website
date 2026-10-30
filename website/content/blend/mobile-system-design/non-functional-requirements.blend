@@ -1,0 +1,12 @@
+<!-- Website teaching layer for mobile-system-design/non-functional-requirements.md (normal chapter layout: it is the NFR menu rather than one design problem).
+     The original chapter is rendered in full; everything here is added after it.
+     Verified 2026-10-30 against non-functional-requirements.md at source 5ff8d44 (§2 dimensions and journey diagram, §7 pacing, §8 trade-offs, §9 mobile-specific NFRs). -->
+
+<!-- @after 11. Where to Read More :: recap -->
+### Say these in the interview
+
+- **Start from the critical journey,** then pick the 4-6 dimensions that can change its design; don't recite all 13.
+- **Turn each one into a number:** a measurable budget, a failure policy and an owner.
+- **Name the trade-offs out loud,** for example performance against battery, or privacy against observability.
+- **Call out what only mobile has:** process death, Doze and App Standby, runtime permissions and OEM battery killers.
+- **Spend about two minutes.** Skipping NFRs reads as happy-path thinking; five minutes is padding.

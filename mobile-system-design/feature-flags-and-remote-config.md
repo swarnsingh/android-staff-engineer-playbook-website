@@ -1,6 +1,6 @@
 # Feature Flags & Remote Config
 
-> A 45-60 minute mobile system-design walkthrough for the feature-flag + remote-config subsystem of an Android app: kill switches, server-driven config, evaluation rules, fetch lifecycle, fallback for offline. A/B experimentation builds on top (next file).
+> A 45-60 minute mobile system-design walkthrough for the feature-flag + remote-config subsystem of an Android app: kill switches, server-driven config, evaluation rules, fetch lifecycle, fallback for offline. A/B experimentation builds on top (`a-b-testing-infrastructure.md`, a later phase).
 
 ---
 
@@ -27,7 +27,7 @@
 - Statistical analysis of variants (see `a-b-testing-infrastructure.md`)
 - Multi-armed bandit assignment (see `experimentation-platform.md`)
 - Server-side flag UI / changeflow (out of mobile scope)
-- Encryption at rest of flag values (handled by EncryptedSharedPrefs if sensitive)
+- Encryption at rest of flag values (if sensitive, a direct Android Keystore key + versioned ciphertext; see [Secure Storage on Android](../security/secure-storage-on-android.md))
 
 ---
 
@@ -88,9 +88,11 @@ GET /v1/flags?appVer=4.12.1&os=14&country=IN&locale=en-IN&deviceTier=mid
     "feed_layout": { "type": "string", "value": "grid", "variant": "B" }
   },
   "evaluatedAt": 1750000000,
-  "stickyBucketSeed": "u_42"     // for client-side sticky bucketing of new flags
+  "stickyBucketSeed": "9f2c…e1"
 }
 ```
+
+`stickyBucketSeed` is a hash of the user id, used for client-side sticky bucketing of new flags; the raw id never leaves the server.
 
 ### Caller API (typed)
 
@@ -130,7 +132,7 @@ val retries = Flags.maxRetry()
 :lib:flags
     flags-api          ← public typed Flags object
     flags-core         ← FlagsRepository, evaluator, store
-    flags-codegen      ← optional KSP for typed accessors
+    flags-codegen      ← optional Gradle codegen for typed accessors
 ```
 
 ### Layered diagram
@@ -153,12 +155,7 @@ One repository owns persistence, refresh, validation, and publication, preventin
 ### Key class signatures
 
 ```kotlin
-class FlagsRepository @Inject constructor(
-    private val fetcher: FlagsFetcher,
-    private val store: FlagsStore,
-    private val evaluator: Evaluator,
-    private val exposureSink: ExposureSink,
-) {
+interface FlagsRepository {
     val flags: StateFlow<FlagSet>                       // immutable snapshot
     suspend fun bootstrap()                              // load disk + start refresh
     suspend fun refresh()                                // explicit refresh
@@ -202,17 +199,24 @@ class DefaultFlagsRepository @Inject constructor(
     private val store: FlagsStore,
     private val fetcher: FlagsFetcher,
     private val evaluator: Evaluator,
+    private val definitions: FlagDefinitions,       // per-flag apply policy
     private val context: ContextProvider,
     private val scope: CoroutineScope,
 ) : FlagsRepository {
 
     private val _flags = MutableStateFlow(FlagSet.EMPTY)
     override val flags = _flags.asStateFlow()
+    private var active: FlagsSnapshot = FlagsSnapshot.EMPTY   // raw snapshot behind _flags
+    private val pendingSnapshot = MutableStateFlow<FlagsSnapshot?>(null)
+
+    private fun publish(snapshot: FlagsSnapshot) {
+        active = snapshot
+        _flags.value = evaluator.evaluate(snapshot, context.snapshot())
+    }
 
     override suspend fun bootstrap() {
         // Phase 1: synchronous-from-disk
-        val disk = store.read()
-        _flags.value = evaluator.evaluate(disk, context.snapshot())
+        publish(store.read())
 
         // Phase 2: async refresh (does not block bootstrap)
         scope.launch { refresh() }
@@ -221,9 +225,20 @@ class DefaultFlagsRepository @Inject constructor(
     override suspend fun refresh() {
         runCatching { fetcher.fetch(context.snapshot()) }
             .onSuccess { resp ->
-                store.write(FlagsSnapshot(resp.flags, resp.evaluatedAt))
-                // POLICY: don't swap mid-session
-                pendingSnapshot.value = FlagsSnapshot(resp.flags, resp.evaluatedAt)
+                val candidate = FlagsSnapshot(resp.flags, resp.evaluatedAt)
+                store.write(candidate)
+                val changed = candidate.changedKeys(active)
+                if (changed.all { definitions.applyPolicy(it) == ApplyPolicy.LIVE }) {
+                    // Only kill switches changed: apply now. The newest response supersedes any
+                    // older staged snapshot, so drop it; otherwise the next session would apply
+                    // stale values and roll the kill switch back.
+                    publish(candidate)
+                    pendingSnapshot.value = null
+                } else {
+                    // Kill switches still apply now; other flags wait for the session boundary.
+                    publish(active.withLiveFlagsFrom(candidate, definitions))
+                    pendingSnapshot.value = candidate   // replaces any older staged snapshot
+                }
             }
             .onFailure { /* log, keep current */ }
     }
@@ -231,7 +246,7 @@ class DefaultFlagsRepository @Inject constructor(
     fun onAppForegrounded() {
         // Apply pending snapshot at session boundary
         pendingSnapshot.value?.let {
-            _flags.value = evaluator.evaluate(it, context.snapshot())
+            publish(it)
             pendingSnapshot.value = null
         }
     }
@@ -252,7 +267,7 @@ Encoded in the flag definition itself:
 val killUploadDirty = bool("kill_upload_dirty", default = false, applyPolicy = ApplyPolicy.LIVE)
 ```
 
-When a live flag's value changes mid-session, `_flags` updates immediately; otherwise we hold the snapshot until the next session boundary.
+When a live flag's value changes mid-session, `_flags` updates immediately; other changes wait in `pendingSnapshot` until the next session boundary. The pending snapshot always holds the newest response, so it can never roll a kill switch back.
 
 ### Evaluator
 
@@ -297,7 +312,7 @@ class FlagSet internal constructor(private val raw: Map<String, RawFlag>) {
 
 ### Typed accessors (codegen)
 
-A KSP processor reads a YAML or JSON schema and generates the `Flags` object:
+A Gradle code-generation task reads a YAML or JSON schema and generates the `Flags` object (KSP fits only if the definitions are annotated Kotlin declarations):
 
 ```yaml
 # flags.yaml
@@ -380,7 +395,7 @@ The lifecycle separates availability from freshness: cached flags make startup d
 | Option | Pros | Cons | Verdict |
 |---|---|---|---|
 | **DataStore (Proto/Preferences)** | Coroutine-native, atomic | Slight ceremony | Pick this |
-| EncryptedSharedPrefs | Use only if values are sensitive | Slower writes | Niche |
+| Keystore-encrypted snapshot | Use only if values are sensitive | Extra code | Niche |
 | Room | Overkill for ~200 keys | Slower reads | Skip |
 | Plain SharedPrefs | Old | Synchronous main-thread danger | Skip |
 
@@ -389,16 +404,16 @@ The lifecycle separates availability from freshness: cached flags make startup d
 | Option | Verdict |
 |---|---|
 | **REST GET** | Pick — cacheable, simple |
-| WebSocket subscription | Real-time but heavy | Use only for kill switches |
+| WebSocket subscription | Real-time but heavy; use only for kill switches |
 | FCM hint to re-fetch | Pick — sends a best-effort silent tickle to re-fetch without constant polling; because Doze, OEM restrictions, and missed messages can delay or drop it, reconcile on foreground and with periodic work for correctness |
 
 ### Variant assignment
 
 | Where? | Verdict |
 |---|---|
-| **Server** | Pick — central control, multi-platform parity |
-| **Client (sticky bucketing)** | Use as fallback / offline path |
-| Hybrid (server primary, client fallback) | Default |
+| Server only | Central control, multi-platform parity; no offline answer |
+| Client only (sticky bucketing) | Works offline; logic duplicated per platform |
+| **Hybrid (server primary, client sticky-bucketing fallback)** | Pick |
 
 ### Apply policy
 
@@ -412,7 +427,7 @@ The lifecycle separates availability from freshness: cached flags make startup d
 
 | Option | Verdict |
 |---|---|
-| **KSP-generated typed accessors** | Pick — compile-time guarantees |
+| **Generated typed accessors** | Pick — compile-time guarantees |
 | Reflective `getFlag(name)` | Stringly-typed, error-prone |
 | Hand-written wrappers | Toil; gets stale |
 
@@ -458,7 +473,7 @@ The lifecycle separates availability from freshness: cached flags make startup d
 - **Statistical analysis** — `a-b-testing-infrastructure.md`.
 - **Multi-armed bandits** — `experimentation-platform.md`.
 - **Server-side flag UI** — admin tool, not mobile.
-- **Encryption** — flags aren't sensitive in our model; if they were, EncryptedSharedPrefs path.
+- **Encryption** — flags aren't sensitive in our model; if they were, a Keystore-encrypted snapshot.
 - **Cross-app flag sharing** — separate problem.
 
 ---

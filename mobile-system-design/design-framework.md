@@ -8,22 +8,24 @@
 
 | Phase | Duration | What you do | What's being assessed |
 |---|---|---|---|
-| Introductions | 2-5 min | Brief background, set scope | Communication style |
-| Requirements | 5-7 min | Functional, non-functional, out-of-scope | Scoping; restraint |
-| Clarifying questions | 3-5 min | Ask the interviewer key questions | Curiosity; awareness of unknowns |
-| High-level diagram | 8-10 min | One server-side sketch + paragraph | Big-picture understanding |
-| Mobile architecture | 10-15 min | Modules, layers, key types | Mobile expertise |
-| Deep dive | 15-20 min | One feature with code-level detail | Depth on hard problem |
-| Trade-offs + concerns | 5-10 min | Tables, key tensions | Tradeoff awareness |
-| Wrap | 2-5 min | Out-of-scope defended, follow-ups suggested | Self-awareness; signaling |
+| Introductions | 2 min | Brief background, set scope | Communication style |
+| Requirements | 4-5 min | Functional, non-functional, out-of-scope | Scoping; restraint |
+| Clarifying questions | 3 min | Ask the interviewer key questions | Curiosity; awareness of unknowns |
+| High-level diagram | 5 min | One server-side sketch + paragraph | Big-picture understanding |
+| Mobile architecture | 8-10 min | Modules, layers, key types | Mobile expertise |
+| Deep dive | 12-15 min | One feature with code-level detail | Depth on hard problem |
+| Trade-offs + concerns | 5 min | Tables, key tensions | Tradeoff awareness |
+| Wrap | 2-3 min | Out-of-scope defended, follow-ups suggested | Self-awareness; signaling |
 
-**Rule of thumb:** if you're 25 minutes in and haven't started coding/deep-diving, you're over-scoping.
+These timings add up to about 41-48 minutes for a 45-minute round; in a 60-minute round, give the extra time to the deep dive and the trade-offs.
+
+**Rule of thumb:** if you're about 25 minutes in and haven't started the deep dive, you're over-scoping.
 
 ---
 
 ## 2. The 12-Section Template
 
-This is the structure every file in this folder follows. Use it as your interview playbook:
+This is the structure every problem walkthrough in this folder follows. Use it as your interview playbook:
 
 1. **Gathering Requirements**
 2. **Clarifying Questions**
@@ -107,7 +109,7 @@ interface Repository {
 
 ### 6. Local Storage
 
-ONE entity shown in full. Mention the rest exist. SQLCipher / EncryptedSharedPrefs if data is sensitive.
+ONE entity shown in full. Mention the rest exist. If data is sensitive, use SQLCipher for databases and a direct Android Keystore key with a versioned ciphertext envelope for small secrets (see [Secure Storage on Android](../security/secure-storage-on-android.md)).
 
 ### 7. Deep Dive: ONE Feature
 
@@ -208,13 +210,13 @@ This sets:
 | Network | OkHttp + Retrofit (or Ktor 3 if KMP) |
 | WebSocket | OkHttp WebSocket |
 | Persistence | Room 2.7+ |
-| Encrypted persistence | EncryptedSharedPrefs or DataStore + Tink |
+| Encrypted persistence | Direct Android Keystore key + versioned ciphertext (or DataStore + Tink) |
 | DB encryption | SQLCipher |
 | Image loading | Coil 3 |
 | Video | Media3 (ExoPlayer) |
 | Background work | WorkManager 2.10+ |
 | Pagination | Paging 3 + RemoteMediator |
-| Location | FusedLocationProvider |
+| Location | `FusedLocationProviderClient` (Play services) |
 | Push | FirebaseMessaging |
 | JSON | kotlinx.serialization |
 | Concurrency | Coroutines + Flow |

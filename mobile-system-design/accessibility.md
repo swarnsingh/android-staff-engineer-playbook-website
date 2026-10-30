@@ -137,7 +137,7 @@ Layouts must handle:
 | Foreground / Background | Min ratio (WCAG AA) |
 |---|---|
 | Body text on background | 4.5 : 1 |
-| Large text (18 pt+) on background | 3 : 1 |
+| Large text (≥ 18 pt, or ≥ 14 pt bold) on background | 3 : 1 |
 | Icons + UI components | 3 : 1 |
 
 Tools: **Accessibility Scanner** (Android), **Stark** (Figma), **WebAIM contrast checker**.
@@ -146,11 +146,11 @@ Design tokens enforce contrast:
 
 ```kotlin
 object AppTheme {
-    val Colors = ColorScheme(
-        primary = Color(0xFF1A56DB),         // 7.1:1 on white
+    val Colors = lightColorScheme(
+        primary = Color(0xFF1A56DB),         // 6.2:1 on white (AA)
         onPrimary = Color.White,
         background = Color.White,
-        onBackground = Color(0xFF111827),    // 16.9:1 on white
+        onBackground = Color(0xFF111827),    // 17.7:1 on white
         // ...
     )
 }
@@ -161,7 +161,13 @@ object AppTheme {
 ## 8. Motion & Animation
 
 ```kotlin
-val reduceMotion = LocalAccessibilityManager.current.isReduceMotionEnabled
+// The system "Remove animations" setting sets the animator duration scale to 0.
+val context = LocalContext.current
+val reduceMotion = remember(context) {
+    Settings.Global.getFloat(
+        context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f
+    ) == 0f
+}
 
 AnimatedVisibility(
     visible = expanded,
@@ -228,13 +234,18 @@ Honour system caption settings: font size, color, edge style. Media3 picks these
 @Test
 fun feedScreen_hasContentDescriptions() {
     composeRule.setContent { FeedScreen() }
-    composeRule.onAllNodesWithRole(Role.Button).assertAll(hasContentDescription())
+    composeRule
+        .onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+        .assertAll(
+            SemanticsMatcher.keyIsDefined(SemanticsProperties.ContentDescription) or
+                SemanticsMatcher.keyIsDefined(SemanticsProperties.Text)
+        )
 }
 ```
 
-Espresso has `AccessibilityChecks.enable()` which runs checks on every interaction. Compose's `composeRule` integrates similarly via `accessibility-test-framework`.
+The assertion above checks semantics that the test explicitly names; it is not a full accessibility scan. For automated Accessibility Test Framework checks in Compose 1.8.0+, add `ui-test-junit4-accessibility`, call `composeRule.enableAccessibilityChecks()`, then perform an action or call `composeRule.onRoot().tryPerformAccessibilityChecks()`. These checks can flag labels, contrast, touch targets, and traversal order. Keep a manual TalkBack pass because automated checks cannot cover the full experience.
 
-CI gate: Accessibility Scanner via `ATF` (Accessibility Test Framework).
+See [Android's Compose accessibility-testing guide](https://developer.android.com/develop/ui/compose/accessibility/testing).
 
 ---
 

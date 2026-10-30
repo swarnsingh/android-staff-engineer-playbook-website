@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "kotlin": "2.4.21",
+  "coroutines": "1.11.0",
+  "jdk": "openjdk version \"17.0.19\" 2026-04-21",
+  "fragments": {
+    "class LamportClock": "5a19eeeb4b02859e379ec67185023cf447292660cf1063ed8b3e44524ca305d7",
+    "class VectorClock": "32542db078d6f91bd8a158e679dec6ee0c5c6d0efc97a8cf2fcb01aa7d34e90c",
+    "data class HLC": "6e66ec1f35c51a441218d86c7f7b844050849b6399f8fa21e7f403e8cb973b84",
+    "class LRUCache": "4320b1450fa1215212d373df56c9c5da588dbdf2d844353d4085f47ee47c5c73",
+    "suspend fun <T> withRetry": "65ddbdfdbd09d3faa66c74a3f3f3fac956b94ae94647a1c3944a8958dced8801"
+  },
+  "fixture_sha256": "5aeb6e29a941d2ac371368a511b827454ad02ba2ae48e5815bbaaeb2cee22bd0",
+  "checks": {
+    "assertions": 27,
+    "contracts": [
+      "Lamport message/local separation",
+      "vector equality/concurrency/shape/snapshot",
+      "HLC future merge/local clock behind",
+      "LRU access eviction",
+      "retry attempts/classification/validation/cancellation"
+    ]
+  },
+  "limits": [
+    "Compiles the exact five corrected JVM fragments (Lamport, vector, HLC, LRU and retry), with imports only.",
+    "HLC is tested with a received future timestamp, so local wall time is behind the retained physical component without changing the host clock.",
+    "Android cache/clock/ViewModel snippets require their platform APIs and app adapters; network/storage examples are conceptual, not a built Android application.",
+    "Manual mobile review remains deferred until all topic trees are integrated."
+  ]
+}
