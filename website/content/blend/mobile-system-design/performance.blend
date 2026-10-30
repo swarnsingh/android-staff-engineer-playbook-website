@@ -20,7 +20,7 @@
   },
   {
     "label": "Smooth frame",
-    "caption": "A scroll frame composes, lays out and draws in 9 ms. It lands on time, and JankStats reports nothing.",
+    "caption": "A scroll frame composes, lays out and draws in 9 ms. It lands on time. The JankStats listener receives the frame with isJank=false.",
     "state": {"main": "done", "frame": "done"},
     "text": {"frameV": "9 ms · on time", "eventV": "within budget"}
   },
