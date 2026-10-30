@@ -2,7 +2,7 @@
      The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
      decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
      Hand-authored here: the step-through and the end recap.
-     Verified 2026-10-30 against analytics-sdk.md at source b7bbcf3 (§4 POST /v1/events, §7 track, interceptors, FlushScheduler with KEEP, FlushWorker 413 halving, delete after ack, APPEND_OR_REPLACE follow-up, at-least-once dedupe and failure modes. Batch sizes are not given in the chapter, so none are shown)
+     Verified 2026-10-30 against analytics-sdk.md at source b7bbcf3 plus the durability correction in source PR #66 (§4 POST /v1/events, §7 track, interceptors, FlushScheduler with KEEP, FlushWorker 413 halving, delete after ack, APPEND_OR_REPLACE follow-up, at-least-once dedupe and failure modes. Batch sizes are not given in the chapter, so none are shown)
      and against WorkManager unique work (ExistingWorkPolicy), Room and RFC 9110 §15.5.14. -->
 
 <!-- @after 7. Deep Dive: Write → Buffer → Flush (15 min) :: animation -->
@@ -11,7 +11,7 @@
 <figure class="stepper" data-illustrated><span class="stepper-title">Durable events, one oversized batch</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="feature" data-art="code" data-art-role="client"><strong>Checkout feature</strong><small data-text="featureV">track(…)</small></div><div class="node" data-el="chain" data-art="gate" data-art-role="runtime"><strong>Interceptors</strong><small data-text="chainV">consent, PII, sampling</small></div><div class="node" data-el="queue" data-art="database" data-art-role="storage"><strong>Room queue</strong><small data-text="queueV">events</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="sched" data-art="clock" data-art-role="queue"><strong>FlushScheduler</strong><small data-text="schedV">size and age</small></div><div class="node" data-el="worker" data-art="worker" data-art-role="queue"><strong>FlushWorker</strong><small data-text="workerV">idle</small></div><div class="node" data-el="api" data-art="server" data-art-role="runtime"><strong>Events API</strong><small data-text="apiV">POST /v1/events</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
   {
     "label": "track() returns at once",
-    "caption": "A feature calls Analytics.track. The work is launched on the SDK’s supervised IO scope, so the call returns immediately and the caller never waits for disk or network.",
+    "caption": "A feature calls Analytics.track. The work is launched on the SDK’s supervised IO scope, so the call returns immediately and the caller never waits for disk or network. The event is not on disk yet.",
     "add": [
       "feature",
       "chain",
@@ -46,8 +46,8 @@
     }
   },
   {
-    "label": "Durable write",
-    "caption": "The event is written to the Room queue, so it survives a crash or a kill. The queue passes its batch threshold, and the scheduler enqueues the unique analytics-flush work with KEEP.",
+    "label": "Durable once committed",
+    "caption": "Once the Room write commits, the event survives a crash or a kill; a process death before that commit loses it. The queue passes its batch threshold, and the scheduler enqueues the unique analytics-flush work with KEEP.",
     "state": {
       "queue": "done",
       "sched": "active"
@@ -85,14 +85,14 @@
   },
   {
     "label": "Delete only after ack",
-    "caption": "The half-size batch is accepted, and only then does the worker delete those events from Room. If the process died before the delete, the batch would be sent again and the server would dedupe it.",
+    "caption": "The half-size batch is accepted, and only then does the worker delete it from Room. Network errors, 401, 408, 429 and 5xx keep the batch and retry. A 400 or 422 batch, or a single event still too large, is deleted on purpose because it can never succeed.",
     "state": {
       "api": "done"
     },
     "text": {
       "apiV": "200",
       "queueV": "acknowledged rows deleted",
-      "eventV": "at-least-once delivery"
+      "eventV": "ack deletes · retry keeps · dead end drops"
     }
   },
   {
@@ -107,14 +107,14 @@
       "eventV": "APPEND_OR_REPLACE"
     }
   }
-]</script><figcaption>track() never blocks, Room makes every event durable, and the worker deletes only what the server acknowledged. A single event that is still too large is dropped and counted.</figcaption></figure>
+]</script><figcaption>track() never blocks, Room makes each event durable once its write commits, and a batch leaves the queue only on acknowledgement or a deliberate drop. Retryable failures keep it; a batch that can never succeed is dropped and counted.</figcaption></figure>
 
 <!-- @after 12. Further Reading :: recap -->
 ### Say these in the interview
 
 - **`track()` returns at once**; the work moves to a supervised IO scope.
 - **Interceptors enforce consent, schema, PII redaction and sampling** before anything is stored.
-- **Room is the buffer.** Events survive crashes, kills and offline time, and the queue is bounded by trimming low-priority categories first.
+- **Room is the buffer.** Once its write commits, an event survives crashes, kills and offline time; an event still in flight in `track()` can be lost. The queue is bounded by trimming low-priority categories first.
 - **Flush with unique work.** `KEEP` coalesces triggers, and the worker chains one follow-up with `APPEND_OR_REPLACE`.
-- **Delete only after the server acknowledges a batch.** Delivery is at-least-once, so the server dedupes, for example by a client-generated event UUID.
+- **A batch leaves the queue in one of two ways:** deleted after the server acknowledges it, or dropped on purpose when it can never succeed. Delivery is at-least-once, so the server dedupes, for example by a client-generated event UUID.
 - **Handle each status code on purpose.** 413 halves the batch, 400 and 422 drop it, and 401, 408, 429 and 5xx retry.

@@ -595,8 +595,8 @@
   {
     "path": "mobile-system-design/analytics-sdk",
     "figure": 0,
-    "problem": "How do events survive crashes and offline time, and still flush when a batch is too large?",
-    "reading": "Feature code calls track, the interceptors filter and redact, and Room holds every event. The scheduler starts one unique FlushWorker, which uploads batches and deletes only what the server acknowledged.",
+    "problem": "How do queued events survive crashes and offline time, and still flush when a batch is too large?",
+    "reading": "Feature code calls track, the interceptors filter and redact, and Room holds every committed event. The scheduler starts one unique FlushWorker, which deletes a batch on acknowledgement, keeps it on a retryable failure and drops it only when it can never succeed.",
     "groups": [
       {
         "id": "app",
