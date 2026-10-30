@@ -87,7 +87,7 @@ Routing is a policy decision over user preferences, locale, urgency, and frequen
 POST /v1/notifications
 {
   "userId": "u_42",
-  "category": "order_shipped",
+  "category": "order_update",
   "templateId": "order_shipped_v3",
   "variables": { "orderId": "o_99", "carrier": "DHL", "trackingUrl": "https://..." },
   "channels": ["push", "email", "inbox"],
@@ -265,7 +265,7 @@ account_security:
 | Per-conversation | Chat collapses to last message during a fast burst |
 | Global emergency override | Account-security bypasses all caps |
 
-Capper is a token-bucket store keyed by `(userId, scope)`. Sliding window in Redis or similar.
+Capper is a token-bucket store keyed by `(userId, scope)`, in Redis or similar.
 
 ### Quiet hours
 
@@ -277,7 +277,7 @@ isQuiet(now, prefs):
 ```
 
 **During quiet hours:**
-- Transactional (`order_update`): deliver (may suppress sound at OS via channel importance).
+- Transactional (`order_update`): deliver (may post to a separate low-importance channel to stay silent, because an app can't change a channel's importance after creating it).
 - Promotional: defer until end of quiet hours (queue).
 - Account security: always deliver.
 
@@ -307,7 +307,8 @@ Toggling writes locally first (`dirty=true`), syncs in the background. Server co
 
 Even with server-side prefs, the client double-checks:
 - If channel importance was lowered by the user post-config, the OS handles silence.
-- If category opt-out toggled offline, push that already arrived is still inserted into the inbox; the OS notification is suppressed via `NotificationManagerCompat.areNotificationsEnabled()` short-circuit.
+- On Android 13+, without the `POST_NOTIFICATIONS` permission the app can't show the notification; the inbox still receives the item.
+- If category opt-out toggled offline, push that already arrived is still inserted into the inbox; the OS notification is suppressed because the client checks its local preference row before posting. `NotificationManagerCompat.areNotificationsEnabled()` only reports whether the system blocks the app, so it cannot see this opt-out.
 
 ### Inbox sync
 
@@ -387,9 +388,9 @@ Triggered: on FCM hint, on app foreground, on periodic 30-min schedule.
 ## 9. Major Concerns
 
 - **Idempotency.** Dedup keys on triggers. Server tracks `(key, sentAt)` for the TTL.
-- **Localization.** Server-rendered with `Accept-Language`; falls back to user profile locale; falls back to `en`.
+- **Localization.** Server-rendered from the user's stored locale, captured from the client's language settings; falls back to `en`.
 - **Multi-device.** A user with 3 devices needs the notification on all 3, but the inbox is shared. Read state syncs across devices via the server inbox.
-- **Compliance.** Promotional channels are opt-in by default (CAN-SPAM, GDPR). Account-security is non-toggleable and explained in the UI.
+- **Compliance.** Every marketing email needs a working unsubscribe, because CAN-SPAM requires an opt-out rather than prior opt-in; consent rules such as GDPR's vary by channel and region, so check them separately. Promotional push is opt-in by default in this design. Account-security is non-toggleable and explained in the UI.
 - **Quiet hours edge cases.** Time-zone changes (user travels), DST transitions, midnight wrap. Use server-side resolution; store `tz` per user.
 - **Burst protection.** Capper protects users; circuit breaker protects upstream when push provider is rate-limiting.
 - **Observability.** Every step (trigger received, prefs resolved, channel routed, transport accepted, client received, user tapped) emits a trace event keyed by notification id.
@@ -433,8 +434,9 @@ Triggered: on FCM hint, on app foreground, on periodic 30-min schedule.
 
 - [Android Developers — Notifications overview](https://developer.android.com/develop/ui/views/notifications) — channels, importance, runtime permission.
 - [Firebase Cloud Messaging — message types](https://firebase.google.com/docs/cloud-messaging/customize-messages/set-message-type) — notification and data payload behavior.
-- [Iterable engineering — Designing a notification platform](https://iterable.com/blog/) — vendor perspective on triggers and routing.
-- [GDPR — push notifications](https://gdpr.eu/) — consent and opt-in framing.
+- [Iterable blog](https://iterable.com/blog/) — vendor articles on messaging and campaigns.
+- [GDPR (Regulation (EU) 2016/679)](https://eur-lex.europa.eu/eli/reg/2016/679/oj) — the regulation's official text.
+- [FTC — CAN-SPAM compliance guide](https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business) — opt-out requirements for commercial email.
 - [Don't kill my app](https://dontkillmyapp.com/) — OEM impact on actual delivery rates.
 
 ---

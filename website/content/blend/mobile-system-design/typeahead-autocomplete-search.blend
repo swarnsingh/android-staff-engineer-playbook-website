@@ -2,7 +2,7 @@
      The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
      decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
      Hand-authored here: the step-through and the end recap.
-     Verified 2026-10-30 against typeahead-autocomplete-search.md at source c1f26bb (§7 ViewModel, repository, cancellation, debounce sizing, rate limiting, recents and failure modes, §9 privacy. The typed text "run" comes from the §4 request; the typing rhythm and rows are illustrative. Cancellation is described through Retrofit's suspend adapter, not an interceptor, and no sub-debounce latency is claimed)
+     Verified 2026-10-30 against typeahead-autocomplete-search.md at source 035778c (§7 ViewModel, repository, cancellation, debounce sizing, rate limiting, recents and failure modes, §9 privacy. The typed text "run" comes from the §4 request; the typing rhythm and rows are illustrative)
      and against the kotlinx.coroutines debounce and flatMapLatest references and Retrofit KotlinExtensions (invokeOnCancellation cancels the call). -->
 
 <!-- @after 7. Deep Dive: Suggestion Pipeline (15 min) :: animation -->
@@ -123,7 +123,7 @@
   },
   {
     "label": "A tap records and submits",
-    "caption": "Tapping a suggestion updates recents on the device and sends click feedback, then fills the bar and starts the main search. Recents stay on the device unless the user opts in to syncing. If the suggestion no longer matches anything, the main search handles “no results”.",
+    "caption": "Tapping a suggestion updates recents on the device and sends click feedback without waiting for it, then fills the bar and starts the main search. Recents stay on the device unless the user opts in to syncing. If the suggestion no longer matches anything, the main search handles “no results”.",
     "state": {
       "api": "done",
       "bar": "done",
@@ -147,4 +147,4 @@
 - **Local first, remote second.** Emit recents and popular matches, then merge the server list on top: the server takes precedence, and locals pad it to 7.
 - **Remote failure stays quiet.** A slow server, a 500 or a tripped rate limiter keeps the local list and shows no error; offline adds a subtle badge.
 - **Debounce doesn’t cap the request rate on its own.** A token-bucket interceptor adds a hard limit, and when it trips the app relies on local results.
-- **Recents are private by default.** They stay on the device, cross-device sync requires opt-in, and shared devices namespace them by account.
+- **Recents are private by default.** They show on empty input and stay on the device; cross-device sync requires opt-in, and shared devices namespace them by account.

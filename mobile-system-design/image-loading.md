@@ -82,7 +82,7 @@ The request key, requested size, and transformations determine cache identity; d
 AsyncImage(
     model = ImageRequest.Builder(LocalContext.current)
         .data("https://cdn/.../foo.jpg")
-        .size(Size.Px(640))
+        .size(640)
         .crossfade(true)
         .placeholder(R.drawable.skel)
         .error(R.drawable.broken)
@@ -105,7 +105,7 @@ imageView.load("https://cdn/.../foo.jpg") {
 
 ```kotlin
 val loader = ImageLoader.Builder(context)
-    .memoryCache { MemoryCache.Builder().maxSizePercent(0.25).build() }
+    .memoryCache { MemoryCache.Builder().maxSizePercent(context, 0.25).build() }
     .diskCache { DiskCache.Builder().directory(cacheDir).maxSizeBytes(200 * MB).build() }
     .crossfade(true)
     .build()
@@ -198,8 +198,9 @@ class ImageEngine(
                 return@withContext SuccessResult(final, DataSource.DISK)
             }
 
+            // The fetched source can only be read once, so tee it into the disk cache while decoding.
             val fetched = fetcherRegistry.fetch(req.data, req.options)
-                .also { disk.write(req.diskKey(), it.source) }
+                .teeTo(disk.writer(req.diskKey()))
             val bitmap = decoderRegistry.decode(fetched.source, req.size)
             val final = req.transformations.fold(bitmap) { b, t -> t.transform(b) }
             memory.put(req.memoryKey(), final)
@@ -236,11 +237,11 @@ when (val s = req.size) {
 }
 ```
 
-`ImageDecoder.setTargetSize(width, height)` samples down at decode time — half the memory of decoding then resizing.
+`ImageDecoder.setTargetSize(width, height)` samples or scales the output at decode time, so the row holds a bitmap at the requested size rather than a full-resolution one.
 
 ### Bitmap pooling
 
-Modern Android (API 28+) supports `Bitmap.reconfigure` only for limited cases. Glide-style pooling is less critical post-API 28 because the platform allocator improved. Coil opts for an `LruCache` of `Bitmap`s with `inBitmap` hints when the decoder is `BitmapFactory` (legacy path). Default: rely on `ImageDecoder` + GC.
+`Bitmap.reconfigure` (API 19+) and `inBitmap` with `BitmapFactory` can reuse an existing allocation, which is what Glide-style pools build on. Glide-style pooling is less critical post-API 28 because the platform allocator improved. Coil 2 removed `BitmapPool` altogether. Default: rely on `ImageDecoder` + GC.
 
 ### Transformations chain
 
@@ -265,7 +266,7 @@ Each transformation contributes to the memory key — `crop(50)` and `crop(80)` 
 | Decode fails | Surface `ErrorResult`; don't crash the app |
 | OOM during decode | Catch + retry at smaller size; surface error if it still fails |
 | Target dies mid-request | Cancel the job; drop the bitmap |
-| Disk write fails | Continue (memory still has it); log |
+| Disk write fails | Continue decoding the fetched bytes; log |
 
 ---
 
@@ -359,9 +360,9 @@ Same as the caching library: file-per-entry with atomic rename + index. Reuses `
 
 - [weeeBox/mobile-system-design — image-library](https://github.com/weeeBox/mobile-system-design/blob/master/exercises/image-library.md) — reference format.
 - [Coil 3 documentation](https://coil-kt.github.io/coil/) — production-grade Compose-native loader.
-- [Glide architecture](https://bumptech.github.io/glide/doc/configuration.html) — for the legacy bitmap-pool perspective.
+- [Glide configuration](https://bumptech.github.io/glide/doc/configuration.html) — for the legacy bitmap-pool perspective.
 - [Android Developers — ImageDecoder](https://developer.android.com/reference/android/graphics/ImageDecoder) — modern decode API.
-- [Coil 3 internals talk](https://coil-kt.github.io/coil/upgrading_to_coil3/) — Coil 3 architectural decisions.
+- [Upgrading to Coil 3](https://coil-kt.github.io/coil/upgrading_to_coil3/) — what changed in Coil 3, including its separate network artifacts.
 
 ---
 

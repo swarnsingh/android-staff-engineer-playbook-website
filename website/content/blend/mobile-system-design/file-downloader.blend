@@ -2,8 +2,8 @@
      The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
      decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
      Hand-authored here: the step-through and the end recap.
-     Verified 2026-10-30 against file-downloader.md at source c1f26bb (§6 chunk ledger, §7 enqueue, worker, planning, runner, fetch, assembly and failure modes, §9 and §10 answers. Where the §7 code differs from the failure table (200 instead of 206, and 416), the captions follow the table, and for 200 they add what RFC 9110 implies: the body starts at byte 0, so a parallel chunk cannot simply restart. Source correction PR pending. The 12 MB file and its three 4 MB chunks are illustrative)
-     and against RFC 9110 (§13.1.5 If-Range, §14.2 Range, §15.5.17 416) and the WorkManager guides for stopping work and long-running workers. -->
+     Verified 2026-10-30 against file-downloader.md at source 035778c (§6 chunk ledger and pinned validator, §7 enqueue, worker, planning, runner, fetch, assembly and failure modes, §8 scheduler, §9 and §10 answers. The 12 MB file and its three 4 MB chunks are illustrative)
+     and against RFC 9110 (§13.1.5 If-Range, §14.2 Range, §14.4 Content-Range, §15.3.7 206, §15.5.17 416), the WorkManager guides for stopping work and long-running workers, and the user-initiated data transfer guide. -->
 
 <!-- @after 7. Deep Dive: Chunked Resumable Download (15 min) :: animation -->
 ### Follow a download through a dropped network
@@ -38,7 +38,7 @@
   },
   {
     "label": "HEAD, then plan once",
-    "caption": "The worker sends a HEAD request to learn Content-Length and Accept-Ranges. It writes chunk rows only if none exist, so a re-run never re-plans. Here the file is 12 MB and is split into three 4 MB chunks (illustrative sizes). A server without range support gets one single chunk instead.",
+    "caption": "The worker sends a HEAD request to learn Content-Length, Accept-Ranges and the ETag. It saves a strong ETag together with the chunk rows, so every chunk belongs to one version of the file. Here the file is 12 MB and is split into three 4 MB chunks (illustrative sizes). Without range support or a strong ETag, the download uses one chunk with a plain GET.",
     "state": {
       "caller": "done",
       "worker": "active",
@@ -46,9 +46,9 @@
     },
     "text": {
       "workerV": "planning",
-      "serverV": "Accept-Ranges: bytes",
-      "ledgerV": "chunks 0, 1, 2 PENDING",
-      "eventV": "planning is one-time and idempotent"
+      "serverV": "Accept-Ranges + strong ETag",
+      "ledgerV": "ETag + chunks 0, 1, 2",
+      "eventV": "the plan is pinned to one file version"
     },
     "handoff": {
       "from": "worker",
@@ -59,7 +59,7 @@
   },
   {
     "label": "Fetch ranges in parallel",
-    "caption": "A semaphore lets up to three chunks run at once, each with its own Range request and part file. Bytes stream through Okio, so the file is never held in memory. A chunk is marked DONE only after it has been written in full.",
+    "caption": "A semaphore lets up to three chunks run at once, each with its own Range request and part file. A 206 is appended only if its Content-Range starts at the requested byte and stays inside the chunk. Bytes stream through Okio, so the file is never held in memory. A chunk is marked DONE only when it is complete.",
     "state": {
       "server": "done",
       "parts": "active"
@@ -69,7 +69,7 @@
       "serverV": "206 Partial Content",
       "partsV": "part.0, part.1, part.2",
       "ledgerV": "chunk 0 DONE",
-      "eventV": "DONE only after the whole chunk is written"
+      "eventV": "check Content-Range, then append"
     },
     "handoff": {
       "from": "server",
@@ -95,7 +95,7 @@
   },
   {
     "label": "A later run fetches what’s missing",
-    "caption": "The new run asks the ledger for chunks not marked DONE, so chunk 0 isn’t fetched again. Chunk 1 resumes from its start byte plus the part file’s length, using a new Range request.",
+    "caption": "The new run asks the ledger for chunks not marked DONE, so chunk 0 isn’t fetched again. Chunk 1 resumes from its start byte plus the part file’s length, with a new Range request and If-Range carrying the saved ETag. A server that sends less than requested leaves the chunk not DONE, and a later run asks for the rest.",
     "state": {
       "server": "done",
       "worker": "active",
@@ -115,22 +115,37 @@
     }
   },
   {
-    "label": "When the server won’t cooperate",
-    "caption": "HTTP lets a server ignore Range and answer 200 with the whole file. Those bytes start at byte 0, so they must never be appended to a partial chunk: the partial data is discarded and the download restarts as a single chunk. A 416 means the range is invalid, perhaps because the file’s size changed, so the download is re-planned.",
+    "label": "The file changes on the server",
+    "caption": "If the file has changed, If-Range fails and the server answers 200 with a new ETag and the whole new file. Combining those bytes would splice two versions, so the partial data is discarded and the download is re-planned against the new ETag. A 416 also re-plans, because the file’s size may have changed.",
     "state": {
       "server": "warn",
       "parts": "warn"
     },
     "text": {
-      "serverV": "200 or 416",
+      "serverV": "200 + new ETag, or 416",
       "partsV": "partial data discarded",
-      "workerV": "200: restart · 416: re-plan",
-      "eventV": "never append a 200 to a partial chunk"
+      "workerV": "re-plan",
+      "eventV": "never splice two versions of a file"
+    }
+  },
+  {
+    "label": "The server breaks its range contract",
+    "caption": "A 200 with the same ETag or none means the server ignored Range. Its bytes start at byte 0, so they are never appended. A 206 for the wrong bytes, or with a missing or invalid Content-Range, writes nothing. In both cases the download falls back to one chunk from the start, and stays that way so it doesn’t re-plan in a loop.",
+    "state": {
+      "server": "warn",
+      "parts": "warn",
+      "worker": "warn"
+    },
+    "text": {
+      "serverV": "200 or a wrong 206",
+      "partsV": "partial data discarded",
+      "workerV": "one chunk from now on",
+      "eventV": "a status code alone proves nothing"
     }
   },
   {
     "label": "Assemble, rename, verify",
-    "caption": "Assembly starts only after every chunk succeeds. The chunks are concatenated in order into a .tmp file and renamed, so the final name never holds a half-written file. If a checksum was supplied, a mismatch deletes the file and fails without retrying. A full disk also fails permanently and is shown to the user.",
+    "caption": "Assembly starts only after every chunk succeeds and each part’s length matches the ledger. The chunks are concatenated in order into a .tmp file and renamed, so the final name never holds a half-written file. If a checksum was supplied, a mismatch deletes the file and fails without retrying. A full disk also fails permanently and is shown to the user.",
     "state": {
       "server": "done",
       "worker": "done",
@@ -151,14 +166,15 @@
       "label": "assembled"
     }
   }
-]</script><figcaption>The Room ledger is the truth about which chunks are done. An interruption keeps the partial file, a later run fetches only what is missing, and the final name appears only after the chunks are assembled.</figcaption></figure>
+]</script><figcaption>The Room ledger is the truth about which chunks are done. With Range support and a strong ETag, an interruption keeps the partial file and a later run fetches only what is missing; without them, the download restarts. Either way, the final name appears only on a complete file.</figcaption></figure>
 
 <!-- @after 12. Further Reading :: recap -->
 ### Say these in the interview
 
-- **The Room ledger is the truth, not the file.** On resume, any chunk not marked `DONE` is fetched again from its byte offset.
-- **Check for Range support, and don’t rely on it.** `HEAD` looks for `Accept-Ranges: bytes` and falls back to one chunk if it’s absent. A server can still ignore a range and answer 200 from byte 0, so that response is never appended; the download restarts as one chunk.
+- **The Room ledger is the truth, not the file.** On resume, any chunk not marked `DONE` is fetched again from its byte offset, and parts are length-checked before assembly.
+- **Resume needs a strong validator.** Save a strong `ETag` with the chunk plan and send it as `If-Range`, so a changed file can’t be spliced. Without one, or without `Range`, use one chunk and restart from zero after an interruption.
+- **Check for Range support, and don’t rely on it.** A server can still ignore a range and answer 200 from byte 0, or send a 206 for other bytes. Check `Content-Range` before appending; if it doesn’t match, fall back to one chunk.
 - **Bound the concurrency.** Three chunks per download and two downloads at once are the defaults, with bytes streamed rather than buffered.
 - **Only a finished file gets the final name.** Chunks are assembled into `.tmp` and renamed; a checksum mismatch deletes the file and fails without an automatic retry.
 - **Retry only what can recover.** A network drop retries and keeps the partial file, a 416 re-plans, and a full disk fails permanently and is shown to the user.
-- **WorkManager can stop a run at any time.** It stops a worker when constraints are lost, and at its 10-minute execution deadline, then retries the work later and ignores the stopped worker’s `Result`. The ledger is what lets that run continue. For a long download the user is watching, make it a long-running worker with `setForeground`.
+- **WorkManager can stop a run at any time.** It stops a worker when constraints are lost, and at its 10-minute execution deadline, then retries the work later and ignores the stopped worker’s `Result`. The ledger is what lets that run continue. For a long download the user started, use a user-initiated data transfer job on Android 14+, or a long-running worker with `setForeground` below that.

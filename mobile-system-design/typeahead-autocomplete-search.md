@@ -10,7 +10,7 @@
 > **Candidate:** "Typeahead is its own problem: high request rate, low payload, perceived snappiness, sometimes offline. I'll deep-dive the suggestion request pipeline (debounce, cancellation, local trie fallback)."
 
 ### Functional Requirements
-- **Suggest as you type** — < 100 ms perceived latency.
+- **Suggest as you type** — local suggestions as soon as the debounce fires.
 - **Highlight matched portion** of each suggestion.
 - **Tap to fill the search bar** and submit.
 - **Show recent queries** when input is empty.
@@ -20,7 +20,7 @@
 - **Cancel in-flight on each keystroke** beyond debounce.
 - **Bound network rate** — don't hammer the server.
 - **Cellular-aware** — same UX, smaller payloads.
-- **Battery-aware** — no background work.
+- **Battery-aware** — no background work while typing; only the periodic popular-list refresh.
 - **Privacy** — local recents not synced unless user opts in.
 
 ### Out of Scope
@@ -80,9 +80,9 @@ GET /v1/suggest?q=run&limit=7
 {
   "suggestions": [
     { "type": "query", "text": "running shoes", "highlightStart": 0, "highlightLen": 3 },
-    { "type": "entity", "text": "Roger Federer", "entityId": "u_555", "imageUrl": "...",
-      "highlightStart": 0, "highlightLen": 1 },
-    { "type": "recent", "text": "rugby balls", "highlightStart": 0, "highlightLen": 3 }
+    { "type": "entity", "text": "Run Club", "entityId": "u_555", "imageUrl": "...",
+      "highlightStart": 0, "highlightLen": 3 },
+    { "type": "recent", "text": "running socks", "highlightStart": 0, "highlightLen": 3 }
   ]
 }
 ```
@@ -137,6 +137,7 @@ sealed class Suggestion {
 
 interface TypeaheadRepository {
     fun suggest(prefix: String): Flow<List<Suggestion>>
+    fun recents(): Flow<List<Suggestion>>
     suspend fun rememberSelection(prefix: String, selected: Suggestion, position: Int)
 }
 ```
@@ -161,7 +162,7 @@ data class PopularRow(
 
 `popular` is periodically refreshed from `/v1/popular-queries` (cached for 7 days). `recents` is purely on-device.
 
-> **Probing Q:** "Why a separate trie?" Because Room `LIKE 'prefix%'` is fine for a small set; for larger local data (e.g., 50K product names cached for offline) a trie is O(prefix length) vs O(n).
+> **Probing Q:** "Why a separate trie?" Room `LIKE 'prefix%'` is fine for a small set. SQLite can use an index for it only with the right collation (`NOCASE` for its default case-insensitive `LIKE`); otherwise it scans. For larger local data (e.g., 50K product names cached for offline), a trie gives O(prefix length) lookups regardless.
 
 ---
 
@@ -178,13 +179,13 @@ class TypeaheadViewModel @Inject constructor(
     savedState: SavedStateHandle,
 ) : ViewModel() {
 
-    val text = savedState.getStateFlow("text", "")
+    val text = savedState.getMutableStateFlow("text", "")
 
     val suggestions: StateFlow<List<Suggestion>> = text
         .debounce(120.milliseconds)
         .distinctUntilChanged()
         .flatMapLatest { prefix ->
-            if (prefix.isBlank()) flowOf(emptyList())
+            if (prefix.isBlank()) repo.recents()
             else repo.suggest(prefix)
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -241,7 +242,7 @@ class DefaultTypeaheadRepository @Inject constructor(
 
 ### Cancellation guarantee
 
-`flatMapLatest` cancels the previous `suggest(prefix)` flow when a new `prefix` arrives. The OkHttp call in flight is cancelled (cooperative cancellation; OkHttp interceptor responds to coroutine cancel).
+`flatMapLatest` cancels the previous `suggest(prefix)` flow when a new `prefix` arrives. With a Retrofit `suspend` call, coroutine cancellation also cancels the OkHttp call in flight; no interceptor is involved.
 
 ### Debounce sizing
 
@@ -255,7 +256,7 @@ For typeahead, 120 ms is a sweet spot: fast typists trigger only at pauses; slow
 
 ### Rate limiting
 
-Even with debounce, a fast typist generates 5-10 req/sec. Limit at the OkHttp level with a token bucket interceptor:
+Debounce alone doesn't cap the request rate: someone pausing just over 120 ms between keys can still trigger several requests a second. Limit at the OkHttp level with a token bucket interceptor:
 
 ```kotlin
 class RateLimitInterceptor(private val limiter: RateLimiter) : Interceptor {
@@ -292,7 +293,7 @@ fun SuggestionRow(s: Suggestion, onTap: () -> Unit) {
 override suspend fun rememberSelection(prefix: String, selected: Suggestion, position: Int) {
     recentsDao.bump(selected.text, clock.now())
     analytics.log(TypeaheadClickEvent(prefix, selected.text, position))
-    runCatching { api.click(prefix, selected.text, position) }   // fire-and-forget
+    appScope.launch { runCatching { api.click(prefix, selected.text, position) } }   // fire-and-forget: never delays submit
 }
 ```
 
@@ -374,7 +375,7 @@ Persist as a compact byte format on first launch (e.g., DAWG); reload into memor
 - **Cancellation.** `flatMapLatest` is the foundation. Don't manually manage `Job`s.
 - **Privacy.** Recents are local-only by default. Cross-device sync requires opt-in (consent banner).
 - **Cellular cost.** Payloads are small (a few KB), but request count can spike. Rate limiter caps it.
-- **Battery.** No background work. Typeahead lives only while the user is typing.
+- **Battery.** Typeahead lives only while the user is typing; the only background work is the periodic popular-list refresh.
 - **Personalization.** If server personalizes, include user id in headers; cache per-user.
 - **Accessibility.** Suggestions list is a `LazyColumn` with proper semantics; TalkBack reads each row including type.
 - **Process death.** Text in `SavedStateHandle`. Local fallback always works on restart.
@@ -388,7 +389,7 @@ Persist as a compact byte format on first launch (e.g., DAWG); reload into memor
 > Server endpoint `/v1/popular-queries?limit=5000` cached weekly. App downloads on first launch + once a week. For domains like city names, ship the trie as an asset and version it.
 
 > **Q: Why not always go remote for the freshest suggestions?**
-> Latency. Local-first ensures < 50 ms perceived latency even on cold network. Remote refines in the background; the merge updates the list.
+> Latency. Local-first shows suggestions as soon as the debounce fires, even on a cold network. Remote refines in the background; the merge updates the list.
 
 > **Q: How do you avoid jank when the list shrinks?**
 > `LazyColumn` with stable keys + `AnimatedVisibility` per row. Or `crossfade` between snapshots. Don't `clear()` then `addAll()`.

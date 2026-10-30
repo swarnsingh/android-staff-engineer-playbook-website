@@ -2,7 +2,7 @@
      The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
      decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
      Hand-authored here: the step-through and the end recap.
-     Verified 2026-10-30 against notification-system.md at source c1f26bb (§4 trigger and preferences, §7 routing pipeline, idempotency, preferences resolution, capper, quiet hours, client suppression, inbox sync and failure modes, §10 dual-write answer. The order_shipped_o_99 key comes from §4; the promo at 23:30 is illustrative. The opted-out step says the app checks its own stored preference, because areNotificationsEnabled reports only whether the system blocks the app)
+     Verified 2026-10-30 against notification-system.md at source 035778c (§4 trigger and preferences, §7 routing pipeline, idempotency, preferences resolution, capper, quiet hours, client suppression, inbox sync and failure modes, §10 dual-write answer. The order_shipped_o_99 key comes from §4; the promo at 23:30 is illustrative.)
      and against the FCM message types guide (4096-byte payload limit), NotificationManagerCompat and the FTC CAN-SPAM guide. -->
 
 <!-- @after 7. Deep Dive: Routing + Preferences (15 min) :: animation -->
@@ -118,7 +118,7 @@
   },
   {
     "label": "The device gets a hint",
-    "caption": "The push is a hint; the inbox is the truth. The client stores the item in its Room mirror. If the user turned off this category while offline, it’s still kept in the inbox, and the app’s stored preference suppresses the system notification. Inbox sync also runs on app foreground and every 30 minutes.",
+    "caption": "The push is a hint; the inbox is the truth. The client stores the item in its Room mirror. If the user turned off this category while offline, it’s still kept in the inbox, and the app’s stored preference suppresses the system notification. On Android 13+, a denied POST_NOTIFICATIONS permission also means no system notification, while the inbox still receives the item. Inbox sync also runs on app foreground and every 30 minutes.",
     "state": {
       "router": "done",
       "device": "done",

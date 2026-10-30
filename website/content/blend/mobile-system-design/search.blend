@@ -2,7 +2,7 @@
      The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
      decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
      Hand-authored here: the step-through and the end recap.
-     Verified 2026-10-30 against search.md at source c1f26bb (§5 paging generations, §6 cache, §7 debounce, mediator, filters, offline fallback, click telemetry and failure modes, §9 concerns, §10 facet answer. The "shoes" and "shoes red" queries come from §10; the filter is from §4)
+     Verified 2026-10-30 against search.md at source 035778c (§5 paging generations, §6 cache, §7 debounce, mediator, filters, offline fallback, click telemetry and failure modes, §9 concerns, §10 facet answer. The "shoes" and "shoes red" queries come from §10; the filter is from §4)
      and against the Paging 3 network and database guide and the kotlinx.coroutines flatMapLatest reference. -->
 
 <!-- @after 7. Deep Dive: Query → Results Lifecycle (15 min) :: animation -->
@@ -54,7 +54,7 @@
   },
   {
     "label": "The mediator fills the key",
-    "caption": "REFRESH sends the query to the API. One transaction clears that key’s rows, inserts the results and stores the facets. Ranking and facets come from the server; the client doesn’t compute them. The response’s queryId ties later clicks to this search.",
+    "caption": "REFRESH sends the query to the API, unless this key’s cache is under 5 minutes old. One transaction clears that key’s rows, inserts the results and stores the facets. Ranking and facets come from the server; the client doesn’t compute them. The response’s queryId ties later clicks to this search.",
     "state": {
       "mediator": "active",
       "api": "done",

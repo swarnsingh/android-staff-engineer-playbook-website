@@ -2,7 +2,7 @@
      The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
      decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
      Hand-authored here: the step-through and the end recap.
-     Verified 2026-10-30 against image-loading.md at source c1f26bb (§5 pipeline, §6 memory key, §7 engine, lifecycle cancellation, size resolution and failure modes, §9 and §10 key and crossfade answers. The 240 and 480 pixel sizes come from the chapter's §10 answer; the row and its scroll path are illustrative)
+     Verified 2026-10-30 against image-loading.md at source 035778c (§5 pipeline, §6 memory key, §7 engine, lifecycle cancellation, size resolution and failure modes, §9 and §10 key and crossfade answers. The 240 and 480 pixel sizes come from the chapter's §10 answer; the row and its scroll path are illustrative)
      and against ImageDecoder, Bitmap, and the Coil 2 upgrade guide (BitmapPool removed). -->
 
 <!-- @after 7. Deep Dive: Request Pipeline (15 min) :: animation -->

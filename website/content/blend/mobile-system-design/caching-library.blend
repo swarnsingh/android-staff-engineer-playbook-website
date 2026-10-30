@@ -2,7 +2,7 @@
      The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
      decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
      Hand-authored here: the step-through and the end recap.
-     Verified 2026-10-30 against caching-library.md at source c1f26bb (§6 disk format, §7 get, put, atomic write, eviction, TTL and concurrency, §9 crash safety and serializer drift, §10 write-during-read answer. The user:42 key is illustrative; the one-hour TTL is the §4 builder default)
+     Verified 2026-10-30 against caching-library.md at source 035778c (§6 disk format, §7 get, put, atomic write, eviction, TTL and concurrency, §9 crash safety and serializer drift, §10 write-during-read answer. The user:42 key is illustrative; the one-hour TTL is the §4 builder default)
      and against AndroidX LruCache (thread safety, sizeOf). -->
 
 <!-- @after 7. Deep Dive: Read/Write Path with Two Tiers (15 min) :: animation -->
@@ -51,7 +51,7 @@
   },
   {
     "label": "Atomic write to disk",
-    "caption": "The serialized bytes go to a .tmp file, fsync flushes them, and rename puts the file in place. A crash before the rename leaves any earlier entry untouched. The disk mutex allows one writer at a time, and the byte budget is checked after each write.",
+    "caption": "The serialized bytes go to a .tmp file, fsync flushes them, and rename puts the file in place. A crash before the rename leaves any earlier entry untouched. The disk mutex lets one operation touch the disk cache at a time, and the byte budget is checked after each write.",
     "state": {
       "memory": "done",
       "writer": "done",
@@ -126,7 +126,8 @@
 
 - **Two independently bounded tiers.** Memory is an LRU with an entry or size budget, and disk is a byte budget evicted by last access.
 - **A put reaches memory first and disk later.** The caller doesn’t wait for disk, and a process death before the flush loses only a cache entry.
-- **Atomic means `.tmp`, `fsync`, then `rename`.** The index is rewritten the same way, so a crash can’t leave a torn file.
+- **Atomic means `.tmp`, `fsync`, then `rename`.** The index is rewritten the same way, but separately from the entry, so recovery ignores orphan files and rows with no file.
+- **Keep disk operations in order.** An invalidate that overtakes a queued write could bring the removed value back on a later cold read.
 - **Expiry is lazy.** Entries carry an absolute `expiresAt`, checked on each read, so there’s no sweeper and no wakeups. An expired entry is a miss.
 - **A cold read promotes.** A fresh disk hit goes back into memory with its original expiry.
 - **Unknown data is a miss, not a crash.** A versioned envelope turns a serializer change into a cache miss.

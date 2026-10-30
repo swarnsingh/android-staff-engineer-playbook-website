@@ -111655,7 +111655,7 @@
           {
             "source": "mobile-system-design/image-loading.md",
             "view": "content",
-            "checked": 570,
+            "checked": 569,
             "units": 137,
             "diagrams": 2,
             "loadedDiagrams": 2,
@@ -112146,8 +112146,8 @@
           {
             "source": "mobile-system-design/file-downloader.md",
             "view": "content",
-            "checked": 788,
-            "units": 134,
+            "checked": 963,
+            "units": 141,
             "diagrams": 2,
             "loadedDiagrams": 2,
             "diagramResources": [
@@ -112165,7 +112165,7 @@
           }
         ],
         "problems": [],
-        "units": 134,
+        "units": 141,
         "diagrams": 2,
         "loadedDiagrams": 2
       },
@@ -112180,7 +112180,7 @@
           "width": 320,
           "theme": "light",
           "figure": 0,
-          "states": 7,
+          "states": 8,
           "objects": 0,
           "problems": [],
           "ok": true
@@ -112189,7 +112189,7 @@
           "width": 320,
           "theme": "dark",
           "figure": 0,
-          "states": 7,
+          "states": 8,
           "objects": 0,
           "problems": [],
           "ok": true
@@ -112198,7 +112198,7 @@
           "width": 320,
           "theme": "sepia",
           "figure": 0,
-          "states": 7,
+          "states": 8,
           "objects": 0,
           "problems": [],
           "ok": true
@@ -112207,7 +112207,7 @@
           "width": 320,
           "theme": "contrast",
           "figure": 0,
-          "states": 7,
+          "states": 8,
           "objects": 0,
           "problems": [],
           "ok": true
@@ -112216,7 +112216,7 @@
           "width": 768,
           "theme": "light",
           "figure": 0,
-          "states": 7,
+          "states": 8,
           "objects": 0,
           "problems": [],
           "ok": true
@@ -112225,7 +112225,7 @@
           "width": 768,
           "theme": "dark",
           "figure": 0,
-          "states": 7,
+          "states": 8,
           "objects": 0,
           "problems": [],
           "ok": true
@@ -112234,7 +112234,7 @@
           "width": 768,
           "theme": "sepia",
           "figure": 0,
-          "states": 7,
+          "states": 8,
           "objects": 0,
           "problems": [],
           "ok": true
@@ -112243,7 +112243,7 @@
           "width": 768,
           "theme": "contrast",
           "figure": 0,
-          "states": 7,
+          "states": 8,
           "objects": 0,
           "problems": [],
           "ok": true
@@ -112252,7 +112252,7 @@
           "width": 1280,
           "theme": "light",
           "figure": 0,
-          "states": 7,
+          "states": 8,
           "objects": 0,
           "problems": [],
           "ok": true
@@ -112261,7 +112261,7 @@
           "width": 1280,
           "theme": "dark",
           "figure": 0,
-          "states": 7,
+          "states": 8,
           "objects": 0,
           "problems": [],
           "ok": true
@@ -112270,7 +112270,7 @@
           "width": 1280,
           "theme": "sepia",
           "figure": 0,
-          "states": 7,
+          "states": 8,
           "objects": 0,
           "problems": [],
           "ok": true
@@ -112279,7 +112279,7 @@
           "width": 1280,
           "theme": "contrast",
           "figure": 0,
-          "states": 7,
+          "states": 8,
           "objects": 0,
           "problems": [],
           "ok": true
@@ -112288,7 +112288,7 @@
           "width": 1440,
           "theme": "light",
           "figure": 0,
-          "states": 7,
+          "states": 8,
           "objects": 0,
           "problems": [],
           "ok": true
@@ -112297,7 +112297,7 @@
           "width": 1440,
           "theme": "dark",
           "figure": 0,
-          "states": 7,
+          "states": 8,
           "objects": 0,
           "problems": [],
           "ok": true
@@ -112306,7 +112306,7 @@
           "width": 1440,
           "theme": "sepia",
           "figure": 0,
-          "states": 7,
+          "states": 8,
           "objects": 0,
           "problems": [],
           "ok": true
@@ -112315,7 +112315,7 @@
           "width": 1440,
           "theme": "contrast",
           "figure": 0,
-          "states": 7,
+          "states": 8,
           "objects": 0,
           "problems": [],
           "ok": true
@@ -112665,8 +112665,8 @@
           {
             "source": "mobile-system-design/caching-library.md",
             "view": "content",
-            "checked": 559,
-            "units": 130,
+            "checked": 564,
+            "units": 131,
             "diagrams": 3,
             "loadedDiagrams": 3,
             "diagramResources": [
@@ -112688,7 +112688,7 @@
           }
         ],
         "problems": [],
-        "units": 130,
+        "units": 131,
         "diagrams": 3,
         "loadedDiagrams": 3
       },
@@ -113104,8 +113104,8 @@
           {
             "source": "mobile-system-design/pagination.md",
             "view": "content",
-            "checked": 612,
-            "units": 135,
+            "checked": 621,
+            "units": 134,
             "diagrams": 2,
             "loadedDiagrams": 2,
             "diagramResources": [
@@ -113123,7 +113123,7 @@
           }
         ],
         "problems": [],
-        "units": 135,
+        "units": 134,
         "diagrams": 2,
         "loadedDiagrams": 2
       },
@@ -113595,7 +113595,7 @@
           {
             "source": "mobile-system-design/typeahead-autocomplete-search.md",
             "view": "content",
-            "checked": 720,
+            "checked": 727,
             "units": 146,
             "diagrams": 2,
             "loadedDiagrams": 2,
@@ -114142,7 +114142,7 @@
           {
             "source": "mobile-system-design/search.md",
             "view": "content",
-            "checked": 686,
+            "checked": 709,
             "units": 134,
             "diagrams": 2,
             "loadedDiagrams": 2,
@@ -114689,8 +114689,8 @@
           {
             "source": "mobile-system-design/notification-system.md",
             "view": "content",
-            "checked": 626,
-            "units": 159,
+            "checked": 629,
+            "units": 161,
             "diagrams": 3,
             "loadedDiagrams": 3,
             "diagramResources": [
@@ -114712,7 +114712,7 @@
           }
         ],
         "problems": [],
-        "units": 159,
+        "units": 161,
         "diagrams": 3,
         "loadedDiagrams": 3
       },

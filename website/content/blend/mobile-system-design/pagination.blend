@@ -2,7 +2,7 @@
      The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
      decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
      Hand-authored here: the step-through and the end recap.
-     Verified 2026-10-30 against pagination.md at source c1f26bb (§4 config values, §6 remote keys, §7 mediator, prefetch and max size, scroll restoration, pull-to-refresh and failure modes, §8 error UX. For relaunch, the caption follows the chapter's LAUNCH_INITIAL_REFRESH code and the Paging guide rather than the "last known cursor" failure row)
+     Verified 2026-10-30 against pagination.md at source 035778c (§4 config values, §6 remote keys, §7 mediator, prefetch and max size, scroll restoration, pull-to-refresh and failure modes, §8 error UX)
      and against the Paging 3 network and database guide and the PagingConfig source (maxSize is best effort, dropped pages). -->
 
 <!-- @after 7. Deep Dive: Load Orchestration with RemoteMediator (15 min) :: animation -->
