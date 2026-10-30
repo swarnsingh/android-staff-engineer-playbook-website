@@ -3375,6 +3375,42 @@
           "role": "runtime"
         }
       ]
+    },
+    {
+      "path": "mobile-system-design/offline-sync",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "notes",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "outbox",
+          "kind": "queue",
+          "role": "queue"
+        },
+        {
+          "id": "server",
+          "kind": "server",
+          "role": "runtime"
+        },
+        {
+          "id": "ui",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "worker",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
     }
   ]
 }

@@ -1,0 +1,4 @@
+{
+  "mobile-system-design.md": "Start with a repeatable design method and the non-functional requirements every design must meet, then the platform building blocks mobile systems share, then complete systems such as sync, feeds, payments and media. Follow the guided phases or open a chapter directly.",
+  "mobile-system-design/offline-sync.md": "Users edit notes without a network and expect nothing lost, nothing duplicated and nothing silently overwritten. Walk through the interview: requirements, an outbox-first architecture, safe retries and a conflict policy."
+}

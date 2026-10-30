@@ -1,0 +1,90 @@
+<!-- Website teaching layer for mobile-system-design/offline-sync.md (interview-walkthrough prototype).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the recovery step-through and the end recap.
+     Verified 2026-10-29 against offline-sync.md (§4 Idempotency, §6, §7 write/push paths, sync triggers, failure modes,
+     tombstones, protocol evolution) and the official WorkManager guide ("tasks persist across app restarts and device
+     reboots") and offline-first guide (local data source is the source of truth; queued writes drained by WorkManager).
+     Source PR #61 (merged as fe82316) resolved findings OS1 and OS2: unique push work uses KEEP, every op including delete
+     carries a clientId, and a foreground check plus a periodic outbox sweep reschedule pushes the enqueue missed.
+     The two queued ops stay illustrative upserts, one per note, matching source PR #62 (one op per note per batch;
+     dirty clears only when no op for the note remains; a conflict removes the note's queued ops, already kept in the conflict copy). -->
+
+<!-- @after 7. Deep Dive: Outbox + Conflict Resolution (15 min) :: animation -->
+### Replay the outbox after the network returns
+
+<figure class="stepper" data-illustrated><span class="stepper-title">Outbox replay and recovery</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="notes" data-art="database" data-art-role="storage"><strong>notes table</strong><small data-text="notesV">n_42 v7 dirty · n_51 v3 dirty</small></div><div class="node" data-el="outbox" data-art="queue" data-art-role="queue"><strong>outbox table</strong><small data-text="outboxV">upsert n_42 · upsert n_51</small></div><div class="node" data-el="server" data-art="server" data-art-role="runtime"><strong>Sync API</strong><small data-text="serverV">unreachable</small></div></div><div class="viz-grid" data-cols="2"><div class="node" data-el="ui" data-art="phone" data-art-role="client"><strong>Notes UI</strong><small data-text="uiV">unsynced dots on n_42, n_51</small></div><div class="node" data-el="worker" data-art="worker" data-art-role="runtime"><strong>PushWorker</strong><small data-text="workerV">waiting for network</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Offline",
+    "caption": "Two edits wait in the outbox: upserts of n_42 with base version 7 and n_51 with base version 3, each with its own clientId. The UI already shows both, because it reads only Room. Another device has also edited n_51.",
+    "add": ["notes", "outbox", "server", "ui", "worker", "event"],
+    "state": {"notes": "done", "outbox": "warn", "ui": "done"},
+    "text": {"eventV": "offline · 2 ops pending"},
+    "visuals": {"outbox": {"count": 2}}
+  },
+  {
+    "label": "Network returns",
+    "caption": "Reconnect triggers PushWorker, then PullWorker.",
+    "state": {"worker": "active"},
+    "text": {"workerV": "running", "serverV": "reachable", "eventV": "reconnect → push, then pull"}
+  },
+  {
+    "label": "Batch sent",
+    "caption": "PushWorker takes up to 100 outbox rows and posts them to /v1/sync/push. Each op carries its clientId and baseVersion.",
+    "state": {"server": "active"},
+    "text": {"eventV": "POST /v1/sync/push · 2 ops"},
+    "handoff": {"from": "worker", "to": "server", "kind": "page", "label": "2 ops"}
+  },
+  {
+    "label": "Killed mid-push",
+    "caption": "The server applies n_42 as version 8, but the app is killed before it deletes any outbox row. Both rows are still in Room. In this scenario the push was already running as persisted WorkManager work, so WorkManager still holds the request. Had the app died before the enqueue was persisted, the foreground check or periodic outbox sweep would schedule the push instead.",
+    "state": {"worker": "warn", "ui": "ghost", "server": "done"},
+    "text": {"workerV": "killed · request still persisted", "uiV": "(app not running)", "serverV": "n_42 v8 · n_51 v5", "eventV": "no outbox row lost"},
+    "visuals": {"ui": {"visible": false}}
+  },
+  {
+    "label": "Replay",
+    "caption": "WorkManager runs PushWorker again. It resends the same rows with the same clientIds.",
+    "state": {"worker": "active", "server": "active", "ui": "done"},
+    "text": {"workerV": "retrying the same batch", "uiV": "unsynced dots on n_42, n_51", "eventV": "same clientIds resent"},
+    "visuals": {"ui": {"visible": true}},
+    "handoff": {"from": "worker", "to": "server", "kind": "page", "label": "same 2 ops"}
+  },
+  {
+    "label": "Server answers",
+    "caption": "For n_42 the server recognises the clientId and returns the same newVersion, 8, instead of applying it twice. For n_51 the server is already at version 5, so it reports VERSION_MISMATCH with its state.",
+    "state": {"server": "done"},
+    "text": {"eventV": "applied: n_42 v8 · conflict: n_51"},
+    "handoff": {"from": "server", "to": "worker", "kind": "rows", "label": "applied + conflicts"}
+  },
+  {
+    "label": "Apply the ack",
+    "caption": "In one Room transaction, PushWorker deletes n_42's outbox row and records version 8. No other op for n_42 is queued, so dirty becomes false and the unsynced dot disappears.",
+    "state": {"notes": "active", "outbox": "active"},
+    "text": {"notesV": "n_42 v8 synced", "outboxV": "upsert n_51", "uiV": "n_42 synced", "eventV": "same transaction: ack applied"},
+    "visuals": {"outbox": {"count": 1}}
+  },
+  {
+    "label": "Keep both copies",
+    "caption": "In the same transaction, the worker removes every queued op for n_51; here there is only the one the server rejected. The resolver saves the local copy as a conflict copy, accepts the server state and adds an entry to the Conflicts inbox.",
+    "state": {"notes": "warn", "outbox": "done"},
+    "text": {"notesV": "n_51 = server v5 · local kept as conflict copy", "outboxV": "empty", "uiV": "Conflicts inbox: 1", "eventV": "nothing silently destroyed"},
+    "visuals": {"outbox": {"count": 0}}
+  },
+  {
+    "label": "Done, then pull",
+    "caption": "The outbox is empty, so PushWorker returns Result.success(); rows left over would return Result.retry(). PullWorker then fetches deltas since the last change token.",
+    "state": {"worker": "done", "notes": "done"},
+    "text": {"workerV": "success", "eventV": "push done → pull deltas"}
+  }
+]</script><figcaption>Durability comes from the Room transaction and the persisted work; safety on replay comes from the clientId the server dedupes on. The conflict path keeps both versions.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **Room is the only thing the UI reads.** Each edit writes the note and its outbox op in one transaction.
+- **WorkManager drains the outbox; sweeps back it up.** Persisted work survives app restarts and reboots. The enqueue is outside the Room transaction, so a foreground check and a periodic sweep reschedule the push for rows left behind.
+- **Every op, deletes included, carries a stable `clientId`.** The server dedupes on it, so a replay never applies twice.
+- **`baseVersion` exposes conflicts.** The losing copy is kept and surfaced, never silently dropped.
+- **Pull only deltas, over an opaque `nextToken`.** On `TOKEN_EXPIRED`, wipe the token, not the database, then run a paginated full pull.
+- **Deletes are tombstones.** They stay about 30 days, so other devices can pull them.

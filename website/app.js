@@ -265,7 +265,8 @@ markExternalLinks();
 if(!$('#resource-links')?.children.length){$('#tab-resources')?.remove();$('#panel-resources')?.remove();}
 const countCopy = $('article').cloneNode(true); countCopy.querySelectorAll('pre,figure,table').forEach(node=>node.remove());
 const words = countCopy.textContent.trim().split(/\s+/).length;
-if($('#reading-time'))$('#reading-time').textContent=`About ${Math.ceil(words/200)} min reading · experiments extra`;
+// An interview walkthrough states its own pacing from the chapter's time hints; keep it.
+if($('#reading-time')&&!$('#reading-time').hasAttribute('data-pacing'))$('#reading-time').textContent=`About ${Math.ceil(words/200)} min reading · experiments extra`;
 
 const tabs=$$('.lesson-tabs [role=tab]');
 const availableViews=new Set(['content',...tabs.map(tab=>tab.id.replace('tab-',''))]);

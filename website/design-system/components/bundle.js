@@ -607,3 +607,43 @@
   }
   window.Playbook = { motion: motion, registerSteps: registerSteps, pauseAll: pauseAll, observeResize: observeResize, Actor: Actor, Payload: Payload, FlowDiagram: FlowDiagram, FlowScene: FlowScene, WideDiagram: WideDiagram, mountAll: mountAll };
 })();
+
+/* InterviewWalkthrough: mark the interview step being read. No motion; without JavaScript the timeline is a plain linked list. */
+(() => {
+  const timeline = document.querySelector('.wt-timeline');
+  if (!timeline) return;
+  // Declared minutes become the bar's sizing variable; without this script the timed steps share the width equally.
+  document.querySelectorAll('.wt-bar li[data-minutes]').forEach(li => li.style.setProperty('--minutes', li.dataset.minutes));
+  if (!('IntersectionObserver' in window)) return;
+  const sections = [...document.querySelectorAll('section[data-interview-step]')];
+  const items = new Map([...timeline.querySelectorAll('.wt-steps li')].map(li => [li.dataset.step, li]));
+  const bars = new Map([...document.querySelectorAll('.wt-bar li')].map(li => [li.dataset.step, li]));
+  const now = document.querySelector('.wt-now-text');
+  // Below 1181px the pacing bar is not sticky; a chip in the sticky "On this page" summary keeps the step visible.
+  const summary = document.querySelector('.mobile-outline summary');
+  const chip = summary ? document.createElement('span') : null;
+  if (chip) { chip.className = 'wt-chip'; chip.hidden = true; summary.insertBefore(chip, summary.querySelector('#mobile-current')); }
+  let current = null;
+  const mark = step => {
+    if (step === current) return;
+    current = step;
+    items.forEach((li, key) => key === step ? li.setAttribute('aria-current', 'step') : li.removeAttribute('aria-current'));
+    bars.forEach((li, key) => li.classList.toggle('is-current', key === step));
+    const li = items.get(step);
+    if (now) now.textContent = li ? ['.wt-number', '.wt-title', '.wt-time'].map(s => li.querySelector(s).textContent).join(' · ') : '';
+    if (chip && li) {
+      const time = li.querySelector('.wt-time').textContent;
+      chip.textContent = `${step}/${items.size}` + (time.startsWith('~') ? ' · ' + time : '');
+      chip.setAttribute('aria-label', `Interview step ${step} of ${items.size}` + (time.startsWith('~') ? `, ${time.slice(1)} hint` : ''));
+      chip.hidden = false;
+    }
+  };
+  const visible = new Set();
+  // A section counts as current while it crosses a band a third of the way down the viewport.
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => entry.isIntersecting ? visible.add(entry.target) : visible.delete(entry.target));
+    const first = sections.find(section => visible.has(section));
+    if (first) mark(first.dataset.interviewStep);
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(section => observer.observe(section));
+})();
