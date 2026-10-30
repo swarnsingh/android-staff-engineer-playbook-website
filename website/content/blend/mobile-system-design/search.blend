@@ -1,0 +1,156 @@
+<!-- Website teaching layer for mobile-system-design/search.md (interview walkthrough).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the step-through and the end recap.
+     Verified 2026-10-30 against search.md at source c1f26bb (§5 paging generations, §6 cache, §7 debounce, mediator, filters, offline fallback, click telemetry and failure modes, §9 concerns, §10 facet answer. The "shoes" and "shoes red" queries come from §10; the filter is from §4)
+     and against the Paging 3 network and database guide and the kotlinx.coroutines flatMapLatest reference. -->
+
+<!-- @after 7. Deep Dive: Query → Results Lifecycle (15 min) :: animation -->
+### Follow a query, a change of mind and a dead network
+
+<figure class="stepper" data-illustrated><span class="stepper-title">Each query is its own paging generation</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="ui" data-art="screen" data-art-role="client"><strong>Search screen</strong><small data-text="uiV">empty</small></div><div class="node" data-el="vm" data-art="clock" data-art-role="runtime"><strong>SearchViewModel</strong><small data-text="vmV">debounce 250 ms</small></div><div class="node" data-el="pager" data-art="code" data-art-role="runtime"><strong>Pager</strong><small data-text="pagerV">none yet</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="mediator" data-art="worker" data-art-role="queue"><strong>RemoteMediator</strong><small data-text="mediatorV">idle</small></div><div class="node" data-el="room" data-art="database" data-art-role="storage"><strong>Room result cache</strong><small data-text="roomV">rows by query key</small></div><div class="node" data-el="api" data-art="server" data-art-role="runtime"><strong>Search API</strong><small data-text="apiV">GET /v1/search</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Input becomes a query",
+    "caption": "Text, filters and sort combine into one query, debounced by 250 ms, and blank text is filtered out. They live in SavedStateHandle, so they survive process death.",
+    "add": [
+      "ui",
+      "vm",
+      "pager",
+      "mediator",
+      "room",
+      "api",
+      "event"
+    ],
+    "state": {
+      "ui": "active",
+      "vm": "active"
+    },
+    "text": {
+      "uiV": "shoes",
+      "vmV": "waiting 250 ms",
+      "eventV": "text + filters + sort = one query"
+    }
+  },
+  {
+    "label": "A new paging generation",
+    "caption": "The user pauses on \"shoes\". The query is remembered in history, and flatMapLatest starts a new Pager whose PagingSource reads only this query’s key: a hash of text, filters and sort. Rows already cached for that key render first.",
+    "state": {
+      "vm": "done",
+      "pager": "active",
+      "room": "done"
+    },
+    "text": {
+      "vmV": "query: shoes",
+      "pagerV": "key for shoes",
+      "roomV": "cached rows, if any",
+      "eventV": "this query reads only its own key"
+    },
+    "handoff": {
+      "from": "vm",
+      "to": "pager",
+      "kind": "parcel",
+      "label": "query"
+    }
+  },
+  {
+    "label": "The mediator fills the key",
+    "caption": "REFRESH sends the query to the API. One transaction clears that key’s rows, inserts the results and stores the facets. Ranking and facets come from the server; the client doesn’t compute them. The response’s queryId ties later clicks to this search.",
+    "state": {
+      "mediator": "active",
+      "api": "done",
+      "room": "active",
+      "ui": "done"
+    },
+    "text": {
+      "mediatorV": "REFRESH",
+      "apiV": "items, facets, queryId",
+      "roomV": "results for shoes",
+      "uiV": "ranked results",
+      "eventV": "results and facets arrive together"
+    },
+    "handoff": {
+      "from": "api",
+      "to": "room",
+      "kind": "rows",
+      "label": "results + facets"
+    }
+  },
+  {
+    "label": "The user changes their mind",
+    "caption": "The user adds \"red\" while the next page of \"shoes\" is loading. After the debounce, flatMapLatest cancels the old flow and starts a new generation with a new key, so a late “shoes” response has no way into the new list.",
+    "state": {
+      "ui": "active",
+      "mediator": "warn",
+      "api": "warn",
+      "pager": "active",
+      "room": "done"
+    },
+    "text": {
+      "uiV": "shoes red",
+      "pagerV": "key for shoes red",
+      "mediatorV": "old load cancelled",
+      "apiV": "shoes abandoned",
+      "eventV": "a new query is a new generation"
+    }
+  },
+  {
+    "label": "A filter is a new query too",
+    "caption": "Applying a brand filter updates the filters state, so the combined query emits again and paging resets. The key changes because filters are part of it, and the new response carries the new facets. A filter with no matches shows greyed-out with a count of 0.",
+    "state": {
+      "ui": "done",
+      "mediator": "done",
+      "api": "done",
+      "pager": "done",
+      "room": "done"
+    },
+    "text": {
+      "uiV": "brand: nike",
+      "mediatorV": "REFRESH",
+      "apiV": "new items and facets",
+      "eventV": "filters reset paging; facets follow"
+    }
+  },
+  {
+    "label": "The network dies",
+    "caption": "A refresh fails, so the mediator returns MediatorResult.Error. The PagingSource still serves whatever is cached for this key, with a “Couldn’t refresh” message. A query with nothing cached has no results to show, because this cache only holds earlier searches.",
+    "state": {
+      "api": "error",
+      "mediator": "warn",
+      "room": "done",
+      "ui": "warn"
+    },
+    "text": {
+      "apiV": "unreachable",
+      "mediatorV": "MediatorResult.Error",
+      "roomV": "last results for this key",
+      "uiV": "cached results + message",
+      "eventV": "offline means earlier searches, not new ones"
+    }
+  },
+  {
+    "label": "A tap closes the loop",
+    "caption": "Tapping a result logs the queryId, item and position, then opens the product. An item deleted on the server is handled by the product screen as “not found”. A query with zero results shows an empty state with suggested terms rather than a blank screen.",
+    "state": {
+      "api": "done",
+      "mediator": "done",
+      "ui": "done",
+      "event": "done"
+    },
+    "text": {
+      "uiV": "product screen",
+      "apiV": "click: queryId + position",
+      "eventV": "queryId ties clicks to the query"
+    }
+  }
+]</script><figcaption>A new query cancels the old one and starts a new Pager over its own cache key, so old results can’t leak into the new list. When the network fails, whatever was cached for that key still renders.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **Each accepted query is a new paging generation.** `flatMapLatest` cancels the old one, and its results can’t reach the new list.
+- **The cache key is the query.** Hash text, filters and sort, and namespace it by user, because personalized results mustn’t cross accounts.
+- **Filters are part of the query.** Applying one resets paging, and the same response carries the new facets.
+- **The server owns ranking and facets.** The client owns the query lifecycle, the cached presentation and pagination.
+- **Offline means earlier searches.** A failed refresh still shows what’s cached for that key. Searching a whole catalog offline needs a local full-text index.
+- **`queryId` ties a click to its query.** Log the position with it, and let the server use that for ranking.
+- **Plan every empty state.** Show a skeleton while loading and suggested terms for true zero results; a deleted item becomes “not found” on the product screen.

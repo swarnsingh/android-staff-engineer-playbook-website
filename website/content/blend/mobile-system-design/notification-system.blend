@@ -1,0 +1,149 @@
+<!-- Website teaching layer for mobile-system-design/notification-system.md (interview walkthrough).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the step-through and the end recap.
+     Verified 2026-10-30 against notification-system.md at source c1f26bb (§4 trigger and preferences, §7 routing pipeline, idempotency, preferences resolution, capper, quiet hours, client suppression, inbox sync and failure modes, §10 dual-write answer. The order_shipped_o_99 key comes from §4; the promo at 23:30 is illustrative. The opted-out step says the app checks its own stored preference, because areNotificationsEnabled reports only whether the system blocks the app)
+     and against the FCM message types guide (4096-byte payload limit), NotificationManagerCompat and the FTC CAN-SPAM guide. -->
+
+<!-- @after 7. Deep Dive: Routing + Preferences (15 min) :: animation -->
+### Follow triggers through routing
+
+<figure class="stepper" data-illustrated><span class="stepper-title">A duplicate, a deferred promo and a down channel</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="trigger" data-art="signal" data-art-role="runtime"><strong>Domain event</strong><small data-text="triggerV">waiting</small></div><div class="node" data-el="dedupe" data-art="key" data-art-role="runtime"><strong>Dedup check</strong><small data-text="dedupeV">key + sentAt</small></div><div class="node" data-el="policy" data-art="gate" data-art-role="runtime"><strong>Policy</strong><small data-text="policyV">prefs, cap, quiet hours</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="render" data-art="document" data-art-role="runtime"><strong>Template renderer</strong><small data-text="renderV">idle</small></div><div class="node" data-el="router" data-art="worker" data-art-role="queue"><strong>Channel router</strong><small data-text="routerV">push, email, inbox</small></div><div class="node" data-el="inbox" data-art="database" data-art-role="storage"><strong>Durable inbox</strong><small data-text="inboxV">server record</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="device" data-art="phone" data-art-role="client"><strong>Android client</strong><small data-text="deviceV">idle</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "A trigger arrives",
+    "caption": "The order service posts a shipped notification with the deduplication key order_shipped_o_99. It names a category, a template, variables and the channels it wants. It doesn’t decide whether the user will actually be notified.",
+    "add": [
+      "trigger",
+      "dedupe",
+      "policy",
+      "render",
+      "router",
+      "inbox",
+      "device",
+      "event"
+    ],
+    "state": {
+      "trigger": "active",
+      "dedupe": "active"
+    },
+    "text": {
+      "triggerV": "order_shipped_o_99",
+      "dedupeV": "new key",
+      "eventV": "the event asks; the service decides"
+    },
+    "handoff": {
+      "from": "trigger",
+      "to": "dedupe",
+      "kind": "parcel",
+      "label": "trigger"
+    }
+  },
+  {
+    "label": "The duplicate stops here",
+    "caption": "The upstream service retries and sends the same key within the TTL window. The stored key turns that trigger into a no-op, with no second ping, inbox row or send. This check is the only thing between a duplicate trigger and a duplicate ping.",
+    "state": {
+      "trigger": "warn",
+      "dedupe": "done"
+    },
+    "text": {
+      "triggerV": "same key again",
+      "dedupeV": "seen: no-op",
+      "eventV": "same key, same outcome, no new send"
+    }
+  },
+  {
+    "label": "Resolve preferences",
+    "caption": "The first trigger continues. For each channel the service uses the user’s setting, then the category’s server-side default, and finally false. Order updates default to push, email and inbox, and security alerts can’t be switched off. The user’s locale and time zone load here too.",
+    "state": {
+      "trigger": "done",
+      "policy": "active"
+    },
+    "text": {
+      "policyV": "push, email, inbox: on",
+      "eventV": "user setting → category default → false"
+    },
+    "handoff": {
+      "from": "dedupe",
+      "to": "policy",
+      "kind": "parcel",
+      "label": "new trigger"
+    }
+  },
+  {
+    "label": "Quiet hours depend on the category",
+    "caption": "At 23:30 inside quiet hours (22:00–07:00), an order update still delivers. A promo at the same moment is deferred to the end of quiet hours, and an account-security alert always goes through. Promo frequency caps apply here too, such as 3 a day. This promo time is illustrative.",
+    "state": {
+      "policy": "warn",
+      "inbox": "done"
+    },
+    "text": {
+      "policyV": "order: send · promo: defer",
+      "inboxV": "record kept",
+      "eventV": "quiet hours defer promos, not security"
+    }
+  },
+  {
+    "label": "Render in the user’s language",
+    "caption": "The server fills the localized template, and the router sends it per channel. If rendering fails, the service logs it and falls back to plain text. FCM’s limit is 4096 bytes, so an oversized payload drops its large fields and truncates the body but keeps the deep link.",
+    "state": {
+      "policy": "done",
+      "render": "active",
+      "router": "active"
+    },
+    "text": {
+      "renderV": "localized text",
+      "routerV": "push + email + inbox",
+      "eventV": "server-side template, under 4096 bytes"
+    },
+    "handoff": {
+      "from": "render",
+      "to": "router",
+      "kind": "page",
+      "label": "message"
+    }
+  },
+  {
+    "label": "One channel is down",
+    "caption": "Email is unavailable. Push and inbox carry on, and email is marked pending and retried. The inbox write doesn’t depend on any transport succeeding, which is why a lost push isn’t a lost notification.",
+    "state": {
+      "render": "done",
+      "router": "warn",
+      "inbox": "done"
+    },
+    "text": {
+      "routerV": "email pending, retrying",
+      "inboxV": "n_555 saved",
+      "eventV": "one failed channel doesn’t stop the others"
+    }
+  },
+  {
+    "label": "The device gets a hint",
+    "caption": "The push is a hint; the inbox is the truth. The client stores the item in its Room mirror. If the user turned off this category while offline, it’s still kept in the inbox, and the app’s stored preference suppresses the system notification. Inbox sync also runs on app foreground and every 30 minutes.",
+    "state": {
+      "router": "done",
+      "device": "done",
+      "event": "done"
+    },
+    "text": {
+      "deviceV": "Room inbox updated",
+      "eventV": "push may be lost; the inbox catches up"
+    },
+    "handoff": {
+      "from": "router",
+      "to": "device",
+      "kind": "parcel",
+      "label": "FCM data"
+    }
+  }
+]</script><figcaption>Idempotency and policy run before any delivery, and the inbox record is written either way. A push is a real-time hint and may be lost; the inbox is what the user can rely on.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **Three layers: triggers, routing, preferences.** A domain event only asks; policy decides each channel.
+- **Check idempotency before anything else.** A deduplication key stored for a TTL window turns a repeated trigger into a no-op.
+- **Resolve each channel in order:** the user’s setting, then the category default, then false. Account-security alerts can’t be turned off and bypass caps.
+- **Quiet hours depend on the category.** Transactional messages still deliver, promos wait for the end of the window, and security always goes through. Resolve them on the server with a stored time zone, because of travel, DST and the midnight wrap.
+- **Write the inbox as well as the push.** A push can be lost, so the server inbox stays the record of what was sent and what was read, across devices.
+- **One channel failing doesn’t stop the others.** A down channel is retried, and an oversized FCM payload (the limit is 4096 bytes) keeps its deep link.
+- **Know which law you’re citing.** CAN-SPAM requires an unsubscribe mechanism and honouring it, not prior opt-in; check consent rules separately for each channel and region.

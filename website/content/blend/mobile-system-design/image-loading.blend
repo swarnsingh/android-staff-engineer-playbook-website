@@ -1,0 +1,150 @@
+<!-- Website teaching layer for mobile-system-design/image-loading.md (interview walkthrough).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the step-through and the end recap.
+     Verified 2026-10-30 against image-loading.md at source c1f26bb (§5 pipeline, §6 memory key, §7 engine, lifecycle cancellation, size resolution and failure modes, §9 and §10 key and crossfade answers. The 240 and 480 pixel sizes come from the chapter's §10 answer; the row and its scroll path are illustrative)
+     and against ImageDecoder, Bitmap, and the Coil 2 upgrade guide (BitmapPool removed). -->
+
+<!-- @after 7. Deep Dive: Request Pipeline (15 min) :: animation -->
+### Follow one image through the tiers
+
+<figure class="stepper" data-illustrated><span class="stepper-title">One URL, two sizes, one cancelled row</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="target" data-art="screen" data-art-role="client"><strong>Feed row</strong><small data-text="targetV">AsyncImage</small></div><div class="node" data-el="memory" data-art="memory" data-art-role="storage"><strong>Memory cache</strong><small data-text="memoryV">decoded bitmaps</small></div><div class="node" data-el="disk" data-art="database" data-art-role="storage"><strong>Disk cache</strong><small data-text="diskV">encoded bytes</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="fetch" data-art="cloud" data-art-role="runtime"><strong>Fetcher</strong><small data-text="fetchV">network source</small></div><div class="node" data-el="decode" data-art="code" data-art-role="runtime"><strong>Decoder</strong><small data-text="decodeV">idle</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Memory is checked first",
+    "caption": "A feed row asks for an image at 240×240. The memory key combines the URL, the target size, the transformations and the colour space. Nothing matches, so this is a miss.",
+    "add": [
+      "target",
+      "memory",
+      "disk",
+      "fetch",
+      "decode",
+      "event"
+    ],
+    "state": {
+      "target": "active",
+      "memory": "warn"
+    },
+    "text": {
+      "memoryV": "miss for this key",
+      "eventV": "key: URL + size + transforms + colour space"
+    }
+  },
+  {
+    "label": "Disk misses, the fetcher runs",
+    "caption": "Work moves to the decode dispatcher. The disk cache has no snapshot, so the fetcher downloads the source and writes the bytes to disk. If that write fails, the request carries on and the failure is only logged.",
+    "state": {
+      "memory": "done",
+      "disk": "warn",
+      "fetch": "active"
+    },
+    "text": {
+      "diskV": "miss, then bytes written",
+      "fetchV": "downloading",
+      "eventV": "a disk failure doesn’t fail the request"
+    },
+    "handoff": {
+      "from": "memory",
+      "to": "disk",
+      "kind": "parcel",
+      "label": "request"
+    }
+  },
+  {
+    "label": "Decode to the requested size",
+    "caption": "The decoder works off the main thread and targets the requested size, so a small row holds a small bitmap rather than a full-resolution one. Transformations run next, and the result goes into the memory cache. An out-of-memory error during decode retries at a smaller size, and a decode failure becomes an ErrorResult rather than a crash.",
+    "state": {
+      "disk": "done",
+      "fetch": "done",
+      "decode": "active"
+    },
+    "text": {
+      "decodeV": "240×240",
+      "memoryV": "240×240 stored",
+      "eventV": "decode failure → ErrorResult"
+    },
+    "handoff": {
+      "from": "fetch",
+      "to": "decode",
+      "kind": "page",
+      "label": "bytes"
+    }
+  },
+  {
+    "label": "The row renders",
+    "caption": "Only setting the result on the target runs on the main thread. This image is new to the row, so it crossfades in.",
+    "state": {
+      "decode": "done",
+      "memory": "done",
+      "target": "done"
+    },
+    "text": {
+      "targetV": "crossfades in",
+      "eventV": "only Target.set runs on main"
+    },
+    "handoff": {
+      "from": "memory",
+      "to": "target",
+      "kind": "parcel",
+      "label": "drawable"
+    }
+  },
+  {
+    "label": "Same URL, larger size",
+    "caption": "Another screen wants the same URL at 480×480. That is a different memory key, so it misses memory. The disk cache stores one source per URL, so it hits, and the image is decoded again at the new size with no network request. Memory now holds two entries.",
+    "state": {
+      "memory": "warn",
+      "disk": "active",
+      "decode": "active",
+      "fetch": "ghost"
+    },
+    "text": {
+      "memoryV": "240×240 and 480×480",
+      "diskV": "hit: one source",
+      "decodeV": "480×480",
+      "fetchV": "not called",
+      "eventV": "memory stores variants, disk stores one source"
+    }
+  },
+  {
+    "label": "Scrolling back is a memory hit",
+    "caption": "The user scrolls back to the 240×240 row. The memory cache answers without touching disk or decoding, and because it is a memory hit the row skips the crossfade, so it doesn’t flicker.",
+    "state": {
+      "memory": "done",
+      "disk": "done",
+      "decode": "done",
+      "fetch": "done",
+      "target": "done"
+    },
+    "text": {
+      "targetV": "no crossfade",
+      "decodeV": "idle",
+      "eventV": "memory hit: no decode, no crossfade"
+    }
+  },
+  {
+    "label": "A row leaves mid-request",
+    "caption": "A different row scrolls away while its image is still loading. Its composable leaves, onDispose cancels the job, and the bitmap is dropped. A recycled target must never receive the result of an older request.",
+    "state": {
+      "target": "warn",
+      "fetch": "error",
+      "decode": "ghost"
+    },
+    "text": {
+      "targetV": "left the composition",
+      "fetchV": "job cancelled",
+      "decodeV": "result dropped",
+      "eventV": "the request’s owner decides when it stops"
+    }
+  }
+]</script><figcaption>Memory is checked first and keyed by size and transformations, disk holds one source per URL, and decoding stays off the main thread. A request whose owner has gone is cancelled, so its result never reaches a recycled row.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **The memory key is URL + target size + transformations + colour space.** So 240×240 and 480×480 of one URL are two memory entries, while disk keeps one source.
+- **Decode as late as possible and off the main thread.** Bytes are decoded only once found or fetched, to the requested size. Only setting the result on the target runs on main.
+- **Bound memory by bytes, not entries.** Cap the memory cache at about 25% of heap and size each entry by its bitmap byte count.
+- **Cancellation belongs to the request’s owner.** A disposed composable or a detached view cancels the job, and a recycled target never receives an older result.
+- **Each failure has its own path.** A 4xx or a decode failure becomes `ErrorResult` and shows the error drawable, an out-of-memory error retries at a smaller size, and a disk write failure is logged while the request continues.
+- **Requests for one key can share a job.** A second request for the same `MemoryKey` joins the in-flight job rather than decoding twice.
+- **Explicit bitmap pooling is no longer the default.** Coil 2 removed `BitmapPool`; this design relies on `ImageDecoder` and the garbage collector.

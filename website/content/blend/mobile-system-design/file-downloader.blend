@@ -1,0 +1,164 @@
+<!-- Website teaching layer for mobile-system-design/file-downloader.md (interview walkthrough).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the step-through and the end recap.
+     Verified 2026-10-30 against file-downloader.md at source c1f26bb (§6 chunk ledger, §7 enqueue, worker, planning, runner, fetch, assembly and failure modes, §9 and §10 answers. Where the §7 code differs from the failure table (200 instead of 206, and 416), the captions follow the table, and for 200 they add what RFC 9110 implies: the body starts at byte 0, so a parallel chunk cannot simply restart. Source correction PR pending. The 12 MB file and its three 4 MB chunks are illustrative)
+     and against RFC 9110 (§13.1.5 If-Range, §14.2 Range, §15.5.17 416) and the WorkManager guides for stopping work and long-running workers. -->
+
+<!-- @after 7. Deep Dive: Chunked Resumable Download (15 min) :: animation -->
+### Follow a download through a dropped network
+
+<figure class="stepper" data-illustrated><span class="stepper-title">Three chunks, one interruption, no restart</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="caller" data-art="phone" data-art-role="client"><strong>App caller</strong><small data-text="callerV">enqueue(request)</small></div><div class="node" data-el="ledger" data-art="database" data-art-role="storage"><strong>Room ledger</strong><small data-text="ledgerV">empty</small></div><div class="node" data-el="worker" data-art="worker" data-art-role="queue"><strong>DownloadWorker</strong><small data-text="workerV">not started</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="server" data-art="server" data-art-role="runtime"><strong>File server</strong><small data-text="serverV">supports Range</small></div><div class="node" data-el="parts" data-art="document" data-art-role="storage"><strong>Part files</strong><small data-text="partsV">none</small></div><div class="node" data-el="final" data-art="document" data-art-role="storage"><strong>Final file</strong><small data-text="finalV">not present</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Enqueue is durable",
+    "caption": "enqueue() inserts the download row in Room and then enqueues unique work named download-<id> with KEEP. Chunks aren’t planned yet, because the file’s size is still unknown. The queue entry now outlives the process.",
+    "add": [
+      "caller",
+      "ledger",
+      "worker",
+      "server",
+      "parts",
+      "final",
+      "event"
+    ],
+    "state": {
+      "caller": "active",
+      "ledger": "done"
+    },
+    "text": {
+      "ledgerV": "1 download row",
+      "eventV": "durable before any byte moves"
+    },
+    "handoff": {
+      "from": "caller",
+      "to": "ledger",
+      "kind": "rows",
+      "label": "download row"
+    }
+  },
+  {
+    "label": "HEAD, then plan once",
+    "caption": "The worker sends a HEAD request to learn Content-Length and Accept-Ranges. It writes chunk rows only if none exist, so a re-run never re-plans. Here the file is 12 MB and is split into three 4 MB chunks (illustrative sizes). A server without range support gets one single chunk instead.",
+    "state": {
+      "caller": "done",
+      "worker": "active",
+      "server": "active"
+    },
+    "text": {
+      "workerV": "planning",
+      "serverV": "Accept-Ranges: bytes",
+      "ledgerV": "chunks 0, 1, 2 PENDING",
+      "eventV": "planning is one-time and idempotent"
+    },
+    "handoff": {
+      "from": "worker",
+      "to": "ledger",
+      "kind": "rows",
+      "label": "chunk rows"
+    }
+  },
+  {
+    "label": "Fetch ranges in parallel",
+    "caption": "A semaphore lets up to three chunks run at once, each with its own Range request and part file. Bytes stream through Okio, so the file is never held in memory. A chunk is marked DONE only after it has been written in full.",
+    "state": {
+      "server": "done",
+      "parts": "active"
+    },
+    "text": {
+      "workerV": "3 chunks at once",
+      "serverV": "206 Partial Content",
+      "partsV": "part.0, part.1, part.2",
+      "ledgerV": "chunk 0 DONE",
+      "eventV": "DONE only after the whole chunk is written"
+    },
+    "handoff": {
+      "from": "server",
+      "to": "parts",
+      "kind": "page",
+      "label": "bytes"
+    }
+  },
+  {
+    "label": "The network drops",
+    "caption": "Chunk 1 is cut off midway. The worker returns Result.retry() and keeps its partial file. If the process is killed instead, nothing is lost either: the ledger is in Room, and no download state lives only in memory.",
+    "state": {
+      "server": "error",
+      "worker": "warn",
+      "parts": "warn"
+    },
+    "text": {
+      "serverV": "connection lost",
+      "workerV": "Result.retry()",
+      "partsV": "part.1 is partial",
+      "eventV": "partial bytes stay on disk"
+    }
+  },
+  {
+    "label": "A later run fetches what’s missing",
+    "caption": "The new run asks the ledger for chunks not marked DONE, so chunk 0 isn’t fetched again. Chunk 1 resumes from its start byte plus the part file’s length, using a new Range request.",
+    "state": {
+      "server": "done",
+      "worker": "active",
+      "parts": "active"
+    },
+    "text": {
+      "serverV": "206 for the rest",
+      "workerV": "notDoneFor(id)",
+      "partsV": "part.1 growing",
+      "eventV": "resume at a byte offset, not at zero"
+    },
+    "handoff": {
+      "from": "ledger",
+      "to": "worker",
+      "kind": "rows",
+      "label": "chunks not DONE"
+    }
+  },
+  {
+    "label": "When the server won’t cooperate",
+    "caption": "HTTP lets a server ignore Range and answer 200 with the whole file. Those bytes start at byte 0, so they must never be appended to a partial chunk: the partial data is discarded and the download restarts as a single chunk. A 416 means the range is invalid, perhaps because the file’s size changed, so the download is re-planned.",
+    "state": {
+      "server": "warn",
+      "parts": "warn"
+    },
+    "text": {
+      "serverV": "200 or 416",
+      "partsV": "partial data discarded",
+      "workerV": "200: restart · 416: re-plan",
+      "eventV": "never append a 200 to a partial chunk"
+    }
+  },
+  {
+    "label": "Assemble, rename, verify",
+    "caption": "Assembly starts only after every chunk succeeds. The chunks are concatenated in order into a .tmp file and renamed, so the final name never holds a half-written file. If a checksum was supplied, a mismatch deletes the file and fails without retrying. A full disk also fails permanently and is shown to the user.",
+    "state": {
+      "server": "done",
+      "worker": "done",
+      "parts": "done",
+      "final": "done",
+      "event": "done"
+    },
+    "text": {
+      "workerV": "markCompleted",
+      "ledgerV": "COMPLETED",
+      "finalV": "complete file",
+      "eventV": ".tmp, rename, then Completed"
+    },
+    "handoff": {
+      "from": "parts",
+      "to": "final",
+      "kind": "page",
+      "label": "assembled"
+    }
+  }
+]</script><figcaption>The Room ledger is the truth about which chunks are done. An interruption keeps the partial file, a later run fetches only what is missing, and the final name appears only after the chunks are assembled.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **The Room ledger is the truth, not the file.** On resume, any chunk not marked `DONE` is fetched again from its byte offset.
+- **Check for Range support, and don’t rely on it.** `HEAD` looks for `Accept-Ranges: bytes` and falls back to one chunk if it’s absent. A server can still ignore a range and answer 200 from byte 0, so that response is never appended; the download restarts as one chunk.
+- **Bound the concurrency.** Three chunks per download and two downloads at once are the defaults, with bytes streamed rather than buffered.
+- **Only a finished file gets the final name.** Chunks are assembled into `.tmp` and renamed; a checksum mismatch deletes the file and fails without an automatic retry.
+- **Retry only what can recover.** A network drop retries and keeps the partial file, a 416 re-plans, and a full disk fails permanently and is shown to the user.
+- **WorkManager can stop a run at any time.** It stops a worker when constraints are lost, and at its 10-minute execution deadline, then retries the work later and ignores the stopped worker’s `Result`. The ledger is what lets that run continue. For a long download the user is watching, make it a long-running worker with `setForeground`.

@@ -1,5 +1,5 @@
 {
-  "about": "Which chapters use the interview-walkthrough layout. Groups are content, not code: the build reads this file, then still checks each listed chapter's own numbered headings and falls back to the normal chapter layout when they do not match. Only listed walkthrough chapters are affected; chapter-layout groups record the decision. 30 October 2026: Phases 1 and 2 (Milestones A and B) plus the Offline Sync pilot.",
+  "about": "Which chapters use the interview-walkthrough layout. Groups are content, not code: the build reads this file, then still checks each listed chapter's own numbered headings and falls back to the normal chapter layout when they do not match. Only listed walkthrough chapters are affected; chapter-layout groups record the decision. 30 October 2026: Phases 1, 2 and 3 plus the Offline Sync pilot.",
   "groups": [
     {
       "id": "foundations",
@@ -36,8 +36,16 @@
       "id": "infrastructure-components",
       "title": "Infrastructure components",
       "layout": "walkthrough",
-      "note": "Bounded libraries and data-delivery problems, for example image loading, caching, pagination and file download.",
-      "chapters": []
+      "note": "Bounded libraries and data-delivery problems, for example image loading, caching, pagination, file download, search and notification routing.",
+      "chapters": [
+        "mobile-system-design/image-loading.md",
+        "mobile-system-design/file-downloader.md",
+        "mobile-system-design/caching-library.md",
+        "mobile-system-design/pagination.md",
+        "mobile-system-design/typeahead-autocomplete-search.md",
+        "mobile-system-design/search.md",
+        "mobile-system-design/notification-system.md"
+      ]
     },
     {
       "id": "full-apps",
