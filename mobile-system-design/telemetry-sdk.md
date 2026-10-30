@@ -329,7 +329,7 @@ class FlushWorker @AssistedInject constructor(...) : CoroutineWorker(ctx, params
 
 ```kotlin
 class FrameMetricsCapture(private val activity: Activity) {
-    // JankStats applies a per-refresh-rate jank heuristic (16.7 ms at 60 Hz, 8.3 ms at 120 Hz).
+    // JankStats flags a frame as jank above 2x the refresh interval by default (33.3 ms at 60 Hz, 16.7 ms at 120 Hz).
     private val jankStats = JankStats.createAndTrack(activity.window) { frame ->
         if (frame.isJank) PerfBuffer.addJank(frame.frameDurationUiNanos)
     }

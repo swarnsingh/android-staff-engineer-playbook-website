@@ -180,7 +180,7 @@
     "mobile-system-design.md": "7e2af23b675e74d7db5f3df5709536f48d32da83e460f7c401afff3ef4fe0254",
     "mobile-system-design/a-b-testing-infrastructure.md": "39205619110cebd15cc97db04ee8582445413952dc90e07bc592f988f556bc23",
     "mobile-system-design/accessibility.md": "2906b363798ab28e4e6a609726b7d64a1c8848a2161e639074c513d3e08517c0",
-    "mobile-system-design/analytics-sdk.md": "c26d6ea861069bc32bf2df7c486398e835fa6937a39efe468d05812aaf7b0af7",
+    "mobile-system-design/analytics-sdk.md": "454f4ff8f6f4da4c90334d8f15de6e9705959d84efde854fdab349397972faf0",
     "mobile-system-design/app-startup.md": "f3d39fc54acb76bf317db6eb31583a4612a61811b9e0695a57eb73256f23bdac",
     "mobile-system-design/authentication.md": "1b84e709e750e222c33cef860f7c07ffe55bd263625d30c0fa191bedd2afe323",
     "mobile-system-design/caching-library.md": "a436752d1ad01b801368b3ca1c1ea85ffc94eb8e05e08e21dc9784095e923f33",
@@ -209,7 +209,7 @@
     "mobile-system-design/security-and-privacy.md": "ccd459aa9b1ef21343c2867ba574610a1b543d3f9b84e411737d962b5cc1238d",
     "mobile-system-design/server-driven-ui.md": "078e9fbb5d3e65736f6823de9dfeccd1f947dba48e478133e321738842b79aee",
     "mobile-system-design/stock-trading-app.md": "f12654c104c11573cadcf2f57c3b414edf3936fa18608abdf5d859c1c7cc5e21",
-    "mobile-system-design/telemetry-sdk.md": "7f1e200a2cd37042ca9f1ced8d2bc2aa27a2b4a0b814f7361d67e9ccaeef4ea3",
+    "mobile-system-design/telemetry-sdk.md": "32f08ba07891e7666c89c35b6bb0361271130b672788329673ac015d6df81e28",
     "mobile-system-design/typeahead-autocomplete-search.md": "91548353d17dca3da50b2d77adb872720057899a06122070142e5ed8d789132c",
     "mobile-system-design/versioning-and-backward-compatibility.md": "bf66b5b8a8c756995828ec01aaa5ed6fe699407859f7ece65bc95bc5d79935b2",
     "mobile-system-design/youtube-video-streaming.md": "4fff829920f7215906c11be0b4c942e1f51591d92f51c036f3b708644c3c32a9"

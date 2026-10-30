@@ -7,18 +7,18 @@
 ## 1. Gathering Requirements (~5 min)
 
 > **Interviewer:** "Design an analytics SDK like Mixpanel or in-house."
-> **Candidate:** "The architectural problem is durable buffering: events from many features, written to disk fast, batched to the network, never lost on crash. I'll deep-dive the write → buffer → flush pipeline."
+> **Candidate:** "The architectural problem is durable buffering: events from many features, written to disk fast, batched to the network, and never lost on a crash once they are in the queue. I'll deep-dive the write → buffer → flush pipeline."
 
 ### Functional Requirements
 - **Track event** with name + properties.
 - **User identification** (login, logout, alias).
 - **Auto-context**: app version, OS, device, locale.
 - **Batched flush** to backend (size + time triggers).
-- **Survives process death and offline**.
+- **Queued events survive process death and offline**, up to the queue's storage bound.
 
 ### Non-Functional Requirements
 - **Don't block callers** — `track()` returns in microseconds.
-- **Don't lose events** under crash / kill / network loss.
+- **Don't lose queued events** under crash / kill / network loss, within the bounded queue's limit: after a long offline period the queue trims the oldest low-priority events first. `track()` returns before the Room write, so an event still in flight when the process dies can be lost.
 - **Bounded memory + disk** — drop or dedupe at limits.
 - **Privacy-aware** — respect consent, no PII leakage.
 - **Battery-conscious** — bundle, don't tag every event with a wake.
@@ -55,15 +55,17 @@ flowchart TD
     Feature["Feature code"] --> Track["Typed Analytics.track"]
     Track --> Policy["Consent + validation + redaction + sampling"]
     Policy --> Queue["Durable bounded event queue"]
+    Queue -->|"overflow: trim oldest low-priority"| Dropped["Deliberately dropped"]
     Queue --> Scheduler["Size / age / connectivity scheduler"]
     Scheduler --> Worker["WorkManager FlushWorker"]
     Worker --> API["Batch events API"]
     API --> Ingestion["Server ingestion<br/>black box"]
     Worker -->|"success: delete acknowledged batch"| Queue
-    Worker -->|"failure: bounded retry/backoff"| Scheduler
+    Worker -->|"retryable failure: bounded retry/backoff"| Scheduler
+    Worker -->|"400 / 422 or single oversized event"| Dropped
 ```
 
-Analytics is a durable, privacy-gated delivery pipeline: feature code emits typed intent, policy determines whether data may enter the queue, and only acknowledged batches are deleted.
+Analytics is a durable, privacy-gated delivery pipeline: feature code emits typed intent, policy determines whether data may enter the queue, and a batch is deleted only after the server acknowledges it, or deliberately when it can never succeed (400 or 422, a single oversized event) or the bounded queue overflows.
 
 **Components:**
 - **`Analytics`** — public facade.
@@ -368,7 +370,7 @@ class SessionTracker(private val processLifecycleOwner: ProcessLifecycleOwner) {
 
 | What breaks | Behavior |
 |---|---|
-| Process killed mid-track | Room write is durable; event survives |
+| Process killed mid-track | An event whose Room write had committed survives; one still in flight in `track()` is lost |
 | Network drop during flush | Worker retries; events stay in queue |
 | Server returns 400 / 422 | Drop batch (won't succeed on retry); 401, 408, 429 and 5xx retry |
 | Server returns 413 (request too large) | Halve the batch and retry; drop only a single event that is still too large (`analytics_oversize_dropped`) |
@@ -429,7 +431,7 @@ class SessionTracker(private val processLifecycleOwner: ProcessLifecycleOwner) {
 ## 9. Major Concerns
 
 - **Performance.** `track()` returns in microseconds. All work on `Dispatchers.IO`. Never block main.
-- **Crash safety.** Room write is atomic. Worst case lose the in-flight (untracked) event.
+- **Crash safety.** Room write is atomic. Worst case: lose an event whose `track()` coroutine had not yet committed its Room write.
 - **Memory.** Queue size capped; trim oldest on overflow.
 - **Battery.** Bundle aggressively. No per-event network call.
 - **Privacy.** Consent-gated; PII redacted; user can `reset()` to drop pending + clear identity.
