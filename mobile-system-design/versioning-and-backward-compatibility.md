@@ -10,7 +10,7 @@
 > **Candidate:** "Mobile has unique constraints: users on old versions for years, can't be force-updated easily, server must stay compatible. Three axes: API versioning, local schema migrations, and lifecycle (deprecate, force-update). I'll deep-dive API + schema."
 
 ### Functional Requirements
-- **N-2 version support**: at minimum, the server supports the last 2 release-train versions plus current.
+- **N-3 version support**: the server supports the current release plus the previous three release-train versions (about six weeks at a bi-weekly cadence).
 - **Schema migrations** at every Room version bump.
 - **Force-update path** for critical security / legal needs.
 - **Soft-deprecation banner** when running an old version.
@@ -108,10 +108,12 @@ Server uses this for:
 
 ```http
 GET /v1/feed
-Deprecation: true
-Sunset: Mon, 31 Dec 2026 00:00:00 GMT
-Link: </v2/feed>; rel="successor-version"
+Deprecation: @1782863999
+Sunset: Thu, 31 Dec 2026 23:59:59 GMT
+Link: </v2/feed>; rel="successor-version", <https://example.com/deprecations/feed-v1>; rel="deprecation"
 ```
+
+`Deprecation` is a structured-field date (`@` + Unix seconds; here 30 June 2026) per [RFC 9745](https://www.rfc-editor.org/rfc/rfc9745.html), and the `Sunset` time ([RFC 8594](https://www.rfc-editor.org/rfc/rfc8594.html)) must not be earlier than it.
 
 Client logs these headers as analytics events. Eng team monitors the dashboard.
 
@@ -210,7 +212,9 @@ CI runs migration tests on every PR.
 
 ### Exported schemas
 
-`exportSchema = true` writes `schemas/AppDatabase/7.json`. Commit these. Reviewers can see schema diffs in PRs.
+With the Room Gradle plugin's `schemaDirectory("$projectDir/schemas")` (or the `room.schemaLocation` option), `exportSchema = true` writes `schemas/com.example.AppDatabase/7.json`, using the database class's fully qualified name. Commit these. Reviewers can see schema diffs in PRs.
+
+`runMigrationsAndValidate` compares the migrated table with the entity: an index the migration creates must match the entity's `@Index` name and columns, and a column default must match `@ColumnInfo(defaultValue = …)` when the entity declares one.
 
 ---
 
@@ -226,9 +230,8 @@ X-App-Version: 4.10.0
 {
   "user": { ... },
   "appPolicy": {
-    "minSupported": "4.10",
-    "deprecationBanner": "4.9",
-    "forceUpdate": "4.8",
+    "bannerBelow": "4.10",
+    "forceUpdateBelow": "4.8",
     "messageDeprecation": "An update is available. Please update soon.",
     "messageForce": "This version is no longer supported. Please update to continue."
   }
@@ -239,7 +242,7 @@ Or a dedicated endpoint at app start:
 
 ```http
 GET /v1/app/policy
-{ "minSupported": "4.10", "deprecationBanner": "4.9", "forceUpdate": "4.8" }
+{ "bannerBelow": "4.10", "forceUpdateBelow": "4.8" }
 ```
 
 ### Client interpretation
@@ -250,8 +253,8 @@ class AppPolicyGate @Inject constructor(
     private val policy: () -> AppPolicy,
 ) {
     fun status(): AppStatus = when {
-        versionInfo().lessThan(policy().forceUpdate) -> AppStatus.FORCE_UPDATE
-        versionInfo().lessThan(policy().deprecationBanner) -> AppStatus.DEPRECATED
+        versionInfo().lessThan(policy().forceUpdateBelow) -> AppStatus.FORCE_UPDATE
+        versionInfo().lessThan(policy().bannerBelow) -> AppStatus.DEPRECATED
         else -> AppStatus.OK
     }
 }
@@ -313,7 +316,7 @@ Watch: if force-update rate is high, you have unhappy users.
 
 | What breaks | Behavior |
 |---|---|
-| Policy endpoint down | Last cached policy used; default to N-2 supported |
+| Policy endpoint down | Last cached policy used; default to N-3 supported |
 | Play Store unreachable | Show CTA; user must reach Play themselves |
 | Force-update on a device with no Play (e.g., Huawei post-2020) | Direct to vendor store; document fallback |
 | Old client sees new field they can't parse | Server omits fields if `X-App-Version < threshold` |
@@ -345,7 +348,7 @@ When you ship a library used by other apps (in-house or open-source):
 - **Deprecation annotations** (`@Deprecated(message = "...", replaceWith = ReplaceWith("..."))`) on every removed/renamed API.
 - **Bridging adapters** for transitional periods.
 - **CHANGELOG.md** human-readable.
-- **Binary compatibility** — use the AndroidX `binary-compatibility-validator`.
+- **Binary compatibility** — JetBrains' [Kotlin binary-compatibility-validator](https://github.com/Kotlin/binary-compatibility-validator) (now in maintenance mode) or the ABI validation built into the Kotlin Gradle plugin; Metalava for Android libraries.
 
 ---
 
@@ -361,7 +364,7 @@ When you ship a library used by other apps (in-house or open-source):
 | No version distribution dashboard | Telemetry on `app_version` |
 | Removed field still expected | Mark deprecated server-side; sunset header |
 | Stale feature flag defaults | Update defaults when sunsetting an experiment |
-| Pinning expired in old version | Build configurable pin set; rotate with overlap |
+| Old version's pins don't match rotated keys | Backup pins, overlapping rotation, and pinning only when justified |
 | Old client downloads new manifest with new opcodes | Server omits / falls back |
 
 ---
@@ -369,7 +372,7 @@ When you ship a library used by other apps (in-house or open-source):
 ## 10. Follow-up Questions
 
 > **Q: A user is on version 3.5 and the schema is now version 12. How do migrations work?**
-> Room runs them in sequence: 3→4, 4→5, ..., 11→12. Each migration must be present. If a migration is missing, Room throws on app start. Hence the discipline: every version bump ships a migration.
+> Room runs them in sequence: 3→4, 4→5, ..., 11→12. Each migration must be present. If Room can't find a migration path, it throws `IllegalStateException` when it opens the database. Hence the discipline: every version bump ships a migration.
 
 > **Q: How do you decide what's a "breaking" API change?**
 > Anything that an old client wouldn't tolerate: removed field it relied on, renamed enum value, changed required-vs-optional. Adding optional fields is safe. Use schema linters in CI.

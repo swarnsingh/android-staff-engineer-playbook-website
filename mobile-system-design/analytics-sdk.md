@@ -1,6 +1,6 @@
 # Analytics SDK (Product Events)
 
-> A 45-60 minute mobile system-design walkthrough for an in-house product-analytics SDK on Android: event API, batching, durable queue, network flush, privacy controls. (Crash/perf telemetry is the next file, `telemetry-sdk.md`.)
+> A 45-60 minute mobile system-design walkthrough for an in-house product-analytics SDK on Android: event API, batching, durable queue, network flush, privacy controls. (Crash/perf telemetry is the previous file, `telemetry-sdk.md`.)
 
 ---
 
@@ -84,7 +84,8 @@ object Analytics {
     fun track(event: AnalyticsEvent)
     fun identify(userId: String, traits: Map<String, Any> = emptyMap())
     fun alias(newId: String, previousId: String)
-    fun reset()                          // signs out
+    fun reset()                          // signs out: flush, then rotate anonId
+    fun deleteLocalData()                // drops queued events (consent withdrawal)
     fun setConsent(consent: Consent)
     fun flush()                          // forces immediate flush
 }
@@ -258,15 +259,15 @@ class FlushScheduler @Inject constructor(
     }
 
     private fun triggerFlushNow() {
-        workManager.enqueueUniqueWork(
-            "analytics-flush", ExistingWorkPolicy.KEEP,
-            OneTimeWorkRequestBuilder<FlushWorker>()
-                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-                .build()
-        )
+        // KEEP coalesces bursts of triggers into the flush that is already queued.
+        workManager.enqueueUniqueWork("analytics-flush", ExistingWorkPolicy.KEEP, flushRequest())
     }
 }
+
+fun flushRequest(): OneTimeWorkRequest =
+    OneTimeWorkRequestBuilder<FlushWorker>()
+        .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+        .build()   // not expedited: analytics upload isn't user-initiated work
 ```
 
 ### Worker
@@ -277,26 +278,47 @@ class FlushWorker @AssistedInject constructor(
     @Assisted ctx: Context, @Assisted params: WorkerParameters,
     private val queue: EventQueue,
     private val api: AnalyticsApi,
+    private val workManager: WorkManager,
+    private val diagnostics: AnalyticsDiagnostics,
 ) : CoroutineWorker(ctx, params) {
 
     override suspend fun doWork(): Result {
-        val batch = queue.takeBatch(limit = BATCH_SIZE)
-        if (batch.isEmpty()) return Result.success()
-        return try {
-            api.upload(EventBatch(events = batch.toWire(), sentAt = clock.now()))
-            queue.delete(batch.map { it.id })
-            if (queue.count() > 0) Result.success().also { triggerFollowUp() } else Result.success()
-        } catch (t: IOException) {
-            Result.retry()         // network error
-        } catch (t: HttpException) {
-            if (t.code() in 400..499) {
-                queue.delete(batch.map { it.id })   // drop bad events; don't loop
-                Result.success()
-            } else Result.retry()
+        var batchSize = BATCH_SIZE
+        // Drain up to MAX_BATCHES in this run.
+        repeat(MAX_BATCHES) {
+            val batch = queue.takeBatch(limit = batchSize)   // read only; deleted after the server acks
+            if (batch.isEmpty()) return Result.success()
+            try {
+                api.upload(EventBatch(events = batch.toWire(), sentAt = clock.now()))
+                queue.delete(batch.map { it.id })
+            } catch (t: IOException) {
+                return Result.retry()         // network error
+            } catch (t: HttpException) {
+                when (t.code()) {
+                    // 413: the request is too large, not necessarily invalid. Halve the batch and
+                    // retry; only a single event that is still too large is dropped.
+                    413 -> if (batch.size > 1) {
+                        batchSize = batch.size / 2
+                    } else {
+                        queue.delete(batch.map { it.id })
+                        diagnostics.record("analytics_oversize_dropped")
+                    }
+                    400, 422 -> queue.delete(batch.map { it.id })   // malformed events; don't loop
+                    else -> return Result.retry()   // 401 (after auth refresh), 408, 429 (Retry-After), 5xx
+                }
+            }
         }
+        // Events remain after MAX_BATCHES. A KEEP enqueue made while this worker is still
+        // running is ignored, so chain exactly one follow-up to run after this one.
+        if (queue.count() > 0) {
+            workManager.enqueueUniqueWork("analytics-flush", ExistingWorkPolicy.APPEND_OR_REPLACE, flushRequest())
+        }
+        return Result.success()
     }
 }
 ```
+
+`ExistingWorkPolicy.KEEP` does nothing while the unique work is pending or running, so a follow-up enqueued with `KEEP` from inside the worker would be dropped, and the leftover events would wait for the 30-minute periodic fallback instead of the ~30 s target. `APPEND_OR_REPLACE` chains the follow-up after the current run instead.
 
 ### At-least-once semantics
 
@@ -311,14 +333,14 @@ suspend fun trimIfOverBudget(max: Int) {
         // Drop oldest *low-priority* (DIAGNOSTIC) first
         dao.deleteOldestByCategory(Category.DIAGNOSTIC.ordinal, excess)
         // If still over, drop oldest PRODUCT
-        // Never drop MARKETING (often paid attribution)
+        // Drop MARKETING last (often paid attribution); if still over, drop its oldest and emit analytics_overflow
     }
 }
 ```
 
 ### Session lifecycle
 
-A "session" begins when the app opens and ends after 30s of background. `sessionId` regenerates on a new session. Session start/end events are auto-emitted.
+A "session" begins when the app opens and ends after 30s of background. `sessionId` regenerates on a new session, and `session_start` is auto-emitted; the server derives session end from the last event (or emit `session_end` when the next session starts).
 
 ```kotlin
 class SessionTracker(private val processLifecycleOwner: ProcessLifecycleOwner) {
@@ -348,10 +370,11 @@ class SessionTracker(private val processLifecycleOwner: ProcessLifecycleOwner) {
 |---|---|
 | Process killed mid-track | Room write is durable; event survives |
 | Network drop during flush | Worker retries; events stay in queue |
-| Server returns 400 | Drop batch (won't succeed on retry) |
+| Server returns 400 / 422 | Drop batch (won't succeed on retry); 401, 408, 429 and 5xx retry |
+| Server returns 413 (request too large) | Halve the batch and retry; drop only a single event that is still too large (`analytics_oversize_dropped`) |
 | Queue grows unbounded (e.g., user offline for weeks) | Trim by category preference |
 | Schema mismatch (server rejects field) | Drop offender; log; emit `analytics_schema_error` event |
-| Multiple workers race | `enqueueUniqueWork` with KEEP prevents concurrent flushes |
+| Multiple workers race | `enqueueUniqueWork` with KEEP prevents concurrent flushes; the worker drains several batches per run and chains one follow-up (`APPEND_OR_REPLACE`) if events remain |
 
 ---
 
@@ -399,7 +422,7 @@ class SessionTracker(private val processLifecycleOwner: ProcessLifecycleOwner) {
 | Consent gate per category | Yes |
 | PII redaction interceptor | Yes |
 | Local opt-out flag | Yes |
-| User can delete pending events | Yes (`reset()`) |
+| User can delete pending events | Yes (`deleteLocalData()`, used on consent withdrawal) |
 
 ---
 
@@ -410,7 +433,7 @@ class SessionTracker(private val processLifecycleOwner: ProcessLifecycleOwner) {
 - **Memory.** Queue size capped; trim oldest on overflow.
 - **Battery.** Bundle aggressively. No per-event network call.
 - **Privacy.** Consent-gated; PII redacted; user can `reset()` to drop pending + clear identity.
-- **Compliance.** Honour `Do Not Track` system signals where relevant. Provide a "delete my data" path that propagates to server.
+- **Compliance.** Honour the user's consent choices and advertising-ID deletion (the ID then reads as zeros); never fall back to other device identifiers for ads. Provide a "delete my data" path that propagates to server.
 - **At-least-once.** Server dedup is required; client can't guarantee exactly-once across crashes.
 - **Session correctness.** Use `ProcessLifecycleOwner` not Activity callbacks. Activities lie under config change.
 - **Testing.** Inject fake `EventQueue`, fake API, fake `Clock`. Assert: enqueue → batch → delete cycle.
@@ -455,7 +478,7 @@ class SessionTracker(private val processLifecycleOwner: ProcessLifecycleOwner) {
 - [Segment Analytics Android SDK](https://github.com/segmentio/analytics-kotlin) — open-source reference architecture.
 - [Mixpanel Android — design](https://docs.mixpanel.com/docs/tracking/reference/android) — events, identities, sessions.
 - [Android Developers — WorkManager](https://developer.android.com/topic/libraries/architecture/workmanager) — expedited + constraints.
-- [GDPR for mobile apps](https://gdpr.eu/) — consent management.
+- [GDPR — Regulation (EU) 2016/679](https://eur-lex.europa.eu/eli/reg/2016/679/oj) — the legal text on consent.
 - [OpenTelemetry — spans + events](https://opentelemetry.io/) — adjacent: distributed traces.
 
 ---

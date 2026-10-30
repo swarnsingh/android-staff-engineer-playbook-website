@@ -93,7 +93,7 @@ Passkeys stay inside this browser-hosted IdP boundary. The IdP sends the WebAuth
                 &code_challenge=…&code_challenge_method=S256
                 &scope=openid+profile+offline_access&state=…
 3. User authenticates in browser (including any IdP-owned passkey ceremony); IdP redirects to:
-     myapp://auth/callback?code=…&state=…
+     https://auth.example.com/callback?code=…&state=…   (verified App Link)
 4. App exchanges code for tokens:
      POST /token { grant_type=authorization_code, code, code_verifier, client_id, redirect_uri }
    → { access_token, id_token, refresh_token, expires_in }
@@ -168,8 +168,8 @@ interface TokenVault {
 }
 
 interface TokenRefresher {
-    suspend fun freshAccessToken(): String   // single-flight; returns valid token or throws
-    suspend fun refreshNow(): Tokens         // forces refresh
+    suspend fun freshAccessToken(): String                    // valid token, refreshing near expiry
+    suspend fun refreshNow(failedAccessToken: String): Tokens // single-flight refresh after a 401
 }
 
 class AuthInterceptor(private val refresher: TokenRefresher) : Interceptor {
@@ -189,7 +189,8 @@ data class Tokens(
     val refreshToken: String,
     val idToken: String?,
     val accessExpiresAt: Long,
-    val obtainedAt: Long
+    val obtainedAt: Long,
+    val lastReauthAt: Long = 0
 )
 
 class TokenVault(
@@ -222,7 +223,7 @@ class AuthBrowserClient @Inject constructor(...) {
     suspend fun login(): Tokens = suspendCancellableCoroutine { cont ->
         val verifier = generatePkceVerifier()
         val challenge = sha256Base64Url(verifier)
-        val state = SecureRandom().nextBytes(16).base64Url()
+        val state = ByteArray(16).also(SecureRandom()::nextBytes).base64Url()
         verifierStore.put(state, verifier)
         val authUri = Uri.parse(idp.authorizeEndpoint).buildUpon()
             .appendQueryParameter("response_type", "code")
@@ -239,47 +240,49 @@ class AuthBrowserClient @Inject constructor(...) {
 }
 ```
 
-The redirect lands in an `AppLink`-registered Activity (myapp://auth/callback) which extracts `code`, validates `state`, exchanges for tokens, and resumes the suspended coroutine.
+The redirect lands in an Activity registered for the verified App Link `https://auth.example.com/callback` (a claimed `https` redirect, RFC 8252 §7.2). It extracts `code`, validates `state`, exchanges for tokens, and resumes the suspended coroutine. If you cannot host an App Link, use a private-use scheme based on a reverse domain you control, such as `com.example.app:/oauth2redirect` (RFC 8252 §7.1).
 
 ### Single-flight refresh
 
-The dangerous bug: two requests both see expired tokens, both refresh, the first refresh rotates the refresh token, the second fails with `invalid_grant`. Solution: single-flight.
+The dangerous bug: two requests both see expired tokens, both refresh, the first refresh rotates the refresh token, the second fails with `invalid_grant`. Solution: single-flight — serialize refreshes and refresh only if the vault still holds the token that failed.
 
 ```kotlin
 class DefaultTokenRefresher @Inject constructor(
     private val vault: TokenVault,
     private val api: IdpApi,
+    @ApplicationScope private val appScope: CoroutineScope,   // SupervisorJob-backed
 ) : TokenRefresher {
     private val mutex = Mutex()
-    private var inFlight: Deferred<Tokens>? = null
 
     override suspend fun freshAccessToken(): String {
         val current = vault.load() ?: throw NotSignedIn
         if (current.accessExpiresAt - clock.now() > REFRESH_THRESHOLD_MS) {
             return current.accessToken
         }
-        return refreshNow().accessToken
+        return refreshNow(failedAccessToken = current.accessToken).accessToken
     }
 
-    override suspend fun refreshNow(): Tokens = mutex.withLock {
-        inFlight?.let { return it.await() }
-        val deferred = scope.async {
-            val current = vault.load() ?: throw NotSignedIn
-            val resp = api.refresh(current.refreshToken)
-            val newTokens = current.copy(
-                accessToken = resp.accessToken,
-                refreshToken = resp.refreshToken,
-                accessExpiresAt = clock.now() + resp.expiresInSec * 1000,
-                obtainedAt = clock.now()
-            )
-            vault.save(newTokens)
-            newTokens
-        }
-        inFlight = deferred
-        try { deferred.await() } finally { inFlight = null }
-    }
+    // The refresh runs in the app scope, not the caller's: a cancelled caller stops waiting,
+    // but a rotation the IdP has already made is still saved before the lock is released.
+    override suspend fun refreshNow(failedAccessToken: String): Tokens =
+        appScope.async {
+            mutex.withLock {
+                val current = vault.load() ?: throw NotSignedIn
+                // Another caller already refreshed while we waited for the lock.
+                if (current.accessToken != failedAccessToken) return@withLock current
+                val resp = api.refresh(current.refreshToken)
+                current.copy(
+                    accessToken = resp.accessToken,
+                    refreshToken = resp.refreshToken,
+                    accessExpiresAt = clock.now() + resp.expiresInSec * 1000,
+                    obtainedAt = clock.now()
+                ).also { vault.save(it) }
+            }
+        }.await()
 }
 ```
+
+Callers that queue on the `Mutex` re-read the vault, see the new token and return it without a second `POST /token`. Running the critical section in an app-owned scope matters because the IdP rotates the refresh token as soon as it answers: if a cancelled caller aborted before `vault.save`, the next caller would send the old, now invalid refresh token and be signed out.
 
 ### OkHttp interceptor
 
@@ -295,7 +298,7 @@ class AuthInterceptor(private val refresher: TokenRefresher) : Interceptor {
 
         if (response.code == 401) {
             response.close()
-            val refreshed = runBlocking { refresher.refreshNow().accessToken }
+            val refreshed = runBlocking { refresher.refreshNow(failedAccessToken = token).accessToken }
             response = chain.proceed(originalReq.newBuilder()
                 .header("Authorization", "Bearer $refreshed").build())
         }
@@ -343,7 +346,7 @@ suspend fun signOut() {
 | Refresh returns 400 `invalid_grant` | Refresh token revoked or rotated by another device; force sign-out |
 | Network down during refresh | `Result.retry()` for workers; UI shows session-expired only after grace period |
 | Clock skew (device 10 min off) | `exp` is advisory; server is truth; 401 triggers refresh |
-| Concurrent refresh from 2 threads | Single-flight `Mutex` + `Deferred` |
+| Concurrent refresh from 2 threads | Single-flight `Mutex`; refresh only if the vault still holds the failed token |
 | Process killed mid-refresh | New process re-attempts on next API call |
 | User signs out on another device | Refresh returns `invalid_grant` → force local sign-out |
 | Biometric not enrolled | Fall back to password re-prompt |
@@ -357,8 +360,8 @@ suspend fun signOut() {
 | Option | Pros | Cons | Verdict |
 |---|---|---|---|
 | **Authorization Code + PKCE** | Industry standard, secure, federated | Browser handoff | Pick this |
-| Implicit | Simpler | Deprecated, leaks tokens in URL | Skip |
-| Resource Owner Password | Direct password capture | Defeats OAuth, increases scope | Only first-party with strong reasons |
+| Implicit | Simpler | Leaks tokens in URL; SHOULD NOT be used (RFC 9700 §2.1.2) | Skip |
+| Resource Owner Password | Direct password capture | Defeats OAuth; MUST NOT be used (RFC 9700 §2.4) | Never |
 | Device Code | TV/console | Bad mobile UX | Skip |
 
 ### Token storage
@@ -374,8 +377,8 @@ suspend fun signOut() {
 
 | Option | Verdict |
 |---|---|
-| **Refresh on 401** (lazy) | Pick — minimal traffic |
-| Pre-emptive refresh at `exp - N` | Combine with lazy as safety net |
+| **Pre-emptive refresh at `exp - N`** | Pick — avoids a failed request in the common case |
+| Refresh on 401 (lazy) | Keep as the safety net (clock skew, revocation) |
 | Periodic background refresh | Wastes battery; users may not return |
 
 ### Browser tab
@@ -383,7 +386,7 @@ suspend fun signOut() {
 | Option | Verdict |
 |---|---|
 | **Chrome Custom Tabs** | Pick — shared cookies, OS-style |
-| WebView | Don't — leaks user agent, no shared session |
+| WebView | Don't — the host app can read credentials and cookies (RFC 8252 §8.12), and there is no SSO with the browser |
 | External Chrome | OK but loses styling control |
 
 ### Biometric
@@ -413,7 +416,7 @@ suspend fun signOut() {
 ## 10. Follow-up Questions
 
 > **Q: User opens 3 tabs and they all 401 at the same time — what happens?**
-> Single-flight: the first one's refresh becomes the `Deferred`. The other two `await()` it. Only one POST `/token` happens. All three retry the original request with the new access token.
+> Single-flight: the first caller takes the `Mutex` and refreshes. The other two wait for the lock, see that the vault no longer holds the token that failed, and return the new one. Only one POST `/token` happens. All three retry the original request with the new access token.
 
 > **Q: Refresh token rotated by another device — what's the UX?**
 > Local refresh returns `invalid_grant`. We treat that as "session ended", clear local, and route to login with a friendly message. Not an error toast.
@@ -422,13 +425,13 @@ suspend fun signOut() {
 > Refresh succeeds when network returns. If the refresh token expired (e.g., 30 days idle), they re-login through the browser.
 
 > **Q: Why not store the access token in memory only?**
-> Access tokens survive process death. Memory-only means a relaunched app would force a network round trip before any request. With Keystore-wrapped storage, the cost is decrypt-once on first use.
+> That is the stricter option: keep the short-lived access token in memory and persist only the refresh token, paying one refresh call after process death. This design persists both in the Keystore-backed vault so a relaunched app can call the API immediately; the access token's short lifetime and server-side revocation limit the extra exposure.
 
 > **Q: How is the redirect deep link secured?**
-> The redirect uses `https://yourdomain/auth/callback` with App Links + Digital Asset Links — verified domain, not interceptable by a malicious app installed alongside. PKCE is a second layer of defense.
+> The redirect uses `https://auth.example.com/callback` with App Links + Digital Asset Links — verified domain, not interceptable by a malicious app installed alongside. PKCE is a second layer of defense.
 
 > **Q: How do you test the auth flow?**
-> WebMock for IdP endpoints. Fake `TokenVault` with in-memory map. Espresso/Compose UI tests against the fake. Manual real-IdP smoke test on each release.
+> OkHttp `MockWebServer` for IdP endpoints. Fake `TokenVault` with in-memory map. Espresso/Compose UI tests against the fake. Manual real-IdP smoke test on each release.
 
 ---
 
@@ -446,6 +449,7 @@ suspend fun signOut() {
 
 - [OAuth 2.0 for Native Apps (RFC 8252)](https://www.rfc-editor.org/rfc/rfc8252) — canonical mobile guidance.
 - [OAuth 2.0 PKCE (RFC 7636)](https://www.rfc-editor.org/rfc/rfc7636) — PKCE spec.
+- [OAuth 2.0 Security Best Current Practice (RFC 9700)](https://www.rfc-editor.org/rfc/rfc9700) — why implicit and password grants are out.
 - [AppAuth for Android](https://github.com/openid/AppAuth-Android) — reference OIDC + PKCE client library.
 - [Android Developers — Android Keystore](https://developer.android.com/privacy-and-security/keystore) — current key-custody primitive.
 - [Android Developers — Biometric authentication](https://developer.android.com/training/sign-in/biometric-auth) — Class-3 prompts.

@@ -382,5 +382,745 @@
       }
     ],
     "layout": "layers"
+  },
+  {
+    "path": "mobile-system-design/design-framework",
+    "diagram": "58051a370fbaa370",
+    "number": 1,
+    "title": "Design the client; name the server boundary",
+    "caption": "One diagram is enough: the Android client is the design scope, and it talks to a BFF or gateway that owns auth, routing and compatibility. Backend services appear only as named boundaries with black-box internals.",
+    "sources": [
+      "https://developer.android.com/topic/architecture"
+    ],
+    "kind": "map",
+    "layout": "layers",
+    "nodes": [
+      {
+        "id": "client",
+        "title": "Android client",
+        "role": "client",
+        "detail": "primary design scope",
+        "key": true
+      },
+      {
+        "id": "gateway",
+        "title": "BFF / gateway",
+        "role": "neutral",
+        "detail": "auth, routing, compatibility"
+      },
+      {
+        "id": "services",
+        "title": "Backend services",
+        "role": "neutral",
+        "detail": "named boundaries, black-box internals"
+      }
+    ],
+    "groups": [
+      {
+        "id": "app",
+        "label": "Designed in this round",
+        "nodes": [
+          "client"
+        ]
+      },
+      {
+        "id": "server",
+        "label": "Named, not designed",
+        "nodes": [
+          "gateway",
+          "services"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "client",
+        "to": "gateway",
+        "label": "HTTPS / WSS, both ways"
+      },
+      {
+        "from": "gateway",
+        "to": "services",
+        "label": "routes to"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/non-functional-requirements",
+    "diagram": "db39a21f1c0bdd42",
+    "number": 1,
+    "title": "Start from the journey, end with a budget",
+    "caption": "NFRs are not a recital. Start from the critical user journey, select only the dimensions that can change its design, and turn each one into a measurable budget, a failure policy and an accountable owner.",
+    "sources": [
+      "https://developer.android.com/quality"
+    ],
+    "kind": "map",
+    "layout": "layers",
+    "nodes": [
+      {
+        "id": "journey",
+        "title": "Critical user journey",
+        "role": "neutral",
+        "key": true
+      },
+      {
+        "id": "experience",
+        "title": "Experience",
+        "role": "client",
+        "detail": [
+          "performance, accessibility,",
+          "localization"
+        ]
+      },
+      {
+        "id": "resources",
+        "title": "Device resources",
+        "role": "runtime",
+        "detail": "battery, memory, network"
+      },
+      {
+        "id": "correctness",
+        "title": "Correctness",
+        "role": "storage",
+        "detail": [
+          "offline, resilience,",
+          "compatibility"
+        ]
+      },
+      {
+        "id": "trust",
+        "title": "Trust",
+        "role": "queue",
+        "detail": "security, privacy"
+      },
+      {
+        "id": "operations",
+        "title": "Operations",
+        "role": "neutral",
+        "detail": "observability, testability"
+      },
+      {
+        "id": "budget",
+        "title": "Measurable budget",
+        "role": "neutral",
+        "detail": [
+          "failure policy",
+          "and owner"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "journey",
+        "to": "experience",
+        "label": "select if it changes the design",
+        "bus": "select"
+      },
+      {
+        "from": "journey",
+        "to": "resources",
+        "label": "select if it changes the design",
+        "bus": "select"
+      },
+      {
+        "from": "journey",
+        "to": "correctness",
+        "label": "select if it changes the design",
+        "bus": "select"
+      },
+      {
+        "from": "journey",
+        "to": "trust",
+        "label": "select if it changes the design",
+        "bus": "select"
+      },
+      {
+        "from": "journey",
+        "to": "operations",
+        "label": "select if it changes the design",
+        "bus": "select"
+      },
+      {
+        "from": "experience",
+        "to": "budget",
+        "label": "becomes",
+        "bus": "becomes"
+      },
+      {
+        "from": "resources",
+        "to": "budget",
+        "label": "becomes",
+        "bus": "becomes"
+      },
+      {
+        "from": "correctness",
+        "to": "budget",
+        "label": "becomes",
+        "bus": "becomes"
+      },
+      {
+        "from": "trust",
+        "to": "budget",
+        "label": "becomes",
+        "bus": "becomes"
+      },
+      {
+        "from": "operations",
+        "to": "budget",
+        "label": "becomes",
+        "bus": "becomes"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/performance",
+    "diagram": "3b79953acb4d3482",
+    "number": 1,
+    "title": "Performance is a coupled budget",
+    "caption": "A user journey spends four budgets at once: rendering, memory, battery and network. An optimization is incomplete until its cost in the other three is measured on representative device tiers.",
+    "sources": [
+      "https://developer.android.com/topic/performance/overview"
+    ],
+    "kind": "map",
+    "layout": "layers",
+    "nodes": [
+      {
+        "id": "journey",
+        "title": "User journey performance",
+        "role": "neutral",
+        "key": true
+      },
+      {
+        "id": "render",
+        "title": "Rendering",
+        "role": "client",
+        "detail": "frame duration + jank"
+      },
+      {
+        "id": "memory",
+        "title": "Memory",
+        "role": "runtime",
+        "detail": [
+          "heap + RSS +",
+          "bounded caches"
+        ]
+      },
+      {
+        "id": "battery",
+        "title": "Battery",
+        "role": "runtime",
+        "detail": [
+          "background work",
+          "+ wakeups"
+        ]
+      },
+      {
+        "id": "network",
+        "title": "Network",
+        "role": "queue",
+        "detail": [
+          "payload + latency",
+          "+ radio use"
+        ]
+      },
+      {
+        "id": "evidence",
+        "title": "Measure on representative",
+        "role": "neutral",
+        "detail": "device tiers"
+      }
+    ],
+    "edges": [
+      {
+        "from": "journey",
+        "to": "render",
+        "label": "spends",
+        "bus": "spends"
+      },
+      {
+        "from": "journey",
+        "to": "memory",
+        "label": "spends",
+        "bus": "spends"
+      },
+      {
+        "from": "journey",
+        "to": "battery",
+        "label": "spends",
+        "bus": "spends"
+      },
+      {
+        "from": "journey",
+        "to": "network",
+        "label": "spends",
+        "bus": "spends"
+      },
+      {
+        "from": "render",
+        "to": "evidence",
+        "label": "measured",
+        "bus": "measured"
+      },
+      {
+        "from": "memory",
+        "to": "evidence",
+        "label": "measured",
+        "bus": "measured"
+      },
+      {
+        "from": "battery",
+        "to": "evidence",
+        "label": "measured",
+        "bus": "measured"
+      },
+      {
+        "from": "network",
+        "to": "evidence",
+        "label": "measured",
+        "bus": "measured"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/accessibility",
+    "diagram": "8a0385e420733d8d",
+    "number": 1,
+    "title": "Services read meaning from semantics, not pixels",
+    "caption": "Composables and Views expose roles, state, descriptions and actions to the framework accessibility node tree. TalkBack, Switch Access and other services read that tree and send the user’s focus and actions back through it, so the app must make the meaning explicit.",
+    "sources": [
+      "https://developer.android.com/guide/topics/ui/accessibility/principles"
+    ],
+    "kind": "map",
+    "layout": "layers",
+    "nodes": [
+      {
+        "id": "compose",
+        "title": "Composable semantics",
+        "role": "client",
+        "detail": [
+          "role, state, action,",
+          "description"
+        ]
+      },
+      {
+        "id": "view",
+        "title": "View accessibility",
+        "role": "client",
+        "detail": [
+          "properties and",
+          "delegate"
+        ]
+      },
+      {
+        "id": "tree",
+        "title": "Framework accessibility",
+        "role": "runtime",
+        "detail": "node tree",
+        "key": true
+      },
+      {
+        "id": "service",
+        "title": "Accessibility service",
+        "role": "runtime",
+        "detail": [
+          "TalkBack, Switch Access,",
+          "others"
+        ]
+      },
+      {
+        "id": "user",
+        "title": "User",
+        "role": "neutral",
+        "detail": "interaction and feedback"
+      }
+    ],
+    "groups": [
+      {
+        "id": "app",
+        "label": "Your app",
+        "nodes": [
+          "compose",
+          "view"
+        ]
+      },
+      {
+        "id": "android",
+        "label": "Android",
+        "nodes": [
+          "tree",
+          "service"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "compose",
+        "to": "tree",
+        "label": "exposes",
+        "bus": "exposes"
+      },
+      {
+        "from": "view",
+        "to": "tree",
+        "label": "exposes",
+        "bus": "exposes"
+      },
+      {
+        "from": "tree",
+        "to": "service",
+        "label": "read by"
+      },
+      {
+        "from": "service",
+        "to": "user",
+        "label": "speaks, highlights"
+      },
+      {
+        "from": "user",
+        "to": "service",
+        "label": "focus and actions",
+        "style": "dashed",
+        "route": "curve"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/localization-and-internationalization",
+    "diagram": "d1e7ae3154d78dd6",
+    "number": 1,
+    "title": "Stable string IDs connect copy to every locale",
+    "caption": "Stable resource IDs carry product copy through the translation workflow into qualified resources. The build and App Bundle package them, Android picks the best match for the user’s locale at runtime, and the UI stays responsible for flexible, RTL-aware layout.",
+    "sources": [
+      "https://developer.android.com/guide/topics/resources/localization"
+    ],
+    "kind": "map",
+    "layout": "snake",
+    "nodes": [
+      {
+        "id": "keys",
+        "title": "Stable string IDs",
+        "role": "storage",
+        "detail": "source-locale resources",
+        "key": true
+      },
+      {
+        "id": "tms",
+        "title": "Translation workflow",
+        "role": "neutral",
+        "detail": [
+          "context, review,",
+          "terminology"
+        ]
+      },
+      {
+        "id": "locales",
+        "title": "Qualified resources",
+        "role": "storage",
+        "detail": [
+          "values-es, values-ar,",
+          "values-fr, …"
+        ]
+      },
+      {
+        "id": "build",
+        "title": "Build and App Bundle",
+        "role": "neutral",
+        "detail": [
+          "locale resources",
+          "packaged"
+        ]
+      },
+      {
+        "id": "runtime",
+        "title": "Android resource selection",
+        "role": "runtime",
+        "detail": "user locale + fallback"
+      },
+      {
+        "id": "ui",
+        "title": "Localized, RTL-aware UI",
+        "role": "client"
+      }
+    ],
+    "edges": [
+      {
+        "from": "keys",
+        "to": "tms",
+        "label": "sent for translation"
+      },
+      {
+        "from": "tms",
+        "to": "locales",
+        "label": "returns translations"
+      },
+      {
+        "from": "locales",
+        "to": "build",
+        "label": "packaged"
+      },
+      {
+        "from": "keys",
+        "to": "build",
+        "label": "default locale packaged"
+      },
+      {
+        "from": "build",
+        "to": "runtime",
+        "label": "installed"
+      },
+      {
+        "from": "runtime",
+        "to": "ui",
+        "label": "resolves strings"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/security-and-privacy",
+    "diagram": "5c466c17237acc8f",
+    "number": 1,
+    "title": "No device control proves trust alone",
+    "caption": "The threat model and data classification decide five layers of device-side controls. Four of them produce signals the backend relies on, but the server still enforces credential lifetime, authorization, revocation and risk decisions.",
+    "sources": [
+      "https://developer.android.com/privacy-and-security/security-best-practices",
+      "https://developer.android.com/google/play/integrity/overview"
+    ],
+    "kind": "map",
+    "layout": "layers",
+    "nodes": [
+      {
+        "id": "threats",
+        "title": "Threat model and",
+        "role": "neutral",
+        "detail": "data classification",
+        "key": true
+      },
+      {
+        "id": "transport",
+        "title": "Transport",
+        "role": "queue",
+        "detail": [
+          "TLS + cleartext policy",
+          "+ justified pinning"
+        ]
+      },
+      {
+        "id": "storage",
+        "title": "Storage",
+        "role": "storage",
+        "detail": [
+          "Android Keystore +",
+          "versioned envelope"
+        ]
+      },
+      {
+        "id": "integrity",
+        "title": "App integrity",
+        "role": "runtime",
+        "detail": [
+          "Play App Signing +",
+          "Play Integrity signals"
+        ]
+      },
+      {
+        "id": "runtimectl",
+        "title": "Runtime controls",
+        "role": "client",
+        "detail": [
+          "biometric gates, secure",
+          "UI, validated links"
+        ]
+      },
+      {
+        "id": "code",
+        "title": "Build controls",
+        "role": "neutral",
+        "detail": [
+          "R8, dependency and",
+          "native-code hardening"
+        ]
+      },
+      {
+        "id": "backend",
+        "title": "Server enforcement",
+        "role": "neutral",
+        "detail": [
+          "short-lived credentials,",
+          "revocation, risk policy"
+        ]
+      }
+    ],
+    "groups": [
+      {
+        "id": "device",
+        "label": "On the device and in the build",
+        "nodes": [
+          "transport",
+          "storage",
+          "integrity",
+          "runtimectl",
+          "code"
+        ]
+      },
+      {
+        "id": "server",
+        "label": "Server",
+        "nodes": [
+          "backend"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "threats",
+        "to": "transport",
+        "label": "decides",
+        "bus": "decides"
+      },
+      {
+        "from": "threats",
+        "to": "storage",
+        "label": "decides",
+        "bus": "decides"
+      },
+      {
+        "from": "threats",
+        "to": "integrity",
+        "label": "decides",
+        "bus": "decides"
+      },
+      {
+        "from": "threats",
+        "to": "runtimectl",
+        "label": "decides",
+        "bus": "decides"
+      },
+      {
+        "from": "threats",
+        "to": "code",
+        "label": "decides",
+        "bus": "decides"
+      },
+      {
+        "from": "transport",
+        "to": "backend",
+        "label": "backed by",
+        "bus": "backed"
+      },
+      {
+        "from": "storage",
+        "to": "backend",
+        "label": "backed by",
+        "bus": "backed"
+      },
+      {
+        "from": "integrity",
+        "to": "backend",
+        "label": "backed by",
+        "bus": "backed"
+      },
+      {
+        "from": "runtimectl",
+        "to": "backend",
+        "label": "backed by",
+        "bus": "backed"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/versioning-and-backward-compatibility",
+    "diagram": "8fe272d041ef7d67",
+    "number": 1,
+    "title": "Three versions evolve on their own clocks",
+    "caption": "The installed app, the wire contract and the local schema change independently, and installed clients cannot be assumed to upgrade. Compatibility controls combine all three to decide whether the user gets the full app, a degraded one, a migration, a warning or a block.",
+    "sources": [
+      "https://developer.android.com/training/data-storage/room/migrating-db-versions",
+      "https://developer.android.com/guide/playcore/in-app-updates"
+    ],
+    "kind": "map",
+    "layout": "layers",
+    "nodes": [
+      {
+        "id": "app",
+        "title": "Installed app version",
+        "role": "client",
+        "detail": [
+          "capabilities +",
+          "support policy"
+        ]
+      },
+      {
+        "id": "wire",
+        "title": "Wire contract version",
+        "role": "queue",
+        "detail": [
+          "old and new",
+          "clients overlap"
+        ]
+      },
+      {
+        "id": "local",
+        "title": "Local schema version",
+        "role": "storage",
+        "detail": [
+          "ordered, tested",
+          "migrations"
+        ]
+      },
+      {
+        "id": "config",
+        "title": "Compatibility controls",
+        "role": "runtime",
+        "detail": [
+          "capabilities, flags,",
+          "minimum version"
+        ],
+        "key": true
+      },
+      {
+        "id": "user",
+        "title": "Safe user experience",
+        "role": "neutral",
+        "detail": [
+          "degrade, migrate,",
+          "warn, or block"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "app",
+        "to": "wire",
+        "label": "negotiates, both ways"
+      },
+      {
+        "from": "app",
+        "to": "local",
+        "label": "migrates"
+      },
+      {
+        "from": "app",
+        "to": "config",
+        "label": "reports",
+        "bus": "feeds"
+      },
+      {
+        "from": "wire",
+        "to": "config",
+        "label": "reports",
+        "bus": "feeds"
+      },
+      {
+        "from": "local",
+        "to": "config",
+        "label": "reports",
+        "bus": "feeds"
+      },
+      {
+        "from": "config",
+        "to": "user",
+        "label": "decides"
+      }
+    ]
   }
 ]

@@ -1,0 +1,13 @@
+<!-- Website teaching layer for mobile-system-design/security-and-privacy.md (normal chapter layout: it teaches a cross-cutting practice).
+     The original chapter is rendered in full; everything here is added after it.
+     Verified 2026-10-30 against security-and-privacy.md at source 5ff8d44 (§1 requirements, §3 stack, §4 transport, §5 storage, §6 integrity, §7 runtime protections, §9 deep dive, §10 privacy). -->
+
+<!-- @after 13. Further Reading :: recap -->
+### Say these in the interview
+
+- **Defence in depth:** device controls reduce exposure, but the server still enforces credential lifetime, authorization and revocation.
+- **TLS 1.2+ with cleartext off;** pin certificates only when the threat model justifies it, with backup pins and a rotation plan.
+- **Keep tokens in memory when you can;** otherwise encrypt them with a direct Android Keystore key in a versioned envelope. EncryptedSharedPreferences is deprecated.
+- **For biometric-bound keys,** initialise the cipher first, then authenticate it as a `CryptoObject`.
+- **Protect the edges:** `FLAG_SECURE` on sensitive screens, tokens excluded from backup and device transfer, and Play Integrity verdicts treated as signals.
+- **Privacy:** collect less, redact PII, gate non-essential data on consent, and give users a delete path.

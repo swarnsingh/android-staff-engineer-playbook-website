@@ -1,6 +1,6 @@
 # Security & Privacy (Android Mobile)
 
-> A 45-60 minute mobile system-design walkthrough for the security & privacy posture of an Android app: TLS + pinning, Keystore, biometric, screen capture, root/rebrand detection, PII handling, GDPR. A horizontal concern referenced across every other file.
+> A 45-60 minute mobile system-design walkthrough for the security & privacy posture of an Android app: TLS + pinning, Keystore, biometric, screen capture, root/repackaging detection, PII handling, GDPR. A horizontal concern referenced across every other file.
 
 ---
 
@@ -10,8 +10,8 @@
 > **Candidate:** "Security breaks down into transport, storage, app integrity, and runtime. Privacy is about minimisation, consent, and compliance. I'll cover both and deep-dive Keystore-wrapped credential storage."
 
 ### Functional Requirements
-- **TLS 1.3** for all network traffic.
-- **Certificate pinning** in production builds.
+- **TLS 1.2+** for all network traffic (prefer TLS 1.3).
+- **Certificate pinning** only where the threat model justifies it, with backup pins and a recovery plan.
 - **Token storage** in Keystore-wrapped storage.
 - **Biometric** for high-stakes actions.
 - **PII redaction** in logs and analytics.
@@ -144,14 +144,16 @@ Non-exportable does not mean unusable by a compromised process. Token TTL, rotat
 ### Room with SQLCipher
 
 ```kotlin
-val passphrase = SQLiteDatabase.getBytes(keystoreWrappedPassphrase)
-val factory = SupportFactory(passphrase)
+// net.zetetic:sqlcipher-android (the older android-database-sqlcipher is deprecated)
+System.loadLibrary("sqlcipher")
+val passphrase: ByteArray = keystoreUnwrap(storedPassphraseEnvelope)
+val factory = SupportOpenHelperFactory(passphrase)
 val db = Room.databaseBuilder(context, AppDatabase::class.java, "app.db")
     .openHelperFactory(factory)
     .build()
 ```
 
-The passphrase is generated once and wrapped by a direct Keystore AES key. Store only the versioned passphrase ciphertext in app-private storage.
+The passphrase is generated once and wrapped by a direct Keystore AES key. Store only the versioned passphrase ciphertext in app-private storage, and unwrap it with the Keystore key before opening the database.
 
 ### Keystore-bound biometric key
 
@@ -163,12 +165,19 @@ keyGen.init(
         .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
         .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
         .setUserAuthenticationRequired(true)
-        .setUserAuthenticationParameters(0, KeyProperties.AUTH_BIOMETRIC_STRONG)
+        .apply {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                setUserAuthenticationParameters(0, KeyProperties.AUTH_BIOMETRIC_STRONG)
+            } else {
+                @Suppress("DEPRECATION")
+                setUserAuthenticationValidityDurationSeconds(-1) // auth for every use
+            }
+        }
         .build()
 )
 ```
 
-Using this key requires fresh biometric authentication. Decrypting a stored token = biometric prompt.
+Using this key requires fresh biometric authentication. Decrypting a stored token = biometric prompt. `setUserAuthenticationParameters` exists from API 30; this design's Android 9 floor needs the older call below that.
 
 ---
 
@@ -185,9 +194,9 @@ integrityManager.requestIntegrityToken(request)
     }
 ```
 
-Server-side verification confirms: app is unmodified, signed by you, installed from Play (not sideloaded), running on a real device.
+Your server decrypts the verdict and checks the signals: `appRecognitionVerdict` is `PLAY_RECOGNIZED`, `appLicensingVerdict` is `LICENSED`, and the device-integrity labels (such as `MEETS_DEVICE_INTEGRITY`). Treat them as risk signals to combine with your own, not as proof.
 
-Use for: high-value actions (transfers, account changes). Not for ordinary reads.
+This snippet is a classic request, which suits rare checks on the highest-value actions (transfers, account changes). Use standard requests for frequent, on-demand checks. Not for ordinary reads.
 
 ---
 
@@ -224,14 +233,28 @@ App Links + Digital Asset Links verification (see `deep-links-and-universal-link
 
 ### Tap-jacking
 
-```kotlin
-Button(modifier = Modifier.systemGestureExclusion()) { ... }
-
-// Manifest:
-android:filterTouchesWhenObscured="true"
+```xml
+<!-- Views: on the sensitive View in the layout -->
+<Button
+    android:filterTouchesWhenObscured="true" />
 ```
 
-Blocks malicious overlays from capturing taps.
+```kotlin
+// Compose: set it on the View hosting the sensitive screen
+val view = LocalView.current
+DisposableEffect(view) {
+    view.filterTouchesWhenObscured = true
+    onDispose { view.filterTouchesWhenObscured = false }
+}
+
+// Android 12 (API 31) and higher: hide non-system overlay windows
+// (requires <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />)
+if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    window.setHideOverlayWindows(true)
+}
+```
+
+`filterTouchesWhenObscured` drops touches delivered while another window fully covers the view. Partial overlays need a check for `MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED`. See [Tapjacking](https://developer.android.com/privacy-and-security/risks/tapjacking).
 
 ---
 
@@ -254,14 +277,14 @@ buildTypes {
 R8 obfuscates class/method names — raises the bar for reverse engineering. Doesn't stop a determined attacker but stops casual decompilation.
 
 For sensitive constants:
-- API keys: never in code. Inject via build config, server-driven if possible.
-- Crypto secrets: never embed; derive from user input or server.
+- Anything shipped in the APK, including `BuildConfig` fields and resources, can be extracted. Keep real secrets server-side; restrict any client key (API restrictions, app-signature checks) and treat it as an identifier, not a secret.
+- Crypto secrets: never embed; derive from user input or server, or keep keys in the Android Keystore.
 
 ---
 
 ## 9. Deep Dive: Token Storage with a Keystore Envelope (~15 min)
 
-> *I'd pick this as the deep dive because token storage is the most-attacked surface — credentials live forever and unlock everything else.*
+> *I'd pick this as the deep dive because token storage is the most-attacked surface — long-lived refresh tokens unlock everything else.*
 
 ### Why Keystore?
 
@@ -283,14 +306,21 @@ Android Keystore (TEE or StrongBox only when verified)
 
 Use the direct `KeyGenerator` + `KeyGenParameterSpec` pattern in the canonical secure-storage page. If StrongBox is requested, handle `StrongBoxUnavailableException`; the platform does not promise a silent fallback. Record the envelope schema version, IV, ciphertext, key generation, and associated-data contract.
 
-### Reading the token
+### Writing and reading the token
 
 ```kotlin
+// Write
 val encrypted = keystoreAead.encrypt(
     plaintext = json.encodeToString(tokens).encodeToByteArray(),
     associatedData = accountId.encodeToByteArray(),
 )
 privateStore.write(encrypted)
+
+// Read
+val stored = privateStore.read() ?: return null
+val tokens = json.decodeFromString<Tokens>(
+    keystoreAead.decrypt(stored, associatedData = accountId.encodeToByteArray()).decodeToString()
+)
 ```
 
 ### Biometric-bound variant
@@ -299,15 +329,18 @@ For apps where credentials must be biometric-gated on each use (e.g., banking):
 
 ```kotlin
 suspend fun loadTokenWithBiometric(activity: FragmentActivity): String? {
-    val cipher = createCipherForKeystoreKey("biometric-key")
-    val ok = biometricPrompt.authenticate(activity, BiometricPrompt.CryptoObject(cipher))
-    if (!ok) return null
-    val encrypted = privateStore.read() ?: return null
-    return decryptAuthenticatedBlob(cipher, encrypted).decodeToString()
+    val envelope = privateStore.read() ?: return null
+    // AES-GCM decryption needs the stored IV at init time, before authentication.
+    val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply {
+        init(Cipher.DECRYPT_MODE, keystoreKey("biometric_key"), GCMParameterSpec(128, envelope.iv))
+    }
+    // authenticateWithCrypto: a suspending wrapper around BiometricPrompt.authenticate(promptInfo, cryptoObject)
+    val authorized = authenticateWithCrypto(activity, BiometricPrompt.CryptoObject(cipher)) ?: return null
+    return authorized.cipher!!.doFinal(envelope.ciphertext).decodeToString()
 }
 ```
 
-`decryptAuthenticatedBlob` restores the stored IV before calling `doFinal`. Without successful biometric authentication, the configured key cannot perform the operation.
+The cipher is initialised with the envelope's IV before it is wrapped in a `CryptoObject`; after successful authentication, `doFinal` runs on that same authorised cipher. Re-initialising the cipher after the prompt would discard the authorisation. Without successful biometric authentication, the configured key cannot perform the operation.
 
 ### Backup exclusion
 
@@ -317,20 +350,33 @@ suspend fun loadTokenWithBiometric(activity: FragmentActivity): String? {
 ```
 
 ```xml
-<!-- backup_rules.xml -->
+<!-- backup_rules.xml: devices running Android 11 and lower -->
 <full-backup-content>
     <exclude domain="file" path="token-vault.bin" />
 </full-backup-content>
 ```
 
-Don't let Google Drive auto-backup carry tokens to other devices.
+```xml
+<!-- data_extraction_rules.xml: Android 12+ for apps targeting API 31+ -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="token-vault.bin" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="token-vault.bin" />
+    </device-transfer>
+</data-extraction-rules>
+```
 
-### Rotation on suspicion
+Don't let cloud backup or device-to-device transfer carry tokens to other devices. See [Back up user data with Auto Backup](https://developer.android.com/identity/data/autobackup).
 
-If you detect a security event (failed biometric attempts, suspicious geo, server alert), force a token rotation:
+### Revoke on suspicion
+
+If you detect a security event (failed biometric attempts, suspicious geo, server alert), revoke the session and force re-authentication:
 
 ```kotlin
-suspend fun forceRotate() {
+suspend fun revokeOnSuspicion() {
+    vault.load()?.let { tokens -> runCatching { api.revoke(tokens.refreshToken) } } // RFC 7009, best effort
     vault.clear()
     navigator.replaceWithLogin(reason = ReAuthReason.SECURITY_EVENT)
 }
@@ -348,16 +394,19 @@ suspend fun forceRotate() {
 
 ```kotlin
 class PiiRedactor {
-    private val patterns = mapOf(
-        "email" to "[REDACTED_EMAIL]",
-        "phone" to "[REDACTED_PHONE]",
-        "card" to "[REDACTED_CARD]",
+    // Best-effort scrubbing for free text; prefer structured fields redacted by key.
+    private val patterns = listOf(
+        Regex("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}") to "[REDACTED_EMAIL]",
+        Regex("\\b\\d(?:[ -]?\\d){12,18}\\b") to "[REDACTED_CARD]",
+        Regex("\\+?\\d[\\d ()-]{7,}\\d") to "[REDACTED_PHONE]",
     )
-    fun redact(message: String): String = patterns.entries.fold(message) { msg, (key, replacement) ->
-        msg.replace(key.toRegex(), replacement)
+    fun redact(message: String): String = patterns.fold(message) { msg, (regex, replacement) ->
+        msg.replace(regex, replacement)
     }
 }
 ```
+
+Regex scrubbing misses formats it does not know. Prefer typed log and analytics fields that are redacted by key (see the analytics SDK's `PiiRedactionInterceptor`).
 
 ### Consent
 
@@ -397,12 +446,12 @@ NotificationCompat.Builder(ctx, CHANNEL_SENSITIVE)
 | Miss | Fix |
 |---|---|
 | Token in plain storage without a threat-model decision | Direct Keystore-backed vault when encryption is required; otherwise short-lived private storage with server controls |
-| No pinning | Network Security Config + pin set |
+| Pinning without backup pins or a rotation plan | Add backup pins and overlapping rotation, or remove pinning |
 | `usesCleartextTraffic=true` | Set to false |
 | `allowBackup=true` carrying tokens | Exclude in backup rules |
 | Logging tokens in OkHttp interceptor | Redact `Authorization` header |
 | Screenshots possible on payment screen | `FLAG_SECURE` |
-| Hardcoded API keys | BuildConfig + server-driven where possible |
+| Secrets shipped in the app (code, `BuildConfig`, resources) | Keep secrets server-side; restrict client keys |
 | Wide-open deep link parser | Validate scheme + host |
 | `runBlocking` on main exposing IO | Move to dispatcher |
 | Storing biometric template (you can't) | Use Keystore-bound key + BiometricPrompt instead |
@@ -412,7 +461,7 @@ NotificationCompat.Builder(ctx, CHANNEL_SENSITIVE)
 ## 12. Testing & Audits
 
 - **Static**: `Detekt`, `Lint`, OWASP Mobile checks in CI.
-- **Dynamic**: Mob-SF (Mobile Security Framework), Frida-based runtime tests.
+- **Dynamic**: MobSF (Mobile Security Framework), Frida-based runtime tests.
 - **Pen-test**: annual by an external firm; high-stakes products quarterly.
 - **Dependency scan**: `OWASP Dependency-Check`, `Snyk`, `Dependabot`.
 
@@ -420,7 +469,8 @@ NotificationCompat.Builder(ctx, CHANNEL_SENSITIVE)
 
 ## 13. Further Reading
 
-- [Android Developers — Security best practices](https://developer.android.com/topic/security/best-practices) — official baseline.
+- [Android Developers — Security best practices](https://developer.android.com/privacy-and-security/security-best-practices) — official baseline.
+- [Android Developers — Security with network protocols](https://developer.android.com/privacy-and-security/security-ssl) — why certificate pinning is not recommended by default.
 - [Android Keystore system](https://developer.android.com/training/articles/keystore) — key storage internals.
 - [Network Security Configuration](https://developer.android.com/training/articles/security-config) — pinning + TLS.
 - [Play Integrity API](https://developer.android.com/google/play/integrity) — integrity verification.

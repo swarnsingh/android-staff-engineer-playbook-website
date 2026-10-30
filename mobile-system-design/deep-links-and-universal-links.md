@@ -17,7 +17,7 @@
 - **Back-stack hygiene** — opening from a notification doesn't lose the home screen.
 
 ### Non-Functional Requirements
-- **No "Open with..." chooser** for our domain — App Links + verified domain.
+- **Opens straight in the app** for our domain — App Links + verified domain (no browser detour, no disambiguation dialog).
 - **Survive process death** — route resumes correctly even if cold-started.
 - **Safe** — no exfiltration via spoofed `intent://` URLs.
 - **Composable** with the navigation graph (one source of truth for routes).
@@ -169,7 +169,8 @@ sealed class Route {
     data class Order(val id: String) : Route()
     data class Chat(val convId: String, val scrollToMessage: String? = null) : Route()
     data class Post(val shareCode: String) : Route()
-    object Login : Route()
+    data object Login : Route()
+    data object Home : Route()
 }
 
 interface DeepLinkParser {
@@ -177,9 +178,7 @@ interface DeepLinkParser {
 }
 
 interface Navigator {
-    fun go(route: Route)
-    fun goAndSaveDestination(route: Route)
-    fun resumePendingDestination(): Route?
+    fun go(route: Route)   // owned by MainActivity, which holds the NavController
 }
 ```
 
@@ -208,11 +207,11 @@ Only the destination; transient query params are encoded into the route itself.
 ### App Links verification handshake
 
 1. Sign your release APK.
-2. Compute SHA-256 fingerprint: `keytool -list -v -keystore release.keystore` → SHA-256 line.
-3. Host `assetlinks.json` at `https://example.com/.well-known/assetlinks.json` over HTTPS with `Content-Type: application/json`.
-4. On install, Android downloads the file and verifies. Status visible via `adb shell pm get-app-links com.example.app`.
+2. Get the SHA-256 fingerprint of the key that signs the app on users' devices. With Play App Signing, copy the Digital Asset Links snippet from Play Console › Release › Setup › App signing; a local `keytool -list -v -keystore release.keystore` fingerprint usually won't match.
+3. Host `assetlinks.json` at `https://example.com/.well-known/assetlinks.json` over HTTPS with `Content-Type: application/json`, with no redirects.
+4. On install, Android downloads the file and verifies asynchronously. Status visible via `adb shell pm get-app-links com.example.app`.
 
-If verification succeeds: tapping `https://example.com/...` opens our app silently. If it fails: user gets a "Open with..." chooser (bad UX).
+If verification succeeds: tapping `https://example.com/...` opens our app silently. If it fails: on Android 12+ the link opens in the user's default browser and the app is skipped; on Android 11 and lower the user may see the disambiguation dialog.
 
 ### Manifest intent filter (recap)
 
@@ -221,10 +220,10 @@ If verification succeeds: tapping `https://example.com/...` opens our app silent
 ### Single router activity
 
 ```kotlin
+@AndroidEntryPoint
 class LinkRouterActivity : ComponentActivity() {
 
     @Inject lateinit var parser: DeepLinkParser
-    @Inject lateinit var navigator: Navigator
     @Inject lateinit var authGate: AuthGate
     @Inject lateinit var analytics: AnalyticsClient
 
@@ -234,20 +233,21 @@ class LinkRouterActivity : ComponentActivity() {
         if (uri == null) { finish(); return }
 
         val route = parser.parse(uri)
-        analytics.log("deeplink_received", mapOf("uri" to uri.scrubbedString(), "route" to (route?.name ?: "unknown")))
+        analytics.log("deeplink_received", mapOf("uri" to uri.scrubbedString(), "route" to (route?.let { it::class.simpleName } ?: "unknown")))
 
-        if (route == null) {
-            navigator.go(Route.Home)   // fallback
-        } else if (authGate.requires(route) && !authGate.isAuthenticated) {
-            navigator.goAndSaveDestination(route)
-            navigator.go(Route.Login)
-        } else {
-            navigator.go(route)
+        val (target, pendingAfterLogin) = when {
+            route == null -> Route.Home to null                      // fallback
+            authGate.requires(route) && !authGate.isAuthenticated -> Route.Login to route
+            else -> route to null
         }
-        finish()       // Router is invisible; never stays on the back stack
+        // The NavController lives in MainActivity's composition, so hand the routes over to it.
+        startActivity(MainActivity.intentFor(this, target, pendingAfterLogin))
+        finish()       // Router is invisible (translucent theme); never stays on the back stack
     }
 }
 ```
+
+`MainActivity` reads both routes from the intent (in `onCreate` and `onNewIntent`), saves `pendingAfterLogin` with `AuthGate.savePending`, and passes `target` to its `Navigator`, which owns the `NavController`.
 
 ### Parser
 
@@ -278,7 +278,7 @@ class AuthGate @Inject constructor(
 ) {
     val isAuthenticated: Boolean get() = session.isSignedIn
 
-    fun requires(route: Route): Boolean = route in AUTH_REQUIRED_ROUTES
+    fun requires(route: Route): Boolean = route is Route.Order
 
     suspend fun savePending(route: Route) {
         pendingDao.save(PendingRouteRow(routeJson = json.encodeToString(route), savedAt = clock.now()))
@@ -323,13 +323,14 @@ For deep links from notifications:
 
 ```kotlin
 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(deepLink)).apply {
+    setPackage(ctx.packageName)   // never let another app claim the notification tap
     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
 }
 val pi = PendingIntent.getActivity(ctx, requestCode, intent,
     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
 ```
 
-Inside the nav graph, the deep-link destination uses `popUpTo("home")` so the user can press Back and land on home, not on the router activity.
+When a Navigation deep link is handled with `FLAG_ACTIVITY_NEW_TASK` (or built with `NavDeepLinkBuilder`), Navigation replaces the task's back stack with the destination plus the start destination of each nested graph, so Back lands on Home, not on the router activity. See [Create a deep link for a destination](https://developer.android.com/guide/navigation/design/deep-link).
 
 ### Deferred deep linking
 
@@ -347,24 +348,31 @@ class InstallReferrerClient @Inject constructor(@ApplicationContext ctx: Context
         suspendCancellableCoroutine { cont ->
             client.startConnection(object : InstallReferrerStateListener {
                 override fun onInstallReferrerSetupFinished(responseCode: Int) {
-                    val ref = if (responseCode == OK) client.installReferrer.installReferrer else null
+                    val ref = if (responseCode == InstallReferrerClient.InstallReferrerResponse.OK) {
+                        client.installReferrer.installReferrer
+                    } else null
                     client.endConnection()
-                    cont.resume(ref)
+                    if (cont.isActive) cont.resume(ref)
                 }
-                override fun onInstallReferrerServiceDisconnected() { cont.resume(null) }
+                override fun onInstallReferrerServiceDisconnected() {
+                    if (cont.isActive) cont.resume(null)   // may follow setup; resume only once
+                }
             })
+            cont.invokeOnCancellation { client.endConnection() }
         }
     }
 }
 ```
 
-For more complex attribution (which channel? which campaign?), use Branch / AppsFlyer / Firebase Dynamic Links (sunsetting).
+For more complex attribution (which channel? which campaign?), evaluate a maintained provider such as Branch or AppsFlyer. Firebase Dynamic Links shut down on August 25, 2025.
+
+See the [Firebase Dynamic Links deprecation FAQ](https://firebase.google.com/support/dynamic-links-faq).
 
 ### Failure modes
 
 | What breaks | Behavior |
 |---|---|
-| `assetlinks.json` not reachable | Verification fails; chooser appears |
+| `assetlinks.json` not reachable | Verification fails; link opens in the browser (Android 12+) or shows the chooser (11 and lower) |
 | Fingerprint mismatch (e.g., new keystore) | Verification fails on next OS check |
 | Parser doesn't know a route | Fallback to home; log unknown URI |
 | Auth-required route + offline | Show splash, retry session on reconnect |
@@ -382,7 +390,7 @@ For more complex attribution (which channel? which campaign?), use Branch / Apps
 |---|---|---|---|
 | **App Links (`https`)** | No chooser, verified, web parity | DevOps to host `assetlinks.json` | Pick this |
 | URI scheme (`myapp://`) | Trivial setup | Spoofable, no web parity | Fallback only |
-| Firebase Dynamic Links | Easy deferred | Sunsetting (Aug 2025) | Migrate away |
+| Firebase Dynamic Links | None; service shut down August 25, 2025 | Existing links no longer resolve | Do not use |
 | Branch.io / AppsFlyer | Full attribution | Vendor dependency, cost | Pick if attribution matters |
 
 ### Routing
@@ -414,7 +422,7 @@ For more complex attribution (which channel? which campaign?), use Branch / Apps
 
 ## 9. Major Concerns
 
-- **Verification fragility.** New keystore (e.g., Play App Signing) means new SHA-256 — update `assetlinks.json`. Check `adb shell pm get-app-links` after every cert change.
+- **Verification fragility.** New keystore (e.g., Play App Signing) means new SHA-256 — update `assetlinks.json`. Check `adb shell pm get-app-links` after every cert change; to re-run verification, `adb shell pm set-app-links --package <pkg> 0 all` then `adb shell pm verify-app-links --re-verify <pkg>`. After an `assetlinks.json` change, Android 15+ re-verifies in the background (up to about seven days); Android 14 and lower pick it up only on install or update.
 - **Security.** Never `eval` URI fragments. Validate scheme + host. Strip user-controllable content from logs.
 - **Privacy.** Don't log full URIs with sensitive query params (`?token=…`). Use `scrubbedString()` that drops known-sensitive keys.
 - **Localization.** Routes are language-agnostic; URLs use codes, not localized words.
@@ -429,7 +437,7 @@ For more complex attribution (which channel? which campaign?), use Branch / Apps
 ## 10. Follow-up Questions
 
 > **Q: User taps a deep link, app cold-starts — how is the back stack constructed?**
-> The intent flags + nav graph define it. Best practice: deep link to `target`, but push `home` underneath. Compose Navigation does this with `popUpTo("home") { saveState = true }` or via the `TaskStackBuilder` for legacy nav.
+> Navigation builds it. An explicit deep link (`NavDeepLinkBuilder`), or an implicit one launched with `FLAG_ACTIVITY_NEW_TASK`, replaces the task stack with the destination plus the start destination of each nested graph, so Back walks to Home. Without `FLAG_ACTIVITY_NEW_TASK`, the destination joins the calling app's task and Back returns to that app.
 
 > **Q: Two apps want to handle the same URL — how does Android decide?**
 > Verified App Links win without chooser. If multiple are verified for the same domain (unusual), Android shows the chooser. If only one is verified, it wins silently.
@@ -461,7 +469,7 @@ For more complex attribution (which channel? which campaign?), use Branch / Apps
 ## 12. Further Reading
 
 - [Android Developers — App Links](https://developer.android.com/training/app-links) — official, including verification steps.
-- [Android Developers — Compose Navigation deep links](https://developer.android.com/jetpack/compose/navigation#deeplinks) — official Compose Nav guidance.
+- [Android Developers — Navigation deep links](https://developer.android.com/guide/navigation/design/deep-link) — explicit and implicit deep links and the back stack they build.
 - [Digital Asset Links spec](https://developers.google.com/digital-asset-links/v1/getting-started) — the assetlinks.json format.
 - [Install Referrer API](https://developer.android.com/google/play/installreferrer) — deferred deep link basics.
 - [Branch.io — deferred deep linking](https://help.branch.io/) — vendor for full attribution.

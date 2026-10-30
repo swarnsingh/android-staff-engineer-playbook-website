@@ -1,0 +1,12 @@
+<!-- Website teaching layer for mobile-system-design/localization-and-internationalization.md (normal chapter layout: it teaches a cross-cutting practice).
+     The original chapter is rendered in full; everything here is added after it.
+     Verified 2026-10-30 against localization-and-internationalization.md at source 5ff8d44 (§4 strings discipline, §6 formatting, §7 RTL, §8 per-app language, §9 server content, §13 testing). -->
+
+<!-- @after 14. Further Reading :: recap -->
+### Say these in the interview
+
+- **No hard-coded strings:** placeholders instead of concatenation, and `<plurals>` with `%d` even in the `one` form.
+- **Format numbers, dates and currency with the locale's formatters;** keep money out of `Double`.
+- **Lay out with start and end,** mirror directional icons, and test right-to-left with the AR (XB) pseudolocale.
+- **Per-app language:** AppCompat 1.6+ backports it to Android 12 and lower; on Android 13+, generate the locale config so the language appears in system settings.
+- **Server text follows `Accept-Language`** with a fallback chain, for example es-MX → es → en.

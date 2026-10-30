@@ -1,0 +1,62 @@
+<!-- Website teaching layer for mobile-system-design/versioning-and-backward-compatibility.md (interview walkthrough).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the policy-gate step-through and the end recap.
+     Verified 2026-10-30 against versioning-and-backward-compatibility.md at source 5ff8d44 (§1 N-3 support, §4 wire
+     discipline and RFC 9745 headers, §5 migrations, §6 policy example bannerBelow 4.10 / forceUpdateBelow 4.8, gate,
+     telemetry, failure modes, §10 first-launch fallback). The app versions 4.9.2 and 4.7.0 are illustrative. -->
+
+<!-- @after 6. Deep Dive: Force-Update + Soft-Deprecation Flow (15 min) :: animation -->
+### Step through the version-policy gate
+
+<figure class="stepper" data-illustrated><span class="stepper-title">Version policy at app start</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="app" data-art="phone" data-art-role="client"><strong>Installed app</strong><small data-text="appV">version 4.9.2</small></div><div class="node" data-el="api" data-art="server" data-art-role="runtime"><strong>Policy endpoint</strong><small data-text="apiV">GET /v1/app/policy</small></div><div class="node" data-el="cache" data-art="database" data-art-role="storage"><strong>Cached policy</strong><small data-text="cacheV">none yet</small></div></div><div class="viz-grid" data-cols="2"><div class="node" data-el="gate" data-art="gate" data-art-role="runtime"><strong>AppPolicyGate</strong><small data-text="gateV">waiting</small></div><div class="node" data-el="screen" data-art="screen" data-art-role="client"><strong>What the user sees</strong><small data-text="screenV">splash</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "App starts",
+    "caption": "Version 4.9.2 asks the policy endpoint for the current rules and sends its version in the X-App-Version header.",
+    "add": ["app", "api", "cache", "gate", "screen", "event"],
+    "state": {"app": "active", "api": "active"},
+    "text": {"eventV": "GET /v1/app/policy · X-App-Version: 4.9.2"},
+    "handoff": {"from": "app", "to": "api", "kind": "page", "label": "version"}
+  },
+  {
+    "label": "Policy arrives",
+    "caption": "The server answers bannerBelow 4.10 and forceUpdateBelow 4.8. The app caches the policy for launches when the endpoint is unreachable.",
+    "state": {"api": "done", "cache": "done"},
+    "text": {"cacheV": "bannerBelow 4.10 · forceUpdateBelow 4.8", "eventV": "policy cached"},
+    "handoff": {"from": "api", "to": "cache", "kind": "rows", "label": "policy"}
+  },
+  {
+    "label": "Gate decides",
+    "caption": "4.9.2 is not below 4.8, so there is no force update. It is below 4.10, so the status is DEPRECATED.",
+    "state": {"gate": "active"},
+    "text": {"gateV": "DEPRECATED", "eventV": "4.9.2 < 4.10, ≥ 4.8"}
+  },
+  {
+    "label": "Soft path",
+    "caption": "The user sees the deprecation banner above the normal content and keeps working. The app logs deprecation_banner_shown, so the team can watch update uptake.",
+    "state": {"gate": "done", "screen": "warn"},
+    "text": {"screenV": "banner + full app", "eventV": "deprecation_banner_shown"}
+  },
+  {
+    "label": "Older install",
+    "caption": "On another device, version 4.7.0 is below 4.8. The gate returns FORCE_UPDATE and shows only the update screen; its button opens the Play Store. The app logs force_update_shown.",
+    "state": {"app": "warn", "gate": "active", "screen": "error"},
+    "text": {"appV": "version 4.7.0", "gateV": "FORCE_UPDATE", "screenV": "update screen only", "eventV": "force_update_shown"}
+  },
+  {
+    "label": "Endpoint down",
+    "caption": "If the policy call fails, the gate uses the last cached policy. On a first launch with no cache, it falls back to OK rather than locking the user out because of a network problem.",
+    "state": {"api": "error", "cache": "done", "gate": "done", "app": "active", "screen": "done"},
+    "text": {"apiV": "unreachable", "gateV": "cached policy, or OK", "screenV": "app usable", "eventV": "never lock out on a network error"}
+  }
+]</script><figcaption>Two thresholds, read from the server and cached on the device, decide between the full app, a banner and a forced update. A missing policy never blocks the user.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **App, wire and schema versions move independently,** and installed clients cannot be forced to upgrade on the server's schedule.
+- **Wire changes are additive.** Rename or retype by adding a field, deprecate the old one, and retire it only when usage data says so.
+- **Every Room version bump ships a tested migration;** `fallbackToDestructiveMigration` never runs in production.
+- **Two thresholds drive the gate:** a soft banner below one version, a forced update below an older one, both from a cached server policy.
+- **Deprecate in stages:** headers (`Deprecation`, `Sunset`), banners, release notes, then force-update only for security, legal or unkeepable contracts.
+- **Retire by data, not the calendar:** watch active installs and endpoint traffic per version before removing an old contract.

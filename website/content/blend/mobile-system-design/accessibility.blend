@@ -1,0 +1,12 @@
+<!-- Website teaching layer for mobile-system-design/accessibility.md (normal chapter layout: it teaches a cross-cutting practice).
+     The original chapter is rendered in full; everything here is added after it.
+     Verified 2026-10-30 against accessibility.md at source 5ff8d44 (§1 requirements, §4 semantics, §5 touch targets, §6 text scaling, §7 contrast, §8 motion, §11 testing). -->
+
+<!-- @after 14. Further Reading :: recap -->
+### Say these in the interview
+
+- **Every interactive element gets a meaningful label;** merge a row's children so TalkBack reads it once.
+- **Touch targets are at least 48 dp;** text uses sp and still fits at 200% font scale.
+- **Contrast meets WCAG AA:** 4.5:1 for body text, 3:1 for large text, icons and UI components.
+- **Respect "Remove animations"** and caption all media.
+- **Automate, then still test by hand:** accessibility checks in CI (Compose 1.8.0+), plus a manual TalkBack pass on every screen.

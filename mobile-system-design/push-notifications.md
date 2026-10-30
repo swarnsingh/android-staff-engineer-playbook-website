@@ -1,6 +1,6 @@
 # Push Notifications (FCM Client-Side)
 
-> A 45-60 minute mobile system-design walkthrough for the Android *client* side of push: FCM token lifecycle, data vs notification messages, MessagingStyle, channels, deep linking, and OEM kill resilience. The server-side delivery fan-out is the next file (`notification-system.md`).
+> A 45-60 minute mobile system-design walkthrough for the Android *client* side of push: FCM token lifecycle, data vs notification messages, MessagingStyle, channels, deep linking, and OEM kill resilience. The server-side delivery fan-out is covered in Phase 3 (`notification-system.md`).
 
 ---
 
@@ -17,7 +17,7 @@
 - **Channels + groups** so users can mute categories.
 
 ### Non-Functional Requirements
-- **Always-on**: notifications must arrive even if the app is killed.
+- **Best-effort delivery when backgrounded or swiped away**: no app process needs to be running; reconcile with the server on the next open.
 - **Battery**: no polling, no background socket for the sake of notifications.
 - **Privacy**: notification content respects lock-screen visibility settings.
 - **OEM resilience**: best-effort delivery on aggressive vendors (Xiaomi, OPPO, Vivo).
@@ -89,19 +89,22 @@ Authorization: Bearer …
 
 > Token uploaded on (a) first sign-in, (b) `onNewToken`, (c) every fresh launch (cheap idempotent confirm).
 
-### Data message (server → FCM → app)
+### Data message (server → FCM HTTP v1 → app)
 
 ```json
+POST https://fcm.googleapis.com/v1/projects/<project-id>/messages:send
 {
-  "to": "<fcm-token>",
-  "priority": "high",
-  "data": {
-    "type": "chat.message",
-    "convId": "c_42",
-    "serverId": "m_991",
-    "sender": "Sam",
-    "previewBody": "yo",
-    "deepLink": "myapp://chat/c_42?message=m_991"
+  "message": {
+    "token": "<fcm-token>",
+    "android": { "priority": "high" },
+    "data": {
+      "type": "chat.message",
+      "convId": "c_42",
+      "serverId": "m_991",
+      "sender": "Sam",
+      "previewBody": "yo",
+      "deepLink": "myapp://chat/c_42?message=m_991"
+    }
   }
 }
 ```
@@ -115,7 +118,7 @@ Authorization: Bearer …
 | Chat — DM | `chat_dm` | HIGH (sound + heads-up) |
 | Chat — group | `chat_group` | DEFAULT |
 | Promotion | `promo` | LOW (silent) |
-| Account / security | `account_security` | HIGH (cannot be silenced) |
+| Account / security | `account_security` | HIGH (users can still lower or block it; also show critical events in-app and by email) |
 | Order update | `order_update` | DEFAULT |
 
 ---
@@ -154,6 +157,7 @@ Validated against: [Receive messages in an Android app](https://firebase.google.
 ### Key class signatures
 
 ```kotlin
+@AndroidEntryPoint
 class AppFcmMessagingService : FirebaseMessagingService() {
     @Inject lateinit var dispatcher: PushDispatcher
 
@@ -202,6 +206,7 @@ The inbox is for an in-app "Notifications" screen. The OS notification shade is 
 - **Pattern:** offload to `WorkManager` immediately; service returns fast.
 
 ```kotlin
+@AndroidEntryPoint
 class AppFcmMessagingService : FirebaseMessagingService() {
     @Inject lateinit var dispatcher: PushDispatcher
     override fun onMessageReceived(message: RemoteMessage) {
@@ -251,6 +256,10 @@ class DecryptAndNotifyWorker @AssistedInject constructor(
     private val inboxRepo: InboxRepository,
 ) : CoroutineWorker(ctx, params) {
 
+    // Required for setExpedited() below Android 12, where expedited work runs as a foreground service.
+    override suspend fun getForegroundInfo(): ForegroundInfo =
+        ForegroundInfo(SYNC_NOTIF_ID, factory.buildSyncing())
+
     override suspend fun doWork(): Result {
         val data = inputData.getString("data")?.fromJson<Map<String, String>>()
             ?: return Result.failure()
@@ -269,9 +278,11 @@ class DecryptAndNotifyWorker @AssistedInject constructor(
 
 ```kotlin
 fun NotificationFactory.buildChat(msg: ChatMessage): Notification {
-    val person = Person.Builder().setName(msg.senderName).build()
-    val style = NotificationCompat.MessagingStyle(person)
-        .addMessage(msg.text, msg.timestamp, person)
+    val me = Person.Builder().setName(applicationContext.getString(R.string.you)).build()
+    val sender = Person.Builder().setName(msg.senderName).setKey(msg.senderId).build()
+    // The constructor takes the device owner (shown on inline replies); each message names its sender.
+    val style = NotificationCompat.MessagingStyle(me)
+        .addMessage(msg.text, msg.timestamp, sender)
 
     val replyIntent = ReplyReceiver.intentFor(applicationContext, msg.convId)
     val reply = NotificationCompat.Action.Builder(
@@ -281,6 +292,8 @@ fun NotificationFactory.buildChat(msg: ChatMessage): Notification {
     )
         .addRemoteInput(RemoteInput.Builder(KEY_REPLY).setLabel("Message").build())
         .setAllowGeneratedReplies(true)
+        .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY)
+        .setShowsUserInterface(false)
         .build()
 
     return NotificationCompat.Builder(applicationContext, Channels.CHAT_DM)
@@ -298,6 +311,7 @@ fun NotificationFactory.buildChat(msg: ChatMessage): Notification {
 ```kotlin
 fun deepLinkPendingIntent(msg: ChatMessage): PendingIntent {
     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(msg.deepLink)).apply {
+        setPackage(applicationContext.packageName)   // custom schemes can be claimed by other apps
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
     }
     return PendingIntent.getActivity(
@@ -308,7 +322,9 @@ fun deepLinkPendingIntent(msg: ChatMessage): PendingIntent {
 }
 ```
 
-> `FLAG_IMMUTABLE` is mandatory on Android 12+.
+> For apps targeting Android 12+, specify either `FLAG_IMMUTABLE` or `FLAG_MUTABLE` on each `PendingIntent`. Use immutable for this navigation intent; the direct-reply action above needs mutable so the system can attach the reply. Make mutable intents explicit to the intended component, and keep every notification intent explicit or scoped to your package, mutable or not ([PendingIntent risks](https://developer.android.com/privacy-and-security/risks/pending-intent)).
+
+See [Android's pending-intent mutability guidance](https://developer.android.com/guide/components/intents-filters#DeclareMutabilityPendingIntent).
 
 ### Channel registration (one-time, idempotent)
 
@@ -318,6 +334,8 @@ class NotificationChannels @Inject constructor(@ApplicationContext ctx: Context)
         val mgr = ctx.getSystemService(NotificationManager::class.java)
         listOf(
             channel(CHAT_DM, "Direct messages", IMPORTANCE_HIGH),
+            channel(CHAT_GROUP, "Group messages", IMPORTANCE_DEFAULT),
+            channel(ACCOUNT_SECURITY, "Account and security", IMPORTANCE_HIGH),
             channel(ORDER_UPDATE, "Order updates", IMPORTANCE_DEFAULT),
             channel(PROMO, "Promotions", IMPORTANCE_LOW),
         ).forEach(mgr::createNotificationChannel)
@@ -328,14 +346,15 @@ class NotificationChannels @Inject constructor(@ApplicationContext ctx: Context)
 ### Permission flow (Android 13+)
 
 ```kotlin
-val launcher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+// Compose: rememberLauncherForActivityResult, not registerForActivityResult
+val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
     analytics.log("notif_permission_${if (granted) "granted" else "denied"}")
 }
-LaunchedEffect(Unit) {
+
+// Called from a meaningful user action (e.g., subscribing to a chat), after any rationale UI.
+fun requestNotificationPermission() {
     if (Build.VERSION.SDK_INT >= 33 &&
         ContextCompat.checkSelfPermission(ctx, POST_NOTIFICATIONS) != PERMISSION_GRANTED) {
-        // Show rationale first, then request
-        if (shouldShowRationale) showRationale()
         launcher.launch(POST_NOTIFICATIONS)
     }
 }
@@ -361,7 +380,7 @@ LaunchedEffect(Unit) {
 | Type | When server controls display | When client controls display | Verdict |
 |---|---|---|---|
 | `notification` | Yes (auto-shown when backgrounded) | No (no `onMessageReceived` when backgrounded) | Skip for any rich logic |
-| **`data`** | No | Yes (always reaches the service) | Pick — total control |
+| **`data`** | No | Yes (reaches `onMessageReceived` when delivered; high priority can be deprioritized if it rarely leads to a visible notification) | Pick — total control |
 
 ### Service work pattern
 
@@ -376,7 +395,7 @@ LaunchedEffect(Unit) {
 | Choice | Pick | Reason |
 |---|---|---|
 | **FCM HTTP v1** | Yes | Modern, scoped tokens |
-| Legacy FCM | No | Deprecated |
+| Legacy FCM | No | Shut down (from July 2024) |
 | Self-hosted MQTT | Skip | Loses background delivery |
 | HMS (Huawei) | Add if you ship to Huawei devices |
 
@@ -424,7 +443,7 @@ LaunchedEffect(Unit) {
 > FCM high-priority data messages bypass Doze (with quota). Document the limitation. Build a settings nudge for users in critical flows.
 
 > **Q: How does this interact with Android Auto / wearables?**
-> `Notification.CarExtender` for Auto; `NotificationCompat.WearableExtender` for Wear. Reuse the same channel. Reply actions surface as voice on Wear.
+> Android Auto reads `MessagingStyle` notifications that carry a reply action (`SEMANTIC_ACTION_REPLY`, `setShowsUserInterface(false)`, one `RemoteInput`) and a mark-as-read action (`SEMANTIC_ACTION_MARK_AS_READ`), declared with `<uses name="notification" />` in `automotive_app_desc.xml`. `NotificationCompat.WearableExtender` for Wear. Reuse the same channel. Reply actions surface as voice on Wear.
 
 > **Q: How do you test push end-to-end?**
 > Firebase Console "Send test message" with a real device token. Integration test: fake `FirebaseMessagingService` shim that dispatches a `RemoteMessage` directly; assert notification was posted via `NotificationManagerCompat`.

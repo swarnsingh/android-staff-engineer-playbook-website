@@ -1,0 +1,69 @@
+<!-- Website teaching layer for mobile-system-design/performance.md (interview walkthrough).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the jank step-through and the end recap.
+     Verified 2026-10-30 against performance.md at source 5ff8d44 (§2 refresh-rate budgets, §4 example budgets,
+     §7 measure first / threading discipline / failure modes, §9 regression gates) and against androidx JankStats
+     (jankHeuristicMultiplier "By default, the multiplier is 2") and the Macrobenchmark and Android vitals guides.
+     The 9 ms and 25 ms frame times are illustrative. -->
+
+<!-- @after 7. Deep Dive: Frame Rate / Jank (15 min) :: animation -->
+### Follow one janky frame from scroll to fix
+
+<figure class="stepper" data-illustrated><span class="stepper-title">One janky frame, measured and fixed</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="ui" data-art="phone" data-art-role="client"><strong>Feed screen</strong><small data-text="uiV">LazyColumn scrolling</small></div><div class="node" data-el="main" data-art="worker" data-art-role="runtime"><strong>Main thread</strong><small data-text="mainV">compose, layout, draw</small></div><div class="node" data-el="frame" data-art="frame" data-art-role="client"><strong>Frame</strong><small data-text="frameV">budget 11.1 ms</small></div></div><div class="viz-grid" data-cols="2"><div class="node" data-el="jank" data-art="inspect" data-art-role="runtime"><strong>JankStats</strong><small data-text="jankV">tracking the window</small></div><div class="node" data-el="telem" data-art="queue" data-art-role="queue"><strong>Telemetry SDK</strong><small data-text="telemV">perf events, sampled</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Set the budget",
+    "caption": "This design targets a 90 Hz mid-tier device, so each frame has 11.1 ms. JankStats is attached to the Activity window and tags frames with the current screen.",
+    "add": ["ui", "main", "frame", "jank", "telem", "event"],
+    "state": {"frame": "done"},
+    "text": {"eventV": "90 Hz → 11.1 ms per frame"}
+  },
+  {
+    "label": "Smooth frame",
+    "caption": "A scroll frame composes, lays out and draws in 9 ms. It lands on time, and JankStats reports nothing.",
+    "state": {"main": "done", "frame": "done"},
+    "text": {"frameV": "9 ms · on time", "eventV": "within budget"}
+  },
+  {
+    "label": "Expensive bind",
+    "caption": "A new item scrolls in and its card decodes a bitmap on the main thread. The frame takes 25 ms, so the display shows the previous frame again while it finishes.",
+    "state": {"main": "warn", "frame": "error"},
+    "text": {"mainV": "bitmap decode on main", "frameV": "25 ms · missed frames", "uiV": "visible stutter", "eventV": "budget blown"}
+  },
+  {
+    "label": "JankStats flags it",
+    "caption": "By default JankStats treats a frame as janky when it takes more than twice the frame interval: 22.2 ms at 90 Hz. At 25 ms this frame is janky, and it carries the state screen=feed.",
+    "state": {"jank": "active"},
+    "text": {"jankV": "isJank · screen=feed", "eventV": "25 ms > 2 × 11.1 ms"},
+    "handoff": {"from": "frame", "to": "jank", "kind": "rows", "label": "frame data"}
+  },
+  {
+    "label": "Report from the field",
+    "caption": "The listener sends the frame duration and states to the telemetry SDK as a perf event. Perf data is sampled and batched, so it costs little battery or network.",
+    "state": {"telem": "active"},
+    "text": {"telemV": "perf · frame_jank · feed", "eventV": "real-user evidence"},
+    "handoff": {"from": "jank", "to": "telem", "kind": "page", "label": "perf event"}
+  },
+  {
+    "label": "Find and fix",
+    "caption": "The per-screen breakdown points at the feed, and a Perfetto trace shows the decode on the main thread. The fix moves decoding to Coil's background decode dispatcher.",
+    "state": {"main": "done", "frame": "done", "jank": "done", "telem": "done"},
+    "text": {"mainV": "decode off main", "frameV": "9 ms · on time", "uiV": "smooth", "eventV": "profile, don't guess"}
+  },
+  {
+    "label": "Guard it in CI",
+    "caption": "A Macrobenchmark scroll test on a representative device runs on every pull request, so this regression is caught before merge. JankStats keeps watching real users.",
+    "state": {"event": "done"},
+    "text": {"eventV": "lab gate + field telemetry"}
+  }
+]</script><figcaption>Field telemetry finds the screen, a trace finds the cause, and a CI benchmark keeps the fix in place. The jank threshold scales with the refresh rate.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **Performance is four coupled budgets:** rendering, memory, battery and network, set per device tier. A win in one is incomplete until its cost in the others is measured.
+- **Frame budget follows the refresh rate:** 16.7 ms at 60 Hz, 11.1 ms at 90 Hz, 8.3 ms at 120 Hz.
+- **Measure in the field and in the lab.** JankStats and Android vitals show real users; Macrobenchmark in CI blocks regressions before merge.
+- **Keep the main thread for UI.** Decode, disk and crypto run on background dispatchers.
+- **Bound every cache** and release players; an unbounded cache ends in an OOM on low-memory devices.
+- **Ship a Baseline Profile** for startup and hot paths, then measure the gain on representative devices.

@@ -76,7 +76,7 @@ Validated against: [Localize your app](https://developer.android.com/guide/topic
     <string name="checkout_button">Place Order</string>
 
     <plurals name="cart_items">
-        <item quantity="one">1 item</item>
+        <item quantity="one">%d item</item>
         <item quantity="other">%d items</item>
     </plurals>
 
@@ -109,42 +109,53 @@ fun CartScreen(cart: Cart) {
 }
 ```
 
-For ViewModel-formatted strings:
+For ViewModel state, expose the data and resolve the string in the UI:
 
 ```kotlin
 @HiltViewModel
 class CartViewModel @Inject constructor(
-    @ApplicationContext private val ctx: Context,
     ...
 ) : ViewModel() {
-    val itemCountLabel: StateFlow<String> = itemCount.map { count ->
-        ctx.resources.getQuantityString(R.plurals.cart_items, count, count)
-    }.stateIn(...)
+    val itemCount: StateFlow<Int> = ...
 }
+
+// In the composable:
+val count by vm.itemCount.collectAsStateWithLifecycle()
+Text(pluralStringResource(R.plurals.cart_items, count, count))
 ```
 
-> **Anti-pattern:** passing `Context` into ViewModel just for strings. Prefer string IDs + format args, resolved in the Composable. (`ctx` here is `@ApplicationContext` — survives config changes, but still avoid where you can.)
+> **Anti-pattern:** formatting user-visible strings in the ViewModel with a `Context`. The ViewModel survives the Activity recreation that a language change triggers, so a string it built keeps the old language. On Android 12 and lower, the AppCompat per-app locale also applies to the `AppCompatActivity` context, not the application context.
 
 ---
 
 ## 6. Number / Date / Currency Formatting
 
 ```kotlin
-import java.text.NumberFormat
+import java.math.BigDecimal
 import java.text.DateFormat
+import java.text.NumberFormat
+import java.util.Currency
+import java.util.Date
 import java.util.Locale
 
-fun formatCurrency(amount: Double, currency: String): String {
+// Money as BigDecimal (or integer minor units), never Double.
+fun formatCurrency(amount: BigDecimal, currency: String): String {
     val format = NumberFormat.getCurrencyInstance(Locale.getDefault())
-    format.currency = java.util.Currency.getInstance(currency)
+    format.currency = Currency.getInstance(currency)
     return format.format(amount)
 }
 
-fun formatDate(ts: Long): String =
+fun formatDateLegacy(ts: Long): String =
     DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault()).format(Date(ts))
+```
 
-// Better: java.time + formatters for everything > Java 8
+Better: `java.time` formatters (API 26+, or lower with core library desugaring):
+
+```kotlin
+import java.time.Instant
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 fun formatDate(ts: Long): String =
     Instant.ofEpochMilli(ts)
@@ -176,7 +187,7 @@ Modifier.align(Alignment.Start)
 - Text alignment: `textAlign = TextAlign.Start`, never `Left`.
 - Padding/margin: `start`/`end`, never `left`/`right`.
 - Vector drawables: `autoMirrored="true"` for arrows, chevrons.
-- Numbers and dates: Western digits in mixed-script contexts.
+- Numbers and dates: use the locale's formatter (some Arabic locales use Arabic-Indic digits); wrap mixed-direction values with `BidiFormatter`.
 - Layout direction: `LocalLayoutDirection.current` for custom drawing.
 
 ---
@@ -197,7 +208,7 @@ fun setAppLanguage(language: String) {
 // On Android 13+, this triggers a system-managed Activity recreation with new resources.
 ```
 
-For older Android versions, the same API backports via AndroidX AppCompat (with manual `recreate()`).
+On Android 12 and lower, AppCompat 1.6+ backports the same API and recreates the Activity for you. The Activity must extend `AppCompatActivity` (Compose apps too), and the manifest must declare `androidx.appcompat.app.AppLocalesMetadataHolderService` with the `autoStoreLocales` meta-data set to `true` so the choice persists (or the app stores it itself). On Android 13+, enable `androidResources { generateLocaleConfig = true }` so the app's languages appear in the system settings.
 
 In Compose, all `stringResource(...)` calls re-resolve on recreation. No additional work.
 
@@ -249,12 +260,12 @@ class HardcodedStringDetector : Detector(...) {
 // build.gradle.kts
 android {
     bundle {
-        language { enableSplit = true }    // one APK per locale on device
+        language { enableSplit = true }    // language config splits per device
     }
 }
 ```
 
-Play Store delivers only the user's locale's strings. Saves ~5-10 MB on multilingual apps.
+Play installs only the language config splits for the device's languages; the saving depends on how many strings and locales you ship.
 
 For markets where users switch languages frequently, opt out of language splits and ship all locales (`enableSplit = false`).
 
@@ -281,8 +292,8 @@ For markets where users switch languages frequently, opt out of language splits 
 
 ### Manual
 
-- `adb shell am start -a android.intent.action.SET_LOCALE --es lang ar` for RTL test.
-- Pseudo-locale (`Settings → Developer options → Pseudo-locale`) to detect non-localised strings (English ones appear as `[Lōñgēr ëxāmplē tēxt]`).
+- `adb shell cmd locale set-app-locales com.example.app --locales ar` (Android 13+) to switch only this app to Arabic for an RTL test.
+- Pseudolocales to detect non-localised strings: set `isPseudoLocalesEnabled = true` on the debug build type, enable developer options, then choose **English (XA)** (accented, expanded text such as `[Lōñgēr ëxāmplē tēxt]`) or **AR (XB)** (forced right-to-left) in the system language settings.
 
 ### Automated
 

@@ -1,12 +1,36 @@
 {
-  "about": "Which chapters use the interview-walkthrough layout. Groups are content, not code: the build reads this file, then still checks each listed chapter's own numbered headings and falls back to the normal chapter layout when they do not match. Only listed chapters are affected. Sketch status, 29 October 2026: one prototype chapter enabled; the other groups are named for review and stay empty until the owner approves the format.",
+  "about": "Which chapters use the interview-walkthrough layout. Groups are content, not code: the build reads this file, then still checks each listed chapter's own numbered headings and falls back to the normal chapter layout when they do not match. Only listed walkthrough chapters are affected; chapter-layout groups record the decision. 30 October 2026: Phase 1 (Milestone A) plus the Offline Sync pilot.",
   "groups": [
     {
       "id": "foundations",
       "title": "Foundations",
       "layout": "chapter",
-      "note": "Method and NFR chapters (Design Framework, Non-Functional Requirements and similar) do not follow the 12-section interview template; they keep the normal chapter layout.",
-      "chapters": []
+      "note": "Design Framework teaches the interview method and its 12-section template, and Non-Functional Requirements is the NFR menu; neither walks through one design problem, so both keep the normal chapter layout.",
+      "chapters": [
+        "mobile-system-design/design-framework.md",
+        "mobile-system-design/non-functional-requirements.md"
+      ]
+    },
+    {
+      "id": "cross-cutting-practices",
+      "title": "Cross-cutting practices",
+      "layout": "chapter",
+      "note": "Accessibility, Localization & Internationalization and Security & Privacy teach practices that apply to every design. They have few time hints and no follow-up questions, so an interview timeline would be mostly empty; they keep the normal chapter layout.",
+      "chapters": [
+        "mobile-system-design/accessibility.md",
+        "mobile-system-design/localization-and-internationalization.md",
+        "mobile-system-design/security-and-privacy.md"
+      ]
+    },
+    {
+      "id": "cross-cutting-designs",
+      "title": "Cross-cutting design problems",
+      "layout": "walkthrough",
+      "note": "A cross-cutting quality designed as one interview problem, with time hints, trade-off tables and follow-up questions: Performance and Versioning & Backward Compatibility.",
+      "chapters": [
+        "mobile-system-design/performance.md",
+        "mobile-system-design/versioning-and-backward-compatibility.md"
+      ]
     },
     {
       "id": "infrastructure-components",

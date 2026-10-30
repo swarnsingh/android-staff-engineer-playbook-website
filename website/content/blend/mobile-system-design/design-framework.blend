@@ -1,0 +1,13 @@
+<!-- Website teaching layer for mobile-system-design/design-framework.md (normal chapter layout: it teaches the interview method rather than walking through one design problem).
+     The original chapter is rendered in full; everything here is added after it.
+     Verified 2026-10-30 against design-framework.md at source 5ff8d44 (§1 timings, §3 section playbook, §4 common mistakes, §5 signals). -->
+
+<!-- @after 9. Further Reading :: recap -->
+### Say these in the interview
+
+- **Agree scope first:** 3-5 functional requirements, 3-4 non-functional ones, and an explicit out-of-scope list.
+- **Ask the questions that change the architecture** (scale, real-time or eventual, offline, API floor, cross-platform), then state your assumptions.
+- **Draw one diagram** and name the server components in a paragraph; the backend stays a black box.
+- **Go deep on one feature** with one or two snippets for the hard part and a failure-mode table.
+- **Show trade-offs as tables with a verdict,** and raise process death, OEM kills and testing without being asked.
+- **Defend your cuts with confidence:** "Out of scope here because…".

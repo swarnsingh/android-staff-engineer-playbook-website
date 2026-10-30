@@ -3411,6 +3411,78 @@
           "role": "runtime"
         }
       ]
+    },
+    {
+      "path": "mobile-system-design/performance",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "ui",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "main",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "frame",
+          "kind": "frame",
+          "role": "client"
+        },
+        {
+          "id": "jank",
+          "kind": "inspect",
+          "role": "runtime"
+        },
+        {
+          "id": "telem",
+          "kind": "queue",
+          "role": "queue"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "mobile-system-design/versioning-and-backward-compatibility",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "app",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "api",
+          "kind": "server",
+          "role": "runtime"
+        },
+        {
+          "id": "cache",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "gate",
+          "kind": "gate",
+          "role": "runtime"
+        },
+        {
+          "id": "screen",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
     }
   ]
 }

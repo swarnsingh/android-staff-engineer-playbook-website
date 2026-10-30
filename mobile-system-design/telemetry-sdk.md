@@ -1,6 +1,6 @@
 # Telemetry SDK (Crash + Performance)
 
-> A 45-60 minute mobile system-design walkthrough for a crash + performance telemetry SDK on Android: uncaught exception capture, ANR detection, frame metrics, network timing, durable upload. Product analytics is the previous file (`analytics-sdk.md`).
+> A 45-60 minute mobile system-design walkthrough for a crash + performance telemetry SDK on Android: uncaught exception capture, ANR detection, frame metrics, network timing, durable upload. Product analytics is the next file (`analytics-sdk.md`).
 
 ---
 
@@ -70,7 +70,7 @@ Every signal enters through a bounded path and passes privacy and sampling polic
 - **`CrashCapture`** — `Thread.setDefaultUncaughtExceptionHandler` + NDK.
 - **`AnrWatchdog`** — separate thread monitoring main responsiveness.
 - **`PerformanceMonitor`** — `FrameMetrics`, startup, network.
-- **`TelemetryQueue`** — Room-backed; crashes are persisted *synchronously*.
+- **`TelemetryQueue`** — Room-backed; crashes are first persisted *synchronously* to a file and imported into Room on the next launch.
 - **`FlushWorker`** — same shape as analytics, dedicated channel.
 
 ---
@@ -95,7 +95,7 @@ Every signal enters through a bounded path and passes privacy and sampling polic
     {"ts": 1750000000, "category": "nav", "msg": "screen=home"},
     {"ts": 1750000010, "category": "network", "msg": "GET /v1/feed 200 132ms"}
   ],
-  "userId": "u_42", "anonId": "a_abc", "sessionId": "s_111",
+  "installId": "i_7f3", "sessionId": "s_111",   // pseudonymous; attach a user id only with consent
   "buildId": "f3a2c9", "ts": 1750000020, "crashId": "c_uuid"
 }
 ```
@@ -192,7 +192,7 @@ data class TelemetryEntity(
 )
 ```
 
-Crashes are written with a **synchronous** Room transaction in the uncaught handler — we have ~milliseconds before process death.
+Crashes are written **synchronously to an append-only file** in the uncaught handler — we have milliseconds before process death, and most crashes happen on the main thread, where Room does not allow database access. On the next launch the SDK imports those files into this table.
 
 ---
 
@@ -227,33 +227,23 @@ class CrashCapture(private val context: Context, private val sink: CrashSink) {
 }
 ```
 
-`CrashSink.capture` writes synchronously to Room *and* a fallback flat file (in case Room is mid-migration or holding a lock).
+`CrashSink.capture` appends synchronously to a flat file. Room is not used in the handler: [Room doesn't support database access on the main thread](https://developer.android.com/training/data-storage/room/async-queries), and the handler often runs there.
 
 ### CrashSink (sync write)
 
 ```kotlin
 class CrashSink @Inject constructor(
-    private val db: TelemetryDatabase,
     private val fileSink: FileCrashSink,
 ) {
     fun capture(event: CrashEvent) {
         val json = serializer.encodeToString(event.toWire())
-        // Best-effort: Room first, file as fallback. Either is acceptable.
-        runCatching {
-            // Synchronous write; we may have milliseconds left.
-            db.runInTransaction {
-                db.telemetryDao().insertCriticalSync(TelemetryEntity(
-                    type = "crash", priority = 0, payloadJson = json, ts = clock.now()
-                ))
-            }
-        }.onFailure {
-            fileSink.append(json)   // raw file in app's filesDir/crashes/
-        }
+        // Synchronous append + fsync; we may have milliseconds left. Never touch Room here.
+        runCatching { fileSink.appendAndSync(json) }   // one JSON line in filesDir/crashes/
     }
 }
 ```
 
-> The flat-file path is the safety net. On next app start, the SDK scans `filesDir/crashes/` and migrates entries into Room.
+> The flat file is the crash path. On next app start, the SDK scans `filesDir/crashes/`, imports entries into Room, and deletes the files.
 
 ### Breadcrumbs (in-memory ring buffer)
 
@@ -338,15 +328,13 @@ class FlushWorker @AssistedInject constructor(...) : CoroutineWorker(ctx, params
 ### Performance traces
 
 ```kotlin
-class FrameMetricsCapture(activity: Activity) {
-    init {
-        activity.window.addOnFrameMetricsAvailableListener({ _, fm, _ ->
-            val totalNs = fm.getMetric(FrameMetrics.TOTAL_DURATION)
-            if (totalNs > 16_700_000) {     // > 16.7ms = jank at 60Hz
-                PerfBuffer.addJank(totalNs)
-            }
-        }, Handler(Looper.getMainLooper()))
+class FrameMetricsCapture(private val activity: Activity) {
+    // JankStats applies a per-refresh-rate jank heuristic (16.7 ms at 60 Hz, 8.3 ms at 120 Hz).
+    private val jankStats = JankStats.createAndTrack(activity.window) { frame ->
+        if (frame.isJank) PerfBuffer.addJank(frame.frameDurationUiNanos)
     }
+
+    fun stop() { jankStats.isTrackingEnabled = false }   // call from onDestroy
 }
 ```
 
@@ -355,22 +343,29 @@ Sample at 10% of sessions; aggregate per-screen at session end; flush.
 ### Network timing (OkHttp event listener)
 
 ```kotlin
+// One listener per call via EventListener.Factory, so no shared map is needed.
 class NetTelemetryListener : EventListener() {
-    private val timers = ConcurrentHashMap<Call, Long>()
-    override fun callStart(call: Call) { timers[call] = clock.now() }
-    override fun callEnd(call: Call) {
-        val start = timers.remove(call) ?: return
-        Telemetry.recordNet(call.request().url, clock.now() - start, code = lastCode)
+    private var start = 0L
+    private var code = -1
+    override fun callStart(call: Call) { start = clock.now() }
+    override fun responseHeadersEnd(call: Call, response: Response) { code = response.code }
+    override fun callEnd(call: Call) = report(call)
+    override fun callFailed(call: Call, ioe: IOException) = report(call)
+    private fun report(call: Call) {
+        val url = call.request().url.newBuilder().query(null).build()   // strip query (PII)
+        Telemetry.recordNet(url, clock.now() - start, code = code)
     }
 }
+
+// OkHttpClient.Builder().eventListenerFactory { NetTelemetryListener() }
 ```
 
 ### Failure modes
 
 | What breaks | Behavior |
 |---|---|
-| Process dies before Room write | File-sink fallback catches it |
-| Room is corrupted | File-sink only |
+| Process dies before the crash is written | Lost; the file write is the shortest safe path |
+| Room is corrupted | Crash files stay on disk until the next successful import |
 | Network unavailable on next launch | Worker retries indefinitely with backoff |
 | Server returns 400 | Drop offender (bad schema); continue |
 | Disk full | Trim oldest perf; never trim crashes |
@@ -392,9 +387,9 @@ class NetTelemetryListener : EventListener() {
 
 | Option | Verdict |
 |---|---|
-| **Room with sync transaction + file fallback** | Pick — safest |
+| **File in the handler, imported into Room on next launch** | Pick — safest |
 | Files only | Loses transactional semantics for the rest of the queue |
-| Room only | Risky if DB is locked at crash time |
+| Room in the handler | Fails for main-thread crashes; risky if the DB is locked |
 
 ### Symbolication
 
@@ -416,15 +411,15 @@ class NetTelemetryListener : EventListener() {
 
 | Source | Verdict |
 |---|---|
-| **`FrameMetrics` API** | Pick — official, accurate |
+| `FrameMetrics` API | Accurate, but you own the per-refresh-rate threshold |
 | `Choreographer` callback | DIY; reinvents wheel |
-| `JankStats` (AndroidX) | Pick — wraps the above, easier |
+| **`JankStats` (AndroidX)** | Pick — wraps the above with a refresh-rate-aware heuristic |
 
 ---
 
 ## 9. Major Concerns
 
-- **Crash atomicity.** Must persist before exit. File fallback covers the Room-locked edge.
+- **Crash atomicity.** Must persist before exit. A synchronous file append is the crash path; Room import happens on the next launch.
 - **Reentrancy.** Uncaught handler must never throw — guard with `runCatching`.
 - **Privacy.** Strip query parameters from URLs; redact known PII keys in breadcrumbs.
 - **Mapping.** Upload R8 / ProGuard mapping per release. Server stores by `buildId`.
@@ -448,10 +443,10 @@ class NetTelemetryListener : EventListener() {
 > File sink is append-only — partial writes are recoverable by skipping malformed JSON lines.
 
 > **Q: What's the perceived impact on app size?**
-> Telemetry SDK ~150 KB stripped (JVM-only). With NDK signal handler, +250 KB. Crashlytics is ~600 KB; in-house can be leaner.
+> Measure it: compare release builds with APK Analyzer. An in-house JVM-only SDK can be small; a native signal handler adds per-ABI native code; vendor SDK sizes vary by version.
 
 > **Q: How do you test crash capture?**
-> `throw RuntimeException("test")` from a debug button. Verify Room row appears post-restart. CI: instrumented test that triggers a crash and checks the persisted artifact.
+> `throw RuntimeException("test")` from a debug button. Verify the crash file is written and a Room row appears post-restart. CI: instrumented test that triggers a crash and checks the persisted artifact.
 
 > **Q: Can the telemetry SDK report on itself?**
 > Yes — internal "self-monitoring" events (worker failures, queue overflow) emit as `type=telemetry_internal`. Watch them carefully; they predict outages.
@@ -474,7 +469,7 @@ class NetTelemetryListener : EventListener() {
 - [Android Developers — ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo) — system-level exit reasons (API 30+).
 - [Crashlytics Android docs](https://firebase.google.com/docs/crashlytics) — reference implementation.
 - [Sentry Android SDK](https://docs.sentry.io/platforms/android/) — open-source alternative.
-- [Microsoft AppCenter mobile diagnostics](https://learn.microsoft.com/appcenter/diagnostics/) — for comparison.
+- [OpenTelemetry Android](https://github.com/open-telemetry/opentelemetry-android) — open-source instrumentation for comparison.
 
 ---
 
