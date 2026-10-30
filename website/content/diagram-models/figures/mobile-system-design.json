@@ -2543,10 +2543,10 @@
   },
   {
     "path": "mobile-system-design/analytics-sdk",
-    "diagram": "c60da8cb86de0213",
+    "diagram": "33ac4b07c9b77e3a",
     "number": 1,
     "title": "Queued events leave by ack, retry or deliberate drop",
-    "caption": "Feature code calls typed Analytics.track, and consent, validation, redaction and sampling run before the event enters a durable, bounded queue. A size, age and connectivity scheduler triggers the FlushWorker. A success deletes the acknowledged batch, and a retryable failure (network, 401, 408, 429, 5xx) backs off. The diagram leaves out the deliberate drops in the chapter: a 400 or 422 batch, a single event still too large after a 413, and low-priority events trimmed when the queue overflows.",
+    "caption": "Feature code calls typed Analytics.track, and consent, validation, redaction and sampling run before the event enters a durable, bounded queue. The scheduler triggers the FlushWorker. A success deletes the acknowledged batch, and a retryable failure backs off. Some events are dropped on purpose: a 400 or 422 batch or a single oversized event that can never succeed, and the oldest low-priority events when the queue overflows.",
     "sources": [
       "https://developer.android.com/topic/libraries/architecture/workmanager",
       "https://developer.android.com/training/data-storage/room"
@@ -2605,6 +2605,15 @@
         "title": "Server ingestion",
         "role": "neutral",
         "detail": "black box"
+      },
+      {
+        "id": "dropped",
+        "title": "Deliberately dropped",
+        "role": "neutral",
+        "detail": [
+          "can never succeed,",
+          "or over the bound"
+        ]
       }
     ],
     "edges": [
@@ -2653,6 +2662,18 @@
         "from": "worker",
         "to": "sched",
         "label": "retryable failure: backoff",
+        "style": "dashed"
+      },
+      {
+        "from": "queue",
+        "to": "dropped",
+        "label": "overflow: trim low-priority",
+        "style": "dashed"
+      },
+      {
+        "from": "worker",
+        "to": "dropped",
+        "label": "400 / 422 or oversized event",
         "style": "dashed"
       }
     ]

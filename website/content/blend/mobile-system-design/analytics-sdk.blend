@@ -2,7 +2,7 @@
      The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
      decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
      Hand-authored here: the step-through and the end recap.
-     Verified 2026-10-30 against analytics-sdk.md at source b7bbcf3 plus the durability correction in source PR #66 (§4 POST /v1/events, §7 track, interceptors, FlushScheduler with KEEP, FlushWorker 413 halving, delete after ack, APPEND_OR_REPLACE follow-up, at-least-once dedupe and failure modes. Batch sizes are not given in the chapter, so none are shown)
+     Verified 2026-10-30 against analytics-sdk.md at source c1f26bb (source PR #66 durability correction) (§4 POST /v1/events, §7 track, interceptors, FlushScheduler with KEEP, FlushWorker 413 halving, delete after ack, APPEND_OR_REPLACE follow-up, at-least-once dedupe and failure modes. Batch sizes are not given in the chapter, so none are shown)
      and against WorkManager unique work (ExistingWorkPolicy), Room and RFC 9110 §15.5.14. -->
 
 <!-- @after 7. Deep Dive: Write → Buffer → Flush (15 min) :: animation -->
