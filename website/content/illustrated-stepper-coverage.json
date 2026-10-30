@@ -3483,6 +3483,293 @@
           "role": "runtime"
         }
       ]
+    },
+    {
+      "path": "mobile-system-design/app-startup",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "tap",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "proc",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "init",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "ui",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "deferred",
+          "kind": "queue",
+          "role": "queue"
+        },
+        {
+          "id": "ci",
+          "kind": "inspect",
+          "role": "runtime"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "mobile-system-design/authentication",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "reqA",
+          "kind": "code",
+          "role": "client"
+        },
+        {
+          "id": "reqB",
+          "kind": "code",
+          "role": "client"
+        },
+        {
+          "id": "ref",
+          "kind": "lock",
+          "role": "runtime"
+        },
+        {
+          "id": "idp",
+          "kind": "server",
+          "role": "runtime"
+        },
+        {
+          "id": "vault",
+          "kind": "key",
+          "role": "storage"
+        },
+        {
+          "id": "api",
+          "kind": "server",
+          "role": "runtime"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "mobile-system-design/deep-links-and-universal-links",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "link",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "os",
+          "kind": "gate",
+          "role": "runtime"
+        },
+        {
+          "id": "router",
+          "kind": "worker",
+          "role": "runtime"
+        },
+        {
+          "id": "parser",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "main",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "pending",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "mobile-system-design/push-notifications",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "fcm",
+          "kind": "cloud",
+          "role": "queue"
+        },
+        {
+          "id": "svc",
+          "kind": "signal",
+          "role": "runtime"
+        },
+        {
+          "id": "disp",
+          "kind": "gate",
+          "role": "runtime"
+        },
+        {
+          "id": "worker",
+          "kind": "worker",
+          "role": "queue"
+        },
+        {
+          "id": "room",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "shade",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "mobile-system-design/feature-flags-and-remote-config",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "api",
+          "kind": "server",
+          "role": "runtime"
+        },
+        {
+          "id": "repo",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "disk",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "flow",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "pending",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "screen",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "mobile-system-design/telemetry-sdk",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "app",
+          "kind": "code",
+          "role": "client"
+        },
+        {
+          "id": "handler",
+          "kind": "inspect",
+          "role": "runtime"
+        },
+        {
+          "id": "ring",
+          "kind": "memory",
+          "role": "storage"
+        },
+        {
+          "id": "file",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "room",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "worker",
+          "kind": "worker",
+          "role": "queue"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "mobile-system-design/analytics-sdk",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "feature",
+          "kind": "code",
+          "role": "client"
+        },
+        {
+          "id": "chain",
+          "kind": "gate",
+          "role": "runtime"
+        },
+        {
+          "id": "queue",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "sched",
+          "kind": "clock",
+          "role": "queue"
+        },
+        {
+          "id": "worker",
+          "kind": "worker",
+          "role": "queue"
+        },
+        {
+          "id": "api",
+          "kind": "server",
+          "role": "runtime"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
     }
   ]
 }

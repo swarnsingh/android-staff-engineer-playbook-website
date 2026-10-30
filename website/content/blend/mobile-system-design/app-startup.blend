@@ -1,0 +1,125 @@
+<!-- Website teaching layer for mobile-system-design/app-startup.md (interview walkthrough).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the step-through and the end recap.
+     Verified 2026-10-30 against app-startup.md at source b7bbcf3 (§1 TTID/TTFD targets, §4 budgets, §5 App Startup removal rule, SplashScreen and ReportDrawnWhen, §7 audit, Baseline Profile and Macrobenchmark gate, §10 follow-ups)
+     and against the App Startup, SplashScreen, launch-time, Baseline Profiles and Macrobenchmark guides. -->
+
+<!-- @after 7. Deep Dive: Deferred Initialization + Baseline Profile (15 min) :: animation -->
+### Follow one cold start from tap to fully drawn
+
+<figure class="stepper" data-illustrated><span class="stepper-title">One cold start, critical path first</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="tap" data-art="phone" data-art-role="client"><strong>Launcher</strong><small data-text="tapV">icon tapped</small></div><div class="node" data-el="proc" data-art="worker" data-art-role="runtime"><strong>App process</strong><small data-text="procV">not started</small></div><div class="node" data-el="init" data-art="code" data-art-role="runtime"><strong>Initializers</strong><small data-text="initV">App Startup</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="ui" data-art="screen" data-art-role="client"><strong>MainActivity</strong><small data-text="uiV">not created</small></div><div class="node" data-el="deferred" data-art="queue" data-art-role="queue"><strong>Deferred SDKs</strong><small data-text="deferredV">analytics, ads, features</small></div><div class="node" data-el="ci" data-art="inspect" data-art-role="runtime"><strong>Macrobenchmark</strong><small data-text="ciV">CI gate</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Tap the icon",
+    "caption": "The user taps the launcher icon. The system draws the SplashScreen theme from the manifest before Application.onCreate runs, so there is no white flash.",
+    "add": [
+      "tap",
+      "proc",
+      "init",
+      "ui",
+      "deferred",
+      "ci",
+      "event"
+    ],
+    "state": {
+      "tap": "active"
+    },
+    "text": {
+      "eventV": "splash drawn by the system"
+    }
+  },
+  {
+    "label": "Critical work only",
+    "caption": "The process starts and runs only the critical initialization: the crash reporter, the Hilt graph and the flag snapshot from disk. The deferrable SDKs had their App Startup entries removed with tools:node=\"remove\", so nothing starts them yet.",
+    "state": {
+      "tap": "done",
+      "proc": "active",
+      "init": "done"
+    },
+    "text": {
+      "initV": "crash reporter, Hilt, flags",
+      "deferredV": "not initialized",
+      "eventV": "onCreate budget < 300 ms"
+    }
+  },
+  {
+    "label": "First frame: TTID",
+    "caption": "MainActivity installs the splash screen and composes the feed, which shows a skeleton while the ViewModel loads. The first frame is drawn. That is TTID, the startup metric Android vitals reports.",
+    "state": {
+      "proc": "done",
+      "ui": "active"
+    },
+    "text": {
+      "uiV": "skeleton drawn",
+      "eventV": "TTID target ≈ 1.0 s"
+    },
+    "handoff": {
+      "from": "proc",
+      "to": "ui",
+      "kind": "page",
+      "label": "first frame"
+    }
+  },
+  {
+    "label": "Fully drawn: TTFD",
+    "caption": "The feed arrives and the state becomes Ready. ReportDrawnWhen calls reportFullyDrawn(), which marks TTFD for the system log, Perfetto and Macrobenchmark.",
+    "state": {
+      "ui": "done"
+    },
+    "text": {
+      "uiV": "feed shown",
+      "eventV": "TTFD target < 2.5 s"
+    }
+  },
+  {
+    "label": "Deferred work runs",
+    "caption": "After the critical path, the app calls AppInitializer.initializeComponent for each deferred SDK, and a lazy SDK starts on first use. None of them competes with the first frame.",
+    "state": {
+      "deferred": "active"
+    },
+    "text": {
+      "deferredV": "initialized after first frame",
+      "eventV": "off the cold path"
+    },
+    "handoff": {
+      "from": "init",
+      "to": "deferred",
+      "kind": "parcel",
+      "label": "deferred init"
+    }
+  },
+  {
+    "label": "Ship a Baseline Profile",
+    "caption": "A Baseline Profile recorded from the launch-and-feed journey is packaged with the app, so ART compiles those paths ahead of time. Measure TTID on representative devices to see the gain.",
+    "state": {
+      "deferred": "done",
+      "proc": "done"
+    },
+    "text": {
+      "procV": "profile-compiled paths",
+      "eventV": "measure, don’t assume"
+    }
+  },
+  {
+    "label": "Gate it in CI",
+    "caption": "A cold-start Macrobenchmark with StartupTimingMetric runs on a known device and fails the build if startup regresses past the threshold. A new SDK added to onCreate is caught before release.",
+    "state": {
+      "ci": "done",
+      "event": "done"
+    },
+    "text": {
+      "ciV": "cold start within budget",
+      "eventV": "regression blocked before merge"
+    }
+  }
+]</script><figcaption>Only critical work runs before the first frame. TTID is the first frame, TTFD is reportFullyDrawn(), and CI keeps both inside the budget. The budgets are this design’s examples, not platform guarantees.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **Name the milestones.** TTID is the first frame, and it is what Android vitals reports. TTFD is when `reportFullyDrawn()` says the content is ready.
+- **Audit `Application.onCreate`.** Classify each initialization as critical, deferrable or lazy; only the crash reporter, the DI graph and the flag snapshot belong before the first frame.
+- **Registering an App Startup initializer does not defer it.** Remove its merged manifest entry with `tools:node="remove"`, then call `AppInitializer` when needed.
+- **Never block the first frame on the network.** Draw a skeleton, load in parallel, then report fully drawn.
+- **Ship a Baseline Profile** for launch and hot paths, then measure TTID on representative devices.
+- **Gate cold start in CI** with Macrobenchmark, and read field percentiles such as p95, not the average.

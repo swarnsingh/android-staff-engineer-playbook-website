@@ -1,0 +1,128 @@
+<!-- Website teaching layer for mobile-system-design/telemetry-sdk.md (interview walkthrough).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the step-through and the end recap.
+     Verified 2026-10-30 against telemetry-sdk.md at source b7bbcf3 (§7 CrashCapture, CrashSink flat-file append and fsync, BreadcrumbBuffer capacity 100, ANR watchdog, delivery on next launch, FlushWorker priorities, performance sampling and failure modes. The checkout crash is illustrative)
+     and against Thread.UncaughtExceptionHandler, ApplicationExitInfo, WorkManager and androidx JankStats. -->
+
+<!-- @after 7. Deep Dive: Crash Capture + Delivery (15 min) :: animation -->
+### Follow one crash to the server
+
+<figure class="stepper" data-illustrated><span class="stepper-title">A crash, saved before the process dies</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="app" data-art="code" data-art-role="client"><strong>Checkout code</strong><small data-text="appV">running</small></div><div class="node" data-el="handler" data-art="inspect" data-art-role="runtime"><strong>Crash handler</strong><small data-text="handlerV">default handler</small></div><div class="node" data-el="ring" data-art="memory" data-art-role="storage"><strong>Breadcrumbs</strong><small data-text="ringV">ring of 100</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="file" data-art="document" data-art-role="storage"><strong>Crash file</strong><small data-text="fileV">filesDir/crashes/</small></div><div class="node" data-el="room" data-art="database" data-art-role="storage"><strong>Room store</strong><small data-text="roomV">by priority</small></div><div class="node" data-el="worker" data-art="worker" data-art-role="queue"><strong>FlushWorker</strong><small data-text="workerV">not scheduled</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Breadcrumbs build up",
+    "caption": "While the user works, navigation, network calls and screen lifecycle add breadcrumbs to a bounded in-memory ring that keeps the last 100.",
+    "add": [
+      "app",
+      "handler",
+      "ring",
+      "file",
+      "room",
+      "worker",
+      "event"
+    ],
+    "state": {
+      "ring": "active",
+      "app": "active"
+    },
+    "text": {
+      "eventV": "cheap, in memory"
+    }
+  },
+  {
+    "label": "Uncaught exception",
+    "caption": "Checkout code throws an exception that nothing catches. The JVM calls the SDK’s default uncaught-exception handler.",
+    "state": {
+      "app": "error",
+      "handler": "active"
+    },
+    "text": {
+      "appV": "uncaught exception",
+      "eventV": "milliseconds left"
+    },
+    "handoff": {
+      "from": "app",
+      "to": "handler",
+      "kind": "parcel",
+      "label": "throwable"
+    }
+  },
+  {
+    "label": "Write and fsync",
+    "caption": "The handler snapshots the breadcrumbs and appends the crash as one JSON line to a flat file, then fsyncs it. It never touches Room here and never throws.",
+    "state": {
+      "ring": "done",
+      "file": "done"
+    },
+    "text": {
+      "fileV": "1 crash line",
+      "eventV": "shortest safe write"
+    },
+    "handoff": {
+      "from": "handler",
+      "to": "file",
+      "kind": "page",
+      "label": "crash JSON"
+    }
+  },
+  {
+    "label": "Let it crash",
+    "caption": "The handler then calls the previous default handler, so the system’s normal crash handling still runs, and the process dies.",
+    "state": {
+      "handler": "done"
+    },
+    "text": {
+      "handlerV": "previous handler called",
+      "appV": "process died",
+      "eventV": "crash saved first"
+    }
+  },
+  {
+    "label": "Import on next launch",
+    "caption": "On the next launch the SDK scans filesDir/crashes/, imports each entry into Room at critical priority, and deletes the files.",
+    "state": {
+      "app": "done",
+      "room": "done"
+    },
+    "text": {
+      "appV": "next launch",
+      "fileV": "imported, deleted",
+      "roomV": "crash · priority 0",
+      "eventV": "nothing lost"
+    },
+    "handoff": {
+      "from": "file",
+      "to": "room",
+      "kind": "rows",
+      "label": "import"
+    }
+  },
+  {
+    "label": "Flush crashes first",
+    "caption": "A unique FlushWorker runs once the device has a network connection, with exponential backoff. It sends critical events first, then ANRs, then sampled performance and network data.",
+    "state": {
+      "worker": "done",
+      "event": "done"
+    },
+    "text": {
+      "workerV": "crashes uploaded first",
+      "eventV": "crash delivered"
+    },
+    "handoff": {
+      "from": "room",
+      "to": "worker",
+      "kind": "rows",
+      "label": "priority 0 batch"
+    }
+  }
+]</script><figcaption>The crash path is the shortest safe write: a flat file before the process dies. Everything slower happens on the next launch.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **Crashes and performance data are different problems.** Never sample or trim crashes; sample performance at about 10% of sessions.
+- **Write the crash synchronously to a flat file** in the uncaught-exception handler, then call the previous handler; never use Room there.
+- **Import and upload on the next launch** with a unique, network-constrained FlushWorker that sends crashes first.
+- **Detect ANRs twice:** an in-process watchdog, plus `ApplicationExitInfo` with `REASON_ANR` on Android 11 and later.
+- **JankStats flags a frame by default** when it takes more than twice the frame interval: 33.3 ms at 60 Hz, 16.7 ms at 120 Hz.
+- **Keep PII out.** Strip query strings from network spans, and symbolicate with R8 mapping files on the server.

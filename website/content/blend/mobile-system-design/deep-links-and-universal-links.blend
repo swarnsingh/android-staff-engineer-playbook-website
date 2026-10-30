@@ -1,0 +1,126 @@
+<!-- Website teaching layer for mobile-system-design/deep-links-and-universal-links.md (interview walkthrough).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the step-through and the end recap.
+     Verified 2026-10-30 against deep-links-and-universal-links.md at source b7bbcf3 (§6 pending_route table, §7 App Links verification, LinkRouterActivity, parser, AuthGate savePending/consumePending, Navigator popUpTo and failure modes)
+     and against the App Links verification guide and the Navigation deep-link guide. -->
+
+<!-- @after 7. Deep Dive: Routing + Verification (15 min) :: animation -->
+### Follow a protected link through sign-in
+
+<figure class="stepper" data-illustrated><span class="stepper-title">A signed-out user taps an order link</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="link" data-art="phone" data-art-role="client"><strong>Order link</strong><small data-text="linkV">https://example.com/…</small></div><div class="node" data-el="os" data-art="gate" data-art-role="runtime"><strong>Android</strong><small data-text="osV">intent resolution</small></div><div class="node" data-el="router" data-art="worker" data-art-role="runtime"><strong>LinkRouterActivity</strong><small data-text="routerV">translucent</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="parser" data-art="code" data-art-role="runtime"><strong>DeepLinkParser</strong><small data-text="parserV">URI → Route</small></div><div class="node" data-el="main" data-art="screen" data-art-role="client"><strong>MainActivity</strong><small data-text="mainV">Navigator</small></div><div class="node" data-el="pending" data-art="database" data-art-role="storage"><strong>Pending route</strong><small data-text="pendingV">Room · empty</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Verified at install",
+    "caption": "When the app was installed, Android fetched https://example.com/.well-known/assetlinks.json and matched the app’s signing-key fingerprint. The domain is verified for this app.",
+    "add": [
+      "link",
+      "os",
+      "router",
+      "parser",
+      "main",
+      "pending",
+      "event"
+    ],
+    "state": {
+      "os": "done"
+    },
+    "text": {
+      "osV": "example.com verified",
+      "eventV": "no chooser, no browser detour"
+    }
+  },
+  {
+    "label": "Tap opens the app",
+    "caption": "The signed-out user taps an order link. Because the domain is verified, Android delivers the ACTION_VIEW intent straight to LinkRouterActivity. On Android 12 and later, an unverified link would open in the browser.",
+    "state": {
+      "link": "active",
+      "router": "active"
+    },
+    "text": {
+      "eventV": "intent goes to the router"
+    },
+    "handoff": {
+      "from": "link",
+      "to": "router",
+      "kind": "page",
+      "label": "ACTION_VIEW"
+    }
+  },
+  {
+    "label": "Parse a typed route",
+    "caption": "DeepLinkParser tries each feature’s RoutePattern and returns Route.Order. An unknown URI would fall back to Route.Home and be logged.",
+    "state": {
+      "link": "done",
+      "parser": "done"
+    },
+    "text": {
+      "parserV": "Route.Order",
+      "eventV": "validated, typed route"
+    }
+  },
+  {
+    "label": "Sign-in comes first",
+    "caption": "AuthGate says Route.Order needs a session, and there is none. The router starts MainActivity with target Login and pendingAfterLogin Order, then finishes, so it never stays on the back stack.",
+    "state": {
+      "router": "done",
+      "main": "active"
+    },
+    "text": {
+      "routerV": "finished",
+      "mainV": "login screen",
+      "eventV": "router leaves the back stack"
+    },
+    "handoff": {
+      "from": "router",
+      "to": "main",
+      "kind": "parcel",
+      "label": "target + pending"
+    }
+  },
+  {
+    "label": "Save the destination",
+    "caption": "MainActivity calls AuthGate.savePending, which writes the route to the pending_route table in Room. It survives process death during a long sign-in.",
+    "state": {
+      "pending": "done"
+    },
+    "text": {
+      "pendingV": "Route.Order saved",
+      "eventV": "survives process death"
+    },
+    "handoff": {
+      "from": "main",
+      "to": "pending",
+      "kind": "rows",
+      "label": "pending route"
+    }
+  },
+  {
+    "label": "Resume after login",
+    "caption": "Sign-in succeeds. The post-login screen calls consumePending(), which reads and clears the row, and the Navigator opens the order with popUpTo(\"home\"), so Back returns to home.",
+    "state": {
+      "main": "done",
+      "event": "done"
+    },
+    "text": {
+      "pendingV": "cleared",
+      "mainV": "order screen",
+      "eventV": "Back goes to home"
+    },
+    "handoff": {
+      "from": "pending",
+      "to": "main",
+      "kind": "rows",
+      "label": "consumePending()"
+    }
+  }
+]</script><figcaption>Verification decides who opens the link, the parser turns it into a typed route, and the pending route carries the destination through sign-in and process death.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **Verify App Links.** Host `assetlinks.json` over HTTPS with the signing-key fingerprint and set `autoVerify="true"`; on Android 12 and later an unverified link opens in the browser.
+- **Route every entry point through one invisible router** that parses the URI into a typed route, starts the main activity and finishes.
+- **Never trust the URI.** Accept only known schemes and hosts, and fall back to home for an unknown route.
+- **Save the destination before sign-in** and consume it after, so the link survives the login flow and process death.
+- **Keep a sane back stack.** Collapse to home for deep destinations, so Back never leaves the user stranded.
+- **Deferred deep links use the Install Referrer API.** Firebase Dynamic Links shut down on August 25, 2025.

@@ -1,0 +1,127 @@
+<!-- Website teaching layer for mobile-system-design/authentication.md (interview walkthrough).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the step-through and the end recap.
+     Verified 2026-10-30 against authentication.md at source b7bbcf3 (§2 token lifetimes, §4 POST /token, §7 single-flight refresh in the app scope, AuthInterceptor 401 retry, biometric re-auth and failure modes)
+     and against RFC 6749, RFC 7636, RFC 8252 and the OkHttp interceptor guide. -->
+
+<!-- @after 7. Deep Dive: Token Lifecycle (15 min) :: animation -->
+### Follow two requests through one token refresh
+
+<figure class="stepper" data-illustrated><span class="stepper-title">Two 401s, one refresh</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="reqA" data-art="code" data-art-role="client"><strong>Request A</strong><small data-text="reqAV">GET /orders</small></div><div class="node" data-el="reqB" data-art="code" data-art-role="client"><strong>Request B</strong><small data-text="reqBV">GET /v1/me</small></div><div class="node" data-el="ref" data-art="lock" data-art-role="runtime"><strong>TokenRefresher</strong><small data-text="refV">Mutex, app scope</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="idp" data-art="server" data-art-role="runtime"><strong>IdP</strong><small data-text="idpV">POST /token</small></div><div class="node" data-el="vault" data-art="key" data-art-role="storage"><strong>TokenVault</strong><small data-text="vaultV">access token T1</small></div><div class="node" data-el="api" data-art="server" data-art-role="runtime"><strong>Resource API</strong><small data-text="apiV">validates Bearer</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Stale token sent",
+    "caption": "The device clock runs behind, so the access token T1 still looks valid locally. AuthInterceptor attaches T1 to two requests that leave at the same time on OkHttp threads.",
+    "add": [
+      "reqA",
+      "reqB",
+      "ref",
+      "idp",
+      "vault",
+      "api",
+      "event"
+    ],
+    "state": {
+      "reqA": "active",
+      "reqB": "active"
+    },
+    "text": {
+      "eventV": "both send Bearer T1"
+    }
+  },
+  {
+    "label": "Both get 401",
+    "caption": "The resource API is the truth about expiry and rejects T1 on both requests. Each interceptor closes its response and calls refreshNow(failedAccessToken = T1).",
+    "state": {
+      "api": "error",
+      "reqA": "warn",
+      "reqB": "warn"
+    },
+    "text": {
+      "apiV": "401 · 401",
+      "eventV": "two callers want a refresh"
+    }
+  },
+  {
+    "label": "Single flight",
+    "caption": "A’s refresh takes the Mutex first and sends POST /token with the refresh token. B’s refresh waits on the same lock instead of sending a second request.",
+    "state": {
+      "ref": "active",
+      "idp": "active"
+    },
+    "text": {
+      "refV": "A holds the lock · B waits",
+      "eventV": "one refresh in flight"
+    },
+    "handoff": {
+      "from": "ref",
+      "to": "idp",
+      "kind": "parcel",
+      "label": "refresh token"
+    }
+  },
+  {
+    "label": "Caller cancelled",
+    "caption": "Request A’s caller is cancelled, for example because its screen closed. The refresh was started with appScope.async, so it keeps running; A only stops waiting.",
+    "state": {
+      "reqA": "ghost"
+    },
+    "text": {
+      "reqAV": "cancelled, stopped waiting",
+      "eventV": "refresh continues in the app scope"
+    }
+  },
+  {
+    "label": "Rotation saved",
+    "caption": "The IdP rotates the refresh token and returns T2. The refresher saves both new tokens to the vault before it releases the lock, so the rotated refresh token is never lost.",
+    "state": {
+      "idp": "done",
+      "vault": "done"
+    },
+    "text": {
+      "vaultV": "T2 + new refresh token",
+      "eventV": "saved before unlock"
+    },
+    "handoff": {
+      "from": "idp",
+      "to": "vault",
+      "kind": "rows",
+      "label": "new tokens"
+    }
+  },
+  {
+    "label": "No second refresh",
+    "caption": "B gets the lock and reloads the vault. The access token is no longer T1, so another caller already refreshed, and B returns T2 without calling the IdP.",
+    "state": {
+      "ref": "done"
+    },
+    "text": {
+      "refV": "lock released",
+      "eventV": "one POST /token in total"
+    }
+  },
+  {
+    "label": "Retry once",
+    "caption": "B’s interceptor retries its request once with T2 and gets 200. If a refresh ever returns invalid_grant, the session was revoked or rotated elsewhere, and the app signs the user out.",
+    "state": {
+      "reqB": "done",
+      "api": "done",
+      "event": "done"
+    },
+    "text": {
+      "reqBV": "200 with T2",
+      "apiV": "accepts T2",
+      "eventV": "retried once"
+    }
+  }
+]</script><figcaption>The Mutex makes the refresh single-flight, the vault check stops a second POST /token, and the app scope keeps a rotation from being lost when a caller is cancelled.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **Sign in with Authorization Code and PKCE** in the system browser or a Custom Tab; the app never sees the password, and the redirect is a verified HTTPS App Link.
+- **Make refresh single-flight.** A Mutex serializes refreshes, and a caller refreshes only if the vault still holds the token that failed.
+- **Run the refresh in an app scope**, so a cancelled caller cannot lose a rotated refresh token.
+- **Treat `exp` as advisory.** The server is the truth, and a 401 triggers one refresh and one retry.
+- **`invalid_grant` means the session is gone.** Sign out locally, clear user data and cancel user-scoped work.
+- **Gate sensitive actions with biometric re-authentication** that stays valid for a short window, such as 5 minutes.

@@ -1,0 +1,134 @@
+<!-- Website teaching layer for mobile-system-design/push-notifications.md (interview walkthrough).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the step-through and the end recap.
+     Verified 2026-10-30 against push-notifications.md at source b7bbcf3 (§3 token upload, §7 service lifecycle, PushDispatcher, DecryptAndNotifyWorker, MessagingStyle, deep-link PendingIntent, channels, Android 13 permission, §8 data vs notification)
+     and against the FCM receive guide, the notification guides and the PendingIntent mutability guidance. -->
+
+<!-- @after 7. Deep Dive: Receive Pipeline (15 min) :: animation -->
+### Follow one chat message from FCM to a tap
+
+<figure class="stepper" data-illustrated><span class="stepper-title">A chat message while the app is in the background</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="fcm" data-art="cloud" data-art-role="queue"><strong>FCM</strong><small data-text="fcmV">data message</small></div><div class="node" data-el="svc" data-art="signal" data-art-role="runtime"><strong>Messaging service</strong><small data-text="svcV">onMessageReceived</small></div><div class="node" data-el="disp" data-art="gate" data-art-role="runtime"><strong>PushDispatcher</strong><small data-text="dispV">delivery policy</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="worker" data-art="worker" data-art-role="queue"><strong>Notify worker</strong><small data-text="workerV">not enqueued</small></div><div class="node" data-el="room" data-art="database" data-art-role="storage"><strong>Room + inbox</strong><small data-text="roomV">conversation</small></div><div class="node" data-el="shade" data-art="phone" data-art-role="client"><strong>Notification</strong><small data-text="shadeV">none</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Data message arrives",
+    "caption": "The server sends a chat.message data message through FCM while the app is in the background. FCM calls onMessageReceived on a background thread.",
+    "add": [
+      "fcm",
+      "svc",
+      "disp",
+      "worker",
+      "room",
+      "shade",
+      "event"
+    ],
+    "state": {
+      "fcm": "active",
+      "svc": "active"
+    },
+    "text": {
+      "eventV": "app backgrounded"
+    },
+    "handoff": {
+      "from": "fcm",
+      "to": "svc",
+      "kind": "parcel",
+      "label": "data payload"
+    }
+  },
+  {
+    "label": "Return fast",
+    "caption": "The service has about 10 seconds before Android can stop it, so it does no slow work and only hands the data to PushDispatcher.",
+    "state": {
+      "fcm": "done",
+      "svc": "done",
+      "disp": "active"
+    },
+    "text": {
+      "eventV": "no slow work in the service"
+    },
+    "handoff": {
+      "from": "svc",
+      "to": "disp",
+      "kind": "parcel",
+      "label": "message data"
+    }
+  },
+  {
+    "label": "Choose the path",
+    "caption": "The app is not in the foreground, and a chat message must be decrypted and stored, so the dispatcher enqueues an expedited DecryptAndNotifyWorker. In the foreground it would show an in-app banner instead.",
+    "state": {
+      "disp": "done",
+      "worker": "active"
+    },
+    "text": {
+      "dispV": "needs work → WorkManager",
+      "workerV": "expedited request",
+      "eventV": "durable handoff"
+    },
+    "handoff": {
+      "from": "disp",
+      "to": "worker",
+      "kind": "parcel",
+      "label": "work request"
+    }
+  },
+  {
+    "label": "Decrypt and store",
+    "caption": "The worker decrypts the message and writes it to Room and the inbox. A screen showing the conversation updates from Room.",
+    "state": {
+      "room": "done"
+    },
+    "text": {
+      "roomV": "message + inbox row",
+      "eventV": "Room stays the source of truth"
+    },
+    "handoff": {
+      "from": "worker",
+      "to": "room",
+      "kind": "rows",
+      "label": "persist"
+    }
+  },
+  {
+    "label": "Show MessagingStyle",
+    "caption": "The worker builds a MessagingStyle notification on the Direct messages channel, with a Reply action, and posts it through NotificationManagerCompat.",
+    "state": {
+      "worker": "done",
+      "shade": "active"
+    },
+    "text": {
+      "workerV": "done",
+      "shadeV": "MessagingStyle · Reply",
+      "eventV": "channel: Direct messages"
+    },
+    "handoff": {
+      "from": "worker",
+      "to": "shade",
+      "kind": "page",
+      "label": "notify"
+    }
+  },
+  {
+    "label": "Tap opens the chat",
+    "caption": "The content intent is an immutable PendingIntent, and its ACTION_VIEW intent is limited to this package, so no other app can claim the tap. It opens the validated route to the conversation.",
+    "state": {
+      "shade": "done",
+      "event": "done"
+    },
+    "text": {
+      "shadeV": "opens the chat",
+      "eventV": "FLAG_IMMUTABLE · setPackage"
+    }
+  }
+]</script><figcaption>The service only dispatches, WorkManager does the slow work, Room stays the source of truth, and the notification is a view of stored data.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **Prefer data messages** so the app decides what to show, and keep `onMessageReceived` short: it has about 10 seconds.
+- **Hand slow work to WorkManager**, expedited where allowed, and write Room first; the notification only reflects stored data.
+- **In the foreground, show in-app UI** instead of a system notification.
+- **Use one channel per category** so users can mute promotions without losing security alerts.
+- **Request `POST_NOTIFICATIONS` on Android 13 and later** from a meaningful user action, after any rationale.
+- **Secure the tap** with an immutable `PendingIntent`, `setPackage` and a validated deep-link route.
+- **Upload the FCM token** on sign-in, on every `onNewToken` and as a cheap confirmation on each launch.

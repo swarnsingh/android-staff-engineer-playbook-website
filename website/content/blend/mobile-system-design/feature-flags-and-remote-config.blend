@@ -1,0 +1,136 @@
+<!-- Website teaching layer for mobile-system-design/feature-flags-and-remote-config.md (interview walkthrough).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the step-through and the end recap.
+     Verified 2026-10-30 against feature-flags-and-remote-config.md at source b7bbcf3 (§4 GET /v1/flags, §7 bootstrap, refresh, publish, pendingSnapshot, onAppForegrounded, apply policies, sticky bucketing, exposure logging and failure modes. new_checkout and kill_upload_dirty are the chapter’s example flags; the flip to true is illustrative)
+     and against the Firebase Remote Config loading strategies and the StateFlow guide. -->
+
+<!-- @after 7. Deep Dive: Evaluation + Fetch Cycle (15 min) :: animation -->
+### Follow one config change: live versus next session
+
+<figure class="stepper" data-illustrated><span class="stepper-title">A response changes a kill switch and a feature flag</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="api" data-art="server" data-art-role="runtime"><strong>Flags API</strong><small data-text="apiV">GET /v1/flags</small></div><div class="node" data-el="repo" data-art="code" data-art-role="runtime"><strong>FlagsRepository</strong><small data-text="repoV">bootstrap()</small></div><div class="node" data-el="disk" data-art="database" data-art-role="storage"><strong>Snapshot store</strong><small data-text="diskV">last good snapshot</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="flow" data-art="memory" data-art-role="storage"><strong>Active FlagSet</strong><small data-text="flowV">StateFlow</small></div><div class="node" data-el="pending" data-art="document" data-art-role="storage"><strong>Pending snapshot</strong><small data-text="pendingV">none</small></div><div class="node" data-el="screen" data-art="screen" data-art-role="client"><strong>Checkout screen</strong><small data-text="screenV">old checkout</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Start from disk",
+    "caption": "On launch, bootstrap() reads the last good snapshot from disk and publishes it as the active FlagSet before any network call. new_checkout and kill_upload_dirty are both false.",
+    "add": [
+      "api",
+      "repo",
+      "disk",
+      "flow",
+      "pending",
+      "screen",
+      "event"
+    ],
+    "state": {
+      "disk": "done",
+      "flow": "done"
+    },
+    "text": {
+      "flowV": "both flags false",
+      "eventV": "reads are synchronous"
+    },
+    "handoff": {
+      "from": "disk",
+      "to": "flow",
+      "kind": "rows",
+      "label": "snapshot"
+    }
+  },
+  {
+    "label": "Refresh in the background",
+    "caption": "bootstrap() launches refresh() without waiting for it. The checkout screen is already reading flags from memory.",
+    "state": {
+      "repo": "active",
+      "api": "active"
+    },
+    "text": {
+      "eventV": "the fetch never blocks the UI"
+    },
+    "handoff": {
+      "from": "repo",
+      "to": "api",
+      "kind": "page",
+      "label": "fetch"
+    }
+  },
+  {
+    "label": "New config arrives",
+    "caption": "The response sets new_checkout to true, a next-session flag, and kill_upload_dirty to true, a LIVE kill switch. The repository writes the candidate to disk first.",
+    "state": {
+      "api": "done",
+      "disk": "active"
+    },
+    "text": {
+      "diskV": "candidate saved",
+      "eventV": "2 keys changed"
+    },
+    "handoff": {
+      "from": "api",
+      "to": "repo",
+      "kind": "rows",
+      "label": "candidate"
+    }
+  },
+  {
+    "label": "Kill switch applies now",
+    "caption": "Not every changed key is LIVE, so the repository publishes only the live flags into the active set. kill_upload_dirty takes effect at once, while new_checkout stays false for this session.",
+    "state": {
+      "disk": "done",
+      "flow": "active"
+    },
+    "text": {
+      "flowV": "kill_upload_dirty = true",
+      "screenV": "old checkout, stable",
+      "eventV": "LIVE now, the rest staged"
+    }
+  },
+  {
+    "label": "Stage the rest",
+    "caption": "The full candidate becomes the pending snapshot. A newer response would replace it, so a stale staged value can never roll the kill switch back later.",
+    "state": {
+      "repo": "done",
+      "pending": "done"
+    },
+    "text": {
+      "pendingV": "new_checkout = true",
+      "eventV": "newest response wins"
+    },
+    "handoff": {
+      "from": "repo",
+      "to": "pending",
+      "kind": "rows",
+      "label": "stage"
+    }
+  },
+  {
+    "label": "Session boundary",
+    "caption": "When the app next comes to the foreground, onAppForegrounded() publishes the pending snapshot and clears it. The checkout screen now shows the new checkout.",
+    "state": {
+      "flow": "done",
+      "screen": "done",
+      "event": "done"
+    },
+    "text": {
+      "flowV": "new_checkout = true",
+      "pendingV": "none",
+      "screenV": "new checkout",
+      "eventV": "applied at the session boundary"
+    },
+    "handoff": {
+      "from": "pending",
+      "to": "flow",
+      "kind": "rows",
+      "label": "publish"
+    }
+  }
+]</script><figcaption>Reads always come from memory. A kill switch applies the moment it arrives; every other change waits for the next session, so the experience stays stable.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **Reads are synchronous from memory**; fetching never blocks startup or the UI.
+- **Serve the last good snapshot from disk**, with safe defaults on first launch or after a corrupt file.
+- **Give every flag an apply policy.** Most wait for the next session; only kill switches apply live.
+- **The newest response replaces any staged snapshot**, so a stale value can never roll a kill switch back.
+- **Bucket variants stickily** with a hash of the flag key and user ID, so a user keeps the same variant across sessions.
+- **Log exposure once per flag per session**, and generate typed accessors from one schema.

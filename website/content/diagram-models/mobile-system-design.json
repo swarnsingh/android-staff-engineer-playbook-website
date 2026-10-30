@@ -185,5 +185,482 @@
       "screen": "What the user sees",
       "event": "What happens"
     }
+  },
+  {
+    "path": "mobile-system-design/app-startup",
+    "figure": 0,
+    "problem": "How does a cold start reach its first frame quickly, and stay fast as more SDKs are added?",
+    "reading": "The app process runs only critical initializers before MainActivity draws its first frame. Deferred SDKs start after that frame, and a Macrobenchmark in CI measures every cold start.",
+    "groups": [
+      {
+        "id": "device",
+        "label": "On the device",
+        "nodes": [
+          "tap",
+          "proc",
+          "init",
+          "ui",
+          "deferred"
+        ]
+      },
+      {
+        "id": "lab",
+        "label": "Continuous integration",
+        "nodes": [
+          "ci"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "tap",
+        "to": "proc",
+        "label": "starts"
+      },
+      {
+        "from": "proc",
+        "to": "init",
+        "label": "runs critical only"
+      },
+      {
+        "from": "proc",
+        "to": "ui",
+        "label": "creates"
+      },
+      {
+        "from": "init",
+        "to": "deferred",
+        "label": "removed from startup"
+      },
+      {
+        "from": "ci",
+        "to": "tap",
+        "label": "launches cold, measures"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/performance/vitals/launch-time",
+      "https://developer.android.com/topic/libraries/app-startup"
+    ],
+    "labels": {
+      "tap": "Launcher",
+      "proc": "App process",
+      "init": "Critical initializers",
+      "ui": "MainActivity",
+      "deferred": "Deferred SDKs",
+      "ci": "Macrobenchmark",
+      "event": "What happens"
+    }
+  },
+  {
+    "path": "mobile-system-design/authentication",
+    "figure": 0,
+    "problem": "How do concurrent 401s refresh the token exactly once, even when a caller is cancelled?",
+    "reading": "Requests carry the access token to the resource API. On a 401 every caller goes to one TokenRefresher, which serializes the refresh with a Mutex, calls the IdP and saves the rotated tokens in the vault.",
+    "groups": [
+      {
+        "id": "device",
+        "label": "On the device",
+        "nodes": [
+          "reqA",
+          "reqB",
+          "ref",
+          "vault"
+        ]
+      },
+      {
+        "id": "servers",
+        "label": "Servers",
+        "nodes": [
+          "idp",
+          "api"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "reqA",
+        "to": "api",
+        "label": "Bearer T1"
+      },
+      {
+        "from": "reqB",
+        "to": "api",
+        "label": "Bearer T1"
+      },
+      {
+        "from": "reqA",
+        "to": "ref",
+        "label": "401: refreshNow"
+      },
+      {
+        "from": "reqB",
+        "to": "ref",
+        "label": "401: waits on the lock"
+      },
+      {
+        "from": "ref",
+        "to": "idp",
+        "label": "POST /token"
+      },
+      {
+        "from": "ref",
+        "to": "vault",
+        "label": "re-reads, saves"
+      }
+    ],
+    "sources": [
+      "https://www.rfc-editor.org/rfc/rfc6749#section-6",
+      "https://square.github.io/okhttp/features/interceptors/"
+    ],
+    "labels": {
+      "reqA": "Request A",
+      "reqB": "Request B",
+      "ref": "TokenRefresher",
+      "idp": "IdP token endpoint",
+      "vault": "TokenVault",
+      "api": "Resource API",
+      "event": "What happens"
+    }
+  },
+  {
+    "path": "mobile-system-design/deep-links-and-universal-links",
+    "figure": 0,
+    "problem": "How does a link to a protected screen survive sign-in and still open the right screen?",
+    "reading": "A verified domain sends the link to LinkRouterActivity. The parser makes a typed route, AuthGate decides whether sign-in comes first, and the pending route in Room keeps the destination until login succeeds.",
+    "groups": [
+      {
+        "id": "system",
+        "label": "Android system",
+        "nodes": [
+          "link",
+          "os"
+        ]
+      },
+      {
+        "id": "app",
+        "label": "The app",
+        "nodes": [
+          "router",
+          "parser",
+          "main",
+          "pending"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "link",
+        "to": "os",
+        "label": "tapped"
+      },
+      {
+        "from": "os",
+        "to": "router",
+        "label": "verified: delivers"
+      },
+      {
+        "from": "router",
+        "to": "parser",
+        "label": "parses"
+      },
+      {
+        "from": "router",
+        "to": "main",
+        "label": "target + pending"
+      },
+      {
+        "from": "main",
+        "to": "pending",
+        "label": "saves, then consumes"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/training/app-links/verify-android-applinks",
+      "https://developer.android.com/guide/navigation/design/deep-link"
+    ],
+    "labels": {
+      "link": "Order link",
+      "os": "Android",
+      "router": "LinkRouterActivity",
+      "parser": "DeepLinkParser",
+      "main": "MainActivity",
+      "pending": "Pending route",
+      "event": "What happens"
+    }
+  },
+  {
+    "path": "mobile-system-design/push-notifications",
+    "figure": 0,
+    "problem": "How does a chat message reach a backgrounded app and open the right conversation on tap?",
+    "reading": "FCM wakes the messaging service, which hands the data to the dispatcher. Work that needs decryption runs in WorkManager, writes Room and posts the notification; a tap follows a validated deep link.",
+    "groups": [
+      {
+        "id": "delivery",
+        "label": "Delivery service",
+        "nodes": [
+          "fcm"
+        ]
+      },
+      {
+        "id": "device",
+        "label": "On the device",
+        "nodes": [
+          "svc",
+          "disp",
+          "worker",
+          "room",
+          "shade"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "fcm",
+        "to": "svc",
+        "label": "onMessageReceived"
+      },
+      {
+        "from": "svc",
+        "to": "disp",
+        "label": "hands data"
+      },
+      {
+        "from": "disp",
+        "to": "worker",
+        "label": "enqueues slow work"
+      },
+      {
+        "from": "worker",
+        "to": "room",
+        "label": "persists"
+      },
+      {
+        "from": "worker",
+        "to": "shade",
+        "label": "posts"
+      }
+    ],
+    "sources": [
+      "https://firebase.google.com/docs/cloud-messaging/android/receive-messages",
+      "https://developer.android.com/develop/ui/views/notifications/build-notification"
+    ],
+    "labels": {
+      "fcm": "FCM",
+      "svc": "AppFcmMessagingService",
+      "disp": "PushDispatcher",
+      "worker": "DecryptAndNotifyWorker",
+      "room": "Room + inbox",
+      "shade": "Notification",
+      "event": "What happens"
+    }
+  },
+  {
+    "path": "mobile-system-design/feature-flags-and-remote-config",
+    "figure": 0,
+    "problem": "How can a flag change reach the app without blocking startup or flipping a feature mid-session?",
+    "reading": "The repository serves the active FlagSet from memory, seeded from the disk snapshot. A background fetch is written to disk; LIVE flags join the active set now and the rest wait as the pending snapshot.",
+    "groups": [
+      {
+        "id": "server",
+        "label": "Server",
+        "nodes": [
+          "api"
+        ]
+      },
+      {
+        "id": "app",
+        "label": "The app",
+        "nodes": [
+          "repo",
+          "disk",
+          "flow",
+          "pending",
+          "screen"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "repo",
+        "to": "api",
+        "label": "fetches"
+      },
+      {
+        "from": "disk",
+        "to": "flow",
+        "label": "seeds at launch"
+      },
+      {
+        "from": "repo",
+        "to": "disk",
+        "label": "writes candidate"
+      },
+      {
+        "from": "repo",
+        "to": "flow",
+        "label": "publishes"
+      },
+      {
+        "from": "repo",
+        "to": "pending",
+        "label": "stages"
+      },
+      {
+        "from": "flow",
+        "to": "screen",
+        "label": "read synchronously"
+      }
+    ],
+    "sources": [
+      "https://firebase.google.com/docs/remote-config/loading",
+      "https://developer.android.com/kotlin/flow/stateflow-and-sharedflow"
+    ],
+    "labels": {
+      "api": "Flags API",
+      "repo": "FlagsRepository",
+      "disk": "Snapshot store",
+      "flow": "Active FlagSet",
+      "pending": "Pending snapshot",
+      "screen": "Checkout screen",
+      "event": "What happens"
+    }
+  },
+  {
+    "path": "mobile-system-design/telemetry-sdk",
+    "figure": 0,
+    "problem": "How does a crash survive the process dying and still reach the server?",
+    "reading": "The crash handler snapshots the breadcrumb ring and writes the crash to a flat file before the process dies. On the next launch it is imported into Room, and FlushWorker uploads it ahead of other telemetry.",
+    "groups": [
+      {
+        "id": "crash",
+        "label": "At crash time",
+        "nodes": [
+          "app",
+          "handler",
+          "ring",
+          "file"
+        ]
+      },
+      {
+        "id": "next",
+        "label": "On the next launch",
+        "nodes": [
+          "room",
+          "worker"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "app",
+        "to": "handler",
+        "label": "uncaught exception"
+      },
+      {
+        "from": "handler",
+        "to": "ring",
+        "label": "snapshots"
+      },
+      {
+        "from": "handler",
+        "to": "file",
+        "label": "append + fsync"
+      },
+      {
+        "from": "file",
+        "to": "room",
+        "label": "imported"
+      },
+      {
+        "from": "room",
+        "to": "worker",
+        "label": "critical first"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler",
+      "https://developer.android.com/topic/libraries/architecture/workmanager"
+    ],
+    "labels": {
+      "app": "Checkout code",
+      "handler": "Crash handler",
+      "ring": "Breadcrumb ring",
+      "file": "Crash file",
+      "room": "Room store",
+      "worker": "FlushWorker",
+      "event": "What happens"
+    }
+  },
+  {
+    "path": "mobile-system-design/analytics-sdk",
+    "figure": 0,
+    "problem": "How do events survive crashes and offline time, and still flush when a batch is too large?",
+    "reading": "Feature code calls track, the interceptors filter and redact, and Room holds every event. The scheduler starts one unique FlushWorker, which uploads batches and deletes only what the server acknowledged.",
+    "groups": [
+      {
+        "id": "app",
+        "label": "The app",
+        "nodes": [
+          "feature",
+          "chain",
+          "queue",
+          "sched",
+          "worker"
+        ]
+      },
+      {
+        "id": "server",
+        "label": "Server",
+        "nodes": [
+          "api"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "feature",
+        "to": "chain",
+        "label": "track"
+      },
+      {
+        "from": "chain",
+        "to": "queue",
+        "label": "enqueues"
+      },
+      {
+        "from": "queue",
+        "to": "sched",
+        "label": "count and age"
+      },
+      {
+        "from": "sched",
+        "to": "worker",
+        "label": "unique work"
+      },
+      {
+        "from": "worker",
+        "to": "api",
+        "label": "uploads a batch"
+      },
+      {
+        "from": "worker",
+        "to": "queue",
+        "label": "deletes on ack"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/manage-work",
+      "https://www.rfc-editor.org/rfc/rfc9110#section-15.5.14"
+    ],
+    "labels": {
+      "feature": "Checkout feature",
+      "chain": "Interceptors",
+      "queue": "Room queue",
+      "sched": "FlushScheduler",
+      "worker": "FlushWorker",
+      "api": "Events API",
+      "event": "What happens"
+    }
   }
 ]

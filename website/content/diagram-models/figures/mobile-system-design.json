@@ -1122,5 +1122,1677 @@
         "label": "decides"
       }
     ]
+  },
+  {
+    "path": "mobile-system-design/app-startup",
+    "diagram": "4030cad665aefad1",
+    "number": 1,
+    "title": "Only critical work runs before the first frame",
+    "caption": "A cold start runs from the launcher tap through process creation, Application.onCreate and the first Activity to the first frame (TTID), then to content ready (TTFD). Non-critical initialization is queued during onCreate and runs after the first frame.",
+    "sources": [
+      "https://developer.android.com/topic/performance/vitals/launch-time",
+      "https://developer.android.com/topic/libraries/app-startup"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "tap",
+        "title": "Launcher tap",
+        "role": "client"
+      },
+      {
+        "id": "proc",
+        "title": "Zygote forks process",
+        "role": "runtime"
+      },
+      {
+        "id": "app",
+        "title": "Application.onCreate",
+        "role": "runtime",
+        "detail": [
+          "critical",
+          "initialization only"
+        ],
+        "key": true
+      },
+      {
+        "id": "act",
+        "title": "First Activity",
+        "role": "client",
+        "detail": [
+          "theme, splash,",
+          "UI composition"
+        ]
+      },
+      {
+        "id": "first",
+        "title": "First frame drawn",
+        "role": "client",
+        "detail": "TTID milestone"
+      },
+      {
+        "id": "ready",
+        "title": "Content ready",
+        "role": "client",
+        "detail": "TTFD milestone"
+      },
+      {
+        "id": "def",
+        "title": "Deferred initialization",
+        "role": "queue",
+        "detail": [
+          "after the",
+          "critical path"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "tap",
+        "to": "proc",
+        "label": "starts"
+      },
+      {
+        "from": "proc",
+        "to": "app",
+        "label": "runs"
+      },
+      {
+        "from": "app",
+        "to": "act",
+        "label": "launches"
+      },
+      {
+        "from": "act",
+        "to": "first",
+        "label": "draws"
+      },
+      {
+        "from": "first",
+        "to": "ready",
+        "label": "loads content"
+      },
+      {
+        "from": "app",
+        "to": "def",
+        "label": "queues non-critical work",
+        "style": "dashed"
+      },
+      {
+        "from": "first",
+        "to": "def",
+        "label": "then runs"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/authentication",
+    "diagram": "3710faa5da8b8d8f",
+    "number": 1,
+    "title": "The browser signs in; the app only holds tokens",
+    "caption": "The app sends an authorization request with a PKCE challenge through the system browser or a Custom Tab, where the user authenticates with the identity provider. The app exchanges the returned code and its verifier for tokens, stores them in the Keystore-wrapped vault and sends the access token to the API.",
+    "sources": [
+      "https://www.rfc-editor.org/rfc/rfc8252",
+      "https://www.rfc-editor.org/rfc/rfc7636"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "app",
+        "title": "Android client",
+        "role": "client",
+        "detail": [
+          "PKCE verifier +",
+          "session state"
+        ],
+        "key": true
+      },
+      {
+        "id": "browser",
+        "title": "System browser",
+        "role": "client",
+        "detail": "or Custom Tab"
+      },
+      {
+        "id": "idp",
+        "title": "Identity provider",
+        "role": "runtime",
+        "detail": [
+          "authorize + token",
+          "endpoints"
+        ]
+      },
+      {
+        "id": "vault",
+        "title": "Token vault",
+        "role": "storage",
+        "detail": [
+          "Keystore-wrapped",
+          "persistence"
+        ]
+      },
+      {
+        "id": "api",
+        "title": "BFF / resource API",
+        "role": "runtime",
+        "detail": [
+          "validates the",
+          "access token"
+        ]
+      }
+    ],
+    "groups": [
+      {
+        "id": "device",
+        "label": "On the device",
+        "nodes": [
+          "app",
+          "browser",
+          "vault"
+        ]
+      },
+      {
+        "id": "server",
+        "label": "Servers",
+        "nodes": [
+          "idp",
+          "api"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "app",
+        "to": "browser",
+        "label": "auth request + challenge"
+      },
+      {
+        "from": "browser",
+        "to": "idp",
+        "label": "user signs in"
+      },
+      {
+        "from": "idp",
+        "to": "app",
+        "label": "redirect with code",
+        "style": "dashed"
+      },
+      {
+        "from": "app",
+        "to": "idp",
+        "label": "code + verifier"
+      },
+      {
+        "from": "idp",
+        "to": "app",
+        "label": "access, refresh, ID tokens",
+        "style": "dashed"
+      },
+      {
+        "from": "app",
+        "to": "vault",
+        "label": "stores tokens"
+      },
+      {
+        "from": "app",
+        "to": "api",
+        "label": "Bearer access token"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/authentication",
+    "diagram": "dc3f88fda728e0e3",
+    "number": 2,
+    "title": "One refresher serves every 401",
+    "caption": "The sign-in path runs from the UI through AuthRepository to Custom Tabs, the IdP API and the vault. On the request path, AuthInterceptor attaches the access token; a 401 goes to the single-flight TokenRefresher, which updates the vault and lets the interceptor retry once.",
+    "sources": [
+      "https://square.github.io/okhttp/features/interceptors/",
+      "https://developer.chrome.com/docs/android/custom-tabs"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "ui",
+        "title": "Compose UI",
+        "role": "client"
+      },
+      {
+        "id": "vm",
+        "title": "AuthViewModel",
+        "role": "runtime"
+      },
+      {
+        "id": "repo",
+        "title": "AuthRepository",
+        "role": "runtime"
+      },
+      {
+        "id": "browser",
+        "title": "AuthBrowserClient",
+        "role": "client",
+        "detail": "Custom Tabs"
+      },
+      {
+        "id": "idp",
+        "title": "IdP API",
+        "role": "runtime",
+        "detail": "token + revoke"
+      },
+      {
+        "id": "vault",
+        "title": "TokenVault",
+        "role": "storage",
+        "detail": "Keystore-wrapped"
+      },
+      {
+        "id": "call",
+        "title": "Network call",
+        "role": "client"
+      },
+      {
+        "id": "icpt",
+        "title": "AuthInterceptor",
+        "role": "runtime"
+      },
+      {
+        "id": "api",
+        "title": "Resource API",
+        "role": "runtime"
+      },
+      {
+        "id": "ref",
+        "title": "TokenRefresher",
+        "role": "runtime",
+        "detail": "single-flight",
+        "key": true
+      }
+    ],
+    "groups": [
+      {
+        "id": "signin",
+        "label": "Sign-in path",
+        "nodes": [
+          "ui",
+          "vm",
+          "repo",
+          "browser",
+          "idp"
+        ]
+      },
+      {
+        "id": "req",
+        "label": "Request path",
+        "nodes": [
+          "call",
+          "icpt",
+          "api",
+          "ref"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "vm",
+        "label": "events"
+      },
+      {
+        "from": "vm",
+        "to": "repo",
+        "label": "sign in / out"
+      },
+      {
+        "from": "repo",
+        "to": "browser",
+        "label": "opens"
+      },
+      {
+        "from": "repo",
+        "to": "idp",
+        "label": "exchanges + revokes"
+      },
+      {
+        "from": "repo",
+        "to": "vault",
+        "label": "saves"
+      },
+      {
+        "from": "call",
+        "to": "icpt",
+        "label": "goes through"
+      },
+      {
+        "from": "icpt",
+        "to": "api",
+        "label": "attaches token"
+      },
+      {
+        "from": "api",
+        "to": "ref",
+        "label": "401"
+      },
+      {
+        "from": "ref",
+        "to": "vault",
+        "label": "reads + saves"
+      },
+      {
+        "from": "ref",
+        "to": "icpt",
+        "label": "retry once",
+        "style": "dashed"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/deep-links-and-universal-links",
+    "diagram": "baa5bcf2df96c6c3",
+    "number": 1,
+    "title": "Verification decides who opens the link",
+    "caption": "Android resolves the tapped HTTPS link. If the domain is not verified for this app, the browser or a user-selected handler opens it. If it is, the link router parses the URI into a typed route; a protected route with no session saves the route, authenticates, then navigates.",
+    "sources": [
+      "https://developer.android.com/training/app-links/verify-android-applinks",
+      "https://developer.android.com/training/app-links"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "tap",
+        "title": "HTTPS link tapped",
+        "role": "client"
+      },
+      {
+        "id": "os",
+        "title": "Intent resolution",
+        "role": "runtime",
+        "detail": "Android"
+      },
+      {
+        "id": "ver",
+        "title": "Domain verified?",
+        "role": "neutral",
+        "detail": "for this app",
+        "key": true
+      },
+      {
+        "id": "browser",
+        "title": "Browser",
+        "role": "client",
+        "detail": "or chosen handler"
+      },
+      {
+        "id": "router",
+        "title": "Link router",
+        "role": "runtime",
+        "detail": "intent-filtered"
+      },
+      {
+        "id": "parse",
+        "title": "Typed route",
+        "role": "runtime",
+        "detail": [
+          "parse and",
+          "validate URI"
+        ]
+      },
+      {
+        "id": "auth",
+        "title": "Needs sign-in?",
+        "role": "neutral",
+        "detail": "route policy"
+      },
+      {
+        "id": "save",
+        "title": "Pending route",
+        "role": "storage",
+        "detail": [
+          "saved, then",
+          "authenticate"
+        ]
+      },
+      {
+        "id": "nav",
+        "title": "Destination",
+        "role": "client",
+        "detail": "navigate"
+      }
+    ],
+    "edges": [
+      {
+        "from": "tap",
+        "to": "os",
+        "label": "ACTION_VIEW"
+      },
+      {
+        "from": "os",
+        "to": "ver",
+        "label": "checks"
+      },
+      {
+        "from": "ver",
+        "to": "browser",
+        "label": "no"
+      },
+      {
+        "from": "ver",
+        "to": "router",
+        "label": "yes"
+      },
+      {
+        "from": "router",
+        "to": "parse",
+        "label": "parses"
+      },
+      {
+        "from": "parse",
+        "to": "auth",
+        "label": "checks"
+      },
+      {
+        "from": "auth",
+        "to": "nav",
+        "label": "public or signed in"
+      },
+      {
+        "from": "auth",
+        "to": "save",
+        "label": "signed out"
+      },
+      {
+        "from": "save",
+        "to": "nav",
+        "label": "after login"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/deep-links-and-universal-links",
+    "diagram": "310a06907821a64e",
+    "number": 2,
+    "title": "One router, one gate, one navigator",
+    "caption": "LinkRouterActivity hands every ACTION_VIEW URI to DeepLinkParser, which returns a typed Route. AuthGate sends an authorized route straight to the Navigator; otherwise PendingRouteStore keeps it through the login flow and releases it to the Navigator after success.",
+    "sources": [
+      "https://developer.android.com/guide/navigation/design/deep-link",
+      "https://developer.android.com/training/app-links/create-deeplinks"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "intent",
+        "title": "ACTION_VIEW intent",
+        "role": "client",
+        "detail": "+ URI"
+      },
+      {
+        "id": "router",
+        "title": "LinkRouterActivity",
+        "role": "runtime"
+      },
+      {
+        "id": "parser",
+        "title": "DeepLinkParser",
+        "role": "runtime",
+        "detail": "URI → typed Route"
+      },
+      {
+        "id": "gate",
+        "title": "AuthGate",
+        "role": "runtime",
+        "key": true
+      },
+      {
+        "id": "pending",
+        "title": "PendingRouteStore",
+        "role": "storage"
+      },
+      {
+        "id": "login",
+        "title": "Authentication flow",
+        "role": "client"
+      },
+      {
+        "id": "navigator",
+        "title": "Navigator",
+        "role": "runtime"
+      },
+      {
+        "id": "nav",
+        "title": "NavController",
+        "role": "client",
+        "detail": "Compose"
+      }
+    ],
+    "edges": [
+      {
+        "from": "intent",
+        "to": "router",
+        "label": "delivered to"
+      },
+      {
+        "from": "router",
+        "to": "parser",
+        "label": "parses"
+      },
+      {
+        "from": "parser",
+        "to": "gate",
+        "label": "Route"
+      },
+      {
+        "from": "gate",
+        "to": "navigator",
+        "label": "authorized"
+      },
+      {
+        "from": "gate",
+        "to": "pending",
+        "label": "sign-in required"
+      },
+      {
+        "from": "pending",
+        "to": "login",
+        "label": "starts"
+      },
+      {
+        "from": "login",
+        "to": "pending",
+        "label": "success",
+        "style": "dashed"
+      },
+      {
+        "from": "pending",
+        "to": "navigator",
+        "label": "releases route"
+      },
+      {
+        "from": "navigator",
+        "to": "nav",
+        "label": "navigates"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/push-notifications",
+    "diagram": "af0154bd8e63c6dc",
+    "number": 1,
+    "title": "Each push takes one of three paths",
+    "caption": "The application server sends through FCM to the device, where FirebaseMessagingService applies the current app and message policy. A foreground app updates its own UI; durable work goes to WorkManager to refresh local data; a user-visible notification goes to NotificationManagerCompat, and a tap opens a validated deep-link route.",
+    "sources": [
+      "https://firebase.google.com/docs/cloud-messaging/android/receive-messages",
+      "https://developer.android.com/develop/ui/views/notifications/build-notification"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "server",
+        "title": "Application server",
+        "role": "neutral"
+      },
+      {
+        "id": "fcm",
+        "title": "Firebase Cloud Messaging",
+        "role": "queue"
+      },
+      {
+        "id": "svc",
+        "title": "FirebaseMessagingService",
+        "role": "runtime",
+        "detail": "on the device",
+        "key": true
+      },
+      {
+        "id": "policy",
+        "title": "App + message policy",
+        "role": "neutral",
+        "detail": "which path?"
+      },
+      {
+        "id": "fg",
+        "title": "In-app UI",
+        "role": "client",
+        "detail": "foreground"
+      },
+      {
+        "id": "worker",
+        "title": "WorkManager",
+        "role": "queue",
+        "detail": "durable work"
+      },
+      {
+        "id": "store",
+        "title": "Local data",
+        "role": "storage",
+        "detail": "refreshed"
+      },
+      {
+        "id": "notify",
+        "title": "NotificationManagerCompat",
+        "role": "client"
+      },
+      {
+        "id": "tap",
+        "title": "User taps",
+        "role": "client"
+      },
+      {
+        "id": "link",
+        "title": "Deep-link route",
+        "role": "runtime",
+        "detail": "validated"
+      }
+    ],
+    "edges": [
+      {
+        "from": "server",
+        "to": "fcm",
+        "label": "sends"
+      },
+      {
+        "from": "fcm",
+        "to": "svc",
+        "label": "delivers"
+      },
+      {
+        "from": "svc",
+        "to": "policy",
+        "label": "decides"
+      },
+      {
+        "from": "policy",
+        "to": "fg",
+        "label": "foreground"
+      },
+      {
+        "from": "policy",
+        "to": "worker",
+        "label": "durable work"
+      },
+      {
+        "from": "policy",
+        "to": "notify",
+        "label": "user-visible"
+      },
+      {
+        "from": "worker",
+        "to": "store",
+        "label": "refreshes"
+      },
+      {
+        "from": "notify",
+        "to": "tap",
+        "label": "shows"
+      },
+      {
+        "from": "tap",
+        "to": "link",
+        "label": "opens"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/push-notifications",
+    "diagram": "1adb53292bc61690",
+    "number": 2,
+    "title": "The dispatcher owns the delivery policy",
+    "caption": "AppFcmMessagingService passes each FCM message to PushDispatcher, which chooses foreground presentation, a WorkManager refresh or an immediate notification built by NotificationFactory. Both the in-app path and the worker update the Room-backed inbox repository.",
+    "sources": [
+      "https://firebase.google.com/docs/cloud-messaging/android/receive-messages",
+      "https://developer.android.com/develop/background-work/background-tasks/persistent"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "fcm",
+        "title": "FCM message",
+        "role": "queue"
+      },
+      {
+        "id": "svc",
+        "title": "AppFcmMessagingService",
+        "role": "runtime"
+      },
+      {
+        "id": "disp",
+        "title": "PushDispatcher",
+        "role": "runtime",
+        "detail": "delivery policy",
+        "key": true
+      },
+      {
+        "id": "inapp",
+        "title": "In-app UI event",
+        "role": "client",
+        "detail": "foreground"
+      },
+      {
+        "id": "work",
+        "title": "WorkManager request",
+        "role": "queue",
+        "detail": "refresh required"
+      },
+      {
+        "id": "factory",
+        "title": "NotificationFactory",
+        "role": "runtime",
+        "detail": "notify now"
+      },
+      {
+        "id": "mgr",
+        "title": "NotificationManagerCompat",
+        "role": "client"
+      },
+      {
+        "id": "repo",
+        "title": "Inbox repository",
+        "role": "storage",
+        "detail": "Room"
+      }
+    ],
+    "edges": [
+      {
+        "from": "fcm",
+        "to": "svc",
+        "label": "received"
+      },
+      {
+        "from": "svc",
+        "to": "disp",
+        "label": "dispatches"
+      },
+      {
+        "from": "disp",
+        "to": "inapp",
+        "label": "foreground"
+      },
+      {
+        "from": "disp",
+        "to": "work",
+        "label": "refresh"
+      },
+      {
+        "from": "disp",
+        "to": "factory",
+        "label": "notify now"
+      },
+      {
+        "from": "factory",
+        "to": "mgr",
+        "label": "posts"
+      },
+      {
+        "from": "work",
+        "to": "repo",
+        "label": "writes"
+      },
+      {
+        "from": "inapp",
+        "to": "repo",
+        "label": "writes"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/feature-flags-and-remote-config",
+    "diagram": "a841da022830f5b4",
+    "number": 1,
+    "title": "Reads come from memory; fetches never block them",
+    "caption": "At startup the repository loads the last valid disk snapshot and publishes an immutable in-memory FlagSet, so typed evaluation is synchronous. A background fetch is validated and persisted atomically; the activation policy either swaps it in live or leaves it on disk for the next session.",
+    "sources": [
+      "https://firebase.google.com/docs/remote-config/loading",
+      "https://developer.android.com/kotlin/flow/stateflow-and-sharedflow"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "start",
+        "title": "App startup",
+        "role": "client"
+      },
+      {
+        "id": "boot",
+        "title": "FlagsRepository",
+        "role": "runtime",
+        "detail": "bootstrap()"
+      },
+      {
+        "id": "disk",
+        "title": "Disk snapshot",
+        "role": "storage",
+        "detail": "last valid"
+      },
+      {
+        "id": "mem",
+        "title": "In-memory FlagSet",
+        "role": "storage",
+        "detail": "immutable",
+        "key": true
+      },
+      {
+        "id": "caller",
+        "title": "Typed evaluation",
+        "role": "client",
+        "detail": "synchronous"
+      },
+      {
+        "id": "fetch",
+        "title": "Background fetch",
+        "role": "queue"
+      },
+      {
+        "id": "validate",
+        "title": "Validate",
+        "role": "runtime",
+        "detail": [
+          "schema, signature,",
+          "targeting"
+        ]
+      },
+      {
+        "id": "persist",
+        "title": "Persist atomically",
+        "role": "storage"
+      },
+      {
+        "id": "policy",
+        "title": "Activation policy",
+        "role": "neutral"
+      }
+    ],
+    "edges": [
+      {
+        "from": "start",
+        "to": "boot",
+        "label": "bootstraps"
+      },
+      {
+        "from": "boot",
+        "to": "disk",
+        "label": "loads"
+      },
+      {
+        "from": "disk",
+        "to": "mem",
+        "label": "publishes"
+      },
+      {
+        "from": "mem",
+        "to": "caller",
+        "label": "reads"
+      },
+      {
+        "from": "boot",
+        "to": "fetch",
+        "label": "starts"
+      },
+      {
+        "from": "fetch",
+        "to": "validate",
+        "label": "candidate"
+      },
+      {
+        "from": "validate",
+        "to": "persist",
+        "label": "valid"
+      },
+      {
+        "from": "persist",
+        "to": "policy",
+        "label": "then"
+      },
+      {
+        "from": "policy",
+        "to": "mem",
+        "label": "live-safe"
+      },
+      {
+        "from": "policy",
+        "to": "disk",
+        "label": "next session",
+        "style": "dashed"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/feature-flags-and-remote-config",
+    "diagram": "d68ec33e293a0f8c",
+    "number": 2,
+    "title": "A StateFlow of immutable snapshots",
+    "caption": "Application.onCreate creates the FlagsRepository, which exposes the stored snapshot as a StateFlow that feature callers read. The background refresher fetches from the Flags API; the validator persists every valid response and swaps live-safe changes into the flow atomically.",
+    "sources": [
+      "https://developer.android.com/kotlin/flow/stateflow-and-sharedflow",
+      "https://developer.android.com/topic/libraries/architecture/datastore"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "app",
+        "title": "Application.onCreate",
+        "role": "runtime"
+      },
+      {
+        "id": "repo",
+        "title": "FlagsRepository",
+        "role": "runtime",
+        "key": true
+      },
+      {
+        "id": "disk",
+        "title": "Snapshot store",
+        "role": "storage"
+      },
+      {
+        "id": "flow",
+        "title": "StateFlow<FlagSet>",
+        "role": "storage",
+        "detail": "immutable"
+      },
+      {
+        "id": "features",
+        "title": "Feature callers",
+        "role": "client"
+      },
+      {
+        "id": "refresh",
+        "title": "Background refresher",
+        "role": "queue"
+      },
+      {
+        "id": "api",
+        "title": "Flags API",
+        "role": "runtime"
+      },
+      {
+        "id": "validate",
+        "title": "Validator",
+        "role": "runtime"
+      }
+    ],
+    "edges": [
+      {
+        "from": "app",
+        "to": "repo",
+        "label": "creates"
+      },
+      {
+        "from": "repo",
+        "to": "disk",
+        "label": "loads"
+      },
+      {
+        "from": "disk",
+        "to": "flow",
+        "label": "seeds"
+      },
+      {
+        "from": "flow",
+        "to": "features",
+        "label": "reads"
+      },
+      {
+        "from": "repo",
+        "to": "refresh",
+        "label": "starts"
+      },
+      {
+        "from": "refresh",
+        "to": "api",
+        "label": "fetches"
+      },
+      {
+        "from": "api",
+        "to": "validate",
+        "label": "candidate"
+      },
+      {
+        "from": "validate",
+        "to": "disk",
+        "label": "persists"
+      },
+      {
+        "from": "validate",
+        "to": "flow",
+        "label": "live-safe swap"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/feature-flags-and-remote-config",
+    "diagram": "7180cde5527f302e",
+    "number": 3,
+    "title": "Cached first, fetched second, activated by policy",
+    "caption": "bootstrap() serves the last valid cached snapshot before any network call, so the app can evaluate synchronously. The background fetch is validated and persisted atomically; only a live-safe change is published to the running app, while a next-session change waits.",
+    "sources": [
+      "https://firebase.google.com/docs/remote-config/loading"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "app",
+        "title": "App",
+        "role": "client"
+      },
+      {
+        "id": "store",
+        "title": "Snapshot store",
+        "role": "storage"
+      },
+      {
+        "id": "repo",
+        "title": "Flags repository",
+        "role": "runtime"
+      },
+      {
+        "id": "api",
+        "title": "Flags API",
+        "role": "runtime"
+      }
+    ],
+    "events": [
+      {
+        "from": "app",
+        "to": "repo",
+        "label": "bootstrap()"
+      },
+      {
+        "from": "repo",
+        "to": "store",
+        "label": "load last valid snapshot"
+      },
+      {
+        "from": "store",
+        "to": "repo",
+        "label": "cached FlagSet",
+        "style": "dashed"
+      },
+      {
+        "from": "repo",
+        "to": "app",
+        "label": "ready for synchronous evaluation",
+        "style": "dashed"
+      },
+      {
+        "from": "repo",
+        "to": "api",
+        "label": "fetch in background"
+      },
+      {
+        "from": "api",
+        "to": "repo",
+        "label": "candidate config",
+        "style": "dashed"
+      },
+      {
+        "at": "repo",
+        "label": "validate, choose activation policy"
+      },
+      {
+        "from": "repo",
+        "to": "store",
+        "label": "persist atomically"
+      },
+      {
+        "over": [
+          "app",
+          "repo"
+        ],
+        "text": "Live-safe: publish the new FlagSet. Next-session: keep the current snapshot."
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/telemetry-sdk",
+    "diagram": "7d6b8d0f487bf60a",
+    "number": 1,
+    "title": "Five signals, one policy, one flush path",
+    "caption": "Crash, ANR, frame, network and startup capture all write to bounded event buffers. Priority, consent, sampling and redaction decide what is kept, and the FlushScheduler hands batches to a WorkManager FlushWorker that uploads to the ingestion API.",
+    "sources": [
+      "https://developer.android.com/topic/performance/vitals",
+      "https://developer.android.com/topic/libraries/architecture/workmanager"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "crash",
+        "title": "Crash capture",
+        "role": "runtime",
+        "detail": "JVM + native"
+      },
+      {
+        "id": "anr",
+        "title": "ANR detection",
+        "role": "runtime"
+      },
+      {
+        "id": "frames",
+        "title": "Frame timing",
+        "role": "runtime"
+      },
+      {
+        "id": "net",
+        "title": "Network spans",
+        "role": "runtime"
+      },
+      {
+        "id": "startup",
+        "title": "Startup tracing",
+        "role": "runtime"
+      },
+      {
+        "id": "buf",
+        "title": "Bounded buffers",
+        "role": "storage",
+        "key": true
+      },
+      {
+        "id": "policy",
+        "title": "Event policy",
+        "role": "neutral",
+        "detail": [
+          "priority, consent,",
+          "sampling, redaction"
+        ]
+      },
+      {
+        "id": "sched",
+        "title": "FlushScheduler",
+        "role": "queue"
+      },
+      {
+        "id": "worker",
+        "title": "FlushWorker",
+        "role": "queue",
+        "detail": "WorkManager"
+      },
+      {
+        "id": "api",
+        "title": "Ingestion API",
+        "role": "runtime"
+      }
+    ],
+    "edges": [
+      {
+        "from": "crash",
+        "to": "buf",
+        "label": "writes"
+      },
+      {
+        "from": "anr",
+        "to": "buf",
+        "label": "writes"
+      },
+      {
+        "from": "frames",
+        "to": "buf",
+        "label": "writes"
+      },
+      {
+        "from": "net",
+        "to": "buf",
+        "label": "writes"
+      },
+      {
+        "from": "startup",
+        "to": "buf",
+        "label": "writes"
+      },
+      {
+        "from": "buf",
+        "to": "policy",
+        "label": "filtered by"
+      },
+      {
+        "from": "policy",
+        "to": "sched",
+        "label": "kept events"
+      },
+      {
+        "from": "sched",
+        "to": "worker",
+        "label": "enqueues"
+      },
+      {
+        "from": "worker",
+        "to": "api",
+        "label": "uploads"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/telemetry-sdk",
+    "diagram": "a1a44fd6d951811d",
+    "number": 2,
+    "title": "Crashes and perf data travel in separate lanes",
+    "caption": "JVM, native and ANR failures go to CrashSink, which also snapshots the breadcrumb ring, and land in the critical durable store. Frame and HTTP metrics go to a sampled PerfSink and its own store. Both stores feed the same FlushScheduler and FlushWorker.",
+    "sources": [
+      "https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler",
+      "https://developer.android.com/topic/performance/vitals/anr"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "jvm",
+        "title": "JVM exception",
+        "role": "runtime",
+        "detail": "uncaught"
+      },
+      {
+        "id": "native",
+        "title": "Native signal",
+        "role": "runtime"
+      },
+      {
+        "id": "anr",
+        "title": "ANR detector",
+        "role": "runtime"
+      },
+      {
+        "id": "bc",
+        "title": "Breadcrumb API",
+        "role": "client"
+      },
+      {
+        "id": "ring",
+        "title": "Breadcrumb ring",
+        "role": "storage",
+        "detail": "bounded, in memory"
+      },
+      {
+        "id": "crash",
+        "title": "CrashSink",
+        "role": "runtime",
+        "key": true
+      },
+      {
+        "id": "critical",
+        "title": "Critical store",
+        "role": "storage",
+        "detail": "durable"
+      },
+      {
+        "id": "frames",
+        "title": "Frame metrics",
+        "role": "runtime"
+      },
+      {
+        "id": "http",
+        "title": "HTTP listener",
+        "role": "runtime"
+      },
+      {
+        "id": "perf",
+        "title": "PerfSink",
+        "role": "runtime",
+        "detail": "sampled"
+      },
+      {
+        "id": "sampled",
+        "title": "Sampled store",
+        "role": "storage",
+        "detail": "durable"
+      },
+      {
+        "id": "sched",
+        "title": "FlushScheduler",
+        "role": "queue"
+      },
+      {
+        "id": "worker",
+        "title": "FlushWorker",
+        "role": "queue"
+      },
+      {
+        "id": "api",
+        "title": "Telemetry API",
+        "role": "runtime"
+      }
+    ],
+    "groups": [
+      {
+        "id": "crashlane",
+        "label": "Crash lane",
+        "nodes": [
+          "jvm",
+          "native",
+          "anr",
+          "bc",
+          "ring",
+          "crash",
+          "critical"
+        ]
+      },
+      {
+        "id": "perflane",
+        "label": "Perf lane",
+        "nodes": [
+          "frames",
+          "http",
+          "perf",
+          "sampled"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "jvm",
+        "to": "crash",
+        "label": "reports"
+      },
+      {
+        "from": "native",
+        "to": "crash",
+        "label": "reports"
+      },
+      {
+        "from": "anr",
+        "to": "crash",
+        "label": "reports"
+      },
+      {
+        "from": "bc",
+        "to": "ring",
+        "label": "records"
+      },
+      {
+        "from": "ring",
+        "to": "crash",
+        "label": "snapshot on failure",
+        "style": "dashed"
+      },
+      {
+        "from": "crash",
+        "to": "critical",
+        "label": "persists"
+      },
+      {
+        "from": "frames",
+        "to": "perf",
+        "label": "reports"
+      },
+      {
+        "from": "http",
+        "to": "perf",
+        "label": "reports"
+      },
+      {
+        "from": "perf",
+        "to": "sampled",
+        "label": "persists"
+      },
+      {
+        "from": "critical",
+        "to": "sched",
+        "label": "pending"
+      },
+      {
+        "from": "sampled",
+        "to": "sched",
+        "label": "pending"
+      },
+      {
+        "from": "sched",
+        "to": "worker",
+        "label": "enqueues"
+      },
+      {
+        "from": "worker",
+        "to": "api",
+        "label": "uploads"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/analytics-sdk",
+    "diagram": "c60da8cb86de0213",
+    "number": 1,
+    "title": "Events stay on disk until the server acknowledges them",
+    "caption": "Feature code calls typed Analytics.track, and consent, validation, redaction and sampling run before the event enters a durable, bounded queue. A size, age and connectivity scheduler triggers the FlushWorker; a success deletes the acknowledged batch and a failure goes back to bounded retry.",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/workmanager",
+      "https://developer.android.com/training/data-storage/room"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "feature",
+        "title": "Feature code",
+        "role": "client"
+      },
+      {
+        "id": "track",
+        "title": "Analytics.track",
+        "role": "runtime",
+        "detail": "typed"
+      },
+      {
+        "id": "policy",
+        "title": "Event policy",
+        "role": "neutral",
+        "detail": [
+          "consent, validation,",
+          "redaction, sampling"
+        ]
+      },
+      {
+        "id": "queue",
+        "title": "Event queue",
+        "role": "storage",
+        "detail": "durable, bounded",
+        "key": true
+      },
+      {
+        "id": "sched",
+        "title": "Scheduler",
+        "role": "queue",
+        "detail": [
+          "size, age,",
+          "connectivity"
+        ]
+      },
+      {
+        "id": "worker",
+        "title": "FlushWorker",
+        "role": "queue",
+        "detail": "WorkManager"
+      },
+      {
+        "id": "api",
+        "title": "Batch events API",
+        "role": "runtime"
+      },
+      {
+        "id": "ingest",
+        "title": "Server ingestion",
+        "role": "neutral",
+        "detail": "black box"
+      }
+    ],
+    "edges": [
+      {
+        "from": "feature",
+        "to": "track",
+        "label": "calls"
+      },
+      {
+        "from": "track",
+        "to": "policy",
+        "label": "checked by"
+      },
+      {
+        "from": "policy",
+        "to": "queue",
+        "label": "enqueues"
+      },
+      {
+        "from": "queue",
+        "to": "sched",
+        "label": "triggers"
+      },
+      {
+        "from": "sched",
+        "to": "worker",
+        "label": "runs"
+      },
+      {
+        "from": "worker",
+        "to": "api",
+        "label": "sends batch"
+      },
+      {
+        "from": "api",
+        "to": "ingest",
+        "label": "forwards"
+      },
+      {
+        "from": "worker",
+        "to": "queue",
+        "label": "success: delete batch",
+        "style": "dashed"
+      },
+      {
+        "from": "worker",
+        "to": "sched",
+        "label": "failure: bounded retry",
+        "style": "dashed"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/analytics-sdk",
+    "diagram": "259c7fb28f43f33a",
+    "number": 2,
+    "title": "An interceptor chain guards the queue",
+    "caption": "Every feature calls one Analytics API, and its interceptor chain applies the consent gate, schema validation, PII redaction and sampling before an event reaches the Room queue. The FlushScheduler and FlushWorker then send batches to the API.",
+    "sources": [
+      "https://developer.android.com/training/data-storage/room",
+      "https://developer.android.com/topic/libraries/architecture/workmanager"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "feature",
+        "title": "Any feature",
+        "role": "client"
+      },
+      {
+        "id": "api",
+        "title": "Analytics API",
+        "role": "runtime"
+      },
+      {
+        "id": "chain",
+        "title": "Interceptor chain",
+        "role": "runtime",
+        "key": true
+      },
+      {
+        "id": "consent",
+        "title": "Consent gate",
+        "role": "neutral"
+      },
+      {
+        "id": "validate",
+        "title": "Schema validation",
+        "role": "neutral"
+      },
+      {
+        "id": "redact",
+        "title": "PII redaction",
+        "role": "neutral"
+      },
+      {
+        "id": "sample",
+        "title": "Sampling",
+        "role": "neutral"
+      },
+      {
+        "id": "queue",
+        "title": "Event queue",
+        "role": "storage",
+        "detail": "Room"
+      },
+      {
+        "id": "sched",
+        "title": "FlushScheduler",
+        "role": "queue"
+      },
+      {
+        "id": "worker",
+        "title": "FlushWorker",
+        "role": "queue"
+      },
+      {
+        "id": "net",
+        "title": "Batch API",
+        "role": "runtime"
+      }
+    ],
+    "edges": [
+      {
+        "from": "feature",
+        "to": "api",
+        "label": "track"
+      },
+      {
+        "from": "api",
+        "to": "chain",
+        "label": "passes to"
+      },
+      {
+        "from": "chain",
+        "to": "consent",
+        "label": "runs"
+      },
+      {
+        "from": "chain",
+        "to": "validate",
+        "label": "runs"
+      },
+      {
+        "from": "chain",
+        "to": "redact",
+        "label": "runs"
+      },
+      {
+        "from": "chain",
+        "to": "sample",
+        "label": "runs"
+      },
+      {
+        "from": "consent",
+        "to": "queue",
+        "label": "admits"
+      },
+      {
+        "from": "validate",
+        "to": "queue",
+        "label": "admits"
+      },
+      {
+        "from": "redact",
+        "to": "queue",
+        "label": "admits"
+      },
+      {
+        "from": "sample",
+        "to": "queue",
+        "label": "admits"
+      },
+      {
+        "from": "queue",
+        "to": "sched",
+        "label": "triggers"
+      },
+      {
+        "from": "sched",
+        "to": "worker",
+        "label": "runs"
+      },
+      {
+        "from": "worker",
+        "to": "net",
+        "label": "sends batch"
+      }
+    ]
   }
 ]
