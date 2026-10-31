@@ -39,7 +39,9 @@ TREES = {
         'mobile-system-design/image-loading.md', 'mobile-system-design/file-downloader.md',
         'mobile-system-design/caching-library.md', 'mobile-system-design/pagination.md',
         'mobile-system-design/typeahead-autocomplete-search.md', 'mobile-system-design/search.md',
-        'mobile-system-design/notification-system.md', 'mobile-system-design/offline-sync.md']},
+        'mobile-system-design/notification-system.md', 'mobile-system-design/offline-sync.md',
+        'mobile-system-design/news-feed.md', 'mobile-system-design/chat-messaging.md',
+        'mobile-system-design/collaborative-editing.md']},
 }
 
 

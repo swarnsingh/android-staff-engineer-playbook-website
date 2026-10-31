@@ -1,0 +1,230 @@
+<!-- Website teaching layer for mobile-system-design/collaborative-editing.md (interview walkthrough).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the step-through and the end recap.
+     Verified 2026-11-01 against collaborative-editing.md at source 49620c3 (§6 storage and account boundary, §7 deep dive and failure modes, §9 concerns, §10 follow-ups). -->
+
+<!-- @after 7. Deep Dive: Local Apply + Sync (15 min) :: animation -->
+### Follow one edit through a crash and an offline restart
+
+<figure class="stepper" data-illustrated><span class="stepper-title">A row leaves the log only with the snapshot that contains it</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="editor" data-art="screen" data-art-role="client"><strong>Editor</strong><small data-text="editorV">visible text</small></div><div class="node" data-el="model" data-art="memory" data-art-role="runtime"><strong>CRDT model</strong><small data-text="modelV">in memory</small></div><div class="node" data-el="log" data-art="database" data-art-role="storage"><strong>Op log</strong><small data-text="logV">no rows</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="snapshot" data-art="document" data-art-role="storage"><strong>Snapshot</strong><small data-text="snapshotV">older state</small></div><div class="node" data-el="socket" data-art="flow" data-art-role="runtime"><strong>DocSocket</strong><small data-text="socketV">connected</small></div><div class="node" data-el="relay" data-art="server" data-art-role="runtime"><strong>Relay</strong><small data-text="relayV">sequencer</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Apply, persist, show, send",
+    "caption": "Under modelLock, the edit goes into the in-memory model but isn’t shown yet. A row is inserted with needsSend = true. Only then does the editor show it, and the socket sends it if connected. A crash before the insert loses an edit the user never saw. If the insert throws, the editor closes with an error and reopens from snapshot plus outbox.",
+    "add": [
+      "editor",
+      "model",
+      "log",
+      "snapshot",
+      "socket",
+      "relay",
+      "event"
+    ],
+    "state": {
+      "model": "active",
+      "log": "active",
+      "editor": "active",
+      "socket": "active"
+    },
+    "text": {
+      "modelV": "op applied",
+      "logV": "row: needsSend",
+      "editorV": "edit shown",
+      "socketV": "op frame sent",
+      "eventV": "durable before it’s visible"
+    },
+    "handoff": {
+      "from": "model",
+      "to": "log",
+      "kind": "rows",
+      "label": "op row"
+    }
+  },
+  {
+    "label": "An ack isn’t a delete",
+    "caption": "The relay’s ack sets needsSend = false, and the row stays. The snapshot can lag by the debounce window, and an offline restart would have no server to get the edit back from.",
+    "state": {
+      "relay": "done",
+      "socket": "done",
+      "log": "active",
+      "model": "done",
+      "editor": "done"
+    },
+    "text": {
+      "relayV": "ack(clientId, clock)",
+      "logV": "row kept: settled",
+      "eventV": "acked means sent, not safe to forget"
+    },
+    "handoff": {
+      "from": "relay",
+      "to": "log",
+      "kind": "parcel",
+      "label": "ack"
+    }
+  },
+  {
+    "label": "Crash, then restart offline",
+    "caption": "The process dies after the ack, before any snapshot contains the edit, and the device is offline. loadModel reads the old snapshot and replays every row, acked or not, so the edit is there. Replaying a row the snapshot already holds is a no-op. The relaunch gets a new clientId, because two live documents must not share one, and old rows keep theirs.",
+    "state": {
+      "socket": "error",
+      "relay": "ghost",
+      "snapshot": "warn",
+      "log": "active",
+      "model": "active",
+      "editor": "active"
+    },
+    "text": {
+      "socketV": "no network",
+      "snapshotV": "doesn’t have the edit",
+      "logV": "replayed",
+      "modelV": "new clientId",
+      "editorV": "edit still there",
+      "eventV": "the log alone restores it"
+    },
+    "handoff": {
+      "from": "log",
+      "to": "model",
+      "kind": "rows",
+      "label": "all rows"
+    }
+  },
+  {
+    "label": "Reconnect: both directions",
+    "caption": "The state vector sent on connect includes everything on this device, because the load came first, and the relay returns only the missing ops. The client then sends every unacked row, including frames sent just before the disconnect, since those may never have arrived. Updates are idempotent, so re-sends are harmless.",
+    "state": {
+      "socket": "active",
+      "relay": "active",
+      "log": "done",
+      "model": "done",
+      "editor": "done",
+      "snapshot": "done"
+    },
+    "text": {
+      "socketV": "state vector + unacked rows",
+      "relayV": "returns missing ops",
+      "logV": "needsSend rows flushed",
+      "snapshotV": "still older",
+      "eventV": "sending again is safe; skipping isn’t"
+    },
+    "handoff": {
+      "from": "log",
+      "to": "relay",
+      "kind": "parcel",
+      "label": "unacked ops"
+    }
+  },
+  {
+    "label": "A remote op is logged first",
+    "caption": "A remote op is inserted with needsSend = false before it’s applied, and it’s ignored if the row exists, so an echo can’t clear a local op’s flag. It’s logged because a local edit typed after it depends on it, and an offline restart couldn’t fetch it again. The CRDT handles the merge.",
+    "state": {
+      "relay": "done",
+      "socket": "active",
+      "log": "active",
+      "model": "active",
+      "editor": "active"
+    },
+    "text": {
+      "relayV": "op from another client",
+      "socketV": "incoming frame",
+      "logV": "insertIgnore",
+      "modelV": "applyRemote",
+      "editorV": "remote text appears",
+      "eventV": "remote ops need the log too"
+    },
+    "handoff": {
+      "from": "socket",
+      "to": "log",
+      "kind": "rows",
+      "label": "remote op"
+    }
+  },
+  {
+    "label": "A snapshot takes the rows with it",
+    "caption": "After a 2-second debounce, writeLock runs one save at a time. Under modelLock, the model is serialized and the settled rows captured, so those rows are in the bytes. One transaction writes the snapshot and deletes them. A crash leaves the old snapshot and the rows, or the new snapshot without them. Unacked rows stay.",
+    "state": {
+      "snapshot": "active",
+      "log": "active",
+      "model": "done",
+      "socket": "done",
+      "editor": "done",
+      "relay": "done"
+    },
+    "text": {
+      "snapshotV": "newer bytes",
+      "logV": "settled rows deleted",
+      "socketV": "connected",
+      "relayV": "sequencer",
+      "eventV": "old state or new state, never a mix"
+    },
+    "handoff": {
+      "from": "log",
+      "to": "snapshot",
+      "kind": "rows",
+      "label": "same transaction"
+    }
+  },
+  {
+    "label": "Presence is allowed to vanish",
+    "caption": "Cursors share the socket as a separate frame type and are never persisted. They anchor to op identities, so text inserted before a cursor doesn’t move it off its character. Frames go at most every 100 ms while moving, with a 5-second keepalive, and a cursor fades after 15 seconds of silence.",
+    "state": {
+      "snapshot": "done",
+      "log": "done",
+      "socket": "active",
+      "editor": "active"
+    },
+    "text": {
+      "socketV": "presence frame",
+      "editorV": "remote cursor",
+      "eventV": "no log, no snapshot, no retry"
+    },
+    "handoff": {
+      "from": "socket",
+      "to": "editor",
+      "kind": "parcel",
+      "label": "cursor"
+    }
+  },
+  {
+    "label": "A foreground service has limits",
+    "caption": "The dataSync service keeps the socket alive during brief backgrounding. It has to start while the editor is visible, and it has 6 hours in 24 on Android 15+. After onTimeout the socket closes and the outbox waits for the next connection. It buys continuity, not durability: the op log already holds every edit.",
+    "state": {
+      "socket": "warn",
+      "log": "done",
+      "editor": "done"
+    },
+    "text": {
+      "socketV": "closed after onTimeout",
+      "logV": "unacked rows wait",
+      "eventV": "the service isn’t what protects edits"
+    }
+  },
+  {
+    "label": "Sign-out or revocation",
+    "caption": "Rows belong to an account, and reads filter by accountId. Sign-out warns if any row still needs sending, then deletes that account’s rows, so those unsent edits are lost. If the server revokes access, the client disconnects and deletes that document’s rows, because the server would reject the queued edits.",
+    "state": {
+      "log": "warn",
+      "snapshot": "warn",
+      "socket": "ghost",
+      "editor": "done",
+      "event": "done"
+    },
+    "text": {
+      "logV": "account’s rows deleted",
+      "snapshotV": "deleted",
+      "socketV": "disconnected",
+      "eventV": "queued edits can’t go out under another token"
+    }
+  }
+]</script><figcaption>A local edit is durable before it’s visible, and it stays in the op log until a committed snapshot contains it. Sign-out, revocation or a failed insert can still discard edits, and the CRDT merges without promising the result is what either person intended.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **Apply, persist, show, send, in that order.** A crash before the insert loses only an edit the user never saw. A failed insert closes the editor, because a Room transaction can’t roll back the in-memory model.
+- **An ack doesn’t free a row.** A row leaves the log in the same transaction that commits a snapshot containing it, so a crash after an ack still leaves the edit on the device.
+- **Remote ops go in the log too.** A local edit can depend on one, and an offline restart can’t fetch it. `insertIgnore` stops an echo clearing a local flag.
+- **On open, load first, then sync.** Snapshot plus all rows makes the document complete offline, and the state vector then reflects everything on this device.
+- **Flush every unacked op.** A frame sent just before a disconnect may never have arrived, and idempotent updates make the repeat harmless.
+- **Durable ops and ephemeral presence have different contracts.** Cursors use relative anchors, are never stored and fade after 15 seconds of silence.
+- **The foreground service buys continuity, not durability.** It has start limits and, on Android 15+, a 6-hour `dataSync` limit. Unsent ops wait in the log.
+- **Name what this design doesn’t solve.** Sign-out and revocation can discard unsent edits, a merged range may read oddly, compaction must not break week-old clients, and a large document needs splitting. Check the CRDT SDK’s Android maturity first.

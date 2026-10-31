@@ -1,0 +1,217 @@
+<!-- Website teaching layer for mobile-system-design/chat-messaging.md (interview walkthrough).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the step-through and the end recap.
+     Verified 2026-11-01 against chat-messaging.md at source 49620c3 (§6 storage and account boundary, §7 deep dive and failure modes, §9 concerns, §10 follow-ups). -->
+
+<!-- @after 7. Deep Dive: Send Flow (15 min) :: animation -->
+### Follow one message from tap to read
+
+<figure class="stepper" data-illustrated><span class="stepper-title">The row exists before the network does</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="ui" data-art="screen" data-art-role="client"><strong>Chat screen</strong><small data-text="uiV">composer</small></div><div class="node" data-el="room" data-art="database" data-art-role="storage"><strong>Room</strong><small data-text="roomV">messages + outbox</small></div><div class="node" data-el="worker" data-art="worker" data-art-role="queue"><strong>Outbox worker</strong><small data-text="workerV">none scheduled</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="socket" data-art="flow" data-art-role="runtime"><strong>ChatWebSocket</strong><small data-text="socketV">connected</small></div><div class="node" data-el="server" data-art="server" data-art-role="runtime"><strong>Chat service</strong><small data-text="serverV">waiting</small></div><div class="node" data-el="fcm" data-art="cloud" data-art-role="queue"><strong>FCM</strong><small data-text="fcmV">idle</small></div></div><div class="viz-grid" data-cols="1"><div class="node" data-el="peer" data-art="phone" data-art-role="client"><strong>Recipient’s device</strong><small data-text="peerV">socket closed</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "Save before anything else",
+    "caption": "A tap creates a PENDING message with a client-generated UUID. One transaction inserts the message and its outbox row, so there’s never one without the other. The bubble appears because Room emitted the row, not because the network answered.",
+    "add": [
+      "ui",
+      "room",
+      "worker",
+      "socket",
+      "server",
+      "fcm",
+      "peer",
+      "event"
+    ],
+    "state": {
+      "ui": "active",
+      "room": "active"
+    },
+    "text": {
+      "uiV": "bubble: sending",
+      "roomV": "PENDING + outbox row",
+      "eventV": "both rows or neither"
+    },
+    "handoff": {
+      "from": "room",
+      "to": "ui",
+      "kind": "rows",
+      "label": "PENDING row"
+    }
+  },
+  {
+    "label": "Schedule recovery first",
+    "caption": "With the socket connected, a delayed ack-timeout worker is scheduled before the send, using one unique work name per clientId. A failed send or a crash after it can’t leave a message with nothing coming to retry it. A crash before scheduling leaves only the row, so app start schedules a worker for any row without one.",
+    "state": {
+      "room": "done",
+      "worker": "active"
+    },
+    "text": {
+      "workerV": "ack timeout waiting",
+      "eventV": "recovery exists before the send"
+    }
+  },
+  {
+    "label": "Send on the socket",
+    "caption": "OkHttp’s send returns false if the frame wasn’t enqueued, and then an expedited worker replaces the delayed one. True only means the frame was queued, so it proves nothing about delivery. Only an ack does.",
+    "state": {
+      "socket": "active",
+      "server": "active",
+      "worker": "done"
+    },
+    "text": {
+      "socketV": "msg.send(clientId)",
+      "serverV": "persists, assigns serverId",
+      "eventV": "enqueued isn’t delivered"
+    },
+    "handoff": {
+      "from": "socket",
+      "to": "server",
+      "kind": "parcel",
+      "label": "msg.send"
+    }
+  },
+  {
+    "label": "The ack clears the outbox",
+    "caption": "The ack marks the message SENT and deletes the outbox row in one transaction. When the delayed worker later runs and finds no row, it does nothing.",
+    "state": {
+      "server": "done",
+      "socket": "done",
+      "room": "active",
+      "ui": "done",
+      "worker": "ghost"
+    },
+    "text": {
+      "serverV": "msg.ack(serverId)",
+      "roomV": "SENT, serverId set",
+      "uiV": "bubble: sent",
+      "workerV": "finds no row",
+      "eventV": "the ack is what ends the retry"
+    },
+    "handoff": {
+      "from": "server",
+      "to": "room",
+      "kind": "rows",
+      "label": "serverId"
+    }
+  },
+  {
+    "label": "If no ack comes",
+    "caption": "For a message with no ack, the worker posts over REST with the same clientId, and the server returns the existing serverId if the socket send had landed. It retries on 5xx, 408 and 429, and waits for a network when there’s none. Another 4xx, or 5 attempts, marks the message FAILED with a retry action. A late response can’t undo DELIVERED or READ.",
+    "state": {
+      "worker": "warn",
+      "server": "active",
+      "room": "done",
+      "ui": "warn"
+    },
+    "text": {
+      "workerV": "POST, same clientId",
+      "serverV": "same serverId",
+      "uiV": "sending, or FAILED",
+      "eventV": "a retry can’t create a second message"
+    },
+    "handoff": {
+      "from": "worker",
+      "to": "server",
+      "kind": "parcel",
+      "label": "same clientId"
+    }
+  },
+  {
+    "label": "The server chooses a priority",
+    "caption": "There’s no push while the recipient’s socket is connected. High priority is for an alert the client will show, because FCM may deprioritize an app whose high-priority messages don’t result in notifications. A muted conversation or disabled notifications get no alert: the message waits for the next sync, or uses normal priority for a background refresh.",
+    "state": {
+      "server": "active",
+      "worker": "done",
+      "ui": "done",
+      "fcm": "active"
+    },
+    "text": {
+      "serverV": "recipient socket offline",
+      "workerV": "none scheduled",
+      "uiV": "bubble: sent",
+      "fcmV": "high priority, data only",
+      "eventV": "priority follows what the user will see"
+    },
+    "handoff": {
+      "from": "server",
+      "to": "fcm",
+      "kind": "parcel",
+      "label": "data message"
+    }
+  },
+  {
+    "label": "Seconds on the recipient’s device",
+    "caption": "onMessageReceived has only seconds. It drops a push whose recipientId isn’t the signed-in account, writes to Room, where the clientId primary key dedupes a later sync, and posts a MessagingStyle notification. A text too long for FCM’s 4096 bytes is fetched by an expedited worker. Aggressive OEMs can drop pushes, so the app also syncs on next launch.",
+    "state": {
+      "fcm": "done",
+      "peer": "active",
+      "server": "done"
+    },
+    "text": {
+      "fcmV": "delivered, or dropped",
+      "peerV": "row + notification",
+      "serverV": "waiting",
+      "eventV": "FCM isn’t the only route: sync still runs"
+    },
+    "handoff": {
+      "from": "fcm",
+      "to": "peer",
+      "kind": "parcel",
+      "label": "push"
+    }
+  },
+  {
+    "label": "Receipts move the status",
+    "caption": "The recipient sends msg.delivered only after the Room write commits, so a crash can’t report a message that was never stored. msg.read follows when it’s visible. The sender updates every row up to that serverId in server order, comparing a numeric sequence rather than strings. Repeats are harmless.",
+    "state": {
+      "peer": "done",
+      "server": "active",
+      "room": "active",
+      "ui": "active"
+    },
+    "text": {
+      "peerV": "msg.delivered, msg.read",
+      "serverV": "fans out",
+      "roomV": "DELIVERED, then READ",
+      "uiV": "bubble: read",
+      "eventV": "a receipt follows the commit"
+    },
+    "handoff": {
+      "from": "server",
+      "to": "room",
+      "kind": "rows",
+      "label": "uptoServerId"
+    }
+  },
+  {
+    "label": "Sign-out wipes this account",
+    "caption": "Sign-out records a signingOut flag so the next launch can finish an interrupted wipe. It closes the socket, cancels outbox work, deletes the FCM token, clears notifications and Coil’s caches, and deletes the database and its passphrase. Queued messages are lost, so warn first. They can’t go out under the next account’s token.",
+    "state": {
+      "room": "warn",
+      "worker": "ghost",
+      "socket": "ghost",
+      "ui": "warn",
+      "server": "done",
+      "event": "done"
+    },
+    "text": {
+      "roomV": "database deleted",
+      "workerV": "cancelled",
+      "socketV": "closed",
+      "uiV": "warned if messages queued",
+      "serverV": "waiting",
+      "eventV": "nothing reaches the next account"
+    }
+  }
+]</script><figcaption>Room holds the message before any transport touches it, and the same clientId makes every retry safe. Delivery still isn’t guaranteed: a message can end FAILED, a push can be dropped, and uninstalling or signing out loses the outbox.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **Room is the single source of truth.** The socket and REST write to Room, and the UI only reads it.
+- **The message and its outbox row commit together, and recovery is scheduled before the socket send.** A crash then leaves a row that a worker, or the next launch, can finish.
+- **A true from `send` means enqueued, not delivered.** Only an ack or a REST response moves a message to `SENT`.
+- **`clientId` makes retries safe across transports.** The server returns the same `serverId` for the socket and REST, and a late response can’t undo `DELIVERED` or `READ`.
+- **Compare `serverId` as a sequence.** Receipts and `sync` depend on server order, and `"m_1000"` sorts before `"m_992"` as a string.
+- **Match FCM priority to what the user will see.** Use high priority for an alert the client will show, and send nothing for a connected socket. Muted conversations get no alert.
+- **FCM is a fallback with limits.** `onMessageReceived` has seconds, the payload has 4096 bytes, and aggressive OEMs can drop messages, so sync on launch too.
+- **Be clear about what can still be lost or left exposed.** Sign-out and reinstall lose the outbox, and a message can end `FAILED`. SQLCipher, when used, covers the database and not Coil’s disk cache, so decide separately how to handle cached attachments.
