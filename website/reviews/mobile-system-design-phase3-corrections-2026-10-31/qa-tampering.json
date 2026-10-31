@@ -1,0 +1,310 @@
+{
+  "done": true,
+  "ok": true,
+  "checks": [
+    {
+      "name": "visible paired control",
+      "expected": true,
+      "actual": true,
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "missing answer",
+      "expected": false,
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "Question/answer pair count differs from the source",
+        "Question 1: answer is not paired with its original question",
+        "Original text is not rendered in order: First answer."
+      ]
+    },
+    {
+      "name": "duplicated answer",
+      "expected": false,
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "Question/answer pair count differs from the source",
+        "Question 1: answer is not paired with its original question"
+      ]
+    },
+    {
+      "name": "swapped original answers",
+      "expected": false,
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "Question 1: answer is not paired with its original question",
+        "Question 1: answer changed or duplicated",
+        "Question 2: answer is not paired with its original question",
+        "Question 2: answer changed or duplicated"
+      ]
+    },
+    {
+      "name": "wrong ordinal",
+      "expected": false,
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "Question 1: answer is not paired with its original question"
+      ]
+    },
+    {
+      "name": "changed answer",
+      "expected": false,
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "Question 1: answer changed or duplicated",
+        "Original text is not rendered in order: First answer."
+      ]
+    },
+    {
+      "name": "changed code",
+      "expected": false,
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "Question 2: answer changed or duplicated",
+        "Original code is not rendered in order: val n = 1"
+      ]
+    },
+    {
+      "name": "hidden answer",
+      "expected": false,
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "section-probing-questions: original content has no rendered area",
+        "section-probing-questions: original content is hidden or nearly transparent",
+        "Original text is not rendered in order: First answer."
+      ]
+    },
+    {
+      "name": "folded answer",
+      "expected": false,
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "section-probing-questions: original prose or code is folded into a disclosure",
+        "Question 1: answer is not paired with its original question",
+        "Original text is not rendered in order: First answer."
+      ]
+    },
+    {
+      "name": "hidden question and answer",
+      "expected": false,
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "section-probing-questions: original content is hidden or nearly transparent",
+        "Original text is not rendered in order: First question?",
+        "Original text is not rendered in order: First answer."
+      ]
+    },
+    {
+      "name": "missing original answer heading",
+      "expected": false,
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "Original heading is not rendered in order: Answer Key",
+        "Original text is not rendered in order: First answer.",
+        "Original text is not rendered in order: Second answer.",
+        "Original code is not rendered in order: val n = 1"
+      ]
+    },
+    {
+      "name": "changed question",
+      "expected": false,
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "Question 1: question changed or duplicated",
+        "Original text is not rendered in order: First question?"
+      ]
+    },
+    {
+      "name": "content: visible",
+      "expected": "pass",
+      "actual": true,
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "content: template",
+      "expected": "fail",
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "Original text is not rendered in order: First original paragraph."
+      ]
+    },
+    {
+      "name": "content: noscript",
+      "expected": "fail",
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "section-fixture: original content is hidden or nearly transparent",
+        "Original text is not rendered in order: First original paragraph."
+      ]
+    },
+    {
+      "name": "content: removed",
+      "expected": "fail",
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "Original text is not rendered in order: First original paragraph."
+      ]
+    },
+    {
+      "name": "content: reordered",
+      "expected": "fail",
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "Original text is not rendered in order: Repeated original paragraph."
+      ]
+    },
+    {
+      "name": "content: repeat-removed",
+      "expected": "fail",
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "Original text is not rendered in order: Repeated original paragraph."
+      ]
+    },
+    {
+      "name": "content: stylesheet",
+      "expected": "fail",
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "section-fixture: original content is hidden or nearly transparent",
+        "Original text is not rendered in order: First original paragraph."
+      ]
+    },
+    {
+      "name": "content: opacity-dot-zero",
+      "expected": "fail",
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "section-fixture: original content is hidden or nearly transparent",
+        "Original text is not rendered in order: First original paragraph."
+      ]
+    },
+    {
+      "name": "content: inherited-opacity",
+      "expected": "fail",
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "section-fixture: original content is hidden or nearly transparent",
+        "Original text is not rendered in order: First original paragraph.",
+        "Original text is not rendered in order: Repeated original paragraph.",
+        "Original text is not rendered in order: Repeated original paragraph."
+      ]
+    },
+    {
+      "name": "content: nearly-transparent",
+      "expected": "fail",
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "section-fixture: original content is hidden or nearly transparent",
+        "Original text is not rendered in order: First original paragraph."
+      ]
+    },
+    {
+      "name": "content: transparent-color",
+      "expected": "fail",
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "section-fixture: original text has a transparent fill",
+        "Original text is not rendered in order: First original paragraph."
+      ]
+    },
+    {
+      "name": "content: filter-opacity",
+      "expected": "fail",
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "section-fixture: original content is hidden by a filter",
+        "Original text is not rendered in order: First original paragraph."
+      ]
+    },
+    {
+      "name": "content: clip-path",
+      "expected": "fail",
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "section-fixture: original content is clipped out of view",
+        "Original text is not rendered in order: First original paragraph."
+      ]
+    },
+    {
+      "name": "content: offscreen",
+      "expected": "fail",
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "section-fixture: original content is positioned outside the reading viewport",
+        "Original text is not rendered in order: First original paragraph."
+      ]
+    },
+    {
+      "name": "content: text-indent",
+      "expected": "fail",
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "section-fixture: original content is indented outside a clipped box",
+        "Original text is not rendered in order: First original paragraph."
+      ]
+    },
+    {
+      "name": "content: disguised-disclosure",
+      "expected": "fail",
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "section-fixture: original prose or code is folded into a disclosure",
+        "Original text is not rendered in order: First original paragraph."
+      ]
+    },
+    {
+      "name": "content: labelled-copy-cannot-replace-original",
+      "expected": "fail",
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "Original text is not rendered in order: First original paragraph."
+      ]
+    },
+    {
+      "name": "content: overlay-limitation",
+      "expected": "limitation",
+      "actual": true,
+      "ok": true,
+      "problems": []
+    },
+    {
+      "name": "content: broken-lazy-diagram",
+      "expected": "fail",
+      "actual": false,
+      "ok": true,
+      "problems": [
+        "section-fixture: original diagram image has not loaded; resource validation is incomplete"
+      ]
+    }
+  ]
+}

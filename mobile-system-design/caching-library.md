@@ -12,7 +12,7 @@
 ### Functional Requirements
 - **Two-tier**: in-memory + on-disk.
 - **Generic types** via `Cache<K, V>` with a pluggable serializer.
-- **TTL** per entry; expired reads return `null`.
+- **TTL**: a cache-wide default with a per-call override; expired reads return `null`.
 - **Manual invalidate** by key and by predicate.
 - **Bounded** by size (memory) and bytes (disk).
 
@@ -75,7 +75,8 @@ The public cache coordinates two independently bounded tiers: memory optimizes l
 ```kotlin
 interface Cache<K : Any, V : Any> {
     suspend fun get(key: K): V?
-    suspend fun put(key: K, value: V, ttl: Duration = Duration.INFINITE)
+    suspend fun put(key: K, value: V)                  // uses the builder's default TTL
+    suspend fun put(key: K, value: V, ttl: Duration)   // per-call override; Duration.INFINITE never expires
     suspend fun invalidate(key: K)
     suspend fun invalidateWhere(predicate: (K) -> Boolean)
     suspend fun clear()
@@ -86,7 +87,14 @@ data class CacheStats(
     val hits: Long, val misses: Long, val evictions: Long,
     val memoryBytes: Long, val diskBytes: Long,
 )
+
+interface Serializer<V> {
+    fun serialize(value: V): ByteArray                 // writes the versioned envelope
+    fun deserializeOrNull(bytes: ByteArray): V?        // null for an unsupported version or undecodable payload
+}
 ```
+
+The default TTL lives in the builder, so it can't be a default parameter value on the interface: an override always uses the base method's default and can't declare its own. Two overloads keep the choice explicit. If the builder sets no TTL, entries don't expire.
 
 ### Builder
 
@@ -169,43 +177,112 @@ internal data class IndexRow(val key: String, val file: String,
 ```kotlin
 override suspend fun get(key: K): V? {
     val stringKey = key.toString()
-    memory.get(stringKey)?.let {
-        if (it.notExpired(clock)) { stats.recordHit(); return it.value }
-        memory.remove(stringKey)                // expired
+    memory.get(stringKey)?.let { cached ->
+        if (cached.notExpired(clock)) { stats.recordHit(); return cached.value }
+        synchronized(stateLock) {               // expired; leave a newer put alone
+            if (memory.get(stringKey) === cached) memory.remove(stringKey)
+        }
     }
-    val bytes = diskMutex.withLock { disk.get(stringKey) } ?: run {
+    val reply = CompletableDeferred<MemoryEntry<V>?>()
+    val seen = synchronized(stateLock) {        // the read's queue position and `seen` must match
+        diskOps.trySend(DiskOp.Read(stringKey, reply))
+        mutations
+    }
+    val entry = reply.await() ?: run {
         stats.recordMiss(); return null
     }
-    if (bytes.isExpired(clock)) {
-        diskMutex.withLock { disk.remove(stringKey) }
-        stats.recordMiss(); return null
+    synchronized(stateLock) {
+        if (mutations == seen) memory.put(stringKey, entry)   // promote only if nothing changed
     }
-    val value = serializer.deserialize(bytes.payload)
-    memory.put(stringKey, MemoryEntry(value, bytes.expiresAt))   // promote
     stats.recordHit()
-    return value
+    return entry.value
 }
 ```
 
 ### Put path
 
 ```kotlin
+override suspend fun put(key: K, value: V) = put(key, value, defaultTtl)
+
 override suspend fun put(key: K, value: V, ttl: Duration) {
     val stringKey = key.toString()
     val expiresAt = if (ttl == Duration.INFINITE) Long.MAX_VALUE
                     else clock.now() + ttl.inWholeMilliseconds
-    memory.put(stringKey, MemoryEntry(value, expiresAt))
-    diskScope.launch {                              // off the caller's coroutine
-        val bytes = serializer.serialize(value)
-        diskMutex.withLock {
-            disk.put(stringKey, DiskEntry(bytes, expiresAt))
-            disk.evictIfOverBudget()
-        }
+    val entry = MemoryEntry(value, expiresAt)
+    synchronized(stateLock) {                       // memory and queue order must agree
+        mutations++
+        memory.put(stringKey, entry)
+        diskOps.trySend(DiskOp.Write(stringKey, entry))
     }
+}
+
+override suspend fun invalidate(key: K) {
+    val stringKey = key.toString()
+    val done = CompletableDeferred<Unit>()
+    synchronized(stateLock) {
+        mutations++
+        memory.remove(stringKey)
+        diskOps.trySend(DiskOp.Remove(stringKey, done))
+    }
+    done.await()                                    // the old value can't return after a restart
 }
 ```
 
-> Disk write happens off the caller's coroutine. Reads see the value immediately via memory. If the process dies before the disk flush, we lose the cache entry — that's *acceptable* for a cache.
+> Disk write happens off the caller's coroutine. Reads see the value immediately via memory. If the process dies before a queued write runs, we lose that cache entry — that's *acceptable* for a cache. A lost invalidate isn't, because the removed value would come back, so `invalidate` waits for the disk. `invalidateWhere` and `clear` follow the same path: count the mutation, change memory, queue one operation, wait for it.
+
+### Disk queue
+
+```kotlin
+private sealed interface DiskOp<out V> {
+    class Read<V>(val key: String, val reply: CompletableDeferred<MemoryEntry<V>?>) : DiskOp<V>
+    class Write<V>(val key: String, val entry: MemoryEntry<V>) : DiskOp<V>
+    class Remove(val key: String, val done: CompletableDeferred<Unit>) : DiskOp<Nothing>
+}
+
+private val stateLock = Any()                       // never held across a suspension or disk I/O
+private var mutations = 0L                          // guarded by stateLock
+private val diskOps = Channel<DiskOp<V>>(Channel.UNLIMITED)
+
+init { diskScope.launch { for (op in diskOps) runDiskOp(op) } }   // one consumer; lives as long as the cache
+
+private fun runDiskOp(op: DiskOp<V>) {
+    try {
+        when (op) {
+            is DiskOp.Read -> op.reply.complete(readFresh(op.key))
+            is DiskOp.Write -> {
+                val bytes = serializer.serialize(op.entry.value)
+                disk.put(op.key, DiskEntry(bytes, op.entry.expiresAt))
+                disk.evictIfOverBudget()
+            }
+            is DiskOp.Remove -> { disk.remove(op.key); op.done.complete(Unit) }
+        }
+    } catch (e: Exception) {                        // one failure must not stop the queue
+        when (op) {
+            is DiskOp.Read -> op.reply.complete(null)
+            is DiskOp.Write -> disk.forget(op.key)  // drop the index row: a later cold read must not get the old value
+            is DiskOp.Remove -> op.done.completeExceptionally(e)
+        }
+    }
+}
+
+private fun readFresh(key: String): MemoryEntry<V>? {
+    val stored = disk.get(key) ?: return null
+    val value = if (stored.isExpired(clock)) null
+                else serializer.deserializeOrNull(stored.payload)
+    if (value == null) { disk.remove(key); return null }   // expired or unsupported: same queue slot as the read
+    return MemoryEntry(value, stored.expiresAt)
+}
+```
+
+Every disk operation runs in the order it was queued, which closes these races:
+
+| Race | Without the rule | What happens now |
+|---|---|---|
+| A `get` reads an old value, then a `put` lands before promotion | The old value overwrites the new one in memory | `mutations` changed, so promotion is skipped |
+| A `get` reads an old value, then `invalidate` runs | The removed value returns to memory | Same: promotion is skipped |
+| A `get` finds an expired or unsupported entry while a `put` is queued | The removal deletes the newer write | The removal shares the read's queue slot, so the write always lands after it or was already read as fresh |
+| `put` then `invalidate`, or two `put`s | The disk ends on an older state | The disk applies them in the order memory did |
+| A `put` is evicted from memory before its disk write runs | A cold read returns the old value | The cold read queues behind the write and gets the new value |
 
 ### Atomic disk write
 
@@ -227,15 +304,17 @@ internal fun writeAtomic(file: File, bytes: ByteArray) {
 ### TTL handling
 
 - Entries carry `expiresAt` absolute timestamp.
-- Checked on every read; expired entries removed lazily (cheap).
+- Checked on every read; expired entries removed lazily (cheap), inside the queued read on disk.
 - No background sweeper — adds wakeups for no benefit.
 
 ### Concurrency
 
 - `MemoryCache` is `LruCache` (synchronized).
-- `DiskCache` is guarded by a `Mutex`, so one read or write touches it at a time; waiting callers suspend rather than block a thread.
+- `stateLock` keeps each memory change, its `mutations` count and its queue position together. It never covers disk work, so memory hits stay fast and don't take it.
+- `DiskCache` has one consumer, a coroutine reading a FIFO channel, so one operation touches it at a time; waiting callers suspend rather than block a thread.
 - Disk work runs on a coroutine dispatcher, off the caller's thread.
-- `invalidate` and `put` must reach disk in order: an invalidate that overtakes a queued disk write would let the removed value come back on a later cold read.
+- `mutations` is one counter for the whole cache, on purpose. A write to another key can skip a promotion, which costs one more disk read later and never a wrong value. A per-key version would need its own bounded map.
+- Two costs to name: a cold read waits behind queued writes, and the unlimited queue holds a write burst's values outside the memory budget until the disk catches up. If bursts matter, coalesce queued writes per key.
 
 ---
 
@@ -278,13 +357,13 @@ internal fun writeAtomic(file: File, bytes: ByteArray) {
 
 ## 9. Major Concerns
 
-- **Crash safety.** Atomic rename for entries. Index rewrite is `tmp + rename`. Lose at most the last in-flight write.
+- **Crash safety.** Atomic rename for entries. Index rewrite is `tmp + rename`. Lose at most the writes still queued.
 - **OOM risk.** Memory tier uses `LruCache` with a *count* budget; size budget if values are large/heterogeneous. Don't unbound the memory tier.
 - **Disk pressure.** Byte budget (e.g., 50 MB). Evict from oldest `lastAccessedAt`. Compact index on threshold.
 - **Cold start.** Don't load the index on app launch synchronously. Lazy-load on first cache touch.
-- **Serializer drift.** Versioned envelope: `{ "v": 2, "payload": ... }`. Unknown version → cache miss (don't crash).
+- **Serializer drift.** Versioned envelope: `{ "v": 2, "payload": ... }`. Unknown version or undecodable payload → `deserializeOrNull` returns `null`, the entry is removed and the read is a cache miss (don't crash). The default serializer catches `IllegalArgumentException`, the parent of kotlinx.serialization's `SerializationException`, so failed validation in a class is covered too.
 - **Privacy.** Caller is responsible for not putting sensitive values; if required, offer a reviewed serializer that emits a versioned ciphertext envelope backed by a platform Keystore key.
-- **Testing.** Inject `Clock`; use `MemoryCache` only in tests; assert hit rates.
+- **Testing.** Inject `Clock`; use `MemoryCache` only in tests; assert hit rates. Use a fake disk that pauses a read to force each race in the table above, and assert both tiers end on the newest state. Also cover the default and per-call TTL, an unsupported envelope, and a failed disk write.
 - **Observability.** `CacheStats` `StateFlow` exposes hits/misses/evictions. Caller wires into telemetry SDK.
 
 ---
@@ -292,7 +371,7 @@ internal fun writeAtomic(file: File, bytes: ByteArray) {
 ## 10. Follow-up Questions
 
 > **Q: How do you handle a write while a read is in flight for the same key?**
-> Memory `put` is atomic on `LruCache`. The disk write happens on a dispatched coroutine; if a read fires before the disk write completes, it gets the memory-tier value (which is newer), as long as the entry has not been evicted from memory. After the disk write, future cold reads see the new value.
+> A read that fires after the `put` gets the newer value: from memory, or, if the entry has been evicted, from a disk read queued behind the write. A cold read already in flight may return the old value, since it overlaps the write, but it can't promote it: `mutations` changed, so it leaves the newer memory entry in place.
 
 > **Q: What about multi-process access?**
 > Out of scope. If needed: switch the disk index to a `ContentProvider`-fronted SQLite table, or use MMKV with file locks. Don't bolt cross-process onto a single-process design.

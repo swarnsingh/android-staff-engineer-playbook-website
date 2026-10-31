@@ -128,7 +128,7 @@
   },
   {
     "label": "After process death",
-    "caption": "Rows and remote keys survive in Room, and the scroll index survives in SavedStateHandle. With LAUNCH_INITIAL_REFRESH the mediator runs REFRESH first, and APPEND waits until it succeeds. To continue from the stored cursor, return SKIP_INITIAL_REFRESH while the cache is still valid.",
+    "caption": "Rows and remote keys survive in Room, and the scroll index is saved in SavedStateHandle. Restoring a far position hasn’t been tested, so check it on a device. With LAUNCH_INITIAL_REFRESH the mediator runs REFRESH first, and APPEND waits until it succeeds. To continue from the stored cursor, return SKIP_INITIAL_REFRESH while the cache is still valid.",
     "state": {
       "pager": "done",
       "room": "done",
@@ -153,4 +153,5 @@
 - **Prefetch and `maxSize` are separate controls.** `prefetchDistance` decides when to load more, and `maxSize` is a best-effort memory bound. Dropped pages stay in Room.
 - **Match the error UI to what’s on screen.** Use a full-screen error only with nothing cached, an inline chip for a failed append, and a snackbar when a refresh fails over good data.
 - **Use stable keys and one source of load state.** `items.itemKey { it.id }` keeps scroll and animation correct, and `LoadState` replaces any parallel `isLoading` flag.
+- **A saved index isn’t a restored position.** The index survives process death, but returning to a far position after relaunch needs a device test.
 - **`initialize()` decides what happens on launch.** `LAUNCH_INITIAL_REFRESH` always refreshes first; `SKIP_INITIAL_REFRESH` keeps a cache that’s still valid.

@@ -740,7 +740,7 @@
   {
     "path": "mobile-system-design/file-downloader",
     "figure": 0,
-    "problem": "How does a large download survive a dropped network or a killed process without restarting or exposing a partial file?",
+    "problem": "How does a large download survive a dropped network or a killed process, resuming where the server allows it, without exposing a partial file?",
     "reading": "The caller enqueues into Room. A worker plans chunks in the ledger and fetches them in parallel into part files, then assembles the final file once every chunk is done.",
     "groups": [
       {
@@ -813,7 +813,7 @@
     "path": "mobile-system-design/caching-library",
     "figure": 0,
     "problem": "How does one cache entry stay fast to read, safe from torn files and honest about expiry?",
-    "reading": "A put writes to memory and hands disk work to a background scope, which renames a temporary file into place. A later read checks memory, then disk, and promotes a fresh disk entry back to memory.",
+    "reading": "A put writes to memory and queues its disk work, and one consumer renames a temporary file into place. A later read checks memory, then queues behind earlier disk work, and promotes a fresh entry only if nothing changed meanwhile.",
     "groups": [
       {
         "id": "proc",
@@ -842,7 +842,7 @@
       {
         "from": "caller",
         "to": "writer",
-        "label": "launches disk write"
+        "label": "queues disk write"
       },
       {
         "from": "writer",
@@ -866,7 +866,7 @@
     "labels": {
       "caller": "Caller",
       "memory": "Memory tier",
-      "writer": "Disk scope",
+      "writer": "Disk queue",
       "tmp": "Temporary file",
       "entry": "Disk entry",
       "event": "What happens"
@@ -1010,7 +1010,7 @@
     "path": "mobile-system-design/search",
     "figure": 0,
     "problem": "How does one search query move through debounce, paging and cache, and what stops an older query from showing its results?",
-    "reading": "The ViewModel debounces text, filters and sort into a query. Each new query starts a Pager that reads Room by query key, while the mediator fills Room from the search API.",
+    "reading": "The ViewModel combines the account with debounced text, filters and sort into a query. Each new query starts a Pager that reads Room by query key, while the mediator fills Room from the search API.",
     "groups": [
       {
         "id": "app",

@@ -80,7 +80,7 @@
   },
   {
     "label": "The network drops",
-    "caption": "Chunk 1 is cut off midway. The worker returns Result.retry() and keeps its partial file. If the process is killed instead, nothing is lost either: the ledger is in Room, and no download state lives only in memory.",
+    "caption": "Chunk 1 is cut off midway. The worker returns Result.retry() and keeps its partial file. If the process is killed instead, the ledger in Room and the part files remain, and no download state lives only in memory.",
     "state": {
       "server": "error",
       "worker": "warn",
@@ -177,4 +177,4 @@
 - **Bound the concurrency.** Three chunks per download and two downloads at once are the defaults, with bytes streamed rather than buffered.
 - **Only a finished file gets the final name.** Chunks are assembled into `.tmp` and renamed; a checksum mismatch deletes the file and fails without an automatic retry.
 - **Retry only what can recover.** A network drop retries and keeps the partial file, a 416 re-plans, and a full disk fails permanently and is shown to the user.
-- **WorkManager can stop a run at any time.** It stops a worker when constraints are lost, and at its 10-minute execution deadline, then retries the work later and ignores the stopped worker’s `Result`. The ledger is what lets that run continue. For a long download the user started, use a user-initiated data transfer job on Android 14+, or a long-running worker with `setForeground` below that.
+- **WorkManager can stop a run at any time.** It stops a worker when constraints are lost, and an ordinary worker at its 10-minute execution deadline, then retries the work later and ignores the stopped worker’s `Result`. The ledger is what lets that run continue. A long-running worker with `setForeground` can run past 10 minutes. For a long download the user started, use a user-initiated data transfer job on Android 14+, or such a worker below that.

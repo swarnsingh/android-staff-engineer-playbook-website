@@ -128,18 +128,18 @@ Each accepted query creates a new paging generation, so old requests and results
 ### Key class signatures
 
 ```kotlin
-data class Query(val text: String, val filters: Filters, val sort: Sort)
+data class Query(val accountId: String, val text: String, val filters: Filters, val sort: Sort)
 
 interface SearchRepository {
     fun search(query: Query): Flow<PagingData<Result>>
-    fun lastResults(): Flow<List<Result>>          // offline fallback
+    fun lastResults(accountId: String): Flow<List<Result>>   // offline fallback
     fun facets(queryId: String): Flow<Facets?>
 }
 
 interface HistoryRepository {
-    fun recents(): Flow<List<RecentQuery>>
+    fun recents(accountId: String): Flow<List<RecentQuery>>
     suspend fun rememberQuery(q: Query)
-    suspend fun clear()
+    suspend fun clear(accountId: String)
 }
 ```
 
@@ -148,19 +148,23 @@ interface HistoryRepository {
 ## 6. Local Storage
 
 ```kotlin
-@Entity(tableName = "search_recents")
+@Entity(tableName = "search_recents", primaryKeys = ["accountId", "text"])
 data class RecentQuery(
-    @PrimaryKey val text: String,
+    val accountId: String,
+    val text: String,
     val filtersJson: String, val lastUsedAt: Long, val useCount: Int
 )
 
 @Entity(tableName = "search_results_cache", primaryKeys = ["queryKey", "itemId"])
 data class CachedResult(
     val itemId: String,
-    val queryKey: String,          // hash of (text + filters + sort)
+    val accountId: String,         // a hash can't be deleted by account, so keep the id too
+    val queryKey: String,          // hash of (accountId + text + filters + sort)
     val rank: Int, val payloadJson: String, val fetchedAt: Long
 )
 ```
+
+Every cached row belongs to one account. A switch keeps each account's rows apart, because reads filter by account. Sign-out deletes that account's results, facets and recents.
 
 > **Probing Q:** "Why cache results?" For the "user types a query, taps a result, comes back" flow. Re-running the search wastes a network call; if the cache is < 5 min old we render it immediately.
 
@@ -179,6 +183,7 @@ data class CachedResult(
 class SearchViewModel @Inject constructor(
     private val repo: SearchRepository,
     private val history: HistoryRepository,
+    session: SessionRepository,
     savedState: SavedStateHandle,
 ) : ViewModel() {
 
@@ -186,8 +191,13 @@ class SearchViewModel @Inject constructor(
     val filters = savedState.getMutableStateFlow("filters", Filters.EMPTY)   // Filters and Sort must be Parcelable
     val sort = savedState.getMutableStateFlow("sort", Sort.RELEVANCE)
 
+    private val accountId = session.currentAccountId()      // a fixed value when signed out
+
+    val recents: StateFlow<List<RecentQuery>> = history.recents(accountId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     private val query: Flow<Query> = combine(text, filters, sort) { t, f, s ->
-        Query(t.trim(), f, s)        // no timestamp: distinctUntilChanged must see equal queries
+        Query(accountId, t.trim(), f, s)     // no timestamp: distinctUntilChanged must see equal queries
     }
         .debounce(250.milliseconds)
         .distinctUntilChanged()
@@ -203,6 +213,8 @@ class SearchViewModel @Inject constructor(
 ```
 
 `flatMapLatest` automatically cancels the previous query when a new one arrives.
+
+This ViewModel belongs to one account. An account switch or sign-out pops that account's whole navigation graph without saving state, which clears the ViewModel, its saved query and its in-memory pages. The next account gets a new ViewModel, so it can't inherit the old query or see those pages.
 
 ### RemoteMediator
 
@@ -229,9 +241,9 @@ class SearchRemoteMediator(
                 if (loadType == LoadType.REFRESH) db.cachedResultsDao().clearForKey(query.key())
                 val firstRank = db.cachedResultsDao().countForKey(query.key())    // ranks continue across pages
                 resp.items.forEachIndexed { i, item ->
-                    db.cachedResultsDao().insert(item.toCached(queryKey = query.key(), rank = firstRank + i))
+                    db.cachedResultsDao().insert(item.toCached(accountId = query.accountId, queryKey = query.key(), rank = firstRank + i))
                 }
-                db.facetsDao().upsert(resp.queryId, resp.facets)
+                db.facetsDao().upsert(query.accountId, resp.queryId, resp.facets)
             }
             MediatorResult.Success(endOfPaginationReached = resp.nextCursor == null)
         } catch (e: IOException) {
@@ -323,6 +335,8 @@ fun onResultClicked(result: Result, position: Int) {
 | User types fast | `debounce + flatMapLatest` cancels mid-flight |
 | Server returns 0 results | Empty state, suggest spelling correction |
 | Process death | Query text + filters in `SavedStateHandle`; restore on resume |
+| Account switch | Navigation graph is popped, clearing the ViewModel; the new account's id gives it its own query keys and recents, so the old account's rows can't show |
+| Sign-out | Navigation graph is popped, then that account's results, facets and recents are deleted; a write that finishes late stays under the old id, so no other account can see it |
 | Stale cache (item deleted server-side) | Tap → product screen handles "not found" |
 | Filters with no facet results | Show greyed-out option (count=0) |
 
@@ -344,7 +358,7 @@ fun onResultClicked(result: Result, position: Int) {
 |---|---|---|---|
 | **Per-query-key Room cache** | Offline + back-stack reuse | Storage cost | Pick this |
 | Memory-only cache | Fast; lost on death | Bad UX after kill | Skip |
-| HTTP-cache only (OkHttp) | Zero code | No per-query keys, less flexible | Acceptable as supplement |
+| HTTP-cache only (OkHttp) | Zero code | No per-query keys, less flexible; personalized responses must not be reused across accounts | Acceptable as supplement |
 
 ### Filters UX
 
@@ -370,8 +384,8 @@ fun onResultClicked(result: Result, position: Int) {
 - **Cellular cost.** Page size 30, image lazy-loaded via Coil with low-quality variant on metered networks.
 - **Process death.** Query text + filters in `SavedStateHandle`. Last results cached in Room. Restored seamlessly.
 - **Empty state.** Don't show a blank screen. Skeleton during load, "No results" with suggested terms or popular queries when truly empty.
-- **Personalization.** Results may differ per user — don't share cache across accounts (namespace the queryKey by user id).
-- **History privacy.** Provide "Clear search history" in settings; honour incognito mode if app has one.
+- **Personalization.** Results may differ per user — don't share cache across accounts. `Query.key()` includes the account id, so the same text gets a different key per account. Test it: run the same query as account A, then as account B, offline, and assert no A rows appear.
+- **History privacy.** Recents are stored per account and deleted at sign-out. Provide "Clear search history" in settings; honour incognito mode if app has one.
 - **Telemetry.** Log query + facet selections + click positions. `queryId` ties them together for ranking.
 - **Accessibility.** Results list must have proper semantics; filter sheet announces selections.
 - **Latency budget.** First paint < 200 ms (cached); fresh results < 400 ms p95.
