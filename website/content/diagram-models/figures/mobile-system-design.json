@@ -2820,7 +2820,7 @@
     "path": "mobile-system-design/image-loading",
     "diagram": "1ae7da91cf009f79",
     "number": 1,
-    "title": "Three tiers, decoded late",
+    "title": "Two caches, then the source",
     "caption": "A request tries memory, then disk, then the source. Bytes are decoded to the requested size only once they are found or fetched, then transformed, and the result fills the eligible cache tiers before it reaches the target.",
     "sources": [
       "https://developer.android.com/reference/android/graphics/ImageDecoder",
@@ -3018,7 +3018,7 @@
     "diagram": "8a81263f4b5132df",
     "number": 1,
     "title": "Durable from enqueue to final file",
-    "caption": "The queue and chunk progress live in Room, so a killed process resumes verified work rather than restarting. The final file appears only through an atomic assembly and rename, so a partial file is never presented as complete.",
+    "caption": "The queue and chunk progress live in Room, so a killed process can resume verified work. That needs Range support and a strong ETag; without them, the download restarts from zero. The final file appears only through an atomic assembly and rename, so a partial file is never presented as complete.",
     "sources": [
       "https://developer.android.com/topic/libraries/architecture/workmanager",
       "https://www.rfc-editor.org/rfc/rfc9110#section-14.2"
@@ -3233,7 +3233,7 @@
     "diagram": "3846c5e8cd9c7cd1",
     "number": 1,
     "title": "One API, two bounded tiers",
-    "caption": "The public cache coordinates two independently bounded tiers. Memory is there for latency. Disk is there for durability, and its data and index updates must stay recoverable after a crash.",
+    "caption": "The public cache coordinates two independently bounded tiers. Memory is there for latency. Disk keeps entries across restarts, and its data and index updates must stay recoverable after a crash.",
     "sources": [
       "https://developer.android.com/reference/kotlin/androidx/collection/LruCache"
     ],
@@ -3286,7 +3286,7 @@
     "path": "mobile-system-design/caching-library",
     "diagram": "3671bd24ed4f7a77",
     "number": 2,
-    "title": "Reads get slower, never staler",
+    "title": "Cheapest tier first; expired is a miss",
     "caption": "A read tries the cheapest tier first, and a fresh disk hit repopulates memory. An expired disk entry is a miss, not silently stale data.",
     "sources": [
       "https://developer.android.com/reference/kotlin/androidx/collection/LruCache"

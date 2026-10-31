@@ -2,7 +2,7 @@
      The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
      decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
      Hand-authored here: the step-through and the end recap.
-     Verified 2026-10-30 against search.md at source 035778c (§5 paging generations, §6 cache, §7 debounce, mediator, filters, offline fallback, click telemetry and failure modes, §9 concerns, §10 facet answer. The "shoes" and "shoes red" queries come from §10; the filter is from §4)
+     Verified 2026-10-31 against search.md at source 1b19336 (§5 paging generations, §6 cache, §7 debounce, mediator, filters, offline fallback, click telemetry and failure modes, §6 and §7 account isolation, §9 concerns, §10 facet answer. The "shoes" and "shoes red" queries come from §10; the filter is from §4)
      and against the Paging 3 network and database guide and the kotlinx.coroutines flatMapLatest reference. -->
 
 <!-- @after 7. Deep Dive: Query → Results Lifecycle (15 min) :: animation -->
@@ -11,7 +11,7 @@
 <figure class="stepper" data-illustrated><span class="stepper-title">Each query is its own paging generation</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="ui" data-art="screen" data-art-role="client"><strong>Search screen</strong><small data-text="uiV">empty</small></div><div class="node" data-el="vm" data-art="clock" data-art-role="runtime"><strong>SearchViewModel</strong><small data-text="vmV">debounce 250 ms</small></div><div class="node" data-el="pager" data-art="code" data-art-role="runtime"><strong>Pager</strong><small data-text="pagerV">none yet</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="mediator" data-art="worker" data-art-role="queue"><strong>RemoteMediator</strong><small data-text="mediatorV">idle</small></div><div class="node" data-el="room" data-art="database" data-art-role="storage"><strong>Room result cache</strong><small data-text="roomV">rows by query key</small></div><div class="node" data-el="api" data-art="server" data-art-role="runtime"><strong>Search API</strong><small data-text="apiV">GET /v1/search</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
   {
     "label": "Input becomes a query",
-    "caption": "Text, filters and sort combine into one query, debounced by 250 ms, and blank text is filtered out. They live in SavedStateHandle, so they survive process death.",
+    "caption": "Text, filters and sort combine with the account into one query, debounced by 250 ms, and blank text is filtered out. Text, filters and sort live in SavedStateHandle, so they survive process death.",
     "add": [
       "ui",
       "vm",
@@ -28,12 +28,12 @@
     "text": {
       "uiV": "shoes",
       "vmV": "waiting 250 ms",
-      "eventV": "text + filters + sort = one query"
+      "eventV": "account + text + filters + sort"
     }
   },
   {
     "label": "A new paging generation",
-    "caption": "The user pauses on \"shoes\". The query is remembered in history, and flatMapLatest starts a new Pager whose PagingSource reads only this query’s key: a hash of text, filters and sort. Rows already cached for that key render first.",
+    "caption": "The user pauses on \"shoes\". The query is remembered in history, and flatMapLatest starts a new Pager whose PagingSource reads only this query’s key: a hash of account, text, filters and sort. Rows already cached for that key render first.",
     "state": {
       "vm": "done",
       "pager": "active",
@@ -128,6 +128,25 @@
     }
   },
   {
+    "label": "The account changes",
+    "caption": "An account switch or sign-out pops that account’s navigation graph, which clears this ViewModel, its saved query and its in-memory pages. The next account gets its own keys and recents, so the old rows can’t show. Sign-out also deletes that account’s results, facets and recents.",
+    "state": {
+      "ui": "active",
+      "vm": "active",
+      "api": "done",
+      "mediator": "done",
+      "room": "done"
+    },
+    "text": {
+      "uiV": "new account, empty",
+      "vmV": "new ViewModel",
+      "apiV": "GET /v1/search",
+      "mediatorV": "idle",
+      "roomV": "rows kept per account",
+      "eventV": "no account reads another’s rows"
+    }
+  },
+  {
     "label": "A tap closes the loop",
     "caption": "Tapping a result logs the queryId, item and position, then opens the product. An item deleted on the server is handled by the product screen as “not found”. A query with zero results shows an empty state with suggested terms rather than a blank screen.",
     "state": {
@@ -148,7 +167,8 @@
 ### Say these in the interview
 
 - **Each accepted query is a new paging generation.** `flatMapLatest` cancels the old one, and its results can’t reach the new list.
-- **The cache key is the query.** Hash text, filters and sort, and namespace it by user, because personalized results mustn’t cross accounts.
+- **The cache key is the account and the query.** Hash the account, text, filters and sort, because personalized results mustn’t cross accounts.
+- **An account change leaves nothing behind.** Pop that account’s navigation graph to clear the ViewModel and its pages, keep recents per account, and delete that account’s rows at sign-out.
 - **Filters are part of the query.** Applying one resets paging, and the same response carries the new facets.
 - **The server owns ranking and facets.** The client owns the query lifecycle, the cached presentation and pagination.
 - **Offline means earlier searches.** A failed refresh still shows what’s cached for that key. Searching a whole catalog offline needs a local full-text index.
