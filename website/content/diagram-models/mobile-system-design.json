@@ -1165,5 +1165,282 @@
       "device": "Android client",
       "event": "What happens"
     }
+  },
+  {
+    "path": "mobile-system-design/news-feed",
+    "figure": 0,
+    "problem": "How does a feed keep its rows, likes and scroll position consistent when the network, the process or the account changes?",
+    "reading": "The list reads Room through the Pager. The mediator and the like path write to Room, the outbox sends likes separately, and a hint reaches the screen without touching the rows.",
+    "groups": [
+      {
+        "id": "app",
+        "label": "Android app",
+        "nodes": [
+          "ui",
+          "pager",
+          "room",
+          "mediator",
+          "outbox",
+          "players"
+        ]
+      },
+      {
+        "id": "remote",
+        "label": "Server side",
+        "nodes": [
+          "api",
+          "hint"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "room",
+        "to": "pager",
+        "label": "loads rows"
+      },
+      {
+        "from": "pager",
+        "to": "ui",
+        "label": "paged items"
+      },
+      {
+        "from": "pager",
+        "to": "mediator",
+        "label": "triggers"
+      },
+      {
+        "from": "mediator",
+        "to": "api",
+        "label": "cursor request"
+      },
+      {
+        "from": "mediator",
+        "to": "room",
+        "label": "page + cursor"
+      },
+      {
+        "from": "ui",
+        "to": "room",
+        "label": "optimistic like"
+      },
+      {
+        "from": "room",
+        "to": "outbox",
+        "label": "same transaction"
+      },
+      {
+        "from": "outbox",
+        "to": "api",
+        "label": "sends like"
+      },
+      {
+        "from": "ui",
+        "to": "players",
+        "label": "plays from pool"
+      },
+      {
+        "from": "hint",
+        "to": "ui",
+        "label": "updates badge"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/paging/v3-network-db",
+      "https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-savedstate",
+      "https://developer.android.com/media/media3/exoplayer/preloading-media",
+      "https://firebase.google.com/docs/cloud-messaging/android-message-priority"
+    ],
+    "labels": {
+      "ui": "Feed list",
+      "pager": "Pager",
+      "room": "Room",
+      "mediator": "RemoteMediator",
+      "api": "Feed API",
+      "outbox": "Engagement outbox",
+      "players": "Player pool",
+      "hint": "FCM hint",
+      "event": "What happens"
+    }
+  },
+  {
+    "path": "mobile-system-design/chat-messaging",
+    "figure": 0,
+    "problem": "How does one message stay saved, undoubled and correctly labelled while its transport changes from socket to worker to push?",
+    "reading": "The screen reads Room. The socket and the worker both send with the same clientId and write the result back to Room. When the recipient’s socket is closed, the server uses FCM to reach their device.",
+    "groups": [
+      {
+        "id": "sender",
+        "label": "Sender’s device",
+        "nodes": [
+          "ui",
+          "room",
+          "worker",
+          "socket"
+        ]
+      },
+      {
+        "id": "backend",
+        "label": "Server side",
+        "nodes": [
+          "server",
+          "fcm"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "room",
+        "to": "ui",
+        "label": "emits rows"
+      },
+      {
+        "from": "room",
+        "to": "socket",
+        "label": "envelope"
+      },
+      {
+        "from": "room",
+        "to": "worker",
+        "label": "outbox row"
+      },
+      {
+        "from": "socket",
+        "to": "server",
+        "label": "msg.send"
+      },
+      {
+        "from": "worker",
+        "to": "server",
+        "label": "POST, same clientId"
+      },
+      {
+        "from": "server",
+        "to": "room",
+        "label": "serverId"
+      },
+      {
+        "from": "server",
+        "to": "fcm",
+        "label": "recipient offline"
+      },
+      {
+        "from": "fcm",
+        "to": "peer",
+        "label": "data message"
+      },
+      {
+        "from": "peer",
+        "to": "server",
+        "label": "receipts"
+      }
+    ],
+    "sources": [
+      "https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/WebSocket.kt",
+      "https://firebase.google.com/docs/cloud-messaging/android-message-priority",
+      "https://firebase.google.com/docs/cloud-messaging/android/receive-messages",
+      "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work"
+    ],
+    "labels": {
+      "ui": "Chat screen",
+      "room": "Room",
+      "worker": "Outbox worker",
+      "socket": "ChatWebSocket",
+      "server": "Chat service",
+      "fcm": "FCM",
+      "peer": "Recipient’s device",
+      "event": "What happens"
+    }
+  },
+  {
+    "path": "mobile-system-design/collaborative-editing",
+    "figure": 0,
+    "problem": "How can an edit stay safe across a crash and an offline restart when acks and snapshots arrive at different times?",
+    "reading": "Local and remote ops both enter the op log before they’re shown. A snapshot transaction removes only the settled rows it contains. On restart the model replays what’s left, then the socket exchanges missing ops.",
+    "groups": [
+      {
+        "id": "app",
+        "label": "In the app",
+        "nodes": [
+          "editor",
+          "model",
+          "socket"
+        ]
+      },
+      {
+        "id": "disk",
+        "label": "On disk",
+        "nodes": [
+          "log",
+          "snapshot"
+        ]
+      },
+      {
+        "id": "remote",
+        "label": "Server side",
+        "nodes": [
+          "relay"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "editor",
+        "to": "model",
+        "label": "local edit"
+      },
+      {
+        "from": "model",
+        "to": "log",
+        "label": "persists op"
+      },
+      {
+        "from": "model",
+        "to": "editor",
+        "label": "shows content"
+      },
+      {
+        "from": "log",
+        "to": "socket",
+        "label": "unacked ops"
+      },
+      {
+        "from": "socket",
+        "to": "relay",
+        "label": "op frames",
+        "both": true
+      },
+      {
+        "from": "socket",
+        "to": "log",
+        "label": "remote ops, acks"
+      },
+      {
+        "from": "log",
+        "to": "snapshot",
+        "label": "settled rows, same transaction"
+      },
+      {
+        "from": "snapshot",
+        "to": "model",
+        "label": "loads on open"
+      }
+    ],
+    "sources": [
+      "https://docs.yjs.dev/api/document-updates",
+      "https://docs.yjs.dev/api/faq",
+      "https://github.com/yjs/y-indexeddb/blob/master/src/y-indexeddb.js",
+      "https://github.com/yjs/y-protocols/blob/master/src/awareness.js",
+      "https://developer.android.com/develop/background-work/services/fgs/timeout"
+    ],
+    "labels": {
+      "editor": "Editor",
+      "model": "CRDT model",
+      "log": "Op log",
+      "snapshot": "Snapshot",
+      "socket": "DocSocket",
+      "relay": "Relay",
+      "event": "What happens"
+    }
   }
 ]

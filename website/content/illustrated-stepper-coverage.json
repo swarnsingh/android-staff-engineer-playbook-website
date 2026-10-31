@@ -4042,6 +4042,144 @@
           "role": "runtime"
         }
       ]
+    },
+    {
+      "path": "mobile-system-design/news-feed",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "ui",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "pager",
+          "kind": "code",
+          "role": "runtime"
+        },
+        {
+          "id": "room",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "mediator",
+          "kind": "worker",
+          "role": "queue"
+        },
+        {
+          "id": "api",
+          "kind": "server",
+          "role": "runtime"
+        },
+        {
+          "id": "outbox",
+          "kind": "queue",
+          "role": "queue"
+        },
+        {
+          "id": "players",
+          "kind": "memory",
+          "role": "runtime"
+        },
+        {
+          "id": "hint",
+          "kind": "signal",
+          "role": "runtime"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "mobile-system-design/chat-messaging",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "ui",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "room",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "worker",
+          "kind": "worker",
+          "role": "queue"
+        },
+        {
+          "id": "socket",
+          "kind": "flow",
+          "role": "runtime"
+        },
+        {
+          "id": "server",
+          "kind": "server",
+          "role": "runtime"
+        },
+        {
+          "id": "fcm",
+          "kind": "cloud",
+          "role": "queue"
+        },
+        {
+          "id": "peer",
+          "kind": "phone",
+          "role": "client"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
+    },
+    {
+      "path": "mobile-system-design/collaborative-editing",
+      "figure": 0,
+      "nodes": [
+        {
+          "id": "editor",
+          "kind": "screen",
+          "role": "client"
+        },
+        {
+          "id": "model",
+          "kind": "memory",
+          "role": "runtime"
+        },
+        {
+          "id": "log",
+          "kind": "database",
+          "role": "storage"
+        },
+        {
+          "id": "snapshot",
+          "kind": "document",
+          "role": "storage"
+        },
+        {
+          "id": "socket",
+          "kind": "flow",
+          "role": "runtime"
+        },
+        {
+          "id": "relay",
+          "kind": "server",
+          "role": "runtime"
+        },
+        {
+          "id": "event",
+          "kind": "signal",
+          "role": "runtime"
+        }
+      ]
     }
   ]
 }

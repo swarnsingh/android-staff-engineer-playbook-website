@@ -1,5 +1,5 @@
 {
-  "about": "Which chapters use the interview-walkthrough layout. Groups are content, not code: the build reads this file, then still checks each listed chapter's own numbered headings and falls back to the normal chapter layout when they do not match. Only listed walkthrough chapters are affected; chapter-layout groups record the decision. 30 October 2026: Phases 1, 2 and 3 plus the Offline Sync pilot.",
+  "about": "Which chapters use the interview-walkthrough layout. Groups are content, not code: the build reads this file, then still checks each listed chapter's own numbered headings and falls back to the normal chapter layout when they do not match. Only listed walkthrough chapters are affected; chapter-layout groups record the decision. 1 November 2026: Phases 1, 2, 3 and 4.",
   "groups": [
     {
       "id": "foundations",
@@ -51,9 +51,12 @@
       "id": "full-apps",
       "title": "Full apps",
       "layout": "walkthrough",
-      "note": "Complete product systems, for example offline sync, feeds, chat, payments and media.",
+      "note": "Complete product systems, for example offline sync, feeds, chat, collaborative editing, payments and media.",
       "chapters": [
-        "mobile-system-design/offline-sync.md"
+        "mobile-system-design/offline-sync.md",
+        "mobile-system-design/news-feed.md",
+        "mobile-system-design/chat-messaging.md",
+        "mobile-system-design/collaborative-editing.md"
       ]
     },
     {

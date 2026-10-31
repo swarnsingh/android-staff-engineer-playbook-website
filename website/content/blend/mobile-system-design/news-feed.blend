@@ -1,0 +1,215 @@
+<!-- Website teaching layer for mobile-system-design/news-feed.md (interview walkthrough).
+     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
+     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
+     Hand-authored here: the step-through and the end recap.
+     Verified 2026-11-01 against news-feed.md at source 49620c3 (§6 storage and account boundary, §7 deep dive and failure modes, §9 concerns, §10 follow-ups). -->
+
+<!-- @after 7. Deep Dive: Feed Scroll & Pagination (15 min) :: animation -->
+### Follow a feed through a like, a restart and a sign-out
+
+<figure class="stepper" data-illustrated><span class="stepper-title">The list reads Room; everything else writes to it</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="ui" data-art="screen" data-art-role="client"><strong>Feed list</strong><small data-text="uiV">LazyColumn</small></div><div class="node" data-el="pager" data-art="code" data-art-role="runtime"><strong>Pager</strong><small data-text="pagerV">reads Room</small></div><div class="node" data-el="room" data-art="database" data-art-role="storage"><strong>Room</strong><small data-text="roomV">this account’s rows</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="mediator" data-art="worker" data-art-role="queue"><strong>RemoteMediator</strong><small data-text="mediatorV">idle</small></div><div class="node" data-el="api" data-art="server" data-art-role="runtime"><strong>Feed API</strong><small data-text="apiV">GET /v1/feed</small></div><div class="node" data-el="outbox" data-art="queue" data-art-role="queue"><strong>Engagement outbox</strong><small data-text="outboxV">empty</small></div></div><div class="viz-grid" data-cols="2"><div class="node" data-el="players" data-art="memory" data-art-role="runtime"><strong>Player pool</strong><small data-text="playersV">2–3 players</small></div><div class="node" data-el="hint" data-art="signal" data-art-role="runtime"><strong>FCM hint</strong><small data-text="hintV">none</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
+  {
+    "label": "initialize() checks the cache",
+    "caption": "The Pager reads this account’s rows from Room, so anything cached can render without waiting for the network. initialize() reads this account’s remote key: younger than CACHE_TTL returns SKIP_INITIAL_REFRESH, and anything else returns LAUNCH_INITIAL_REFRESH.",
+    "add": [
+      "ui",
+      "pager",
+      "room",
+      "mediator",
+      "api",
+      "outbox",
+      "players",
+      "hint",
+      "event"
+    ],
+    "state": {
+      "ui": "active",
+      "pager": "active",
+      "room": "done",
+      "mediator": "active"
+    },
+    "text": {
+      "uiV": "cached rows",
+      "mediatorV": "initialize()",
+      "eventV": "cache age decides whether to refresh"
+    },
+    "handoff": {
+      "from": "room",
+      "to": "ui",
+      "kind": "rows",
+      "label": "cached rows"
+    }
+  },
+  {
+    "label": "REFRESH swaps in one transaction",
+    "caption": "REFRESH fetches with no cursor. Only after the response does one transaction clear this account’s rows, insert the page with positions from 0, save nextCursor and re-apply queued likes. A failed request keeps the cache. The list orders by position because the order is the server’s.",
+    "state": {
+      "api": "done",
+      "room": "active",
+      "mediator": "done"
+    },
+    "text": {
+      "apiV": "ranked page",
+      "mediatorV": "REFRESH",
+      "roomV": "page 1 + nextCursor",
+      "eventV": "a failed refresh keeps the old rows"
+    },
+    "handoff": {
+      "from": "api",
+      "to": "room",
+      "kind": "rows",
+      "label": "page + cursor"
+    }
+  },
+  {
+    "label": "APPEND uses the stored cursor",
+    "caption": "When Room runs out, the mediator sends the stored nextCursor, and new rows continue from the highest position. A null cursor ends pagination. A failed page sets LoadState.Error: the rows already shown stay, with an inline retry chip.",
+    "state": {
+      "mediator": "warn",
+      "api": "error",
+      "ui": "warn",
+      "room": "done"
+    },
+    "text": {
+      "mediatorV": "APPEND",
+      "apiV": "request failed",
+      "uiV": "retry chip at the bottom",
+      "eventV": "the error stays with the page that failed"
+    },
+    "handoff": {
+      "from": "mediator",
+      "to": "api",
+      "kind": "parcel",
+      "label": "nextCursor"
+    }
+  },
+  {
+    "label": "Video stays bounded",
+    "caption": "Two or three ExoPlayers are reused rather than one per card, muted until a tap, and DefaultPreloadManager loads nearby videos. ON_STOP pauses playback. A card leaving composition returns its player, and the pool owner releases them all when the screen leaves composition.",
+    "state": {
+      "players": "active",
+      "ui": "active",
+      "api": "done",
+      "mediator": "done"
+    },
+    "text": {
+      "playersV": "reused, not per card",
+      "uiV": "scrolling",
+      "apiV": "GET /v1/feed",
+      "mediatorV": "idle",
+      "eventV": "no decoded video off-screen"
+    }
+  },
+  {
+    "label": "A like is saved, then scheduled",
+    "caption": "The tap updates the row and enqueues the op in one transaction, so the screen and the queue can’t disagree. The worker is scheduled after that. If the process dies in that gap, app start schedules it again.",
+    "state": {
+      "ui": "active",
+      "room": "active",
+      "outbox": "active",
+      "players": "done"
+    },
+    "text": {
+      "uiV": "liked at once",
+      "roomV": "likedByMe, count + 1",
+      "outboxV": "1 queued",
+      "eventV": "both writes or neither"
+    },
+    "handoff": {
+      "from": "room",
+      "to": "outbox",
+      "kind": "parcel",
+      "label": "Like op"
+    }
+  },
+  {
+    "label": "A fetch lands before the op drains",
+    "caption": "A feed fetch overwrites local counts with server truth, but reapplyQueuedLikes keeps the user’s choice for any post still queued. The worker retries on network errors, 5xx, 408 and 429. It drops the op on any other 4xx, and the next fetch then shows the server’s state.",
+    "state": {
+      "api": "done",
+      "room": "active",
+      "outbox": "warn",
+      "ui": "done"
+    },
+    "text": {
+      "apiV": "older like state",
+      "roomV": "choice re-applied",
+      "outboxV": "still queued",
+      "eventV": "a queued like isn’t undone on screen"
+    },
+    "handoff": {
+      "from": "api",
+      "to": "room",
+      "kind": "rows",
+      "label": "fetched rows"
+    }
+  },
+  {
+    "label": "After a system kill",
+    "caption": "cachedIn dies with the process, and the Pager restarts from Room. After SKIP_INITIAL_REFRESH the rows are unchanged, so the saved index goes to Pager(initialKey) and still means the same post. After LAUNCH_INITIAL_REFRESH the rows are replaced, so start at the top. A user who dismisses the app starts fresh.",
+    "state": {
+      "pager": "active",
+      "room": "done",
+      "ui": "active",
+      "outbox": "done"
+    },
+    "text": {
+      "pagerV": "restarted from Room",
+      "roomV": "rows and nextCursor",
+      "uiV": "saved index or top",
+      "outboxV": "empty",
+      "eventV": "the index only holds if the rows didn’t change"
+    }
+  },
+  {
+    "label": "A hint arrives",
+    "caption": "A normal-priority FCM message says new posts exist. onMessageReceived drops it if accountId isn’t the signed-in account, then updates a badge held in memory. Nothing reorders under the scroll: only a tap refreshes and returns to the top.",
+    "state": {
+      "hint": "active",
+      "ui": "active",
+      "pager": "done"
+    },
+    "text": {
+      "hintV": "feed.new, count 3",
+      "uiV": "banner: new posts",
+      "pagerV": "reads Room",
+      "eventV": "a hint changes a badge, not the list"
+    },
+    "handoff": {
+      "from": "hint",
+      "to": "ui",
+      "kind": "parcel",
+      "label": "count"
+    }
+  },
+  {
+    "label": "Sign-out ends the account’s data",
+    "caption": "Sign-out deletes the account’s rows, keys and queued likes, so a like still queued is lost. It also clears Coil’s memory and disk caches, which aren’t keyed by account. Popping the navigation graph without saving state clears the ViewModel, the saved index and the in-memory pages.",
+    "state": {
+      "room": "warn",
+      "outbox": "warn",
+      "ui": "done",
+      "hint": "done",
+      "event": "done"
+    },
+    "text": {
+      "roomV": "account’s rows deleted",
+      "outboxV": "queued likes deleted",
+      "uiV": "graph popped",
+      "hintV": "none",
+      "eventV": "the next account starts empty"
+    }
+  }
+]</script><figcaption>The list reads Room. The mediator and the like path write to it, and a hint only changes a badge. Offline, the user sees the last cached feed; a queued like can still be dropped by a non-retryable error or by sign-out.</figcaption></figure>
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- **The server owns the order.** `PagingSource` orders by `position`, not `createdAt`. The cursor belongs to a page rather than a post, so it has its own table.
+- **Fetch first, then swap in one transaction.** A failed `REFRESH` keeps the old rows, and each page commits with its cursor.
+- **A saved index only means the same post if the rows didn’t change.** Use it with `SKIP_INITIAL_REFRESH`. After a `REFRESH`, start at the top. It only returns after a system kill, and far-position restore needs a device test.
+- **Likes are durable but not guaranteed.** The row and the outbox op commit together, and fetches keep a queued choice. A non-retryable 4xx drops the op, and the next fetch shows the server’s state.
+- **A hint is only a hint.** Send it at normal priority, drop it for another account and keep the count in memory. Only a tap refreshes the list.
+- **Personal data needs an account boundary.** Rows, cursors and queued likes are keyed by `accountId`, and sign-out deletes them and clears Coil’s caches.
+- **Bound what’s decoded.** Cap Coil at 25% of the app’s available memory, reuse two or three players, and pause on `ON_STOP`. Item keys keep state with the post; they don’t prevent recomposition.
+- **Offline means the last cached feed.** New posts need a network, and “Tap to retry” is the honest state when there’s nothing cached.

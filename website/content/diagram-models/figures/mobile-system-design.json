@@ -4306,5 +4306,646 @@
         "label": "persists"
       }
     ]
+  },
+  {
+    "path": "mobile-system-design/news-feed",
+    "diagram": "33753e84b317d8a0",
+    "number": 1,
+    "title": "The API pages; the hint only hints",
+    "caption": "The client pages a ranked snapshot from the Feed API and renders from its Room cache, and likes reach the API through a separate outbox. A new-content hint tells the client that fresher posts exist. It doesn’t change the order behind the user’s scroll.",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/paging/v3-network-db",
+      "https://firebase.google.com/docs/cloud-messaging/android-message-priority"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "client",
+        "title": "Android client",
+        "role": "client"
+      },
+      {
+        "id": "api",
+        "title": "BFF / Feed API",
+        "role": "runtime"
+      },
+      {
+        "id": "rank",
+        "title": "Ranking service",
+        "role": "runtime"
+      },
+      {
+        "id": "cdn",
+        "title": "Media CDN",
+        "role": "runtime"
+      },
+      {
+        "id": "hint",
+        "title": "New-content hint",
+        "role": "neutral",
+        "detail": "FCM / socket"
+      },
+      {
+        "id": "room",
+        "title": "Room feed cache",
+        "role": "storage",
+        "key": true
+      },
+      {
+        "id": "outbox",
+        "title": "Engagement outbox",
+        "role": "queue"
+      }
+    ],
+    "edges": [
+      {
+        "from": "client",
+        "to": "api",
+        "label": "cursor HTTPS",
+        "both": true
+      },
+      {
+        "from": "api",
+        "to": "rank",
+        "label": "asks for order"
+      },
+      {
+        "from": "api",
+        "to": "cdn",
+        "label": "references media"
+      },
+      {
+        "from": "hint",
+        "to": "client",
+        "label": "new posts exist",
+        "style": "dashed"
+      },
+      {
+        "from": "client",
+        "to": "room",
+        "label": "caches pages"
+      },
+      {
+        "from": "client",
+        "to": "outbox",
+        "label": "queues likes"
+      },
+      {
+        "from": "outbox",
+        "to": "api",
+        "label": "delivers likes"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/news-feed",
+    "diagram": "8c3930312aaf19dc",
+    "number": 2,
+    "title": "Paging and likes take separate paths",
+    "caption": "Paging reads through Room: the mediator fetches pages and writes them there, and the Pager reads them back. Likes go through a durable outbox and WorkManager, so the optimistic update doesn’t wait for the network.",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/paging/v3-network-db",
+      "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "ui",
+        "title": "Compose UI",
+        "role": "client"
+      },
+      {
+        "id": "vm",
+        "title": "FeedViewModel",
+        "role": "client"
+      },
+      {
+        "id": "repo",
+        "title": "FeedRepository",
+        "role": "runtime"
+      },
+      {
+        "id": "pager",
+        "title": "Pager",
+        "role": "runtime"
+      },
+      {
+        "id": "mediator",
+        "title": "RemoteMediator",
+        "role": "queue"
+      },
+      {
+        "id": "api",
+        "title": "Feed API",
+        "role": "runtime"
+      },
+      {
+        "id": "room",
+        "title": "Room + page anchors",
+        "role": "storage",
+        "key": true
+      },
+      {
+        "id": "outbox",
+        "title": "Engagement outbox",
+        "role": "queue"
+      },
+      {
+        "id": "work",
+        "title": "WorkManager",
+        "role": "queue"
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "vm",
+        "label": "calls"
+      },
+      {
+        "from": "vm",
+        "to": "repo",
+        "label": "calls"
+      },
+      {
+        "from": "repo",
+        "to": "pager",
+        "label": "builds"
+      },
+      {
+        "from": "pager",
+        "to": "mediator",
+        "label": "triggers"
+      },
+      {
+        "from": "mediator",
+        "to": "api",
+        "label": "fetches"
+      },
+      {
+        "from": "mediator",
+        "to": "room",
+        "label": "writes pages"
+      },
+      {
+        "from": "room",
+        "to": "pager",
+        "label": "backs"
+      },
+      {
+        "from": "pager",
+        "to": "vm",
+        "label": "paged data"
+      },
+      {
+        "from": "repo",
+        "to": "outbox",
+        "label": "enqueues"
+      },
+      {
+        "from": "outbox",
+        "to": "work",
+        "label": "drained by"
+      },
+      {
+        "from": "work",
+        "to": "api",
+        "label": "sends"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/chat-messaging",
+    "diagram": "062a26dd35ec40f4",
+    "number": 1,
+    "title": "Three transports, one message identity",
+    "caption": "The socket carries events for an active session, and HTTPS recovers history. FCM is the fallback for a recipient with no connected socket, and it can be delayed or dropped. The chat service keeps the message’s durable identity, whichever transport delivers it.",
+    "sources": [
+      "https://firebase.google.com/docs/cloud-messaging/android-message-priority",
+      "https://developer.android.com/topic/architecture"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "client",
+        "title": "Android client",
+        "role": "client"
+      },
+      {
+        "id": "gateway",
+        "title": "BFF / gateway",
+        "role": "runtime"
+      },
+      {
+        "id": "chat",
+        "title": "Chat service",
+        "role": "runtime",
+        "key": true
+      },
+      {
+        "id": "store",
+        "title": "Message store",
+        "role": "storage"
+      },
+      {
+        "id": "media",
+        "title": "Media service / object storage",
+        "role": "storage"
+      },
+      {
+        "id": "push",
+        "title": "FCM fallback",
+        "role": "queue"
+      }
+    ],
+    "edges": [
+      {
+        "from": "client",
+        "to": "gateway",
+        "label": "WSS realtime + HTTPS history",
+        "both": true
+      },
+      {
+        "from": "gateway",
+        "to": "chat",
+        "label": "routes messages"
+      },
+      {
+        "from": "chat",
+        "to": "store",
+        "label": "persists"
+      },
+      {
+        "from": "gateway",
+        "to": "media",
+        "label": "routes uploads"
+      },
+      {
+        "from": "chat",
+        "to": "push",
+        "label": "recipient offline"
+      },
+      {
+        "from": "push",
+        "to": "client",
+        "label": "data message",
+        "style": "dashed"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/chat-messaging",
+    "diagram": "136d2388769d7baa",
+    "number": 2,
+    "title": "Everything converges on Room",
+    "caption": "The ViewModel renders only what Room emits. The repository, the socket and the retry worker all write there, so the UI never talks to the network and doesn’t need to know which transport delivered a message.",
+    "sources": [
+      "https://developer.android.com/topic/architecture",
+      "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "ui",
+        "title": "Compose UI",
+        "role": "client"
+      },
+      {
+        "id": "vm",
+        "title": "ChatViewModel",
+        "role": "client"
+      },
+      {
+        "id": "repo",
+        "title": "ChatRepository",
+        "role": "runtime"
+      },
+      {
+        "id": "dao",
+        "title": "ChatDao / Room",
+        "role": "storage",
+        "key": true
+      },
+      {
+        "id": "socket",
+        "title": "ChatWebSocket",
+        "role": "runtime"
+      },
+      {
+        "id": "outbox",
+        "title": "OutboxScheduler",
+        "role": "queue"
+      },
+      {
+        "id": "work",
+        "title": "WorkManager",
+        "role": "queue"
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "vm",
+        "label": "calls"
+      },
+      {
+        "from": "vm",
+        "to": "repo",
+        "label": "calls"
+      },
+      {
+        "from": "repo",
+        "to": "dao",
+        "label": "writes"
+      },
+      {
+        "from": "dao",
+        "to": "vm",
+        "label": "Flow of rows"
+      },
+      {
+        "from": "repo",
+        "to": "socket",
+        "label": "sends"
+      },
+      {
+        "from": "repo",
+        "to": "outbox",
+        "label": "schedules"
+      },
+      {
+        "from": "outbox",
+        "to": "work",
+        "label": "enqueues"
+      },
+      {
+        "from": "socket",
+        "to": "dao",
+        "label": "writes acks and messages"
+      },
+      {
+        "from": "work",
+        "to": "dao",
+        "label": "writes results"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/chat-messaging",
+    "diagram": "1155f6a04fdce76b",
+    "number": 3,
+    "title": "The durable row comes before the network",
+    "caption": "The bubble renders from a saved row with a client-generated id, before any network call. Every retry carries that id, so the server can return the same serverId instead of creating a duplicate. The row becomes SENT only when an ack or a REST response gives it a serverId.",
+    "sources": [
+      "https://github.com/square/okhttp/blob/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/WebSocket.kt",
+      "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "ui",
+        "title": "UI",
+        "role": "client"
+      },
+      {
+        "id": "repo",
+        "title": "ChatRepository",
+        "role": "runtime"
+      },
+      {
+        "id": "db",
+        "title": "Room",
+        "role": "storage"
+      },
+      {
+        "id": "transport",
+        "title": "Socket / retry worker",
+        "role": "queue"
+      },
+      {
+        "id": "server",
+        "title": "Server",
+        "role": "runtime"
+      }
+    ],
+    "events": [
+      {
+        "from": "ui",
+        "to": "repo",
+        "label": "send(text)"
+      },
+      {
+        "from": "repo",
+        "to": "db",
+        "label": "insert PENDING with clientId"
+      },
+      {
+        "from": "db",
+        "to": "ui",
+        "label": "render optimistic bubble",
+        "style": "dashed"
+      },
+      {
+        "from": "repo",
+        "to": "transport",
+        "label": "send durable envelope"
+      },
+      {
+        "from": "transport",
+        "to": "server",
+        "label": "msg.send(clientId)"
+      },
+      {
+        "from": "server",
+        "to": "transport",
+        "label": "ack(serverId, clientId)",
+        "style": "dashed"
+      },
+      {
+        "from": "transport",
+        "to": "db",
+        "label": "mark SENT"
+      },
+      {
+        "from": "db",
+        "to": "ui",
+        "label": "render canonical status",
+        "style": "dashed"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/collaborative-editing",
+    "diagram": "c5ceac822f27d50d",
+    "number": 1,
+    "title": "Durable first, then the relay",
+    "caption": "A local edit reaches the CRDT model and the durable queue without waiting for the network. The relay distributes operations to other clients, and convergence comes from each operation’s identity and the merge rules, not from the order they arrive in.",
+    "sources": [
+      "https://docs.yjs.dev/api/document-updates",
+      "https://github.com/yjs/y-indexeddb/blob/master/src/y-indexeddb.js"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "editor",
+        "title": "Compose editor",
+        "role": "client"
+      },
+      {
+        "id": "model",
+        "title": "Local CRDT document model",
+        "role": "runtime",
+        "key": true
+      },
+      {
+        "id": "queue",
+        "title": "Durable operation queue",
+        "role": "storage"
+      },
+      {
+        "id": "socket",
+        "title": "Document WebSocket",
+        "role": "runtime"
+      },
+      {
+        "id": "relay",
+        "title": "Collaboration relay / sequencer",
+        "role": "runtime"
+      },
+      {
+        "id": "peers",
+        "title": "Other clients",
+        "role": "client"
+      }
+    ],
+    "edges": [
+      {
+        "from": "editor",
+        "to": "model",
+        "label": "edits and content",
+        "both": true
+      },
+      {
+        "from": "model",
+        "to": "queue",
+        "label": "ops",
+        "both": true
+      },
+      {
+        "from": "queue",
+        "to": "socket",
+        "label": "op frames",
+        "both": true
+      },
+      {
+        "from": "socket",
+        "to": "relay",
+        "label": "op frames",
+        "both": true
+      },
+      {
+        "from": "relay",
+        "to": "peers",
+        "label": "distributed ops",
+        "both": true
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/collaborative-editing",
+    "diagram": "0647dd39cf162e4b",
+    "number": 2,
+    "title": "Two reliability contracts, one repository",
+    "caption": "Document operations are durable: they go to the Room queue, which is the op log in §6. Presence is ephemeral and never stored. One repository coordinates both for the editor.",
+    "sources": [
+      "https://github.com/yjs/y-indexeddb/blob/master/src/y-indexeddb.js",
+      "https://github.com/yjs/y-protocols/blob/master/src/awareness.js"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "ui",
+        "title": "Compose editor",
+        "role": "client"
+      },
+      {
+        "id": "vm",
+        "title": "EditorViewModel",
+        "role": "client"
+      },
+      {
+        "id": "repo",
+        "title": "DocumentRepository",
+        "role": "runtime"
+      },
+      {
+        "id": "model",
+        "title": "CRDT model",
+        "role": "runtime",
+        "key": true
+      },
+      {
+        "id": "queue",
+        "title": "Room operation queue",
+        "role": "storage"
+      },
+      {
+        "id": "socket",
+        "title": "DocSocket",
+        "role": "runtime"
+      },
+      {
+        "id": "presence",
+        "title": "Ephemeral presence tracker",
+        "role": "neutral"
+      }
+    ],
+    "edges": [
+      {
+        "from": "ui",
+        "to": "vm",
+        "label": "calls"
+      },
+      {
+        "from": "vm",
+        "to": "repo",
+        "label": "calls"
+      },
+      {
+        "from": "repo",
+        "to": "model",
+        "label": "applies edits"
+      },
+      {
+        "from": "model",
+        "to": "vm",
+        "label": "content"
+      },
+      {
+        "from": "repo",
+        "to": "queue",
+        "label": "persists ops"
+      },
+      {
+        "from": "repo",
+        "to": "socket",
+        "label": "uses"
+      },
+      {
+        "from": "repo",
+        "to": "presence",
+        "label": "tracks cursors"
+      },
+      {
+        "from": "queue",
+        "to": "socket",
+        "label": "unacked ops"
+      },
+      {
+        "from": "socket",
+        "to": "model",
+        "label": "remote ops"
+      }
+    ]
   }
 ]
