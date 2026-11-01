@@ -6,6 +6,14 @@
   background-image: radial-gradient(var(--grid-dot) 1.2px, transparent 1.4px); background-size: var(--space-4) var(--space-4); }
 .pb-svg { display: block; width: 100%; height: auto; }
 
+/* Language variants for competitive-programming examples. Content supplies code and metadata; layout stays here. */
+.code-switcher .code-tabs { display: flex; align-items: end; gap: .15rem; padding: 0 .75rem; border-bottom: 1px solid color-mix(in srgb, var(--code-ink) 19%, transparent); background: color-mix(in srgb, var(--code-bg) 88%, var(--code-ink)); }
+.code-switcher .code-tab { min-height: 2.75rem; padding: .65rem .85rem .55rem; color: var(--code-ink); border-bottom: 2px solid transparent; font-size: .85em; }
+.code-switcher .code-tab[aria-selected="true"] { color: var(--code-text); border-bottom-color: var(--accent); font-weight: 650; }
+.code-switcher .code-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+.code-switcher .code-panel[hidden] { display: none; }
+.code-switcher .code-header small { display: block; }
+
 .pb-region rect { fill: none; stroke: var(--line-strong); stroke-width: 1.5; stroke-dasharray: 5 6; }
 .pb-region text { font: 650 var(--ui-sm) var(--font-sans); letter-spacing: .08em; fill: var(--ink-muted); }
 .pb-node > rect { fill: var(--sheet); stroke: var(--line-strong); stroke-width: 2; transition: stroke .3s, fill .3s; }

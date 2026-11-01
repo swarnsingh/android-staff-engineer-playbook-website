@@ -10,7 +10,7 @@
   const allUnits = Array.isArray(unitManifest) ? unitManifest : unitManifest[source];
   const expectedUnits = allUnits?.filter(unit => unit.view ? unit.view === view : view === 'content');
   const problems = [], reported = new Set(), concealed = new Set();
-  const ignore = '.blend,.correction-note,.code-header,.part-band,.steps-text,.qa-answer-label';
+  const ignore = '.blend,.correction-note,.code-header,.code-tabs,.code-panel-added,.part-band,.steps-text,.qa-answer-label';
   const sourceZones = '.original-opening,section[id^="section-"]';
   let checked = 0, loadedDiagrams = 0;
   function report(element, why) {
@@ -69,7 +69,7 @@
   const seen = new Set();
   for (const zone of zones) {
     for (const element of [zone, ...zone.querySelectorAll('*')]) {
-      if (seen.has(element) || !element.textContent.trim() || element.closest(ignore) || element.closest('script,style,button,summary,figcaption')) continue;
+      if (seen.has(element) || !element.textContent.trim() || element.closest(ignore) || element.closest('script,style,button,summary,figcaption') || element.closest('.code-switcher .code-panel[hidden]')) continue;
       seen.add(element);checked++;inspect(element);
     }
   }
@@ -90,6 +90,9 @@
         .sort((a,b) => Number(a.dataset.originalAnswerIndex)-Number(b.dataset.originalAnswerIndex))
         .map(answer => rendered(answer, owner)).join(' ');
     }
+    // A paired Kotlin panel is intentionally hidden while Java is selected, but the original
+    // source still needs to participate in the source-order check.
+    if (element.matches('.code-switcher .code-panel[hidden] code')) return element.textContent + ' ';
     if (element.matches(ignore + ',template,noscript,script,style,button,summary,figcaption') || concealed.has(element) || folded(element) || !element.innerText) return '';
     let text = '';
     for (const child of element.childNodes) {

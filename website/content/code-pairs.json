@@ -1,0 +1,11 @@
+{
+  "computer-science/arrays-and-strings.md": {
+    "4": {
+      "java": "static boolean hasPairWithSum(int[] sorted, int target) {\n    int left = 0;\n    int right = sorted.length - 1;\n\n    while (left < right) {\n        int sum = sorted[left] + sorted[right];\n        if (sum == target) return true;\n        if (sum < target) left++;\n        else right--;\n    }\n    return false;\n}",
+      "java_label": "TwoSum.java",
+      "kotlin_label": "TwoSum.kt",
+      "java_version": "Java 17+",
+      "kotlin_version": "Kotlin 2.0+"
+    }
+  }
+}

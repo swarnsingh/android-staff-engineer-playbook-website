@@ -30,7 +30,7 @@ BLOCK = {'address', 'article', 'aside', 'blockquote', 'br', 'dd', 'details', 'di
          'figure', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'li', 'ol', 'p', 'pre', 'section', 'summary',
          'table', 'tbody', 'thead', 'tfoot', 'tr', 'ul'}
 VOID = {'area', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr'}
-ADDED = {'blend', 'correction-note', 'code-header', 'part-band', 'steps-text'}
+ADDED = {'blend', 'correction-note', 'code-header', 'code-tabs', 'code-panel-added', 'part-band', 'steps-text'}
 DISCLOSURES = {'original-diagram', 'diagram-source'}
 # Interface text the build places among the original blocks.
 CHROME = {'Copy code', 'Read diagram source', 'Original diagram from the chapter',
@@ -108,7 +108,7 @@ class Page(HTMLParser):
         if tag == 'details':
             details.append(classes)
         self.stack.append({
-            'tag': tag, 'hidden': hidden, 'details': details,
+            'tag': tag, 'classes': classes, 'hidden': hidden, 'details': details,
             'hero': parent['hero'] or 'lesson-hero' in classes,
             'concealed': hidden or bool(details),
             'zone': parent['zone'] or 'original-opening' in classes or (tag == 'section' and (a.get('id') or '').startswith('section-')),
@@ -127,7 +127,8 @@ class Page(HTMLParser):
         while self.stack:
             element = self.stack.pop()
             if element['tag'] == 'code' and self.code is not None:
-                self.codes.append((''.join(self.code), element['hidden'], element['details']))
+                paired = any('code-switcher' in frame.get('classes', set()) for frame in self.stack)
+                self.codes.append((''.join(self.code), element['hidden'], element['details'], paired))
                 self.code = None
             if element['tag'] == 'h1' and self.hero_title is not None:
                 self.hero_titles.append((''.join(self.hero_title[0]), self.hero_title[1]))
@@ -198,9 +199,9 @@ def verify(path, panel):
                 moved = any(block[0].rstrip('\n') == unit for block in page.codes)
                 problems.append(('out of order' if moved else 'missing', kind, label))
                 continue
-            _, hidden, disclosures = page.codes[found]
+            _, hidden, disclosures, paired = page.codes[found]
             permitted_diagram = kind == 'diagram' and all(classes & DISCLOSURES for classes in disclosures)
-            if hidden or (disclosures and not permitted_diagram):
+            if (hidden and not paired) or (disclosures and not permitted_diagram):
                 problems.append(('hidden', kind, label))
             code_index = found + 1
             # The code's text is also in the flat text; claim it there so it is not reported as extra.

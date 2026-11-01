@@ -15,6 +15,44 @@ $$('code.highlight').forEach(code => {
     return `<span class="syntax-${kind}">${escapeHtml(part)}</span>`;
   }).join('');
 });
+function activateCodeTab(tab, moveFocus = false) {
+  const group = tab.closest('[data-code-tabs]');
+  if (!group) return;
+  const tabs = [...group.querySelectorAll('[role="tab"]')];
+  const panels = [...group.querySelectorAll('[role="tabpanel"]')];
+  const active = tab.dataset.codeLanguage;
+  tabs.forEach(candidate => {
+    const selected = candidate === tab;
+    candidate.setAttribute('aria-selected', String(selected));
+    candidate.tabIndex = selected ? 0 : -1;
+  });
+  panels.forEach(panel => { panel.hidden = panel.id !== tab.getAttribute('aria-controls'); });
+  const label = group.querySelector('[data-code-label]');
+  const copy = group.querySelector('[data-copy]');
+  const file = group.dataset[`${active}Label`];
+  const version = group.dataset[`${active}Version`];
+  if (label) label.innerHTML = `${escapeHtml(file)}<small>${escapeHtml(version)}${active === 'java' ? ' · default' : ''}</small>`;
+  const panel = group.querySelector(`#${CSS.escape(tab.getAttribute('aria-controls'))}`);
+  const code = panel?.querySelector('code');
+  if (copy && code) copy.dataset.copy = code.id;
+  if (moveFocus) tab.focus();
+}
+$$('[data-code-tabs] [role="tab"]').forEach(tab => {
+  tab.addEventListener('click', () => activateCodeTab(tab));
+  tab.addEventListener('keydown', event => {
+    const tabs = [...tab.closest('[data-code-tabs]').querySelectorAll('[role="tab"]')];
+    const index = tabs.indexOf(tab);
+    let next = -1;
+    if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
+    if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
+    if (event.key === 'Home') next = 0;
+    if (event.key === 'End') next = tabs.length - 1;
+    if (next >= 0) {
+      event.preventDefault();
+      activateCodeTab(tabs[next], true);
+    }
+  });
+});
 let toastTimer;
 function toast(message) {
   clearTimeout(toastTimer); $('#toast').textContent = message; $('#toast').hidden = false;
