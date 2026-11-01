@@ -1342,10 +1342,10 @@
   },
   {
     "path": "mobile-system-design/authentication",
-    "diagram": "dc3f88fda728e0e3",
+    "diagram": "8a97dc623a51512b",
     "number": 2,
     "title": "One refresher serves every 401",
-    "caption": "The sign-in path runs from the UI through AuthRepository to Custom Tabs, the IdP API and the vault. On the request path, AuthInterceptor attaches the access token; a 401 goes to the single-flight TokenRefresher, which updates the vault and lets the interceptor retry once.",
+    "caption": "The sign-in path runs from the UI through AuthRepository to Custom Tabs, the IdP API and the vault. On the request path, SessionAuthInterceptor attaches the access token; a 401 goes to the single-flight TokenRefresher, which updates the vault and lets the interceptor retry a bodyless read once. A write's 401 returns to its caller.",
     "sources": [
       "https://square.github.io/okhttp/features/interceptors/",
       "https://developer.chrome.com/docs/android/custom-tabs"
@@ -1392,7 +1392,7 @@
       },
       {
         "id": "icpt",
-        "title": "AuthInterceptor",
+        "title": "SessionAuthInterceptor",
         "role": "runtime"
       },
       {

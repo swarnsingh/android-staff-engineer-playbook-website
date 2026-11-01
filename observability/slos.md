@@ -58,13 +58,15 @@ graph LR
     end
     
     subgraph "The Outcomes"
-        SLO -->|Current: 98%| Happy[Happy Users / Ship Features]
-        SLO -->|Current: 90%| Sad[Unhappy Users / Stop Features, Fix Bugs]
+        SLO -->|Current: 98%| Happy[Above target / Follow agreed budget policy]
+        SLO -->|Current: 90%| Sad[Below target / Follow agreed budget policy]
     end
     
     style Happy fill:#d4edda,stroke:#28a745,stroke-width:2px;
     style Sad fill:#f8d7da,stroke:#dc3545,stroke-width:2px;
 ```
+
+The measured startup proportion is above or below the 95% target; release actions follow the agreed [error-budget policy](error-budgets.md).
 
 ## Production Example
 
@@ -245,3 +247,4 @@ This policy prevents alert fatigue. Paging is reserved for cases where a human c
 - [Cloud Monitoring SLO periods](https://docs.cloud.google.com/monitoring/api/ref_v3/rest/v3/services.serviceLevelObjectives)
 - [Google SRE: Embracing Risk](https://sre.google/sre-book/embracing-risk/)
 - [JDK BigDecimal contract](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html) — exact decimal construction and arithmetic.
+- [Google SRE: Example Error Budget Policy](https://sre.google/workbook/error-budget-policy/) — release decisions and exceptions belong to an agreed policy.

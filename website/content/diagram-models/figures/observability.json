@@ -935,7 +935,7 @@
   },
   {
     "path": "observability/slos",
-    "diagram": "ce7416629cae86cb",
+    "diagram": "ded7933a17fe9c7c",
     "number": 1,
     "title": "Attach a target and window to an SLI",
     "caption": "An event condition becomes an objective only after the target and window are named. The 98% and 90% observations sit above and below this illustrative 95% startup target; release action still follows the agreed budget policy and cohort evidence.",
