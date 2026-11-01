@@ -1,0 +1,1231 @@
+[
+  {
+    "path": "observability/alerting",
+    "diagram": "1f624aa71a996fb2",
+    "number": 1,
+    "title": "Evidence before interruption",
+    "caption": "Paired windows are evaluated with fresh, sufficient observations. The result can page an owner, create a ticket, or trigger a missing-data investigation; a single error percentage cannot choose the response.",
+    "sources": [
+      "https://sre.google/workbook/alerting-on-slos/"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "client",
+        "title": "Eligible outcomes",
+        "role": "client",
+        "detail": "Observed on devices"
+      },
+      {
+        "id": "backend",
+        "title": "Telemetry backend",
+        "role": "runtime"
+      },
+      {
+        "id": "engine",
+        "title": "Window evaluator",
+        "role": "runtime",
+        "detail": [
+          "Freshness, volume",
+          "and paired burn rates"
+        ],
+        "key": true
+      },
+      {
+        "id": "page",
+        "title": "Page on-call",
+        "role": "queue",
+        "detail": "Actionable incident"
+      },
+      {
+        "id": "ticket",
+        "title": "Investigate in hours",
+        "role": "queue"
+      },
+      {
+        "id": "data",
+        "title": "Review evidence",
+        "role": "queue",
+        "detail": "Missing or low traffic"
+      },
+      {
+        "id": "runbook",
+        "title": "Mitigation runbook",
+        "role": "neutral"
+      }
+    ],
+    "edges": [
+      {
+        "from": "client",
+        "to": "backend",
+        "label": "Batch observations"
+      },
+      {
+        "from": "backend",
+        "to": "engine",
+        "label": "Supply bad and total counts"
+      },
+      {
+        "from": "engine",
+        "to": "page",
+        "label": "Both page windows breach"
+      },
+      {
+        "from": "engine",
+        "to": "ticket",
+        "label": "Ticket windows breach"
+      },
+      {
+        "from": "engine",
+        "to": "data",
+        "label": "Insufficient evidence"
+      },
+      {
+        "from": "page",
+        "to": "runbook",
+        "label": "Open mitigation steps"
+      }
+    ],
+    "layout": "layers",
+    "groups": [
+      {
+        "id": "devices",
+        "label": "Device observation",
+        "nodes": [
+          "client"
+        ]
+      },
+      {
+        "id": "platform",
+        "label": "Observability platform",
+        "nodes": [
+          "backend",
+          "engine"
+        ]
+      },
+      {
+        "id": "response",
+        "label": "Human response",
+        "nodes": [
+          "page",
+          "ticket",
+          "data",
+          "runbook"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "observability/alerting",
+    "diagram": "cece0b364f28feb3",
+    "number": 2,
+    "title": "Mitigate at the right boundary",
+    "caption": "The policy evaluates quality evidence before choosing a response. Halting distribution limits new adoption; a kill switch or a delivered hotfix addresses users who already installed the affected version.",
+    "sources": [
+      "https://sre.google/workbook/alerting-on-slos/",
+      "https://support.google.com/googleplay/android-developer/answer/9844486?hl=en",
+      "https://support.google.com/googleplay/android-developer/answer/16285429?hl=en"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "vitals",
+        "title": "Android vitals",
+        "role": "neutral",
+        "detail": "Daily quality evidence"
+      },
+      {
+        "id": "crash",
+        "title": "Crashlytics",
+        "role": "neutral",
+        "detail": "Crash evidence"
+      },
+      {
+        "id": "telemetry",
+        "title": "Owned telemetry",
+        "role": "neutral",
+        "detail": "Eligible outcomes"
+      },
+      {
+        "id": "policy",
+        "title": "Impact policy",
+        "role": "runtime",
+        "detail": "Check freshness and scope",
+        "key": true
+      },
+      {
+        "id": "paging",
+        "title": "Page with runbook",
+        "role": "queue"
+      },
+      {
+        "id": "release",
+        "title": "Hold or ticket",
+        "role": "queue"
+      },
+      {
+        "id": "owner",
+        "title": "Release on-call",
+        "role": "neutral"
+      },
+      {
+        "id": "halt",
+        "title": "Halt distribution",
+        "role": "runtime"
+      },
+      {
+        "id": "flag",
+        "title": "Disable affected path",
+        "role": "runtime",
+        "detail": "When a kill switch exists"
+      },
+      {
+        "id": "fix",
+        "title": "Release a hotfix",
+        "role": "runtime"
+      }
+    ],
+    "edges": [
+      {
+        "from": "vitals",
+        "to": "policy",
+        "label": "Provide quality evidence"
+      },
+      {
+        "from": "crash",
+        "to": "policy",
+        "label": "Provide crash evidence"
+      },
+      {
+        "from": "telemetry",
+        "to": "policy",
+        "label": "Provide outcome evidence"
+      },
+      {
+        "from": "policy",
+        "to": "paging",
+        "label": "Actionable incident"
+      },
+      {
+        "from": "policy",
+        "to": "release",
+        "label": "Non-urgent breach"
+      },
+      {
+        "from": "paging",
+        "to": "owner",
+        "label": "Assign mitigation"
+      },
+      {
+        "from": "owner",
+        "to": "halt",
+        "label": "Stop adoption"
+      },
+      {
+        "from": "owner",
+        "to": "flag",
+        "label": "Activate kill switch"
+      },
+      {
+        "from": "owner",
+        "to": "fix",
+        "label": "Repair via update"
+      }
+    ],
+    "layout": "layers",
+    "groups": [
+      {
+        "id": "sources",
+        "label": "Quality sources",
+        "nodes": [
+          "vitals",
+          "crash",
+          "telemetry"
+        ]
+      },
+      {
+        "id": "response",
+        "label": "Release response",
+        "nodes": [
+          "policy",
+          "paging",
+          "release",
+          "owner",
+          "halt",
+          "flag",
+          "fix"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "observability/dashboards",
+    "diagram": "f52349471397b54c",
+    "number": 1,
+    "title": "Start with impact, then drill down",
+    "caption": "The maintained overview leads from user-facing health to affected journeys, then to infrastructure evidence. These are levels of investigation inside one dashboard, not separate reliability owners.",
+    "sources": [
+      "https://sre.google/workbook/alerting-on-slos/",
+      "https://sre.google/sre-book/monitoring-distributed-systems/",
+      "https://support.google.com/googleplay/android-developer/answer/9844486?hl=en"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "top",
+        "title": "User-facing SLIs",
+        "role": "neutral",
+        "detail": "Overview entry point",
+        "key": true
+      },
+      {
+        "id": "health",
+        "title": "Crash and API health",
+        "role": "storage"
+      },
+      {
+        "id": "features",
+        "title": "Journey breakdown",
+        "role": "neutral"
+      },
+      {
+        "id": "checkout",
+        "title": "Checkout health",
+        "role": "storage"
+      },
+      {
+        "id": "feed",
+        "title": "Feed health",
+        "role": "storage"
+      },
+      {
+        "id": "infra",
+        "title": "Infrastructure view",
+        "role": "neutral"
+      },
+      {
+        "id": "signals",
+        "title": "Pool and database data",
+        "role": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "top",
+        "to": "health",
+        "label": "Summarise user impact"
+      },
+      {
+        "from": "top",
+        "to": "features",
+        "label": "Drill into journeys"
+      },
+      {
+        "from": "features",
+        "to": "checkout",
+        "label": "Inspect checkout"
+      },
+      {
+        "from": "features",
+        "to": "feed",
+        "label": "Inspect feed"
+      },
+      {
+        "from": "features",
+        "to": "infra",
+        "label": "Investigate causes"
+      },
+      {
+        "from": "infra",
+        "to": "signals",
+        "label": "Inspect utilisation and errors"
+      }
+    ],
+    "layout": "layers",
+    "groups": [
+      {
+        "id": "overview",
+        "label": "Maintained dashboard overview",
+        "nodes": [
+          "top",
+          "health",
+          "features",
+          "checkout",
+          "feed",
+          "infra",
+          "signals"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "observability/distributed-tracing",
+    "diagram": "e64d2bd3eb3eabce",
+    "number": 1,
+    "title": "Context crosses an ingress policy",
+    "caption": "The gateway validates the client carrier and chooses accepted or re-rooted server context. Backend spans follow that decision; client and server exports are not guaranteed to share one trace after re-rooting. Export arrows show logical delivery, not a delivery-time guarantee.",
+    "sources": [
+      "https://www.w3.org/TR/trace-context/",
+      "https://opentelemetry.io/docs/concepts/signals/traces/"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "App",
+        "title": "Android app",
+        "role": "client",
+        "detail": "Mobile process"
+      },
+      {
+        "id": "Net",
+        "title": "HTTP client",
+        "role": "runtime",
+        "detail": "Mobile process"
+      },
+      {
+        "id": "Gateway",
+        "title": "Gateway",
+        "role": "runtime",
+        "detail": "Ingress policy"
+      },
+      {
+        "id": "BE",
+        "title": "Service",
+        "role": "runtime",
+        "detail": "Backend process"
+      },
+      {
+        "id": "DB",
+        "title": "Database",
+        "role": "storage"
+      },
+      {
+        "id": "O11y",
+        "title": "Trace backend",
+        "role": "storage"
+      }
+    ],
+    "events": [
+      {
+        "from": "App",
+        "to": "Net",
+        "label": "Start checkout"
+      },
+      {
+        "over": "Net",
+        "text": "Create client context; inject traceparent"
+      },
+      {
+        "from": "Net",
+        "to": "Gateway",
+        "label": "POST checkout with carrier"
+      },
+      {
+        "over": "Gateway",
+        "text": "Validate carrier; continue or re-root"
+      },
+      {
+        "from": "Gateway",
+        "to": "O11y",
+        "label": "Export gateway span"
+      },
+      {
+        "from": "Gateway",
+        "to": "BE",
+        "label": "Propagate accepted server context"
+      },
+      {
+        "from": "BE",
+        "to": "DB",
+        "label": "Query data"
+      },
+      {
+        "from": "DB",
+        "to": "BE",
+        "label": "Return result"
+      },
+      {
+        "from": "BE",
+        "to": "O11y",
+        "label": "Export server span"
+      },
+      {
+        "from": "BE",
+        "to": "Gateway",
+        "label": "Return HTTP result"
+      },
+      {
+        "from": "Gateway",
+        "to": "Net",
+        "label": "Return HTTP result"
+      },
+      {
+        "from": "Net",
+        "to": "App",
+        "label": "Deliver result"
+      },
+      {
+        "from": "Net",
+        "to": "O11y",
+        "label": "Export client span"
+      }
+    ]
+  },
+  {
+    "path": "observability/error-budgets",
+    "diagram": "5489e671e1117da7",
+    "number": 1,
+    "title": "A budget informs a release policy",
+    "caption": "A positive balance alone does not approve a change. The agreed policy evaluates risk, missing evidence, and urgent exceptions, then rechecks the budget as observations enter and leave its declared window.",
+    "sources": [
+      "https://sre.google/workbook/error-budget-policy/",
+      "https://firebase.google.com/docs/crashlytics/crash-free-metrics"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "change",
+        "title": "Proposed release",
+        "role": "queue"
+      },
+      {
+        "id": "gate",
+        "title": "Agreed budget policy",
+        "role": "runtime",
+        "key": true
+      },
+      {
+        "id": "ship",
+        "title": "Stage the release",
+        "role": "runtime"
+      },
+      {
+        "id": "hold",
+        "title": "Hold risky changes",
+        "role": "queue",
+        "detail": "Apply declared exceptions"
+      },
+      {
+        "id": "data",
+        "title": "Review missing data",
+        "role": "queue"
+      },
+      {
+        "id": "measure",
+        "title": "Recompute the budget",
+        "role": "runtime",
+        "detail": "Same population and window"
+      }
+    ],
+    "edges": [
+      {
+        "from": "change",
+        "to": "gate",
+        "label": "Read current evidence"
+      },
+      {
+        "from": "gate",
+        "to": "ship",
+        "label": "Risk allowed"
+      },
+      {
+        "from": "gate",
+        "to": "hold",
+        "label": "Budget pressure"
+      },
+      {
+        "from": "gate",
+        "to": "data",
+        "label": "Evidence missing"
+      },
+      {
+        "from": "ship",
+        "to": "measure",
+        "label": "Observe outcomes"
+      },
+      {
+        "from": "hold",
+        "to": "measure",
+        "label": "Mitigate and prevent recurrence"
+      },
+      {
+        "from": "data",
+        "to": "measure",
+        "label": "Restore observations"
+      },
+      {
+        "from": "measure",
+        "to": "gate",
+        "label": "Re-evaluate window",
+        "route": "around"
+      }
+    ],
+    "layout": "layers",
+    "groups": [
+      {
+        "id": "policy",
+        "label": "Release-policy boundary",
+        "nodes": [
+          "change",
+          "gate",
+          "ship",
+          "hold",
+          "data",
+          "measure"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "observability/logging",
+    "diagram": "d77d90a887f4e728",
+    "number": 1,
+    "title": "A facade chooses each diagnostic route",
+    "caption": "The facade can write local diagnostics or route approved context to a remote sink. Severity alone does not export data or page anyone; crash breadcrumbs are context for a report rather than a complete remote log stream.",
+    "sources": [
+      "https://github.com/JakeWharton/timber/blob/5.0.1/timber/src/main/java/timber/log/Timber.kt",
+      "https://firebase.google.com/docs/crashlytics/customize-crash-reports"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "app",
+        "title": "Application code",
+        "role": "client"
+      },
+      {
+        "id": "facade",
+        "title": "Logging facade",
+        "role": "runtime",
+        "detail": "Select routes by policy",
+        "key": true
+      },
+      {
+        "id": "local",
+        "title": "Local Logcat",
+        "role": "storage"
+      },
+      {
+        "id": "sink",
+        "title": "Approved remote sink",
+        "role": "runtime",
+        "detail": "Breadcrumb or diagnostic"
+      },
+      {
+        "id": "network",
+        "title": "SDK delivery",
+        "role": "runtime"
+      },
+      {
+        "id": "backend",
+        "title": "Diagnostic backend",
+        "role": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "app",
+        "to": "facade",
+        "label": "Emit diagnostic record"
+      },
+      {
+        "from": "facade",
+        "to": "local",
+        "label": "Write enabled local output"
+      },
+      {
+        "from": "facade",
+        "to": "sink",
+        "label": "Select approved context"
+      },
+      {
+        "from": "sink",
+        "to": "network",
+        "label": "Buffer and report by SDK policy"
+      },
+      {
+        "from": "network",
+        "to": "backend",
+        "label": "Deliver selected records"
+      }
+    ],
+    "layout": "layers",
+    "groups": [
+      {
+        "id": "device",
+        "label": "Application process and device",
+        "nodes": [
+          "app",
+          "facade",
+          "local",
+          "sink",
+          "network"
+        ]
+      },
+      {
+        "id": "remote",
+        "label": "Remote diagnostic service",
+        "nodes": [
+          "backend"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "observability/metrics",
+    "diagram": "6b7d362aee99cb34",
+    "number": 1,
+    "title": "Aggregate locally, merge at the backend",
+    "caption": "Each device aggregates its own observations. A backend combines compatible counters and distributions for dashboards and alerts; export delay and process-death loss depend on the SDK policy, and per-device percentiles cannot be averaged into a fleet percentile.",
+    "sources": [
+      "https://opentelemetry.io/docs/specs/otel/metrics/sdk/",
+      "https://prometheus.io/docs/practices/histograms/"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "counter",
+        "title": "Counter observations",
+        "role": "storage"
+      },
+      {
+        "id": "gauge",
+        "title": "Gauge observations",
+        "role": "storage"
+      },
+      {
+        "id": "hist",
+        "title": "Duration observations",
+        "role": "storage"
+      },
+      {
+        "id": "aggregate",
+        "title": "In-memory aggregation",
+        "role": "runtime",
+        "detail": "Volatile device buffer",
+        "key": true
+      },
+      {
+        "id": "network",
+        "title": "SDK exporter",
+        "role": "runtime"
+      },
+      {
+        "id": "tsdb",
+        "title": "Time-series store",
+        "role": "storage"
+      },
+      {
+        "id": "dashboard",
+        "title": "Fleet dashboard",
+        "role": "neutral"
+      },
+      {
+        "id": "alert",
+        "title": "Threshold evaluation",
+        "role": "runtime",
+        "detail": "Apply declared alert policy"
+      }
+    ],
+    "edges": [
+      {
+        "from": "counter",
+        "to": "aggregate",
+        "label": "Accumulate counts"
+      },
+      {
+        "from": "gauge",
+        "to": "aggregate",
+        "label": "Record current values"
+      },
+      {
+        "from": "hist",
+        "to": "aggregate",
+        "label": "Accumulate distribution"
+      },
+      {
+        "from": "aggregate",
+        "to": "network",
+        "label": "Export by bounded policy"
+      },
+      {
+        "from": "network",
+        "to": "tsdb",
+        "label": "Merge compatible observations"
+      },
+      {
+        "from": "tsdb",
+        "to": "dashboard",
+        "label": "Query fleet results"
+      },
+      {
+        "from": "tsdb",
+        "to": "alert",
+        "label": "Evaluate recorded conditions"
+      }
+    ],
+    "layout": "layers",
+    "groups": [
+      {
+        "id": "client",
+        "label": "One device",
+        "nodes": [
+          "counter",
+          "gauge",
+          "hist",
+          "aggregate",
+          "network"
+        ]
+      },
+      {
+        "id": "backend",
+        "label": "Observability backend",
+        "nodes": [
+          "tsdb",
+          "dashboard",
+          "alert"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "observability/slis",
+    "diagram": "e7a9ca28ac500eec",
+    "number": 1,
+    "title": "Select the signals that describe user harm",
+    "caption": "The platform receives multiple measurements, but only declared user-facing outcomes become SLIs. CPU and memory observations remain diagnostic evidence; choosing an SLI does not require paging for every breach.",
+    "sources": [
+      "https://sre.google/sre-book/service-level-objectives/",
+      "https://developer.android.com/topic/performance/vitals/launch-time"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "startup",
+        "title": "Startup measurements",
+        "role": "storage"
+      },
+      {
+        "id": "sync",
+        "title": "Sync measurements",
+        "role": "storage"
+      },
+      {
+        "id": "cpu",
+        "title": "CPU measurements",
+        "role": "storage"
+      },
+      {
+        "id": "memory",
+        "title": "Memory measurements",
+        "role": "storage"
+      },
+      {
+        "id": "aggregate",
+        "title": "Device aggregator",
+        "role": "runtime"
+      },
+      {
+        "id": "backend",
+        "title": "Telemetry platform",
+        "role": "runtime"
+      },
+      {
+        "id": "select",
+        "title": "User-journey selection",
+        "role": "runtime",
+        "key": true
+      },
+      {
+        "id": "startSli",
+        "title": "Timely startup SLI",
+        "role": "neutral",
+        "detail": "Defined eligible cold starts"
+      },
+      {
+        "id": "syncSli",
+        "title": "Sync-success SLI",
+        "role": "neutral"
+      },
+      {
+        "id": "diagnosis",
+        "title": "Diagnostic metrics",
+        "role": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "startup",
+        "to": "aggregate",
+        "label": "Record startup"
+      },
+      {
+        "from": "sync",
+        "to": "aggregate",
+        "label": "Record sync"
+      },
+      {
+        "from": "cpu",
+        "to": "aggregate",
+        "label": "Record CPU"
+      },
+      {
+        "from": "memory",
+        "to": "aggregate",
+        "label": "Record memory"
+      },
+      {
+        "from": "aggregate",
+        "to": "backend",
+        "label": "Export observations"
+      },
+      {
+        "from": "backend",
+        "to": "select",
+        "label": "Apply eligibility and outcome rules"
+      },
+      {
+        "from": "select",
+        "to": "startSli",
+        "label": "Define timely display"
+      },
+      {
+        "from": "select",
+        "to": "syncSli",
+        "label": "Define sync completion"
+      },
+      {
+        "from": "cpu",
+        "to": "diagnosis",
+        "label": "Retain for diagnosis",
+        "style": "dashed"
+      },
+      {
+        "from": "memory",
+        "to": "diagnosis",
+        "label": "Retain for diagnosis",
+        "style": "dashed"
+      }
+    ],
+    "layout": "layers",
+    "groups": [
+      {
+        "id": "device",
+        "label": "Device measurements",
+        "nodes": [
+          "startup",
+          "sync",
+          "cpu",
+          "memory",
+          "aggregate"
+        ]
+      },
+      {
+        "id": "platform",
+        "label": "Reliability definition",
+        "nodes": [
+          "backend",
+          "select",
+          "startSli",
+          "syncSli",
+          "diagnosis"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "observability/slos",
+    "diagram": "ce7416629cae86cb",
+    "number": 1,
+    "title": "Attach a target and window to an SLI",
+    "caption": "An event condition becomes an objective only after the target and window are named. The 98% and 90% observations sit above and below this illustrative 95% startup target; release action still follows the agreed budget policy and cohort evidence.",
+    "sources": [
+      "https://sre.google/sre-book/service-level-objectives/",
+      "https://docs.cloud.google.com/monitoring/api/ref_v3/rest/v3/services.serviceLevelObjectives"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "sli",
+        "title": "Timely startup event",
+        "role": "neutral",
+        "detail": "TTID below 1.5 seconds"
+      },
+      {
+        "id": "target",
+        "title": "Target: 95%",
+        "role": "neutral"
+      },
+      {
+        "id": "window",
+        "title": "Window: 30 days",
+        "role": "neutral"
+      },
+      {
+        "id": "objective",
+        "title": "Startup objective",
+        "role": "neutral",
+        "detail": "95% timely starts in window",
+        "key": true
+      },
+      {
+        "id": "above",
+        "title": "Measured: 98%",
+        "role": "storage",
+        "detail": "Above the declared target"
+      },
+      {
+        "id": "below",
+        "title": "Measured: 90%",
+        "role": "storage",
+        "detail": "Below the declared target"
+      }
+    ],
+    "edges": [
+      {
+        "from": "sli",
+        "to": "target",
+        "label": "Choose required proportion"
+      },
+      {
+        "from": "target",
+        "to": "window",
+        "label": "Choose observation period"
+      },
+      {
+        "from": "window",
+        "to": "objective",
+        "label": "Complete the contract"
+      },
+      {
+        "from": "objective",
+        "to": "above",
+        "label": "Observed timely fraction: 98%"
+      },
+      {
+        "from": "objective",
+        "to": "below",
+        "label": "Observed timely fraction: 90%"
+      }
+    ],
+    "layout": "layers",
+    "groups": [
+      {
+        "id": "contract",
+        "label": "Measurement contract",
+        "nodes": [
+          "sli",
+          "target",
+          "window",
+          "objective"
+        ]
+      },
+      {
+        "id": "outcomes",
+        "label": "Observed outcomes",
+        "nodes": [
+          "above",
+          "below"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "observability/structured-logging",
+    "diagram": "e560fb5c3b91f12e",
+    "number": 1,
+    "title": "Preserve fields across the diagnostic path",
+    "caption": "The facade combines event fields with scoped, approved context before encoding a structured record. Stable mappings let the backend query fields; thread-local context still needs deliberate propagation, and malformed values can reject an individual document.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-slf4j/kotlinx.coroutines.slf4j/-m-d-c-context/",
+      "https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/coerce",
+      "https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/ignore-malformed"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "business",
+        "title": "Business operation",
+        "role": "client"
+      },
+      {
+        "id": "context",
+        "title": "Scoped context",
+        "role": "storage",
+        "detail": "Approved correlation fields"
+      },
+      {
+        "id": "facade",
+        "title": "Structured facade",
+        "role": "runtime",
+        "key": true
+      },
+      {
+        "id": "sender",
+        "title": "Diagnostic sender",
+        "role": "runtime"
+      },
+      {
+        "id": "index",
+        "title": "JSON indexing",
+        "role": "runtime"
+      },
+      {
+        "id": "dashboard",
+        "title": "Diagnostic queries",
+        "role": "neutral"
+      }
+    ],
+    "edges": [
+      {
+        "from": "business",
+        "to": "facade",
+        "label": "Supply event fields"
+      },
+      {
+        "from": "context",
+        "to": "facade",
+        "label": "Attach scoped context"
+      },
+      {
+        "from": "facade",
+        "to": "sender",
+        "label": "Encode approved JSON"
+      },
+      {
+        "from": "sender",
+        "to": "index",
+        "label": "Deliver diagnostic record"
+      },
+      {
+        "from": "index",
+        "to": "dashboard",
+        "label": "Expose indexed fields"
+      }
+    ],
+    "layout": "layers",
+    "groups": [
+      {
+        "id": "app",
+        "label": "Application process",
+        "nodes": [
+          "business",
+          "context",
+          "facade",
+          "sender"
+        ]
+      },
+      {
+        "id": "backend",
+        "label": "Observability backend",
+        "nodes": [
+          "index",
+          "dashboard"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "observability/tracing",
+    "diagram": "84c785c1f2a4d329",
+    "number": 1,
+    "title": "Reconstruct recorded work within one trace",
+    "caption": "Checkout spans describe the recorded execution path across validation, data access, payment and the UI update. Their trace is a logical correlation boundary; export and visualisation are separate, and unsupported asynchronous boundaries can leave gaps.",
+    "sources": [
+      "https://opentelemetry.io/docs/concepts/signals/traces/",
+      "https://opentelemetry.io/docs/concepts/context-propagation/"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "click",
+        "title": "UI-click span",
+        "role": "runtime"
+      },
+      {
+        "id": "validate",
+        "title": "Validation span",
+        "role": "runtime"
+      },
+      {
+        "id": "db",
+        "title": "Database-read span",
+        "role": "runtime"
+      },
+      {
+        "id": "pay",
+        "title": "Payment-call span",
+        "role": "runtime"
+      },
+      {
+        "id": "update",
+        "title": "UI-update span",
+        "role": "runtime"
+      },
+      {
+        "id": "data",
+        "title": "Exported trace data",
+        "role": "storage"
+      },
+      {
+        "id": "view",
+        "title": "Trace timeline",
+        "role": "neutral"
+      }
+    ],
+    "edges": [
+      {
+        "from": "click",
+        "to": "validate",
+        "label": "Begin validation"
+      },
+      {
+        "from": "validate",
+        "to": "db",
+        "label": "Await data read"
+      },
+      {
+        "from": "db",
+        "to": "pay",
+        "label": "Continue to payment"
+      },
+      {
+        "from": "pay",
+        "to": "update",
+        "label": "Deliver payment result"
+      },
+      {
+        "from": "update",
+        "to": "data",
+        "label": "Export recorded spans"
+      },
+      {
+        "from": "data",
+        "to": "view",
+        "label": "Visualise recorded timing"
+      }
+    ],
+    "layout": "layers",
+    "groups": [
+      {
+        "id": "trace",
+        "label": "Checkout trace",
+        "nodes": [
+          "click",
+          "validate",
+          "db",
+          "pay",
+          "update"
+        ]
+      },
+      {
+        "id": "backend",
+        "label": "Observability backend",
+        "nodes": [
+          "data",
+          "view"
+        ]
+      }
+    ]
+  }
+]

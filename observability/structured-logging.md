@@ -18,7 +18,7 @@ In the early days of SRE, log aggregation tools (like the ELK stack: Elasticsear
 
 1.  **Machine-Readable First:** Logs are for machines to query, not for humans to read linearly. Humans read the *results* of the queries via dashboards.
 2.  **Context is King:** A structured log should automatically include the environment (OS version, app version, device model, battery state) without the developer having to explicitly add it to every log statement.
-3.  **Strict Typology:** A `user_id` should always be a String. If one module logs it as an Int `123` and another logs it as a String `"123"`, the backend database (like Elasticsearch) will reject the conflicting types, causing dropped logs.
+3.  **Consistent schema:** Declare field types and privacy rules. Elasticsearch normally coerces numeric strings into numeric fields; malformed values or incompatible object/scalar shapes can reject documents. Explicit mappings and ingestion validation make failures predictable.
 
 ## Mental Model
 
@@ -84,29 +84,26 @@ graph TD
 
 ## Production Example
 
-**Global Context Injection (MDC)**
+**Scoped context propagation (MDC)**
 
-A major benefit of Structured Logging is the Mapped Diagnostic Context (MDC). This is a thread-local map of key-value pairs. 
+MDC is a thread-local map used by compatible logging integrations. Setting a value at login does not automatically update every app thread or coroutine, and Timber does not itself provide an SLF4J MDC bridge.
 
-When a user logs in, you can set `userId` in the MDC. From that point forward, *every single log* emitted by the app will automatically include `{"user_id": "123"}`, even if the developer doesn't explicitly pass it.
+With an SLF4J-compatible logger and `kotlinx-coroutines-slf4j`, explicitly capture the allowed context for the operation:
 
 ```kotlin
-// On Login
-StructuredLogger.setGlobalContext("user_id", "123")
-StructuredLogger.setGlobalContext("session_id", "abc-456")
+import kotlinx.coroutines.slf4j.MDCContext
+import kotlinx.coroutines.withContext
 
-// In a completely different module, 10 minutes later:
-StructuredLogger.logWarn(mapOf("event" to "gps_signal_lost"))
-
-// The Backend receives:
-// {
-//   "event": "gps_signal_lost",
-//   "user_id": "123",        <-- Injected automatically
-//   "session_id": "abc-456"  <-- Injected automatically
-// }
+suspend fun recordGpsLoss(opaqueOperationId: String) {
+    withContext(MDCContext(mapOf("operation_id" to opaqueOperationId))) {
+        logger.warn("gps_signal_lost") // SLF4J logger configured to include MDC
+    }
+}
 ```
 
-When a customer support agent gets a ticket for this user, they can query `user_id = 123` and see their entire session history across every module in the app.
+`MDCContext` restores the captured map on coroutine resumption and restores the previous thread context on exit. `MDC.put()` updates made inside the coroutine are not automatically preserved across suspension; capture a new context explicitly when needed. Callbacks and independently launched work need their own supported propagation.
+
+Use approved, short-lived correlation values. On logout or account switch, end the old account's operation scopes and avoid reusing their context for new work. Clear thread-local values at their ownership boundary; an account-wide global map can misattribute another user's logs. Field minimisation, retention, and access policy still apply.
 
 ## Tradeoffs
 
@@ -129,7 +126,7 @@ When a customer support agent gets a ticket for this user, they can query `user_
   }
   ```
   Here, the developer took a structured object, converted it to a String, and put it inside the log. The backend database cannot query `details.code` because `details` is just a string, not a nested JSON object. You have defeated the entire purpose of structured logging.
-- **Type Clashing:** Logging `{"retry_count": 5}` (Integer) on Monday, and then a new developer logs `{"retry_count": "five"}` (String) on Tuesday. The backend database indexing will crash and drop the logs for Tuesday.
+- **Type Clashing:** Logging `{"retry_count": 5}` (Integer) on Monday, and then a new developer logs `{"retry_count": "five"}` (String) on Tuesday. A numeric mapping cannot parse `"five"`: by default the affected document is rejected, rather than the whole index crashing. Monitor per-document ingestion failures; `ignore_malformed` changes field handling and must be deliberate.
 - **Exploding Cardinality:** Logging dynamic data as keys instead of values.
   ```json
   // BAD: Dynamic Keys
@@ -215,7 +212,7 @@ Three mobile-distinct considerations:
 4. **If Team A logs `latencyMs` and Team B logs `latency_ms`, how does this impact the SRE team's ability to create dashboards?**
    It fragments queries and dashboards unless ingestion maps both fields or the producers converge on a versioned schema. A shared data dictionary makes that migration explicit.
 5. **Why is it important to strictly enforce data types (e.g., String vs Int) for JSON values in structured logging?**
-   Backend databases like Elasticsearch expect consistent types per key. If types clash (e.g., logging an Int instead of a String), the database rejects and drops the logs.
+   Consistent types prevent ambiguous queries and mapping failures. Elasticsearch normally coerces numeric strings; incompatible values can reject the affected document. Validate the schema and monitor ingestion failures rather than assuming all mixed JSON types crash an index.
 6. **How do you balance the need for machine-readable JSON in production with the need for human-readable text during local Android Studio debugging?**
    Use a facade that can render developer-friendly local output and route only approved structured diagnostics to a remote sink. Remote production transmission is a policy decision, not the default fate of every log.
 7. **What is the difference between an Analytics Event (e.g., Mixpanel) and a Structured Log (e.g., Datadog)?**
@@ -235,3 +232,6 @@ Three mobile-distinct considerations:
 - [The 12-Factor App: Logs](https://12factor.net/logs)
 - [Crashlytics custom keys](https://firebase.google.com/docs/crashlytics/customize-crash-reports) — structured context per crash.
 - [`mobile-system-design/analytics-sdk.md`](../mobile-system-design/analytics-sdk.md) — the typed event pipeline.
+- [Kotlin MDCContext](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-slf4j/kotlinx.coroutines.slf4j/-m-d-c-context/)
+- [Elasticsearch coercion](https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/coerce)
+- [Elasticsearch malformed-field handling](https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/ignore-malformed)

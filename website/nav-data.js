@@ -1074,28 +1074,28 @@ window.PLAYBOOK_CATALOG = [
     "icon": "◉",
     "chapters": [
       {
-        "title": "Alerting",
-        "path": "observability/alerting.md"
-      },
-      {
-        "title": "Dashboards",
-        "path": "observability/dashboards.md"
-      },
-      {
-        "title": "Distributed Tracing",
-        "path": "observability/distributed-tracing.md"
-      },
-      {
-        "title": "Error Budgets",
-        "path": "observability/error-budgets.md"
+        "title": "Telemetry Taxonomy and Signal Selection",
+        "path": "observability/telemetry-taxonomy.md"
       },
       {
         "title": "Logging",
         "path": "observability/logging.md"
       },
       {
+        "title": "Structured Logging",
+        "path": "observability/structured-logging.md"
+      },
+      {
         "title": "Metrics",
         "path": "observability/metrics.md"
+      },
+      {
+        "title": "Tracing",
+        "path": "observability/tracing.md"
+      },
+      {
+        "title": "Distributed Tracing",
+        "path": "observability/distributed-tracing.md"
       },
       {
         "title": "Service Level Indicators (SLIs)",
@@ -1106,16 +1106,16 @@ window.PLAYBOOK_CATALOG = [
         "path": "observability/slos.md"
       },
       {
-        "title": "Structured Logging",
-        "path": "observability/structured-logging.md"
+        "title": "Error Budgets",
+        "path": "observability/error-budgets.md"
       },
       {
-        "title": "Telemetry Taxonomy and Signal Selection",
-        "path": "observability/telemetry-taxonomy.md"
+        "title": "Alerting",
+        "path": "observability/alerting.md"
       },
       {
-        "title": "Tracing",
-        "path": "observability/tracing.md"
+        "title": "Dashboards",
+        "path": "observability/dashboards.md"
       }
     ]
   },

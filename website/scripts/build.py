@@ -29,6 +29,7 @@ TREES = {
     'kotlin': {'title': 'Kotlin', 'phases': None},
     'android': {'title': 'Android', 'phases': [1, 2, 3, 4, 5, 6, 7, 8, 9]},
     'mobile-system-design': {'title': 'Mobile System Design', 'phases': None},
+    'observability': {'title': 'Observability', 'phases': None},
 }
 
 
@@ -42,6 +43,10 @@ def phases(slug):
         sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
         paths=re.findall(r'\]\((computer-science/[^)#]+\.md)\)',sequence)
         return [('Phase 1 — Data structures',paths[:7]),('Phase 2 — Algorithms',paths[7:11]),('Phase 3 — Systems',paths[11:])]
+    if slug == 'observability':
+        sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
+        paths=re.findall(r'\]\((observability/[^)#]+\.md)\)',sequence)
+        return [('Phase 1 — Signals and correlation',paths[:6]),('Phase 2 — Reliability contracts',paths[6:9]),('Phase 3 — Response and investigation',paths[9:])]
     if slug == 'platform-engineering':
         sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
         paths=re.findall(r'\]\((platform-engineering/[^)#]+\.md)\)',sequence)
@@ -621,7 +626,7 @@ INTRO = {
 
 def intro(path):
     extras={}
-    for name in ('engineering-fundamentals','computer-science','platform-engineering','mobile-system-design'):
+    for name in ('engineering-fundamentals','computer-science','platform-engineering','mobile-system-design','observability'):
         extras.update(json.loads((WEB/f'content/{name}.json').read_text()))
     return extras.get(path) or INTRO.get(path) or INTRO[Path(path).stem]
 

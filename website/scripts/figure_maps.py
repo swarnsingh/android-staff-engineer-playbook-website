@@ -85,6 +85,7 @@ def check(row):
 class Canvas:
     def __init__(self, key):
         self.key, self.parts, self.boxes, self.pills, self.segments = key, [], [], [], []
+        self.marker_id = f"fm-{key}-head"
         self.box = [10**9, 10**9, -10**9, -10**9]
 
     def grow(self, x0, y0, x1, y1):
@@ -123,7 +124,7 @@ class Canvas:
         x0, y0, x1, y1 = self.box
         x0, y0, x1, y1 = x0 - MARGIN, y0 - MARGIN, x1 + MARGIN, y1 + MARGIN
         w, h = x1 - x0, y1 - y0
-        marker = (f'<defs><marker id="{prefix}-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" '
+        marker = (f'<defs><marker id="{self.marker_id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" '
                   f'markerHeight="8" orient="auto-start-reverse"><path class="fm-arrowhead" d="M1 1L9 5L1 9z"/></marker></defs>')
         return (f'<svg class="fm-svg" viewBox="{x0:.0f} {y0:.0f} {w:.0f} {h:.0f}" width="{w:.0f}" height="{h:.0f}" '
                 f'style="min-width:{w:.0f}px;max-width:{w:.0f}px" role="img" aria-labelledby="{prefix}-t {prefix}-d">'
@@ -578,7 +579,7 @@ def draw_map(row, key):
         d_ = math.hypot(qx - px, qy - py) or 1
         pts[-1] = (qx - (qx - px) / d_ * 2, qy - (qy - py) / d_ * 2)
         cls = 'fm-edge' + (' is-dashed' if e.get('style') == 'dashed' else '')
-        start = f' marker-start="url(#{key}-head)"' if e.get('both') else ''
+        start = f' marker-start="url(#{c.marker_id})"' if e.get('both') else ''
         if kind == 'curve':
             (sx, sy), (tx, ty) = pts
             length = math.hypot(tx - sx, ty - sy) or 1
@@ -603,7 +604,7 @@ def draw_map(row, key):
                 t = e.get('t', .5)
                 (sx, sy), (tx, ty) = pts[seg], pts[seg + 1]
                 label_at = (sx + (tx - sx) * t, sy + (ty - sy) * t)
-        edges.append(f'<path class="{cls}" d="{path}"{start} marker-end="url(#{key}-head)"/>')
+        edges.append(f'<path class="{cls}" d="{path}"{start} marker-end="url(#{c.marker_id})"/>')
         # Edges on one shared bus carry one number and one visible label.
         bus = e.get('bus')
         if bus in numbers:
@@ -666,7 +667,7 @@ def render_sequence(row, key):
             elif 'at' in e:
                 number += 1
                 lx = lanes[e['at']]
-                body.append(f'<path class="fm-edge" d="M{lx} {y-14} C{lx+70} {y-18} {lx+70} {y+18} {lx+4} {y+16}" marker-end="url(#{key}-head)"/>')
+                body.append(f'<path class="fm-edge" d="M{lx} {y-14} C{lx+70} {y-18} {lx+70} {y+18} {lx+4} {y+16}" marker-end="url(#{c.marker_id})"/>')
                 c.grow(lx, y - 18, lx + 60, y + 18)
                 room = right_edge - (lx + 74)
                 if room >= 150:
@@ -687,7 +688,7 @@ def render_sequence(row, key):
                 dashed = ' is-dashed' if e.get('style') == 'dashed' else ''
                 label = fit(e['label'], max(abs(x1 - x0) - 16, 170))
                 w, h = pill_size(label)
-                body.append(f'<path class="fm-edge{dashed}" d="M{x0+step} {y+8} L{x1-step} {y+8}" marker-end="url(#{key}-head)"/>')
+                body.append(f'<path class="fm-edge{dashed}" d="M{x0+step} {y+8} L{x1-step} {y+8}" marker-end="url(#{c.marker_id})"/>')
                 body.append(('pill', (x0 + x1) / 2, y + 8 - h / 2 - 6, number, label))
                 tallest = max(tallest, h + 22)
         y += tallest + 26

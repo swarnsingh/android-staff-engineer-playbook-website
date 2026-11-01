@@ -84,16 +84,16 @@ When an alert fires, the engineer goes to the dashboard. They see the "Crash Rat
 ## Failure Modes
 
 - **The "Wall of Dials" Anti-pattern:** A dashboard with 100 tiny graphs packed onto one screen. It is completely unreadable. It induces cognitive overload. *(Fix: Group graphs into collapsible rows. Use the Top-Down Hierarchy).*
-- **Averaging Percentiles (Again):** A graph labeled "Average Latency." As covered in [Metrics](metrics.md), averages hide the pain of your slowest users. Dashboards should visualize the P50 (Median), P90, and P99 lines on the same graph to show the distribution spread.
+- **Hiding latency tails:** A mean-only latency graph hides distribution shape. Show relevant percentiles and error rate; use means when they answer a total-work or cost question. Separately, averaging per-device percentiles cannot produce a fleet percentile; see [Metrics](metrics.md).
 - **Missing Annotations:** A massive spike in traffic appears on a Thursday. Was it a marketing push? A DDoS attack? A feature rollout? *(Fix: Observability tools allow you to automatically draw vertical lines on graphs when CI/CD completes a deployment. Correlation is instantaneous).*
 
 ## Staff Engineer Thinking
 
 When reviewing observability posture, a Staff engineer focuses on curation and lifecycle:
 
-1.  **Which one is the "Golden" dashboard?** If a new hire joins the team, what is the single URL they should bookmark to know if the mobile app is healthy? There must be *one* officially maintained Golden Dashboard. All others are scratchpads.
+1.  **Which one is the "Golden" dashboard?** If a new hire joins the team, what is the single URL they should bookmark to know if the mobile app is healthy? Maintain an overview with links to owned role-specific and incident dashboards. Each critical dashboard needs an owner; secondary does not mean disposable.
 2.  **Dashboard as Code.** I forbid creating critical dashboards by clicking around in the Datadog UI. Dashboards must be defined in Terraform or JSON, reviewed in a Pull Request, and checked into Git. If the vendor deletes our account, we must be able to recreate the dashboards instantly.
-3.  **The "Kill it with Fire" policy.** If a dashboard hasn't been viewed by a human in 90 days, I set up an automated script to delete it. Dashboard rot is a massive liability during an incident.
+3.  **Review unused dashboards.** A 90-day usage review can find stale panels, but infrequently used incident dashboards may still be essential. Check owners, runbook links, and query validity before archiving; do not delete automatically based only on views.
 
 ## Common Misconceptions
 
@@ -110,7 +110,7 @@ When reviewing observability posture, a Staff engineer focuses on curation and l
 6.  Why is an "Average Latency" graph considered an anti-pattern? What should you visualize instead?
 7.  How do deployment annotations (vertical lines indicating when code was shipped) aid in root-cause analysis?
 8.  What is the difference between the primary function of an Alert and the primary function of a Dashboard?
-9.  Why should a Staff Engineer aggressively delete dashboards that haven't been viewed recently?
+9.  How should a Staff Engineer review rarely viewed dashboards before deciding whether to archive them?
 10. Describe the visual layout differences between a dashboard designed for an Executive (Product/Business) vs a dashboard designed for an On-Call Engineer.
 
 ## Mobile Implementation (Android)
@@ -141,9 +141,9 @@ Each one answers a specific question:
 Mobile-distinct dashboarding principles:
 
 1. **Per-version, always.** Aggregating across versions hides regressions in new releases. Default every panel to "by versionCode."
-2. **Cohort by what you can't control.** Country, OEM, API level, device tier, network class. These are the dimensions Vitals can't (or won't) slice for you.
+2. **Cohort by what you can't control.** Country, OEM, API level, device tier, network class. Vitals already supports artifact/version, SDK, device model, form factor, and country breakdowns. Add custom cohorts such as network class where needed; respect source coverage and minimum sample size.
 3. **One dashboard per role.** Release manager wants rollout + crash gates; on-call wants alerts + service health; feature owner wants their flow's metrics. Don't make everyone hunt.
-4. **No averages.** P50/P95/P99 only. The mean of (1ms, 1ms, 60s) is comforting and wrong.
+4. **Show the right aggregation.** Latency percentiles and error rates expose tail harm; a mean can still answer average resource-cost questions. Never average per-device percentiles to estimate a fleet percentile.
 5. **Day-of-week and time-of-day.** Mobile traffic is cyclical. A baseline that doesn't show 7d-over-7d comparison misleads.
 6. **Link to runbooks.** Every alert chart links to the runbook for "what to do at 3 AM when this fires."
 
@@ -165,8 +165,8 @@ Mobile-distinct dashboarding principles:
    They provide immediate visual correlation between a sudden change in metrics (e.g., a crash spike) and a specific code deployment, instantly highlighting what changed.
 8. **What is the difference between the primary function of an Alert and the primary function of a Dashboard?**
    An Alert notifies you that something is broken and wakes you up, whereas a Dashboard is used after the alert to investigate the blast radius, vector, and root cause.
-9. **Why should a Staff Engineer aggressively delete dashboards that haven't been viewed recently?**
-   To reduce cognitive overload and confusion during an incident, ensuring the official, accurate "Golden Dashboard" is easy to find when every second counts.
+9. **How should a Staff Engineer review rarely viewed dashboards before deciding whether to archive them?**
+   Review and archive stale dashboards to reduce confusion, while preserving valid rare-incident views and their runbook links. Low view count alone is not grounds for deletion.
 10. **Describe the visual layout differences between a dashboard designed for an Executive (Product/Business) vs a dashboard designed for an On-Call Engineer.**
     An Executive dashboard emphasizes top-level SLIs, conversion rates, and overall uptime. An On-Call Engineer dashboard goes deeper into granular, actionable metrics (U.S.E., R.E.D., traces) used for debugging.
 
@@ -175,3 +175,5 @@ Mobile-distinct dashboarding principles:
 - [`alerting.md`](alerting.md) — The system that drives humans to look at the dashboard.
 - [`metrics.md`](metrics.md) — The raw numerical data that powers the graphs.
 - [Grafana dashboard best practices: RED method](https://grafana.com/docs/grafana/latest/visualizations/dashboards/build-dashboards/best-practices/)
+- [Play Vitals breakdowns](https://support.google.com/googleplay/android-developer/answer/9844486?hl=en)
+- [Prometheus histogram aggregation](https://prometheus.io/docs/practices/histograms/)

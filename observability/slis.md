@@ -20,7 +20,7 @@ SLIs are the bedrock of Site Reliability Engineering (SRE), a discipline invente
 
 1.  **User-Centric:** SLIs must directly reflect the user's experience. "Database Disk I/O" is not an SLI. "Search Results Latency" is an SLI.
 2.  **Proportional:** An SLI is almost always expressed as a proportion (a percentage): `(Good Events / Total Valid Events) * 100`.
-3.  **Actionable:** If an SLI drops, it must unequivocally mean that users are suffering and an engineer needs to fix something immediately.
+3.  **Actionable:** A degraded SLI should inform a decision: page, hold a rollout, create a ticket, or investigate a cohort. Not every SLI breach warrants immediate paging.
 
 ## Mental Model
 
@@ -37,16 +37,17 @@ $$ \text{SLI} = \frac{\text{Good Events}}{\text{Valid Events}} \times 100 $$
 ### Example 1: The Crash-Free Session SLI (Availability)
 
 This is the most common SLI in mobile engineering.
-- **Good Event:** A user session that ends normally (backgrounded or closed).
+- **Good Event:** An eligible session without a fatal crash, under the reporting SDK's session definition. Backgrounding is not itself proof that a session was crash-free.
 - **Valid Event:** Any user session that starts.
 - **SLI:** "99.9% of user sessions are crash-free."
 
 ### Example 2: The Checkout SLI (Reliability)
 
-- **Good Event:** A user tapping "Pay" and seeing the "Success" screen.
-- **Valid Event:** A user tapping "Pay".
-- **SLI:** "99.5% of 'Pay' button taps result in a success screen."
-*(Note: If the user inputs an invalid credit card, the payment fails, but the app worked correctly. This must NOT be counted as a "Bad Event". It is an expected business outcome. Only system failures are bad events).*
+- **Good Event:** An accepted checkout attempt reaches and displays its correct terminal outcome within the declared deadline: success or an expected business decline.
+- **Valid Event:** Every accepted checkout attempt, counted once by operation ID. Define how cancellation, duplicate taps, unresolved attempts, and timeouts are handled.
+- **SLI:** "99.5% of accepted attempts reach a correct terminal outcome within the deadline."
+
+This is technical completion. Purchase conversion (`purchases / attempts`) is a separate product metric. A decline correctly displayed is technically successful; a missing or incorrect decline result is not.
 
 ### Example 3: The Startup Time SLI (Latency)
 
@@ -83,13 +84,9 @@ graph TD
 
 A common mistake is defining a Latency SLI as "Average API Response Time."
 
-As discussed in [Metrics](metrics.md), averages lie. If 99 users have a 10ms response, and 1 user has a 10,000ms timeout, the average is 109ms. The SLI looks great! But 1% of your users are completely broken.
+For 99 requests taking 10 ms and one timing out at 10,000 ms, the mean is 109.9 ms. P95 is still 10 ms, so replacing the mean with P95 does not expose the 1% failure rate.
 
-**The Pro Production SLI:**
-You use a Histogram metric to calculate Percentiles.
-- **SLI:** "The 95th Percentile (P95) of the Feed API response time is $< 300\text{ms}$."
-
-This guarantees that 95 out of 100 users are experiencing a fast app.
+Track both availability (`successful eligible requests / all eligible requests`) and timely success (`successful requests within 300 ms / all eligible requests`). Include transport failures and deadline expiry in the denominator. Preserve mergeable latency distributions for tail diagnosis. Request percentiles describe requests, not distinct users; repeated failures can be concentrated in a small cohort.
 
 ## Tradeoffs
 
@@ -99,7 +96,7 @@ This guarantees that 95 out of 100 users are experiencing a fast app.
 
 **Disadvantages**
 - **Hard to Define:** Distinguishing between a "System Error" (which hurts the SLI) and a "User Error" (like a typo in a password, which shouldn't hurt the SLI) requires complex instrumentation.
-- **Mobile Environment Variance:** A backend server has a stable network. A mobile app is used on 2G networks in tunnels. If your SLI is "Network request $< 2\text{s}$", it will constantly fail for users on bad networks, even if your code is perfect. (Mobile SLIs often require complex filtering, like `WHERE network_type = WIFI`).
+- **Mobile Environment Variance:** A backend server has a stable network. A mobile app is used on 2G networks in tunnels. If your SLI is "Network request $< 2\text{s}$", it will constantly fail for users on bad networks, even if your code is perfect. Keep an all-eligible-user experience SLI and slice by network class. A Wi-Fi-only SLO is valid only when its restricted eligibility is explicit; it cannot represent users on cellular networks.
 
 ## Failure Modes
 
@@ -111,7 +108,7 @@ This guarantees that 95 out of 100 users are experiencing a fast app.
 
 When setting up SRE practices, a Staff engineer asks:
 
-1.  **If this metric spikes, do we wake someone up?** If the answer is no, it is not an SLI. It is just an interesting metric. SLIs are the triggers for critical alerts.
+1.  **What decision follows a breach?** Assign an owner and route: immediate mitigation, release hold, business-hours investigation, or ticket. Startup latency can be a valid SLI without being a paging condition.
 2.  **Does this measure the user's pain?** I frequently push back on backend teams who claim "100% Uptime" while the mobile app is crashing due to a malformed JSON payload. The backend SLI is green, but the Mobile SLI is red. The Mobile SLI is the only one that reflects the truth.
 3.  **Is the "Good Event" scientifically sound?** If the SLI is "Video playback is smooth," how do we measure "smooth"? We must mathematically define it: "Video playback has fewer than 1 dropped frame per 60 seconds."
 
@@ -139,22 +136,26 @@ The canonical mobile SLIs map roughly to Play's "bad behavior" metrics plus a fe
 
 | SLI | Definition | Source | Why mobile |
 |---|---|---|---|
-| **Crash-free users** | `1 - (users_with_crash / DAU)` per version | Crashlytics / Android Vitals | Direct user experience |
-| **ANR-free users** | `1 - (users_with_ANR / DAU)` | Android Vitals | Play's distribution gate |
-| **Cold start TTID** | p95 milliseconds | `JankStats`, `ReportFullyDrawn`, Vitals | First-impression latency |
+| **Crash-free users** | `1 - (unique_users_with_fatal_crash / unique_active_users)` in the same selected window/cohort | Crashlytics | Distinct-user impact; not interchangeable with Play's daily metric |
+| **User-perceived ANR rate** | Daily active users with ≥1 user-perceived ANR / DAU | Android Vitals | Play's ANR distribution metric |
+| **Cold start TTID** | p95 milliseconds | Vitals TTID; Macrobenchmark `StartupTimingMetric` for lab measurements | First-impression latency |
 | **Frame jank rate** | `janky_frames / total_frames` | `JankStats` | Scroll smoothness perception |
-| **Network success rate** | `non_5xx_responses / total` per endpoint, **on-device measured** | OkHttp listener + telemetry SDK | Backend SLI is wrong-end measurement |
-| **Critical-flow success** | e.g., `checkout_succeeded / checkout_started` | Custom analytics | Domain-specific |
+| **Network success rate** | Correct terminal outcomes / all eligible on-device operations, per endpoint; include transport failures | OkHttp listener + telemetry SDK | Backend SLI is wrong-end measurement |
+| **Critical-flow success** | e.g., timely correct checkout outcomes / accepted attempts | Custom analytics | Domain-specific |
 | **Sync recovery** | `synced_within_5min / outbox_writes_offline` | Telemetry | Offline-first apps |
 
+Classify HTTP outcomes against the operation contract: an expected validation decline can be a correct terminal result, while an unresolved 401, rate-limit failure, DNS/TLS failure, or timeout can prevent completion. A non-5xx response alone is not proof of success. For deadline-based SLIs, evaluate matured attempts or track in-flight work separately; do not mark a newly started operation as failed before its deadline.
+
 ```kotlin
-// SLI: critical-flow checkout success
+// Illustrative counter facade. The operation owner emits accepted once and
+// exactly one terminal classification per attempt; it reconciles timeouts
+// and late results. Durable operation state, not these counters, deduplicates.
 class CheckoutSliRecorder @Inject constructor(private val telemetry: TelemetryClient) {
-    fun started(orderId: String) {
+    fun accepted() {
         telemetry.counter("sli.checkout.attempted").increment()
     }
-    fun succeeded(orderId: String) {
-        telemetry.counter("sli.checkout.succeeded").increment()
+    fun completedCorrectly() {
+        telemetry.counter("sli.checkout.completed_correctly").increment()
     }
 }
 ```
@@ -165,7 +166,7 @@ Mobile-distinct rules:
 2. **Slice by foreground vs background.** A network call timing in the background fights Doze; expecting the same p95 as foreground is wrong.
 3. **Slice by device tier.** A flagship's cold-start budget and a low-tier emerging-market budget cannot be the same SLI.
 4. **Don't aggregate frame jank globally.** A heavy carousel might be janky by design (expected); a settings page should never be. Per-screen SLIs.
-5. **Cumulative ANRs vs user-perceived ANRs.** Play distinguishes; you should too. User-perceived (within an interactive session) is the stricter measure.
+5. **Overall vs user-perceived ANRs.** Play currently counts input-dispatch timeouts in the user-perceived subset. This is a different numerator, not a universally stricter rate threshold.
 
 ### Ownership matrix
 
@@ -188,17 +189,17 @@ The owner is accountable for the runbook and for deleting or retuning the SLI if
 2. **Why is "CPU Usage" an invalid SLI for an Android application?**
    It measures an internal system state rather than the actual user experience or user pain.
 3. **Explain the difference between a "System Error" and a "User Error" when calculating a Checkout Success SLI.**
-   A system error (e.g., crash, network failure) hurts the SLI, whereas a user error (e.g., invalid credit card) is an expected business outcome and should not be counted as a bad event.
+   For technical completion, a correct, timely business decline is a good terminal outcome, while a transport failure, wrong result, or deadline expiry is bad. Purchase conversion is separate; keep numerator and denominator consistent.
 4. **Why must SLIs be measured from the mobile client rather than the backend server?**
    Measuring at the client captures the total latency and complete end-to-end user experience, including network transit and on-device processing.
 5. **What is the danger of having too many SLIs (e.g., 50+) for a single mobile application?**
    It creates noise, dilutes focus, and leads to alert fatigue, making it impossible to identify and prioritize critical user journeys.
 6. **How does the volatility of mobile networks make defining Latency SLIs uniquely difficult compared to backend development?**
-   Variable network conditions (e.g., 2G, tunnels) cause false positives, requiring complex filtering (like `WHERE network_type = WIFI`) to isolate app performance from environmental issues.
+   Network conditions affect real user experience. Keep an all-eligible-user SLI and network slices; use restricted eligibility only when the SLO explicitly promises service to that population.
 7. **If you want an SLI for UI smoothness, how would you mathematically define a "Good Event" using Android's frame rendering metrics?**
-   A good event would be defined as a frame rendered within the target time (e.g., under 16ms) or a session with fewer than a specific number of dropped/janky frames per minute.
+   Define the frame deadline or the chosen jank heuristic and refresh rate. A nominal interval is about 16.7 ms at 60 Hz and 8.3 ms at 120 Hz; JankStats uses a configurable heuristic (default multiplier 2), not a universal 16 ms definition.
 8. **Why are Percentiles (P95, P99) superior to Averages (Mean) when defining Latency SLIs?**
-   Averages hide extreme outliers, whereas percentiles guarantee that a specific large majority of users (e.g., 95%) are experiencing acceptable performance.
+   Percentiles describe distribution tails better than a mean, but P95 can hide 1% failures. Pair latency with availability, include failed operations, and slice cohorts; request percentiles make no distinct-user guarantee.
 9. **Explain the relationship between raw Metrics (Counters, Histograms) and SLIs.**
    Raw metrics provide the underlying data points that are filtered and aggregated to calculate the proportions used in SLIs.
 10. **Describe a scenario where backend SLIs are green (100% success), but mobile SLIs are red (0% success). What could cause this?**
@@ -211,3 +212,8 @@ The owner is accountable for the runbook and for deleting or retuning the SLI if
 - [Google SRE Book: Service Level Objectives](https://sre.google/sre-book/service-level-objectives/) — the theory.
 - [Android Vitals](https://developer.android.com/topic/performance/vitals) — the SLIs Play measures for you.
 - [`mobile-system-design/telemetry-sdk.md`](../mobile-system-design/telemetry-sdk.md) — the on-device pipeline.
+- [Crashlytics crash-free metrics](https://firebase.google.com/docs/crashlytics/crash-free-metrics)
+- [Play ANR definitions](https://developer.android.com/google/play/vitals/anr)
+- [Startup TTID and TTFD](https://developer.android.com/topic/performance/vitals/launch-time)
+- [JankStats frame heuristics](https://developer.android.com/topic/performance/jankstats)
+- [Prometheus histograms and summaries](https://prometheus.io/docs/practices/histograms/)

@@ -236,7 +236,7 @@ The two canonical tracing surfaces on Android:
 | **OpenTelemetry Android SDK** | OTel-compatible spans, context propagation, instrumentation, and configurable export | When vendor-neutral instrumentation/export and cross-boundary correlation meet the product need |
 
 ```kotlin
-// Firebase Performance custom trace + sub-spans
+// Firebase Performance custom trace with numeric duration metrics (not child spans)
 val checkout = FirebasePerformance.getInstance().newTrace("checkout_flow").apply {
     putAttribute("payment_method", "card")
     putAttribute("network_class", networkClass())
@@ -244,9 +244,8 @@ val checkout = FirebasePerformance.getInstance().newTrace("checkout_flow").apply
 }
 
 try {
-    val validation = checkout.newMetric("validation_ms")
-    val ms = measureTimeMillis { validateCart() }
-    validation.setValue(ms)
+    val validationMs = measureTimeMillis { validateCart() }
+    checkout.putMetric("validation_ms", validationMs)
 
     val authMs = measureTimeMillis { authorizePayment() }
     checkout.putMetric("authorize_ms", authMs)
@@ -297,3 +296,4 @@ The mobile-distinct concerns:
 - [OpenTelemetry documentation](https://opentelemetry.io/docs/) — current instrumentation and specification entry point.
 - [Firebase Performance Monitoring](https://firebase.google.com/docs/perf-mon) — auto-instrumented spans + custom traces.
 - [JankStats](https://developer.android.com/topic/performance/jankstats) — frame-level perf events.
+- [Firebase Trace API](https://firebase.google.com/docs/reference/android/com/google/firebase/perf/metrics/Trace) — custom numeric metrics do not create child spans.

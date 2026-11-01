@@ -2,15 +2,15 @@
 
 ## Overview
 
-Metrics are aggregatable numerical measurements of your system's performance and health, captured over time. Unlike Logs (which describe discrete, isolated events), metrics are mathematically combinable (e.g., sums, averages, percentiles). They are the foundation of alerting, dashboards, and SLIs.
+Metrics are aggregatable numerical measurements of your system's performance and health, captured over time. Unlike Logs (which describe discrete, isolated events), metrics support defined aggregations (for example sums, weighted means, and quantiles computed from mergeable distributions). Arbitrary per-device percentiles are not themselves mergeable. They are the foundation of alerting, dashboards, and SLIs.
 
 ## Why It Matters
 
 Logs tell you *why* something is broken. Metrics tell you *that* something is broken.
 
-If a backend server goes down and 500,000 mobile clients fail to checkout, logging that failure 500,000 times will overwhelm your logging infrastructure, cost tens of thousands of dollars in ingestion fees, and potentially crash the backend observability database. 
+If a backend server goes down and 500,000 mobile clients fail to checkout, a diagnostic record for every failure can add substantial ingestion volume. The cost and capacity impact depend on payload size, sampling, and backend limits.
 
-Metrics solve this. Instead of sending 500,000 heavy JSON logs, the mobile app simply increments a counter: `checkout_failures++`. The mobile app periodically sends a single number (`500,000`) to the server. The network payload is tiny, but the signal to the SRE team is instantaneous and deafening.
+Each device aggregates its own observed failures under a bounded export policy. The backend combines the compatible device aggregates to reach a fleet count such as 500,000; no single device observes all clients. Delivery is delayed and can be incomplete, so define loss, retry, and deduplication semantics.
 
 ## Historical Context
 
@@ -35,7 +35,7 @@ There are three primary types of metrics:
 ### 1. Counters
 
 A number that only goes up (or resets to zero). Used for counting discrete events.
-- *Examples:* `app_crashes_total`, `checkout_success_total`, `network_errors_total`.
+- *Examples:* `checkout_success_total`, `sync_retry_total`, `network_errors_total`.
 
 ```kotlin
 // Incrementing a counter with tags
@@ -82,7 +82,7 @@ graph TD
         C1[Counter++] --> InMem[(In-Memory Aggregator)]
         G1["Gauge(42)"] --> InMem
         H1["Histogram(120ms)"] --> InMem
-        InMem -->|Push every 60s| Net[Network]
+        InMem -->|Bounded SDK export policy| Net[Network]
     end
     
     subgraph "Observability Backend"
@@ -91,6 +91,8 @@ graph TD
         TSDB --> Alert["PagerDuty Alert: P99 > 2s"]
     end
 ```
+
+The device aggregates locally and the backend merges compatible observations. Export delay and process-death loss depend on the SDK policy; an in-memory buffer is not durable. See the [OpenTelemetry aggregation model](https://opentelemetry.io/docs/specs/otel/metrics/sdk/).
 
 ## Production Example
 
@@ -101,7 +103,7 @@ Google provides Firebase Performance Monitoring for Android. Add the [Performanc
 For custom business logic, you can define your own trace metrics:
 
 ```kotlin
-// Firebase custom trace (effectively a Histogram metric)
+// Firebase custom trace: the SDK records a duration measurement
 val trace = FirebasePerformance.getInstance().newTrace("image_processing_time")
 trace.start()
 // Add custom dimensions (Tags)
@@ -109,7 +111,7 @@ trace.putAttribute("image_format", "webp")
 
 val processedImage = processImage(rawImage)
 
-trace.stop() // Records the duration and pushes to Firebase
+trace.stop() // Ends the measurement; SDK delivery is separate and asynchronous
 ```
 
 ## Tradeoffs
@@ -117,7 +119,7 @@ trace.stop() // Records the duration and pushes to Firebase
 **Advantages**
 - **Incredibly Cheap:** You can retain metrics for years because they take up almost no disk space. (Logs are usually deleted after 14-30 days to save money).
 - **Fast Dashboarding:** Rendering a graph of a single metric over 30 days takes milliseconds. Querying 10 million logs to build the same graph takes minutes.
-- **Proactive Alerting:** Metrics are the only reliable way to trigger automated alerts (e.g., "Alert me if the error rate counter exceeds 5% in a 5-minute window").
+- **Proactive Alerting:** Metrics are a common efficient input for automated alerts (e.g., "Alert me if the error rate counter exceeds 5% in a 5-minute window").
 
 **Disadvantages**
 - **Loss of Context:** A counter tells you that 500 network errors happened. It does *not* tell you *why* they happened. You still need logs for the forensic investigation.
@@ -135,7 +137,7 @@ trace.stop() // Records the duration and pushes to Firebase
   ```
   *(Fix: Tags must only be low-cardinality enumerations, like `os_version`, `carrier_name`, or `error_code`).*
 - **Using Logs for Math:** Writing `Timber.i("Checkout successful")` and then writing a complex query in Datadog to count how many times that exact string appears per minute. This is incredibly slow, fragile, and expensive. Use a `Counter`.
-- **Averaging Percentiles:** If you calculate the P95 latency on the mobile device, and send that number to the server, the server cannot mathematically average the P95 from Device A and the P95 from Device B to get a global P95. The math doesn't work. Mobile devices must send raw distributions, and the *server* must calculate the percentiles.
+- **Averaging Percentiles:** If you calculate the P95 latency on the mobile device, and send that number to the server, the server cannot mathematically average the P95 from Device A and the P95 from Device B to get a global P95. The math doesn't work. Send a compatible mergeable histogram/distribution (such as bucket counts), then calculate fleet quantiles at the backend. Raw per-request samples are not mandatory; histogram quantiles are estimates whose accuracy depends on the representation.
 
 ## Staff Engineer Thinking
 
@@ -176,35 +178,28 @@ The metric-pipeline shape on Android pulls from three sources:
 Choose dimensions per metric and question. Foreground state, app version, API cohort, device tier, or network class can be useful when their vocabularies and privacy purpose are bounded. OEM/country may create sparse or sensitive cohorts and need minimum-sample/access policy. Do not use raw user, device, session, URL, or request identifiers as metric labels.
 
 ```kotlin
-// Tagging a histogram with mobile-specific dimensions
-class HistogramRecorder @Inject constructor(
-    private val tags: MobileTagsProvider,
+// Illustrative telemetry facade: choose dimensions for this metric only.
+class NetworkLatencyRecorder @Inject constructor(
+    private val telemetry: TelemetryClient,
 ) {
-    fun record(name: String, valueMs: Long, extra: Map<String, String> = emptyMap()) {
+    fun record(valueMs: Long, network: NetworkClass) {
         telemetry.histogram(
-            name = name,
+            name = "network_duration_ms",
             value = valueMs,
-            tags = tags.snapshot() + extra,
+            tags = mapOf(
+                "app_version" to BuildConfig.VERSION_NAME,
+                "network_class" to network.name.lowercase(),
+            ),
         )
     }
 }
 
-class MobileTagsProvider @Inject constructor(
-    @ApplicationContext private val ctx: Context,
-    private val foreground: ForegroundObserver,
-) {
-    fun snapshot(): Map<String, String> = mapOf(
-        "app_version" to BuildConfig.VERSION_NAME,
-        "android_api" to Build.VERSION.SDK_INT.toString(),
-        "oem" to Build.MANUFACTURER.lowercase(),
-        "device_tier" to DeviceClass.tier().name.lowercase(),  // low / mid / flagship
-        "network_class" to networkClass(ctx),                   // wifi / cellular / none
-        "metered" to networkMetered(ctx).toString(),
-        "fg_state" to if (foreground.isAppInForeground()) "fg" else "bg",
-        "battery_saver" to powerSaver(ctx).toString(),
-    )
-}
+enum class NetworkClass { WIFI, CELLULAR, NONE, OTHER }
 ```
+
+Do not attach a universal device/environment map to every metric. Bound and monitor the actual combinations of labels, retained versions, and histogram buckets. Add other dimensions only when their diagnostic value justifies the series count and privacy cost.
+
+Fatal-crash rate requires a crash-aware reporting mechanism and a compatible denominator. An in-memory `app_crashes_total` increment can disappear when the process dies; it is not a reliable substitute for crash reporting.
 
 Start with metrics tied to declared user journeys, SLOs, release gates, or capacity decisions. Examples include startup distributions, slow/janky-frame rate, network duration/error distributions, crash/ANR rate, and sync success/freshness. DAU/MAU is normally a product aggregation computed from governed events, not an on-device gauge.
 
@@ -217,7 +212,7 @@ Batch/export cadence depends on action latency, loss tolerance, process death, b
 2. **Explain the concept of "Cardinality" in metrics tagging. Why is adding a `user_id` tag to a metric dangerous?**
    Cardinality is the number of unique attribute combinations. A user ID can create one series per user and expose personal/profiling data, driving storage/query cost and operational limits; use bounded cohorts for metrics.
 3. **What is the difference between a Counter, a Gauge, and a Histogram? Give an Android example for each.**
-   A Counter strictly increases (e.g., `crash_count`), a Gauge goes up or down (e.g., `battery_level`), and a Histogram tracks distributions (e.g., `api_latency`).
+   A Counter accumulates events (e.g., `network_errors_total`) until reset, a Gauge goes up or down (e.g., `battery_level`), and a Histogram tracks distributions (e.g., `api_latency`).
 4. **Why can a mean be insufficient for network latency, and what should you preserve instead?**
    A mean hides distribution shape and tail cohorts even though it can answer total-work questions. Preserve a mergeable histogram/distribution and report percentiles or buckets aligned to the user/SLO question.
 5. **How do mobile constraints (battery, network connectivity) change how metrics are delivered to the server compared to backend systems?**
@@ -241,3 +236,6 @@ Batch/export cadence depends on action latency, loss tolerance, process death, b
 - [`telemetry-taxonomy.md`](telemetry-taxonomy.md) — Canonical signal-selection and data-governance matrix.
 - [Android Vitals](https://developer.android.com/topic/performance/vitals) — Play Console's auto-collected metrics.
 - [JankStats](https://developer.android.com/topic/performance/jankstats) — frame-jank RUM library.
+- [Prometheus histograms and summaries](https://prometheus.io/docs/practices/histograms/)
+- [OpenTelemetry metric aggregation](https://opentelemetry.io/docs/specs/otel/metrics/sdk/)
+- [Crashlytics crash-free metrics](https://firebase.google.com/docs/crashlytics/crash-free-metrics)
