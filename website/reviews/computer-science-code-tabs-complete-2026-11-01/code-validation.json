@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "java_snippets": 74,
+  "java_flags": ["--release", "17", "-Xlint:all", "-Werror"],
+  "java_behaviour_fixtures": 48,
+  "kotlin_snippets": 74,
+  "kotlin_compiler": "2.2.0",
+  "kotlin_language_version": "2.0",
+  "kotlin_api_version": "2.0",
+  "kotlin_jvm_target": "17",
+  "guava": "33.4.6-jre",
+  "explicit_android_kotlin_only_blocks": 12,
+  "code_pairs_sha256": "c8a8456c1a6531deb6a7d8ff6f7d6cd4e4d9ae763816b699d178b605dbc30d62",
+  "validator_sha256": "5011f1eaaff9a02ab281d202c9141777d25ba1c56f85643b0b55e9d3c63edc68",
+  "scope": "Exact displayed JVM fragments compiled with declared imports, chapter types, and enclosing harnesses; Android application fragments excluded."
+}

@@ -16,3 +16,29 @@ A dark code block with a filename header and a copy button; the one dark object 
 ## Tokens
 
 `code-bg`, `code-ink`, `code-key`, `code-call`, `code-string`, `code-comment`, `line-strong`, `radius-md`, `radius-pill`.
+
+## Java / Kotlin variants
+
+Computer Science JVM examples use `website/content/code-pairs.json`. Each entry
+binds a Java counterpart to the SHA-256 of its exact corrected Kotlin fence.
+Java is initially selected; each card switches independently. Tabs support
+Left/Right and Home/End, roving focus, named panels, and an active copy target.
+Both snippets remain readable when JavaScript is disabled.
+
+Headers show the tested language/API level: Java 17 and Kotlin 2.0. Examples are
+fragments, with imports and application-type prerequisites in a disclosure.
+Android/Compose and Kotlin source-inspection examples have explicit labels in
+`code-kotlin-only.json`; they follow the Kotlin direction for Android code.
+The Big-O chapter is a cross-reference with no code fences.
+
+Run `python website/scripts/check_cs_code.py` to check complete coverage, source
+hashes, Java 17 compilation (warnings are errors), and algorithm assertions.
+Use `--kotlin-libraries /path/to/compiler/lib` to compile all Kotlin counterparts
+with language/API version 2.0. The harness compiles exact displayed text and supplies
+only declared chapter dependencies, imports, and enclosing classes.
+
+References: [Java 17 collections](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/package-summary.html),
+[Comparator](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Comparator.html),
+[Streams](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/stream/Stream.html),
+[Compose Kotlin APIs](https://developer.android.com/develop/ui/compose/kotlin),
+[accessible tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/).

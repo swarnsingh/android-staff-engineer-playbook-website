@@ -393,6 +393,8 @@ def render_chapter(path, raw, is_course=False):
             note=''
         pair = CODE_PAIRS.get(path, {}).get(str(code_index)) if path.startswith('computer-science/') else None
         if pair and language == 'kotlin' and not env.get('blend'):
+            if pair.get('source_sha256') != hashlib.sha256(token.content.encode()).hexdigest():
+                raise ValueError(f'{path} code {code_index}: source changed; reverify language pair')
             java_id = code_id + '-java'; kotlin_id = code_id + '-kotlin'
             java_label = pair.get('java_label', 'Example.java'); kotlin_label = pair.get('kotlin_label', 'Example.kt')
             java_version = pair.get('java_version', 'Java 17+'); kotlin_version = pair.get('kotlin_version', 'Kotlin 2.0+')

@@ -31,6 +31,29 @@ window.__runAudit = async (pages, widths = [320, 390, 768, 1181, 1280, 1439, 144
         });
         const d=frame.contentDocument,w=frame.contentWindow;
         if (typeof w.__inspectOriginalContent !== 'function') throw new Error('QA instrumentation missing');
+        // Exercise every code card before the read-only preservation audit.
+        for (const card of d.querySelectorAll('[data-code-tabs]')) {
+          const tabs = [...card.querySelectorAll('[role="tab"]')];
+          const neighbors = [...d.querySelectorAll('[data-code-tabs]')].filter(other=>other!==card);
+          const snapshot = neighbors.map(other=>other.querySelector('[aria-selected="true"]').id).join('|');
+          const check = language => {
+            const tab = tabs.find(tab=>tab.dataset.codeLanguage===language);
+            const activePanel = d.getElementById(tab.getAttribute('aria-controls'));
+            if(tab.getAttribute('aria-selected')!=='true' || tab.tabIndex!==0 ||
+               activePanel.hidden || card.querySelectorAll('[role="tabpanel"]:not([hidden])').length!==1 ||
+               card.querySelector('[data-copy]').dataset.copy!==activePanel.querySelector('code').id) {
+              throw new Error('Code tab state/copy target failed: '+tab.id);
+            }
+          };
+          check('java');
+          tabs[1].click(); check('kotlin');
+          tabs[1].dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true})); check('java');
+          tabs[0].dispatchEvent(new w.KeyboardEvent('keydown',{key:'End',bubbles:true})); check('kotlin');
+          tabs[1].dispatchEvent(new w.KeyboardEvent('keydown',{key:'Home',bubbles:true})); check('java');
+          if(snapshot!==neighbors.map(other=>other.querySelector('[aria-selected="true"]').id).join('|')) {
+            throw new Error('Code tab changed another example');
+          }
+        }
         const viewAudits=[];
         const views=d.querySelector('#panel-qa')?['content','qa']:['content'];
         const expectedQA=(units[d.body.dataset.source]||[]).filter(u=>u.view==='qa');

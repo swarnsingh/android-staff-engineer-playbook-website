@@ -9,7 +9,8 @@
       "java_mode": "statements",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "33f54895a32c8ad39bc9f29b3bf59e93a79338155501125d66f1f6cdca6066ef"
     },
     "2": {
       "java": "StringBuilder builder = new StringBuilder();\nfor (int i = 0; i < 10_000; i++) {\n    builder.append('x');\n}\nString result = builder.toString();",
@@ -20,7 +21,8 @@
       "java_mode": "statements",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "ff1678d8fdb2aa207cff842a15748b956cd3bd650959eb1f12020b36670ee837"
     },
     "3": {
       "java": "String text = \"👨‍👩‍👧‍👦\";\nSystem.out.println(text.length());",
@@ -31,7 +33,8 @@
       "java_mode": "statements",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "c80ee869b87566d38512acbcf2a9ddd8f4efc2b000a50cb57ab50235fa7163af"
     },
     "4": {
       "java": "static boolean hasPairWithSum(int[] sorted, int target) {\n    int left = 0;\n    int right = sorted.length - 1;\n\n    while (left < right) {\n        int sum = sorted[left] + sorted[right];\n        if (sum == target) return true;\n        if (sum < target) left++;\n        else right--;\n    }\n    return false;\n}",
@@ -42,7 +45,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert hasPairWithSum(new int[]{1,2,4},6); assert !hasPairWithSum(new int[]{},0);"
+      "java_test": "assert hasPairWithSum(new int[]{1,2,4},6); assert !hasPairWithSum(new int[]{},0);",
+      "source_sha256": "3ff094e630fccecbd80d1a52e0a8da30a375e5643e4e88a653521e4e26780c07"
     },
     "5": {
       "java": "static int longestSubstringWithoutRepeats(String s) {\n    Map<Character, Integer> lastSeen = new HashMap<>();\n    int start = 0;\n    int best = 0;\n\n    for (int end = 0; end < s.length(); end++) {\n        char c = s.charAt(end);\n        Integer previous = lastSeen.get(c);\n        if (previous != null && previous >= start) {\n            start = previous + 1;\n        }\n        lastSeen.put(c, end);\n        best = Math.max(best, end - start + 1);\n    }\n    return best;\n}",
@@ -53,7 +57,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert longestSubstringWithoutRepeats(\"abcabcbb\")==3; assert longestSubstringWithoutRepeats(\"\")==0;"
+      "java_test": "assert longestSubstringWithoutRepeats(\"abcabcbb\")==3; assert longestSubstringWithoutRepeats(\"\")==0;",
+      "source_sha256": "b4c1bb5c07e4d1e572f1528b19562ea3d8cd58df0f6f0331cf442ae5c23e4ec8"
     },
     "6": {
       "java": "static final class PrefixSum {\n    private final long[] prefix;\n\n    PrefixSum(int[] values) {\n        prefix = new long[values.length + 1];\n        for (int i = 0; i < values.length; i++) {\n            prefix[i + 1] = prefix[i] + values[i];\n        }\n    }\n\n    long sumInclusive(int left, int right) {\n        if (left > right) throw new IllegalArgumentException(\"left > right\");\n        return prefix[right + 1] - prefix[left];\n    }\n}",
@@ -64,7 +69,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert new PrefixSum(new int[]{1,2,3}).sumInclusive(1,2)==5;"
+      "java_test": "assert new PrefixSum(new int[]{1,2,3}).sumInclusive(1,2)==5;",
+      "source_sha256": "aa82bde3f45feebd9a730930d7bb6c6196965e03b68f7d8d818ef38154e9c8b7"
     },
     "7": {
       "java": "static int[] applyRangeAdds(int size, List<int[]> updates) {\n    int[] diff = new int[size + 1];\n    for (int[] update : updates) {\n        int left = update[0];\n        int right = update[1];\n        int delta = update[2];\n        diff[left] += delta;\n        if (right + 1 < diff.length) diff[right + 1] -= delta;\n    }\n\n    int[] result = new int[size];\n    int running = 0;\n    for (int i = 0; i < size; i++) {\n        running += diff[i];\n        result[i] = running;\n    }\n    return result;\n}",
@@ -75,7 +81,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert Arrays.equals(applyRangeAdds(4,List.of(new int[]{1,2,3})),new int[]{0,3,3,0});"
+      "java_test": "assert Arrays.equals(applyRangeAdds(4,List.of(new int[]{1,2,3})),new int[]{0,3,3,0});",
+      "source_sha256": "a4a64d89f0a8c35d43680438672965cfb348c381ab4ceccb00430bacb8012c93"
     },
     "8": {
       "java": "record UiState(List<Item> items) {}",
@@ -86,7 +93,8 @@
       "java_mode": "members",
       "java_support": "record Item(String id) {}",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Item.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "2bc74ede7012c614b3553ad8679107cabc63c0dea5313e86a339ef97c6b41ab1"
     },
     "9": {
       "java": "private final List<Item> items = new ArrayList<>();\n\nUiState add(Item item) {\n    items.add(item);\n    return new UiState(List.copyOf(items));\n}",
@@ -97,7 +105,8 @@
       "java_mode": "members",
       "java_support": "record Item(String id) {}\nrecord UiState(List<Item> items) {}",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Item, UiState.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "df643d4f24f1b2bfa292f6f3c90a2065cd763d95830ac167fbd5f6f935b3381e"
     },
     "10": {
       "java": "List<String> names = users.stream()\n    .filter(User::active)\n    .map(User::name)\n    .sorted()\n    .toList();",
@@ -108,7 +117,8 @@
       "java_mode": "statements",
       "java_support": "record User(boolean active, String name) {}\nList<User> users = List.of();",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: User.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "12b90fbbfef43d000ec419b157a30fa6d0b4133a5019752de65912991eb5b535"
     },
     "11": {
       "java": "String normalized = input.toLowerCase(Locale.ROOT); // protocol keys, not user text",
@@ -119,7 +129,8 @@
       "java_mode": "statements",
       "java_support": "String input = \"KEY\";",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "df1d4f23a8f5a3b669c9e60bbe4e60dea2e64e4fcbecd9efaae8e73e1f195a8a"
     }
   },
   "computer-science/dynamic-programming.md": {
@@ -132,7 +143,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert fibSlow(10)==55;"
+      "java_test": "assert fibSlow(10)==55;",
+      "source_sha256": "1de3e735f771aebe45366a731173485231cab8ce1c3a3ec618a329888a551b35"
     },
     "1": {
       "java": "static long fib(int n) {\n    long[] memo = new long[n + 1];\n    Arrays.fill(memo, -1L);\n    return solve(n, memo);\n}\n\nprivate static long solve(int i, long[] memo) {\n    if (i <= 1) return i;\n    if (memo[i] != -1L) return memo[i];\n    memo[i] = solve(i - 1, memo) + solve(i - 2, memo);\n    return memo[i];\n}",
@@ -143,7 +155,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert fib(10)==55; assert fib(0)==0;"
+      "java_test": "assert fib(10)==55; assert fib(0)==0;",
+      "source_sha256": "8fa50f174bc8a4ad48fb505a4f29887eca308af4d8b61882bb7fcbe67b5d8220"
     },
     "2": {
       "java": "static long fibTab(int n) {\n    if (n <= 1) return n;\n    long prev = 0L;\n    long curr = 1L;\n    for (int i = 0; i < n - 1; i++) {\n        long next = prev + curr;\n        prev = curr;\n        curr = next;\n    }\n    return curr;\n}",
@@ -154,7 +167,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert fibTab(10)==55; assert fibTab(1)==1;"
+      "java_test": "assert fibTab(10)==55; assert fibTab(1)==1;",
+      "source_sha256": "fa096122069e52f8942a7f6ea766b05a29af313579ad959d2c9501a0df928bcf"
     },
     "4": {
       "java": "static int maxNonAdjacentSum(int[] values) {\n    int skip = 0;\n    int take = 0;\n\n    for (int value : values) {\n        int newTake = skip + value;\n        int newSkip = Math.max(skip, take);\n        take = newTake;\n        skip = newSkip;\n    }\n    return Math.max(skip, take);\n}",
@@ -165,7 +179,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert maxNonAdjacentSum(new int[]{2,7,9,3,1})==12; assert maxNonAdjacentSum(new int[]{-1})==0;"
+      "java_test": "assert maxNonAdjacentSum(new int[]{2,7,9,3,1})==12; assert maxNonAdjacentSum(new int[]{-1})==0;",
+      "source_sha256": "14cec868583b5f0e96699a9e195d085592110807d4080ac600d1cb90a54127b2"
     },
     "5": {
       "java": "static int editDistance(String a, String b) {\n    int[][] dp = new int[a.length() + 1][b.length() + 1];\n    for (int i = 0; i <= a.length(); i++) dp[i][0] = i;\n    for (int j = 0; j <= b.length(); j++) dp[0][j] = j;\n\n    for (int i = 1; i <= a.length(); i++) {\n        for (int j = 1; j <= b.length(); j++) {\n            int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;\n            dp[i][j] = Math.min(\n                Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1),\n                dp[i - 1][j - 1] + cost\n            );\n        }\n    }\n    return dp[a.length()][b.length()];\n}",
@@ -176,7 +191,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert editDistance(\"kitten\",\"sitting\")==3; assert editDistance(\"\",\"a\")==1;"
+      "java_test": "assert editDistance(\"kitten\",\"sitting\")==3; assert editDistance(\"\",\"a\")==1;",
+      "source_sha256": "dfb7624f94ae3439a5a647e0fe8921e562fedb2bad5aa5d013614284b18a2adb"
     },
     "6": {
       "java": "record Item(int weight, int value) {}\n\nstatic int knapsack(int capacity, List<Item> items) {\n    int[] dp = new int[capacity + 1];\n    for (Item item : items) {\n        for (int w = capacity; w >= item.weight(); w--) {\n            dp[w] = Math.max(dp[w], dp[w - item.weight()] + item.value());\n        }\n    }\n    return dp[capacity];\n}",
@@ -187,7 +203,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert knapsack(5,List.of(new Item(2,3),new Item(3,4)))==7;"
+      "java_test": "assert knapsack(5,List.of(new Item(2,3),new Item(3,4)))==7;",
+      "source_sha256": "6e5c9ae3bd367232af6409ee995480aab04477556b049d0f7de686e22b95ec48"
     }
   },
   "computer-science/greedy-and-intervals.md": {
@@ -200,7 +217,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert !new Interval(1,1).overlaps(new Interval(0,2)); assert !new Interval(0,1).overlaps(new Interval(1,2));"
+      "java_test": "assert !new Interval(1,1).overlaps(new Interval(0,2)); assert !new Interval(0,1).overlaps(new Interval(1,2));",
+      "source_sha256": "386bdbc5fedaf0c31b8ef769a1ca19ea98ae7d74d2b3c6fb6e2c21b4d6eeb733"
     },
     "2": {
       "java": "static List<Interval> mergeIntervals(List<Interval> input) {\n    if (input.isEmpty()) return List.of();\n    List<Interval> sorted = new ArrayList<>(input);\n    sorted.sort(Comparator.comparingLong(Interval::start).thenComparingLong(Interval::end));\n    List<Interval> result = new ArrayList<>();\n    Interval current = sorted.get(0);\n    for (int i = 1; i < sorted.size(); i++) {\n        Interval next = sorted.get(i);\n        if (current.end() >= next.start()) {\n            current = new Interval(current.start(), Math.max(current.end(), next.end()));\n        } else {\n            result.add(current);\n            current = next;\n        }\n    }\n    result.add(current);\n    return result;\n}",
@@ -211,7 +229,8 @@
       "java_mode": "members",
       "java_support": "record Interval(long start, long end) {\n    Interval {\n        if (start > end) throw new IllegalArgumentException(\"start > end\");\n    }\n    boolean overlaps(Interval other) {\n        return start < end && other.start < other.end\n            && start < other.end && other.start < end;\n    }\n}",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Interval.",
-      "java_test": "assert mergeIntervals(List.of(new Interval(0,2),new Interval(2,4))).equals(List.of(new Interval(0,4)));"
+      "java_test": "assert mergeIntervals(List.of(new Interval(0,2),new Interval(2,4))).equals(List.of(new Interval(0,4)));",
+      "source_sha256": "ce97e304cd96c57b1e59d2c35c352bae27f7e2946a8a186b8363382ae5b7544b"
     },
     "3": {
       "java": "static List<Interval> maxNonOverlapping(List<Interval> intervals) {\n    List<Interval> sorted = new ArrayList<>(intervals);\n    sorted.sort(Comparator.comparingLong(Interval::end));\n    List<Interval> result = new ArrayList<>();\n    long lastEnd = Long.MIN_VALUE;\n    for (Interval interval : sorted) {\n        if (interval.start() >= lastEnd) {\n            result.add(interval);\n            lastEnd = interval.end();\n        }\n    }\n    return result;\n}",
@@ -222,7 +241,8 @@
       "java_mode": "members",
       "java_support": "record Interval(long start, long end) {\n    Interval {\n        if (start > end) throw new IllegalArgumentException(\"start > end\");\n    }\n    boolean overlaps(Interval other) {\n        return start < end && other.start < other.end\n            && start < other.end && other.start < end;\n    }\n}",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Interval.",
-      "java_test": "assert maxNonOverlapping(List.of(new Interval(0,2),new Interval(1,4),new Interval(2,3))).size()==2;"
+      "java_test": "assert maxNonOverlapping(List.of(new Interval(0,2),new Interval(1,4),new Interval(2,3))).size()==2;",
+      "source_sha256": "cf43f716c5b34d6b3a3a44257096b722cf90a5596365e234a33644acf88123d4"
     },
     "4": {
       "java": "record Event(long time, int delta) {}\nstatic int maxConcurrent(List<Interval> intervals) {\n    List<Event> events = new ArrayList<>();\n    for (Interval interval : intervals) {\n        if (interval.start() == interval.end()) continue; // Empty range.\n        events.add(new Event(interval.start(), 1));\n        events.add(new Event(interval.end(), -1));\n    }\n    events.sort(Comparator.comparingLong(Event::time).thenComparingInt(Event::delta));\n    int active = 0, maxActive = 0;\n    for (Event event : events) {\n        active += event.delta();\n        maxActive = Math.max(maxActive, active);\n    }\n    return maxActive;\n}",
@@ -233,7 +253,8 @@
       "java_mode": "members",
       "java_support": "record Interval(long start, long end) {\n    Interval {\n        if (start > end) throw new IllegalArgumentException(\"start > end\");\n    }\n    boolean overlaps(Interval other) {\n        return start < end && other.start < other.end\n            && start < other.end && other.start < end;\n    }\n}",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Interval.",
-      "java_test": "assert maxConcurrent(List.of(new Interval(0,2),new Interval(1,3)))==2; assert maxConcurrent(List.of(new Interval(1,1)))==0;"
+      "java_test": "assert maxConcurrent(List.of(new Interval(0,2),new Interval(1,3)))==2; assert maxConcurrent(List.of(new Interval(1,1)))==0;",
+      "source_sha256": "b6c07a05db0a9b744f40ccd56deb03fe0677107398ee0fee13eddb1266f6391a"
     },
     "5": {
       "java": "static boolean canReachEnd(int[] maxJump) {\n    long farthest = 0;\n    for (int i = 0; i < maxJump.length; i++) {\n        if (i > farthest) return false;\n        farthest = Math.max(farthest, (long) i + maxJump[i]);\n    }\n    return true;\n}",
@@ -244,7 +265,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert canReachEnd(new int[]{2,3,1,1,4}); assert !canReachEnd(new int[]{3,2,1,0,4});"
+      "java_test": "assert canReachEnd(new int[]{2,3,1,1,4}); assert !canReachEnd(new int[]{3,2,1,0,4});",
+      "source_sha256": "c831e0847d122da74d8c3289e480f08f47f2a9e162be8914febcf2c2a89b6854"
     }
   },
   "computer-science/recursion-backtracking.md": {
@@ -257,7 +279,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert factorial(5)==120;"
+      "java_test": "assert factorial(5)==120;",
+      "source_sha256": "7508896b41fac742c8ac9d1d88bdca9082b32dc231a6b2a252dcbb7dab5cde0c"
     },
     "1": {
       "java": "record Node(String id, List<Node> children) {}\nstatic int countNodes(Node root) {\n    int count = 1;\n    for (Node child : root.children()) count += countNodes(child);\n    return count;\n}",
@@ -268,7 +291,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert countNodes(new Node(\"r\",List.of(new Node(\"c\",List.of()))))==2;"
+      "java_test": "assert countNodes(new Node(\"r\",List.of(new Node(\"c\",List.of()))))==2;",
+      "source_sha256": "39e7f9b6310c414e4e52b6688cabeff39643b0e764ff6d95b09057ac031a2294"
     },
     "2": {
       "java": "static int countNodesIterative(Node root) {\n    Deque<Node> stack = new ArrayDeque<>();\n    int count = 0;\n    stack.addLast(root);\n    while (!stack.isEmpty()) {\n        Node node = stack.removeLast();\n        count++;\n        for (Node child : node.children()) stack.addLast(child);\n    }\n    return count;\n}",
@@ -279,7 +303,8 @@
       "java_mode": "members",
       "java_support": "record Node(String id, List<Node> children) {}\nstatic int countNodes(Node root) {\n    int count = 1;\n    for (Node child : root.children()) count += countNodes(child);\n    return count;\n}",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Node.",
-      "java_test": "assert countNodesIterative(new Node(\"r\",List.of()))==1;"
+      "java_test": "assert countNodesIterative(new Node(\"r\",List.of()))==1;",
+      "source_sha256": "9a9ee988c7fec5ab0de45090078fbf6a8bec5a5fa5751a9ffefd2b18cb971a33"
     },
     "4": {
       "java": "static List<List<Integer>> subsets(int[] values) {\n    List<List<Integer>> result = new ArrayList<>();\n    subsetDfs(values, 0, new ArrayList<>(), result);\n    return result;\n}\nprivate static void subsetDfs(int[] values, int index, List<Integer> current,\n                              List<List<Integer>> result) {\n    if (index == values.length) {\n        result.add(new ArrayList<>(current));\n        return;\n    }\n    subsetDfs(values, index + 1, current, result);\n    current.add(values[index]);\n    subsetDfs(values, index + 1, current, result);\n    current.remove(current.size() - 1);\n}",
@@ -290,7 +315,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert subsets(new int[]{1,2}).size()==4; assert subsets(new int[]{}).size()==1;"
+      "java_test": "assert subsets(new int[]{1,2}).size()==4; assert subsets(new int[]{}).size()==1;",
+      "source_sha256": "1b012ff7b26a32855428a0ff460b7173c78e7b228eafc03ae4d09c92f93c4afb"
     },
     "5": {
       "java": "static List<List<Integer>> permutations(int[] values) {\n    List<List<Integer>> result = new ArrayList<>();\n    permutationDfs(values, new boolean[values.length], new ArrayList<>(), result);\n    return result;\n}\nprivate static void permutationDfs(int[] values, boolean[] used, List<Integer> current,\n                                   List<List<Integer>> result) {\n    if (current.size() == values.length) {\n        result.add(new ArrayList<>(current));\n        return;\n    }\n    for (int i = 0; i < values.length; i++) {\n        if (used[i]) continue;\n        used[i] = true;\n        current.add(values[i]);\n        permutationDfs(values, used, current, result);\n        current.remove(current.size() - 1);\n        used[i] = false;\n    }\n}",
@@ -301,7 +327,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert permutations(new int[]{1,2,3}).size()==6;"
+      "java_test": "assert permutations(new int[]{1,2,3}).size()==6;",
+      "source_sha256": "9190996c81ee407e8a8f68bb7e6471d366872fc6548d4be9f13b3657308bc381"
     },
     "6": {
       "java": "static List<List<Integer>> combinationSum(int[] values, int target) {\n    int[] sorted = values.clone();\n    Arrays.sort(sorted);\n    List<List<Integer>> result = new ArrayList<>();\n    combinationDfs(sorted, 0, target, new ArrayList<>(), result);\n    return result;\n}\nprivate static void combinationDfs(int[] sorted, int start, int remaining,\n                                   List<Integer> current, List<List<Integer>> result) {\n    if (remaining == 0) {\n        result.add(new ArrayList<>(current));\n        return;\n    }\n    for (int i = start; i < sorted.length; i++) {\n        int value = sorted[i];\n        if (value > remaining) break;\n        current.add(value);\n        combinationDfs(sorted, i + 1, remaining - value, current, result);\n        current.remove(current.size() - 1);\n    }\n}",
@@ -312,7 +339,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert combinationSum(new int[]{1,2,3},3).size()==2;"
+      "java_test": "assert combinationSum(new int[]{1,2,3},3).size()==2;",
+      "source_sha256": "85028030ae4c3de3507523db356c5495de542a984f0d5eb8a7c239114fb4ef3a"
     },
     "7": {
       "java": "static int gcd(int a, int b) {\n    // Java does not guarantee tail-call elimination; use a loop.\n    while (b != 0) {\n        int remainder = a % b;\n        a = b;\n        b = remainder;\n    }\n    return Math.abs(a);\n}",
@@ -323,7 +351,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert gcd(54,24)==6;"
+      "java_test": "assert gcd(54,24)==6;",
+      "source_sha256": "620e2cec63dd98c6bef52a41e01fd6bcb34c3f5b280dd5dfa45f6ac892c328d4"
     },
     "8": {
       "java": "static int sum(int n) {\n    return n == 0 ? 0 : n + sum(n - 1); // Not tail-recursive.\n}",
@@ -334,7 +363,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert sum(10)==55;"
+      "java_test": "assert sum(10)==55;",
+      "source_sha256": "e4760d2af43938253ef50e5699d72948e2f72e556d9f1f4ada46eb8784913a4e"
     },
     "9": {
       "java": "enum Mark { VISITING, DONE }\nstatic boolean hasCycle(Map<String, List<String>> graph) {\n    Map<String, Mark> marks = new HashMap<>();\n    for (String node : graph.keySet()) {\n        if (visitCycle(graph, node, marks)) return true;\n    }\n    return false;\n}\nprivate static boolean visitCycle(Map<String, List<String>> graph, String node,\n                                   Map<String, Mark> marks) {\n    if (marks.get(node) == Mark.VISITING) return true;\n    if (marks.get(node) == Mark.DONE) return false;\n    marks.put(node, Mark.VISITING);\n    for (String next : graph.getOrDefault(node, List.of())) {\n        if (visitCycle(graph, next, marks)) return true;\n    }\n    marks.put(node, Mark.DONE);\n    return false;\n}",
@@ -345,7 +375,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert hasCycle(Map.of(\"a\",List.of(\"b\"),\"b\",List.of(\"a\"))); assert !hasCycle(Map.of(\"a\",List.of(\"b\")));"
+      "java_test": "assert hasCycle(Map.of(\"a\",List.of(\"b\"),\"b\",List.of(\"a\"))); assert !hasCycle(Map.of(\"a\",List.of(\"b\")));",
+      "source_sha256": "b4fee259c559ec6c47bec0d3ae026c5ba727f72be1033942ea465d79aaa71d10"
     }
   },
   "computer-science/linked-lists-stacks-queues.md": {
@@ -358,7 +389,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "Stack<Integer> stack = new Stack<>(); stack.push(1); stack.push(2); assert stack.pop()==2;"
+      "java_test": "Stack<Integer> stack = new Stack<>(); stack.push(1); stack.push(2); assert stack.pop()==2;",
+      "source_sha256": "c2ae3b09f01df266e17008083d6e8c8b0f14b79479ed11d82150a00347e05001"
     },
     "2": {
       "java": "static class Queue<T> {\n    private final Deque<T> data = new ArrayDeque<>();\n    void enqueue(T value) { data.addLast(value); }\n    T dequeue() { return data.removeFirst(); }\n    boolean isEmpty() { return data.isEmpty(); }\n}",
@@ -369,7 +401,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "Queue<Integer> q = new Queue<>(); q.enqueue(1); q.enqueue(2); assert q.dequeue()==1;"
+      "java_test": "Queue<Integer> q = new Queue<>(); q.enqueue(1); q.enqueue(2); assert q.dequeue()==1;",
+      "source_sha256": "36dd240fbe2425581a124fc885acb47adf967dce2d820c3d9c95cfc3102aca27"
     },
     "3": {
       "java": "static class RingBuffer<T> {\n    private final Object[] values;\n    private int start = 0, size = 0;\n    RingBuffer(int capacity) {\n        if (capacity <= 0) throw new IllegalArgumentException(\"capacity <= 0\");\n        values = new Object[capacity];\n    }\n    void add(T value) {\n        int index = (start + size) % values.length;\n        if (size == values.length) {\n            values[start] = value;\n            start = (start + 1) % values.length;\n        } else {\n            values[index] = value;\n            size++;\n        }\n    }\n    @SuppressWarnings(\"unchecked\")\n    List<T> toList() {\n        List<T> result = new ArrayList<>();\n        for (int i = 0; i < size; i++) result.add((T) values[(start + i) % values.length]);\n        return result;\n    }\n}",
@@ -380,7 +413,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "RingBuffer<Integer> b = new RingBuffer<>(2); b.add(1); b.add(2); b.add(3); assert b.toList().equals(List.of(2,3));"
+      "java_test": "RingBuffer<Integer> b = new RingBuffer<>(2); b.add(1); b.add(2); b.add(3); assert b.toList().equals(List.of(2,3));",
+      "source_sha256": "6c880a475c10960e29d26662d74fcc8f4c9f4c82b002f52429d65619560f2a4f"
     },
     "6": {
       "java": "Deque<Upload> queue = new ArrayDeque<>();",
@@ -391,7 +425,8 @@
       "java_mode": "members",
       "java_support": "record Upload(String id) {}",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Upload.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "afaf93e98a99acea15b559532cb6583ad0923eb687d0c45b3ffa6bdd15bd0a09"
     },
     "7": {
       "java": "static <T> List<T> bfs(T start, Function<T, Iterable<T>> neighbors) {\n    Set<T> seen = new HashSet<>();\n    seen.add(start);\n    Deque<T> queue = new ArrayDeque<>();\n    List<T> order = new ArrayList<>();\n    queue.addLast(start);\n    while (!queue.isEmpty()) {\n        T node = queue.removeFirst();\n        order.add(node);\n        for (T next : neighbors.apply(node)) {\n            if (seen.add(next)) queue.addLast(next);\n        }\n    }\n    return order;\n}",
@@ -402,7 +437,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert bfs(1,n -> n<3?List.of(n+1):List.of()).equals(List.of(1,2,3));"
+      "java_test": "assert bfs(1,n -> n<3?List.of(n+1):List.of()).equals(List.of(1,2,3));",
+      "source_sha256": "840680d15cd93ed531b1bbd249929bba4906e10d09d33dd14715bdf00f5a3a9c"
     },
     "8": {
       "java": "static <T> List<T> dfsIterative(T start, Function<T, Iterable<T>> neighbors) {\n    Set<T> seen = new HashSet<>();\n    Deque<T> stack = new ArrayDeque<>();\n    List<T> order = new ArrayList<>();\n    stack.addLast(start);\n    while (!stack.isEmpty()) {\n        T node = stack.removeLast();\n        if (!seen.add(node)) continue;\n        order.add(node);\n        for (T next : neighbors.apply(node)) stack.addLast(next);\n    }\n    return order;\n}",
@@ -413,7 +449,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert dfsIterative(1,n -> n<3?List.of(n+1):List.of()).equals(List.of(1,2,3));"
+      "java_test": "assert dfsIterative(1,n -> n<3?List.of(n+1):List.of()).equals(List.of(1,2,3));",
+      "source_sha256": "89759c9966b22e10bf658d5271276e4b347d189854ab0ff175a3b455f5591463"
     },
     "9": {
       "java": "static int[] maxSlidingWindow(int[] nums, int k) {\n    if (k <= 0 || k > nums.length) throw new IllegalArgumentException(\"invalid k\");\n    Deque<Integer> deque = new ArrayDeque<>();\n    int[] result = new int[nums.length - k + 1];\n    for (int i = 0; i < nums.length; i++) {\n        while (!deque.isEmpty() && deque.getFirst() <= i - k) deque.removeFirst();\n        while (!deque.isEmpty() && nums[deque.getLast()] <= nums[i]) deque.removeLast();\n        deque.addLast(i);\n        if (i >= k - 1) result[i - k + 1] = nums[deque.getFirst()];\n    }\n    return result;\n}",
@@ -424,7 +461,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert Arrays.equals(maxSlidingWindow(new int[]{1,3,-1,-3,5,3,6,7},3),new int[]{3,3,5,5,6,7});"
+      "java_test": "assert Arrays.equals(maxSlidingWindow(new int[]{1,3,-1,-3,5,3,6,7},3),new int[]{3,3,5,5,6,7});",
+      "source_sha256": "bacb1e8ccb4d80cf0d88593976a87fb2cb2c5c0fa70c0922346432f9f48ed20d"
     }
   },
   "computer-science/graphs.md": {
@@ -437,7 +475,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "5afa0acec259404bac6684b2513b609390f374457665133608776c65375a9cd6"
     },
     "3": {
       "java": "static class Graph<T> {\n    private final boolean directed;\n    private final Map<T, Set<T>> adjacency = new LinkedHashMap<>();\n    Graph() { this(true); }\n    Graph(boolean directed) { this.directed = directed; }\n    void addVertex(T vertex) { adjacency.computeIfAbsent(vertex, v -> new LinkedHashSet<>()); }\n    void addEdge(T from, T to) {\n        addVertex(from); addVertex(to);\n        adjacency.get(from).add(to);\n        if (!directed) adjacency.get(to).add(from);\n    }\n    Set<T> neighbors(T vertex) { return adjacency.getOrDefault(vertex, Set.of()); }\n    Set<T> vertices() { return adjacency.keySet(); }\n}",
@@ -448,7 +487,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "393170ab5fe91dad0d38b9e6eef4e7ca292d223ebb27f1b03aee2b5f53b33461"
     },
     "4": {
       "java": "static <T> List<T> bfs(Graph<T> graph, T start) {\n    Set<T> visited = new HashSet<>();\n    visited.add(start);\n    Deque<T> queue = new ArrayDeque<>();\n    queue.add(start);\n    List<T> order = new ArrayList<>();\n    while (!queue.isEmpty()) {\n        T node = queue.removeFirst();\n        order.add(node);\n        for (T next : graph.neighbors(node)) {\n            if (visited.add(next)) queue.addLast(next);\n        }\n    }\n    return order;\n}",
@@ -459,7 +499,8 @@
       "java_mode": "members",
       "java_support": "static class Graph<T> {\n    private final boolean directed;\n    private final Map<T, Set<T>> adjacency = new LinkedHashMap<>();\n    Graph() { this(true); }\n    Graph(boolean directed) { this.directed = directed; }\n    void addVertex(T vertex) { adjacency.computeIfAbsent(vertex, v -> new LinkedHashSet<>()); }\n    void addEdge(T from, T to) {\n        addVertex(from); addVertex(to);\n        adjacency.get(from).add(to);\n        if (!directed) adjacency.get(to).add(from);\n    }\n    Set<T> neighbors(T vertex) { return adjacency.getOrDefault(vertex, Set.of()); }\n    Set<T> vertices() { return adjacency.keySet(); }\n}",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Graph.",
-      "java_test": "Graph<String> g = new Graph<>(); g.addEdge(\"a\",\"b\"); assert bfs(g,\"a\").equals(List.of(\"a\",\"b\"));"
+      "java_test": "Graph<String> g = new Graph<>(); g.addEdge(\"a\",\"b\"); assert bfs(g,\"a\").equals(List.of(\"a\",\"b\"));",
+      "source_sha256": "4ad59a96c2facef8cb9e7bb4a9b434e6f91f53d1789d4af29c4d0808cd729210"
     },
     "5": {
       "java": "static <T> List<T> dfs(Graph<T> graph, T start) {\n    List<T> order = new ArrayList<>();\n    visit(graph, start, new HashSet<>(), order);\n    return order;\n}\nprivate static <T> void visit(Graph<T> graph, T node, Set<T> visited, List<T> order) {\n    if (!visited.add(node)) return;\n    order.add(node);\n    for (T next : graph.neighbors(node)) visit(graph, next, visited, order);\n}",
@@ -470,7 +511,8 @@
       "java_mode": "members",
       "java_support": "static class Graph<T> {\n    private final boolean directed;\n    private final Map<T, Set<T>> adjacency = new LinkedHashMap<>();\n    Graph() { this(true); }\n    Graph(boolean directed) { this.directed = directed; }\n    void addVertex(T vertex) { adjacency.computeIfAbsent(vertex, v -> new LinkedHashSet<>()); }\n    void addEdge(T from, T to) {\n        addVertex(from); addVertex(to);\n        adjacency.get(from).add(to);\n        if (!directed) adjacency.get(to).add(from);\n    }\n    Set<T> neighbors(T vertex) { return adjacency.getOrDefault(vertex, Set.of()); }\n    Set<T> vertices() { return adjacency.keySet(); }\n}",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Graph.",
-      "java_test": "Graph<String> g = new Graph<>(); g.addEdge(\"a\",\"b\"); assert dfs(g,\"a\").size()==2;"
+      "java_test": "Graph<String> g = new Graph<>(); g.addEdge(\"a\",\"b\"); assert dfs(g,\"a\").size()==2;",
+      "source_sha256": "79f09da7a7dec0ecc16c2c6a598bcd5e178d70e67dea8f5fe4555b19a6b60640"
     },
     "6": {
       "java": "static <T> List<T> topologicalSort(Graph<T> graph) {\n    Map<T, Integer> inDegree = new LinkedHashMap<>();\n    for (T vertex : graph.vertices()) inDegree.put(vertex, 0);\n    for (T vertex : graph.vertices()) {\n        for (T next : graph.neighbors(vertex)) inDegree.merge(next, 1, Integer::sum);\n    }\n    Deque<T> queue = new ArrayDeque<>();\n    inDegree.forEach((vertex, degree) -> { if (degree == 0) queue.add(vertex); });\n    List<T> result = new ArrayList<>();\n    while (!queue.isEmpty()) {\n        T vertex = queue.removeFirst();\n        result.add(vertex);\n        for (T next : graph.neighbors(vertex)) {\n            int degree = inDegree.merge(next, -1, Integer::sum);\n            if (degree == 0) queue.add(next);\n        }\n    }\n    return result.size() == graph.vertices().size() ? result : null;\n}",
@@ -481,7 +523,8 @@
       "java_mode": "members",
       "java_support": "static class Graph<T> {\n    private final boolean directed;\n    private final Map<T, Set<T>> adjacency = new LinkedHashMap<>();\n    Graph() { this(true); }\n    Graph(boolean directed) { this.directed = directed; }\n    void addVertex(T vertex) { adjacency.computeIfAbsent(vertex, v -> new LinkedHashSet<>()); }\n    void addEdge(T from, T to) {\n        addVertex(from); addVertex(to);\n        adjacency.get(from).add(to);\n        if (!directed) adjacency.get(to).add(from);\n    }\n    Set<T> neighbors(T vertex) { return adjacency.getOrDefault(vertex, Set.of()); }\n    Set<T> vertices() { return adjacency.keySet(); }\n}",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Graph.",
-      "java_test": "Graph<String> g = new Graph<>(); g.addEdge(\"a\",\"b\"); assert topologicalSort(g).equals(List.of(\"a\",\"b\")); g.addEdge(\"b\",\"a\"); assert topologicalSort(g)==null;"
+      "java_test": "Graph<String> g = new Graph<>(); g.addEdge(\"a\",\"b\"); assert topologicalSort(g).equals(List.of(\"a\",\"b\")); g.addEdge(\"b\",\"a\"); assert topologicalSort(g)==null;",
+      "source_sha256": "865136e42044f9c1d0e18bc8be046f8459fa3341a86e603b79a895fad54d3cc9"
     },
     "7": {
       "java": "record Edge<T>(T node, int weight) {}\nstatic <T> Map<T, Integer> dijkstra(Map<T, List<Edge<T>>> graph, T start) {\n    Map<T, Integer> dist = new HashMap<>();\n    dist.put(start, 0);\n    PriorityQueue<Edge<T>> queue = new PriorityQueue<>(Comparator.comparingInt(Edge::weight));\n    queue.add(new Edge<>(start, 0));\n    while (!queue.isEmpty()) {\n        Edge<T> current = queue.remove();\n        if (current.weight() != dist.get(current.node())) continue;\n        for (Edge<T> edge : graph.getOrDefault(current.node(), List.of())) {\n            if (edge.weight() < 0) throw new IllegalArgumentException(\"negative edge\");\n            int candidate = Math.addExact(current.weight(), edge.weight());\n            if (candidate < dist.getOrDefault(edge.node(), Integer.MAX_VALUE)) {\n                dist.put(edge.node(), candidate);\n                queue.add(new Edge<>(edge.node(), candidate));\n            }\n        }\n    }\n    return dist;\n}",
@@ -492,7 +535,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert dijkstra(Map.of(\"a\",List.of(new Edge<>(\"b\",3))),\"a\").get(\"b\")==3;"
+      "java_test": "assert dijkstra(Map.of(\"a\",List.of(new Edge<>(\"b\",3))),\"a\").get(\"b\")==3;",
+      "source_sha256": "997ef97e19d54c8a781cce7c8e7e668fe5d03bcef462d13faad0f1583b062d61"
     },
     "9": {
       "java": "// :app depends on :feature:checkout and :feature:profile\n// :feature:checkout depends on :core:network, :core:database\n// :feature:profile depends on :core:network",
@@ -503,7 +547,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "76b3652ecc26ecbf49f425c8471deea3647b7ab4b7bc4d8a5ecc028d935de317"
     }
   },
   "computer-science/heaps-and-priority-queues.md": {
@@ -516,7 +561,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "2c0aee1a6012c8969a2f2abfe5166c69d5853dc007158399f3e1aae1dd4d6143"
     },
     "3": {
       "java": "static List<Integer> topK(int[] values, int k) {\n    if (k < 0) throw new IllegalArgumentException(\"negative k\");\n    if (k == 0) return List.of();\n    PriorityQueue<Integer> heap = new PriorityQueue<>();\n    for (int value : values) {\n        if (heap.size() < k) heap.add(value);\n        else if (value > heap.element()) {\n            heap.remove();\n            heap.add(value);\n        }\n    }\n    List<Integer> result = new ArrayList<>(heap);\n    result.sort(Comparator.reverseOrder());\n    return result;\n}",
@@ -527,7 +573,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert topK(new int[]{4,1,8,3},2).equals(List.of(8,4)); assert topK(new int[]{1},0).isEmpty();"
+      "java_test": "assert topK(new int[]{4,1,8,3},2).equals(List.of(8,4)); assert topK(new int[]{1},0).isEmpty();",
+      "source_sha256": "b0485c87e06de32cd8beaea53384247d14263b1a45af92ac2799ae376d968ffb"
     },
     "4": {
       "java": "record CursorItem(int value, int listIndex, int itemIndex) {}\nstatic List<Integer> mergeSorted(List<List<Integer>> lists) {\n    PriorityQueue<CursorItem> heap = new PriorityQueue<>(\n        Comparator.comparingInt(CursorItem::value));\n    List<Integer> result = new ArrayList<>();\n    for (int i = 0; i < lists.size(); i++) {\n        if (!lists.get(i).isEmpty()) heap.add(new CursorItem(lists.get(i).get(0), i, 0));\n    }\n    while (!heap.isEmpty()) {\n        CursorItem item = heap.remove();\n        result.add(item.value());\n        int nextIndex = item.itemIndex() + 1;\n        List<Integer> list = lists.get(item.listIndex());\n        if (nextIndex < list.size()) heap.add(\n            new CursorItem(list.get(nextIndex), item.listIndex(), nextIndex));\n    }\n    return result;\n}",
@@ -538,7 +585,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert mergeSorted(List.of(List.of(1,3),List.of(2,4))).equals(List.of(1,2,3,4));"
+      "java_test": "assert mergeSorted(List.of(List.of(1,3),List.of(2,4))).equals(List.of(1,2,3,4));",
+      "source_sha256": "152e1c26e535c5193169f09f8e0856ea9770bbb58940506517c5b8804715c377"
     },
     "5": {
       "java": "record Edge<T>(T node, int weight) {}\nstatic <T> Map<T, Integer> shortestPath(Map<T, List<Edge<T>>> graph, T start) {\n    Map<T, Integer> dist = new HashMap<>();\n    dist.put(start, 0);\n    PriorityQueue<Edge<T>> queue = new PriorityQueue<>(Comparator.comparingInt(Edge::weight));\n    queue.add(new Edge<>(start, 0));\n    while (!queue.isEmpty()) {\n        Edge<T> current = queue.remove();\n        if (current.weight() != dist.get(current.node())) continue;\n        for (Edge<T> edge : graph.getOrDefault(current.node(), List.of())) {\n            if (edge.weight() < 0) throw new IllegalArgumentException(\"negative edge\");\n            int candidate = Math.addExact(current.weight(), edge.weight());\n            if (candidate < dist.getOrDefault(edge.node(), Integer.MAX_VALUE)) {\n                dist.put(edge.node(), candidate);\n                queue.add(new Edge<>(edge.node(), candidate));\n            }\n        }\n    }\n    return dist;\n}",
@@ -549,7 +597,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert shortestPath(Map.of(\"a\",List.of(new Edge<>(\"b\",3))),\"a\").get(\"b\")==3;"
+      "java_test": "assert shortestPath(Map.of(\"a\",List.of(new Edge<>(\"b\",3))),\"a\").get(\"b\")==3;",
+      "source_sha256": "2c2793a9f6b95cb34b37a2c752582dfa2050a736dc0af5d71d0eb8006b9b05c7"
     },
     "6": {
       "java": "enum ImagePriority { VISIBLE, PREFETCH }\nrecord ImageRequest(String url, ImagePriority priority, long sequence) {}\nPriorityQueue<ImageRequest> requests = new PriorityQueue<>(\n    Comparator.comparingInt((ImageRequest request) -> request.priority().ordinal())\n        .thenComparingLong(ImageRequest::sequence));",
@@ -560,7 +609,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "60752996918a72d90a30135596b82ae719833dc7e071d9d117a6caa20e8e5ee8"
     },
     "7": {
       "java": "record RetryJob(String id, long nextRunAtMillis, int attempt) {}\nPriorityQueue<RetryJob> retryQueue = new PriorityQueue<>(\n    Comparator.comparingLong(RetryJob::nextRunAtMillis));",
@@ -571,7 +621,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "f7c8f24934b73bc54f77f85ddcef2ae4a975b0536df1355ab5c1429f817c3e07"
     }
   },
   "computer-science/sorting-and-searching.md": {
@@ -584,7 +635,8 @@
       "java_mode": "members",
       "java_support": "record User(boolean isPremium, long lastActiveAtMillis, String id) {}",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: User.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "1a28a6507d9d51aa416307461707427c780f3568139ec3988b7f14cd67f053c6"
     },
     "1": {
       "java": "Comparator<User> comparator = Comparator.comparing(User::isPremium).reversed()\n    .thenComparingLong(User::lastActiveAtMillis)\n    .thenComparing(User::id);",
@@ -595,7 +647,8 @@
       "java_mode": "members",
       "java_support": "record User(boolean isPremium, long lastActiveAtMillis, String id) {}",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: User.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "1b9d68c422c95b2f3334bcc1e4b20028ee6a357c2a689b265e93cf8f3a82842f"
     },
     "2": {
       "java": "static int lowerBound(int[] values, int target) {\n    int left = 0, right = values.length;\n    while (left < right) {\n        int mid = left + (right - left) / 2;\n        if (values[mid] < target) left = mid + 1;\n        else right = mid;\n    }\n    return left;\n}",
@@ -606,7 +659,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert lowerBound(new int[]{1,2,2,4},2)==1;"
+      "java_test": "assert lowerBound(new int[]{1,2,2,4},2)==1;",
+      "source_sha256": "148b0832cefc48d5d16eba1aa89cea0d9c4fe971b2f44796b2ec8e218cafccf9"
     },
     "3": {
       "java": "static int upperBound(int[] values, int target) {\n    int left = 0, right = values.length;\n    while (left < right) {\n        int mid = left + (right - left) / 2;\n        if (values[mid] <= target) left = mid + 1;\n        else right = mid;\n    }\n    return left;\n}",
@@ -617,7 +671,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert upperBound(new int[]{1,2,2,4},2)==3;"
+      "java_test": "assert upperBound(new int[]{1,2,2,4},2)==3;",
+      "source_sha256": "f05c2425de382b1d9c218484cfe749c602f908fb1874506f934190d931a91951"
     },
     "4": {
       "java": "static int countInRange(int[] sorted, int min, int max) {\n    return upperBound(sorted, max) - lowerBound(sorted, min);\n}",
@@ -628,7 +683,8 @@
       "java_mode": "members",
       "java_support": "static int lowerBound(int[] values, int target) {\n    int left = 0, right = values.length;\n    while (left < right) {\n        int mid = left + (right - left) / 2;\n        if (values[mid] < target) left = mid + 1;\n        else right = mid;\n    }\n    return left;\n}\nstatic int upperBound(int[] values, int target) {\n    int left = 0, right = values.length;\n    while (left < right) {\n        int mid = left + (right - left) / 2;\n        if (values[mid] <= target) left = mid + 1;\n        else right = mid;\n    }\n    return left;\n}",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert countInRange(new int[]{1,2,2,4},2,2)==2;"
+      "java_test": "assert countInRange(new int[]{1,2,2,4},2,2)==2;",
+      "source_sha256": "560cea0a948982967ce17c7302ece860aca32eb82ac8f9533879c1a2be7d23d3"
     },
     "5": {
       "java": "static Tab findSelected(List<Tab> tabs) {\n    for (Tab tab : tabs) if (tab.selected()) return tab;\n    return null;\n}",
@@ -639,7 +695,8 @@
       "java_mode": "members",
       "java_support": "record Tab(boolean selected) {}",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Tab.",
-      "java_test": "assert findSelected(List.of(new Tab(false),new Tab(true))).selected();"
+      "java_test": "assert findSelected(List.of(new Tab(false),new Tab(true))).selected();",
+      "source_sha256": "c132cf9384af586a71c1993a64cad72fb7eb9c3efa775f3f99d8905b1bc9e90a"
     },
     "6": {
       "java": "Map<String, User> byId = new HashMap<>();\nfor (User value : users) byId.put(value.id(), value);\nUser user = byId.get(userId);",
@@ -650,7 +707,8 @@
       "java_mode": "statements",
       "java_support": "record User(String id) {}\nList<User> users = List.of();\nString userId = \"1\";",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: User.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "becc8bf3466598560927cb97ac9010f5fb36e54dab0121d555386f8d8f0c5da1"
     },
     "8": {
       "java": "Comparator<Post> feedOrder = Comparator.comparingDouble(Post::score).reversed()\n    .thenComparing(Comparator.comparingLong(Post::createdAtMillis).reversed())\n    .thenComparing(Post::id);",
@@ -661,7 +719,8 @@
       "java_mode": "members",
       "java_support": "record Post(double score, long createdAtMillis, String id) {}",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Post.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "a2ee0a2642fb7ba27522e15866209f22c40c2c5839ddb832e60c0726bc1090c4"
     }
   },
   "computer-science/trees.md": {
@@ -674,7 +733,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "fc220c6821993916d0397170accd5cf9fa25b3e972a573c9733a9fd51674d793"
     },
     "4": {
       "java": "static class BSTNode<T extends Comparable<T>> {\n    final T value;\n    BSTNode<T> left, right;\n    BSTNode(T value) { this.value = value; }\n}\nstatic <T extends Comparable<T>> BSTNode<T> insert(BSTNode<T> root, T value) {\n    if (root == null) return new BSTNode<>(value);\n    int comparison = value.compareTo(root.value);\n    if (comparison < 0) root.left = insert(root.left, value);\n    else if (comparison > 0) root.right = insert(root.right, value);\n    return root;\n}\nstatic <T extends Comparable<T>> boolean contains(BSTNode<T> root, T value) {\n    if (root == null) return false;\n    int comparison = value.compareTo(root.value);\n    if (comparison < 0) return contains(root.left, value);\n    if (comparison > 0) return contains(root.right, value);\n    return true;\n}",
@@ -685,7 +745,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "BSTNode<Integer> root = insert(null,2); insert(root,1); assert contains(root,1); assert !contains(root,3);"
+      "java_test": "BSTNode<Integer> root = insert(null,2); insert(root,1); assert contains(root,1); assert !contains(root,3);",
+      "source_sha256": "8cd1c8660383f03f5354654625a9a88adc90a5233a9735402e66973a80ddd9ec"
     },
     "6": {
       "java": "static class TrieNode {\n    final Map<Character, TrieNode> children = new HashMap<>();\n    boolean isEnd;\n}\nstatic class Trie {\n    private final TrieNode root = new TrieNode();\n    void insert(String word) {\n        TrieNode node = root;\n        for (char c : word.toCharArray()) {\n            node = node.children.computeIfAbsent(c, key -> new TrieNode());\n        }\n        node.isEnd = true;\n    }\n    boolean contains(String word) {\n        TrieNode node = root;\n        for (char c : word.toCharArray()) {\n            node = node.children.get(c);\n            if (node == null) return false;\n        }\n        return node.isEnd;\n    }\n    List<String> wordsWithPrefix(String prefix) {\n        TrieNode node = root;\n        for (char c : prefix.toCharArray()) {\n            node = node.children.get(c);\n            if (node == null) return List.of();\n        }\n        List<String> results = new ArrayList<>();\n        collectWords(node, prefix, results);\n        return results;\n    }\n    private void collectWords(TrieNode node, String current, List<String> out) {\n        if (node.isEnd) out.add(current);\n        node.children.forEach((c, child) -> collectWords(child, current + c, out));\n    }\n}",
@@ -696,7 +757,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "Trie trie = new Trie(); trie.insert(\"cat\"); assert trie.contains(\"cat\"); assert !trie.contains(\"ca\"); assert trie.wordsWithPrefix(\"c\").equals(List.of(\"cat\"));"
+      "java_test": "Trie trie = new Trie(); trie.insert(\"cat\"); assert trie.contains(\"cat\"); assert !trie.contains(\"ca\"); assert trie.wordsWithPrefix(\"c\").equals(List.of(\"cat\"));",
+      "source_sha256": "0e314f3f2230b20c0607f7fcc20c8ef21226e11c23b3e3c64092f180b2d7eb8f"
     },
     "7": {
       "java": "static byte[] hash(byte[] data) {\n    try { return MessageDigest.getInstance(\"SHA-256\").digest(data); }\n    catch (NoSuchAlgorithmException exception) { throw new IllegalStateException(exception); }\n}\nstatic byte[] concat(byte[] left, byte[] right) {\n    byte[] combined = Arrays.copyOf(left, left.length + right.length);\n    System.arraycopy(right, 0, combined, left.length, right.length);\n    return combined;\n}\nstatic byte[] merkleRoot(List<byte[]> leaves) {\n    if (leaves.isEmpty()) throw new IllegalArgumentException(\"empty leaves\");\n    List<byte[]> level = new ArrayList<>();\n    for (byte[] leaf : leaves) level.add(hash(leaf));\n    while (level.size() > 1) {\n        List<byte[]> next = new ArrayList<>();\n        for (int i = 0; i < level.size(); i += 2) {\n            byte[] left = level.get(i);\n            byte[] right = i + 1 < level.size() ? level.get(i + 1) : left;\n            next.add(hash(concat(left, right)));\n        }\n        level = next;\n    }\n    return level.get(0);\n}\nrecord ProofStep(byte[] sibling, boolean leftSibling) {}\nstatic boolean verifyMerkleProof(byte[] leaf, List<ProofStep> proof, byte[] expectedRoot) {\n    byte[] current = hash(leaf);\n    for (ProofStep step : proof) {\n        current = hash(step.leftSibling()\n            ? concat(step.sibling(), current) : concat(current, step.sibling()));\n    }\n    return Arrays.equals(current, expectedRoot);\n}",
@@ -707,7 +769,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "byte[] leaf = {1,2}; assert verifyMerkleProof(leaf,List.of(),merkleRoot(List.of(leaf)));"
+      "java_test": "byte[] leaf = {1,2}; assert verifyMerkleProof(leaf,List.of(),merkleRoot(List.of(leaf)));",
+      "source_sha256": "bb282a9f09de7a8db28166a75b7dd8038d90ea293c9a0d1f96ba87cc0571a046"
     },
     "10": {
       "java": "Trie trie = new Trie();\nvoid indexLocations(List<Location> locations) {\n    for (Location location : locations) trie.insert(location.name().toLowerCase(Locale.ROOT));\n}\nList<String> search(String prefix, int limit) {\n    return trie.wordsWithPrefix(prefix.toLowerCase(Locale.ROOT)).stream().limit(limit).toList();\n}",
@@ -718,7 +781,8 @@
       "java_mode": "members",
       "java_support": "static class TrieNode {\n    final Map<Character, TrieNode> children = new HashMap<>();\n    boolean isEnd;\n}\nstatic class Trie {\n    private final TrieNode root = new TrieNode();\n    void insert(String word) {\n        TrieNode node = root;\n        for (char c : word.toCharArray()) {\n            node = node.children.computeIfAbsent(c, key -> new TrieNode());\n        }\n        node.isEnd = true;\n    }\n    boolean contains(String word) {\n        TrieNode node = root;\n        for (char c : word.toCharArray()) {\n            node = node.children.get(c);\n            if (node == null) return false;\n        }\n        return node.isEnd;\n    }\n    List<String> wordsWithPrefix(String prefix) {\n        TrieNode node = root;\n        for (char c : prefix.toCharArray()) {\n            node = node.children.get(c);\n            if (node == null) return List.of();\n        }\n        List<String> results = new ArrayList<>();\n        collectWords(node, prefix, results);\n        return results;\n    }\n    private void collectWords(TrieNode node, String current, List<String> out) {\n        if (node.isEnd) out.add(current);\n        node.children.forEach((c, child) -> collectWords(child, current + c, out));\n    }\n}\nrecord Location(String name) {}",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: TrieNode, Trie, Location.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "ca7cd107d7c9687ca4f8865d1d29e5696d7e97ce46ab9d2931a5f88a7857195c"
     },
     "13": {
       "java": "static String greet(String name) { return \"Hello, \" + name; }\n// A parser can represent this as a method declaration with a binary\n// expression joining the string literal \"Hello, \" and the parameter name.",
@@ -729,7 +793,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "c52ba653d4f209fef1dedf200df93d4af424fdaa8296a80026f354a938d57dc3"
     }
   },
   "computer-science/hashing.md": {
@@ -742,7 +807,8 @@
       "java_mode": "statements",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "3f781f04a8c6cceb20e94fdc1b6093933ac26191b30f65c9b16fbddfd424341a"
     },
     "2": {
       "java": "static int javaHashCode(String text) {\n    int hash = 0;\n    for (int i = 0; i < text.length(); i++) hash = 31 * hash + text.charAt(i);\n    return hash;\n}",
@@ -753,7 +819,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert javaHashCode(\"hello\")==\"hello\".hashCode();"
+      "java_test": "assert javaHashCode(\"hello\")==\"hello\".hashCode();",
+      "source_sha256": "424cbaae9264824fc3a68cd8beccb40d4450ba26b5aab304ebf1581182579630"
     },
     "3": {
       "java": "// Block-mixing fragment only; not a complete MurmurHash3 implementation.\nstatic int murmur3Blocks(byte[] key, int seed) {\n    ByteBuffer buffer = ByteBuffer.wrap(key).order(ByteOrder.LITTLE_ENDIAN);\n    int hash = seed;\n    while (buffer.remaining() >= 4) {\n        int k = buffer.getInt();\n        k *= 0xcc9e2d51;\n        k = Integer.rotateLeft(k, 15);\n        k *= 0x1b873593;\n        hash ^= k;\n        hash = Integer.rotateLeft(hash, 13);\n        hash = hash * 5 + 0xe6546b64;\n    }\n    // Tail and finalization are omitted, as in the Kotlin fragment.\n    return hash;\n}",
@@ -763,8 +830,9 @@
       "kotlin_version": "Kotlin 2.0 · fragment",
       "java_mode": "members",
       "java_support": "",
-      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": ""
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Kotlin's ByteArray.getInt is a supplied little-endian helper; both variants omit tail mixing and finalization.",
+      "java_test": "",
+      "source_sha256": "cde75fc36f5dfdf585e47501fcec7dc25c0994870cb46d1386c8f76a821afd77"
     },
     "4": {
       "java": "static byte[] sha256(byte[] data) {\n    try { return MessageDigest.getInstance(\"SHA-256\").digest(data); }\n    catch (NoSuchAlgorithmException exception) { throw new IllegalStateException(exception); }\n}\nstatic void example() {\n    byte[] hash = sha256(\"hello\".getBytes(StandardCharsets.UTF_8));\n}",
@@ -775,7 +843,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert HexFormat.of().formatHex(sha256(\"hello\".getBytes(StandardCharsets.UTF_8))).equals(\"2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824\");"
+      "java_test": "assert HexFormat.of().formatHex(sha256(\"hello\".getBytes(StandardCharsets.UTF_8))).equals(\"2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824\");",
+      "source_sha256": "a2958b1b6e415c86ada6ab1b54ad030974389d1a04c2cb59840d1ec3f20a8673"
     },
     "6": {
       "java": "static int bucketForUser(String userId, String experimentKey, int buckets) {\n    if (buckets <= 0) throw new IllegalArgumentException(\"buckets <= 0\");\n    String input = userId + \"::\" + experimentKey;\n    int hash = com.google.common.hash.Hashing.murmur3_32_fixed()\n        .hashString(input, StandardCharsets.UTF_8).asInt();\n    return Math.floorMod(hash, buckets);\n}\nstatic String variant(String userId) {\n    return bucketForUser(userId, \"checkout_v2\", 100) < 50 ? \"treatment\" : \"control\";\n}",
@@ -786,7 +855,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Requires Guava 33.4.6-jre (com.google.guava:guava). Uses the fixed UTF-8 Murmur3 implementation.",
-      "java_test": "assert bucketForUser(\"u\",\"test\",100)>=0 && bucketForUser(\"u\",\"test\",100)<100;"
+      "java_test": "assert bucketForUser(\"u\",\"test\",100)>=0 && bucketForUser(\"u\",\"test\",100)<100;",
+      "source_sha256": "5ea9faeb894b61ad32e9dd8a39fc45be65d6604e4ed6ff1541992e528be9c2de"
     },
     "7": {
       "java": "static String cacheKey(String url) {\n    try {\n        byte[] sha = MessageDigest.getInstance(\"SHA-256\")\n            .digest(url.getBytes(StandardCharsets.UTF_8));\n        return HexFormat.of().formatHex(sha);\n    } catch (NoSuchAlgorithmException exception) {\n        throw new IllegalStateException(exception);\n    }\n}\nstatic File cacheFile(File cacheDir, String url) {\n    return new File(cacheDir, \"img-\" + cacheKey(url));\n}",
@@ -797,7 +867,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": "assert cacheKey(\"hello\").length()==64;"
+      "java_test": "assert cacheKey(\"hello\").length()==64;",
+      "source_sha256": "df28969a8b6bf53e98bd89779dd624eff71688edeb971d0feaa113229f96ff1e"
     }
   },
   "computer-science/system-complexity.md": {
@@ -810,7 +881,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "941172fce1af6f79a6bca26659feb6bd61d2341a7f8fe7dca48f239e77cffda3"
     },
     "1": {
       "java": "// Input and Result are application types; results is owned by this object.\nResult process(Input input) {\n    if (input.isValid()) {\n        for (Input item : input.items()) {\n            if (item.isRelevant()) results.add(process(item));\n        }\n    }\n    return new Result(results);\n}",
@@ -821,7 +893,8 @@
       "java_mode": "members",
       "java_support": "record Input(boolean isValid, boolean isRelevant, List<Input> items) {}\nrecord Result(List<Result> values) {}\nfinal List<Result> results = new ArrayList<>();",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Input, Result.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "bceb14a13129574a983a92f1c84edb1294d788343adc2e25712bd2981a666044"
     },
     "2": {
       "java": "static int foo(int x) {\n    if (x > 0) {\n        if (x > 10) return 100;\n    }\n    return 0;\n}",
@@ -832,7 +905,8 @@
       "java_mode": "members",
       "java_support": "",
       "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
-      "java_test": ""
+      "java_test": "",
+      "source_sha256": "51df9ba317532bb7778778c3052373af971e64a3b9bc7edb958336974c026518"
     }
   }
 }

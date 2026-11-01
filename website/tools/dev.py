@@ -168,6 +168,7 @@ def frames():
 
 def ci():
     ok = report('website unit tests', *run('tests-website', [PY, '-m', 'unittest', 'discover', '-s', 'website/scripts', '-p', 'test_*.py']))
+    ok &= report('Computer Science Java compilation and behaviour', *run('cs-code', [PY, 'website/scripts/check_cs_code.py']))
     ok &= report('docs unit tests', *run('tests-docs', [PY, '-m', 'unittest', 'discover', '--start-directory', 'scripts', '--pattern', 'test_*.py']))
     ok &= report('docs check', *run('docs', [PY, 'scripts/check_docs.py']), keep=0)
     scripts = ['website/scripts/browser_preservation.js', 'website/app.js', 'website/blend.js',

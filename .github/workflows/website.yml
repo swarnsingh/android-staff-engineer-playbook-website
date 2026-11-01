@@ -48,6 +48,8 @@ jobs:
             website-diagrams-${{ runner.os }}-
       - name: Test correction markup boundaries
         run: python -m unittest discover -s website/scripts -p "test_*.py"
+      - name: Compile and exercise Computer Science Java examples
+        run: python website/scripts/check_cs_code.py
       - name: Build and verify original chapter preservation
         env:
           SITE_BASE: /android-staff-engineer-playbook-website/
