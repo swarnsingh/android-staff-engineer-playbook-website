@@ -13,6 +13,10 @@
 .code-switcher .code-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
 .code-switcher .code-panel[hidden] { display: none; }
 .code-switcher .code-header small { display: block; }
+.code-assumptions { display: block; font-size: var(--ui-sm); }
+.code-assumptions p { margin: .5rem 0; overflow-wrap: anywhere; }
+.code-switcher:not(.code-tabs-ready) .code-tabs { display: none; }
+.code-switcher .code-tab[aria-selected="true"] { border-bottom-color: var(--code-call); }
 
 .pb-region rect { fill: none; stroke: var(--line-strong); stroke-width: 1.5; stroke-dasharray: 5 6; }
 .pb-region text { font: 650 var(--ui-sm) var(--font-sans); letter-spacing: .08em; fill: var(--ink-muted); }

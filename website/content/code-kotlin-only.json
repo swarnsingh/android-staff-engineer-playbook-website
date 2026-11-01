@@ -1,0 +1,22 @@
+{
+  "computer-science/hashing.md": {
+    "10": "Android networking fragment · requires OkHttp",
+    "11": "Android Compose fragment · Kotlin API"
+  },
+  "computer-science/trees.md": {
+    "9": "Android Room entity · requires Room",
+    "12": "Android Compose fragment · Kotlin API"
+  },
+  "computer-science/graphs.md": {
+    "10": "Android dependency-injection constructor sketch",
+    "11": "Android Compose Navigation fragment · Kotlin API",
+    "12": "Android Hilt/ViewModel fragment · requires Android libraries"
+  },
+  "computer-science/system-complexity.md": {
+    "3": "Konsist architecture test · Kotlin source inspection",
+    "5": "Android ViewModel application fragment",
+    "6": "Android ViewModel application fragment",
+    "7": "Konsist architecture tests · Kotlin source inspection",
+    "9": "Android Compose fragment · Kotlin API"
+  }
+}

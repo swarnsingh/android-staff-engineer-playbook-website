@@ -53,6 +53,10 @@ $$('[data-code-tabs] [role="tab"]').forEach(tab => {
     }
   });
 });
+$$('[data-code-tabs]').forEach(group => {
+  group.classList.add('code-tabs-ready');
+  activateCodeTab(group.querySelector('[role="tab"][aria-selected="true"]'));
+});
 let toastTimer;
 function toast(message) {
   clearTimeout(toastTimer); $('#toast').textContent = message; $('#toast').hidden = false;

@@ -4,71 +4,122 @@
       "java": "String s = \"\";\nfor (int i = 0; i < 10_000; i++) {\n    s += \"x\"; // O(n^2) total: repeatedly copies previous content\n}",
       "java_label": "StringConcat.java",
       "kotlin_label": "StringConcat.kt",
-      "java_version": "Java 17+",
-      "kotlin_version": "Kotlin 2.0+"
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "statements",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": ""
     },
     "2": {
       "java": "StringBuilder builder = new StringBuilder();\nfor (int i = 0; i < 10_000; i++) {\n    builder.append('x');\n}\nString result = builder.toString();",
       "java_label": "StringBuilderExample.java",
       "kotlin_label": "StringBuilderExample.kt",
-      "java_version": "Java 17+",
-      "kotlin_version": "Kotlin 2.0+"
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "statements",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": ""
     },
     "3": {
       "java": "String text = \"👨‍👩‍👧‍👦\";\nSystem.out.println(text.length());",
       "java_label": "UnicodeLength.java",
       "kotlin_label": "UnicodeLength.kt",
-      "java_version": "Java 17+",
-      "kotlin_version": "Kotlin 2.0+"
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "statements",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": ""
     },
     "4": {
       "java": "static boolean hasPairWithSum(int[] sorted, int target) {\n    int left = 0;\n    int right = sorted.length - 1;\n\n    while (left < right) {\n        int sum = sorted[left] + sorted[right];\n        if (sum == target) return true;\n        if (sum < target) left++;\n        else right--;\n    }\n    return false;\n}",
       "java_label": "TwoSum.java",
       "kotlin_label": "TwoSum.kt",
-      "java_version": "Java 17+",
-      "kotlin_version": "Kotlin 2.0+"
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert hasPairWithSum(new int[]{1,2,4},6); assert !hasPairWithSum(new int[]{},0);"
     },
     "5": {
       "java": "static int longestSubstringWithoutRepeats(String s) {\n    Map<Character, Integer> lastSeen = new HashMap<>();\n    int start = 0;\n    int best = 0;\n\n    for (int end = 0; end < s.length(); end++) {\n        char c = s.charAt(end);\n        Integer previous = lastSeen.get(c);\n        if (previous != null && previous >= start) {\n            start = previous + 1;\n        }\n        lastSeen.put(c, end);\n        best = Math.max(best, end - start + 1);\n    }\n    return best;\n}",
       "java_label": "LongestSubstring.java",
       "kotlin_label": "LongestSubstring.kt",
-      "java_version": "Java 17+ · java.util.HashMap",
-      "kotlin_version": "Kotlin 2.0+"
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert longestSubstringWithoutRepeats(\"abcabcbb\")==3; assert longestSubstringWithoutRepeats(\"\")==0;"
     },
     "6": {
       "java": "static final class PrefixSum {\n    private final long[] prefix;\n\n    PrefixSum(int[] values) {\n        prefix = new long[values.length + 1];\n        for (int i = 0; i < values.length; i++) {\n            prefix[i + 1] = prefix[i] + values[i];\n        }\n    }\n\n    long sumInclusive(int left, int right) {\n        if (left > right) throw new IllegalArgumentException(\"left > right\");\n        return prefix[right + 1] - prefix[left];\n    }\n}",
       "java_label": "PrefixSum.java",
       "kotlin_label": "PrefixSum.kt",
-      "java_version": "Java 17+",
-      "kotlin_version": "Kotlin 2.0+"
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert new PrefixSum(new int[]{1,2,3}).sumInclusive(1,2)==5;"
     },
     "7": {
       "java": "static int[] applyRangeAdds(int size, List<int[]> updates) {\n    int[] diff = new int[size + 1];\n    for (int[] update : updates) {\n        int left = update[0];\n        int right = update[1];\n        int delta = update[2];\n        diff[left] += delta;\n        if (right + 1 < diff.length) diff[right + 1] -= delta;\n    }\n\n    int[] result = new int[size];\n    int running = 0;\n    for (int i = 0; i < size; i++) {\n        running += diff[i];\n        result[i] = running;\n    }\n    return result;\n}",
       "java_label": "DifferenceArray.java",
       "kotlin_label": "DifferenceArray.kt",
-      "java_version": "Java 17+ · List<int[]> updates",
-      "kotlin_version": "Kotlin 2.0+"
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert Arrays.equals(applyRangeAdds(4,List.of(new int[]{1,2,3})),new int[]{0,3,3,0});"
     },
     "8": {
       "java": "record UiState(List<Item> items) {}",
       "java_label": "UiState.java",
       "kotlin_label": "UiState.kt",
-      "java_version": "Java 17+ · record",
-      "kotlin_version": "Kotlin 2.0+"
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "record Item(String id) {}",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Item.",
+      "java_test": ""
     },
     "9": {
       "java": "private final List<Item> items = new ArrayList<>();\n\nUiState add(Item item) {\n    items.add(item);\n    return new UiState(List.copyOf(items));\n}",
       "java_label": "OwnedItems.java",
       "kotlin_label": "OwnedItems.kt",
-      "java_version": "Java 17+ · List.copyOf",
-      "kotlin_version": "Kotlin 2.0+"
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "record Item(String id) {}\nrecord UiState(List<Item> items) {}",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Item, UiState.",
+      "java_test": ""
+    },
+    "10": {
+      "java": "List<String> names = users.stream()\n    .filter(User::active)\n    .map(User::name)\n    .sorted()\n    .toList();",
+      "java_label": "UserNames.java",
+      "kotlin_label": "UserNames.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "statements",
+      "java_support": "record User(boolean active, String name) {}\nList<User> users = List.of();",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: User.",
+      "java_test": ""
     },
     "11": {
       "java": "String normalized = input.toLowerCase(Locale.ROOT); // protocol keys, not user text",
       "java_label": "LocaleNormalization.java",
       "kotlin_label": "LocaleNormalization.kt",
-      "java_version": "Java 17+ · java.util.Locale",
-      "kotlin_version": "Kotlin 2.0+"
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "statements",
+      "java_support": "String input = \"KEY\";",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": ""
     }
   },
   "computer-science/dynamic-programming.md": {
@@ -76,43 +127,712 @@
       "java": "static long fibSlow(int n) {\n    return n <= 1 ? n : fibSlow(n - 1) + fibSlow(n - 2);\n}",
       "java_label": "FibonacciSlow.java",
       "kotlin_label": "FibonacciSlow.kt",
-      "java_version": "Java 17+",
-      "kotlin_version": "Kotlin 2.0+"
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert fibSlow(10)==55;"
     },
     "1": {
       "java": "static long fib(int n) {\n    long[] memo = new long[n + 1];\n    Arrays.fill(memo, -1L);\n    return solve(n, memo);\n}\n\nprivate static long solve(int i, long[] memo) {\n    if (i <= 1) return i;\n    if (memo[i] != -1L) return memo[i];\n    memo[i] = solve(i - 1, memo) + solve(i - 2, memo);\n    return memo[i];\n}",
       "java_label": "FibonacciMemoized.java",
       "kotlin_label": "FibonacciMemoized.kt",
-      "java_version": "Java 17+ · java.util.Arrays",
-      "kotlin_version": "Kotlin 2.0+"
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert fib(10)==55; assert fib(0)==0;"
     },
     "2": {
       "java": "static long fibTab(int n) {\n    if (n <= 1) return n;\n    long prev = 0L;\n    long curr = 1L;\n    for (int i = 0; i < n - 1; i++) {\n        long next = prev + curr;\n        prev = curr;\n        curr = next;\n    }\n    return curr;\n}",
       "java_label": "FibonacciTabulated.java",
       "kotlin_label": "FibonacciTabulated.kt",
-      "java_version": "Java 17+",
-      "kotlin_version": "Kotlin 2.0+"
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert fibTab(10)==55; assert fibTab(1)==1;"
     },
     "4": {
       "java": "static int maxNonAdjacentSum(int[] values) {\n    int skip = 0;\n    int take = 0;\n\n    for (int value : values) {\n        int newTake = skip + value;\n        int newSkip = Math.max(skip, take);\n        take = newTake;\n        skip = newSkip;\n    }\n    return Math.max(skip, take);\n}",
       "java_label": "MaxNonAdjacentSum.java",
       "kotlin_label": "MaxNonAdjacentSum.kt",
-      "java_version": "Java 17+",
-      "kotlin_version": "Kotlin 2.0+"
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert maxNonAdjacentSum(new int[]{2,7,9,3,1})==12; assert maxNonAdjacentSum(new int[]{-1})==0;"
     },
     "5": {
       "java": "static int editDistance(String a, String b) {\n    int[][] dp = new int[a.length() + 1][b.length() + 1];\n    for (int i = 0; i <= a.length(); i++) dp[i][0] = i;\n    for (int j = 0; j <= b.length(); j++) dp[0][j] = j;\n\n    for (int i = 1; i <= a.length(); i++) {\n        for (int j = 1; j <= b.length(); j++) {\n            int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;\n            dp[i][j] = Math.min(\n                Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1),\n                dp[i - 1][j - 1] + cost\n            );\n        }\n    }\n    return dp[a.length()][b.length()];\n}",
       "java_label": "EditDistance.java",
       "kotlin_label": "EditDistance.kt",
-      "java_version": "Java 17+",
-      "kotlin_version": "Kotlin 2.0+"
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert editDistance(\"kitten\",\"sitting\")==3; assert editDistance(\"\",\"a\")==1;"
     },
     "6": {
       "java": "record Item(int weight, int value) {}\n\nstatic int knapsack(int capacity, List<Item> items) {\n    int[] dp = new int[capacity + 1];\n    for (Item item : items) {\n        for (int w = capacity; w >= item.weight(); w--) {\n            dp[w] = Math.max(dp[w], dp[w - item.weight()] + item.value());\n        }\n    }\n    return dp[capacity];\n}",
       "java_label": "Knapsack.java",
       "kotlin_label": "Knapsack.kt",
-      "java_version": "Java 17+ · record",
-      "kotlin_version": "Kotlin 2.0+"
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert knapsack(5,List.of(new Item(2,3),new Item(3,4)))==7;"
+    }
+  },
+  "computer-science/greedy-and-intervals.md": {
+    "1": {
+      "java": "record Interval(long start, long end) {\n    Interval {\n        if (start > end) throw new IllegalArgumentException(\"start > end\");\n    }\n    boolean overlaps(Interval other) {\n        return start < end && other.start < other.end\n            && start < other.end && other.start < end;\n    }\n}",
+      "java_label": "Example1.java",
+      "kotlin_label": "Example1.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert !new Interval(1,1).overlaps(new Interval(0,2)); assert !new Interval(0,1).overlaps(new Interval(1,2));"
+    },
+    "2": {
+      "java": "static List<Interval> mergeIntervals(List<Interval> input) {\n    if (input.isEmpty()) return List.of();\n    List<Interval> sorted = new ArrayList<>(input);\n    sorted.sort(Comparator.comparingLong(Interval::start).thenComparingLong(Interval::end));\n    List<Interval> result = new ArrayList<>();\n    Interval current = sorted.get(0);\n    for (int i = 1; i < sorted.size(); i++) {\n        Interval next = sorted.get(i);\n        if (current.end() >= next.start()) {\n            current = new Interval(current.start(), Math.max(current.end(), next.end()));\n        } else {\n            result.add(current);\n            current = next;\n        }\n    }\n    result.add(current);\n    return result;\n}",
+      "java_label": "Example2.java",
+      "kotlin_label": "Example2.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "record Interval(long start, long end) {\n    Interval {\n        if (start > end) throw new IllegalArgumentException(\"start > end\");\n    }\n    boolean overlaps(Interval other) {\n        return start < end && other.start < other.end\n            && start < other.end && other.start < end;\n    }\n}",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Interval.",
+      "java_test": "assert mergeIntervals(List.of(new Interval(0,2),new Interval(2,4))).equals(List.of(new Interval(0,4)));"
+    },
+    "3": {
+      "java": "static List<Interval> maxNonOverlapping(List<Interval> intervals) {\n    List<Interval> sorted = new ArrayList<>(intervals);\n    sorted.sort(Comparator.comparingLong(Interval::end));\n    List<Interval> result = new ArrayList<>();\n    long lastEnd = Long.MIN_VALUE;\n    for (Interval interval : sorted) {\n        if (interval.start() >= lastEnd) {\n            result.add(interval);\n            lastEnd = interval.end();\n        }\n    }\n    return result;\n}",
+      "java_label": "Example3.java",
+      "kotlin_label": "Example3.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "record Interval(long start, long end) {\n    Interval {\n        if (start > end) throw new IllegalArgumentException(\"start > end\");\n    }\n    boolean overlaps(Interval other) {\n        return start < end && other.start < other.end\n            && start < other.end && other.start < end;\n    }\n}",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Interval.",
+      "java_test": "assert maxNonOverlapping(List.of(new Interval(0,2),new Interval(1,4),new Interval(2,3))).size()==2;"
+    },
+    "4": {
+      "java": "record Event(long time, int delta) {}\nstatic int maxConcurrent(List<Interval> intervals) {\n    List<Event> events = new ArrayList<>();\n    for (Interval interval : intervals) {\n        if (interval.start() == interval.end()) continue; // Empty range.\n        events.add(new Event(interval.start(), 1));\n        events.add(new Event(interval.end(), -1));\n    }\n    events.sort(Comparator.comparingLong(Event::time).thenComparingInt(Event::delta));\n    int active = 0, maxActive = 0;\n    for (Event event : events) {\n        active += event.delta();\n        maxActive = Math.max(maxActive, active);\n    }\n    return maxActive;\n}",
+      "java_label": "Example4.java",
+      "kotlin_label": "Example4.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "record Interval(long start, long end) {\n    Interval {\n        if (start > end) throw new IllegalArgumentException(\"start > end\");\n    }\n    boolean overlaps(Interval other) {\n        return start < end && other.start < other.end\n            && start < other.end && other.start < end;\n    }\n}",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Interval.",
+      "java_test": "assert maxConcurrent(List.of(new Interval(0,2),new Interval(1,3)))==2; assert maxConcurrent(List.of(new Interval(1,1)))==0;"
+    },
+    "5": {
+      "java": "static boolean canReachEnd(int[] maxJump) {\n    long farthest = 0;\n    for (int i = 0; i < maxJump.length; i++) {\n        if (i > farthest) return false;\n        farthest = Math.max(farthest, (long) i + maxJump[i]);\n    }\n    return true;\n}",
+      "java_label": "Example5.java",
+      "kotlin_label": "Example5.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert canReachEnd(new int[]{2,3,1,1,4}); assert !canReachEnd(new int[]{3,2,1,0,4});"
+    }
+  },
+  "computer-science/recursion-backtracking.md": {
+    "0": {
+      "java": "static long factorial(int n) {\n    if (n < 0) throw new IllegalArgumentException(\"negative n\");\n    return n <= 1 ? 1L : n * factorial(n - 1);\n}",
+      "java_label": "Example0.java",
+      "kotlin_label": "Example0.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert factorial(5)==120;"
+    },
+    "1": {
+      "java": "record Node(String id, List<Node> children) {}\nstatic int countNodes(Node root) {\n    int count = 1;\n    for (Node child : root.children()) count += countNodes(child);\n    return count;\n}",
+      "java_label": "Example1.java",
+      "kotlin_label": "Example1.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert countNodes(new Node(\"r\",List.of(new Node(\"c\",List.of()))))==2;"
+    },
+    "2": {
+      "java": "static int countNodesIterative(Node root) {\n    Deque<Node> stack = new ArrayDeque<>();\n    int count = 0;\n    stack.addLast(root);\n    while (!stack.isEmpty()) {\n        Node node = stack.removeLast();\n        count++;\n        for (Node child : node.children()) stack.addLast(child);\n    }\n    return count;\n}",
+      "java_label": "Example2.java",
+      "kotlin_label": "Example2.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "record Node(String id, List<Node> children) {}\nstatic int countNodes(Node root) {\n    int count = 1;\n    for (Node child : root.children()) count += countNodes(child);\n    return count;\n}",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Node.",
+      "java_test": "assert countNodesIterative(new Node(\"r\",List.of()))==1;"
+    },
+    "4": {
+      "java": "static List<List<Integer>> subsets(int[] values) {\n    List<List<Integer>> result = new ArrayList<>();\n    subsetDfs(values, 0, new ArrayList<>(), result);\n    return result;\n}\nprivate static void subsetDfs(int[] values, int index, List<Integer> current,\n                              List<List<Integer>> result) {\n    if (index == values.length) {\n        result.add(new ArrayList<>(current));\n        return;\n    }\n    subsetDfs(values, index + 1, current, result);\n    current.add(values[index]);\n    subsetDfs(values, index + 1, current, result);\n    current.remove(current.size() - 1);\n}",
+      "java_label": "Example4.java",
+      "kotlin_label": "Example4.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert subsets(new int[]{1,2}).size()==4; assert subsets(new int[]{}).size()==1;"
+    },
+    "5": {
+      "java": "static List<List<Integer>> permutations(int[] values) {\n    List<List<Integer>> result = new ArrayList<>();\n    permutationDfs(values, new boolean[values.length], new ArrayList<>(), result);\n    return result;\n}\nprivate static void permutationDfs(int[] values, boolean[] used, List<Integer> current,\n                                   List<List<Integer>> result) {\n    if (current.size() == values.length) {\n        result.add(new ArrayList<>(current));\n        return;\n    }\n    for (int i = 0; i < values.length; i++) {\n        if (used[i]) continue;\n        used[i] = true;\n        current.add(values[i]);\n        permutationDfs(values, used, current, result);\n        current.remove(current.size() - 1);\n        used[i] = false;\n    }\n}",
+      "java_label": "Example5.java",
+      "kotlin_label": "Example5.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert permutations(new int[]{1,2,3}).size()==6;"
+    },
+    "6": {
+      "java": "static List<List<Integer>> combinationSum(int[] values, int target) {\n    int[] sorted = values.clone();\n    Arrays.sort(sorted);\n    List<List<Integer>> result = new ArrayList<>();\n    combinationDfs(sorted, 0, target, new ArrayList<>(), result);\n    return result;\n}\nprivate static void combinationDfs(int[] sorted, int start, int remaining,\n                                   List<Integer> current, List<List<Integer>> result) {\n    if (remaining == 0) {\n        result.add(new ArrayList<>(current));\n        return;\n    }\n    for (int i = start; i < sorted.length; i++) {\n        int value = sorted[i];\n        if (value > remaining) break;\n        current.add(value);\n        combinationDfs(sorted, i + 1, remaining - value, current, result);\n        current.remove(current.size() - 1);\n    }\n}",
+      "java_label": "Example6.java",
+      "kotlin_label": "Example6.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert combinationSum(new int[]{1,2,3},3).size()==2;"
+    },
+    "7": {
+      "java": "static int gcd(int a, int b) {\n    // Java does not guarantee tail-call elimination; use a loop.\n    while (b != 0) {\n        int remainder = a % b;\n        a = b;\n        b = remainder;\n    }\n    return Math.abs(a);\n}",
+      "java_label": "Example7.java",
+      "kotlin_label": "Example7.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert gcd(54,24)==6;"
+    },
+    "8": {
+      "java": "static int sum(int n) {\n    return n == 0 ? 0 : n + sum(n - 1); // Not tail-recursive.\n}",
+      "java_label": "Example8.java",
+      "kotlin_label": "Example8.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert sum(10)==55;"
+    },
+    "9": {
+      "java": "enum Mark { VISITING, DONE }\nstatic boolean hasCycle(Map<String, List<String>> graph) {\n    Map<String, Mark> marks = new HashMap<>();\n    for (String node : graph.keySet()) {\n        if (visitCycle(graph, node, marks)) return true;\n    }\n    return false;\n}\nprivate static boolean visitCycle(Map<String, List<String>> graph, String node,\n                                   Map<String, Mark> marks) {\n    if (marks.get(node) == Mark.VISITING) return true;\n    if (marks.get(node) == Mark.DONE) return false;\n    marks.put(node, Mark.VISITING);\n    for (String next : graph.getOrDefault(node, List.of())) {\n        if (visitCycle(graph, next, marks)) return true;\n    }\n    marks.put(node, Mark.DONE);\n    return false;\n}",
+      "java_label": "Example9.java",
+      "kotlin_label": "Example9.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert hasCycle(Map.of(\"a\",List.of(\"b\"),\"b\",List.of(\"a\"))); assert !hasCycle(Map.of(\"a\",List.of(\"b\")));"
+    }
+  },
+  "computer-science/linked-lists-stacks-queues.md": {
+    "1": {
+      "java": "static class Stack<T> {\n    private final Deque<T> data = new ArrayDeque<>();\n    void push(T value) { data.addLast(value); }\n    T pop() { return data.removeLast(); }\n    T peek() { return data.getLast(); }\n    boolean isEmpty() { return data.isEmpty(); }\n}",
+      "java_label": "Example1.java",
+      "kotlin_label": "Example1.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "Stack<Integer> stack = new Stack<>(); stack.push(1); stack.push(2); assert stack.pop()==2;"
+    },
+    "2": {
+      "java": "static class Queue<T> {\n    private final Deque<T> data = new ArrayDeque<>();\n    void enqueue(T value) { data.addLast(value); }\n    T dequeue() { return data.removeFirst(); }\n    boolean isEmpty() { return data.isEmpty(); }\n}",
+      "java_label": "Example2.java",
+      "kotlin_label": "Example2.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "Queue<Integer> q = new Queue<>(); q.enqueue(1); q.enqueue(2); assert q.dequeue()==1;"
+    },
+    "3": {
+      "java": "static class RingBuffer<T> {\n    private final Object[] values;\n    private int start = 0, size = 0;\n    RingBuffer(int capacity) {\n        if (capacity <= 0) throw new IllegalArgumentException(\"capacity <= 0\");\n        values = new Object[capacity];\n    }\n    void add(T value) {\n        int index = (start + size) % values.length;\n        if (size == values.length) {\n            values[start] = value;\n            start = (start + 1) % values.length;\n        } else {\n            values[index] = value;\n            size++;\n        }\n    }\n    @SuppressWarnings(\"unchecked\")\n    List<T> toList() {\n        List<T> result = new ArrayList<>();\n        for (int i = 0; i < size; i++) result.add((T) values[(start + i) % values.length]);\n        return result;\n    }\n}",
+      "java_label": "Example3.java",
+      "kotlin_label": "Example3.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "RingBuffer<Integer> b = new RingBuffer<>(2); b.add(1); b.add(2); b.add(3); assert b.toList().equals(List.of(2,3));"
+    },
+    "6": {
+      "java": "Deque<Upload> queue = new ArrayDeque<>();",
+      "java_label": "Example6.java",
+      "kotlin_label": "Example6.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "record Upload(String id) {}",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Upload.",
+      "java_test": ""
+    },
+    "7": {
+      "java": "static <T> List<T> bfs(T start, Function<T, Iterable<T>> neighbors) {\n    Set<T> seen = new HashSet<>();\n    seen.add(start);\n    Deque<T> queue = new ArrayDeque<>();\n    List<T> order = new ArrayList<>();\n    queue.addLast(start);\n    while (!queue.isEmpty()) {\n        T node = queue.removeFirst();\n        order.add(node);\n        for (T next : neighbors.apply(node)) {\n            if (seen.add(next)) queue.addLast(next);\n        }\n    }\n    return order;\n}",
+      "java_label": "Example7.java",
+      "kotlin_label": "Example7.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert bfs(1,n -> n<3?List.of(n+1):List.of()).equals(List.of(1,2,3));"
+    },
+    "8": {
+      "java": "static <T> List<T> dfsIterative(T start, Function<T, Iterable<T>> neighbors) {\n    Set<T> seen = new HashSet<>();\n    Deque<T> stack = new ArrayDeque<>();\n    List<T> order = new ArrayList<>();\n    stack.addLast(start);\n    while (!stack.isEmpty()) {\n        T node = stack.removeLast();\n        if (!seen.add(node)) continue;\n        order.add(node);\n        for (T next : neighbors.apply(node)) stack.addLast(next);\n    }\n    return order;\n}",
+      "java_label": "Example8.java",
+      "kotlin_label": "Example8.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert dfsIterative(1,n -> n<3?List.of(n+1):List.of()).equals(List.of(1,2,3));"
+    },
+    "9": {
+      "java": "static int[] maxSlidingWindow(int[] nums, int k) {\n    if (k <= 0 || k > nums.length) throw new IllegalArgumentException(\"invalid k\");\n    Deque<Integer> deque = new ArrayDeque<>();\n    int[] result = new int[nums.length - k + 1];\n    for (int i = 0; i < nums.length; i++) {\n        while (!deque.isEmpty() && deque.getFirst() <= i - k) deque.removeFirst();\n        while (!deque.isEmpty() && nums[deque.getLast()] <= nums[i]) deque.removeLast();\n        deque.addLast(i);\n        if (i >= k - 1) result[i - k + 1] = nums[deque.getFirst()];\n    }\n    return result;\n}",
+      "java_label": "Example9.java",
+      "kotlin_label": "Example9.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert Arrays.equals(maxSlidingWindow(new int[]{1,3,-1,-3,5,3,6,7},3),new int[]{3,3,5,5,6,7});"
+    }
+  },
+  "computer-science/graphs.md": {
+    "1": {
+      "java": "static class SimpleGraph<T> {\n    final Map<T, List<T>> edges = new HashMap<>();\n    void addEdge(T from, T to) {\n        edges.computeIfAbsent(from, v -> new ArrayList<>()).add(to);\n    }\n}\nstatic class MatrixGraph {\n    final boolean[][] matrix;\n    MatrixGraph(int n) { matrix = new boolean[n][n]; }\n    void addEdge(int from, int to) { matrix[from][to] = true; }\n}",
+      "java_label": "Example1.java",
+      "kotlin_label": "Example1.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": ""
+    },
+    "3": {
+      "java": "static class Graph<T> {\n    private final boolean directed;\n    private final Map<T, Set<T>> adjacency = new LinkedHashMap<>();\n    Graph() { this(true); }\n    Graph(boolean directed) { this.directed = directed; }\n    void addVertex(T vertex) { adjacency.computeIfAbsent(vertex, v -> new LinkedHashSet<>()); }\n    void addEdge(T from, T to) {\n        addVertex(from); addVertex(to);\n        adjacency.get(from).add(to);\n        if (!directed) adjacency.get(to).add(from);\n    }\n    Set<T> neighbors(T vertex) { return adjacency.getOrDefault(vertex, Set.of()); }\n    Set<T> vertices() { return adjacency.keySet(); }\n}",
+      "java_label": "Example3.java",
+      "kotlin_label": "Example3.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": ""
+    },
+    "4": {
+      "java": "static <T> List<T> bfs(Graph<T> graph, T start) {\n    Set<T> visited = new HashSet<>();\n    visited.add(start);\n    Deque<T> queue = new ArrayDeque<>();\n    queue.add(start);\n    List<T> order = new ArrayList<>();\n    while (!queue.isEmpty()) {\n        T node = queue.removeFirst();\n        order.add(node);\n        for (T next : graph.neighbors(node)) {\n            if (visited.add(next)) queue.addLast(next);\n        }\n    }\n    return order;\n}",
+      "java_label": "Example4.java",
+      "kotlin_label": "Example4.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "static class Graph<T> {\n    private final boolean directed;\n    private final Map<T, Set<T>> adjacency = new LinkedHashMap<>();\n    Graph() { this(true); }\n    Graph(boolean directed) { this.directed = directed; }\n    void addVertex(T vertex) { adjacency.computeIfAbsent(vertex, v -> new LinkedHashSet<>()); }\n    void addEdge(T from, T to) {\n        addVertex(from); addVertex(to);\n        adjacency.get(from).add(to);\n        if (!directed) adjacency.get(to).add(from);\n    }\n    Set<T> neighbors(T vertex) { return adjacency.getOrDefault(vertex, Set.of()); }\n    Set<T> vertices() { return adjacency.keySet(); }\n}",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Graph.",
+      "java_test": "Graph<String> g = new Graph<>(); g.addEdge(\"a\",\"b\"); assert bfs(g,\"a\").equals(List.of(\"a\",\"b\"));"
+    },
+    "5": {
+      "java": "static <T> List<T> dfs(Graph<T> graph, T start) {\n    List<T> order = new ArrayList<>();\n    visit(graph, start, new HashSet<>(), order);\n    return order;\n}\nprivate static <T> void visit(Graph<T> graph, T node, Set<T> visited, List<T> order) {\n    if (!visited.add(node)) return;\n    order.add(node);\n    for (T next : graph.neighbors(node)) visit(graph, next, visited, order);\n}",
+      "java_label": "Example5.java",
+      "kotlin_label": "Example5.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "static class Graph<T> {\n    private final boolean directed;\n    private final Map<T, Set<T>> adjacency = new LinkedHashMap<>();\n    Graph() { this(true); }\n    Graph(boolean directed) { this.directed = directed; }\n    void addVertex(T vertex) { adjacency.computeIfAbsent(vertex, v -> new LinkedHashSet<>()); }\n    void addEdge(T from, T to) {\n        addVertex(from); addVertex(to);\n        adjacency.get(from).add(to);\n        if (!directed) adjacency.get(to).add(from);\n    }\n    Set<T> neighbors(T vertex) { return adjacency.getOrDefault(vertex, Set.of()); }\n    Set<T> vertices() { return adjacency.keySet(); }\n}",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Graph.",
+      "java_test": "Graph<String> g = new Graph<>(); g.addEdge(\"a\",\"b\"); assert dfs(g,\"a\").size()==2;"
+    },
+    "6": {
+      "java": "static <T> List<T> topologicalSort(Graph<T> graph) {\n    Map<T, Integer> inDegree = new LinkedHashMap<>();\n    for (T vertex : graph.vertices()) inDegree.put(vertex, 0);\n    for (T vertex : graph.vertices()) {\n        for (T next : graph.neighbors(vertex)) inDegree.merge(next, 1, Integer::sum);\n    }\n    Deque<T> queue = new ArrayDeque<>();\n    inDegree.forEach((vertex, degree) -> { if (degree == 0) queue.add(vertex); });\n    List<T> result = new ArrayList<>();\n    while (!queue.isEmpty()) {\n        T vertex = queue.removeFirst();\n        result.add(vertex);\n        for (T next : graph.neighbors(vertex)) {\n            int degree = inDegree.merge(next, -1, Integer::sum);\n            if (degree == 0) queue.add(next);\n        }\n    }\n    return result.size() == graph.vertices().size() ? result : null;\n}",
+      "java_label": "Example6.java",
+      "kotlin_label": "Example6.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "static class Graph<T> {\n    private final boolean directed;\n    private final Map<T, Set<T>> adjacency = new LinkedHashMap<>();\n    Graph() { this(true); }\n    Graph(boolean directed) { this.directed = directed; }\n    void addVertex(T vertex) { adjacency.computeIfAbsent(vertex, v -> new LinkedHashSet<>()); }\n    void addEdge(T from, T to) {\n        addVertex(from); addVertex(to);\n        adjacency.get(from).add(to);\n        if (!directed) adjacency.get(to).add(from);\n    }\n    Set<T> neighbors(T vertex) { return adjacency.getOrDefault(vertex, Set.of()); }\n    Set<T> vertices() { return adjacency.keySet(); }\n}",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Graph.",
+      "java_test": "Graph<String> g = new Graph<>(); g.addEdge(\"a\",\"b\"); assert topologicalSort(g).equals(List.of(\"a\",\"b\")); g.addEdge(\"b\",\"a\"); assert topologicalSort(g)==null;"
+    },
+    "7": {
+      "java": "record Edge<T>(T node, int weight) {}\nstatic <T> Map<T, Integer> dijkstra(Map<T, List<Edge<T>>> graph, T start) {\n    Map<T, Integer> dist = new HashMap<>();\n    dist.put(start, 0);\n    PriorityQueue<Edge<T>> queue = new PriorityQueue<>(Comparator.comparingInt(Edge::weight));\n    queue.add(new Edge<>(start, 0));\n    while (!queue.isEmpty()) {\n        Edge<T> current = queue.remove();\n        if (current.weight() != dist.get(current.node())) continue;\n        for (Edge<T> edge : graph.getOrDefault(current.node(), List.of())) {\n            if (edge.weight() < 0) throw new IllegalArgumentException(\"negative edge\");\n            int candidate = Math.addExact(current.weight(), edge.weight());\n            if (candidate < dist.getOrDefault(edge.node(), Integer.MAX_VALUE)) {\n                dist.put(edge.node(), candidate);\n                queue.add(new Edge<>(edge.node(), candidate));\n            }\n        }\n    }\n    return dist;\n}",
+      "java_label": "Example7.java",
+      "kotlin_label": "Example7.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert dijkstra(Map.of(\"a\",List.of(new Edge<>(\"b\",3))),\"a\").get(\"b\")==3;"
+    },
+    "9": {
+      "java": "// :app depends on :feature:checkout and :feature:profile\n// :feature:checkout depends on :core:network, :core:database\n// :feature:profile depends on :core:network",
+      "java_label": "Example9.java",
+      "kotlin_label": "Example9.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": ""
+    }
+  },
+  "computer-science/heaps-and-priority-queues.md": {
+    "2": {
+      "java": "record Task(String id, int priority, long createdAtMillis) {}\nstatic void example() {\n    PriorityQueue<Task> queue = new PriorityQueue<>(\n        Comparator.comparingInt(Task::priority).reversed()\n            .thenComparingLong(Task::createdAtMillis));\n    queue.add(new Task(\"sync\", 10, 100));\n    queue.add(new Task(\"analytics\", 1, 101));\n    Task next = queue.poll();\n}",
+      "java_label": "Example2.java",
+      "kotlin_label": "Example2.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": ""
+    },
+    "3": {
+      "java": "static List<Integer> topK(int[] values, int k) {\n    if (k < 0) throw new IllegalArgumentException(\"negative k\");\n    if (k == 0) return List.of();\n    PriorityQueue<Integer> heap = new PriorityQueue<>();\n    for (int value : values) {\n        if (heap.size() < k) heap.add(value);\n        else if (value > heap.element()) {\n            heap.remove();\n            heap.add(value);\n        }\n    }\n    List<Integer> result = new ArrayList<>(heap);\n    result.sort(Comparator.reverseOrder());\n    return result;\n}",
+      "java_label": "Example3.java",
+      "kotlin_label": "Example3.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert topK(new int[]{4,1,8,3},2).equals(List.of(8,4)); assert topK(new int[]{1},0).isEmpty();"
+    },
+    "4": {
+      "java": "record CursorItem(int value, int listIndex, int itemIndex) {}\nstatic List<Integer> mergeSorted(List<List<Integer>> lists) {\n    PriorityQueue<CursorItem> heap = new PriorityQueue<>(\n        Comparator.comparingInt(CursorItem::value));\n    List<Integer> result = new ArrayList<>();\n    for (int i = 0; i < lists.size(); i++) {\n        if (!lists.get(i).isEmpty()) heap.add(new CursorItem(lists.get(i).get(0), i, 0));\n    }\n    while (!heap.isEmpty()) {\n        CursorItem item = heap.remove();\n        result.add(item.value());\n        int nextIndex = item.itemIndex() + 1;\n        List<Integer> list = lists.get(item.listIndex());\n        if (nextIndex < list.size()) heap.add(\n            new CursorItem(list.get(nextIndex), item.listIndex(), nextIndex));\n    }\n    return result;\n}",
+      "java_label": "Example4.java",
+      "kotlin_label": "Example4.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert mergeSorted(List.of(List.of(1,3),List.of(2,4))).equals(List.of(1,2,3,4));"
+    },
+    "5": {
+      "java": "record Edge<T>(T node, int weight) {}\nstatic <T> Map<T, Integer> shortestPath(Map<T, List<Edge<T>>> graph, T start) {\n    Map<T, Integer> dist = new HashMap<>();\n    dist.put(start, 0);\n    PriorityQueue<Edge<T>> queue = new PriorityQueue<>(Comparator.comparingInt(Edge::weight));\n    queue.add(new Edge<>(start, 0));\n    while (!queue.isEmpty()) {\n        Edge<T> current = queue.remove();\n        if (current.weight() != dist.get(current.node())) continue;\n        for (Edge<T> edge : graph.getOrDefault(current.node(), List.of())) {\n            if (edge.weight() < 0) throw new IllegalArgumentException(\"negative edge\");\n            int candidate = Math.addExact(current.weight(), edge.weight());\n            if (candidate < dist.getOrDefault(edge.node(), Integer.MAX_VALUE)) {\n                dist.put(edge.node(), candidate);\n                queue.add(new Edge<>(edge.node(), candidate));\n            }\n        }\n    }\n    return dist;\n}",
+      "java_label": "Example5.java",
+      "kotlin_label": "Example5.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert shortestPath(Map.of(\"a\",List.of(new Edge<>(\"b\",3))),\"a\").get(\"b\")==3;"
+    },
+    "6": {
+      "java": "enum ImagePriority { VISIBLE, PREFETCH }\nrecord ImageRequest(String url, ImagePriority priority, long sequence) {}\nPriorityQueue<ImageRequest> requests = new PriorityQueue<>(\n    Comparator.comparingInt((ImageRequest request) -> request.priority().ordinal())\n        .thenComparingLong(ImageRequest::sequence));",
+      "java_label": "Example6.java",
+      "kotlin_label": "Example6.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": ""
+    },
+    "7": {
+      "java": "record RetryJob(String id, long nextRunAtMillis, int attempt) {}\nPriorityQueue<RetryJob> retryQueue = new PriorityQueue<>(\n    Comparator.comparingLong(RetryJob::nextRunAtMillis));",
+      "java_label": "Example7.java",
+      "kotlin_label": "Example7.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": ""
+    }
+  },
+  "computer-science/sorting-and-searching.md": {
+    "0": {
+      "java": "// Deliberately broken comparator: violates the Comparator contract.\nComparator<User> comparator = (a, b) -> a.isPremium() ? -1 : 1;",
+      "java_label": "Example0.java",
+      "kotlin_label": "Example0.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "record User(boolean isPremium, long lastActiveAtMillis, String id) {}",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: User.",
+      "java_test": ""
+    },
+    "1": {
+      "java": "Comparator<User> comparator = Comparator.comparing(User::isPremium).reversed()\n    .thenComparingLong(User::lastActiveAtMillis)\n    .thenComparing(User::id);",
+      "java_label": "Example1.java",
+      "kotlin_label": "Example1.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "record User(boolean isPremium, long lastActiveAtMillis, String id) {}",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: User.",
+      "java_test": ""
+    },
+    "2": {
+      "java": "static int lowerBound(int[] values, int target) {\n    int left = 0, right = values.length;\n    while (left < right) {\n        int mid = left + (right - left) / 2;\n        if (values[mid] < target) left = mid + 1;\n        else right = mid;\n    }\n    return left;\n}",
+      "java_label": "Example2.java",
+      "kotlin_label": "Example2.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert lowerBound(new int[]{1,2,2,4},2)==1;"
+    },
+    "3": {
+      "java": "static int upperBound(int[] values, int target) {\n    int left = 0, right = values.length;\n    while (left < right) {\n        int mid = left + (right - left) / 2;\n        if (values[mid] <= target) left = mid + 1;\n        else right = mid;\n    }\n    return left;\n}",
+      "java_label": "Example3.java",
+      "kotlin_label": "Example3.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert upperBound(new int[]{1,2,2,4},2)==3;"
+    },
+    "4": {
+      "java": "static int countInRange(int[] sorted, int min, int max) {\n    return upperBound(sorted, max) - lowerBound(sorted, min);\n}",
+      "java_label": "Example4.java",
+      "kotlin_label": "Example4.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "static int lowerBound(int[] values, int target) {\n    int left = 0, right = values.length;\n    while (left < right) {\n        int mid = left + (right - left) / 2;\n        if (values[mid] < target) left = mid + 1;\n        else right = mid;\n    }\n    return left;\n}\nstatic int upperBound(int[] values, int target) {\n    int left = 0, right = values.length;\n    while (left < right) {\n        int mid = left + (right - left) / 2;\n        if (values[mid] <= target) left = mid + 1;\n        else right = mid;\n    }\n    return left;\n}",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert countInRange(new int[]{1,2,2,4},2,2)==2;"
+    },
+    "5": {
+      "java": "static Tab findSelected(List<Tab> tabs) {\n    for (Tab tab : tabs) if (tab.selected()) return tab;\n    return null;\n}",
+      "java_label": "Example5.java",
+      "kotlin_label": "Example5.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "record Tab(boolean selected) {}",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Tab.",
+      "java_test": "assert findSelected(List.of(new Tab(false),new Tab(true))).selected();"
+    },
+    "6": {
+      "java": "Map<String, User> byId = new HashMap<>();\nfor (User value : users) byId.put(value.id(), value);\nUser user = byId.get(userId);",
+      "java_label": "Example6.java",
+      "kotlin_label": "Example6.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "statements",
+      "java_support": "record User(String id) {}\nList<User> users = List.of();\nString userId = \"1\";",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: User.",
+      "java_test": ""
+    },
+    "8": {
+      "java": "Comparator<Post> feedOrder = Comparator.comparingDouble(Post::score).reversed()\n    .thenComparing(Comparator.comparingLong(Post::createdAtMillis).reversed())\n    .thenComparing(Post::id);",
+      "java_label": "Example8.java",
+      "kotlin_label": "Example8.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "record Post(double score, long createdAtMillis, String id) {}",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Post.",
+      "java_test": ""
+    }
+  },
+  "computer-science/trees.md": {
+    "1": {
+      "java": "// Inserting 1, 2, 3, 4, 5 into an unbalanced BST forms a chain:\n// 1 -> 2 -> 3 -> 4 -> 5 (all right children).",
+      "java_label": "Example1.java",
+      "kotlin_label": "Example1.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": ""
+    },
+    "4": {
+      "java": "static class BSTNode<T extends Comparable<T>> {\n    final T value;\n    BSTNode<T> left, right;\n    BSTNode(T value) { this.value = value; }\n}\nstatic <T extends Comparable<T>> BSTNode<T> insert(BSTNode<T> root, T value) {\n    if (root == null) return new BSTNode<>(value);\n    int comparison = value.compareTo(root.value);\n    if (comparison < 0) root.left = insert(root.left, value);\n    else if (comparison > 0) root.right = insert(root.right, value);\n    return root;\n}\nstatic <T extends Comparable<T>> boolean contains(BSTNode<T> root, T value) {\n    if (root == null) return false;\n    int comparison = value.compareTo(root.value);\n    if (comparison < 0) return contains(root.left, value);\n    if (comparison > 0) return contains(root.right, value);\n    return true;\n}",
+      "java_label": "Example4.java",
+      "kotlin_label": "Example4.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "BSTNode<Integer> root = insert(null,2); insert(root,1); assert contains(root,1); assert !contains(root,3);"
+    },
+    "6": {
+      "java": "static class TrieNode {\n    final Map<Character, TrieNode> children = new HashMap<>();\n    boolean isEnd;\n}\nstatic class Trie {\n    private final TrieNode root = new TrieNode();\n    void insert(String word) {\n        TrieNode node = root;\n        for (char c : word.toCharArray()) {\n            node = node.children.computeIfAbsent(c, key -> new TrieNode());\n        }\n        node.isEnd = true;\n    }\n    boolean contains(String word) {\n        TrieNode node = root;\n        for (char c : word.toCharArray()) {\n            node = node.children.get(c);\n            if (node == null) return false;\n        }\n        return node.isEnd;\n    }\n    List<String> wordsWithPrefix(String prefix) {\n        TrieNode node = root;\n        for (char c : prefix.toCharArray()) {\n            node = node.children.get(c);\n            if (node == null) return List.of();\n        }\n        List<String> results = new ArrayList<>();\n        collectWords(node, prefix, results);\n        return results;\n    }\n    private void collectWords(TrieNode node, String current, List<String> out) {\n        if (node.isEnd) out.add(current);\n        node.children.forEach((c, child) -> collectWords(child, current + c, out));\n    }\n}",
+      "java_label": "Example6.java",
+      "kotlin_label": "Example6.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "Trie trie = new Trie(); trie.insert(\"cat\"); assert trie.contains(\"cat\"); assert !trie.contains(\"ca\"); assert trie.wordsWithPrefix(\"c\").equals(List.of(\"cat\"));"
+    },
+    "7": {
+      "java": "static byte[] hash(byte[] data) {\n    try { return MessageDigest.getInstance(\"SHA-256\").digest(data); }\n    catch (NoSuchAlgorithmException exception) { throw new IllegalStateException(exception); }\n}\nstatic byte[] concat(byte[] left, byte[] right) {\n    byte[] combined = Arrays.copyOf(left, left.length + right.length);\n    System.arraycopy(right, 0, combined, left.length, right.length);\n    return combined;\n}\nstatic byte[] merkleRoot(List<byte[]> leaves) {\n    if (leaves.isEmpty()) throw new IllegalArgumentException(\"empty leaves\");\n    List<byte[]> level = new ArrayList<>();\n    for (byte[] leaf : leaves) level.add(hash(leaf));\n    while (level.size() > 1) {\n        List<byte[]> next = new ArrayList<>();\n        for (int i = 0; i < level.size(); i += 2) {\n            byte[] left = level.get(i);\n            byte[] right = i + 1 < level.size() ? level.get(i + 1) : left;\n            next.add(hash(concat(left, right)));\n        }\n        level = next;\n    }\n    return level.get(0);\n}\nrecord ProofStep(byte[] sibling, boolean leftSibling) {}\nstatic boolean verifyMerkleProof(byte[] leaf, List<ProofStep> proof, byte[] expectedRoot) {\n    byte[] current = hash(leaf);\n    for (ProofStep step : proof) {\n        current = hash(step.leftSibling()\n            ? concat(step.sibling(), current) : concat(current, step.sibling()));\n    }\n    return Arrays.equals(current, expectedRoot);\n}",
+      "java_label": "Example7.java",
+      "kotlin_label": "Example7.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "byte[] leaf = {1,2}; assert verifyMerkleProof(leaf,List.of(),merkleRoot(List.of(leaf)));"
+    },
+    "10": {
+      "java": "Trie trie = new Trie();\nvoid indexLocations(List<Location> locations) {\n    for (Location location : locations) trie.insert(location.name().toLowerCase(Locale.ROOT));\n}\nList<String> search(String prefix, int limit) {\n    return trie.wordsWithPrefix(prefix.toLowerCase(Locale.ROOT)).stream().limit(limit).toList();\n}",
+      "java_label": "Example10.java",
+      "kotlin_label": "Example10.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "static class TrieNode {\n    final Map<Character, TrieNode> children = new HashMap<>();\n    boolean isEnd;\n}\nstatic class Trie {\n    private final TrieNode root = new TrieNode();\n    void insert(String word) {\n        TrieNode node = root;\n        for (char c : word.toCharArray()) {\n            node = node.children.computeIfAbsent(c, key -> new TrieNode());\n        }\n        node.isEnd = true;\n    }\n    boolean contains(String word) {\n        TrieNode node = root;\n        for (char c : word.toCharArray()) {\n            node = node.children.get(c);\n            if (node == null) return false;\n        }\n        return node.isEnd;\n    }\n    List<String> wordsWithPrefix(String prefix) {\n        TrieNode node = root;\n        for (char c : prefix.toCharArray()) {\n            node = node.children.get(c);\n            if (node == null) return List.of();\n        }\n        List<String> results = new ArrayList<>();\n        collectWords(node, prefix, results);\n        return results;\n    }\n    private void collectWords(TrieNode node, String current, List<String> out) {\n        if (node.isEnd) out.add(current);\n        node.children.forEach((c, child) -> collectWords(child, current + c, out));\n    }\n}\nrecord Location(String name) {}",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: TrieNode, Trie, Location.",
+      "java_test": ""
+    },
+    "13": {
+      "java": "static String greet(String name) { return \"Hello, \" + name; }\n// A parser can represent this as a method declaration with a binary\n// expression joining the string literal \"Hello, \" and the parameter name.",
+      "java_label": "Example13.java",
+      "kotlin_label": "Example13.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": ""
+    }
+  },
+  "computer-science/hashing.md": {
+    "0": {
+      "java": "int h1 = \"hello\".hashCode();\nint h2 = \"hello\".hashCode();\n// h1 == h2",
+      "java_label": "Example0.java",
+      "kotlin_label": "Example0.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "statements",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": ""
+    },
+    "2": {
+      "java": "static int javaHashCode(String text) {\n    int hash = 0;\n    for (int i = 0; i < text.length(); i++) hash = 31 * hash + text.charAt(i);\n    return hash;\n}",
+      "java_label": "Example2.java",
+      "kotlin_label": "Example2.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert javaHashCode(\"hello\")==\"hello\".hashCode();"
+    },
+    "3": {
+      "java": "// Block-mixing fragment only; not a complete MurmurHash3 implementation.\nstatic int murmur3Blocks(byte[] key, int seed) {\n    ByteBuffer buffer = ByteBuffer.wrap(key).order(ByteOrder.LITTLE_ENDIAN);\n    int hash = seed;\n    while (buffer.remaining() >= 4) {\n        int k = buffer.getInt();\n        k *= 0xcc9e2d51;\n        k = Integer.rotateLeft(k, 15);\n        k *= 0x1b873593;\n        hash ^= k;\n        hash = Integer.rotateLeft(hash, 13);\n        hash = hash * 5 + 0xe6546b64;\n    }\n    // Tail and finalization are omitted, as in the Kotlin fragment.\n    return hash;\n}",
+      "java_label": "Example3.java",
+      "kotlin_label": "Example3.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": ""
+    },
+    "4": {
+      "java": "static byte[] sha256(byte[] data) {\n    try { return MessageDigest.getInstance(\"SHA-256\").digest(data); }\n    catch (NoSuchAlgorithmException exception) { throw new IllegalStateException(exception); }\n}\nstatic void example() {\n    byte[] hash = sha256(\"hello\".getBytes(StandardCharsets.UTF_8));\n}",
+      "java_label": "Example4.java",
+      "kotlin_label": "Example4.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert HexFormat.of().formatHex(sha256(\"hello\".getBytes(StandardCharsets.UTF_8))).equals(\"2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824\");"
+    },
+    "6": {
+      "java": "static int bucketForUser(String userId, String experimentKey, int buckets) {\n    if (buckets <= 0) throw new IllegalArgumentException(\"buckets <= 0\");\n    String input = userId + \"::\" + experimentKey;\n    int hash = com.google.common.hash.Hashing.murmur3_32_fixed()\n        .hashString(input, StandardCharsets.UTF_8).asInt();\n    return Math.floorMod(hash, buckets);\n}\nstatic String variant(String userId) {\n    return bucketForUser(userId, \"checkout_v2\", 100) < 50 ? \"treatment\" : \"control\";\n}",
+      "java_label": "Example6.java",
+      "kotlin_label": "Example6.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Requires Guava 33.4.6-jre (com.google.guava:guava). Uses the fixed UTF-8 Murmur3 implementation.",
+      "java_test": "assert bucketForUser(\"u\",\"test\",100)>=0 && bucketForUser(\"u\",\"test\",100)<100;"
+    },
+    "7": {
+      "java": "static String cacheKey(String url) {\n    try {\n        byte[] sha = MessageDigest.getInstance(\"SHA-256\")\n            .digest(url.getBytes(StandardCharsets.UTF_8));\n        return HexFormat.of().formatHex(sha);\n    } catch (NoSuchAlgorithmException exception) {\n        throw new IllegalStateException(exception);\n    }\n}\nstatic File cacheFile(File cacheDir, String url) {\n    return new File(cacheDir, \"img-\" + cacheKey(url));\n}",
+      "java_label": "Example7.java",
+      "kotlin_label": "Example7.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": "assert cacheKey(\"hello\").length()==64;"
+    }
+  },
+  "computer-science/system-complexity.md": {
+    "0": {
+      "java": "static String classify(int n) { // Start: 1\n    if (n < 0) return \"negative\"; // +1\n    if (n == 0) return \"zero\";    // +1\n    if (n < 10) return \"small\";   // +1\n    if (n < 100) return \"medium\"; // +1\n    return \"large\";\n}\n// Cyclomatic complexity: 5",
+      "java_label": "Example0.java",
+      "kotlin_label": "Example0.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": ""
+    },
+    "1": {
+      "java": "// Input and Result are application types; results is owned by this object.\nResult process(Input input) {\n    if (input.isValid()) {\n        for (Input item : input.items()) {\n            if (item.isRelevant()) results.add(process(item));\n        }\n    }\n    return new Result(results);\n}",
+      "java_label": "Example1.java",
+      "kotlin_label": "Example1.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "record Input(boolean isValid, boolean isRelevant, List<Input> items) {}\nrecord Result(List<Result> values) {}\nfinal List<Result> results = new ArrayList<>();",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types. Harness supplies: Input, Result.",
+      "java_test": ""
+    },
+    "2": {
+      "java": "static int foo(int x) {\n    if (x > 0) {\n        if (x > 10) return 100;\n    }\n    return 0;\n}",
+      "java_label": "Example2.java",
+      "kotlin_label": "Example2.kt",
+      "java_version": "Java 17 · fragment",
+      "kotlin_version": "Kotlin 2.0 · fragment",
+      "java_mode": "members",
+      "java_support": "",
+      "assumptions": "JVM fragment. Java imports: java.util.*, java.util.function.*, java.security.*, java.nio.*, java.nio.charset.*, java.io.*. Declarations in this chapter supply shared types.",
+      "java_test": ""
     }
   }
 }

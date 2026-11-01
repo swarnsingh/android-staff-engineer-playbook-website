@@ -89,6 +89,7 @@ for path in sorted((WEB/'content').glob('corrections-*.json')):
     ALL_CORRECTIONS.extend(json.loads(path.read_text()))
 APPROVED_CORRECTIONS = [fix for fix in ALL_CORRECTIONS if fix.get('status') == 'approved']
 CODE_PAIRS = json.loads((WEB/'content/code-pairs.json').read_text()) if (WEB/'content/code-pairs.json').exists() else {}
+KOTLIN_ONLY = json.loads((WEB/'content/code-kotlin-only.json').read_text())
 
 
 def route(path):
@@ -391,7 +392,7 @@ def render_chapter(path, raw, is_course=False):
             label={'kotlin':'Kotlin','java':'Java','groovy':'Gradle / Groovy','kts':'Gradle / Kotlin','text':'Illustrative output'}.get(language,language)
             note=''
         pair = CODE_PAIRS.get(path, {}).get(str(code_index)) if path.startswith('computer-science/') else None
-        if pair and language == 'kotlin':
+        if pair and language == 'kotlin' and not env.get('blend'):
             java_id = code_id + '-java'; kotlin_id = code_id + '-kotlin'
             java_label = pair.get('java_label', 'Example.java'); kotlin_label = pair.get('kotlin_label', 'Example.kt')
             java_version = pair.get('java_version', 'Java 17+'); kotlin_version = pair.get('kotlin_version', 'Kotlin 2.0+')
@@ -403,8 +404,13 @@ def render_chapter(path, raw, is_course=False):
             )
             header = f'<div class="code-header"><span data-code-label="{java_id}-panel">{escape(java_label)}<small>{escape(java_version)} · default</small></span><button class="code-button" data-copy="{java_id}">Copy code</button></div>'
             java_panel = f'<div class="code-panel code-panel-added" role="tabpanel" id="{java_id}-panel" aria-labelledby="{java_id}-tab"><pre tabindex="0" aria-label="{escape(java_label)} example"><code id="{java_id}" class="highlight language-java">{escape(pair["java"])}</code></pre></div>'
-            kotlin_panel = f'<div class="code-panel" role="tabpanel" id="{kotlin_id}-panel" aria-labelledby="{kotlin_id}-tab" hidden><pre tabindex="0" aria-label="{escape(kotlin_label)} example"><code id="{kotlin_id}" class="highlight language-kotlin">{escape(token.content)}</code></pre></div>'
+            kotlin_panel = f'<div class="code-panel" role="tabpanel" id="{kotlin_id}-panel" aria-labelledby="{kotlin_id}-tab"><pre tabindex="0" aria-label="{escape(kotlin_label)} example"><code id="{kotlin_id}" class="highlight language-kotlin">{escape(token.content)}</code></pre></div>'
+            assumptions = f'<details class="code-header code-assumptions"><summary>Imports and prerequisites</summary><p>{escape(pair["assumptions"])}</p></details>'
+            java_panel += assumptions
             return f'<div class="code-card code-switcher" data-code-tabs data-java-label="{escape(java_label)}" data-kotlin-label="{escape(kotlin_label)}" data-java-version="{escape(java_version)}" data-kotlin-version="{escape(kotlin_version)}">{tabs}{header}{java_panel}{kotlin_panel}</div>\n'
+        if language == 'kotlin' and path.startswith('computer-science/'):
+            label = 'Kotlin 2.0'
+            note = escape(KOTLIN_ONLY.get(path, {}).get(str(code_index), 'JVM fragment'))
         return f'<div class="code-card"><div class="code-header"><span>{escape(label)}{f'<small>{note}</small>' if note else ''}</span><button class="code-button" data-copy="{code_id}">Copy code</button></div><pre tabindex="0" aria-label="{escape(label)} example"><code id="{code_id}" class="highlight language-{escape(language)}">{escape(token.content)}</code></pre></div>\n'
     MD.renderer.rules['fence']=fence
     env={'prefix':slug(path),'code_index':0}
