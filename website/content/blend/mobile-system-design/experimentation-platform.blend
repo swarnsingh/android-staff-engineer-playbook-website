@@ -1,0 +1,10 @@
+<!-- Source: original playbook 400a7d7dd85c962b6b2d6d856712ca316a11edc8; recap follows the reviewed chapter. -->
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- Choose session or user pinning for the surface; lasting effects need a stable user assignment.
+- Carry the original assignment handle through the flow so a delayed conversion cannot credit a later arm.
+- Commit the first-exposure marker and its stable-ID outbox event in one Room transaction.
+- Send exposure and rewards through one ordered trial outbox; keep events unsettled when the server cannot place them yet.
+- Count exposed non-converters as zero after the window plus delivery grace, and state the final late-delivery policy.

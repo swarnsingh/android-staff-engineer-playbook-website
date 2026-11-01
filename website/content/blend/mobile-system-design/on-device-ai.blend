@@ -1,0 +1,10 @@
+<!-- Source: original playbook 400a7d7dd85c962b6b2d6d856712ca316a11edc8; recap follows the reviewed chapter. -->
+
+<!-- @after 10. Further Reading :: recap -->
+### Say these in the interview
+
+- Choose the runtime per task and device; platform GenAI models and custom LiteRT models have different availability and update contracts.
+- Keep SENSITIVE requests on device by a client-enforced rule; unavailable local inference means deferral or a hidden feature.
+- Cloud fallback requires consent and policy permission, not only a network connection.
+- For ML Kit GenAI, availability does not bypass foreground execution limits or AICore quotas.
+- Validate model output and measure quality per model version without logging prompt or result content.

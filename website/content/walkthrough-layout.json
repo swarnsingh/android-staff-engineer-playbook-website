@@ -1,5 +1,5 @@
 {
-  "about": "Which chapters use the interview-walkthrough layout. Groups are content, not code: the build reads this file, then still checks each listed chapter's own numbered headings and falls back to the normal chapter layout when they do not match. Only listed walkthrough chapters are affected; chapter-layout groups record the decision. 1 November 2026: Phases 1–5.",
+  "about": "Which chapters use the interview-walkthrough layout. Groups are content, not code: the build reads this file, then still checks each listed chapter's own numbered headings and falls back to the normal chapter layout when they do not match. Only listed walkthrough chapters are affected; chapter-layout groups record the decision. 1 November 2026: Phases 1–6.",
   "groups": [
     {
       "id": "foundations",
@@ -76,7 +76,10 @@
         "mobile-system-design/push-notifications.md",
         "mobile-system-design/feature-flags-and-remote-config.md",
         "mobile-system-design/telemetry-sdk.md",
-        "mobile-system-design/analytics-sdk.md"
+        "mobile-system-design/analytics-sdk.md",
+        "mobile-system-design/a-b-testing-infrastructure.md",
+        "mobile-system-design/experimentation-platform.md",
+        "mobile-system-design/server-driven-ui.md"
       ]
     },
     {
@@ -85,7 +88,8 @@
       "layout": "chapter",
       "note": "Billing and AI use their original lifecycle and decision structure rather than the 12-section interview format.",
       "chapters": [
-        "mobile-system-design/play-billing-and-subscriptions.md"
+        "mobile-system-design/play-billing-and-subscriptions.md",
+        "mobile-system-design/on-device-ai.md"
       ]
     }
   ],

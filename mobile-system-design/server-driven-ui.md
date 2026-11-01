@@ -1,6 +1,6 @@
 # Server-Driven UI (SDUI)
 
-> A platform-design walkthrough for a server-driven UI system: the server decides *what* renders on a screen; the client owns *how* it renders. This is the architecture behind Airbnb's Ghost Platform, Lyft's home screen, and DoorDash's Mosaic — and the standard answer to "how do we ship UI changes without waiting for app releases and Play review?"
+> A platform-design walkthrough for a server-driven UI system: the server decides *what* renders on a screen; the client owns *how* it renders. This is the idea behind Airbnb's Ghost Platform and Lyft's Bikes and Scooters screens — and the standard answer to "how do we ship UI changes without waiting for app releases and Play review?"
 
 ---
 
@@ -75,9 +75,11 @@ The server composes only schemas and actions the installed client advertises; th
 
 ```json
 {
-  "schemaVersion": "3",
+  "schemaVersion": 3,
   "screenId": "home",
   "ttlSeconds": 900,
+  "cacheKey": "home|us|exp_home_v4:B",    // from the server, so the client needn't know its experiment bucket
+  "cacheScope": "user",                   // "user" for personal payloads; "shared" only for non-personal ones
   "sections": [
     {
       "id": "promo-banner-1",
@@ -97,7 +99,10 @@ The server composes only schemas and actions the installed client advertises; th
       "type": "Carousel",
       "typeVersion": 1,
       "props": { "items": [ { "...": "..." } ] },
-      "fallback": { "behavior": "replaceWith", "type": "ListSection", "typeVersion": 1 }
+      "fallback": {
+        "behavior": "replaceWith", "type": "ListSection", "typeVersion": 1,
+        "props": { "items": [ { "...": "..." } ] }      // complete and valid for the replacement type
+      }
     }
   ]
 }
@@ -117,7 +122,9 @@ The client declares what it can render; the server composes only from that set (
 
 - **Components are data, not code.** `props` are typed values validated against the registry schema — never templates or expressions to evaluate.
 - **Actions are an enum, not a script.** `deeplink | navigate | mutate | dismiss | openSheet` — each handled by native code.
-- **Every section carries a fallback policy** (`skip`, `replaceWith`, or `useNativeDefault`).
+- **An allowed action type doesn't authorize its contents.** The router parses each URI and checks its scheme and full host against an allowlist, and destinations against a registered list. `mutate` names a registered operation with validated arguments. The server still authorizes every mutation, and a queued one carries an idempotency key.
+- **Every section carries a fallback policy** (`skip`, `replaceWith`, or `useNativeDefault`). A `replaceWith` carries its own valid props.
+- **Payloads are bounded.** Limits on size, section count, nesting depth and fallback-chain length are checked before rendering, so malformed content can't exhaust the client.
 - **`a11y` fields are required** in the schema for any component with user-facing text or imagery — validated at authoring time, not left to client guesswork.
 
 ---
@@ -163,19 +170,30 @@ The renderer maps section types onto **design-system components** — SDUI compo
 
 ## 6. Local Storage
 
-One table, keyed by screen + user segment:
+One table, keyed by owner + screen + the server's cache key:
 
 ```sql
 CREATE TABLE sdui_screens (
+  owner_id TEXT NOT NULL,         -- signed-in account; a fixed value only for "shared" payloads
   screen_id TEXT NOT NULL,
-  segment_key TEXT NOT NULL,      -- user/market/experiment hash
+  cache_key TEXT NOT NULL,        -- returned by the server
   payload BLOB NOT NULL,          -- raw JSON, re-parsed on read
   schema_version INTEGER NOT NULL,
   fetched_at INTEGER NOT NULL,
   ttl_seconds INTEGER NOT NULL,
-  PRIMARY KEY (screen_id, segment_key)
+  payload_hash TEXT NOT NULL,
+  PRIMARY KEY (owner_id, screen_id, cache_key)
+);
+
+CREATE TABLE sdui_render_attempts (     -- one row per render; see the crash quarantine below
+  attempt_id TEXT PRIMARY KEY,
+  payload_hash TEXT NOT NULL,
+  launch_id TEXT NOT NULL,              -- changes every process start
+  started_at INTEGER NOT NULL
 );
 ```
+
+A segment key alone would let users in the same segment read each other's personal payload, and a second person signing in offline would see the first person's home screen. So reads filter by `owner_id`, and sign-out deletes that account's rows.
 
 Store the **raw payload**, not parsed models — a client update with a newer parser can re-read old cached payloads, and parse failures fall back exactly like network failures.
 
@@ -183,15 +201,16 @@ Store the **raw payload**, not parsed models — a client update with a newer pa
 
 The hard problem: **the server evolves weekly; binaries in the field are frozen for months.**
 
-Three layers of defense:
+Four layers of defense:
 
 1. **Tolerant reader.** The parser ignores unknown fields, treats missing optionals as defaults, and turns unknown section types into `ParsedSection.Unknown` instead of throwing. A parse error in one section never poisons the screen.
 2. **Capability negotiation.** The client declares `type:typeVersion` pairs; the server never sends a component the binary can't render *without* a fallback the binary can.
 3. **Server-declared fallbacks.** For gradual rollout of a new component, the payload carries `replaceWith` fallbacks expressed in old vocabulary. The authoring tool refuses to publish a screen whose fallback chain doesn't bottom out in components supported by the minimum live app version.
+4. **Validate before composing.** Parsing isn't enough. A renderer that throws during composition can't be caught by `try`/`catch` around a composable call, and `LazyColumn` requires unique keys, so two sections with the same `id` can break the whole list. An authoring bug like that passes a schema check. So validation runs on the parsed list before any composition: unique IDs (drop later duplicates and count them), required props present, limits respected. The authoring tool runs the same check before publishing.
 
 ```kotlin
 fun render(parsed: List<ParsedSection>): List<@Composable () -> Unit> =
-    parsed.mapNotNull { p ->
+    validate(parsed).mapNotNull { p ->
         when (p) {
             is ParsedSection.Known ->
                 registry.rendererFor(p.section.type, p.section.typeVersion)
@@ -201,7 +220,16 @@ fun render(parsed: List<ParsedSection>): List<@Composable () -> Unit> =
         }
     }
 // fallbackOf: skip -> null; replaceWith -> render substitute; useNativeDefault -> native section
+// validate: dedupes IDs and enforces limits; a fallback chain stops at the depth limit
 ```
+
+**Crash quarantine.** "Never crash" needs a last line of defense, because a cached payload that crashes would crash on every launch. Before composing, a render inserts its own attempt row; after its first frame, it deletes only that row. A shared counter wouldn't work: one screen's success would clear another's pending attempt, and two screens rendering at once could look like crashes.
+
+Only unfinished attempts from an **earlier** `launch_id` count as evidence, since a live attempt in this process hasn't failed. With two or more for a `payload_hash`, skip that payload and load fresh or show the native fallback screen.
+
+Checking doesn't delete that evidence, or a crash loop would never reach the threshold. Launch A crashes and leaves one row. Launch B finds one, retries, crashes and leaves a second. Launch C finds two and shows the fallback, and keeps skipping that hash on later launches because the rows remain. Evidence clears in only two ways: a first frame for that hash succeeds, which removes its rows from earlier launches, or the payload is replaced or evicted, which removes rows for the old hash. A rendering screen's own pending row from this launch is never touched, so two screens can't clear each other. A process killed for other reasons before its first frame also counts, so a rare false quarantine is possible; it costs one fresh load.
+
+This protects the first frame only. A lazy section that crashes when scrolled into view happens after the row is gone, so crash reports carry `screenId`, `payload_hash` and the section `type`, which feed the server's per-screen kill switch.
 
 **Failure-mode table for this cycle:**
 
@@ -210,8 +238,13 @@ fun render(parsed: List<ParsedSection>): List<@Composable () -> Unit> =
 | Unknown component type | Apply fallback (skip/replace) | `sdui_unknown_component{type, appVersion}` counter |
 | Known type, newer `typeVersion` | Same as unknown | same counter, `reason=version` |
 | Malformed props (schema mismatch) | Drop section, keep screen | `sdui_parse_error` with section id |
+| Duplicate section `id` | Keep the first; drop later ones | `sdui_duplicate_id` |
+| Payload over a size, depth or fallback limit | Drop the section, or treat the whole payload as malformed | `sdui_limit_exceeded` |
 | Whole payload malformed | Serve cached payload; else native fallback screen | `sdui_screen_fallback` |
+| Renderer crashes on a cached payload's first frame | Quarantine it on next launch; load fresh or native fallback | `sdui_payload_quarantined` |
+| Lazy section crashes after the first frame | Not quarantined automatically; crash reports identify it, and the server kill switch stops it | crash rate by `payload_hash` |
 | Action type unknown | No-op + log (never crash) | `sdui_unknown_action` |
+| Action URI or operation not allowlisted | Refuse + log | `sdui_action_rejected` |
 
 The observability requirement is structural: **unknown-component rate per app version** is the metric that tells the authoring side when a fallback chain is wrong — alert on it like a crash rate ([`../observability/metrics.md`](../observability/metrics.md)).
 
@@ -233,16 +266,16 @@ The honest framing: SDUI moves iteration speed from "release-bound" to "deploy-b
 
 - **Testing matrix explosion** — every payload shape × every live app version. Mitigate: contract tests generated from the registry; a "min-supported-version renderer" CI job that renders every published screen with the oldest binary's component set.
 - **The registry becomes the bottleneck** — one team gate-keeping component additions recreates the release train socially. Mitigate: paved-road contribution process with schema linting, not human review for every prop.
-- **Analytics drift** — server-composed screens must emit impressions/taps consistently; put `impressionId` in the schema so the server owns identity and the client owns delivery ([`analytics-sdk.md`](analytics-sdk.md)).
+- **Analytics drift** — server-composed screens must emit impressions/taps consistently; put `impressionId` in the schema so the server identifies the content, and add a client-generated render ID, because a cached payload replays the same `impressionId` on every render ([`analytics-sdk.md`](analytics-sdk.md)).
 - **Performance** — deep section lists are still `LazyColumn` items with stable keys (`section.id`); payload-driven UI doesn't exempt you from [stability discipline](../android/compose/stability.md).
 - **Offline UX honesty** — a stale cached screen with a dead promo is worse than a generic screen; TTL + "content may be outdated" states are product decisions to force early.
 
 ## 10. Follow-up Questions (anticipate)
 
-- "How would you A/B test two screen compositions?" → the composition service consumes the experimentation platform ([`experimentation-platform.md`](experimentation-platform.md)); bucket in the segment key so caches don't cross-contaminate.
+- "How would you A/B test two screen compositions?" → the composition service consumes the experimentation platform ([`experimentation-platform.md`](experimentation-platform.md)); the server includes the bucket in `cacheKey`, so caches don't cross-contaminate and the client never computes it.
 - "How do forms work — isn't input state behavior?" → input components own local state natively; submission is a `mutate` action with a typed payload; validation rules ship as data (regex/required/ranges), complex validation stays server-side.
-- "How do you handle SDUI state management for interactive components?" → Components maintain ephemeral state (like text input or toggle state) locally via standard ViewModels, which is aggregated and dispatched as a unified payload upon a designated submit action, keeping the server stateless during interaction.
-- "Could this drive the whole app?" → chrome (tabs, auth, settings) stays native; SDUI earns its keep on high-iteration surfaces (home, search results, checkout upsells) — Airbnb reports most-used surfaces on it, but they built authoring, preview, and observability tooling to match.
+- "How do you handle SDUI state management for interactive components?" → Components maintain ephemeral state (like text input or toggle state) locally in a state holder keyed by `section.id`, since two same-type sections would otherwise share one ViewModel. That state is aggregated and dispatched as a unified payload upon a designated submit action, keeping the server stateless during interaction.
+- "Could this drive the whole app?" → chrome (tabs, auth, settings) stays native; SDUI earns its keep on high-iteration surfaces (home, search results, checkout upsells) — large platforms such as Airbnb's show it can cover many surfaces, but expect to build authoring, preview, and observability tooling to match.
 
 ## 11. Out of Scope (defended earlier, restated)
 
@@ -252,6 +285,8 @@ Interpreter-based dynamism, server-driven navigation graphs, the authoring CMS, 
 
 - [A Deep Dive into Airbnb's Server-Driven UI System](https://medium.com/airbnb-engineering/a-deep-dive-into-airbnbs-server-driven-ui-system-842244c5f5) — the Ghost Platform: sections, single GraphQL schema, cross-platform frameworks.
 - [InfoQ summary of Airbnb's SDUI platform](https://www.infoq.com/news/2021/07/airbnb-server-driven-ui/) — condensed architecture overview.
+- [The journey to server-driven UI at Lyft Bikes and Scooters](https://eng.lyft.com/the-journey-to-server-driven-ui-at-lyft-bikes-and-scooters-c19264a0378e) — a smaller, surface-scoped rollout.
+- [Unsafe URI loading](https://developer.android.com/privacy-and-security/risks/unsafe-uri-loading) — validating schemes and hosts.
 - [`feature-flags-and-remote-config.md`](feature-flags-and-remote-config.md) — the simpler sibling: values, not composition.
 - [`versioning-and-backward-compatibility.md`](versioning-and-backward-compatibility.md) — the canonical version-negotiation treatment.
 - [`../backend-for-mobile/bff-pattern.md`](../backend-for-mobile/bff-pattern.md) — the composition service is a BFF specialization.

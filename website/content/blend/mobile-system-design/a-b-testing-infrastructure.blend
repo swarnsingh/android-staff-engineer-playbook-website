@@ -1,0 +1,10 @@
+<!-- Source: original playbook 400a7d7dd85c962b6b2d6d856712ca316a11edc8; recap follows the reviewed chapter. -->
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- Keep evaluation pure; log exposure only where the rendered experience first differs, including the control arm.
+- Loading is not non-enrollment. Wait for a consistent identity snapshot before showing experiment-sensitive UI.
+- Use server assignments, eligibility and holdout decisions; an unknown assignment is not a treatment bucket.
+- Freeze experiment definitions or use versioned sticky assignments; modulo a changing variant list reshuffles users.
+- A live kill overrides a pin, and analysis joins later outcomes to the first valid exposure. Check sample ratio mismatch rather than trusting event counts.

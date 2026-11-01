@@ -6691,5 +6691,720 @@
         ]
       }
     ]
+  },
+  {
+    "path": "mobile-system-design/a-b-testing-infrastructure",
+    "diagram": "dc6125903264e6ff",
+    "number": 1,
+    "title": "Exposure joins the delivered experience to outcomes",
+    "caption": "The server assigns a stable variant and the client caches it for the chosen identity. Exposure happens at the feature trigger; analysis joins outcomes to that exposure rather than treating a flag fetch as a view.",
+    "sources": [
+      "https://research.google/pubs/overlapping-experiment-infrastructure-more-better-faster-experimentation/",
+      "https://www.microsoft.com/en-us/research/articles/diagnosing-sample-ratio-mismatch-in-a-b-testing/",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/state-in.html"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "Client",
+        "title": "Client requests flags",
+        "detail": "Requests for one identity",
+        "role": "client"
+      },
+      {
+        "id": "Assign",
+        "title": "Server assigns stable variant",
+        "detail": "Stable server assignment",
+        "role": "runtime"
+      },
+      {
+        "id": "Snapshot",
+        "title": "Flag response with experiment metadata",
+        "detail": "Variant and experiment ID",
+        "role": "neutral"
+      },
+      {
+        "id": "Cache",
+        "title": "Client caches immutable assignment",
+        "detail": "Pinned identity snapshot",
+        "role": "storage"
+      },
+      {
+        "id": "Render",
+        "title": "Feature renders assigned variant",
+        "detail": "Actual feature trigger",
+        "role": "client"
+      },
+      {
+        "id": "Exposure",
+        "title": "Log exposure once when actually viewed",
+        "detail": "Control counts too",
+        "role": "queue"
+      },
+      {
+        "id": "Metrics",
+        "title": "Join exposures with outcome metrics",
+        "detail": "Exposure-to-outcome join",
+        "role": "runtime"
+      },
+      {
+        "id": "Analysis",
+        "title": "Experiment analysis",
+        "detail": "Check effect and bias",
+        "role": "runtime"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Client",
+        "to": "Assign",
+        "label": "requests assignment"
+      },
+      {
+        "from": "Assign",
+        "to": "Snapshot",
+        "label": "returns variant metadata"
+      },
+      {
+        "from": "Snapshot",
+        "to": "Cache",
+        "label": "persists assignment"
+      },
+      {
+        "from": "Cache",
+        "to": "Render",
+        "label": "provides selected variant"
+      },
+      {
+        "from": "Render",
+        "to": "Exposure",
+        "label": "logs at experience trigger"
+      },
+      {
+        "from": "Exposure",
+        "to": "Metrics",
+        "label": "joins observed outcomes"
+      },
+      {
+        "from": "Metrics",
+        "to": "Analysis",
+        "label": "checks experimental effect"
+      }
+    ],
+    "groups": [
+      {
+        "id": "client",
+        "label": "Android client",
+        "nodes": [
+          "Client",
+          "Cache",
+          "Render",
+          "Exposure"
+        ]
+      },
+      {
+        "id": "server",
+        "label": "Assignment and analysis backend",
+        "nodes": [
+          "Assign",
+          "Snapshot",
+          "Metrics",
+          "Analysis"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/a-b-testing-infrastructure",
+    "diagram": "66653399a617571f",
+    "number": 2,
+    "title": "Evaluation and measurement have separate jobs",
+    "caption": "The typed API supplies feature behavior. ExposureSink records the committed feature trigger, while MetricTagger supplies context without making a pure evaluation into an exposure.",
+    "sources": [
+      "https://research.google/pubs/overlapping-experiment-infrastructure-more-better-faster-experimentation/",
+      "https://www.microsoft.com/en-us/research/articles/diagnosing-sample-ratio-mismatch-in-a-b-testing/",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/state-in.html"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "Flags",
+        "title": "FlagSet",
+        "detail": "Assignment metadata",
+        "role": "storage"
+      },
+      {
+        "id": "Registry",
+        "title": "ExperimentRegistry",
+        "detail": "Typed experiment catalog",
+        "role": "runtime"
+      },
+      {
+        "id": "Typed",
+        "title": "Typed experiment API",
+        "detail": "Pure evaluation",
+        "role": "runtime"
+      },
+      {
+        "id": "Feature",
+        "title": "Feature renders variant",
+        "detail": "Committed experience",
+        "role": "client"
+      },
+      {
+        "id": "Sink",
+        "title": "Trigger-based ExposureSink",
+        "detail": "Trigger-based event",
+        "role": "queue"
+      },
+      {
+        "id": "Analytics",
+        "title": "experiment_exposure event",
+        "detail": "Queued measurement",
+        "role": "queue"
+      },
+      {
+        "id": "Tagger",
+        "title": "MetricTagger",
+        "detail": "Experiment context",
+        "role": "runtime"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Flags",
+        "to": "Registry",
+        "label": "loads assignments"
+      },
+      {
+        "from": "Registry",
+        "to": "Typed",
+        "label": "provides typed evaluation"
+      },
+      {
+        "from": "Typed",
+        "to": "Feature",
+        "label": "selects feature behavior"
+      },
+      {
+        "from": "Feature",
+        "to": "Sink",
+        "label": "records actual exposure"
+      },
+      {
+        "from": "Sink",
+        "to": "Analytics",
+        "label": "queues exposure event"
+      },
+      {
+        "from": "Registry",
+        "to": "Tagger",
+        "label": "supplies experiment context"
+      },
+      {
+        "from": "Tagger",
+        "to": "Analytics",
+        "label": "tags measurements"
+      }
+    ],
+    "groups": [
+      {
+        "id": "client",
+        "label": "Android client",
+        "nodes": [
+          "Flags",
+          "Registry",
+          "Typed",
+          "Feature",
+          "Sink",
+          "Analytics",
+          "Tagger"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/experimentation-platform",
+    "diagram": "e80cfd1ccfd05713",
+    "number": 1,
+    "title": "Adaptive allocation needs attributed feedback",
+    "caption": "The bandit chooses an assignment and the client retains its immutable identity. Validated feedback updates the server model; allocation does not remove the need to count exposed users who never convert.",
+    "sources": [
+      "https://arxiv.org/abs/1707.02038",
+      "https://developer.android.com/reference/androidx/room/RoomDatabaseKt",
+      "https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/manage-work"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "Request",
+        "title": "Client requests assignment",
+        "detail": "Owner and pin identity",
+        "role": "client"
+      },
+      {
+        "id": "Bandit",
+        "title": "Bandit service selects variant",
+        "detail": "Adapts future allocation",
+        "role": "runtime"
+      },
+      {
+        "id": "Assignment",
+        "title": "Variant + immutable assignmentId",
+        "detail": "Immutable assignment ID",
+        "role": "neutral"
+      },
+      {
+        "id": "Client",
+        "title": "Client caches and exposes assignment",
+        "detail": "Pinned delivered arm",
+        "role": "client"
+      },
+      {
+        "id": "Reward",
+        "title": "Attributed reward event",
+        "detail": "Original conversion handle",
+        "role": "queue"
+      },
+      {
+        "id": "Validate",
+        "title": "Validate assignment, window, and metric",
+        "detail": "Owner, window and metric",
+        "role": "runtime"
+      },
+      {
+        "id": "Update",
+        "title": "Update posterior",
+        "detail": "Learns from valid trials",
+        "role": "runtime"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Request",
+        "to": "Bandit",
+        "label": "requests allocation"
+      },
+      {
+        "from": "Bandit",
+        "to": "Assignment",
+        "label": "issues immutable assignment"
+      },
+      {
+        "from": "Assignment",
+        "to": "Client",
+        "label": "delivers selected variant"
+      },
+      {
+        "from": "Client",
+        "to": "Reward",
+        "label": "records attributed outcome"
+      },
+      {
+        "from": "Reward",
+        "to": "Validate",
+        "label": "submits assignment and metric"
+      },
+      {
+        "from": "Validate",
+        "to": "Update",
+        "label": "accepts eligible feedback"
+      },
+      {
+        "from": "Update",
+        "to": "Bandit",
+        "label": "updates allocation model"
+      }
+    ],
+    "groups": [
+      {
+        "id": "client",
+        "label": "Android client",
+        "nodes": [
+          "Request",
+          "Client",
+          "Reward"
+        ]
+      },
+      {
+        "id": "server",
+        "label": "Bandit backend",
+        "nodes": [
+          "Bandit",
+          "Assignment",
+          "Validate",
+          "Update"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/experimentation-platform",
+    "diagram": "4cdcee2bee40e454",
+    "number": 2,
+    "title": "One durable queue orders trial events",
+    "caption": "The pin store retains the arm and assignment identity. Exposure and reward events share one durable outbox; analytics exposure is separate and does not open the authoritative trial.",
+    "sources": [
+      "https://arxiv.org/abs/1707.02038",
+      "https://developer.android.com/reference/androidx/room/RoomDatabaseKt",
+      "https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/manage-work"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "Flags",
+        "title": "FlagSet + assignmentId",
+        "detail": "Owner and pin metadata",
+        "role": "storage"
+      },
+      {
+        "id": "API",
+        "title": "Typed experiment API",
+        "detail": "Eligibility and live kills",
+        "role": "runtime"
+      },
+      {
+        "id": "Tracker",
+        "title": "Pinned assignment store",
+        "detail": "Arm and immutable ID",
+        "role": "storage"
+      },
+      {
+        "id": "Feature",
+        "title": "Feature behavior",
+        "detail": "Actual experience trigger",
+        "role": "client"
+      },
+      {
+        "id": "Reward",
+        "title": "recordReward",
+        "detail": "Original conversion handle",
+        "role": "runtime"
+      },
+      {
+        "id": "Sink",
+        "title": "Durable trial outbox",
+        "detail": "Exposure before reward",
+        "role": "queue"
+      },
+      {
+        "id": "Endpoint",
+        "title": "Trial events API",
+        "detail": "Ordered, deduplicated events",
+        "role": "neutral"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Flags",
+        "to": "API",
+        "label": "provides assignment metadata"
+      },
+      {
+        "from": "API",
+        "to": "Tracker",
+        "label": "pins selected arm"
+      },
+      {
+        "from": "API",
+        "to": "Feature",
+        "label": "provides feature variant"
+      },
+      {
+        "from": "Feature",
+        "to": "Reward",
+        "label": "records conversion handle"
+      },
+      {
+        "from": "Tracker",
+        "to": "Reward",
+        "label": "looks up original assignment"
+      },
+      {
+        "from": "Feature",
+        "to": "Sink",
+        "label": "commits first exposure"
+      },
+      {
+        "from": "Reward",
+        "to": "Sink",
+        "label": "queues attributed reward"
+      },
+      {
+        "from": "Sink",
+        "to": "Endpoint",
+        "label": "uploads ordered trial events"
+      }
+    ],
+    "groups": [
+      {
+        "id": "client",
+        "label": "Android client",
+        "nodes": [
+          "Flags",
+          "API",
+          "Tracker",
+          "Feature",
+          "Reward",
+          "Sink"
+        ]
+      },
+      {
+        "id": "server",
+        "label": "Backend",
+        "nodes": [
+          "Endpoint"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/server-driven-ui",
+    "diagram": "2773abdfb2adcc56",
+    "number": 1,
+    "title": "Remote composition stays inside native capabilities",
+    "caption": "The server returns a versioned payload; the client loads its cache and maps supported sections to native renderers. Actions pass through an allowlist, while the backend owns composition and schema governance.",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/lists#item-keys",
+      "https://developer.android.com/privacy-and-security/risks/unsafe-uri-loading",
+      "https://developer.android.com/topic/architecture/data-layer/offline-first"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "Loader",
+        "title": "Screen loader",
+        "detail": "Owner-scoped load",
+        "role": "runtime"
+      },
+      {
+        "id": "Cache",
+        "title": "Validated payload cache",
+        "detail": "Raw JSON, parsed on read",
+        "role": "storage"
+      },
+      {
+        "id": "Renderer",
+        "title": "Native component registry / renderer",
+        "detail": "Native component versions",
+        "role": "runtime"
+      },
+      {
+        "id": "Actions",
+        "title": "Allowlisted action router",
+        "detail": "Allowed operations only",
+        "role": "runtime"
+      },
+      {
+        "id": "Compose",
+        "title": "Screen composition service",
+        "detail": "Chooses screen sections",
+        "role": "runtime"
+      },
+      {
+        "id": "Registry",
+        "title": "Versioned schema registry",
+        "detail": "Versioned component schema",
+        "role": "storage"
+      },
+      {
+        "id": "Data",
+        "title": "Data + experimentation + personalization",
+        "detail": "Inputs for composition",
+        "role": "neutral"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Loader",
+        "to": "Cache",
+        "label": "reads validated payload"
+      },
+      {
+        "from": "Cache",
+        "to": "Renderer",
+        "label": "provides screen sections"
+      },
+      {
+        "from": "Renderer",
+        "to": "Actions",
+        "label": "dispatches user action"
+      },
+      {
+        "from": "Compose",
+        "to": "Registry",
+        "label": "uses versioned schema"
+      },
+      {
+        "from": "Data",
+        "to": "Compose",
+        "label": "supplies data and targeting"
+      },
+      {
+        "from": "Loader",
+        "to": "Compose",
+        "label": "versioned HTTPS payload",
+        "both": true
+      }
+    ],
+    "groups": [
+      {
+        "id": "client",
+        "label": "Android client",
+        "nodes": [
+          "Loader",
+          "Cache",
+          "Renderer",
+          "Actions"
+        ]
+      },
+      {
+        "id": "backend",
+        "label": "Backend",
+        "nodes": [
+          "Compose",
+          "Registry",
+          "Data"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/on-device-ai",
+    "diagram": "774ac2cb51696d1e",
+    "number": 1,
+    "title": "Capability and policy both gate inference",
+    "caption": "The router combines runtime capability with consent and data policy for each request. Sensitive data stays on device or the feature defers; permitted cloud fallback is a separate decision, and every result still needs validation.",
+    "sources": [
+      "https://developers.google.com/ml-kit/genai",
+      "https://developers.google.com/ml-kit/genai/prompt/android",
+      "https://developer.android.com/ai/gemini-nano",
+      "https://firebase.google.com/docs/ai-logic"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "UI",
+        "title": "Feature UI",
+        "detail": "Task and labelled data",
+        "role": "client"
+      },
+      {
+        "id": "Router",
+        "title": "InferenceRouter",
+        "detail": "Evaluates every request",
+        "role": "runtime"
+      },
+      {
+        "id": "Capability",
+        "title": "Model and device capability?",
+        "detail": "Availability and device",
+        "role": "neutral"
+      },
+      {
+        "id": "Policy",
+        "title": "Consent, data class, network, and cost policy?",
+        "detail": "Consent and data rules",
+        "role": "neutral"
+      },
+      {
+        "id": "Choice",
+        "title": "Per-request execution choice",
+        "detail": "Client-enforced gate",
+        "role": "runtime"
+      },
+      {
+        "id": "Local",
+        "title": "On-device runtime platform model or LiteRT",
+        "detail": "Eligible local request",
+        "role": "runtime"
+      },
+      {
+        "id": "Cloud",
+        "title": "Authenticated cloud inference",
+        "detail": "Permitted cloud request",
+        "role": "neutral"
+      },
+      {
+        "id": "Result",
+        "title": "Validated result + telemetry",
+        "detail": "Validate before rendering",
+        "role": "runtime"
+      }
+    ],
+    "edges": [
+      {
+        "from": "UI",
+        "to": "Router",
+        "label": "submits task and data class"
+      },
+      {
+        "from": "Router",
+        "to": "Capability",
+        "label": "checks runtime availability"
+      },
+      {
+        "from": "Router",
+        "to": "Policy",
+        "label": "checks consent and policy"
+      },
+      {
+        "from": "Capability",
+        "to": "Choice",
+        "label": "reports available execution"
+      },
+      {
+        "from": "Policy",
+        "to": "Choice",
+        "label": "permits execution paths"
+      },
+      {
+        "from": "Choice",
+        "to": "Local",
+        "label": "eligible local request"
+      },
+      {
+        "from": "Choice",
+        "to": "Cloud",
+        "label": "permitted cloud request"
+      },
+      {
+        "from": "Local",
+        "to": "Result",
+        "label": "local model output"
+      },
+      {
+        "from": "Cloud",
+        "to": "Result",
+        "label": "cloud model output"
+      },
+      {
+        "from": "Result",
+        "to": "UI",
+        "label": "validated feature result"
+      }
+    ],
+    "groups": [
+      {
+        "id": "device",
+        "label": "Android device",
+        "nodes": [
+          "UI",
+          "Router",
+          "Capability",
+          "Policy",
+          "Choice",
+          "Local",
+          "Result"
+        ]
+      },
+      {
+        "id": "cloud",
+        "label": "Cloud service",
+        "nodes": [
+          "Cloud"
+        ]
+      }
+    ]
   }
 ]
