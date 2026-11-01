@@ -42,7 +42,7 @@ When an instrumented Android request has a current client span, its propagator c
 - `00`: Version
 - `4bf9...`: The global **Trace ID**.
 - `00f0...`: The Mobile App's **Span ID** (The parent).
-- `01`: Sampled flag (Should the backend record this?).
+- `01`: Sampled flag: the caller's recording recommendation. It does not require the backend to honour an untrusted caller's sampling choice.
 
 ### Android-to-edge handoff
 
@@ -60,18 +60,18 @@ sequenceDiagram
     participant O11y as Datadog / Jaeger
 
     App->>Net: checkout()
-    Note over Net: Generate TraceID: 1234<br/>Inject `traceparent` Header
+    Note over Net: Create client trace context<br/>Inject traceparent header
     Net->>Gateway: POST /checkout (valid W3C traceparent)
     Note over Gateway: Validate carrier and apply ingress policy
     Gateway->>O11y: Export gateway span under accepted or re-rooted context
     Gateway->>BE: POST /checkout (propagated accepted context)
     BE->>DB: Query
     DB-->>BE: Result
-    BE->>O11y: Send Span (Trace:1234, Parent:Gateway)
+    BE->>O11y: Export span under propagated server trace
     BE-->>Gateway: 200 OK
     Gateway-->>Net: 200 OK
     Net-->>App: Success
-    Note over Net: Send Span (Trace:1234) to O11y
+    Note over Net: Export client span under client trace
 ```
 
 The diagram's key boundary is ingress: the gateway validates client-supplied context and propagates only the accepted or re-rooted server context.

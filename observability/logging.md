@@ -12,7 +12,7 @@ If a user reports, "The checkout button doesn't work," and you have no logs, you
 
 ## Historical Context
 
-Logging is as old as computing itself (printing to a teletype terminal). In Android, the standard `android.util.Log` (`Log.d`, `Log.e`) writes to `logcat`, a circular buffer on the device. However, `logcat` is volatile (it disappears when the device reboots) and local (you can't see it from your office). Modern mobile engineering relies on Remote Logging (e.g., Firebase Crashlytics, Datadog), where logs are batched and shipped over the network to a central server.
+Logging is as old as computing itself (printing to a teletype terminal). In Android, the standard `android.util.Log` (`Log.d`, `Log.e`) writes to `logcat`, a circular buffer on the device. However, `logcat` is volatile (it disappears when the device reboots) and local (you can't see it from your office). Remote diagnostic sinks can batch approved logs for analysis. Crashlytics custom logs are bounded context attached to reports, not a general-purpose stream of every app log.
 
 ## First Principles
 
@@ -38,11 +38,11 @@ Properly utilizing levels determines whether your logging is a useful tool or a 
 
 | Level | Usage | Production Behavior |
 | :--- | :--- | :--- |
-| **VERBOSE / TRACE** | Extremely granular step-by-step execution. | *Stripped at compile time.* |
-| **DEBUG** | Data payloads, network responses, lifecycle events. | *Usually disabled or ignored remotely.* |
-| **INFO** | Major business milestones (e.g., `UserLoggedIn`, `OrderPlaced`). | *Sent to remote server.* |
-| **WARN** | Something unexpected happened, but the app recovered (e.g., `Cache miss, fetching from network`). | *Sent to remote server. May trigger alerts if volume spikes.* |
-| **ERROR** | A failure that impacts the user (e.g., `Failed to process payment`). | *Always sent. Triggers immediate alerts.* |
+| **VERBOSE / TRACE** | Granular diagnostic detail. | Suppress or explicitly remove noisy calls; release builds do not automatically strip them. |
+| **DEBUG** | Development diagnostics without sensitive payloads. | Usually local-only; gate expensive argument construction explicitly. |
+| **INFO** | Operational milestones. | Route approved diagnostics only; product events have a separate governed schema. |
+| **WARN** | Unexpected condition with recovery. | Sample or retain under policy; ordinary cache misses need not be warnings. |
+| **ERROR** | A failure that impacts the user. | Minimise and route under policy; severity alone neither exports data nor pages anyone. |
 
 ## Architecture
 
@@ -51,11 +51,13 @@ graph TD
     App[Mobile App] -->|Emits Log| Logger[Logging Facade e.g., Timber]
     
     Logger -->|Debug/Verbose| Logcat[Local Logcat]
-    Logger -->|Info/Warn/Error| RemoteLogger[Remote SDK e.g., Crashlytics]
+    Logger -->|Policy-approved context| RemoteLogger[Crash breadcrumb or diagnostic sink]
     
-    RemoteLogger -->|Batch & Compress| Network[Network]
+    RemoteLogger -->|SDK-specific buffering and reporting| Network[Network]
     Network --> Backend[Log Aggregation Server e.g., Datadog]
 ```
+
+The facade routes only policy-approved context; severity alone does not export a record. [Crashlytics custom logs](https://firebase.google.com/docs/crashlytics/customize-crash-reports) attach context to reports rather than guaranteeing delivery of a complete log stream.
 
 ## Production Example
 
@@ -71,8 +73,8 @@ if (BuildConfig.DEBUG) {
     // In debug mode, print everything to the local console
     Timber.plant(Timber.DebugTree())
 } else {
-    // In production, only send WARN and ERROR to the remote server
-    Timber.plant(CrashlyticsTree())
+    // Explicit policies select breadcrumbs and non-fatal reports (defined below).
+    Timber.plant(PolicyReleaseTree(breadcrumbPolicy, nonFatalPolicy))
 }
 
 // Business Logic (Repository)
@@ -106,7 +108,15 @@ fun fetchUser() {
   // BAD: The string is built and memory is allocated EVEN IF debug logging is disabled.
   Timber.d("User array is " + users.joinToString() + " and size is " + users.size)
   ```
-  *(Fix: Modern loggers use lambdas: `Timber.d { "User array is..." }`. The string is only evaluated if the log level is active).*
+  Timber 5.0.1 has no `Timber.d { ... }` overload. Guard expensive development-only construction explicitly:
+
+  ```kotlin
+  if (BuildConfig.DEBUG) {
+      Timber.d("User count: %d", users.size)
+  }
+  ```
+
+  Formatting arguments can still be eager: do not put expensive work or side effects in an argument expression. A custom lazy facade must actually check its policy before invoking the lambda.
 
 ## Staff Engineer Thinking
 
@@ -114,7 +124,7 @@ When reviewing a PR, a Staff engineer asks:
 
 1.  **Is this log actionable?** If I see `Timber.i("Got here")`, I delete it. A log must provide context. What is "here"? What state were we in when we got here?
 2.  **Are we leaking PII?** I actively check data classes for `toString()` overrides. If `User` has a `password` field, the `toString()` method must mask it, because someone, eventually, will log the whole object.
-3.  **Will this break the budget?** If a developer adds an `INFO` log inside a `RecyclerView` `onBindViewHolder` method, it will fire 60 times a second as the user scrolls. That will cost the company thousands of dollars in Datadog ingestion fees. I push it down to `VERBOSE` so it never leaves the device.
+3.  **Will this break the budget?** Binding frequency depends on scrolling, recycling, and updates; `onBindViewHolder` is not a per-frame callback. Measure event volume and disable or sample noisy diagnostics under explicit routing policy; changing severity alone does not prevent export.
 
 ## Common Misconceptions
 
@@ -136,11 +146,11 @@ When reviewing a PR, a Staff engineer asks:
 
 ## Mobile Implementation (Android)
 
-Logs on mobile aren't logs the way servers do them. There's no `tail -f`. The user's device emits to logcat (visible only during USB debug), and a curated subset is mirrored to a remote sink (Crashlytics breadcrumbs, in-house telemetry, or vendor RUM).
+Logs on mobile aren't logs the way servers do them. There's no `tail -f`. Android logging writes to local Logcat subject to access restrictions; it is not inherently disabled in release builds. A curated subset may be routed to a remote sink (Crashlytics breadcrumbs, in-house telemetry, or vendor RUM).
 
 | Sink | When |
 |---|---|
-| `Log.d/i/w/e` → logcat | Local dev only |
+| `Log.d/i/w/e` → logcat | Local device output, including release calls unless explicitly suppressed or removed |
 | **Timber or another facade** | Routes to trees/sinks selected by build and runtime policy; it is not automatically disabled in release |
 | **Crash-report breadcrumbs** | A bounded, approved context buffer attached to a later report |
 | **Remote diagnostic sink/RUM** | Sampled structured operational events selected under [`telemetry-taxonomy.md`](telemetry-taxonomy.md) |
@@ -205,7 +215,7 @@ Mobile logging can serve local debugging, bounded crash context, or sampled remo
 8. **Explain the performance impact of logging inside a hot loop (like a View's `onDraw` method).**
    Eager construction and enabled output add allocation and sink work. Whether that causes jank depends on frequency, payload, device, build, and sink; profile the release-equivalent path.
 9. **How can you configure ProGuard/R8 to automatically strip `Log.d` statements from a production release build?**
-   By wrapping log statements in `if (BuildConfig.DEBUG)` checks, allowing R8's dead code elimination to completely remove the block.
+   A `BuildConfig.DEBUG` guard enables dead-code removal for that build variant. For existing Android log calls, configure R8 explicitly, for example `-maximumremovedandroidloglevel 3` to remove VERBOSE/DEBUG calls, or a narrowly scoped `-assumenosideeffects` rule. Verify the optimised artifact and preserve required diagnostics; do not assume argument side effects are removed.
 10. **Describe a scenario where an over-zealous logging strategy could actually cause an app to crash with an `OutOfMemoryError` or `IOException`.**
     Logging massive payloads (like raw bitmap data or 10MB JSON responses) can exhaust heap memory, or fill up local disk space leading to I/O failures.
 
@@ -217,3 +227,5 @@ Mobile logging can serve local debugging, bounded crash context, or sampled remo
 - [`telemetry-taxonomy.md`](telemetry-taxonomy.md) — Canonical selection policy for logs, metrics, traces, exceptions, product events, and breadcrumbs.
 - [Timber](https://github.com/JakeWharton/timber) — the conventional Android logging wrapper.
 - [Crashlytics breadcrumbs / custom keys](https://firebase.google.com/docs/crashlytics/customize-crash-reports) — context attached to crash reports.
+- [Timber 5.0.1 API implementation](https://github.com/JakeWharton/timber/blob/5.0.1/timber/src/main/java/timber/log/Timber.kt)
+- [R8 additional rule types](https://developer.android.com/topic/performance/app-optimization/additional-rule-types)

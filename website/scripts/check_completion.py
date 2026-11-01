@@ -7,7 +7,7 @@ import build
 ROOT=build.ROOT;REVIEW=ROOT/'website/reviews/completion'
 def digest(value):return hashlib.sha256(value.encode()).hexdigest()
 def fingerprints():
- files=['website/scripts/check_fundamentals_kotlin.py','website/tests/FundamentalsRegression.kt','website/content/engineering-fundamentals.json','website/content/corrections-engineering-fundamentals.json','website/content/corrections-computer-science.json','source-snapshot.json','website/scripts/check_scene_routes.py','website/content/corrections-z-completion.json','website/reviews/completion/source-sync.json',
+ files=['website/scripts/check_fundamentals_kotlin.py','website/tests/FundamentalsRegression.kt','website/content/engineering-fundamentals.json','website/content/corrections-engineering-fundamentals.json','website/content/corrections-computer-science.json','source-snapshot.json','website/content/corrections-zz-observability-source-sync.json','website/scripts/check_scene_routes.py','website/content/corrections-z-completion.json','website/reviews/completion/source-sync.json',
   'website/scripts/build.py','website/scripts/diagram_models.py','website/scripts/figure_maps.py','website/sequence.css','website/scripts/check_completion.py','website/scripts/check_preservation.py',
   'website/scripts/generate_android_validation.py','website/scripts/browser_preservation.js',
   'website/tools/qa_fixture_runner.js','website/styles.css','website/blend.css',
@@ -36,7 +36,19 @@ def check(source_root=None):
   assert entry.get('primary_sources'),('missing primary evidence',entry['id'])
  rows=json.loads((ROOT/'website/content/corrections-z-completion.json').read_text())
  assert len(rows)==743 and len({r['id'] for r in rows})==743
- assert len([r for r in build.APPROVED_CORRECTIONS if r['path'].split('/')[0] in {'kotlin','android'}])==743, 'Canonical inventory must be applied exactly once'
+ core=[r for r in build.APPROVED_CORRECTIONS if r['path'].split('/')[0] in {'kotlin','android'}]
+ canonical_ids={r['id'] for r in rows}
+ assert len([r for r in core if r['id'] in canonical_ids])==743, 'Canonical inventory must be applied exactly once'
+ sync=json.loads((ROOT/'website/content/corrections-zz-observability-source-sync.json').read_text())
+ expected_paths={'android/networking-and-security/retrofit-and-okhttp.md','android/performance/anrs.md','android/performance/memory-management-and-leaks.md'}
+ assert len(sync)==3 and {r['path'] for r in sync}==expected_paths, 'Merged PR #72 sync scope changed'
+ assert len(core)==746 and len({r['id'] for r in core})==746, 'Unexpected or duplicate Kotlin/Android corrections'
+ assert {r['id'] for r in core}==canonical_ids|{r['id'] for r in sync}
+ for fix in sync:
+  assert fix['status']=='approved' and fix['source_pr']==72 and fix.get('approval') and fix.get('sources')
+  assert fix['source_commit']=='7666569cf77db7616d43f05cf041c438cb947035'
+  assert digest(fix['new'])==fix['source_sha256']
+  assert digest(build.corrected((ROOT/fix['path']).read_text(),fix['path'])[0])==fix['source_sha256'], ('Merged-source replay mismatch',fix['path'])
  fundamentals=[r for r in build.APPROVED_CORRECTIONS if r['path'].startswith('engineering-fundamentals/')]
  assert fundamentals and len({r['id'] for r in fundamentals})==len(fundamentals)
  assert all(r.get('sources') and r.get('validation') for r in fundamentals)
@@ -66,7 +78,7 @@ def check(source_root=None):
  code_checks=[c for p in browser['pages'] for c in p.get('codeChecks',[])]
  assert code_checks and all(c['ok'] for c in code_checks),'Code readability or contrast regression'
  pairs=[c for p in browser['pages'] for v in p['preservation']['views'] for c in v.get('pairChecks',[])]
- core_pairs=[c for p in browser['pages'] if all('/'+tree+'/' not in p['href'] for tree in ('engineering-fundamentals','computer-science','platform-engineering','mobile-system-design')) for v in p['preservation']['views'] for c in v.get('pairChecks',[])]
+ core_pairs=[c for p in browser['pages'] if all('/'+tree+'/' not in p['href'] for tree in ('engineering-fundamentals','computer-science','platform-engineering','mobile-system-design','observability')) for v in p['preservation']['views'] for c in v.get('pairChecks',[])]
  fundamentals_pairs=[c for p in browser['pages'] if '/engineering-fundamentals/' in p['href'] for v in p['preservation']['views'] for c in v.get('pairChecks',[])]
  # Kotlin/Android and Fundamentals counts are fixed; newer trees add pairs that must all pass.
  assert len(core_pairs)==928 and len(fundamentals_pairs)==130 and all(c['ok'] for c in pairs),'Question/answer pairing failed'

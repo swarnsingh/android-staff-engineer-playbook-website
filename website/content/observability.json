@@ -1,0 +1,14 @@
+{
+  "observability.md": "Choose signals that explain user harm, turn them into reliability contracts, and connect alerts to a clear response. Follow the path from telemetry selection to incident investigation.",
+  "observability/telemetry-taxonomy.md": "A product event, a crash breadcrumb and a reliability metric answer different questions. Choose the signal, owner and data policy before adding an SDK call.",
+  "observability/logging.md": "A useful log preserves the context needed to explain a failure. Learn how to control message construction, sensitive fields and release routing.",
+  "observability/structured-logging.md": "Stable fields make diagnostic records queryable across modules. Keep schemas consistent and propagate only the context that belongs to the current operation.",
+  "observability/metrics.md": "A fleet result starts with observations on individual devices. Learn which aggregates can be merged, how dimensions multiply, and what an export can lose.",
+  "observability/tracing.md": "A slow checkout crosses several pieces of work. Use spans, context and sampling to account for the execution path without pretending every boundary is instrumented.",
+  "observability/distributed-tracing.md": "A trace header crosses a trust boundary as well as a network boundary. Follow client context through ingress validation, backend work and trace export.",
+  "observability/slis.md": "Healthy servers do not guarantee a working app. Define eligible operations and correct outcomes so the measurement represents what users can actually do.",
+  "observability/slos.md": "A reliability target needs a population, units and a window. Separate product promises from vendor thresholds and use explicit policies to guide release decisions.",
+  "observability/error-budgets.md": "A budget makes release risk discussable. Calculate it over one population, handle missing evidence, and agree on consequences before reliability declines.",
+  "observability/alerting.md": "A page should lead to a useful action. Combine windows, traffic and current user impact, then route the problem to an owner with a mitigation.",
+  "observability/dashboards.md": "Start with user impact and drill into the affected cohort. Build an overview that leads an investigator to the evidence needed for the next decision."
+}

@@ -215,5 +215,20 @@
     "mobile-system-design/youtube-video-streaming.md": "b8abec68f1d325a2d18eb066f1b869c954a390633a7b6943dff105d9bc4f8df0"
   },
   "mobile-system-design_phase5_reference_commit": "400a7d7dd85c962b6b2d6d856712ca316a11edc8",
-  "mobile-system-design_phase6_reference_commit": "400a7d7dd85c962b6b2d6d856712ca316a11edc8"
+  "mobile-system-design_phase6_reference_commit": "400a7d7dd85c962b6b2d6d856712ca316a11edc8",
+  "observability_reference_commit": "7666569cf77db7616d43f05cf041c438cb947035",
+  "observability_sha256": {
+    "observability.md": "71f301e9abeef8478b5f2989cf0ffd8ec1b67f820d1b93f109fbfff3d6ee3dc5",
+    "observability/alerting.md": "5d78be311fa5379bdd5adbf41b9bbe333d036c655cb9b197737de9a2502b5822",
+    "observability/dashboards.md": "6d7f3daa89ff630e0dc6f622539e66419a0f3f5f61f320e1f0e88050d000ca00",
+    "observability/distributed-tracing.md": "abdd2dca2487aeef331533a5904d00858ebd773ed7ba55270672427308f44566",
+    "observability/error-budgets.md": "20c4e3841925e1934aff6aca7f0fd0754d4d1ab6446399dd9c2b064f705843a1",
+    "observability/logging.md": "4201227eb6d1bc20e435d6601944a15811f86d54e14fcca235188162fc3a3e7f",
+    "observability/metrics.md": "285a35349f069d95a3b7c5ea19d11e133a79c7b4a859645c00ebbda368e2dc12",
+    "observability/slis.md": "68c04946c8f71d0e8ef7cf7d05e9d32877b7f1caea36dfb270f4d2173eb2ff19",
+    "observability/slos.md": "5e83e029e04a68e1e7dca3d2a56744f8ac92fdaa5c5289857cb19bed0bf82685",
+    "observability/structured-logging.md": "fdc2b4b373ccd9ad90e0b634779dc4b69d44733988574276ffd632419d81288b",
+    "observability/telemetry-taxonomy.md": "4132601a92a9da855a737d2b57bfa4c42663e4417c83acb169840e0dffa84d1a",
+    "observability/tracing.md": "ccad4327f1cbe09787dc6469e354b0929112ff7b97a12079527977eba6deb3e8"
+  }
 }
