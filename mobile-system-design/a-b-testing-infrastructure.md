@@ -12,7 +12,7 @@
 ### Functional Requirements
 - **Assign each user to a variant** (control, A, B...) for each experiment.
 - **Stable assignment** — same user, same variant, across sessions.
-- **Lazy exposure logging** — fire when the user actually sees the variant.
+- **Trigger-based exposure logging** — fire when the user actually sees the variant.
 - **Metric tagging** — link analytics events to experiments.
 - **Holdouts** — opt-out a slice of users from all experiments.
 
@@ -67,7 +67,7 @@ Assignment, exposure, and outcome are distinct events: analysis is valid only wh
 - **`ExperimentRegistry`** — typed accessors per experiment.
 - **`ExposureSink`** — debounced per-session logger.
 - **`MetricTagger`** — adds active experiments to every analytics event.
-- **`Holdout`** — kicks a deterministic slice out of all experiments.
+- **Holdout status** — returned by the server; keeps a deterministic slice out of all experiments.
 
 ---
 
@@ -78,10 +78,12 @@ Assignment, exposure, and outcome are distinct events: analysis is valid only wh
 ```json
 GET /v1/flags?...
 {
+  "killedExperiments": ["exp_old_banner_v1"],   // read live; overrides any pinned assignment
   "flags": {
     "ab_checkout_color": { "type": "variant", "value": "B",
                             "experimentId": "exp_checkout_color_v3",
-                            "isInExperiment": true }
+                            "configVersion": 4,
+                            "isInExperiment": true, "isHoldout": false }
   }
 }
 ```
@@ -93,6 +95,7 @@ GET /v1/flags?...
   "event": "experiment_exposure",
   "experimentId": "exp_checkout_color_v3",
   "variant": "B",
+  "configVersion": 4,
   "isInExperiment": true,
   "ts": ...
 }
@@ -120,7 +123,7 @@ GET /v1/flags?...
 ```
 :lib:experiments
     experiments-api     ← Experiment, Variant, typed accessors
-    experiments-core    ← ExposureSink, MetricTagger, Holdout
+    experiments-core    ← ExposureSink, MetricTagger, assignment snapshot
 :lib:flags              ← (dependency)
 :lib:analytics          ← (dependency, for event piping)
 ```
@@ -130,24 +133,24 @@ GET /v1/flags?...
 ```mermaid
 flowchart LR
     Flags["FlagSet"] --> Registry["ExperimentRegistry"] --> Typed["Typed experiment API"]
-    Typed --> Feature["Feature renders variant"] --> Sink["Lazy ExposureSink"]
+    Typed --> Feature["Feature renders variant"] --> Sink["Trigger-based ExposureSink"]
     Sink --> Analytics["experiment_exposure event"]
     Registry --> Tagger["MetricTagger"] --> Analytics
 ```
 
-The typed registry prevents raw-key drift, and lazy exposure logging avoids counting users who were assigned but never reached the experiment surface.
+The typed registry prevents raw-key drift, and trigger-based exposure logging avoids counting users who were assigned but never reached the experiment surface.
 
 ### Key class signatures
 
 ```kotlin
-class Experiment<T : Variant>(
+open class Experiment<T : Variant>(
     val id: String,
     val flagKey: String,
     val default: T,
     private val variants: List<T>,
 ) {
-    val variant: T               // returns active variant; logs exposure
-    val isInExperiment: Boolean  // false if user is in holdout
+    val evaluation: StateFlow<Evaluation<T>>          // identity, assignment and kill switch; no side effects
+    fun recordExposure(evaluation: Evaluation<T>)     // call where the arms first differ
 }
 
 object Experiments {
@@ -160,7 +163,7 @@ object Experiments {
 }
 
 class ExposureSink {
-    fun log(experimentId: String, variant: String, isInExperiment: Boolean)
+    fun log(assignment: Assignment, sessionId: String)
 }
 ```
 
@@ -168,15 +171,15 @@ class ExposureSink {
 
 ## 6. Local Storage
 
-Already covered by `feature-flags-and-remote-config.md`'s DataStore snapshot. Experiments don't need their own store; they read through the FlagSet.
+Flag values come from `feature-flags-and-remote-config.md`'s DataStore snapshot. Experiments add one small store: an assignment snapshot per `evaluationId`. A background flag refresh updates it only for new experiments, so an ordinary allocation change can't move a user who is already in one. A kill switch is the exception: it's read live and overrides the snapshot, which stays stored for analysis.
 
 For exposure deduplication within a session:
 
 ```kotlin
 class SessionExposureCache {
-    private val emitted = ConcurrentHashMap.newKeySet<String>()    // "experimentId|sessionId"
-    fun shouldEmit(experimentId: String, sessionId: String): Boolean =
-        emitted.add("$experimentId|$sessionId")
+    private val emitted = ConcurrentHashMap.newKeySet<String>()
+    fun shouldEmit(evaluationId: String, experimentId: String, variant: String, sessionId: String): Boolean =
+        emitted.add("$evaluationId|$experimentId|$variant|$sessionId")
 }
 ```
 
@@ -190,73 +193,95 @@ In-memory only — sessions are short-lived.
 
 ### Assignment
 
-Assignment happens server-side (in `/v1/flags` response). The client just consumes the variant. For client-side fallback (server omitted the variant for any reason), sticky bucketing:
+Assignment happens server-side (in `/v1/flags` response), and the response says whether the user is enrolled. The client just consumes it. A missing assignment isn't an error to repair: the server may have omitted it because the user is ineligible or the experiment is off. So the safe result is control, outside the experiment, with no exposure.
 
 ```kotlin
-fun fallbackBucket(experimentId: String, userId: String, variants: List<String>): String {
-    val hash = Hashing.sha256().hashString("$experimentId|$userId", Charsets.UTF_8).asLong()
-    val bucket = ((hash % variants.size) + variants.size) % variants.size
-    return variants[bucket.toInt()]
-}
+data class Assignment(
+    val experimentId: String, val variant: String,
+    val isInExperiment: Boolean, val isHoldout: Boolean,
+    val configVersion: Int,
+    val evaluationId: String,    // the user or anonymous ID this was assigned to
+)
+
+sealed interface Evaluation<out T>
+object Loading : Evaluation<Nothing>                                   // this identity's snapshot isn't read yet
+data class Enrolled<T>(val variant: T, val assignment: Assignment) : Evaluation<T>
+data class NotEnrolled<T>(val variant: T) : Evaluation<T>              // a real answer: holdout, ineligible, killed or offline
 ```
 
-Same `(experimentId, userId)` always lands on the same bucket. Different experiments use the same user but different keys, so users in B for one experiment aren't biased to B for another.
+Client-side bucketing is only valid if the client holds the same complete, versioned rules as the server, including eligibility and allocation. This design doesn't ship those, so there is no client fallback bucket.
+
+**Stability has to be stored, not derived.** A hash of `(experimentId, userId)` is stable only while the variant list stays the same. `hash % variants.size` reassigns about two-thirds of users when two variants become three. So an experiment's definition is frozen once it starts. A changed definition is a new experiment version, or the server keeps sticky assignments with a stated migration.
 
 ### Holdout
 
-A "holdout" experiment that excludes a deterministic slice (e.g., 5%) from all experiments. Implementation:
+A "holdout" excludes a deterministic slice (e.g., 5%) from all experiments. The server computes it and returns `isHoldout`, so server-side decisions such as ranking respect it too, and the client never has to work it out.
 
-```kotlin
-class Holdout @Inject constructor(private val userId: () -> String) {
-    private val holdoutBucket = lazy {
-        Hashing.sha256().hashString("holdout|${userId()}", Charsets.UTF_8).asLong().mod(100)
-    }
+The server hashes a versioned key (`holdout|v3|$userId`), so the same users aren't held out forever. Each version has a planned end date. For holdout users, evaluation returns `NotEnrolled(default)`. They're never logged as in any experiment and their events are never tagged. The holdout exists so the team has a control group for long-term feature stacking effects.
 
-    fun isInHoldout(): Boolean = holdoutBucket.value < HOLDOUT_PERCENT  // e.g., 5
-}
-```
-
-For users in the holdout, `Experiment.variant` always returns `default`. They're never logged as in any experiment. The holdout exists so the team has a control group for long-term feature stacking effects.
-
-### Exposure logging
+### Evaluation and exposure logging
 
 ```kotlin
 class ExperimentImpl<T : Variant>(...) {
-    val variant: T
-        get() {
-            val raw = flags.value.variantFor(flagKey)
-            val isInHoldout = holdout.isInHoldout()
-            val resolved = if (isInHoldout) default else (raw?.let(::pickVariant) ?: default)
-            exposureSink.log(id, resolved.name, !isInHoldout)
-            return resolved
-        }
+    // Pure read: safe for prefetch, branching and a composition that never commits.
+    // Recomputes when the identity, its stored assignment or the live kill list changes.
+    val evaluation: StateFlow<Evaluation<T>> =
+        combine(identity.evaluationId, assignments.snapshot, flags.killedExperiments) { evaluationId, snapshot, killed ->
+            val a = snapshot?.takeIf { it.evaluationId == evaluationId }?.pinned?.get(flagKey)
+            when {
+                snapshot?.evaluationId != evaluationId -> Loading    // includes just after an account switch
+                killed == null -> Loading                            // kill list not read yet
+                id !in killed && a != null && a.isInExperiment && !a.isHoldout -> Enrolled(pickVariant(a), a)
+                else -> NotEnrolled(default)
+            }
+        }.stateIn(appScope, SharingStarted.Eagerly, Loading)
+
+    // Call where the experience first differs between arms, including for control.
+    fun recordExposure(evaluation: Evaluation<T>) {
+        if (evaluation is Enrolled) exposureSink.log(evaluation.assignment, sessionId())
+    }
+}
+
+@Composable
+fun CheckoutButton(experiment: ExperimentImpl<CheckoutColor>) {
+    val evaluation by experiment.evaluation.collectAsStateWithLifecycle()
+    LaunchedEffect(evaluation) { experiment.recordExposure(evaluation) }   // runs only after commit
+    when (val e = evaluation) {
+        Loading -> PayButtonPlaceholder()    // never show control and then switch
+        is Enrolled -> PayButton(color = e.variant.color)
+        is NotEnrolled -> PayButton(color = e.variant.color)
+    }
 }
 
 class ExposureSink @Inject constructor(
-    private val sessionId: () -> String,
     private val analytics: AnalyticsClient,
     private val cache: SessionExposureCache,
 ) {
-    fun log(experimentId: String, variant: String, isInExperiment: Boolean) {
-        if (!cache.shouldEmit(experimentId, sessionId())) return
+    fun log(a: Assignment, sessionId: String) {
+        if (!cache.shouldEmit(a.evaluationId, a.experimentId, a.variant, sessionId)) return
         analytics.track(AnalyticsEvent(
             name = "experiment_exposure",
             properties = mapOf(
-                "experimentId" to experimentId,
-                "variant" to variant,
-                "isInExperiment" to isInExperiment
+                "experimentId" to a.experimentId,
+                "variant" to a.variant,
+                "configVersion" to a.configVersion,
+                "isInExperiment" to true
             ),
-            category = Category.DIAGNOSTIC
+            category = Category.PRODUCT    // same consent as the outcomes it's joined to
         ))
     }
 }
 ```
 
-> **Why lazy?** If the user never sees the variant (e.g., the experiment is on a screen they never visit), they shouldn't count as exposed. Analysis only includes users who were exposed.
+The screen observes one immutable evaluation, so what it renders and what it logs always match. A login, a late first assignment or a kill switch updates both. `Loading` is separate from `NotEnrolled` because they mean different things: treating a slow local read as "not enrolled" would show an enrolled user control, unlogged, before switching to treatment. The read is a small local file, so the wait is brief; a surface that can't wait reads the snapshot before its first frame. A killed experiment renders the default and logs no more treatment exposures. The stored assignment stays, so analysis can stop at the kill time.
+
+> **Why at the trigger, not on read?** A read may be for prefetch or a branch the user never sees, and a Compose composition can be abandoned. If the user never sees the variant (e.g., the experiment is on a screen they never visit), they shouldn't count as exposed. Control logs at the same point, so both arms are counted by the same rule; if a trigger needs a treatment-only condition, control logs the counterfactual: whether it would have seen the change.
+
+> **Consent and loss.** Exposure uses the same consent category as the outcomes, because if diagnostic consent or overflow trimming removed exposures but kept purchases, loss would correlate with usage and bias results. Whether experiments may run on users without product consent is an explicit decision, and those users are left out of both sides. Treat a lost exposure as data loss to measure, not as correct exclusion.
 
 ### Metric tagging
 
-Every analytics event automatically includes active variants the user has been exposed to:
+Events can carry active variants for debugging:
 
 ```kotlin
 class ExperimentMetricInterceptor @Inject constructor(
@@ -270,34 +295,38 @@ class ExperimentMetricInterceptor @Inject constructor(
 }
 ```
 
-`activeExperiments()` returns `Map<experimentId, variant>` for all experiments the user has been exposed to in the current session.
+`activeExperiments()` returns `Map<experimentId, variant>` for experiments the user has been exposed to in the current session.
 
-> **Note:** only experiments the user has *been exposed to* are tagged — not all defined experiments. This avoids polluting events with variants the user never saw.
+> **Note:** tags are not the analysis join. A user who sees the variant on Monday and buys on Tuesday without revisiting that screen has an untagged purchase. Analysis joins outcomes on the server by user and first exposure time, and keeps events from the first exposure onward. Holdout users are never tagged.
 
 ### Layered experiments
 
-To run many concurrent experiments without interaction effects, group them into "layers". Within a layer, each user gets one experiment (mutually exclusive). Across layers, experiments are independent.
+To run many concurrent experiments, group them into "layers". Within a layer, each user gets at most one experiment (mutually exclusive). Across layers, assignments are independent, but effects can still interact, so overlapping surfaces need review.
+
+The server hashes users into a fixed number of buckets and allocates ranges to experiments, so a new experiment takes free buckets and moves nobody. `hash % experiments.size` can't do this: going from four experiments to five would move about four-fifths of users mid-flight.
 
 ```kotlin
-class Layer(val id: String, val experiments: List<Experiment<*>>) {
-    fun assign(userId: String): Experiment<*> {
-        val bucket = Hashing.sha256().hashString("layer|$id|$userId", Charsets.UTF_8).asLong()
-            .mod(experiments.size.toLong()).toInt()
-        return experiments[bucket]
-    }
-}
+// Server side
+fun layerBucket(layerId: String, userId: String): Int =
+    Hashing.sha256().hashString("layer|$layerId|$userId", Charsets.UTF_8).asLong().mod(1_000L).toInt()
+
+data class LayerAllocation(val experimentId: String, val buckets: IntRange)   // frozen while it runs
 ```
+
+The client doesn't evaluate layers. It reads the result in the assignment.
 
 ### Failure modes
 
 | What breaks | Behavior |
 |---|---|
-| Server didn't include variant | Sticky bucketing fallback |
-| User in holdout | Always control; no exposure |
-| `userId` not yet known (pre-login) | Use `anonId` for bucketing; re-evaluate after login |
-| Two experiments contradict | Layer them; document the interaction |
-| Exposure not fired | User excluded from analysis (correct behaviour) |
-| Variant changes between sessions | Don't allow — sticky bucketing prevents |
+| Server didn't include variant | Control, not enrolled, no exposure |
+| User in holdout | Always control; no exposure; no tags |
+| `userId` not yet known (pre-login) | Assign to `anonId`. At login, the server keeps an already-exposed assignment for that experiment, or the analysis excludes the crossover. Either way, the choice is stated up front |
+| Two experiments contradict | Same layer, so they're mutually exclusive; document the interaction |
+| User saw the variant but the exposure was lost | Biased data, not correct exclusion. Measure delivery loss and watch SRM |
+| Getter read but variant never shown | No exposure, because reads don't log |
+| Variant changes between sessions | Stored snapshot and frozen definitions prevent it |
+| Treatment is harmful | Live kill list overrides the snapshot; the UI switches to the default on the next flag update |
 
 ---
 
@@ -308,8 +337,8 @@ class Layer(val id: String, val experiments: List<Experiment<*>>) {
 | Option | Pros | Cons | Verdict |
 |---|---|---|---|
 | **Server-evaluated** | Central, consistent, can adapt | Network round-trip | Pick this |
-| **Client-evaluated** | Offline-safe | Drift between platforms, harder to update | Fallback only |
-| **Hybrid (server primary, client fallback)** | Best of both | More code paths | Default |
+| Client-evaluated | Offline-safe | Needs the complete, versioned rules on the client; drift between platforms | Only with a shared rules engine |
+| Hybrid (server primary, client fallback) | Works offline for new experiments | Unsafe unless the client has those same rules | Skip here; offline gets control |
 
 ### Bucketing key
 
@@ -324,15 +353,15 @@ class Layer(val id: String, val experiments: List<Experiment<*>>) {
 
 | Option | Pros | Cons | Verdict |
 |---|---|---|---|
-| **Lazy** (log on read) | Accurate "was exposed" set | Risk of missing exposures if accessed via reflection | Pick this |
+| **At the trigger point** | Accurate "was exposed" set for both arms | Caller must place it; lint or a wrapper composable helps | Pick this |
+| On every read | Hard to forget | Prefetch, branching and abandoned compositions count as exposure | Skip |
 | Eager (log on fetch) | Simpler | Counts users who never saw it | Skip |
-| Manual | Caller-driven | Easy to forget | Skip |
 
 ### Concurrent experiments
 
 | Option | Verdict |
 |---|---|
-| **Layered (one experiment per layer)** | Pick — no interaction effects |
+| **Layered (one experiment per user in a layer)** | Pick — mutually exclusive within a layer; interactions across layers still need review |
 | Unlayered (independent buckets) | OK if experiments don't interact |
 | Single-experiment-at-a-time | Slow rollout |
 
@@ -349,11 +378,11 @@ class Layer(val id: String, val experiments: List<Experiment<*>>) {
 ## 9. Major Concerns
 
 - **Don't break stickiness.** Same user → same variant. If you change the assignment algorithm, you re-randomize everyone and old experiments become invalid.
-- **Lazy exposure.** Only log when read. Eager logging inflates exposure counts with users who never saw the variant.
+- **Exposure at the trigger.** Log where the experience first differs, for both arms. Logging on fetch or read inflates exposure counts with users who never saw the variant.
 - **Default = control.** When the network fails or the flag is missing, return control. Never return a treatment by accident.
 - **Privacy.** No PII in `experimentId` or variant names. They show up in logs and dashboards.
 - **Cross-platform parity.** iOS, Android, web should agree for the same user. Server-side evaluation enforces this.
-- **Sample ratio mismatch.** If the client-side filter excludes a different share per arm (e.g., feature only triggers on Android), SRM check on the server flags it. The client must log honestly.
+- **Sample ratio mismatch.** The server runs a chi-square test on **unique users** per arm against the configured split. Microsoft uses p < 0.0005 to limit false alarms. Event counts won't do: if treatment increases sessions, per-session exposures look like an SRM. A real cause is a difference between arms, such as treatment crashing before its exposure sends, or a filter that removes more users from one arm. A platform filter that hits both arms equally doesn't cause one. The client must log honestly.
 - **Holdout management.** Document who's in the holdout. Don't auto-exclude critical paths (like login).
 - **Long-tail experiments.** Decide on a sunset policy. Old experiments stuck in "control vs B" forever pollute every event.
 - **Session correctness.** Use `ProcessLifecycleOwner` for session boundaries (not Activity callbacks).
@@ -363,10 +392,10 @@ class Layer(val id: String, val experiments: List<Experiment<*>>) {
 ## 10. Follow-up Questions
 
 > **Q: How do you handle a user who upgrades the app mid-experiment?**
-> Sticky bucketing is by user id, not version. If the new version adds a new variant, the user's `(experimentId, userId)` hash deterministically places them. Old version users with old buckets aren't reshuffled.
+> Assignment is by user, not app version, so upgrading alone changes nothing. A new variant is a different matter: changing the variant count reshuffles a modulo hash, so it needs a new experiment version, or stored assignments with a defined migration. Old clients that can't render a variant must be excluded by the server.
 
 > **Q: An experiment is wrong and shipping bad behavior — how to kill it?**
-> Two options: (1) update the flag definition to force "control" for everyone (live-apply policy); (2) end the experiment in the dashboard and let server return control. Option 1 propagates faster.
+> Add it to `killedExperiments`. Clients apply it on their next flag update with a live-apply policy, and it overrides pinned assignments, so enrolled users stop seeing the treatment too. Simply changing the flag's value wouldn't reach them, by design. Keep stored assignments for analysis, and stop the analysis at the kill time. An offline client keeps its last-known list until it reconnects.
 
 > **Q: How do you avoid "experiment fatigue" in analytics?**
 > Auto-tagging adds only *active* experiments to events (those the user was exposed to). Experiments cleaned up after launch removed from active set automatically.
@@ -375,10 +404,10 @@ class Layer(val id: String, val experiments: List<Experiment<*>>) {
 > Debug overlay shows: `userId`, all active experiments + variants, holdout status, source (server / fallback / default). Optionally a developer override.
 
 > **Q: How is the assignment algorithm tested?**
-> Property-based tests: same `(experimentId, userId)` → same variant 100% of the time. Different `userId`s → balanced distribution (chi-squared at 5%).
+> Property-based tests: same `(experimentId, userId)` → same variant 100% of the time. Different `userId`s → balanced distribution, using fixed seeds so a 5% chi-square check doesn't fail one run in twenty by chance. Also test that adding a layer allocation moves nobody in a running experiment.
 
 > **Q: How do you measure exposure events themselves are trustworthy?**
-> Server logs flag fetches AND exposure events. If exposure count >> flag fetch count, something is wrong. SRM detection compares variant counts to expected split.
+> Compare unique exposed users per arm to the expected split (SRM), and watch per-arm delivery loss: assignments served against exposures received. Exposure counts far above flag fetches are normal, since a cached assignment serves many sessions.
 
 ---
 
@@ -396,9 +425,10 @@ class Layer(val id: String, val experiments: List<Experiment<*>>) {
 
 - [GrowthBook documentation](https://docs.growthbook.io/) — open-source experimentation implementation reference.
 - [Statsig documentation](https://docs.statsig.com/welcome) — current experimentation and feature-gating entry point.
-- [Microsoft — Trustworthy Online Controlled Experiments](https://exp-platform.com/) — research papers.
-- [Spotify — feature flags layered experiments](https://engineering.atspotify.com/) — blog on layering at scale.
-- [Airbnb — Experimentation platform principles](https://medium.com/airbnb-engineering/) — practitioner perspective.
+- [Microsoft — Diagnosing sample ratio mismatch](https://www.microsoft.com/en-us/research/articles/diagnosing-sample-ratio-mismatch-in-a-b-testing/) — what SRM tests and what causes it.
+- [Microsoft — Post-experiment patterns](https://www.microsoft.com/en-us/research/articles/patterns-of-trustworthy-experimentation-post-experiment-stage/) — triggered analysis and counterfactual logging.
+- [Google — Overlapping Experiment Infrastructure](https://research.google/pubs/overlapping-experiment-infrastructure-more-better-faster-experimentation/) — layers and fixed buckets.
+- [GrowthBook — Sticky bucketing](https://docs.growthbook.io/app/sticky-bucketing) — what moves users, and how to prevent it.
 
 ---
 

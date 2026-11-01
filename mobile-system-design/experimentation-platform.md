@@ -1,6 +1,6 @@
 # Experimentation Platform (Beyond A/B)
 
-> A 45-60 minute mobile system-design walkthrough for an experimentation platform that goes beyond fixed A/B (multi-armed bandits, interleaving, sequential testing) — from the mobile client's perspective. Built on top of `feature-flags-and-remote-config.md` and `a-b-testing-infrastructure.md`.
+> A 45-60 minute mobile system-design walkthrough for an experimentation platform that goes beyond fixed A/B, centered on multi-armed bandits, from the mobile client's perspective. Interleaving and sequential testing are named for context only. Built on top of `feature-flags-and-remote-config.md` and `a-b-testing-infrastructure.md`.
 
 ---
 
@@ -13,7 +13,7 @@
 - **Fixed A/B** support (the previous file).
 - **Multi-armed bandits**: server adapts traffic by performance.
 - **Reward reporting**: client signals success per arm.
-- **Sticky assignment within the user-session** even as bandits shift.
+- **Sticky assignment within a chosen unit** (session or user) even as bandits shift.
 - **Eligibility filters** (only ship a variant to users who qualify).
 
 ### Non-Functional Requirements
@@ -21,7 +21,7 @@
 - **Reward must be attributable** to the exposed arm.
 - **Privacy-aware** — reward signals scrub PII.
 - **Auditable** — every assignment + reward traceable.
-- **Resilient** — falls back to fixed A/B if bandit service is down.
+- **Resilient** — falls back to control, outside the experiment, if bandit service is down.
 
 ### Out of Scope
 - Bandit algorithm internals (Thompson sampling, UCB, ε-greedy) — server's domain
@@ -44,7 +44,7 @@
 | Reward signals (click, conversion, retention)? | Capture latency |
 | Bandit rebalance cadence? | Sticky session enforcement |
 
-> **Candidate:** "Per-experiment Thompson sampling, conversion rewards within 30 min of exposure, server-side assignment, fall back to fixed A/B on bandit failure, cross-platform consistent."
+> **Candidate:** "Per-experiment Thompson sampling, conversion rewards within 24 hours of exposure, server-side assignment, fall back to control on bandit failure, one active assignment per user and pin unit so platforms agree."
 
 ---
 
@@ -64,8 +64,8 @@ Every reward references the assignment that caused it; without that immutable jo
 
 **Components:**
 - **`BanditClient`** — talks to flag service + reward endpoint.
-- **`AssignmentTracker`** — pairs (assignmentId, exposureSession) for reward attribution.
-- **`RewardSink`** — buffers reward events; sends through analytics path.
+- **`AssignmentDao`** — stores each pinned assignment, with its arm, for reward attribution.
+- **`TrialOutbox`** — one durable, ordered queue of exposure and reward events.
 - **Server-side Bandit Service** — black box; runs the algorithm.
 
 ---
@@ -74,30 +74,39 @@ Every reward references the assignment that caused it; without that immutable jo
 
 ### Flag response (bandit-aware)
 
+The request names the current session, so the server can issue an assignment for that pin.
+
 ```json
 {
+  "killedExperiments": [],              // read live; overrides any pinned assignment
   "flags": {
     "onboarding_variant": {
       "type": "variant",
       "value": "C",
       "experimentId": "exp_onboarding_v7",
-      "assignmentId": "asg_8f7a",       // unique to this assignment
-      "policy": "bandit_thompson"
+      "assignmentId": "asg_8f7a",       // unique to one trial for one pin
+      "ownerUserId": "u_1",
+      "pinKey": "u_1",                  // the session ID or user ID this was issued for
+      "policy": "bandit_thompson",
+      "policyVersion": 12,
+      "isHoldout": false
     }
   }
 }
 ```
 
-### Reward report
+### Trial events
 
 ```http
-POST /v1/experiments/reward
+POST /v1/experiments/trial-events
 {
-  "assignmentId": "asg_8f7a",
-  "experimentId": "exp_onboarding_v7",
-  "rewardType": "onboarding_completed",
-  "rewardValue": 1.0,
-  "ts": ...
+  "events": [
+    { "eventId": "4b7d…", "seq": 41, "type": "EXPOSURE",   // IDs created once on the client, resent unchanged
+      "assignmentId": "asg_8f7a", "experimentId": "exp_onboarding_v7", "ts": ... },
+    { "eventId": "9c1e…", "seq": 42, "type": "REWARD",
+      "assignmentId": "asg_8f7a", "experimentId": "exp_onboarding_v7",
+      "rewardType": "onboarding_completed", "rewardValue": 1.0, "ts": ... }
+  ]
 }
 ```
 
@@ -123,7 +132,7 @@ POST /v1/experiments/reward
 :lib:experiments               ← (from a-b-testing-infrastructure)
 :lib:bandits
     bandits-api                ← reward typed accessors
-    bandits-core               ← AssignmentTracker, RewardSink
+    bandits-core               ← AssignmentDao, TrialOutbox
 ```
 
 ### Layered diagram
@@ -131,35 +140,32 @@ POST /v1/experiments/reward
 ```mermaid
 flowchart LR
     Flags["FlagSet + assignmentId"] --> API["Typed experiment API"]
-    API --> Tracker["AssignmentTracker"]
+    API --> Tracker["Pinned assignment store"]
     API --> Feature["Feature behavior"] --> Reward["recordReward"]
     Tracker --> Reward
-    Reward --> Sink["Durable RewardSink"] --> Endpoint["Reward API"]
+    Feature --> Sink["Durable trial outbox"]
+    Reward --> Sink --> Endpoint["Trial events API"]
 ```
 
-The client persists enough assignment context to attribute a later reward, while the durable sink prevents transient connectivity from silently biasing observed outcomes.
+The client persists enough assignment context to attribute a later reward, while the durable outbox keeps exposure before reward and prevents transient connectivity from silently biasing observed outcomes.
 
 ### Key class signatures
 
 ```kotlin
-class BanditExperiment<T : Variant>(
+abstract class BanditExperiment<T : Variant>(
     id: String,
     flagKey: String,
     default: T,
     variants: List<T>,
-) : Experiment<T>(...) {
-    fun recordReward(type: String, value: Double = 1.0)
+    val unit: PinUnit,                      // SESSION or USER
+) : Experiment<T>(id, flagKey, default, variants) {
+    abstract suspend fun assignment(): BanditAssignment<T>
+    abstract suspend fun recordReward(handle: AssignmentHandle, type: String, value: Double = 1.0)
 }
 
-class AssignmentTracker {
-    fun record(experimentId: String, assignmentId: String, sessionId: String)
-    fun assignmentFor(experimentId: String): AssignmentSnapshot?
-}
+data class BanditAssignment<T>(val variant: T, val handle: AssignmentHandle?)   // null: not in the experiment
 
-data class AssignmentSnapshot(
-    val experimentId: String, val assignmentId: String,
-    val sessionId: String, val ts: Long
-)
+@JvmInline value class AssignmentHandle(val assignmentId: String)
 ```
 
 ---
@@ -167,22 +173,33 @@ data class AssignmentSnapshot(
 ## 6. Local Storage
 
 ```kotlin
-@Entity(tableName = "bandit_assignments")
+@Entity(
+    tableName = "bandit_assignments",
+    primaryKeys = ["ownerUserId", "experimentId", "pinKey"],
+    indices = [Index(value = ["assignmentId"], unique = true)],   // one trial, one pin
+)
 data class AssignmentEntity(
-    @PrimaryKey val key: String,           // "$experimentId|$sessionId"
-    val experimentId: String, val assignmentId: String,
-    val sessionId: String, val ts: Long
+    val ownerUserId: String, val experimentId: String,
+    val pinKey: String,                    // session ID or user ID, by the experiment's PinUnit
+    val assignmentId: String?,             // null: pinned as not in the experiment
+    val variant: String,                   // the arm itself, so it survives flag changes
+    val policyVersion: Int?,
+    val assignedAt: Long,
+    val firstExposedAt: Long?              // null until shown; starts the reward window
 )
 
-@Entity(tableName = "bandit_rewards")
-data class RewardEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+@Entity(tableName = "bandit_trial_events", indices = [Index(value = ["eventId"], unique = true)])
+data class TrialEventEntity(
+    @PrimaryKey(autoGenerate = true) val seq: Long = 0,   // upload order
+    val eventId: String,                                  // saved once, resent unchanged
+    val ownerUserId: String,
+    val type: TrialEventType,                             // EXPOSURE or REWARD
     val assignmentId: String, val experimentId: String,
-    val rewardType: String, val rewardValue: Double, val ts: Long
+    val rewardType: String?, val rewardValue: Double?, val ts: Long
 )
 ```
 
-Assignments are kept for reward window (e.g., 24h). Rewards are buffered like analytics events and flushed via the same worker.
+A session pin is kept until its reward window closes (24h after first exposure, or sooner if never shown). A user pin is kept as long as the experiment runs, because deleting it would let a lasting assignment such as onboarding change. Trial events are flushed by their own worker. Sign-out tries a final flush for that user, then purges their rows.
 
 ---
 
@@ -192,52 +209,67 @@ Assignments are kept for reward window (e.g., 24h). Rewards are buffered like an
 
 ### Assignment
 
-Server returns the variant + `assignmentId` per fetch. The `assignmentId` is unique per assignment instance (not stable across sessions like A/B). This is important: a bandit may give a user variant `A` today and variant `B` next month as the algorithm explores.
+Server returns the variant + `assignmentId` per fetch. The `assignmentId` is unique per assignment instance. A bandit can change a user's arm between pins as the algorithm explores, or keep each user on one arm and shift traffic only for new users.
 
-> **Trade-off:** within a session, we still want stickiness (the user shouldn't see the home screen in variant `A` and the checkout screen in variant `B`). The client enforces stickiness at session boundary.
+> **Trade-off:** choose the pin unit per surface. A surface where each session stands alone, such as a promo card, can pin per session. Onboarding or anything with a lasting effect pins per user, because switching a returning user's arm carries over: an outcome credited to one arm may have been caused by the earlier one. Pinning per user doesn't stop the bandit adapting, since it still shifts allocation for new users. Either way, the bandit assumes arm quality is fairly stable; a surface with strong carry-over or a long delay is a better fit for fixed A/B.
 
-### Sticky-within-session policy
+### Pinned assignment policy
 
 ```kotlin
 class BanditExperimentImpl<T : Variant>(...) : BanditExperiment<T>(...) {
+    private val mutex = Mutex()        // first-assignment check and write are one step
 
-    private val sessionAssignments = ConcurrentHashMap<String, AssignmentSnapshot>()
+    // Pinned per session or per user. Holdout, eligibility and fallback are decided before anything is exposed.
+    suspend fun assignment(): BanditAssignment<T> = mutex.withLock {
+        val owner = session.userId()
+        // A kill overrides a pin but doesn't erase it; the stored row stays for analysis.
+        if (id in flags.value.killedExperiments) return@withLock BanditAssignment(default, handle = null)
 
-    override val variant: T
-        get() {
-            val sessionId = currentSessionId()
-            // Use the assignment recorded at session start
-            val existing = sessionAssignments[sessionId]
-            if (existing != null) return resolveVariant(existing.assignmentId)
-            // First read this session: snapshot current server assignment
-            val raw = flags.value.variantFor(flagKey)
-            val snap = AssignmentSnapshot(
-                experimentId = id,
-                assignmentId = raw?.assignmentId ?: "fallback",
-                sessionId = sessionId,
-                ts = clock.now()
-            )
-            sessionAssignments[sessionId] = snap
-            assignmentTracker.record(id, snap.assignmentId, sessionId)
-            exposureSink.log(id, raw?.value?.toString() ?: default.name, isInExperiment = raw != null)
-            return raw?.let { pickVariant(it) } ?: default
+        val pinKey = if (unit == PinUnit.USER) owner else currentSessionId()
+        dao.pinned(owner, id, pinKey)?.let { return@withLock it.toAssignment() }
+
+        // A cached assignment belongs to the pin it was issued for. Reusing it would merge two trials.
+        val raw = flags.value.variantFor(flagKey)?.takeIf { it.ownerUserId == owner && it.pinKey == pinKey }
+        val candidate = raw?.takeIf { it.policy != FALLBACK_CONTROL && !it.isHoldout }?.let(::pickVariant)
+        val row = if (raw != null && candidate != null && eligibility.check(candidate)) {
+            AssignmentEntity(owner, id, pinKey, raw.assignmentId, candidate.name, raw.policyVersion, clock.now())
+        } else {
+            AssignmentEntity(owner, id, pinKey, assignmentId = null, default.name, policyVersion = null, clock.now())
         }
+        // A not-enrolled user pin isn't stored, so a later assignment for this user can still apply.
+        if (row.assignmentId != null || unit == PinUnit.SESSION) dao.insert(row)
+        row.toAssignment()
+    }
+
+    // Call where the arms first differ. A row with no assignmentId is never exposed or rewarded.
+    suspend fun recordExposure(a: BanditAssignment<T>) {
+        if (a.handle == null) return
+        val snap = dao.byAssignmentId(a.handle.assignmentId) ?: return
+        trialOutbox.recordFirstExposure(snap, clock.now())   // starts the reward window and opens the trial
+        exposureSink.log(id, a.variant.name, a.handle.assignmentId)   // analysis; separate and best-effort
+    }
 }
 ```
 
-> The first read locks the assignment for the session. Subsequent reads within the session return the same variant, even if the server rebalances mid-session.
+> The first read locks the assignment for the pin unit, durably, so a process restart reads the same arm. Later reads return the same variant, even if the server rebalances mid-session. The stored variant means no flag change can alter it. A row with no `assignmentId` records "not in this experiment", so a late flag refresh can't flip the user mid-session either. That includes a read before this session's flags arrive, so the session-start fetch should finish first where it can, and the rate of such misses is worth watching. The UI also observes `flags.killedExperiments` and asks again when it changes, so a kill reaches a screen that's already showing a treatment.
 
 ### Reward reporting
 
 ```kotlin
-override fun recordReward(type: String, value: Double) {
-    val sessionId = currentSessionId()
-    val snap = sessionAssignments[sessionId]
-        ?: assignmentTracker.assignmentFor(id)                // late attribution (within window)
-        ?: return                                              // user wasn't in this experiment
-
-    rewardSink.enqueue(RewardEntity(
-        assignmentId = snap.assignmentId,
+// The flow that started under an assignment keeps its handle, and stores it in its own durable record.
+suspend fun recordReward(handle: AssignmentHandle, type: String, value: Double = 1.0) {
+    val snap = dao.byAssignmentId(handle.assignmentId) ?: return
+    if (snap.ownerUserId != session.userId()) return              // never credit another account
+    val exposedAt = snap.firstExposedAt ?: return                 // never shown, so no trial to credit
+    if (clock.now() - exposedAt > REWARD_WINDOW_MS) {
+        diagnostics.lateConversion(id, type)                      // late_conversion, no reward
+        return
+    }
+    trialOutbox.enqueue(TrialEventEntity(
+        eventId = UUID.randomUUID().toString(),                   // saved once, resent unchanged
+        ownerUserId = snap.ownerUserId,
+        type = TrialEventType.REWARD,
+        assignmentId = snap.assignmentId!!,
         experimentId = id,
         rewardType = type, rewardValue = value,
         ts = clock.now()
@@ -247,72 +279,101 @@ override fun recordReward(type: String, value: Double) {
 
 ### Reward attribution window
 
-A user is exposed to variant `C` at 10:00. They convert at 10:32. The reward should attribute to the 10:00 assignment, not whatever variant they'd be in at 10:32.
+A user is exposed to variant `C` at 10:00. They start checkout, then a new session assigns `B`, and they convert at 10:32. The reward should attribute to the 10:00 assignment, not whatever variant they'd be in at 10:32.
+
+A lookup by experiment can't recover that, because "the latest assignment" is `B` by then. So the caller passes the handle captured when the flow began, which can outlive the session. `REWARD_WINDOW_MS` = 24h here, counted from first exposure, the same event that opens the server's trial. An assignment saved at 09:00 and first shown at 10:00 can still earn a reward at 09:30 the next day. Older than that and we conservatively drop the reward signal. The client's check only saves an upload; the server decides from its own trial record, because device clocks can be wrong.
+
+### What counts as a trial
+
+The client reports only successes, so the server has to know about failures. Exposed users who never convert are the failures for Thompson sampling. If they don't count, every arm looks perfect and the arm with more traffic collects more credit: 5% of 1,000 users gives 50 successes, while 10% of 100 gives 10, so the worse arm wins.
+
+So the contract is:
+- A valid `EXPOSURE` event opens a trial on the server. An assignment that was fetched but never exposed isn't a trial.
+- A reward closes that trial as a success.
+- When the window ends without a reward, the server closes it as reward 0.
+- A binary reward counts once per `(assignmentId, rewardType)`. A repeatable reward counts once per `eventId`.
+
+The outbox below is what makes this contract hold.
+
+### Trial outbox (durable, ordered, batched)
+
+Exposures and rewards share one ordered queue, because their order decides the result. If they travelled separately, a reward could arrive first, be rejected as an unknown trial and be deleted, and the late exposure would then open a trial that closes as a false zero.
 
 ```kotlin
-class AssignmentTracker @Inject constructor(private val dao: AssignmentDao) {
-    fun assignmentFor(experimentId: String): AssignmentSnapshot? = runBlocking {
-        val recent = dao.recentFor(experimentId, since = clock.now() - REWARD_WINDOW_MS)
-        recent?.toSnapshot()
-    }
-}
-```
-
-`REWARD_WINDOW_MS` = 24h typically. Older than that and we conservatively drop the reward signal.
-
-### Reward sink (durable, batched)
-
-```kotlin
-class RewardSink @Inject constructor(
-    private val rewardDao: RewardDao,
+class TrialOutbox @Inject constructor(
+    private val db: AppDatabase,
+    private val eventDao: TrialEventDao,
     private val workManager: WorkManager,
 ) {
-    suspend fun enqueue(reward: RewardEntity) {
-        rewardDao.insert(reward)
-        workManager.enqueueUniqueWork("reward-flush", KEEP, rewardFlushWork())
+    // Atomic: a crash leaves both the marker and its event, or neither.
+    suspend fun recordFirstExposure(snap: AssignmentEntity, now: Long) {
+        db.withTransaction {
+            if (dao.markExposedIfUnset(snap.assignmentId!!, now)) {
+                eventDao.insert(TrialEventEntity.exposure(snap, eventId = UUID.randomUUID().toString(), now))
+            }
+        }
+        enqueueFlush(snap.ownerUserId)
     }
+
+    suspend fun enqueue(reward: TrialEventEntity) {
+        eventDao.insert(reward)
+        enqueueFlush(reward.ownerUserId)
+    }
+
+    // APPEND_OR_REPLACE: KEEP would ignore this while a worker is finishing its last read.
+    private fun enqueueFlush(owner: String) =
+        workManager.enqueueUniqueWork("trial-flush-$owner", APPEND_OR_REPLACE, trialFlushWork(owner))
 }
 
 @HiltWorker
-class RewardFlushWorker @AssistedInject constructor(...) : CoroutineWorker(ctx, params) {
+class TrialFlushWorker @AssistedInject constructor(...) : CoroutineWorker(ctx, params) {
     override suspend fun doWork(): Result {
-        val batch = rewardDao.take(100)
-        return runCatching { api.reportRewards(batch.toWire()) }
-            .fold(
-                onSuccess = { rewardDao.delete(batch.map { it.id }); Result.success() },
-                onFailure = { Result.retry() }
-            )
+        val owner = inputData.getString(KEY_OWNER_USER_ID) ?: return Result.failure()   // fixed at enqueue
+        repeat(MAX_BATCHES) {
+            val batch = eventDao.takeOldest(owner, limit = 100)     // ordered by seq
+            if (batch.isEmpty()) return Result.success()
+            val response = try {
+                api.reportTrialEvents(owner, batch.toWire())        // CancellationException propagates
+            } catch (e: IOException) {
+                return Result.retry()
+            }
+            // Accepted, duplicate or permanently rejected. An event the server can't place yet stays queued.
+            eventDao.delete(response.settledEventIds)
+            if (response.settledEventIds.isEmpty()) return Result.retry()
+        }
+        workManager.enqueueUniqueWork("trial-flush-$owner", APPEND_OR_REPLACE, trialFlushWork(owner))   // more may remain
+        return Result.success()
     }
 }
 ```
+
+App start also enqueues a flush for the signed-in owner if rows exist, covering a process death before enqueue, or a chained job that failed. The analytics `experiment_exposure` event still goes out for analysis, but only this outbox event opens a trial.
+
+The server handles a batch in `seq` order and dedupes by `eventId`. It closes a trial at the end of the window **plus a delivery grace period**, so an offline user's exposure and reward can still arrive together before a zero is recorded. After a kill, it refuses new exposures but still accepts a reward for an exposure made before the kill, because rejecting those delayed conversions would bias the result.
+
+**Owner binding.** Reading the current session when the worker starts wouldn't protect uploads, since a batch can be loaded for A and sent after B signs in. So the worker takes its owner as immutable input, and `reportTrialEvents` gets credentials for that owner, with the network layer refusing any other token. Sign-out cancels that owner's unique work as cleanup. The server also checks that each assignment belongs to the authenticated principal.
 
 ### Eligibility filtering
 
 Some variants are only valid for some users (e.g., a premium-only feature variant). The flag service applies the filter server-side and either omits the variant or returns control.
 
-Client-side post-filter (rare, for late-known eligibility):
-
-```kotlin
-val variant: T
-    get() {
-        val candidate = super.variant
-        return if (!eligibility.check(candidate)) {
-            sessionAssignments.remove(currentSessionId())
-            default
-        } else candidate
-    }
-```
+Late-known eligibility is checked on the client inside `assignment()`, **before** the row is committed or an exposure logged. Filtering afterwards would leave a logged exposure and a stored assignment for an arm the user never saw, and could bias the arms. The client logs what was actually delivered, and an ineligible user holds no handle, so no reward can be credited.
 
 ### Failure modes
 
 | What breaks | Behavior |
 |---|---|
 | Bandit service down | Server returns control with `policy: fallback_control` |
-| Reward sent for unknown `assignmentId` | Server-side dedup/drop |
-| User exposed, never converts | No reward — bandit interprets as no signal (or as a 0 reward depending on contract) |
+| Reward sent for unknown `assignmentId` | Can't happen by ordering alone, since exposure goes first. If it does, the server keeps it unsettled and retried; rejects it only for a bad owner or after the window plus grace; and counts it |
+| Crash during first exposure | Marker and exposure event commit together, so a reward can't exist without its trial's event |
+| User exposed, never converts | Server closes the trial as reward 0 when the window ends |
 | Late conversion (> window) | Drop client-side; report a `late_conversion` diagnostic |
-| User in holdout | Skip bandit entirely; default arm; no reward attribution |
-| Session boundary mid-flow | Don't re-assign mid-flow; sticky-within-session preserves |
+| User in holdout | Server says so; skip bandit entirely; default arm; no handle, so no reward attribution |
+| Session boundary mid-flow | The flow keeps its handle, so the reward credits the arm that started it |
+| Treatment is harmful | Live kill list overrides the pin; default arm, no new exposures; the row stays for analysis |
+| Cached assignment from an earlier pin | Not reused; this pin stays not enrolled until the server issues one |
+| More than one batch queued | Worker drains in a bounded loop, then chains one follow-up |
+| Event enqueued as the worker finishes | `APPEND_OR_REPLACE` runs another pass; app start covers a process death or a failed chain |
 
 ---
 
@@ -330,16 +391,16 @@ val variant: T
 
 | Option | Pros | Cons | Verdict |
 |---|---|---|---|
-| **Session-locked assignment** | Coherent UX | Slower convergence | Pick this |
+| **Session-locked assignment** | Coherent UX; more trials per user | Carry-over between sessions; a user's arm can change | Pick for surfaces where each session stands alone |
+| **User-locked assignment** | Consistent experience; no carry-over | Fewer trials; adapts only through new users | Pick for onboarding and lasting effects |
 | Per-screen assignment | Faster convergence | Confusing UX, often invalid | Skip |
-| Sticky across sessions | Closer to A/B; loses adaptivity | Defeats bandits | Use only for slow-changing arms |
 
 ### Reward latency
 
 | Option | Verdict |
 |---|---|
 | **Immediate reward** (within session) | Easiest; preferred when possible |
-| **Delayed reward** (within 24h) | Pick — keep `AssignmentTracker` for window |
+| **Delayed reward** (within 24h) | Pick — keep pinned assignments for the window |
 | Multi-day rewards | Server-side join; not client's problem |
 
 ### Reward signal
@@ -363,37 +424,37 @@ val variant: T
 
 ## 9. Major Concerns
 
-- **Session stickiness.** A user must not see arm A on screen 1 and arm B on screen 2. Lock on first read.
-- **Reward leakage.** A reward fired after user switched arms (e.g., due to logout/login) must not attribute incorrectly. Use `assignmentId` as the key.
+- **Stickiness.** A user must not see arm A on screen 1 and arm B on screen 2. Lock on first read, atomically and durably.
+- **Reward leakage.** A reward fired after user switched arms (e.g., due to logout/login) must not attribute incorrectly. The flow passes its handle, and the owner is checked.
 - **Privacy.** Reward types shouldn't reveal PII. Use category labels (e.g., `purchase_completed`, not `purchased_xyz_product`).
-- **Late conversions.** Set a window (24h-7d) past which rewards are dropped. Otherwise opportunistic conversions reward whichever arm is current.
+- **Late conversions.** Set one window for each experiment, past which rewards are dropped, and use it on both client and server. Otherwise opportunistic conversions reward whichever arm is current.
 - **Bandit convergence.** Need a minimum sample per arm before traffic shifts heavily. Server enforces; client just consumes.
-- **Cross-platform consistency.** Same user on iOS and Android should not be in different arms of the same bandit. Server keys by user id, not device.
-- **Holdout interaction.** Bandits live within the layered experimentation system. Holdout users always get control.
-- **Debugging.** Without sticky-within-session, debugging is nearly impossible. Engineers can't reproduce.
-- **Algorithm leakage.** Don't expose `policy: thompson` to users in dashboards; could be confusing.
+- **Cross-platform consistency.** Same user on iOS and Android should not be in different arms of the same bandit at the same time. Server keys by user id, not device, and returns the active assignment for that pin rather than a new draw per fetch.
+- **Holdout interaction.** Bandits live within the layered experimentation system. Holdout users always get control, and the server's `isHoldout` is checked before anything else.
+- **Debugging.** Without pinned assignment, debugging is nearly impossible. Engineers can't reproduce.
+- **Policy names.** The client needs `policy` only to spot the fallback. Keep it out of user-facing UI.
 
 ---
 
 ## 10. Follow-up Questions
 
 > **Q: User opens the app, app fetches flags (variant C), user converts in 5 minutes — what happens?**
-> AssignmentTracker had recorded `(experimentId, assignmentId=asg_8f7a, sessionId=s_111)`. The reward event sends `assignmentId=asg_8f7a`. Server credits C's posterior with +1 reward. The next user might be more likely to see C if Thompson sampling boosts it.
+> Room holds `(experimentId, assignmentId=asg_8f7a, variant=C)`, and the exposure opened a trial on the server. The reward event sends `assignmentId=asg_8f7a`. Server records a success on that trial, and C's posterior improves. The next user might be more likely to see C if Thompson sampling boosts it.
 
 > **Q: User opens the app while offline — what variant do they get?**
-> The cached flag snapshot from last fetch. If that included a variant for this experiment, they see it (sticky). If not, control. No bandit signal is sent until reconnect.
+> A user pin already in Room keeps its arm. A new session pin can't reuse the cached assignment, because that assignment is a trial for an earlier pin, so the session gets control, not enrolled. Rewards and exposures already queued wait for reconnect.
 
 > **Q: Why not let the client run the bandit algorithm?**
 > Cross-platform consistency (the same user across iOS and Android), centralized algorithm changes, and server-side has the global posterior view that no single client can have.
 
-> **Q: How is a 7-day rolling reward window handled?**
-> AssignmentTracker keeps assignments in Room for 7 days. Reward events look up by `experimentId`. After 7 days, attempts return null and the reward is dropped (with a diagnostic logged).
+> **Q: What if a reward needs a 7-day window?**
+> The experiment's window becomes 7 days on both sides, counted from first exposure, Room keeps session pins that long, and flows still pass their handle. The bandit then learns slowly, because a trial stays open for a week. Past that, a server-side join is a better design than holding assignments on the client.
 
 > **Q: A reward fires twice (network retry) — how is dedup handled?**
-> Each reward has an autogenerated id. Worker drops by id on successful upload. Server also dedups on `(assignmentId, rewardType, ts)` within seconds-level grain.
+> Each event has a UUID `eventId`, created before upload and resent unchanged. The server dedups on `eventId`. Binary rewards also count once per `(assignmentId, rewardType)`, so two separate taps can't double-credit. A timestamp makes a poor key, because it can merge separate rewards.
 
 > **Q: How is this tested?**
-> Fake `FlagsRepository` that returns scripted assignments. Fake `RewardSink`. Property test: same `(experimentId, sessionId)` always returns same variant; first read sets it; second read reads from cache.
+> Fake `FlagsRepository` that returns scripted assignments. Fake server for `TrialOutbox`. Property tests: same pin always returns same variant, including after a simulated restart and under concurrent first reads. A delayed reward credits the original arm after a new session. A reward just inside the window counts from first exposure, not assignment. A cached assignment isn't reused for a new pin. A kill overrides a pin. An ineligible user produces no exposure. 101 queued events all upload, in order. A crash during first exposure leaves both the marker and its event, or neither. A reward can't reach the server before its exposure.
 
 ---
 
@@ -409,11 +470,10 @@ val variant: T
 
 ## 12. Further Reading
 
-- [Microsoft — Multi-Armed Bandits at scale](https://exp-platform.com/) — research and patterns.
-- [Spotify — Recommending music via bandits](https://engineering.atspotify.com/) — practitioner blog.
-- [Statsig — bandit experimentation guide](https://docs.statsig.com/) — vendor docs.
-- [Vowpal Wabbit — Contextual bandits](https://vowpalwabbit.org/) — open-source algorithm reference.
-- [Cassidy Williams — Sequential testing primer](https://posthog.com/blog) — accessible intro.
+- [A Tutorial on Thompson Sampling](https://arxiv.org/abs/1707.02038) — Russo et al.; the algorithm and Bernoulli bandits.
+- [Microsoft — Diagnosing sample ratio mismatch](https://www.microsoft.com/en-us/research/articles/diagnosing-sample-ratio-mismatch-in-a-b-testing/) — why uneven logging breaks analysis.
+- [Statsig documentation](https://docs.statsig.com/) — vendor docs.
+- [Vowpal Wabbit](https://vowpalwabbit.org/) — open-source contextual bandit project.
 
 ---
 

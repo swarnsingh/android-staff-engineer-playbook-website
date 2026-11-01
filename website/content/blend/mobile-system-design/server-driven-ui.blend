@@ -1,0 +1,10 @@
+<!-- Source: original playbook 400a7d7dd85c962b6b2d6d856712ca316a11edc8; recap follows the reviewed chapter. -->
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- Remote payloads describe composition and content; native binaries own executable behavior.
+- Negotiate component versions and validate props, unique IDs and fallback limits before composing.
+- Cache raw payloads by owner, screen and server cache key; a segment is not an account boundary.
+- Route only allowlisted actions and URIs, and make malformed sections fall back without poisoning the screen.
+- Track each render separately and retain earlier-launch crash evidence until success, replacement or eviction; first-frame quarantine does not cover later lazy-section crashes.

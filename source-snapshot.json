@@ -178,7 +178,7 @@
   },
   "mobile-system-design_sha256": {
     "mobile-system-design.md": "7e2af23b675e74d7db5f3df5709536f48d32da83e460f7c401afff3ef4fe0254",
-    "mobile-system-design/a-b-testing-infrastructure.md": "39205619110cebd15cc97db04ee8582445413952dc90e07bc592f988f556bc23",
+    "mobile-system-design/a-b-testing-infrastructure.md": "0ec7bf4e19582b68fca60a72c09276d7ca80afdf097a0a411cea6958c230c7cd",
     "mobile-system-design/accessibility.md": "2906b363798ab28e4e6a609726b7d64a1c8848a2161e639074c513d3e08517c0",
     "mobile-system-design/analytics-sdk.md": "454f4ff8f6f4da4c90334d8f15de6e9705959d84efde854fdab349397972faf0",
     "mobile-system-design/app-startup.md": "f3d39fc54acb76bf317db6eb31583a4612a61811b9e0695a57eb73256f23bdac",
@@ -188,7 +188,7 @@
     "mobile-system-design/collaborative-editing.md": "7ec3271e0effd5e267af5d7b8803645a570d29bf7c53f262d03b3b37fba0e878",
     "mobile-system-design/deep-links-and-universal-links.md": "0567e1dcf6e2668f44c638691110154bfc4895cda91336b020a683c22ac3660e",
     "mobile-system-design/design-framework.md": "7fa9f453c0eac8a14ccecc97c041f7f01f18b3e97bb56abc27878f776bb7eda3",
-    "mobile-system-design/experimentation-platform.md": "da370ed92065a5a60f2db1794bd5c1d3f7bd4b53a18e30638dde6dc4a5573e76",
+    "mobile-system-design/experimentation-platform.md": "7233eaf29635e8deef763d44ae6de8435c6a807f263cc9bafca468efd41c5761",
     "mobile-system-design/feature-flags-and-remote-config.md": "24e3dc547ff4380d3372de7c4f8edd2f853b28da8ba4dd40a0c443f89dc41b32",
     "mobile-system-design/file-downloader.md": "dc60f20f60c58d6d41e15a3df897a14b8c56832d5be4cec3c245985b96b52aac",
     "mobile-system-design/google-maps-location-system.md": "15cd8aa2720fa1f9c451247f6988711a640791dc1b958e89b199cbc94341891f",
@@ -198,7 +198,7 @@
     "mobile-system-design/non-functional-requirements.md": "749b106e55f1c43d863cf9406276f3609dc9d7be70acae182cf5486aefb711e0",
     "mobile-system-design/notification-system.md": "2d32175c34869dfbfe930682dd8c12b553651e1ba2d52cb486998d52653a0105",
     "mobile-system-design/offline-sync.md": "6f056dcb1b5616924b844945140c9a08936a8972209a9092afb283527cbbf7b5",
-    "mobile-system-design/on-device-ai.md": "be79f41a6f2d2c11e02f08b7b3ca74e0139a7822ddefeb07271ee1c053c8c71a",
+    "mobile-system-design/on-device-ai.md": "cbdca31eacd936034d15b1aa2513adc826f0bb55042fe2c50e4d5c8181eb5dd8",
     "mobile-system-design/pagination.md": "027bdc8200c76df762b35ef937ed285d92e51217d8fc8c92bfe55305f5212459",
     "mobile-system-design/payment-flow.md": "e75e38d1c3500e56f81966dd1c649c3cd4d6a2f63011bc90940ebaf9b0e26fc9",
     "mobile-system-design/performance.md": "588f5a4cbd6429f63125e19bb57951d76b07b767b3c65a5026961798b0583987",
@@ -207,12 +207,13 @@
     "mobile-system-design/ride-hailing.md": "27857ce7b97bc562a010c8d1be18899837c6f5dbaab69f778e992f92ffca47c5",
     "mobile-system-design/search.md": "6c3db0436f12fb5c435bc5e5e38293a3f48c54dd19969bac4b631a2836b4a431",
     "mobile-system-design/security-and-privacy.md": "ccd459aa9b1ef21343c2867ba574610a1b543d3f9b84e411737d962b5cc1238d",
-    "mobile-system-design/server-driven-ui.md": "078e9fbb5d3e65736f6823de9dfeccd1f947dba48e478133e321738842b79aee",
+    "mobile-system-design/server-driven-ui.md": "0d3d02ac34ddf139858c69fd2a73b9b3e9962080366e8506c5355d6207f6a12a",
     "mobile-system-design/stock-trading-app.md": "9a8096851afc0b4bf885af47f921b797cd523f31f52b0e1e340590508e6a54a5",
     "mobile-system-design/telemetry-sdk.md": "32f08ba07891e7666c89c35b6bb0361271130b672788329673ac015d6df81e28",
     "mobile-system-design/typeahead-autocomplete-search.md": "fe4943d2d1bb0a5a0f9c0ec65e73ca8206343ce8cfc31f242838c21b4af181df",
     "mobile-system-design/versioning-and-backward-compatibility.md": "bf66b5b8a8c756995828ec01aaa5ed6fe699407859f7ece65bc95bc5d79935b2",
     "mobile-system-design/youtube-video-streaming.md": "b8abec68f1d325a2d18eb066f1b869c954a390633a7b6943dff105d9bc4f8df0"
   },
-  "mobile-system-design_phase5_reference_commit": "400a7d7dd85c962b6b2d6d856712ca316a11edc8"
+  "mobile-system-design_phase5_reference_commit": "400a7d7dd85c962b6b2d6d856712ca316a11edc8",
+  "mobile-system-design_phase6_reference_commit": "400a7d7dd85c962b6b2d6d856712ca316a11edc8"
 }
