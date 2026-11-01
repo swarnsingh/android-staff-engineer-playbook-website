@@ -47,11 +47,18 @@ def check(source_root=None):
  sync=json.loads((ROOT/'website/content/corrections-zz-observability-source-sync.json').read_text())
  expected_paths={'android/networking-and-security/retrofit-and-okhttp.md','android/performance/anrs.md','android/performance/memory-management-and-leaks.md'}
  assert len(sync)==3 and {r['path'] for r in sync}==expected_paths, 'Merged PR #72 sync scope changed'
- assert len(core)==746 and len({r['id'] for r in core})==746, 'Unexpected or duplicate Kotlin/Android corrections'
- assert {r['id'] for r in core}==canonical_ids|{r['id'] for r in sync}
+ auth_sync=json.loads((ROOT/'website/content/corrections-zz-auth-source-sync.json').read_text())
+ assert len(auth_sync)==1 and {r['path'] for r in auth_sync}=={'android/networking-and-security/ktor-vs-retrofit.md'}, 'Merged PR #74 sync scope changed'
+ assert len(core)==747 and len({r['id'] for r in core})==747, 'Unexpected or duplicate Kotlin/Android corrections'
+ assert {r['id'] for r in core}==canonical_ids|{r['id'] for r in sync}|{r['id'] for r in auth_sync}
  for fix in sync:
   assert fix['status']=='approved' and fix['source_pr']==72 and fix.get('approval') and fix.get('sources')
   assert fix['source_commit']=='7666569cf77db7616d43f05cf041c438cb947035'
+  assert digest(fix['new'])==fix['source_sha256']
+  assert digest(build.corrected((ROOT/fix['path']).read_text(),fix['path'])[0])==fix['source_sha256'], ('Merged-source replay mismatch',fix['path'])
+ for fix in auth_sync:
+  assert fix['status']=='approved' and fix['source_pr']==74 and fix.get('approval') and fix.get('sources')
+  assert fix['source_commit']=='8e152a8ead842de3c7f20ac6f88118d5b3e70fc6'
   assert digest(fix['new'])==fix['source_sha256']
   assert digest(build.corrected((ROOT/fix['path']).read_text(),fix['path'])[0])==fix['source_sha256'], ('Merged-source replay mismatch',fix['path'])
  fundamentals=[r for r in build.APPROVED_CORRECTIONS if r['path'].startswith('engineering-fundamentals/')]

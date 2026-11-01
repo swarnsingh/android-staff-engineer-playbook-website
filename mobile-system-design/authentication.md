@@ -77,8 +77,8 @@ Passkeys stay inside this browser-hosted IdP boundary. The IdP sends the WebAuth
 - **`AuthBrowserClient`** — Chrome Custom Tabs for the IdP redirect.
 - **`TokenVault`** — encrypted at rest (Keystore-wrapped).
 - **`TokenRefresher`** — single-flight refresh coroutine.
-- **`AuthInterceptor`** — adds `Authorization: Bearer …` and handles 401s.
-- **`SignOutOrchestrator`** — server revoke + local clear + nav reset.
+- **`SessionAuthInterceptor`** — adds `Authorization: Bearer …` and handles 401s.
+- **`SignOutOrchestrator`** — local invalidation + session cleanup/navigation + bounded server revocation.
 
 ---
 
@@ -132,9 +132,9 @@ token=…&token_type_hint=refresh_token
 ```
 :app
 :feature:auth          ← login/landing screens
-:core:auth             ← TokenVault, TokenRefresher, AuthInterceptor
+:core:auth             ← TokenVault, TokenRefresher, SessionAuthInterceptor
 :core:secure           ← Keystore, BiometricPrompt helpers
-:core:network          ← OkHttp + Retrofit with AuthInterceptor wired
+:core:network          ← OkHttp + Retrofit with SessionAuthInterceptor wired
 :data:user
 ```
 
@@ -147,7 +147,7 @@ flowchart LR
     Repo --> IdP["IdP API<br/>token + revoke"]
     Repo --> Vault["TokenVault<br/>Keystore-wrapped"]
 
-    Call["Network call"] --> Interceptor["AuthInterceptor"]
+    Call["Network call"] --> Interceptor["SessionAuthInterceptor"]
     Interceptor -->|"attach access token"| API["Resource API"]
     API -->|"401"| Refresher["Single-flight TokenRefresher"]
     Refresher --> Vault
@@ -160,22 +160,26 @@ Validated against: [OAuth 2.0 for native apps (RFC 8252)](https://www.rfc-editor
 
 ### Key class signatures
 
+A login creates one vault, refresher and authenticated client, including a re-login to the same account. Operations retain that session's objects. Logout permanently invalidates the old vault before another login is published; no refresh, biometric callback or old operation may save into the new session.
+
 ```kotlin
+// App-defined storage contract, not an Android/Keystore API.
 interface TokenVault {
-    suspend fun save(tokens: Tokens)
     suspend fun load(): Tokens?
-    suspend fun clear()
+    suspend fun replaceIfCurrent(expected: Tokens, replacement: Tokens): Tokens?
+    suspend fun invalidateIfCurrent(expected: Tokens): Boolean
+    suspend fun invalidate(): Tokens? // Atomically ends this session and returns its last tokens.
+    suspend fun lastReauthAt(): Long
+    suspend fun recordReauthIfActive(at: Long): Boolean
 }
 
 interface TokenRefresher {
-    suspend fun freshAccessToken(): String                    // valid token, refreshing near expiry
-    suspend fun refreshNow(failedAccessToken: String): Tokens // single-flight refresh after a 401
-}
-
-class AuthInterceptor(private val refresher: TokenRefresher) : Interceptor {
-    override fun intercept(chain: Chain): Response { ... }
+    suspend fun freshAccessToken(): String
+    suspend fun refreshNow(failedAccessToken: String): Tokens
 }
 ```
+
+`replaceIfCurrent` and invalidation must share one atomic storage boundary: compare-and-save cannot be implemented as separate `load` and `save` calls. Once invalidated, a vault returns no tokens and rejects every replacement. Re-auth timestamps are separate session metadata, so recording a biometric result cannot overwrite a concurrent token rotation. The [session-store example](../android/networking-and-security/retrofit-and-okhttp.md#production-example) demonstrates the process-local boundary; durable storage must preserve the same guarantees, including preventing a late encrypted-file write after logout.
 
 ---
 
@@ -190,23 +194,12 @@ data class Tokens(
     val idToken: String?,
     val accessExpiresAt: Long,
     val obtainedAt: Long,
-    val lastReauthAt: Long = 0
-)
-
-class TokenVault(
-    private val aead: AndroidKeystoreAead,
-    private val store: PrivateCiphertextStore,
 ) {
-    suspend fun save(tokens: Tokens) =
-        store.write(aead.encrypt(json.encodeToString(tokens).encodeToByteArray()))
-
-    suspend fun load(): Tokens? = store.read()?.let { encrypted ->
-        json.decodeFromString(aead.decrypt(encrypted).decodeToString())
-    }
+    override fun toString(): String = "Tokens([redacted])"
 }
 ```
 
-`PrivateCiphertextStore` owns a versioned `IV + ciphertext` representation; the direct Keystore implementation and migration rules live in [Secure Storage on Android](../security/secure-storage-on-android.md).
+Persist only through the session vault's atomic operations, using a versioned `IV + ciphertext` envelope in private storage. The encryption primitives and migration rules live in [Secure Storage on Android](../security/secure-storage-on-android.md). Encryption does not serialize writers or establish session ownership. A generated data-class `toString()` would expose credentials, so this example redacts it; do not log properties or serialize tokens into diagnostics either.
 
 > **Probing Q:** "Why not Room?" Room is useful only if the token data needs relational queries. Storage shape and encryption key custody are separate decisions.
 
@@ -247,108 +240,130 @@ The redirect lands in an Activity registered for the verified App Link `https://
 The dangerous bug: two requests both see expired tokens, both refresh, the first refresh rotates the refresh token, the second fails with `invalid_grant`. Solution: single-flight — serialize refreshes and refresh only if the vault still holds the token that failed.
 
 ```kotlin
-class DefaultTokenRefresher @Inject constructor(
+class NotSignedIn : IOException("Session ended")
+
+// Dedicated token-endpoint adapter: bounded I/O, no automatic refresh retry,
+// no authenticated resource client, no body logging. Null means ONLY a
+// confirmed terminal credential rejection (for example invalid_grant).
+interface RefreshApi {
+    suspend fun refreshOrNull(refreshToken: String): RefreshResponse?
+}
+
+data class RefreshResponse(
+    val accessToken: String,
+    val refreshToken: String?, // OAuth permits omission: retain the old refresh token then.
+    val expiresInSec: Long,
+)
+
+class DefaultTokenRefresher(
     private val vault: TokenVault,
-    private val api: IdpApi,
-    @ApplicationScope private val appScope: CoroutineScope,   // SupervisorJob-backed
+    private val api: RefreshApi,
+    private val nowMillis: () -> Long,
 ) : TokenRefresher {
     private val mutex = Mutex()
 
     override suspend fun freshAccessToken(): String {
-        val current = vault.load() ?: throw NotSignedIn
-        if (current.accessExpiresAt - clock.now() > REFRESH_THRESHOLD_MS) {
-            return current.accessToken
-        }
-        return refreshNow(failedAccessToken = current.accessToken).accessToken
+        val current = vault.load() ?: throw NotSignedIn()
+        if (current.accessExpiresAt - nowMillis() > 60_000) return current.accessToken
+        return refreshNow(current.accessToken).accessToken
     }
 
-    // The refresh runs in the app scope, not the caller's: a cancelled caller stops waiting,
-    // but a rotation the IdP has already made is still saved before the lock is released.
-    override suspend fun refreshNow(failedAccessToken: String): Tokens =
-        appScope.async {
-            mutex.withLock {
-                val current = vault.load() ?: throw NotSignedIn
-                // Another caller already refreshed while we waited for the lock.
-                if (current.accessToken != failedAccessToken) return@withLock current
-                val resp = api.refresh(current.refreshToken)
-                current.copy(
-                    accessToken = resp.accessToken,
-                    refreshToken = resp.refreshToken,
-                    accessExpiresAt = clock.now() + resp.expiresInSec * 1000,
-                    obtainedAt = clock.now()
-                ).also { vault.save(it) }
+    override suspend fun refreshNow(failedAccessToken: String): Tokens {
+        currentCoroutineContext().ensureActive()
+        val result = mutex.withLock {
+            currentCoroutineContext().ensureActive()
+            val current = vault.load() ?: throw NotSignedIn()
+            if (current.accessToken != failedAccessToken) return@withLock current
+            // Once rotation starts, finish its bounded I/O and atomic commit.
+            withContext(NonCancellable) {
+                val response = api.refreshOrNull(current.refreshToken)
+                if (response == null) {
+                    vault.invalidateIfCurrent(current)
+                    throw NotSignedIn()
+                }
+                val replacement = current.copy(
+                    accessToken = response.accessToken,
+                    refreshToken = response.refreshToken ?: current.refreshToken,
+                    accessExpiresAt = nowMillis() + response.expiresInSec * 1000,
+                    obtainedAt = nowMillis(),
+                )
+                vault.replaceIfCurrent(current, replacement) ?: throw NotSignedIn()
             }
-        }.await()
+        }
+        currentCoroutineContext().ensureActive()
+        return result
+    }
 }
 ```
 
-Callers that queue on the `Mutex` re-read the vault, see the new token and return it without a second `POST /token`. Running the critical section in an app-owned scope matters because the IdP rotates the refresh token as soon as it answers: if a cancelled caller aborted before `vault.save`, the next caller would send the old, now invalid refresh token and be signed out.
+The caller owns this suspending operation; there is no hidden `appScope.async` job. A waiter can cancel while acquiring the mutex. Once it owns a refresh, cancellation waits for the bounded rotation/commit, then reaches the caller. Other waiters read the updated pair rather than refreshing again. A terminal rejection invalidates that session so queued callers stop; transient transport/server failures propagate as `IOException` and preserve its tokens. Later callers can retry under a bounded backoff policy, rather than treating network loss as logout.
+
+The adapter must enforce real network timeouts independently of caller cancellation, validate the token response, and map only a confirmed credential rejection to `null`. Durable commit failure, a lost response or process death during rotation cannot be made atomic with the IdP: recovery depends on its rotation/reuse policy and may require re-login. A mutex and `NonCancellable` protect neither process death nor a second process.
 
 ### OkHttp interceptor
 
 ```kotlin
-class AuthInterceptor(private val refresher: TokenRefresher) : Interceptor {
-    override fun intercept(chain: Chain): Response {
-        val originalReq = chain.request()
-        if (originalReq.header("X-No-Auth") != null) return chain.proceed(originalReq)
-
+class SessionAuthInterceptor(
+    private val vault: TokenVault,
+    private val refresher: TokenRefresher,
+    private val apiOrigin: HttpUrl,
+) : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        if (!request.url.sameOriginAs(apiOrigin)) throw IOException("Outside session API origin")
         val token = runBlocking { refresher.freshAccessToken() }
-        var response = chain.proceed(originalReq.newBuilder()
+        val response = chain.proceed(request.newBuilder()
             .header("Authorization", "Bearer $token").build())
-
-        if (response.code == 401) {
-            response.close()
-            val refreshed = runBlocking { refresher.refreshNow(failedAccessToken = token).accessToken }
-            response = chain.proceed(originalReq.newBuilder()
-                .header("Authorization", "Bearer $refreshed").build())
+        // This example permits a single auth follow-up for bodyless reads only.
+        if (response.code != 401 || request.method !in setOf("GET", "HEAD") ||
+            request.body != null || chain.call().isCanceled()) return response
+        response.close()
+        val refreshed = runBlocking { refresher.refreshNow(token).accessToken }
+        if (chain.call().isCanceled() || runBlocking { vault.load()?.accessToken } != refreshed) {
+            throw IOException("Call canceled or session ended")
         }
-        return response
+        return chain.proceed(request.newBuilder()
+            .header("Authorization", "Bearer $refreshed").build())
     }
 }
 ```
 
-> `runBlocking` inside an interceptor is acceptable here because the OkHttp dispatcher thread is allowed to block. We don't run on main.
+Use the HTTPS scheme/host/port predicate from [Retrofit and OkHttp](../android/networking-and-security/retrofit-and-okhttp.md#internal-mechanics). Build this client with redirects disabled, no second authenticator, and a total call deadline. Public and IdP requests use separate clients; there is no caller-supplied `X-No-Auth` bypass. A second 401, a write, or a request body returns without replay. A terminal refresh rejection ends the captured session and fails this call with `NotSignedIn` (`IOException`); transient refresh failure also fails the call but leaves the session active.
+
+`runBlocking` is the explicit synchronous OkHttp bridge. `execute()` runs interceptors on its calling thread; `enqueue()` uses the dispatcher. Never call `execute()` on main, and do not assume a Retrofit API choice moves all work off main. Canceling an OkHttp call does not automatically cancel arbitrary blocking coroutine work, so the adapter's independent bound is necessary. A request already sent can still finish after logout: cancel old-session calls and reject their results in UI and persistence using the captured session identity.
 
 ### Biometric re-auth (sensitive actions)
 
 For sensitive actions (large transfer, password change), require biometric *and* recent re-auth:
 
 ```kotlin
-suspend fun guardSensitiveAction(activity: FragmentActivity): Boolean {
-    val lastReauth = vault.load()?.lastReauthAt ?: 0
-    if (clock.now() - lastReauth < 5.minutes.inWholeMilliseconds) return true
+suspend fun guardSensitiveAction(activity: FragmentActivity, vault: TokenVault): Boolean {
+    if (vault.load() == null) return false
+    val lastReauth = vault.lastReauthAt()
+    if (lastReauth > 0 && clock.now() - lastReauth in 0 until 5.minutes.inWholeMilliseconds) return true
     val ok = biometric.require(activity, "Confirm it's you")
-    if (ok is BiometricResult.Ok) {
-        vault.save(vault.load()!!.copy(lastReauthAt = clock.now()))
-        return true
-    }
-    return false
+    return ok is BiometricResult.Ok && vault.recordReauthIfActive(clock.now())
 }
 ```
+
+The passed vault belongs to the initiating session. A late prompt result cannot record re-auth in a different account or restore old tokens. This is a local UX gate; sensitive server actions still enforce their own authorization and any required step-up proof.
 
 ### Sign out
 
-```kotlin
-suspend fun signOut() {
-    val tokens = vault.load() ?: return
-    runCatching { api.revoke(tokens.refreshToken) }   // server-side revoke; ignore failure
-    vault.clear()
-    workManager.cancelAllWorkByTag("user-scoped")
-    db.clearAllTables()
-    navigator.replaceWithLogin()
-}
-```
+Invalidate the captured session locally **before** suspending for revocation. The session manager serializes this transition with login/account switch and prevents old cleanup from unpublishing a newer session. Cancel that session's calls and work, clear only its namespaced data, and navigate to login only if it is still the displayed session. Do not run an old operation's `db.clearAllTables()` against a new account's database.
+
+Then attempt bounded server revocation using the captured refresh token on the dedicated IdP client. Re-throw `CancellationException`; report transient revocation failure without restoring the local session. Local invalidation is not proof of server revocation, especially if rotation was already in flight. Reliable account-wide logout requires the IdP/backend's session-revocation contract; a failed best-effort request cannot promise it.
 
 ### Failure modes
 
 | What breaks | Behavior |
 |---|---|
-| Refresh returns 400 `invalid_grant` | Refresh token revoked or rotated by another device; force sign-out |
-| Network down during refresh | `Result.retry()` for workers; UI shows session-expired only after grace period |
+| Refresh returns 400 `invalid_grant` | Expired, revoked or otherwise invalid grant; end only the captured login session |
+| Network down during refresh | Retain session; report transient failure, and retry only within worker/UI backoff policy |
 | Clock skew (device 10 min off) | `exp` is advisory; server is truth; 401 triggers refresh |
 | Concurrent refresh from 2 threads | Single-flight `Mutex`; refresh only if the vault still holds the failed token |
-| Process killed mid-refresh | New process re-attempts on next API call |
-| User signs out on another device | Refresh returns `invalid_grant` → force local sign-out |
+| Process killed mid-refresh | Outcome may be ambiguous after rotation; follow the IdP recovery policy or re-login |
+| User signs out on another device | Depends on IdP revocation policy; a confirmed `invalid_grant` ends this local session |
 | Biometric not enrolled | Fall back to password re-prompt |
 
 ---
@@ -406,8 +421,8 @@ suspend fun signOut() {
 - **Token exfiltration.** Never log tokens. Strip from headers in any error reporting.
 - **Biometric binding.** For high-stakes apps, bind a Keystore-resident key with `setUserAuthenticationRequired(true)` so the access token decryption requires biometric.
 - **Clock skew.** Don't trust the device clock for `exp` enforcement. Use it as a hint; 401 is the truth.
-- **Sign-out hygiene.** Clear Room, the token vault, work, and cookies. Cancel `WorkManager` tags by user.
-- **Multi-account.** If supported, namespace the vault by account id; never mix tokens.
+- **Sign-out hygiene.** Invalidate the captured login before network revocation; cancel and clear its calls, work and namespaced data. Browser SSO cookies require a separate IdP logout flow; an app cannot promise to clear the browser cookie jar.
+- **Multi-account.** If supported, bind a fresh vault/client to each login session, including re-login to the same account; namespace account data and reject retired-session results.
 - **Backups.** Exclude token-vault ciphertext and metadata from cloud backup/device transfer, or deliberately disable backup when product requirements allow it.
 - **Phishing.** Don't render IdP UI in WebView. Custom Tabs only.
 
@@ -416,10 +431,10 @@ suspend fun signOut() {
 ## 10. Follow-up Questions
 
 > **Q: User opens 3 tabs and they all 401 at the same time — what happens?**
-> Single-flight: the first caller takes the `Mutex` and refreshes. The other two wait for the lock, see that the vault no longer holds the token that failed, and return the new one. Only one POST `/token` happens. All three retry the original request with the new access token.
+> Single-flight: the first caller takes the `Mutex` and refreshes. The other two wait for the lock, see that the vault no longer holds the token that failed, and return the new one. Only one POST `/token` happens. All three can retry bodyless reads with the new access token. Writes require an explicit replay-safety contract; this interceptor returns their 401 without replay.
 
-> **Q: Refresh token rotated by another device — what's the UX?**
-> Local refresh returns `invalid_grant`. We treat that as "session ended", clear local, and route to login with a friendly message. Not an error toast.
+> **Q: Refresh token is revoked or no longer usable — what's the UX?**
+> A confirmed `invalid_grant` ends the captured login session. Clear only that session and route to login if it is still current. Another device's login does not necessarily revoke this grant; the IdP's policy decides. Transient failures retain the session.
 
 > **Q: How is silent re-auth handled if the user has been offline for days?**
 > Refresh succeeds when network returns. If the refresh token expired (e.g., 30 days idle), they re-login through the browser.
@@ -453,6 +468,10 @@ suspend fun signOut() {
 - [AppAuth for Android](https://github.com/openid/AppAuth-Android) — reference OIDC + PKCE client library.
 - [Android Developers — Android Keystore](https://developer.android.com/privacy-and-security/keystore) — current key-custody primitive.
 - [Android Developers — Biometric authentication](https://developer.android.com/training/sign-in/biometric-auth) — Class-3 prompts.
+- [OAuth 2.0, RFC 6749 §5.2 and §6](https://www.rfc-editor.org/rfc/rfc6749) — terminal grant errors and optional refresh-token replacement.
+- [Kotlin Mutex cancellation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/lock.html) and [NonCancellable](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-non-cancellable/) — cancelable waiters and bounded commit protection.
+- [OkHttp Call contract (official source)](https://raw.githubusercontent.com/square/okhttp/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Call.kt) — synchronous execution, enqueue and cancellation.
+- [OAuth token revocation, RFC 7009](https://www.rfc-editor.org/rfc/rfc7009) — server-side revocation and its limits.
 
 ---
 
