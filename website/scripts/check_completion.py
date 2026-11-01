@@ -25,6 +25,11 @@ def fingerprints():
   for file in sorted([ROOT/(tree+'.md'),*(ROOT/tree).rglob('*.md')]):
    path=str(file.relative_to(ROOT));result['corrected:'+path]=digest(build.corrected(file.read_text(),path)[0])
  return result
+def audit_tree(href):
+ # Classify by the top-level route, not any nested directory with the same name.
+ prefix=build.BASE if href.startswith(build.BASE) else '/'
+ return href.removeprefix(prefix).strip('/').split('/')[0]
+
 def check(source_root=None):
  ledger=json.loads((REVIEW/'backlog.json').read_text());entries=ledger['entries'];ids=[e['id'] for e in entries]
  assert len(ids)==len(set(ids)) and len(ids)==515,'Retained review inventory changed: reconcile scope explicitly'
@@ -78,8 +83,8 @@ def check(source_root=None):
  code_checks=[c for p in browser['pages'] for c in p.get('codeChecks',[])]
  assert code_checks and all(c['ok'] for c in code_checks),'Code readability or contrast regression'
  pairs=[c for p in browser['pages'] for v in p['preservation']['views'] for c in v.get('pairChecks',[])]
- core_pairs=[c for p in browser['pages'] if all('/'+tree+'/' not in p['href'] for tree in ('engineering-fundamentals','computer-science','platform-engineering','mobile-system-design','observability')) for v in p['preservation']['views'] for c in v.get('pairChecks',[])]
- fundamentals_pairs=[c for p in browser['pages'] if '/engineering-fundamentals/' in p['href'] for v in p['preservation']['views'] for c in v.get('pairChecks',[])]
+ core_pairs=[c for p in browser['pages'] if audit_tree(p['href']) in {'kotlin','android'} for v in p['preservation']['views'] for c in v.get('pairChecks',[])]
+ fundamentals_pairs=[c for p in browser['pages'] if audit_tree(p['href'])=='engineering-fundamentals' for v in p['preservation']['views'] for c in v.get('pairChecks',[])]
  # Kotlin/Android and Fundamentals counts are fixed; newer trees add pairs that must all pass.
  assert len(core_pairs)==928 and len(fundamentals_pairs)==130 and all(c['ok'] for c in pairs),'Question/answer pairing failed'
  kotlin=json.loads((ux/'kotlin-validation.json').read_text())
