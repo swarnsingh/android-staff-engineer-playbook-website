@@ -1,10 +1,73 @@
 {
   "computer-science/arrays-and-strings.md": {
+    "1": {
+      "java": "String s = \"\";\nfor (int i = 0; i < 10_000; i++) {\n    s += \"x\"; // O(n^2) total: repeatedly copies previous content\n}",
+      "java_label": "StringConcat.java",
+      "kotlin_label": "StringConcat.kt",
+      "java_version": "Java 17+",
+      "kotlin_version": "Kotlin 2.0+"
+    },
+    "2": {
+      "java": "StringBuilder builder = new StringBuilder();\nfor (int i = 0; i < 10_000; i++) {\n    builder.append('x');\n}\nString result = builder.toString();",
+      "java_label": "StringBuilderExample.java",
+      "kotlin_label": "StringBuilderExample.kt",
+      "java_version": "Java 17+",
+      "kotlin_version": "Kotlin 2.0+"
+    },
+    "3": {
+      "java": "String text = \"👨‍👩‍👧‍👦\";\nSystem.out.println(text.length());",
+      "java_label": "UnicodeLength.java",
+      "kotlin_label": "UnicodeLength.kt",
+      "java_version": "Java 17+",
+      "kotlin_version": "Kotlin 2.0+"
+    },
     "4": {
       "java": "static boolean hasPairWithSum(int[] sorted, int target) {\n    int left = 0;\n    int right = sorted.length - 1;\n\n    while (left < right) {\n        int sum = sorted[left] + sorted[right];\n        if (sum == target) return true;\n        if (sum < target) left++;\n        else right--;\n    }\n    return false;\n}",
       "java_label": "TwoSum.java",
       "kotlin_label": "TwoSum.kt",
       "java_version": "Java 17+",
+      "kotlin_version": "Kotlin 2.0+"
+    },
+    "5": {
+      "java": "static int longestSubstringWithoutRepeats(String s) {\n    Map<Character, Integer> lastSeen = new HashMap<>();\n    int start = 0;\n    int best = 0;\n\n    for (int end = 0; end < s.length(); end++) {\n        char c = s.charAt(end);\n        Integer previous = lastSeen.get(c);\n        if (previous != null && previous >= start) {\n            start = previous + 1;\n        }\n        lastSeen.put(c, end);\n        best = Math.max(best, end - start + 1);\n    }\n    return best;\n}",
+      "java_label": "LongestSubstring.java",
+      "kotlin_label": "LongestSubstring.kt",
+      "java_version": "Java 17+ · java.util.HashMap",
+      "kotlin_version": "Kotlin 2.0+"
+    },
+    "6": {
+      "java": "static final class PrefixSum {\n    private final long[] prefix;\n\n    PrefixSum(int[] values) {\n        prefix = new long[values.length + 1];\n        for (int i = 0; i < values.length; i++) {\n            prefix[i + 1] = prefix[i] + values[i];\n        }\n    }\n\n    long sumInclusive(int left, int right) {\n        if (left > right) throw new IllegalArgumentException(\"left > right\");\n        return prefix[right + 1] - prefix[left];\n    }\n}",
+      "java_label": "PrefixSum.java",
+      "kotlin_label": "PrefixSum.kt",
+      "java_version": "Java 17+",
+      "kotlin_version": "Kotlin 2.0+"
+    },
+    "7": {
+      "java": "static int[] applyRangeAdds(int size, List<int[]> updates) {\n    int[] diff = new int[size + 1];\n    for (int[] update : updates) {\n        int left = update[0];\n        int right = update[1];\n        int delta = update[2];\n        diff[left] += delta;\n        if (right + 1 < diff.length) diff[right + 1] -= delta;\n    }\n\n    int[] result = new int[size];\n    int running = 0;\n    for (int i = 0; i < size; i++) {\n        running += diff[i];\n        result[i] = running;\n    }\n    return result;\n}",
+      "java_label": "DifferenceArray.java",
+      "kotlin_label": "DifferenceArray.kt",
+      "java_version": "Java 17+ · List<int[]> updates",
+      "kotlin_version": "Kotlin 2.0+"
+    },
+    "8": {
+      "java": "record UiState(List<Item> items) {}",
+      "java_label": "UiState.java",
+      "kotlin_label": "UiState.kt",
+      "java_version": "Java 17+ · record",
+      "kotlin_version": "Kotlin 2.0+"
+    },
+    "9": {
+      "java": "private final List<Item> items = new ArrayList<>();\n\nUiState add(Item item) {\n    items.add(item);\n    return new UiState(List.copyOf(items));\n}",
+      "java_label": "OwnedItems.java",
+      "kotlin_label": "OwnedItems.kt",
+      "java_version": "Java 17+ · List.copyOf",
+      "kotlin_version": "Kotlin 2.0+"
+    },
+    "11": {
+      "java": "String normalized = input.toLowerCase(Locale.ROOT); // protocol keys, not user text",
+      "java_label": "LocaleNormalization.java",
+      "kotlin_label": "LocaleNormalization.kt",
+      "java_version": "Java 17+ · java.util.Locale",
       "kotlin_version": "Kotlin 2.0+"
     }
   }
