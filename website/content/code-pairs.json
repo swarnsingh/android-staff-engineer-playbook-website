@@ -70,5 +70,49 @@
       "java_version": "Java 17+ · java.util.Locale",
       "kotlin_version": "Kotlin 2.0+"
     }
+  },
+  "computer-science/dynamic-programming.md": {
+    "0": {
+      "java": "static long fibSlow(int n) {\n    return n <= 1 ? n : fibSlow(n - 1) + fibSlow(n - 2);\n}",
+      "java_label": "FibonacciSlow.java",
+      "kotlin_label": "FibonacciSlow.kt",
+      "java_version": "Java 17+",
+      "kotlin_version": "Kotlin 2.0+"
+    },
+    "1": {
+      "java": "static long fib(int n) {\n    long[] memo = new long[n + 1];\n    Arrays.fill(memo, -1L);\n    return solve(n, memo);\n}\n\nprivate static long solve(int i, long[] memo) {\n    if (i <= 1) return i;\n    if (memo[i] != -1L) return memo[i];\n    memo[i] = solve(i - 1, memo) + solve(i - 2, memo);\n    return memo[i];\n}",
+      "java_label": "FibonacciMemoized.java",
+      "kotlin_label": "FibonacciMemoized.kt",
+      "java_version": "Java 17+ · java.util.Arrays",
+      "kotlin_version": "Kotlin 2.0+"
+    },
+    "2": {
+      "java": "static long fibTab(int n) {\n    if (n <= 1) return n;\n    long prev = 0L;\n    long curr = 1L;\n    for (int i = 0; i < n - 1; i++) {\n        long next = prev + curr;\n        prev = curr;\n        curr = next;\n    }\n    return curr;\n}",
+      "java_label": "FibonacciTabulated.java",
+      "kotlin_label": "FibonacciTabulated.kt",
+      "java_version": "Java 17+",
+      "kotlin_version": "Kotlin 2.0+"
+    },
+    "4": {
+      "java": "static int maxNonAdjacentSum(int[] values) {\n    int skip = 0;\n    int take = 0;\n\n    for (int value : values) {\n        int newTake = skip + value;\n        int newSkip = Math.max(skip, take);\n        take = newTake;\n        skip = newSkip;\n    }\n    return Math.max(skip, take);\n}",
+      "java_label": "MaxNonAdjacentSum.java",
+      "kotlin_label": "MaxNonAdjacentSum.kt",
+      "java_version": "Java 17+",
+      "kotlin_version": "Kotlin 2.0+"
+    },
+    "5": {
+      "java": "static int editDistance(String a, String b) {\n    int[][] dp = new int[a.length() + 1][b.length() + 1];\n    for (int i = 0; i <= a.length(); i++) dp[i][0] = i;\n    for (int j = 0; j <= b.length(); j++) dp[0][j] = j;\n\n    for (int i = 1; i <= a.length(); i++) {\n        for (int j = 1; j <= b.length(); j++) {\n            int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;\n            dp[i][j] = Math.min(\n                Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1),\n                dp[i - 1][j - 1] + cost\n            );\n        }\n    }\n    return dp[a.length()][b.length()];\n}",
+      "java_label": "EditDistance.java",
+      "kotlin_label": "EditDistance.kt",
+      "java_version": "Java 17+",
+      "kotlin_version": "Kotlin 2.0+"
+    },
+    "6": {
+      "java": "record Item(int weight, int value) {}\n\nstatic int knapsack(int capacity, List<Item> items) {\n    int[] dp = new int[capacity + 1];\n    for (Item item : items) {\n        for (int w = capacity; w >= item.weight(); w--) {\n            dp[w] = Math.max(dp[w], dp[w - item.weight()] + item.value());\n        }\n    }\n    return dp[capacity];\n}",
+      "java_label": "Knapsack.java",
+      "kotlin_label": "Knapsack.kt",
+      "java_version": "Java 17+ · record",
+      "kotlin_version": "Kotlin 2.0+"
+    }
   }
 }
