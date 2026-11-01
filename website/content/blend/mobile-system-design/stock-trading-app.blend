@@ -1,0 +1,10 @@
+<!-- Source: original playbook 400a7d7dd85c962b6b2d6d856712ca316a11edc8; recap follows the reviewed chapter. -->
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- Reference-count quote subscriptions and release them on cancellation; quotes are ephemeral presentation data.
+- Create one clientOrderId per decision and commit the order before sending.
+- Keep accountId fixed in every order call, recovery row and work input.
+- A timeout or 404 cannot prove non-placement. Resolve with the same key, and require an atomic abandon fence before declaring expiry.
+- Render version-ordered Room state and broker-supplied buying power and disclosures; do not hardcode changing trading rules.

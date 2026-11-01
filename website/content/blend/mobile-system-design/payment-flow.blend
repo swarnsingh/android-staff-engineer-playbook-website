@@ -1,0 +1,10 @@
+<!-- Source: original playbook 400a7d7dd85c962b6b2d6d856712ca316a11edc8; recap follows the reviewed chapter. -->
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- Use one backend intent per order and a stable idempotency key; a timeout never justifies a new charge intent.
+- Bind preparation, reconciliation, credentials and poll work to one immutable owner.
+- Persist CONFIRMING before presenting PaymentSheet; a callback alone is not payment truth.
+- Apply backend revisions atomically and render Room. A stale response or another call’s timeout must not undo a known result.
+- After restart, reconcile non-terminal intents; offer continuation for required action and retain pending UX for delayed processing.

@@ -1,0 +1,10 @@
+<!-- Source: original playbook 400a7d7dd85c962b6b2d6d856712ca316a11edc8; recap follows the reviewed chapter. -->
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- Separate the map renderer, location source and routing engine; offline tiles do not imply offline directions.
+- Use licensed map data and a bounded region store; this design chooses MapLibre and downloaded PMTiles.
+- Save route and step progress before relying on restart recovery. A redelivered intent restores that saved session.
+- Serialize navigation replacements through one controller: cancel and finish the previous session before the next collector starts.
+- Treat poor accuracy, routing failures and missing service restarts as normal failure paths, with a user-visible recovery action.

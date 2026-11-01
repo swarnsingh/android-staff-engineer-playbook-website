@@ -4947,5 +4947,1749 @@
         "label": "remote ops"
       }
     ]
+  },
+  {
+    "path": "mobile-system-design/google-maps-location-system",
+    "diagram": "8130d21c7a6232ae",
+    "number": 1,
+    "title": "Location drives guidance; tiles draw the map",
+    "caption": "The navigation session consumes locations, updates the map and speaks turns. Tiles and place search are separate inputs; a tile download alone does not provide an offline route.",
+    "sources": [
+      "https://maplibre.org/maplibre-native/android/examples/data/PMTiles/",
+      "https://developer.android.com/develop/sensors-and-location/location",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/collect-latest.html"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "Map",
+        "title": "Map renderer + layers",
+        "detail": "User-facing client",
+        "role": "client"
+      },
+      {
+        "id": "Location",
+        "title": "Fused location source",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Session",
+        "title": "Navigation session",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "TTS",
+        "title": "Turn instruction TTS",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Routing",
+        "title": "Directions / reroute API",
+        "detail": "Service boundary",
+        "role": "neutral"
+      },
+      {
+        "id": "Tiles",
+        "title": "Tile API / offline regions",
+        "detail": "Service boundary",
+        "role": "neutral"
+      },
+      {
+        "id": "Cache",
+        "title": "Bounded tile cache",
+        "detail": "Durable data",
+        "role": "storage"
+      },
+      {
+        "id": "Search",
+        "title": "Place search API",
+        "detail": "Service boundary",
+        "role": "neutral"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Location",
+        "to": "Session",
+        "label": "location samples"
+      },
+      {
+        "from": "Session",
+        "to": "Map",
+        "label": "route progress"
+      },
+      {
+        "from": "Session",
+        "to": "TTS",
+        "label": "turn instructions"
+      },
+      {
+        "from": "Session",
+        "to": "Routing",
+        "label": "requests directions"
+      },
+      {
+        "from": "Tiles",
+        "to": "Cache",
+        "label": "tile content"
+      },
+      {
+        "from": "Cache",
+        "to": "Map",
+        "label": "draws map tiles"
+      },
+      {
+        "from": "Search",
+        "to": "Map",
+        "label": "place results"
+      }
+    ],
+    "groups": [
+      {
+        "id": "device",
+        "label": "Android app",
+        "nodes": [
+          "Map",
+          "Location",
+          "Session",
+          "TTS",
+          "Cache"
+        ]
+      },
+      {
+        "id": "services",
+        "label": "Remote services",
+        "nodes": [
+          "Routing",
+          "Tiles",
+          "Search"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/google-maps-location-system",
+    "diagram": "761606cdbc2cbed1",
+    "number": 2,
+    "title": "One session coordinates route progress",
+    "caption": "The ViewModel delegates location, routing and region storage to separate components. The navigation session coordinates guidance and the foreground service keeps user-started navigation visible.",
+    "sources": [
+      "https://maplibre.org/maplibre-native/android/examples/data/PMTiles/",
+      "https://developer.android.com/develop/sensors-and-location/location",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/collect-latest.html"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "UI",
+        "title": "MapScreen",
+        "detail": "User-facing client",
+        "role": "client"
+      },
+      {
+        "id": "VM",
+        "title": "MapViewModel",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Location",
+        "title": "LocationSource",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Directions",
+        "title": "DirectionsRepository",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Offline",
+        "title": "OfflineRegionsRepository",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Session",
+        "title": "NavSession",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "TTS",
+        "title": "TtsEngine",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Reroute",
+        "title": "RerouteController",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Service",
+        "title": "Navigation foreground service",
+        "detail": "Execution component",
+        "role": "runtime"
+      }
+    ],
+    "edges": [
+      {
+        "from": "UI",
+        "to": "VM",
+        "label": "user actions"
+      },
+      {
+        "from": "VM",
+        "to": "Location",
+        "label": "requests positions"
+      },
+      {
+        "from": "VM",
+        "to": "Directions",
+        "label": "requests routes"
+      },
+      {
+        "from": "VM",
+        "to": "Offline",
+        "label": "manages regions"
+      },
+      {
+        "from": "VM",
+        "to": "Session",
+        "label": "starts guidance"
+      },
+      {
+        "from": "Session",
+        "to": "TTS",
+        "label": "speaks instructions"
+      },
+      {
+        "from": "Session",
+        "to": "Reroute",
+        "label": "requests reroute"
+      },
+      {
+        "from": "Session",
+        "to": "Service",
+        "label": "foreground lifecycle"
+      }
+    ],
+    "groups": [
+      {
+        "id": "device",
+        "label": "Android app",
+        "nodes": [
+          "UI",
+          "VM",
+          "Location",
+          "Directions",
+          "Offline",
+          "Session",
+          "TTS",
+          "Reroute",
+          "Service"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/ride-hailing",
+    "diagram": "869b12f718cc9a29",
+    "number": 1,
+    "title": "The server owns matching and trip state",
+    "caption": "Rider and driver apps exchange commands and updates with the Trip API. Location indexing and dispatch stay on the server; FCM offers are hints with platform delivery limits.",
+    "sources": [
+      "https://developer.android.com/develop/sensors-and-location/location",
+      "https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start",
+      "https://developer.android.com/training/location/background"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "Rider",
+        "title": "Rider app",
+        "detail": "User-facing client",
+        "role": "client"
+      },
+      {
+        "id": "API",
+        "title": "BFF / Trip API",
+        "detail": "Service boundary",
+        "role": "neutral"
+      },
+      {
+        "id": "Driver",
+        "title": "Driver app",
+        "detail": "User-facing client",
+        "role": "client"
+      },
+      {
+        "id": "Location",
+        "title": "Location index",
+        "detail": "Service boundary",
+        "role": "neutral"
+      },
+      {
+        "id": "Dispatch",
+        "title": "Dispatch engine",
+        "detail": "Service boundary",
+        "role": "neutral"
+      },
+      {
+        "id": "Push",
+        "title": "FCM offers / recovery hints",
+        "detail": "Service boundary",
+        "role": "neutral"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Rider",
+        "to": "API",
+        "label": "HTTPS and trip updates",
+        "both": true
+      },
+      {
+        "from": "Driver",
+        "to": "API",
+        "label": "commands and location batches",
+        "both": true
+      },
+      {
+        "from": "API",
+        "to": "Location",
+        "label": "indexes driver locations"
+      },
+      {
+        "from": "API",
+        "to": "Dispatch",
+        "label": "requests matching"
+      },
+      {
+        "from": "API",
+        "to": "Push",
+        "label": "queues offers or hints"
+      },
+      {
+        "from": "Push",
+        "to": "Driver",
+        "label": "offer notification"
+      },
+      {
+        "from": "Push",
+        "to": "Rider",
+        "label": "trip notification"
+      }
+    ],
+    "groups": [
+      {
+        "id": "rider",
+        "label": "Rider device",
+        "nodes": [
+          "Rider"
+        ]
+      },
+      {
+        "id": "driver",
+        "label": "Driver device",
+        "nodes": [
+          "Driver"
+        ]
+      },
+      {
+        "id": "remote",
+        "label": "Backend services",
+        "nodes": [
+          "API",
+          "Location",
+          "Dispatch",
+          "Push"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/ride-hailing",
+    "diagram": "cb1779ad195c2a91",
+    "number": 2,
+    "title": "Room connects live updates to recovery",
+    "caption": "The repository combines idempotent API commands, socket updates and durable local state. Room feeds the ViewModel, so a restart can recover the active trip rather than trusting a surviving socket.",
+    "sources": [
+      "https://developer.android.com/develop/sensors-and-location/location",
+      "https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start",
+      "https://developer.android.com/training/location/background"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "UI",
+        "title": "Compose UI",
+        "detail": "User-facing client",
+        "role": "client"
+      },
+      {
+        "id": "VM",
+        "title": "TripViewModel",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Repo",
+        "title": "TripRepository",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Socket",
+        "title": "TripSocket",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "API",
+        "title": "Idempotent TripApi",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Location",
+        "title": "LocationSource",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Service",
+        "title": "Driver foreground service",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Room",
+        "title": "Active trip + location buffer",
+        "detail": "Durable data",
+        "role": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "UI",
+        "to": "VM",
+        "label": "user actions"
+      },
+      {
+        "from": "VM",
+        "to": "Repo",
+        "label": "trip operations"
+      },
+      {
+        "from": "Repo",
+        "to": "Socket",
+        "label": "subscribes to updates"
+      },
+      {
+        "from": "Repo",
+        "to": "API",
+        "label": "trip commands"
+      },
+      {
+        "from": "Repo",
+        "to": "Location",
+        "label": "requests positions"
+      },
+      {
+        "from": "Location",
+        "to": "Service",
+        "label": "tracking lifecycle"
+      },
+      {
+        "from": "Repo",
+        "to": "Room",
+        "label": "persists trip and pings"
+      },
+      {
+        "from": "Socket",
+        "to": "Room",
+        "label": "stores server updates"
+      },
+      {
+        "from": "Room",
+        "to": "VM",
+        "label": "observes trip state"
+      }
+    ],
+    "groups": [
+      {
+        "id": "device",
+        "label": "Android app",
+        "nodes": [
+          "UI",
+          "VM",
+          "Repo",
+          "Socket",
+          "API",
+          "Location",
+          "Service",
+          "Room"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/ride-hailing",
+    "diagram": "c2f9e12a11bba669",
+    "number": 3,
+    "title": "Trip transitions are server decisions",
+    "caption": "Accept, arrival and boarding advance the trip. Expiry and cancellation are explicit terminal paths; clients request transitions and render the server result.",
+    "sources": [
+      "https://developer.android.com/develop/sensors-and-location/location",
+      "https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start",
+      "https://developer.android.com/training/location/background"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "start",
+        "shape": "start",
+        "title": "Start",
+        "role": "neutral"
+      },
+      {
+        "id": "OFFERED",
+        "title": "Offered",
+        "detail": "Server-owned state",
+        "role": "runtime"
+      },
+      {
+        "id": "ACCEPTED",
+        "title": "Accepted",
+        "detail": "Server-owned state",
+        "role": "runtime"
+      },
+      {
+        "id": "DRIVER_EN_ROUTE",
+        "title": "Driver En Route",
+        "detail": "Server-owned state",
+        "role": "runtime"
+      },
+      {
+        "id": "ARRIVED",
+        "title": "Arrived",
+        "detail": "Server-owned state",
+        "role": "runtime"
+      },
+      {
+        "id": "IN_TRIP",
+        "title": "In Trip",
+        "detail": "Server-owned state",
+        "role": "runtime"
+      },
+      {
+        "id": "COMPLETED",
+        "title": "Completed",
+        "detail": "Server-owned state",
+        "role": "runtime"
+      },
+      {
+        "id": "EXPIRED",
+        "title": "Expired",
+        "detail": "Server-owned state",
+        "role": "runtime"
+      },
+      {
+        "id": "CANCELLED",
+        "title": "Cancelled",
+        "detail": "Server-owned state",
+        "role": "runtime"
+      },
+      {
+        "id": "end",
+        "shape": "end",
+        "title": "End",
+        "role": "neutral"
+      }
+    ],
+    "edges": [
+      {
+        "from": "start",
+        "to": "OFFERED",
+        "label": "initial"
+      },
+      {
+        "from": "OFFERED",
+        "to": "ACCEPTED",
+        "label": "driver accepts"
+      },
+      {
+        "from": "ACCEPTED",
+        "to": "DRIVER_EN_ROUTE",
+        "label": "driver departs"
+      },
+      {
+        "from": "DRIVER_EN_ROUTE",
+        "to": "ARRIVED",
+        "label": "pickup reached"
+      },
+      {
+        "from": "ARRIVED",
+        "to": "IN_TRIP",
+        "label": "rider boarded"
+      },
+      {
+        "from": "IN_TRIP",
+        "to": "COMPLETED",
+        "label": "drop-off reached"
+      },
+      {
+        "from": "OFFERED",
+        "to": "EXPIRED",
+        "label": "declined or timed out"
+      },
+      {
+        "from": "OFFERED",
+        "to": "CANCELLED",
+        "label": "trip cancelled"
+      },
+      {
+        "from": "ACCEPTED",
+        "to": "CANCELLED",
+        "label": "trip cancelled"
+      },
+      {
+        "from": "DRIVER_EN_ROUTE",
+        "to": "CANCELLED",
+        "label": "trip cancelled"
+      },
+      {
+        "from": "ARRIVED",
+        "to": "CANCELLED",
+        "label": "trip cancelled"
+      },
+      {
+        "from": "IN_TRIP",
+        "to": "CANCELLED",
+        "label": "trip cancelled"
+      },
+      {
+        "from": "COMPLETED",
+        "to": "end",
+        "label": "done"
+      },
+      {
+        "from": "CANCELLED",
+        "to": "end",
+        "label": "done"
+      },
+      {
+        "from": "EXPIRED",
+        "to": "end",
+        "label": "done"
+      }
+    ],
+    "layout": "layers",
+    "groups": [
+      {
+        "id": "state",
+        "label": "Canonical server state",
+        "nodes": [
+          "start",
+          "OFFERED",
+          "ACCEPTED",
+          "DRIVER_EN_ROUTE",
+          "ARRIVED",
+          "IN_TRIP",
+          "COMPLETED",
+          "EXPIRED",
+          "CANCELLED",
+          "end"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/payment-flow",
+    "diagram": "406f2280e7594050",
+    "number": 1,
+    "title": "Provider callbacks do not settle an order",
+    "caption": "The provider moves money and sends signed events to the backend. The app obtains canonical payment state from that backend rather than declaring success from the SDK result.",
+    "sources": [
+      "https://docs.stripe.com/payments/accept-a-payment?payment-ui=mobile&platform=android",
+      "https://docs.stripe.com/payments/paymentintents/lifecycle",
+      "https://docs.stripe.com/api/idempotent_requests"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "App",
+        "title": "Android app + PSP SDK",
+        "detail": "User-facing client",
+        "role": "client"
+      },
+      {
+        "id": "API",
+        "title": "Order / payment API",
+        "detail": "Service boundary",
+        "role": "neutral"
+      },
+      {
+        "id": "PSP",
+        "title": "Payment service provider",
+        "detail": "Service boundary",
+        "role": "neutral"
+      },
+      {
+        "id": "Rails",
+        "title": "Acquirer / scheme / bank",
+        "detail": "Service boundary",
+        "role": "neutral"
+      },
+      {
+        "id": "Webhook",
+        "title": "Webhook receiver",
+        "detail": "Service boundary",
+        "role": "neutral"
+      }
+    ],
+    "edges": [
+      {
+        "from": "App",
+        "to": "API",
+        "label": "order and idempotency key"
+      },
+      {
+        "from": "API",
+        "to": "PSP",
+        "label": "creates payment intent"
+      },
+      {
+        "from": "PSP",
+        "to": "Rails",
+        "label": "payment authorization"
+      },
+      {
+        "from": "PSP",
+        "to": "Webhook",
+        "label": "signed webhook"
+      },
+      {
+        "from": "Webhook",
+        "to": "API",
+        "label": "updates canonical state"
+      },
+      {
+        "from": "API",
+        "to": "App",
+        "label": "canonical payment status"
+      }
+    ],
+    "groups": [
+      {
+        "id": "device",
+        "label": "Android app",
+        "nodes": [
+          "App"
+        ]
+      },
+      {
+        "id": "services",
+        "label": "Remote services",
+        "nodes": [
+          "API",
+          "PSP",
+          "Rails",
+          "Webhook"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/payment-flow",
+    "diagram": "85c18ccdb83965ad",
+    "number": 2,
+    "title": "The checkout observes one durable answer",
+    "caption": "The repository coordinates the provider and backend, while Room holds owner-scoped intent state. Server revisions order updates before the ViewModel renders them.",
+    "sources": [
+      "https://docs.stripe.com/payments/accept-a-payment?payment-ui=mobile&platform=android",
+      "https://docs.stripe.com/payments/paymentintents/lifecycle",
+      "https://docs.stripe.com/api/idempotent_requests"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "UI",
+        "title": "Compose checkout",
+        "detail": "User-facing client",
+        "role": "client"
+      },
+      {
+        "id": "VM",
+        "title": "CheckoutViewModel",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Repo",
+        "title": "CheckoutRepository",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "API",
+        "title": "OrderApi + idempotency key",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "PSP",
+        "title": "PSP SDK gateway",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Bio",
+        "title": "Biometric step-up",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Room",
+        "title": "Payment intent state log",
+        "detail": "Durable data",
+        "role": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "UI",
+        "to": "VM",
+        "label": "checkout actions"
+      },
+      {
+        "from": "VM",
+        "to": "Repo",
+        "label": "coordinates payment"
+      },
+      {
+        "from": "Repo",
+        "to": "API",
+        "label": "owner-bound requests"
+      },
+      {
+        "from": "Repo",
+        "to": "PSP",
+        "label": "presents provider UI"
+      },
+      {
+        "from": "Repo",
+        "to": "Bio",
+        "label": "required step-up"
+      },
+      {
+        "from": "Repo",
+        "to": "Room",
+        "label": "persists intent state"
+      },
+      {
+        "from": "API",
+        "to": "Room",
+        "label": "canonical status revision"
+      },
+      {
+        "from": "Room",
+        "to": "VM",
+        "label": "observes payment state"
+      }
+    ],
+    "groups": [
+      {
+        "id": "device",
+        "label": "Android app",
+        "nodes": [
+          "UI",
+          "VM",
+          "Repo",
+          "API",
+          "PSP",
+          "Bio",
+          "Room"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/payment-flow",
+    "diagram": "84691b598d7a5a5d",
+    "number": 3,
+    "title": "A successful SDK callback still needs reconciliation",
+    "caption": "The app commits recovery state before presenting the SDK. A signed webhook updates the backend, and a status request determines what the app can safely show.",
+    "sources": [
+      "https://docs.stripe.com/payments/accept-a-payment?payment-ui=mobile&platform=android",
+      "https://docs.stripe.com/payments/paymentintents/lifecycle",
+      "https://docs.stripe.com/api/idempotent_requests"
+    ],
+    "kind": "sequence",
+    "participants": [
+      {
+        "id": "User",
+        "title": "User",
+        "detail": "Checkout participant",
+        "role": "client"
+      },
+      {
+        "id": "App",
+        "title": "App",
+        "detail": "Checkout participant",
+        "role": "client"
+      },
+      {
+        "id": "API",
+        "title": "API",
+        "detail": "Checkout participant",
+        "role": "runtime"
+      },
+      {
+        "id": "PSP",
+        "title": "PSP",
+        "detail": "Provider",
+        "role": "neutral"
+      }
+    ],
+    "events": [
+      {
+        "from": "User",
+        "to": "App",
+        "label": "tap Pay"
+      },
+      {
+        "at": "App",
+        "label": "biometric check"
+      },
+      {
+        "from": "App",
+        "to": "API",
+        "label": "create intent + key"
+      },
+      {
+        "from": "API",
+        "to": "PSP",
+        "label": "create payment intent"
+      },
+      {
+        "from": "PSP",
+        "to": "API",
+        "label": "intent + client secret"
+      },
+      {
+        "from": "API",
+        "to": "App",
+        "label": "intent"
+      },
+      {
+        "from": "App",
+        "to": "PSP",
+        "label": "confirm / required action"
+      },
+      {
+        "from": "PSP",
+        "to": "API",
+        "label": "signed webhook"
+      },
+      {
+        "from": "App",
+        "to": "API",
+        "label": "fetch canonical status"
+      },
+      {
+        "from": "API",
+        "to": "App",
+        "label": "canonical status"
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/play-billing-and-subscriptions",
+    "diagram": "7146071e37690cda",
+    "number": 1,
+    "title": "Entitlement comes from verified purchase state",
+    "caption": "The app sends its purchase token to the entitlement service. Play notifications trigger verification, and the verified entitlement store determines access.",
+    "sources": [
+      "https://developer.android.com/google/play/billing/security",
+      "https://developer.android.com/google/play/billing/lifecycle/subscriptions",
+      "https://developer.android.com/google/play/billing/integrate"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "App",
+        "title": "Android app",
+        "detail": "User-facing client",
+        "role": "client"
+      },
+      {
+        "id": "Play",
+        "title": "Google Play Billing",
+        "detail": "Service boundary",
+        "role": "neutral"
+      },
+      {
+        "id": "Backend",
+        "title": "Entitlement service",
+        "detail": "Service boundary",
+        "role": "neutral"
+      },
+      {
+        "id": "Store",
+        "title": "User entitlement store",
+        "detail": "Durable data",
+        "role": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "App",
+        "to": "Play",
+        "label": "billing flow and purchase result",
+        "both": true
+      },
+      {
+        "from": "App",
+        "to": "Backend",
+        "label": "purchase token"
+      },
+      {
+        "from": "Play",
+        "to": "Backend",
+        "label": "real-time developer notification"
+      },
+      {
+        "from": "Backend",
+        "to": "Play",
+        "label": "verifies with Play API"
+      },
+      {
+        "from": "Backend",
+        "to": "Store",
+        "label": "stores verified entitlement"
+      },
+      {
+        "from": "Store",
+        "to": "App",
+        "label": "canonical access"
+      }
+    ],
+    "groups": [
+      {
+        "id": "app",
+        "label": "Android app",
+        "nodes": [
+          "App"
+        ]
+      },
+      {
+        "id": "play",
+        "label": "Google Play",
+        "nodes": [
+          "Play"
+        ]
+      },
+      {
+        "id": "backend",
+        "label": "Entitlement backend",
+        "nodes": [
+          "Backend",
+          "Store"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/play-billing-and-subscriptions",
+    "diagram": "1c0b733a022bad2a",
+    "number": 2,
+    "title": "Cancellation and expiry are different states",
+    "caption": "A cancellation can retain access until the paid period ends. Grace, hold and pause have different entitlement consequences; the backend follows the verified Play subscription lifecycle.",
+    "sources": [
+      "https://developer.android.com/google/play/billing/security",
+      "https://developer.android.com/google/play/billing/lifecycle/subscriptions",
+      "https://developer.android.com/google/play/billing/integrate"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "start",
+        "shape": "start",
+        "title": "Start",
+        "role": "neutral"
+      },
+      {
+        "id": "ACTIVE",
+        "title": "Active",
+        "detail": "Server-owned state",
+        "role": "runtime"
+      },
+      {
+        "id": "IN_GRACE_PERIOD",
+        "title": "In Grace Period",
+        "detail": "Server-owned state",
+        "role": "runtime"
+      },
+      {
+        "id": "ON_HOLD",
+        "title": "On Hold",
+        "detail": "Server-owned state",
+        "role": "runtime"
+      },
+      {
+        "id": "CANCELED",
+        "title": "Canceled",
+        "detail": "Server-owned state",
+        "role": "runtime"
+      },
+      {
+        "id": "PAUSED",
+        "title": "Paused",
+        "detail": "Server-owned state",
+        "role": "runtime"
+      },
+      {
+        "id": "EXPIRED",
+        "title": "Expired",
+        "detail": "Server-owned state",
+        "role": "runtime"
+      },
+      {
+        "id": "end",
+        "shape": "end",
+        "title": "End",
+        "role": "neutral"
+      }
+    ],
+    "edges": [
+      {
+        "from": "start",
+        "to": "ACTIVE",
+        "label": "initial"
+      },
+      {
+        "from": "ACTIVE",
+        "to": "IN_GRACE_PERIOD",
+        "label": "renewal payment fails"
+      },
+      {
+        "from": "IN_GRACE_PERIOD",
+        "to": "ACTIVE",
+        "label": "recovered"
+      },
+      {
+        "from": "IN_GRACE_PERIOD",
+        "to": "ON_HOLD",
+        "label": "grace period ends"
+      },
+      {
+        "from": "ON_HOLD",
+        "to": "ACTIVE",
+        "label": "recovered"
+      },
+      {
+        "from": "ON_HOLD",
+        "to": "CANCELED",
+        "label": "unresolved"
+      },
+      {
+        "from": "ACTIVE",
+        "to": "PAUSED",
+        "label": "user pauses"
+      },
+      {
+        "from": "PAUSED",
+        "to": "ACTIVE",
+        "label": "resumes"
+      },
+      {
+        "from": "PAUSED",
+        "to": "ON_HOLD",
+        "label": "resume payment fails"
+      },
+      {
+        "from": "ACTIVE",
+        "to": "CANCELED",
+        "label": "user cancels"
+      },
+      {
+        "from": "CANCELED",
+        "to": "ACTIVE",
+        "label": "restored before expiry"
+      },
+      {
+        "from": "CANCELED",
+        "to": "EXPIRED",
+        "label": "entitlement period ends"
+      },
+      {
+        "from": "EXPIRED",
+        "to": "end",
+        "label": "done"
+      }
+    ],
+    "layout": "layers",
+    "groups": [
+      {
+        "id": "state",
+        "label": "Canonical server state",
+        "nodes": [
+          "start",
+          "ACTIVE",
+          "IN_GRACE_PERIOD",
+          "ON_HOLD",
+          "CANCELED",
+          "PAUSED",
+          "EXPIRED",
+          "end"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/stock-trading-app",
+    "diagram": "7fc4a4eb2b066b72",
+    "number": 1,
+    "title": "Quotes and orders have different reliability needs",
+    "caption": "The gateway distributes ephemeral quotes and forwards durable orders to the execution service. A push only hints at a status change; the client fetches canonical order state.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/channel-flow.html",
+      "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started",
+      "https://docs.stripe.com/api/idempotent_requests"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "App",
+        "title": "Android trading client",
+        "detail": "User-facing client",
+        "role": "client"
+      },
+      {
+        "id": "Gateway",
+        "title": "BFF / gateway",
+        "detail": "Service boundary",
+        "role": "neutral"
+      },
+      {
+        "id": "Quotes",
+        "title": "Quote stream",
+        "detail": "Service boundary",
+        "role": "neutral"
+      },
+      {
+        "id": "Orders",
+        "title": "Order service",
+        "detail": "Service boundary",
+        "role": "neutral"
+      },
+      {
+        "id": "Engine",
+        "title": "Matching / execution venue",
+        "detail": "Service boundary",
+        "role": "neutral"
+      },
+      {
+        "id": "Push",
+        "title": "FCM status hint",
+        "detail": "Service boundary",
+        "role": "neutral"
+      }
+    ],
+    "edges": [
+      {
+        "from": "App",
+        "to": "Gateway",
+        "label": "quotes and order requests",
+        "both": true
+      },
+      {
+        "from": "Gateway",
+        "to": "Quotes",
+        "label": "subscribes to quotes"
+      },
+      {
+        "from": "Gateway",
+        "to": "Orders",
+        "label": "submits order command"
+      },
+      {
+        "from": "Orders",
+        "to": "Engine",
+        "label": "routes for execution"
+      },
+      {
+        "from": "Orders",
+        "to": "Push",
+        "label": "queues status hint"
+      },
+      {
+        "from": "Push",
+        "to": "App",
+        "label": "prompts status fetch"
+      }
+    ],
+    "groups": [
+      {
+        "id": "device",
+        "label": "Android app",
+        "nodes": [
+          "App"
+        ]
+      },
+      {
+        "id": "services",
+        "label": "Remote services",
+        "nodes": [
+          "Gateway",
+          "Quotes",
+          "Orders",
+          "Engine",
+          "Push"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/stock-trading-app",
+    "diagram": "e92aeb1f3d1af0fa",
+    "number": 2,
+    "title": "The outbox resolves uncertain order outcomes",
+    "caption": "The repository persists orders before sending, while the worker resolves unknown outcomes using the same account and client order ID. Quote streaming feeds the ViewModel separately.",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/channel-flow.html",
+      "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started",
+      "https://docs.stripe.com/api/idempotent_requests"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "UI",
+        "title": "Compose UI",
+        "detail": "User-facing client",
+        "role": "client"
+      },
+      {
+        "id": "VM",
+        "title": "TradingViewModel",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Repo",
+        "title": "TradingRepository",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Quotes",
+        "title": "QuoteStream",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "API",
+        "title": "Idempotent OrderApi",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Room",
+        "title": "Orders + positions + watchlist",
+        "detail": "Durable data",
+        "role": "storage"
+      },
+      {
+        "id": "Outbox",
+        "title": "Order outbox",
+        "detail": "Scheduled work",
+        "role": "queue"
+      },
+      {
+        "id": "Work",
+        "title": "WorkManager",
+        "detail": "Scheduled work",
+        "role": "queue"
+      }
+    ],
+    "edges": [
+      {
+        "from": "UI",
+        "to": "VM",
+        "label": "user actions"
+      },
+      {
+        "from": "VM",
+        "to": "Repo",
+        "label": "order operations"
+      },
+      {
+        "from": "Repo",
+        "to": "Quotes",
+        "label": "subscribes to prices"
+      },
+      {
+        "from": "Quotes",
+        "to": "VM",
+        "label": "latest quote"
+      },
+      {
+        "from": "Repo",
+        "to": "API",
+        "label": "places or resolves order"
+      },
+      {
+        "from": "Repo",
+        "to": "Room",
+        "label": "persists orders"
+      },
+      {
+        "from": "Repo",
+        "to": "Outbox",
+        "label": "queues recovery"
+      },
+      {
+        "from": "Outbox",
+        "to": "Work",
+        "label": "schedules resolution"
+      },
+      {
+        "from": "Work",
+        "to": "API",
+        "label": "lookup or same-key retry"
+      },
+      {
+        "from": "API",
+        "to": "Room",
+        "label": "canonical order version"
+      },
+      {
+        "from": "Room",
+        "to": "VM",
+        "label": "observes stored state"
+      }
+    ],
+    "groups": [
+      {
+        "id": "device",
+        "label": "Android app",
+        "nodes": [
+          "UI",
+          "VM",
+          "Repo",
+          "Quotes",
+          "API",
+          "Room",
+          "Outbox",
+          "Work"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/youtube-video-streaming",
+    "diagram": "0cfacdd49b3b74cf",
+    "number": 1,
+    "title": "Playback and downloads share content, not lifetime",
+    "caption": "The playback service owns ExoPlayer. Manifests, segments and licences serve playback, while DownloadService stores protected offline media through a separate lifecycle.",
+    "sources": [
+      "https://developer.android.com/media/media3",
+      "https://developer.android.com/media/media3/session/background-playback",
+      "https://developer.android.com/media/media3/exoplayer/drm",
+      "https://developer.android.com/media/media3/exoplayer/downloading-media"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "UI",
+        "title": "Compose player UI",
+        "detail": "User-facing client",
+        "role": "client"
+      },
+      {
+        "id": "Session",
+        "title": "MediaSessionService",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Player",
+        "title": "Media3 ExoPlayer",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Manifest",
+        "title": "Manifest API",
+        "detail": "Service boundary",
+        "role": "neutral"
+      },
+      {
+        "id": "CDN",
+        "title": "Segment CDN",
+        "detail": "Service boundary",
+        "role": "neutral"
+      },
+      {
+        "id": "DRM",
+        "title": "DRM licence service",
+        "detail": "Service boundary",
+        "role": "neutral"
+      },
+      {
+        "id": "ABR",
+        "title": "Adaptive bitrate + track selection",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Download",
+        "title": "Media3 DownloadService",
+        "detail": "Scheduled work",
+        "role": "queue"
+      },
+      {
+        "id": "Offline",
+        "title": "Protected offline media",
+        "detail": "Durable data",
+        "role": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "UI",
+        "to": "Session",
+        "label": "playback commands"
+      },
+      {
+        "from": "Session",
+        "to": "Player",
+        "label": "owns player"
+      },
+      {
+        "from": "Player",
+        "to": "Manifest",
+        "label": "loads manifest"
+      },
+      {
+        "from": "Player",
+        "to": "CDN",
+        "label": "fetches segments"
+      },
+      {
+        "from": "Player",
+        "to": "DRM",
+        "label": "requests licence"
+      },
+      {
+        "from": "Player",
+        "to": "ABR",
+        "label": "selects tracks"
+      },
+      {
+        "from": "Download",
+        "to": "Manifest",
+        "label": "loads download manifest"
+      },
+      {
+        "from": "Download",
+        "to": "CDN",
+        "label": "downloads segments"
+      },
+      {
+        "from": "Download",
+        "to": "Offline",
+        "label": "stores protected media"
+      }
+    ],
+    "groups": [
+      {
+        "id": "device",
+        "label": "Android app",
+        "nodes": [
+          "UI",
+          "Session",
+          "Player",
+          "ABR",
+          "Download",
+          "Offline"
+        ]
+      },
+      {
+        "id": "services",
+        "label": "Remote services",
+        "nodes": [
+          "Manifest",
+          "CDN",
+          "DRM"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/youtube-video-streaming",
+    "diagram": "0806fd72f215c5ea",
+    "number": 2,
+    "title": "Service ownership survives UI recreation",
+    "caption": "The repository connects the UI to playback and downloads. The playback service owns player state and progress reporting; the screen controls it rather than holding a released player.",
+    "sources": [
+      "https://developer.android.com/media/media3",
+      "https://developer.android.com/media/media3/session/background-playback",
+      "https://developer.android.com/media/media3/exoplayer/drm",
+      "https://developer.android.com/media/media3/exoplayer/downloading-media"
+    ],
+    "kind": "map",
+    "nodes": [
+      {
+        "id": "Screen",
+        "title": "PlayerScreen",
+        "detail": "User-facing client",
+        "role": "client"
+      },
+      {
+        "id": "VM",
+        "title": "PlayerViewModel",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Repo",
+        "title": "VideoRepository",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "API",
+        "title": "Playback / licence API",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Downloads",
+        "title": "DownloadRepository",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "ServiceD",
+        "title": "DownloadService",
+        "detail": "Scheduled work",
+        "role": "queue"
+      },
+      {
+        "id": "Session",
+        "title": "MediaSessionService",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Player",
+        "title": "ExoPlayer",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Progress",
+        "title": "PlaybackProgressRepository",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "ProgressAPI",
+        "title": "Progress API",
+        "detail": "Execution component",
+        "role": "runtime"
+      },
+      {
+        "id": "Tracks",
+        "title": "ABR + DRM + track selection",
+        "detail": "Execution component",
+        "role": "runtime"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Screen",
+        "to": "VM",
+        "label": "user actions"
+      },
+      {
+        "from": "VM",
+        "to": "Repo",
+        "label": "playback operations"
+      },
+      {
+        "from": "Repo",
+        "to": "API",
+        "label": "playback configuration"
+      },
+      {
+        "from": "Repo",
+        "to": "Downloads",
+        "label": "manages downloads"
+      },
+      {
+        "from": "Downloads",
+        "to": "ServiceD",
+        "label": "background download work"
+      },
+      {
+        "from": "Repo",
+        "to": "Session",
+        "label": "connects controller"
+      },
+      {
+        "from": "Session",
+        "to": "Player",
+        "label": "owns playback"
+      },
+      {
+        "from": "Session",
+        "to": "Progress",
+        "label": "saves progress"
+      },
+      {
+        "from": "Progress",
+        "to": "ProgressAPI",
+        "label": "uploads position"
+      },
+      {
+        "from": "Player",
+        "to": "Tracks",
+        "label": "track and DRM policy"
+      },
+      {
+        "from": "Session",
+        "to": "VM",
+        "label": "playback state"
+      }
+    ],
+    "groups": [
+      {
+        "id": "device",
+        "label": "Android app",
+        "nodes": [
+          "Screen",
+          "VM",
+          "Repo",
+          "API",
+          "Downloads",
+          "ServiceD",
+          "Session",
+          "Player",
+          "Progress",
+          "ProgressAPI",
+          "Tracks"
+        ]
+      }
+    ]
   }
 ]

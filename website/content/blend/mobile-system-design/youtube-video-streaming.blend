@@ -1,0 +1,10 @@
+<!-- Source: original playbook 400a7d7dd85c962b6b2d6d856712ca316a11edc8; recap follows the reviewed chapter. -->
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- The MediaSessionService creates and releases the player; the UI controls it through a MediaController.
+- Track selection follows both playback conditions and user or metered-network constraints.
+- PiP changes the UI lifecycle; it is not permission to lose the service-owned playback session.
+- For audio-mode task removal, preserve Media3’s default cleanup; deliberately stop video when the product requires it.
+- Offline media includes a licence lifecycle and profile boundary, and dataSync foreground-service time limits still apply.

@@ -38,7 +38,7 @@
 | Question | Why it matters |
 |---|---|
 | Protocol (HLS, DASH)? | Player + CDN setup |
-| DRM (Widevine L1/L3)? | Hardware requirements |
+| DRM (Widevine L1/L3)? | Hardware requirements; the content provider's licence sets the quality per level |
 | Offline / save-for-later? | Downloader + storage |
 | Live in scope? | Different latency profile |
 | Cast / external playback? | Media3 Cast extension |
@@ -97,16 +97,18 @@ Authorization: Bearer ...
 }
 ```
 
-### Offline download request
+### Offline download authorization
 
 ```http
 POST /v1/videos/{id}/license/offline
 {
   "deviceId": "d_abc",
-  "expectedDurationDays": 30
+  "profileId": "p_1"
 }
-{ "offlineLicenseKey": "...bytes-base64..." }
+{ "licenseUrl": "https://drm.../widevine?offline=1", "licenseToken": "...", "expiresAt": 1752592000 }
 ```
+
+This response only authorizes a licence request; it carries no key. The device's `MediaDrm` generates the DRM request, the licence server answers it, and `provideKeyResponse` returns a **local key-set ID** that only means something on this device. `OfflineLicenseHelper` wraps that exchange.
 
 ### Cross-device playback progress
 
@@ -194,11 +196,15 @@ interface VideoRepository {
     fun observeDownloads(): Flow<List<Download>>
 }
 
-class PlayerHolder @Inject constructor(@ApplicationContext ctx: Context, ...) {
-    val player: ExoPlayer = ExoPlayer.Builder(ctx)
+class PlayerFactory @Inject constructor(@ApplicationContext private val ctx: Context, private val constraints: TrackConstraints, ...) {
+    // The service owns what this returns, and releases it in onDestroy.
+    fun create(): ExoPlayer = ExoPlayer.Builder(ctx)
         .setMediaSourceFactory(buildMediaSourceFactory())
-        .setTrackSelector(buildTrackSelector())
+        .setTrackSelector(constraints.trackSelector)
         .setLoadControl(buildLoadControl())
+        .setWakeMode(C.WAKE_MODE_LOCAL)                  // screen-off playback under a foreground service
+        .setAudioAttributes(movieAudioAttributes, /* handleAudioFocus = */ true)
+        .setHandleAudioBecomingNoisy(true)               // pause when headphones unplug
         .build()
 }
 ```
@@ -208,11 +214,13 @@ class PlayerHolder @Inject constructor(@ApplicationContext ctx: Context, ...) {
 ## 6. Local Storage
 
 ```kotlin
-@Entity(tableName = "downloads")
+@Entity(tableName = "downloads", primaryKeys = ["profileId", "videoId"])
 data class DownloadEntity(
-    @PrimaryKey val videoId: String,
+    val profileId: String,          // paid or age-restricted downloads belong to one profile
+    val videoId: String,
     val title: String, val durationMs: Long, val sizeBytes: Long,
     val state: DownloadState,       // QUEUED, DOWNLOADING, COMPLETED, FAILED, EXPIRED
+    val offlineKeySetId: ByteArray?,  // local MediaDrm ID, never a raw key
     val downloadedAt: Long?, val licenseExpiresAt: Long?
 )
 
@@ -268,53 +276,53 @@ Actual video bytes are managed by Media3's `DownloadIndex` + a `Cache` on disk �
 ```kotlin
 class VideoPlaybackService : MediaSessionService() {
 
-    @Inject lateinit var playerHolder: PlayerHolder
+    @Inject lateinit var playerFactory: PlayerFactory
     private var session: MediaSession? = null
 
     override fun onCreate() {
         super.onCreate()
-        session = MediaSession.Builder(this, playerHolder.player).build()
+        session = MediaSession.Builder(this, playerFactory.create()).build()
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        // User swiped the app — stop playback (or continue if audio mode)
-        if (!playerHolder.player.playWhenReady) stopSelf()
+        // Video stops with the app. Audio mode uses the default: keep ongoing playback, stop otherwise.
+        if (audioMode) super.onTaskRemoved(rootIntent) else pauseAllPlayersAndStopSelf()
     }
 
     override fun onDestroy() {
         session?.run { player.release(); release() }
+        session = null
         super.onDestroy()
     }
 }
 ```
+
+The service creates the player and releases it, so nothing can reuse a released instance. The UI talks to it through a `MediaController`. Declare `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK` and `foregroundServiceType="mediaPlayback"`.
 
 The MediaSessionService gets a foreground notification automatically when playback starts. System surfaces the player on lock screen, Bluetooth, Android Auto, Wear.
 
 ### ABR (adaptive bitrate)
 
 ```kotlin
-private fun buildTrackSelector(): DefaultTrackSelector {
-    val parameters = DefaultTrackSelector.Parameters.Builder(context)
-        .setMaxVideoSize(width = 1920, height = 1080)
-        .setMaxVideoBitrate(8_000_000)
-        .setForceLowestBitrate(false)
-        .build()
-    return DefaultTrackSelector(context).apply { setParameters(parameters) }
-}
-```
+class TrackConstraints @Inject constructor(@ApplicationContext context: Context, private val plan: Plan) {
+    val trackSelector = DefaultTrackSelector(context)
 
-Constrain on cellular:
-
-```kotlin
-fun applyCellularConstraints() {
-    if (connectivity.isActiveNetworkMetered) {
-        trackSelector.setParameters(trackSelector.buildUponParameters()
-            .setMaxVideoSize(854, 480)
-            .setMaxVideoBitrate(1_500_000)
-            .build())
+    init {
+        clearMeteredLimits()
     }
+
+    fun applyMeteredLimits() = trackSelector.setParameters(trackSelector.buildUponParameters()
+        .setMaxVideoSize(854, 480)
+        .setMaxVideoBitrate(1_500_000)
+        .build())
+
+    // The cap follows the ABR ladder in section 8; the selector also skips tracks the device can't play.
+    fun clearMeteredLimits() = trackSelector.setParameters(trackSelector.buildUponParameters()
+        .clearVideoSizeConstraints()
+        .setMaxVideoBitrate(if (plan.isPremium) 15_000_000 else 4_000_000)
+        .build())
 }
 ```
 
@@ -336,29 +344,41 @@ private fun buildLoadControl(): LoadControl {
 }
 ```
 
-Aggressive `bufferForPlaybackMs` favors TTFF; user expects video to start fast. The 50s max buffer cap balances memory + responsive seeks.
+The last two values match Media3's current defaults (1 s and 2 s), so only the first is a real change: the default minimum is 50 s, and starting downloads again at 15 s spends less data on video the user may abandon. These values are durations of buffered media, not waiting time. The 50s max buffer cap balances memory + responsive seeks.
 
 ### Picture-in-picture
 
 ```kotlin
 class PlayerActivity : ComponentActivity() {
 
+    // Call setPictureInPictureParams(pipParams()) when playback starts or pauses, or the video size changes.
+    private fun pipParams(): PictureInPictureParams {
+        val size = controller.videoSize
+        val ratio = if (size.width > 0 && size.height > 0) {
+            Rational(size.width, size.height).coerceIn(Rational(100, 239), Rational(239, 100))
+        } else {
+            Rational(16, 9)
+        }
+        return PictureInPictureParams.Builder().setAspectRatio(ratio).apply {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) setAutoEnterEnabled(controller.isPlaying)
+        }.build()
+    }
+
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        if (player.isPlaying && supportsPip()) {
-            val ratio = Rational(player.videoSize.width, player.videoSize.height)
-            enterPictureInPictureMode(PictureInPictureParams.Builder()
-                .setAspectRatio(ratio).build())
+        // Android 12+ enters by itself through setAutoEnterEnabled.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && controller.isPlaying && supportsPip()) {
+            enterPictureInPictureMode(pipParams())
         }
     }
 }
 ```
 
-`onUserLeaveHint` fires when the user presses Home. PiP keeps playback going in a floating window.
+PiP keeps playback going in a floating window. The ratio must be between 2.39:1 and 1:2.39, and scope films can be wider, so clamp it; a zero size means the player doesn't know yet.
 
 ### Background audio
 
-When the user locks the screen during a music-style video, MediaSessionService keeps playback alive. The `MediaSession` projects controls to lock screen / Bluetooth.
+When the user locks the screen during a music-style video, the foreground MediaSessionService keeps the process alive, and `WAKE_MODE_LOCAL` keeps the CPU awake, which the service alone doesn't do. The `MediaSession` projects controls to lock screen / Bluetooth.
 
 ### DRM (Widevine)
 
@@ -376,23 +396,24 @@ fun buildMediaItem(info: PlaybackInfo): MediaItem {
 }
 ```
 
-ExoPlayer handles the Widevine key exchange. On L1 devices, decrypted frames stay in TEE; we never see plaintext. On L3 (no Trusted Execution), client-side software decryption is used; only SD content typically.
+ExoPlayer handles the Widevine key exchange. On L1 devices, decrypted frames stay in TEE; we never see plaintext. On L3 (no Trusted Execution), client-side software decryption is used. The maximum resolution per level is the content provider's licence policy, not a Widevine rule; many studio licences cap L3 at SD.
 
 ### Network change handling
 
 ```kotlin
 class NetworkChangeListener(...) : ConnectivityManager.NetworkCallback() {
     override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
-        if (caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
-            playerHolder.applyCellularConstraints()
+        // Metered status, not transport: a Wi-Fi hotspot can be metered, and some cellular plans aren't.
+        if (caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)) {
+            constraints.clearMeteredLimits()
         } else {
-            playerHolder.clearConstraints()
+            constraints.applyMeteredLimits()
         }
     }
 }
 ```
 
-When user switches from Wi-Fi to cellular mid-playback, we tighten quality immediately — avoid a surprise data spike.
+Register it with `registerDefaultNetworkCallback`, so it follows the network the app is using. When user switches from Wi-Fi to a metered network mid-playback, we tighten quality immediately — avoid a surprise data spike.
 
 ### Offline downloads (Media3)
 
@@ -410,7 +431,18 @@ class VideoDownloadService : DownloadService(
 }
 ```
 
-Media3's `DownloadService` manages segment download, retry, persistence. For DRM content, we also call `OfflineLicenseHelper` to download a long-lived license.
+Media3's `DownloadService` manages segment download, retry, persistence. Declare `FOREGROUND_SERVICE_DATA_SYNC` and `foregroundServiceType="dataSync"`. For apps targeting Android 15+, that type gets 6 hours in any 24, shared across the app's `dataSync` services. Then the system calls `onTimeout`, and new starts fail until the user brings the app forward. So test that a large queue on slow Wi-Fi resumes correctly after the limit; Media3's guide doesn't say how `DownloadService` handles it.
+
+For DRM content, the licence is a separate lifecycle:
+
+1. Get authorization from `POST /v1/videos/{id}/license/offline`.
+2. Call `OfflineLicenseHelper.downloadLicense(format)`, which returns the local `offlineKeySetId`.
+3. Persist it in `DownloadEntity`, and pass it to `DownloadRequest.Builder.setKeySetId`.
+4. Load it for playback with `MediaItem.DrmConfiguration.Builder.setKeySetId`.
+5. Before expiry, call `renewLicense` if the user is still entitled, and store the returned ID.
+6. On delete, sign-out or lost entitlement, call `releaseLicense`, then remove the bytes.
+
+Only one offline key set can be used per playback, so multi-key content needs a licence server that returns all its keys in one response.
 
 ### Failure modes
 
@@ -418,8 +450,10 @@ Media3's `DownloadService` manages segment download, retry, persistence. For DRM
 |---|---|
 | Network drops mid-playback | ExoPlayer rebuffers; ABR may step down; resume on reconnect |
 | Manifest URL expires | `expiresAt` triggers re-fetch before next segment |
-| DRM license expires | Fetch new license; retry segment |
-| Foreground service killed by OEM | MediaSessionService restarts via WorkManager fallback |
+| DRM license expires | Online: fetch new license; retry segment. Offline: block playback and ask the user to reconnect |
+| Foreground service killed by OEM | Playback stops. Position is already saved, so the user resumes from the app or, if we implement `onPlaybackResumption` and its `MediaButtonReceiver`, a media button. No automatic restart is promised |
+| Download hits the `dataSync` limit | Service stops on `onTimeout`; remaining downloads wait until the app is next opened |
+| Different profile opens a download | Only rows for that `profileId` are listed and playable |
 | Disk full during download | Download fails; surface error; partial cleanup |
 | Codec unsupported | Track selector picks alternate; if none, show error |
 | Cast disconnects | Resume on phone; preserve position |
@@ -448,8 +482,8 @@ Media3's `DownloadService` manages segment download, retry, persistence. For DRM
 
 | Tier | When |
 |---|---|
-| **L1 (hardware TEE)** | Required for HD on protected content |
-| **L3 (software)** | SD only; older / cheaper devices |
+| **L1 (hardware TEE)** | Usually what studio licences require for HD on protected content |
+| **L3 (software)** | Older / cheaper devices; quality limited by the provider's licence, often SD |
 | No DRM | UGC; free content |
 
 ### Background playback model
@@ -485,9 +519,9 @@ Media3's `DownloadService` manages segment download, retry, persistence. For DRM
 - **TTFF.** `bufferForPlaybackMs` low; prefetch via small initial segments.
 - **Cellular spend.** Auto-cap on metered networks. Warn before HD.
 - **Battery.** Hardware decode (codec2/MediaCodec) is far more efficient than software fallback.
-- **Memory.** Cap buffer to 50s; release player aggressively on dispose.
-- **DRM.** L1 required for HD on protected content; surface "best quality on this device" honestly.
-- **Lifecycle.** `MediaSessionService` for background; PiP for "leave the app but keep playing"; surface release on dispose.
+- **Memory.** Cap buffer to 50s. Leaving the screen detaches the surface and controller; the service-owned player is released only in the service's `onDestroy`.
+- **DRM.** The provider's licence decides quality per security level; surface "best quality on this device" honestly.
+- **Lifecycle.** `MediaSessionService` for background; PiP for "leave the app but keep playing"; surface release on dispose. Automatic restart after a kill isn't guaranteed, so saved position is what protects the user.
 - **Cast.** Media3 Cast extension; preserve position when handing off.
 - **Captions / accessibility.** Always offer captions; honour system caption settings.
 - **Privacy.** Don't log full URLs (signed CDN URLs may include user tokens). Redact.
@@ -500,13 +534,13 @@ Media3's `DownloadService` manages segment download, retry, persistence. For DRM
 > `ConnectivityManager` callback fires. We re-apply cellular constraints (`MaxVideoBitrate=1.5Mbps`). ExoPlayer's `BandwidthMeter` reads the new throughput; ABR steps down. If buffer underruns, brief rebuffer; otherwise seamless.
 
 > **Q: User scrubs to 50% on a long video — what's the latency target?**
-> Seek to keyframe near target. With segmented streaming (DASH), we fetch the segment containing that position (~few seconds). `bufferForPlaybackAfterRebufferMs = 2000` means ~2s before playback resumes. UI shows scrubbing thumbnail (from thumbnails VTT) during the seek.
+> Set a measured seek-to-frame target, because the real time depends on network, cache, codec and keyframe spacing. We seek to a keyframe near the target and fetch the segment containing it. A seek uses `bufferForPlaybackMs` (1 s of buffered media here), because `bufferForPlaybackAfterRebufferMs` applies only after the buffer ran out on its own. Neither is a wait time. UI shows scrubbing thumbnail (from thumbnails VTT) during the seek.
 
 > **Q: How do you support background audio for a music video?**
-> MediaSessionService + a foreground notification with `MediaStyle`. The user can lock the screen and audio continues. We mark the session as `MediaSession.Builder.setPlaybackState(PLAYING)` so lock-screen controls work.
+> MediaSessionService + `WAKE_MODE_LOCAL`, with the media notification Media3 provides. The user can lock the screen and audio continues. Lock-screen controls follow the session's `Player` automatically, so there's no playback state to set by hand; that was the legacy `MediaSessionCompat` model.
 
 > **Q: How are downloads expired?**
-> Each offline license has `expiresAt`. A periodic `WorkManager` job checks expiries and either re-requests a new license (if user is still entitled) or marks the download EXPIRED and deletes bytes after a grace period.
+> `OfflineLicenseHelper.getLicenseDurationRemainingSec` reports what's left on a key set. A periodic `WorkManager` job checks expiries and either renews the licence (if user is still entitled, storing the returned key-set ID) or marks the download EXPIRED, releases the licence and deletes bytes after a grace period.
 
 > **Q: Cast handoff — what happens to local player?**
 > When `CastSession` connects, the local player is paused. We pass the current position to Cast (`CastPlayer.setMediaItem(item, currentPosition)`). When the user disconnects, we read position back and resume locally.
