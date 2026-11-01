@@ -28,7 +28,7 @@ TREES = {
     'platform-engineering': {'title': 'Platform Engineering', 'phases': None},
     'kotlin': {'title': 'Kotlin', 'phases': None},
     'android': {'title': 'Android', 'phases': [1, 2, 3, 4, 5, 6, 7, 8, 9]},
-    'mobile-system-design': {'title': 'Mobile System Design', 'phases': [1, 2, 3, 4], 'pilot': [
+    'mobile-system-design': {'title': 'Mobile System Design', 'phases': [1, 2, 3, 4, 5], 'pilot': [
         'mobile-system-design/design-framework.md', 'mobile-system-design/non-functional-requirements.md',
         'mobile-system-design/performance.md', 'mobile-system-design/accessibility.md',
         'mobile-system-design/localization-and-internationalization.md', 'mobile-system-design/security-and-privacy.md',
@@ -41,7 +41,8 @@ TREES = {
         'mobile-system-design/typeahead-autocomplete-search.md', 'mobile-system-design/search.md',
         'mobile-system-design/notification-system.md', 'mobile-system-design/offline-sync.md',
         'mobile-system-design/news-feed.md', 'mobile-system-design/chat-messaging.md',
-        'mobile-system-design/collaborative-editing.md']},
+        'mobile-system-design/collaborative-editing.md',
+        'mobile-system-design/google-maps-location-system.md', 'mobile-system-design/ride-hailing.md', 'mobile-system-design/payment-flow.md', 'mobile-system-design/play-billing-and-subscriptions.md', 'mobile-system-design/stock-trading-app.md', 'mobile-system-design/youtube-video-streaming.md']},
 }
 
 

@@ -1,0 +1,10 @@
+<!-- Source: original playbook 400a7d7dd85c962b6b2d6d856712ca316a11edc8; recap follows the reviewed chapter. -->
+
+<!-- @after 11. Further Reading :: recap -->
+### Say these in the interview
+
+- Treat a purchase token as evidence to verify on the backend, bound to one app account.
+- Do not grant a pending purchase. Grant only after verified purchase state allows entitlement.
+- Acknowledge new purchases within their deadline; renewals are not new acknowledgement tasks.
+- RTDN is a prompt to query Play’s canonical state, not a complete entitlement record.
+- Cancellation is not immediate expiry. Model grace, hold, pause and expiry separately.

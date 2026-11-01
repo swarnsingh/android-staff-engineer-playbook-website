@@ -12,8 +12,8 @@
 ### Functional Requirements
 - **Card entry** (number, expiry, CVC) with PAN never leaving the PSP SDK's surface.
 - **Save card** for future use (with explicit consent).
-- **Confirm and pay** for an order with biometric gate.
-- **3DS challenge** handling for SCA (PSD2).
+- **Confirm and pay** for an order, with a biometric gate as our own product policy.
+- **3DS challenge** handling, because the cardholder's bank can require SCA (PSD2) at any amount.
 - **Show clear success / failure / retry** states.
 
 ### Non-Functional Requirements
@@ -40,13 +40,13 @@
 | Which PSP / region? | SDK choice, SCA requirements |
 | Geographic markets? | PSD2 (EU), 3DS variants, alternative payment methods |
 | Guest checkout or signed-in only? | Save-card flow, token lifetime |
-| Median order value? | Risk thresholds for SCA exemption |
+| Median order value? | Which SCA exemptions the PSP can request, and how often the bank may refuse them |
 | Currencies / FX handling? | Display rules, server-side conversion |
 | Save card by default or opt-in? | GDPR / consent UX |
 | Android API floor? | Biometric APIs, Autofill |
 | Webhook timeliness expectations? | Polling vs FCM for the final status |
 
-> **Candidate:** "Assume signed-in users only, Stripe PaymentSheet on Android, EUR/USD/GBP, PSD2 in scope, Android 9+, biometric required > €30."
+> **Candidate:** "Assume signed-in users only, Stripe PaymentSheet on Android, EUR/USD/GBP, PSD2 in scope, Android 9+, and a product rule that asks for biometrics above €30. That threshold is our policy, separate from the bank's SCA decision."
 
 ---
 
@@ -65,9 +65,9 @@ The client never handles raw card data and never declares success from an SDK ca
 **Server-side (named, not designed):**
 - **BFF / Order API** — creates a `PaymentIntent` on the PSP, holds the secret, exposes a `clientSecret` to the app.
 - **PSP** — Stripe-like service that talks to schemes and acquirers.
-- **Webhook Receiver** — listens for `payment_intent.succeeded` / `.failed` / `.requires_action` events.
+- **Webhook Receiver** — listens for `payment_intent.succeeded`, `payment_intent.processing`, `payment_intent.payment_failed` and `payment_intent.requires_action` events.
 
-> The Android app never touches raw cards. It exchanges a `clientSecret` with the PSP SDK, gets a `paymentMethodId`, and confirms.
+> The Android app never touches raw cards. It hands a `clientSecret` to PaymentSheet, which collects the details, confirms the payment and runs any 3DS challenge. The app learns only that the sheet completed, was canceled or failed, then asks the backend what happened.
 
 ---
 
@@ -77,7 +77,7 @@ The client never handles raw card data and never declares success from an SDK ca
 
 ```json
 POST /v1/payments/intent
-{ "orderId": "o_42", "amount": 4999, "currency": "EUR" }
+{ "orderId": "o_42" }                     // backend derives the price; a client amount is never trusted
 
 200 OK
 {
@@ -93,21 +93,26 @@ POST /v1/payments/intent
 ```json
 GET /v1/payments/intent/{intentId}
 { "intentId": "pi_abc", "status": "SUCCEEDED",
-  "paymentMethodId": "pm_111", "chargeId": "ch_555", "lastUpdated": ... }
+  "paymentMethodId": "pm_111", "chargeId": "ch_555",
+  "lastErrorCode": null,                  // set when an attempt was declined
+  "revision": 7,                          // increases with every transition of this intent
+  "lastUpdated": ... }
 ```
 
 ### Idempotency
-- The **order ID** is the natural idempotency key. The BFF reuses the same `PaymentIntent` for the same `orderId` across retries.
-- The PSP's `clientSecret` is single-use per intent; multiple confirms with the same secret are idempotent.
+- The **order ID** is the natural idempotency key. The BFF keeps one `orderId` → `intentId` row with a uniqueness rule and reuses that `PaymentIntent` across retries. The row matters because PSP idempotency keys expire: Stripe can prune v1 keys after 24 hours.
+- The `clientSecret` isn't an idempotency token and doesn't rotate on retry. It lets the client complete the payment on that intent, so it stays out of logs and URLs. A failed attempt returns the same intent to `requires_payment_method`, ready to try again.
 - The app sends an `Idempotency-Key` header on `/v1/payments/intent` to prevent the BFF from creating two intents for the same order.
+- Create a new intent only after the old one is known to be dead, for example `canceled`. A timeout never justifies one.
 
 ### Status mapping
 
 | PSP state | Client state | UX |
 |---|---|---|
-| `requires_payment_method` | NEEDS_INPUT | Show form |
-| `requires_action` | NEEDS_3DS | Open challenge flow |
-| `processing` | PROCESSING | Spinner; poll/await webhook |
+| `requires_payment_method`, no last error | NEEDS_INPUT | Show form |
+| `requires_payment_method`, with last error | DECLINED | Show the decline; allow retry on the same intent |
+| `requires_action` | NEEDS_3DS | Offer "Continue payment"; relaunch the SDK flow |
+| `processing` | PROCESSING | "We're confirming your payment"; can last days for delayed methods |
 | `succeeded` | SUCCESS | Receipt screen |
 | `requires_capture` | AUTHORIZED | Awaiting capture (if used) |
 | `canceled` | CANCELED | Show reason |
@@ -148,20 +153,23 @@ The repository coordinates authentication, provider UI, backend intent creation,
 
 ```kotlin
 interface CheckoutRepository {
-    suspend fun createIntent(orderId: String): IntentDescriptor
-    suspend fun confirm(intent: IntentDescriptor, method: PaymentMethod): ConfirmResult
-    suspend fun pollStatus(intentId: String): PaymentStatus
-    fun observeStatus(intentId: String): Flow<PaymentStatus>
+    suspend fun prepareSheet(ownerId: String, orderId: String): SheetRequest   // Present(clientSecret), or Settled
+    suspend fun reconcile(ownerId: String, intentId: String)                   // updates Room; the UI observes it
 }
 
-sealed class ConfirmResult {
-    data class Success(val chargeId: String) : ConfirmResult()
-    data class NeedsAction(val redirect: ChallengeRequest) : ConfirmResult()
-    data class Failed(val reason: ReasonCode) : ConfirmResult()
+sealed class CheckoutOutcome {
+    data class Paid(val orderId: String) : CheckoutOutcome()
+    data class Declined(val reason: ReasonCode) : CheckoutOutcome()      // same intent can retry
+    data class NeedsAction(val intentId: String) : CheckoutOutcome()     // relaunch the SDK flow
+    data class Pending(val intentId: String) : CheckoutOutcome()         // processing or unknown; never "failed"
+    object NeedsInput : CheckoutOutcome()
+    object Canceled : CheckoutOutcome()
 }
 ```
 
-> **Boundary discipline:** Only `:core:psp` imports the PSP SDK. The rest of the app deals in domain types (`PaymentMethod`, `ConfirmResult`). Swapping PSPs becomes one module change.
+> **PaymentSheet's result is a prompt, not the truth.** `Completed` doesn't mean paid for delayed methods, and `Failed` doesn't mean no money moved. Every result leads to `reconcile`, because only the backend's status counts.
+
+> **Boundary discipline:** Only `:core:psp` imports the PSP SDK. The rest of the app deals in domain types (`SheetRequest`, `CheckoutOutcome`). Swapping PSPs becomes one module change.
 
 ---
 
@@ -171,8 +179,10 @@ sealed class ConfirmResult {
 @Entity(tableName = "payment_intents")
 data class PaymentIntentEntity(
     @PrimaryKey val intentId: String,
+    val ownerId: String,                 // signed-in user; reconcile only touches this user's rows
     val orderId: String, val amount: Long, val currency: String,
-    val status: PaymentStatus,           // CREATED, CONFIRMING, REQUIRES_ACTION, PROCESSING, SUCCEEDED, FAILED
+    val status: PaymentStatus,           // CONFIRMING, NEEDS_INPUT, DECLINED, REQUIRES_ACTION, PROCESSING, AUTHORIZED, SUCCEEDED, CANCELED
+    val revision: Long,                  // the backend's per-intent revision; orders every update
     val lastEventAt: Long,
     val clientReference: String          // Idempotency-Key
 )
@@ -211,65 +221,80 @@ Ambiguous network outcomes become a status-reconciliation problem, not a second 
 ### Idempotency in detail
 
 ```kotlin
-suspend fun confirm(orderId: String, method: PaymentMethod): ConfirmResult {
-    val key = "$orderId-v1"
-    val descriptor = api.createIntent(
-        idempotencyKey = key,
-        body = CreateIntent(orderId)
-    ).also { dao.upsert(PaymentIntentEntity(it.intentId, orderId, ..., status = CREATED, clientReference = key)) }
+// ownerId is fixed when checkout starts. Every call uses that owner's credentials,
+// and the network layer refuses any other token.
+suspend fun prepareSheet(ownerId: String, orderId: String): SheetRequest {
+    val descriptor = api.createIntent(ownerId, idempotencyKey = orderId, body = CreateIntent(orderId))
 
-    return runCatching {
-        psp.confirm(descriptor.clientSecret, method)
-    }.fold(
-        onSuccess = { handle(it, descriptor.intentId) },
-        onFailure = { t ->
-            if (t.isNetworkError) {
-                dao.update(descriptor.intentId, status = CONFIRMING)
-                workManager.enqueueUniqueWork("poll-$intentId", REPLACE, pollWork(descriptor.intentId))
-                ConfirmResult.Failed(ReasonCode.NETWORK_UNCERTAIN)
-            } else throw t
-        }
-    )
+    // A retry starts from what the backend knows, so it can't pay an order that already went through.
+    val current = api.status(ownerId, descriptor.intentId)
+    when (current.status) {
+        NEEDS_INPUT, DECLINED, REQUIRES_ACTION -> Unit
+        else -> return SheetRequest.Settled(descriptor.intentId, current.status)
+    }
+
+    // Commit before the SDK can move money: if the process dies from here on, reconcile finds this row.
+    dao.upsertConfirming(descriptor.toEntity(ownerId, status = CONFIRMING, revision = current.revision, clientReference = orderId))
+    return SheetRequest.Present(descriptor.intentId, descriptor.clientSecret)
 }
+
+fun onPaymentSheetResult(result: PaymentSheetResult) {
+    // Completed, Canceled and Failed all lead to the same question for the backend.
+    reconcileInFlight()
+}
+
+// Updates Room. The screen renders from Room, so overlapping calls can't show conflicting answers.
+suspend fun reconcile(ownerId: String, intentId: String) {
+    try {
+        // Atomic: accepts a higher revision, or the same revision while the row is locally CONFIRMING.
+        dao.applyStatus(ownerId, intentId, api.status(ownerId, intentId))
+    } catch (e: IOException) {
+        enqueuePoll(ownerId, intentId)      // a timeout is unknown, not failed, and can't undo a known result
+        return
+    }
+    if (dao.get(ownerId, intentId)?.isStillMoving == true) enqueuePoll(ownerId, intentId)
+}
+
+private fun enqueuePoll(ownerId: String, intentId: String) =
+    workManager.enqueueUniqueWork("poll-$intentId", KEEP, pollWork(ownerId, intentId))
 ```
 
-**Why this is safe:** even if the SDK call times out, the server's PSP did or didn't charge. We never call `confirm` twice with a different intent — the same `clientSecret` is reused, and the same `Idempotency-Key` is sent. The truth is recovered by polling the intent status, not by guessing.
+**Why this is safe:** a timeout or provider 5xx tells us nothing about the charge, so the outcome stays `Pending` and the button stays disabled until the backend answers. We never pay through a different intent, and a retry first checks the current status. Stripe's v1 API replays a saved 500 for a repeated key, so the BFF treats that as unknown too, and looks up the status through its `orderId` row instead of retrying blindly. `isStillMoving` covers a just-confirmed intent or a lagging webhook. Polling backs off and stops after a bounded time: `requires_action` waits for the user and `processing` can last days, so neither ends by polling. Those states wait for a webhook-driven update or the next launch.
 
 ### 3DS / SCA challenge
 
-```kotlin
-sealed class ChallengeRequest {
-    data class Redirect(val url: Uri) : ChallengeRequest()
-    data class InlineSdk(val challengePayload: ByteArray) : ChallengeRequest()
-}
+With PaymentSheet, the SDK runs the challenge itself and the app never sees a redirect or challenge payload. If we chose a custom integration instead, we'd own that flow, along with a larger PCI scope.
 
-// Launched as ActivityResultContract — survives process death
-val challengeLauncher = registerForActivityResult(ThreeDsContract()) { result ->
-    when (result) {
-        is ChallengeResult.Completed -> vm.onChallengeCompleted(result.intentId)
-        is ChallengeResult.Cancelled -> vm.onChallengeCancelled()
-    }
-}
-```
+Don't assume the flow survives process death. An Activity Result callback only returns if the launcher is registered again when the activity is recreated, and any state needed to handle the result has to be saved separately. The system can also kill the process while the user is in a banking app. So the design doesn't depend on the SDK resuming. On return, the row is still `CONFIRMING`, reconcile asks the backend, and each answer has a defined path:
 
-The challenge runs in a dedicated Activity (Stripe SDK does this internally) — if the user is killed mid-challenge by Doze or returns from a banking app, the SDK resumes the flow via `onNewIntent`.
+| Backend status | What the app does |
+|---|---|
+| `succeeded` | Receipt |
+| `processing` | "We're confirming your payment"; fulfil only on success |
+| `requires_action` | Offer "Continue payment": fetch the client secret again and relaunch the SDK flow for this integration |
+| `requires_payment_method` | Show the decline if there's a last error, otherwise return to checkout |
 
 ### Reconciliation on resume
 
 ```kotlin
+// The ViewModel is created for one ownerId and is cleared when that account signs out.
+val checkout: StateFlow<CheckoutOutcome> =
+    dao.observeByOrder(ownerId, orderId).map { it.toOutcome() }.stateIn(...)
+
 override fun onResume() {
     super.onResume()
-    vm.reconcileInFlight()    // any CONFIRMING/REQUIRES_ACTION row → poll
+    vm.reconcileInFlight()    // launches in viewModelScope
 }
 
-suspend fun reconcileInFlight() {
-    dao.inFlightIntents().forEach { entity ->
-        val status = repo.pollStatus(entity.intentId)
-        dao.update(entity.intentId, status = status)
-        if (status == SUCCEEDED) navigate(to = Receipt(entity.orderId))
-    }
+fun reconcileInFlight() = viewModelScope.launch {
+    // Every non-terminal row for this user: CONFIRMING, REQUIRES_ACTION, PROCESSING, AUTHORIZED.
+    dao.inFlightIntents(ownerId).forEach { repo.reconcile(ownerId, it.intentId) }
 }
 ```
+
+The screen and receipt navigation follow `checkout`. Room holds one answer, ordered by revision, so if one call commits `SUCCEEDED` and another times out, the user still sees the receipt. A timestamp can't give that ordering: two transitions can share a tick, and statuses can cycle through decline and retry, so the order of status names doesn't help either.
+
+At sign-out, cancel that owner's work, clear its ViewModel, call `PaymentSheet.resetCustomer()` and purge its rows, so the next user neither polls nor sees them. A request already suspended can still return afterwards, but its row carries the old `ownerId`, so the next user's queries never see it, and the next launch sweeps rows for accounts no longer signed in. A sheet result arriving for a cleared ViewModel is dropped, and the sweep or that owner's next sign-in reconciles the payment. Poll work takes `ownerId` as input and fetches with credentials for that owner, so a poll that outlives a sign-in can't run under the next user's token.
 
 ### Biometric gate
 
@@ -286,22 +311,27 @@ class BiometricPromptManager @Inject constructor() {
                 }
             })
         prompt.authenticate(promptInfo(title))
+        cont.invokeOnCancellation { prompt.cancelAuthentication() }
     }
 }
 ```
 
-Triggered only when amount > threshold OR risk score from PSP is elevated.
+Triggered only when amount > threshold OR risk score from PSP is elevated. This is a local check with no `CryptoObject` or server proof, so a modified client can skip it. Treat it as a guard against someone else holding the phone, separate from the bank's SCA. If it must be a real control, have the backend require a key-bound proof.
 
 ### Failure modes
 
 | What breaks | Behavior |
 |---|---|
-| Network drops after SDK confirm | Status moves to `CONFIRMING`; poll worker resolves |
-| User backgrounds during 3DS | SDK resumes via `onNewIntent`; reconcile on resume |
+| Network drops after SDK confirm | Row is already `CONFIRMING`; outcome is `Pending`; poll worker resolves |
+| User backgrounds during 3DS | Reconcile on resume; if still `requires_action`, offer "Continue payment" |
 | User taps Pay twice fast | Single-click guard in VM; `Idempotency-Key` covers the network race |
-| Process killed mid-confirm | Room row in `CONFIRMING`; reconcile on next launch |
-| PSP returns `requires_action` after we showed success | Cannot happen if VM waits for terminal status; assert with tests |
+| Process killed mid-confirm | Row was committed as `CONFIRMING` before the sheet; reconcile on next launch shows the receipt, decline or continue option |
+| Card declined | Intent returns to `requires_payment_method`; show the reason; retry uses the same intent |
+| Delayed method still `processing` | Tell the user it's pending; fulfil on `payment_intent.succeeded`, and offer another attempt on `payment_intent.payment_failed` |
+| PSP returns `requires_action` after we showed success | Cannot happen if VM waits for the backend's status; assert with tests |
 | Webhook lags | Poll backoff up to 30 s; show "We're confirming your payment…" |
+| Another user signs in | Every call and query is scoped to a fixed `ownerId`; a late result for the previous user is invisible and swept |
+| Two reconciles overlap | Room keeps the highest revision; a stale response or a timeout can't undo a known result |
 
 ---
 
@@ -311,7 +341,7 @@ Triggered only when amount > threshold OR risk score from PSP is elevated.
 
 | Option | Verdict |
 |---|---|
-| **PSP SDK fields (Stripe PaymentSheet)** | Pick — PCI scope = SAQ-A, no PAN in app |
+| **PSP SDK fields (Stripe PaymentSheet)** | Pick — no PAN in app, and SAQ A can apply when only the official UI components handle card data on the customer's own device. Confirm eligibility for your integration |
 | Custom UI + PSP token API | Possible but raises PCI scope; rarely worth it |
 | WebView checkout | Bad UX, deep linking complexity |
 
@@ -319,7 +349,7 @@ Triggered only when amount > threshold OR risk score from PSP is elevated.
 
 | Option | Pros | Cons | Verdict |
 |---|---|---|---|
-| **Order-ID-derived key** | Stable across retries | Need to rotate on user-initiated retry | Pick this |
+| **Order-ID-derived key** | Stable across retries, including a user-initiated retry on the same intent | Backend needs its own `orderId` → `intentId` row, since PSP keys expire | Pick this |
 | Random UUID per attempt | Trivial | Same retry creates two intents | Skip |
 | Server-generated key | Single source of truth | Race during creation | Server still validates |
 
@@ -327,7 +357,7 @@ Triggered only when amount > threshold OR risk score from PSP is elevated.
 
 | Option | Verdict |
 |---|---|
-| **PSP SDK (direct)** | Pick — SDK handles 3DS, retries, PCI boundary |
+| **PSP SDK (direct)** | Pick — SDK handles 3DS, retries, PCI boundary. Stripe now steers most new integrations to its Checkout Sessions API, so check current guidance; the reconciliation design here doesn't change |
 | Our BFF acts as proxy | Adds latency, doesn't gain anything; PCI scope grows |
 | Webhook-only | App can't show realtime status; only as backup signal |
 
@@ -345,28 +375,28 @@ Triggered only when amount > threshold OR risk score from PSP is elevated.
 |---|---|
 | **BiometricPrompt + AndroidX** | Pick — class-3 (strong) where available |
 | FingerprintManager (deprecated) | Skip |
-| No biometric | Acceptable below threshold; required above |
+| No biometric | Acceptable below our product threshold; this doesn't change whether the bank asks for SCA |
 
 ---
 
 ## 9. Major Concerns
 
 - **Double-charge prevention.** Same `Idempotency-Key` for the same logical attempt. Server's PSP integration dedupes. Client never re-creates an intent for the same order.
-- **PCI scope.** Stay in SAQ-A: use PSP SDK fields. Never log card data, even masked, even in debug.
-- **Network-uncertain state.** "Did it go through?" must be resolvable: poll the intent status until terminal. Never assume failure on timeout.
-- **Process death during 3DS.** Activity result + Room state must survive. SDK handles its own resume; you reconcile from your log.
+- **PCI scope.** Aim for SAQ A: only the PSP SDK's own UI handles card data, on the customer's own device. Custom card-handling code loses that. Never log card data, even masked, even in debug.
+- **Network-uncertain state.** "Did it go through?" must be resolvable: reconcile against the backend, with bounded polling and webhook updates. Never assume failure on timeout.
+- **Process death during 3DS.** The Room row survives even if the SDK flow doesn't. Reconcile from your log, and handle an intent still in `requires_action` by offering to continue.
 - **Webhook lag.** Build the UI assuming up to 30s delay. Spinner with explanatory text > false success.
 - **Security.** `FLAG_SECURE` on checkout screens. TLS 1.3 + cert pinning. Tokens only in Keystore-wrapped storage. No payment data in screenshots or recents.
-- **Replay attack.** PSP SDK uses single-use `clientSecret`. Don't echo it to logs. Rotate on retry.
+- **Client secret.** It can complete a payment on its intent, so don't log it, put it in URLs or store it in Room. Protection against a duplicate charge comes from one intent per order and server-side idempotency.
 - **Accessibility.** TalkBack on every error. Don't rely on color alone.
-- **Geo edge.** PSD2 mandates SCA above thresholds; show challenge clearly; don't silently fail for low-friction users in non-EU regions where exemptions apply.
+- **Geo edge.** SCA is the default for in-scope customer-initiated online payments, with scope set by where the business and the cardholder's bank are (EEA, plus the UK's own regime). There's no amount below which it simply stops: low-value (under €30 or £25) and risk-analysis routes are exemptions the PSP requests, and the bank decides. Low-value exemptions also run out after five uses or €100 since the last authentication. So handle `requires_action` at any amount, and show the challenge clearly.
 
 ---
 
 ## 10. Follow-up Questions
 
 > **Q: User taps Pay, sees "no internet" — they walk away, come back, what now?**
-> On resume, reconcile any `CONFIRMING` rows by polling `/v1/payments/intent/{id}`. If `SUCCEEDED`, navigate to receipt — they paid. If `FAILED`, allow retry. The bank already decided; we only display the truth.
+> On resume, reconcile every non-terminal row through `/v1/payments/intent/{id}`. If `SUCCEEDED`, navigate to receipt — they paid. If the intent is back at `requires_payment_method`, show the decline and allow a retry on the same intent. If it's still `requires_action`, offer to continue. The bank already decided; we only display the truth.
 
 > **Q: How do you prevent the user paying twice by tapping fast?**
 > ViewModel-level single-flight guard (`MutableStateFlow<Boolean>` for `inFlight`). Compose disables the button while `inFlight`. The idempotency key covers the network race even if the button somehow fires twice.
@@ -375,10 +405,10 @@ Triggered only when amount > threshold OR risk score from PSP is elevated.
 > The PSP returns a `paymentMethodId`. We store it server-side, scoped to the user. On future checkouts, the app passes `paymentMethodId` instead of fresh card details. The token is not sensitive on its own; it's only useful via your account.
 
 > **Q: How is 3DS tested?**
-> PSP sandbox provides test cards that always trigger challenge, succeed, or fail. End-to-end tests with the SDK mocked to return each `ConfirmResult` variant. Manual smoke tests on real devices for the actual web challenge handoff.
+> PSP sandbox provides test cards that always trigger challenge, succeed, or fail. End-to-end tests mock each `PaymentSheetResult` against each backend status, including `Failed` with a `succeeded` intent. Manual smoke tests on real devices for the actual web challenge handoff.
 
-> **Q: Apple Pay / Google Pay — how does it slot in?**
-> Same `CheckoutRepository.confirm` API; the `PaymentMethod` source is GooglePayLauncher instead of card fields. The PSP SDK returns the same `ConfirmResult`. Architecture absorbs it cleanly.
+> **Q: Google Pay — how does it slot in?**
+> Pass `PaymentSheet.GooglePayConfiguration` when configuring the sheet. It's one more option inside the same sheet, on the same intent, and the result still goes to `reconcile`. Apple Pay has no Android path; it belongs to the iOS client.
 
 > **Q: Refunds?**
 > Out of scope here, but architecturally: a different screen, server-side reverse charge, no biometric required, optimistic UI not needed (rare action). Bank notification arrives via webhook.
@@ -400,7 +430,8 @@ Triggered only when amount > threshold OR risk score from PSP is elevated.
 
 - [weeeBox/mobile-system-design](https://github.com/weeeBox/mobile-system-design) — reference format.
 - [Stripe — Idempotent Requests](https://stripe.com/docs/api/idempotent_requests) — canonical idempotency-key pattern.
-- [Stripe Android SDK — PaymentSheet](https://stripe.com/docs/payments/accept-a-payment?platform=android) — PCI-reducing card capture.
+- [Stripe Android SDK — PaymentSheet](https://docs.stripe.com/payments/accept-a-payment?payment-ui=mobile&platform=android) — PCI-reducing card capture.
+- [How Payment Intents work](https://docs.stripe.com/payments/paymentintents/lifecycle) — every status, and what a failed attempt returns to.
 - [PSD2 / SCA — what it means for mobile](https://stripe.com/guides/strong-customer-authentication) — challenge flow design.
 - [Android Developers — BiometricPrompt](https://developer.android.com/training/sign-in/biometric-auth) — class-3 biometric integration.
 

@@ -24,8 +24,8 @@ Version context (verify before an interview — this moves): Play Billing Librar
 
 ### Out of Scope (defended)
 
-- Card checkout for physical goods — Play Billing is *required* for digital in-app goods and *prohibited* for physical ones; that flow is [Payment Flow](payment-flow.md).
-- Alternative/external billing programs (region-specific: PBL 8.2/8.3 added `enableBillingProgram` APIs for external payments) — mention they exist, don't design them.
+- Card checkout for physical goods — Play Billing is the default for digital in-app goods and isn't for physical ones; that flow is [Payment Flow](payment-flow.md).
+- Alternative/external billing programs (PBL 8.2/8.3 added `enableBillingProgram` APIs for external payments, and [Play's billing choice program](https://android-developers.googleblog.com/2026/06/play-expanded-billing.html) now covers the US, UK and EEA) — mention they exist and that the rule depends on region and current Play policy; don't design them.
 - Paywall/pricing experimentation — that's [Experimentation Platform](experimentation-platform.md).
 
 ---
@@ -37,7 +37,7 @@ Modern Play subscriptions are a three-level hierarchy — one **subscription pro
 Two base-plan types matter architecturally:
 
 - **Auto-renewing** — the default; the lifecycle in §5 applies.
-- **Prepaid** — no auto-renewal; the user *tops up* to extend. Acknowledgment windows are tighter (≥1-week plans: 3 days; shorter plans: half the plan duration) and a missed acknowledgment means revocation plus refund.
+- **Prepaid** — no auto-renewal; the user *tops up* to extend. Every top-up is a new purchase to acknowledge. Plans of a week or longer get 3 days; shorter plans get half the plan duration. A missed top-up acknowledgment revokes the top-up and the remaining subscription, with a refund.
 
 Installment plans (pay monthly for an annual commitment; Brazil/France/Italy/Spain) exist — know they change cancellation semantics (takes effect at commitment end, signaled by `SUBSCRIPTION_CANCELLATION_SCHEDULED`).
 
@@ -66,7 +66,7 @@ Two synchronization channels, both required:
 
 ### The acknowledgment contract
 
-Every purchase must be **acknowledged within 3 days** or Play revokes and refunds it automatically. Acknowledge from the server, *after* you've durably granted entitlement — acknowledgment is your "I have processed this" signal, so acknowledging before the entitlement write can leak a refund-proof failure window. This ordering (verify → grant → acknowledge) is the Play analogue of the idempotency discipline in [Payment Flow](payment-flow.md).
+Every **new purchase** must be acknowledged or Play revokes and refunds it automatically: an auto-renewing subscription, upgrade, downgrade, resubscribe or prepaid top-up. The window is 3 days, or half the plan duration for a prepaid plan shorter than a week. **Automatic renewals don't need acknowledging.** A pending purchase is processed only once it becomes `PURCHASED`. Acknowledge from the server, *after* you've durably granted entitlement — acknowledgment is your "I have processed this" signal, so acknowledging before the entitlement write can leak a refund-proof failure window. This ordering (verify → grant → acknowledge) is the Play analogue of the idempotency discipline in [Payment Flow](payment-flow.md).
 
 ## 4. Data Model
 
@@ -81,7 +81,7 @@ entitlements
   acknowledged_at, updated_at, source (RTDN | RECONCILE | CLIENT)
 ```
 
-Map purchases to your users with `obfuscatedAccountId` set at purchase time — it comes back in the subscription resource, which is how you attribute an out-of-app renewal or a Play-website purchase to an account. **Purchase tokens rotate**: an upgrade, downgrade, or pre-expiry resubscribe creates a *new* token whose resource carries `linkedPurchaseToken` pointing at the old one. Process replacements idempotently by retiring the linked token's entitlement when granting the new one — double-granting on upgrade is the classic bug. **Post-expiry resubscribes are the exception:** the old subscription expired completely, so there is *no* `linkedPurchaseToken` — the prior purchase surfaces instead in `outOfAppPurchaseContext` (`expiredPurchaseToken` plus the `expiredExternalAccountIdentifiers` you set originally), present only while the new purchase is unacknowledged. An entitlement service that attributes users solely via `linkedPurchaseToken` silently drops exactly the customers who came back.
+Map purchases to your users with `obfuscatedAccountId`, set through `BillingFlowParams` at purchase time. It comes back in the subscription resource, so renewals keep their mapping. A purchase that starts on Play outside the app never went through `BillingFlowParams`, so a first-time Play-store purchase has no mapping. Hold it as unmapped, link it when the user next signs in, and decide before the acknowledgment deadline what happens if they don't. **Purchase tokens rotate**: an upgrade, downgrade, or pre-expiry resubscribe creates a *new* token whose resource carries `linkedPurchaseToken` pointing at the old one. Process replacements idempotently by retiring the linked token's entitlement when granting the new one — double-granting on upgrade is the classic bug. **Post-expiry resubscribes are the exception:** the old subscription expired completely, so there is *no* `linkedPurchaseToken` — the prior purchase surfaces instead in `outOfAppPurchaseContext` (`expiredPurchaseToken` plus the `expiredExternalAccountIdentifiers` you set originally), present only while the new purchase is unacknowledged. An entitlement service that attributes users solely via `linkedPurchaseToken` silently drops exactly the customers who came back.
 
 Tokens remain queryable until ~60 days after expiry; after that, reconciliation can't see them, so record terminal states when they happen.
 
@@ -97,7 +97,11 @@ stateDiagram-v2
     IN_GRACE_PERIOD --> ON_HOLD: grace period ends
     ON_HOLD --> ACTIVE: recovered
     ON_HOLD --> CANCELED: unresolved
+    ACTIVE --> PAUSED: user pauses
+    PAUSED --> ACTIVE: resumes
+    PAUSED --> ON_HOLD: resume payment fails
     ACTIVE --> CANCELED: user cancels
+    CANCELED --> ACTIVE: restored before expiry
     CANCELED --> EXPIRED: entitlement period ends
     EXPIRED --> [*]
 ```
@@ -117,20 +121,22 @@ Replacement modes (set via `SubscriptionProductReplacementParams` on PBL 8.1+; t
 
 | Mode | Effect | Typical use |
 |---|---|---|
-| `WITH_TIME_PRORATION` (default) | Switch now; remaining value becomes extra time; next billing date shifts | Upgrade without charging today |
+| `WITH_TIME_PRORATION` (enum default) | Switch now; remaining value becomes extra time; next billing date shifts | Upgrade without charging today |
 | `CHARGE_PRORATED_PRICE` | Switch now; charge the price difference; billing date unchanged | Upgrade, keep cycle (upgrades only) |
 | `CHARGE_FULL_PRICE` | Switch now; charge full new price; remainder credited/prorated | Period change (monthly → annual) |
 | `WITHOUT_PRORATION` | Switch now; new price starts at next renewal | Tier bump as a courtesy |
 | `DEFERRED` | Entitlement changes only at renewal; old plan runs out first | Downgrades — never claw back mid-cycle |
 | `KEEP_EXISTING` (PBL 8.1+) | Leave this item's schedule untouched | Multi-item carts with add-ons |
 
-Staff-level defaults: **upgrades charge-prorated or time-prorated, downgrades deferred.** And remember the platform precondition: the existing purchase must already be acknowledged before Play will let you replace it.
+**The table applies to changing subscription products.** Base-plan switches within one subscription, which is how monthly-to-annual usually works here, are narrower. Their default is set in Play Console, and only `CHARGE_FULL_PRICE` and `WITHOUT_PRORATION` are valid; any other mode fails the purchase. Switching to a prepaid plan allows only `CHARGE_FULL_PRICE`.
+
+Staff-level defaults across products: **upgrades charge-prorated or time-prorated, downgrades deferred.** And remember the platform precondition: the existing purchase must already be acknowledged before Play will let you replace it.
 
 ## 7. Failure Modes
 
 - **PENDING purchases** (cash top-ups, parental approval): enable pending-purchase handling, grant nothing until `PURCHASED` arrives — possibly days later, via RTDN, with the app closed.
 - **RTDN subscriber outage:** entitlements freeze in place; grace-period users keep access (fine), recovered users stay locked out (not fine). The reconciliation sweep is the backstop; alert on Pub/Sub backlog age.
-- **Acknowledgment misses** → automatic refunds three days later. Alert on `acknowledged_at IS NULL AND age > 24h`.
+- **Acknowledgment misses** → automatic refunds when the window closes. Alert relative to each purchase's own deadline, for example at half of it, because a fixed 24-hour alert is too late for a one-day prepaid plan. Exclude renewals, which need no acknowledgment.
 - **Voided purchases** (refunds/chargebacks): consume the Voided Purchases API and revoke — this is your clawback path, cross-cutting with abuse detection.
 - **Connection churn on-device:** PBL 8's `enableAutoServiceReconnection()` removes most manual `SERVICE_DISCONNECTED` retry code; sub-response codes (e.g., `PAYMENT_DECLINED_DUE_TO_INSUFFICIENT_FUNDS`, `USER_INELIGIBLE`) let the UI say something more useful than "purchase failed."
 
@@ -139,13 +145,14 @@ Staff-level defaults: **upgrades charge-prorated or time-prorated, downgrades de
 - **Entitlement mismatch rate:** sampled diff between your DB and `subscriptionsv2.get` — the SLI for the whole design.
 - **Grace→recovered vs grace→hold conversion** (involuntary-churn recovery): the business metric this system exists to protect.
 - **RTDN processing lag** (publish→entitlement-write) and Pub/Sub backlog age.
-- **Acknowledgment latency histogram** with alerting well inside the 3-day window; auto-refund count (should be ~0).
+- **Acknowledgment latency histogram** with alerting well inside each purchase's window; auto-refund count (should be ~0).
 
 ## 9. Security
 
 - Never trust client-reported purchase state; verify server-side via the Play Developer API (which also handles what the client can't: refunds, revokes, defers).
 - `obfuscatedAccountId` should be an opaque per-user value — not an email, not a raw user id (it flows through Play systems; treat it as pseudonymous PII).
 - Replay/duplicate defense is structural: key entitlement writes by purchase token, retire `linkedPurchaseToken` predecessors idempotently.
+- Bind each token to one account. Keying by token stops double processing, but not a token submitted from the wrong account. Check that the purchase's `obfuscatedAccountId` matches the authenticated caller, and flag or revoke a mismatch, as [Play's security guidance](https://developer.android.com/google/play/billing/security) advises.
 
 ## 10. Rollout
 

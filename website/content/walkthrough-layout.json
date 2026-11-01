@@ -1,5 +1,5 @@
 {
-  "about": "Which chapters use the interview-walkthrough layout. Groups are content, not code: the build reads this file, then still checks each listed chapter's own numbered headings and falls back to the normal chapter layout when they do not match. Only listed walkthrough chapters are affected; chapter-layout groups record the decision. 1 November 2026: Phases 1, 2, 3 and 4.",
+  "about": "Which chapters use the interview-walkthrough layout. Groups are content, not code: the build reads this file, then still checks each listed chapter's own numbered headings and falls back to the normal chapter layout when they do not match. Only listed walkthrough chapters are affected; chapter-layout groups record the decision. 1 November 2026: Phases 1–5.",
   "groups": [
     {
       "id": "foundations",
@@ -56,7 +56,12 @@
         "mobile-system-design/offline-sync.md",
         "mobile-system-design/news-feed.md",
         "mobile-system-design/chat-messaging.md",
-        "mobile-system-design/collaborative-editing.md"
+        "mobile-system-design/collaborative-editing.md",
+        "mobile-system-design/google-maps-location-system.md",
+        "mobile-system-design/ride-hailing.md",
+        "mobile-system-design/payment-flow.md",
+        "mobile-system-design/stock-trading-app.md",
+        "mobile-system-design/youtube-video-streaming.md"
       ]
     },
     {
@@ -72,6 +77,15 @@
         "mobile-system-design/feature-flags-and-remote-config.md",
         "mobile-system-design/telemetry-sdk.md",
         "mobile-system-design/analytics-sdk.md"
+      ]
+    },
+    {
+      "id": "product-lifecycles",
+      "title": "Product lifecycles and runtime decisions",
+      "layout": "chapter",
+      "note": "Billing and AI use their original lifecycle and decision structure rather than the 12-section interview format.",
+      "chapters": [
+        "mobile-system-design/play-billing-and-subscriptions.md"
       ]
     }
   ],

@@ -1,0 +1,10 @@
+<!-- Source: original playbook 400a7d7dd85c962b6b2d6d856712ca316a11edc8; recap follows the reviewed chapter. -->
+
+<!-- @after 12. Further Reading :: recap -->
+### Say these in the interview
+
+- The backend owns trip transitions; a client action is a command, not proof that the trip advanced.
+- Keep commandId stable across retries and recover the active trip from the server after process death.
+- An online driver keeps user-visible location tracking running; periodic work is too stale for dispatch.
+- Buffer pings by owner, upload with that owner’s credentials and delete acknowledged samples.
+- Handle service loss explicitly: mark the driver stale server-side and offer a tap to resume tracking.
