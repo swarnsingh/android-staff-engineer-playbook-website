@@ -6,7 +6,7 @@
   "instrumentation_compilation": "passed",
   "gradle_plugin_probe": "passed",
   "fingerprints": {
-    "source-snapshot.json": "4425bd5d577f6876242f30655ce366758559d7c4a06c126a32a7625467305132",
+    "source-snapshot.json": "19034b58db2b5d4520b6e5ab80a1a8d83bbbbb6c0572e09b8694137028191c9c",
     "website/app.js": "3313a6d8585f0d0d7a0925b01b5e5a13298edd26dd73a72ffc65f23ac18ca7bf",
     "website/blend.css": "e2a7898095be2e746ade1ca9097a232769e7e847f0c28435436f7d7c9aff0e23",
     "website/blend.js": "d1e49c0deaff446850df5f57a8fffc4f572e0ef4b0330e5c231c7db1122e3dde",
@@ -199,7 +199,7 @@
     "website/content/corrections-computer-science.json": "236670d98c02856d74ed3de8c07ed271d60541668f94b6d261dcb91d1cd8e19c",
     "website/content/corrections-engineering-fundamentals.json": "8de95c2a6881ce15f37f433d38880f47ed1d50f29d5fba30dbf967e223c0f675",
     "website/content/corrections-z-completion.json": "e22fd2b67da8754357d0fa903103fd66a1893d65d934cfb03230c1325d7be145",
-    "website/content/corrections-zz-observability-source-sync.json": "36ff2e0289be692d0abde191fd4efbf7e3d91c12f16d4abb25bf07c697865f2b",
+    "website/content/corrections-zz-observability-source-sync.json": "eef69cafed0f2f06f59520c6a3ce2e6f2998d0192c3b244774e596ba6edacede",
     "website/content/diagram-models/android-first.json": "e4be41e6532f17cda96823e4e06c9673d9fa0db3fc7c7ddfd861426fa993dd47",
     "website/content/diagram-models/android-rest.json": "6ee05aa6d7c011ffcd2790fb9fb00a7fc90915d7061402d5ee0a486e27062edc",
     "website/content/diagram-models/figures/android.json": "7144b52870c8160ed9f356c2e7a56c78d739fcb36f3e8648464b7436be3b90aa",
@@ -453,7 +453,7 @@
   ],
   "source_merge": "b8b56170e3b78f26ad73807b626acfb9530deb47",
   "final_affected_pages": 16,
-  "ux_review": "website/reviews/observability-2026-11-01/REPORT.md",
+  "ux_review": "website/reviews/observability-links-2026-11-01/REPORT.md",
   "ux_review_date": "2026-11-01",
   "fundamentals": {
     "chapters": 13,

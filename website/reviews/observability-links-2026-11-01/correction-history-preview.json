@@ -1,0 +1,48 @@
+{
+  "done": true,
+  "ok": true,
+  "checks": [
+    {
+      "route": "android/networking-and-security/retrofit-and-okhttp/",
+      "width": 320,
+      "plainProvenance": true,
+      "privatePrLinks": 0,
+      "overflow": false
+    },
+    {
+      "route": "android/networking-and-security/retrofit-and-okhttp/",
+      "width": 375,
+      "plainProvenance": true,
+      "privatePrLinks": 0,
+      "overflow": false
+    },
+    {
+      "route": "android/performance/anrs/",
+      "width": 320,
+      "plainProvenance": true,
+      "privatePrLinks": 0,
+      "overflow": false
+    },
+    {
+      "route": "android/performance/anrs/",
+      "width": 375,
+      "plainProvenance": true,
+      "privatePrLinks": 0,
+      "overflow": false
+    },
+    {
+      "route": "android/performance/memory-management-and-leaks/",
+      "width": 320,
+      "plainProvenance": true,
+      "privatePrLinks": 0,
+      "overflow": false
+    },
+    {
+      "route": "android/performance/memory-management-and-leaks/",
+      "width": 375,
+      "plainProvenance": true,
+      "privatePrLinks": 0,
+      "overflow": false
+    }
+  ]
+}
