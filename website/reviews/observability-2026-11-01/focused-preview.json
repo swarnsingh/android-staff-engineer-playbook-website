@@ -11,7 +11,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability.md",
@@ -19,7 +20,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability.md",
@@ -27,7 +29,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability.md",
@@ -35,7 +38,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability.md",
@@ -43,7 +47,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability.md",
@@ -51,7 +56,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability.md",
@@ -59,7 +65,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability.md",
@@ -67,7 +74,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability.md",
@@ -75,7 +83,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability.md",
@@ -83,7 +92,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability.md",
@@ -91,7 +101,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability.md",
@@ -99,7 +110,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability.md",
@@ -107,7 +119,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability.md",
@@ -115,7 +128,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability.md",
@@ -123,7 +137,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability.md",
@@ -131,7 +146,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/telemetry-taxonomy.md",
@@ -139,7 +155,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/telemetry-taxonomy.md",
@@ -147,7 +164,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/telemetry-taxonomy.md",
@@ -155,7 +173,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/telemetry-taxonomy.md",
@@ -163,7 +182,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/telemetry-taxonomy.md",
@@ -171,7 +191,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/telemetry-taxonomy.md",
@@ -179,7 +200,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/telemetry-taxonomy.md",
@@ -187,7 +209,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/telemetry-taxonomy.md",
@@ -195,7 +218,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/telemetry-taxonomy.md",
@@ -203,7 +227,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/telemetry-taxonomy.md",
@@ -211,7 +236,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/telemetry-taxonomy.md",
@@ -219,7 +245,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/telemetry-taxonomy.md",
@@ -227,7 +254,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/telemetry-taxonomy.md",
@@ -235,7 +263,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/telemetry-taxonomy.md",
@@ -243,7 +272,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/telemetry-taxonomy.md",
@@ -251,7 +281,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/telemetry-taxonomy.md",
@@ -259,7 +290,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 0,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/logging.md",
@@ -267,7 +299,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/logging.md",
@@ -275,7 +308,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/logging.md",
@@ -283,7 +317,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/logging.md",
@@ -291,7 +326,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/logging.md",
@@ -299,7 +335,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/logging.md",
@@ -307,7 +344,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/logging.md",
@@ -315,7 +353,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/logging.md",
@@ -323,7 +362,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/logging.md",
@@ -331,7 +371,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/logging.md",
@@ -339,7 +380,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/logging.md",
@@ -347,7 +389,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/logging.md",
@@ -355,7 +398,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/logging.md",
@@ -363,7 +407,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/logging.md",
@@ -371,7 +416,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/logging.md",
@@ -379,7 +425,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/logging.md",
@@ -387,7 +434,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/structured-logging.md",
@@ -395,7 +443,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/structured-logging.md",
@@ -403,7 +452,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/structured-logging.md",
@@ -411,7 +461,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/structured-logging.md",
@@ -419,7 +470,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/structured-logging.md",
@@ -427,7 +479,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/structured-logging.md",
@@ -435,7 +488,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/structured-logging.md",
@@ -443,7 +497,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/structured-logging.md",
@@ -451,7 +506,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/structured-logging.md",
@@ -459,7 +515,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/structured-logging.md",
@@ -467,7 +524,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/structured-logging.md",
@@ -475,7 +533,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/structured-logging.md",
@@ -483,7 +542,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/structured-logging.md",
@@ -491,7 +551,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/structured-logging.md",
@@ -499,7 +560,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/structured-logging.md",
@@ -507,7 +569,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/structured-logging.md",
@@ -515,7 +578,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/metrics.md",
@@ -523,7 +587,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/metrics.md",
@@ -531,7 +596,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/metrics.md",
@@ -539,7 +605,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/metrics.md",
@@ -547,7 +614,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/metrics.md",
@@ -555,7 +623,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/metrics.md",
@@ -563,7 +632,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/metrics.md",
@@ -571,7 +641,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/metrics.md",
@@ -579,7 +650,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/metrics.md",
@@ -587,7 +659,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/metrics.md",
@@ -595,7 +668,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/metrics.md",
@@ -603,7 +677,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/metrics.md",
@@ -611,7 +686,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/metrics.md",
@@ -619,7 +695,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/metrics.md",
@@ -627,7 +704,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/metrics.md",
@@ -635,7 +713,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/metrics.md",
@@ -643,7 +722,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/tracing.md",
@@ -651,7 +731,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/tracing.md",
@@ -659,7 +740,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/tracing.md",
@@ -667,7 +749,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/tracing.md",
@@ -675,7 +758,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/tracing.md",
@@ -683,7 +767,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/tracing.md",
@@ -691,7 +776,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/tracing.md",
@@ -699,7 +785,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/tracing.md",
@@ -707,7 +794,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/tracing.md",
@@ -715,7 +803,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/tracing.md",
@@ -723,7 +812,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/tracing.md",
@@ -731,7 +821,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/tracing.md",
@@ -739,7 +830,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/tracing.md",
@@ -747,7 +839,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/tracing.md",
@@ -755,7 +848,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/tracing.md",
@@ -763,7 +857,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/tracing.md",
@@ -771,7 +866,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/distributed-tracing.md",
@@ -779,7 +875,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/distributed-tracing.md",
@@ -787,7 +884,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/distributed-tracing.md",
@@ -795,7 +893,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/distributed-tracing.md",
@@ -803,7 +902,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/distributed-tracing.md",
@@ -811,7 +911,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/distributed-tracing.md",
@@ -819,7 +920,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/distributed-tracing.md",
@@ -827,7 +929,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/distributed-tracing.md",
@@ -835,7 +938,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/distributed-tracing.md",
@@ -843,7 +947,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/distributed-tracing.md",
@@ -851,7 +956,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/distributed-tracing.md",
@@ -859,7 +965,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/distributed-tracing.md",
@@ -867,7 +974,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/distributed-tracing.md",
@@ -875,7 +983,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/distributed-tracing.md",
@@ -883,7 +992,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/distributed-tracing.md",
@@ -891,7 +1001,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/distributed-tracing.md",
@@ -899,7 +1010,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slis.md",
@@ -907,7 +1019,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slis.md",
@@ -915,7 +1028,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slis.md",
@@ -923,7 +1037,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slis.md",
@@ -931,7 +1046,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slis.md",
@@ -939,7 +1055,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slis.md",
@@ -947,7 +1064,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slis.md",
@@ -955,7 +1073,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slis.md",
@@ -963,7 +1082,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slis.md",
@@ -971,7 +1091,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slis.md",
@@ -979,7 +1100,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slis.md",
@@ -987,7 +1109,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slis.md",
@@ -995,7 +1118,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slis.md",
@@ -1003,7 +1127,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slis.md",
@@ -1011,7 +1136,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slis.md",
@@ -1019,7 +1145,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slis.md",
@@ -1027,7 +1154,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slos.md",
@@ -1035,7 +1163,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slos.md",
@@ -1043,7 +1172,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slos.md",
@@ -1051,7 +1181,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slos.md",
@@ -1059,7 +1190,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slos.md",
@@ -1067,7 +1199,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slos.md",
@@ -1075,7 +1208,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slos.md",
@@ -1083,7 +1217,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slos.md",
@@ -1091,7 +1226,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slos.md",
@@ -1099,7 +1235,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slos.md",
@@ -1107,7 +1244,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slos.md",
@@ -1115,7 +1253,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slos.md",
@@ -1123,7 +1262,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slos.md",
@@ -1131,7 +1271,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slos.md",
@@ -1139,7 +1280,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slos.md",
@@ -1147,7 +1289,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/slos.md",
@@ -1155,7 +1298,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/error-budgets.md",
@@ -1163,7 +1307,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/error-budgets.md",
@@ -1171,7 +1316,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/error-budgets.md",
@@ -1179,7 +1325,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/error-budgets.md",
@@ -1187,7 +1334,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/error-budgets.md",
@@ -1195,7 +1343,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/error-budgets.md",
@@ -1203,7 +1352,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/error-budgets.md",
@@ -1211,7 +1361,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/error-budgets.md",
@@ -1219,7 +1370,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/error-budgets.md",
@@ -1227,7 +1379,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/error-budgets.md",
@@ -1235,7 +1388,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/error-budgets.md",
@@ -1243,7 +1397,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/error-budgets.md",
@@ -1251,7 +1406,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/error-budgets.md",
@@ -1259,7 +1415,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/error-budgets.md",
@@ -1267,7 +1424,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/error-budgets.md",
@@ -1275,7 +1433,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/error-budgets.md",
@@ -1283,7 +1442,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/alerting.md",
@@ -1291,7 +1451,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 2,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/alerting.md",
@@ -1299,7 +1460,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 2,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/alerting.md",
@@ -1307,7 +1469,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 2,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/alerting.md",
@@ -1315,7 +1478,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 2,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/alerting.md",
@@ -1323,7 +1487,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 2,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/alerting.md",
@@ -1331,7 +1496,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 2,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/alerting.md",
@@ -1339,7 +1505,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 2,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/alerting.md",
@@ -1347,7 +1514,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 2,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/alerting.md",
@@ -1355,7 +1523,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 2,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/alerting.md",
@@ -1363,7 +1532,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 2,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/alerting.md",
@@ -1371,7 +1541,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 2,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/alerting.md",
@@ -1379,7 +1550,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 2,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/alerting.md",
@@ -1387,7 +1559,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 2,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/alerting.md",
@@ -1395,7 +1568,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 2,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/alerting.md",
@@ -1403,7 +1577,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 2,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/alerting.md",
@@ -1411,7 +1586,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 2,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/dashboards.md",
@@ -1419,7 +1595,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/dashboards.md",
@@ -1427,7 +1604,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/dashboards.md",
@@ -1435,7 +1613,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/dashboards.md",
@@ -1443,7 +1622,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/dashboards.md",
@@ -1451,7 +1631,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/dashboards.md",
@@ -1459,7 +1640,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/dashboards.md",
@@ -1467,7 +1649,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/dashboards.md",
@@ -1475,7 +1658,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/dashboards.md",
@@ -1483,7 +1667,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/dashboards.md",
@@ -1491,7 +1676,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/dashboards.md",
@@ -1499,7 +1685,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/dashboards.md",
@@ -1507,7 +1694,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/dashboards.md",
@@ -1515,7 +1703,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/dashboards.md",
@@ -1523,7 +1712,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/dashboards.md",
@@ -1531,7 +1721,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "observability/dashboards.md",
@@ -1539,7 +1730,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/networking-and-security/retrofit-and-okhttp.md",
@@ -1547,7 +1739,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/networking-and-security/retrofit-and-okhttp.md",
@@ -1555,7 +1748,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/networking-and-security/retrofit-and-okhttp.md",
@@ -1563,7 +1757,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/networking-and-security/retrofit-and-okhttp.md",
@@ -1571,7 +1766,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/networking-and-security/retrofit-and-okhttp.md",
@@ -1579,7 +1775,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/networking-and-security/retrofit-and-okhttp.md",
@@ -1587,7 +1784,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/networking-and-security/retrofit-and-okhttp.md",
@@ -1595,7 +1793,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/networking-and-security/retrofit-and-okhttp.md",
@@ -1603,7 +1802,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/networking-and-security/retrofit-and-okhttp.md",
@@ -1611,7 +1811,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/networking-and-security/retrofit-and-okhttp.md",
@@ -1619,7 +1820,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/networking-and-security/retrofit-and-okhttp.md",
@@ -1627,7 +1829,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/networking-and-security/retrofit-and-okhttp.md",
@@ -1635,7 +1838,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/networking-and-security/retrofit-and-okhttp.md",
@@ -1643,7 +1847,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/networking-and-security/retrofit-and-okhttp.md",
@@ -1651,7 +1856,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/networking-and-security/retrofit-and-okhttp.md",
@@ -1659,7 +1865,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/networking-and-security/retrofit-and-okhttp.md",
@@ -1667,7 +1874,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/anrs.md",
@@ -1675,7 +1883,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/anrs.md",
@@ -1683,7 +1892,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/anrs.md",
@@ -1691,7 +1901,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/anrs.md",
@@ -1699,7 +1910,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/anrs.md",
@@ -1707,7 +1919,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/anrs.md",
@@ -1715,7 +1928,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/anrs.md",
@@ -1723,7 +1937,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/anrs.md",
@@ -1731,7 +1946,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/anrs.md",
@@ -1739,7 +1955,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/anrs.md",
@@ -1747,7 +1964,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/anrs.md",
@@ -1755,7 +1973,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/anrs.md",
@@ -1763,7 +1982,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/anrs.md",
@@ -1771,7 +1991,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/anrs.md",
@@ -1779,7 +2000,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/anrs.md",
@@ -1787,7 +2009,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/anrs.md",
@@ -1795,7 +2018,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/memory-management-and-leaks.md",
@@ -1803,7 +2027,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/memory-management-and-leaks.md",
@@ -1811,7 +2036,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/memory-management-and-leaks.md",
@@ -1819,7 +2045,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/memory-management-and-leaks.md",
@@ -1827,7 +2054,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/memory-management-and-leaks.md",
@@ -1835,7 +2063,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/memory-management-and-leaks.md",
@@ -1843,7 +2072,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/memory-management-and-leaks.md",
@@ -1851,7 +2081,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/memory-management-and-leaks.md",
@@ -1859,7 +2090,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/memory-management-and-leaks.md",
@@ -1867,7 +2099,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/memory-management-and-leaks.md",
@@ -1875,7 +2108,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/memory-management-and-leaks.md",
@@ -1883,7 +2117,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/memory-management-and-leaks.md",
@@ -1891,7 +2126,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/memory-management-and-leaks.md",
@@ -1899,7 +2135,8 @@
       "theme": "light",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/memory-management-and-leaks.md",
@@ -1907,7 +2144,8 @@
       "theme": "dark",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/memory-management-and-leaks.md",
@@ -1915,7 +2153,8 @@
       "theme": "sepia",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     },
     {
       "path": "android/performance/memory-management-and-leaks.md",
@@ -1923,7 +2162,8 @@
       "theme": "contrast",
       "overflow": false,
       "figures": 1,
-      "mermaidImages": 0
+      "mermaidImages": 0,
+      "danglingMarkers": []
     }
   ]
 }
