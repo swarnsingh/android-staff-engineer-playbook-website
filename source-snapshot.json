@@ -230,5 +230,10 @@
     "observability/structured-logging.md": "fdc2b4b373ccd9ad90e0b634779dc4b69d44733988574276ffd632419d81288b",
     "observability/telemetry-taxonomy.md": "4132601a92a9da855a737d2b57bfa4c42663e4417c83acb169840e0dffa84d1a",
     "observability/tracing.md": "ccad4327f1cbe09787dc6469e354b0929112ff7b97a12079527977eba6deb3e8"
+  },
+  "observability_link_targets_reference_commit": "7666569cf77db7616d43f05cf041c438cb947035",
+  "observability_link_targets_sha256": {
+    "release-engineering/crash-rate-gating.md": "b87f6838fb304c0e018ae2403f882b278ebccd7ebd55db83816b0aa3b8a9bd04",
+    "milestones.md": "25df271211d99bb3d6c6ca984e092032f5fb316d5d8b2b7e7f3c19a9db74931b"
   }
 }

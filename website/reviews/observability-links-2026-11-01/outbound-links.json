@@ -1,0 +1,305 @@
+{
+  "source_commit": "7666569cf77db7616d43f05cf041c438cb947035",
+  "pages": [
+    "observability.md",
+    "observability/alerting.md",
+    "observability/dashboards.md",
+    "observability/distributed-tracing.md",
+    "observability/error-budgets.md",
+    "observability/logging.md",
+    "observability/metrics.md",
+    "observability/slis.md",
+    "observability/slos.md",
+    "observability/structured-logging.md",
+    "observability/telemetry-taxonomy.md",
+    "observability/tracing.md",
+    "android/networking-and-security/retrofit-and-okhttp.md",
+    "android/performance/anrs.md",
+    "android/performance/memory-management-and-leaks.md"
+  ],
+  "unique_targets": 20,
+  "links": [
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "release-engineering.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/release-engineering.md"
+      ],
+      "pages": [
+        "observability.md"
+      ],
+      "changed_in_pr72": false,
+      "source_sha256": "29cedea3ba46943ecdaa6410eeea99446581d9c849f9e5b03ca6d4a812b7ffd1",
+      "website_sha256": "29cedea3ba46943ecdaa6410eeea99446581d9c849f9e5b03ca6d4a812b7ffd1",
+      "status": "matches"
+    },
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "observability.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/observability.md"
+      ],
+      "pages": [
+        "observability.md"
+      ],
+      "changed_in_pr72": false,
+      "source_sha256": "71f301e9abeef8478b5f2989cf0ffd8ec1b67f820d1b93f109fbfff3d6ee3dc5",
+      "website_sha256": "71f301e9abeef8478b5f2989cf0ffd8ec1b67f820d1b93f109fbfff3d6ee3dc5",
+      "status": "matches"
+    },
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "release-engineering/crash-rate-gating.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/release-engineering/crash-rate-gating.md",
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/release-engineering/crash-rate-gating.md#4-the-auto-halt-workflow"
+      ],
+      "pages": [
+        "observability/alerting.md",
+        "observability/slos.md"
+      ],
+      "changed_in_pr72": true,
+      "source_sha256": "b87f6838fb304c0e018ae2403f882b278ebccd7ebd55db83816b0aa3b8a9bd04",
+      "website_sha256": "b87f6838fb304c0e018ae2403f882b278ebccd7ebd55db83816b0aa3b8a9bd04",
+      "status": "matches"
+    },
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "release-engineering/kill-switches.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/release-engineering/kill-switches.md"
+      ],
+      "pages": [
+        "observability/alerting.md"
+      ],
+      "changed_in_pr72": false,
+      "source_sha256": "3a8811748624f792db6d0c55d78e3db5c5554b509a7ef6d572699dcacc726203",
+      "website_sha256": "3a8811748624f792db6d0c55d78e3db5c5554b509a7ef6d572699dcacc726203",
+      "status": "matches"
+    },
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "observability/alerting.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/observability/alerting.md"
+      ],
+      "pages": [
+        "observability/alerting.md"
+      ],
+      "changed_in_pr72": true,
+      "source_sha256": "5d78be311fa5379bdd5adbf41b9bbe333d036c655cb9b197737de9a2502b5822",
+      "website_sha256": "5d78be311fa5379bdd5adbf41b9bbe333d036c655cb9b197737de9a2502b5822",
+      "status": "matches"
+    },
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "observability/dashboards.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/observability/dashboards.md"
+      ],
+      "pages": [
+        "observability/dashboards.md"
+      ],
+      "changed_in_pr72": true,
+      "source_sha256": "6d7f3daa89ff630e0dc6f622539e66419a0f3f5f61f320e1f0e88050d000ca00",
+      "website_sha256": "6d7f3daa89ff630e0dc6f622539e66419a0f3f5f61f320e1f0e88050d000ca00",
+      "status": "matches"
+    },
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "distributed-systems/distributed-tracing.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/distributed-systems/distributed-tracing.md"
+      ],
+      "pages": [
+        "observability/distributed-tracing.md"
+      ],
+      "changed_in_pr72": false,
+      "source_sha256": "bd7eb9ec50de9a6c4d0157b64438b50a8362224eee0e62d0534e5af570995d6e",
+      "website_sha256": "bd7eb9ec50de9a6c4d0157b64438b50a8362224eee0e62d0534e5af570995d6e",
+      "status": "matches"
+    },
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "observability/distributed-tracing.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/observability/distributed-tracing.md"
+      ],
+      "pages": [
+        "observability/distributed-tracing.md"
+      ],
+      "changed_in_pr72": true,
+      "source_sha256": "abdd2dca2487aeef331533a5904d00858ebd773ed7ba55270672427308f44566",
+      "website_sha256": "abdd2dca2487aeef331533a5904d00858ebd773ed7ba55270672427308f44566",
+      "status": "matches"
+    },
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "observability/error-budgets.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/observability/error-budgets.md"
+      ],
+      "pages": [
+        "observability/error-budgets.md"
+      ],
+      "changed_in_pr72": true,
+      "source_sha256": "20c4e3841925e1934aff6aca7f0fd0754d4d1ab6446399dd9c2b064f705843a1",
+      "website_sha256": "20c4e3841925e1934aff6aca7f0fd0754d4d1ab6446399dd9c2b064f705843a1",
+      "status": "matches"
+    },
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "observability/logging.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/observability/logging.md"
+      ],
+      "pages": [
+        "observability/logging.md"
+      ],
+      "changed_in_pr72": true,
+      "source_sha256": "4201227eb6d1bc20e435d6601944a15811f86d54e14fcca235188162fc3a3e7f",
+      "website_sha256": "4201227eb6d1bc20e435d6601944a15811f86d54e14fcca235188162fc3a3e7f",
+      "status": "matches"
+    },
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "observability/metrics.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/observability/metrics.md"
+      ],
+      "pages": [
+        "observability/metrics.md"
+      ],
+      "changed_in_pr72": true,
+      "source_sha256": "285a35349f069d95a3b7c5ea19d11e133a79c7b4a859645c00ebbda368e2dc12",
+      "website_sha256": "285a35349f069d95a3b7c5ea19d11e133a79c7b4a859645c00ebbda368e2dc12",
+      "status": "matches"
+    },
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "observability/slis.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/observability/slis.md"
+      ],
+      "pages": [
+        "observability/slis.md"
+      ],
+      "changed_in_pr72": true,
+      "source_sha256": "68c04946c8f71d0e8ef7cf7d05e9d32877b7f1caea36dfb270f4d2173eb2ff19",
+      "website_sha256": "68c04946c8f71d0e8ef7cf7d05e9d32877b7f1caea36dfb270f4d2173eb2ff19",
+      "status": "matches"
+    },
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "milestones.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/milestones.md#currency-watchlist"
+      ],
+      "pages": [
+        "observability/slos.md"
+      ],
+      "changed_in_pr72": true,
+      "source_sha256": "25df271211d99bb3d6c6ca984e092032f5fb316d5d8b2b7e7f3c19a9db74931b",
+      "website_sha256": "25df271211d99bb3d6c6ca984e092032f5fb316d5d8b2b7e7f3c19a9db74931b",
+      "status": "matches"
+    },
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "observability/slos.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/observability/slos.md"
+      ],
+      "pages": [
+        "observability/slos.md"
+      ],
+      "changed_in_pr72": true,
+      "source_sha256": "5e83e029e04a68e1e7dca3d2a56744f8ac92fdaa5c5289857cb19bed0bf82685",
+      "website_sha256": "5e83e029e04a68e1e7dca3d2a56744f8ac92fdaa5c5289857cb19bed0bf82685",
+      "status": "matches"
+    },
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "observability/structured-logging.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/observability/structured-logging.md"
+      ],
+      "pages": [
+        "observability/structured-logging.md"
+      ],
+      "changed_in_pr72": true,
+      "source_sha256": "fdc2b4b373ccd9ad90e0b634779dc4b69d44733988574276ffd632419d81288b",
+      "website_sha256": "fdc2b4b373ccd9ad90e0b634779dc4b69d44733988574276ffd632419d81288b",
+      "status": "matches"
+    },
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "observability/telemetry-taxonomy.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/observability/telemetry-taxonomy.md"
+      ],
+      "pages": [
+        "observability/telemetry-taxonomy.md"
+      ],
+      "changed_in_pr72": false,
+      "source_sha256": "4132601a92a9da855a737d2b57bfa4c42663e4417c83acb169840e0dffa84d1a",
+      "website_sha256": "4132601a92a9da855a737d2b57bfa4c42663e4417c83acb169840e0dffa84d1a",
+      "status": "matches"
+    },
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "observability/tracing.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/observability/tracing.md"
+      ],
+      "pages": [
+        "observability/tracing.md"
+      ],
+      "changed_in_pr72": true,
+      "source_sha256": "ccad4327f1cbe09787dc6469e354b0929112ff7b97a12079527977eba6deb3e8",
+      "website_sha256": "ccad4327f1cbe09787dc6469e354b0929112ff7b97a12079527977eba6deb3e8",
+      "status": "matches"
+    },
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "android/networking-and-security/retrofit-and-okhttp.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/android/networking-and-security/retrofit-and-okhttp.md"
+      ],
+      "pages": [
+        "android/networking-and-security/retrofit-and-okhttp.md"
+      ],
+      "changed_in_pr72": true,
+      "source_sha256": "afca875949cadd43308f7a653d9b7c50dac1cf7825a8dea10ac3d8e57ddf3691",
+      "website_sha256": "d10f1c6c58fd5a8a497fffd423958e53323cbd2624d816271f574ccbbaaec49d",
+      "status": "differs"
+    },
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "android/performance/anrs.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/android/performance/anrs.md"
+      ],
+      "pages": [
+        "android/performance/anrs.md"
+      ],
+      "changed_in_pr72": true,
+      "source_sha256": "6b3d8aee786399f64adbe922cb5ba11a76d5af5bc4346216885bdcb6ba5955cb",
+      "website_sha256": "bc6e9f28930ebf8f0730bfeaefd1ac3296e4ed937c3e4b9db0d582f3c1bdf391",
+      "status": "differs"
+    },
+    {
+      "repository": "swarnsingh/android-staff-engineer-playbook-website",
+      "path": "android/performance/memory-management-and-leaks.md",
+      "urls": [
+        "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/android/performance/memory-management-and-leaks.md"
+      ],
+      "pages": [
+        "android/performance/memory-management-and-leaks.md"
+      ],
+      "changed_in_pr72": true,
+      "source_sha256": "1b5a03e59f35d46dd2b8047dd47abaa51f59d29c102757d392d60dcc53121ed4",
+      "website_sha256": "299f72258023caff48b2d2bc975074ca8944947197db102cab86f47b7c701b54",
+      "status": "differs"
+    }
+  ]
+}

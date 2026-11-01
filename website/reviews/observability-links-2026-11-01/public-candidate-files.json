@@ -1,0 +1,18 @@
+[
+  {
+    "path": "release-engineering/crash-rate-gating.md",
+    "url": "https://raw.githubusercontent.com/swarnsingh/android-staff-engineer-playbook-website/observability-source-links/release-engineering/crash-rate-gating.md",
+    "authenticated": false,
+    "http_status": 200,
+    "sha256": "b87f6838fb304c0e018ae2403f882b278ebccd7ebd55db83816b0aa3b8a9bd04",
+    "matches_approved_source": true
+  },
+  {
+    "path": "milestones.md",
+    "url": "https://raw.githubusercontent.com/swarnsingh/android-staff-engineer-playbook-website/observability-source-links/milestones.md",
+    "authenticated": false,
+    "http_status": 200,
+    "sha256": "25df271211d99bb3d6c6ca984e092032f5fb316d5d8b2b7e7f3c19a9db74931b",
+    "matches_approved_source": true
+  }
+]
