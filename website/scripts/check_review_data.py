@@ -70,6 +70,13 @@ def check():
             if hashlib.sha256((ROOT/path).read_bytes()).hexdigest() != digest:
                 raise ValueError('Read-only source changed: '+path)
         verified += len(hashes)
+    linked = snapshot['observability_link_targets_sha256']
+    if set(linked) != {'release-engineering/crash-rate-gating.md', 'milestones.md'}:
+        raise ValueError('Observability linked-source snapshot scope changed')
+    for path, digest in linked.items():
+        if hashlib.sha256((ROOT/path).read_bytes()).hexdigest() != digest:
+            raise ValueError('Read-only linked source changed: '+path)
+    verified += len(linked)
     print(f'Review data: {sum(totals.values())} triage rows, {len(edited)} amended IDs / {len(proposals)} replacements, {verified} source hashes verified.')
     return totals
 

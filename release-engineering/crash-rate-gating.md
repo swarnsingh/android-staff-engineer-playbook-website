@@ -1,4 +1,4 @@
-# Release Engineering: Crash-Rate Gating (Automated Rollback)
+# Release Engineering: Crash-Rate Gating (Automated Holds and Halts)
 
 > Automated checks that read crash + ANR metrics during a staged rollout and decide: promote, hold, or halt. The release manager isn't supposed to babysit Crashlytics at 3 AM.
 
@@ -8,223 +8,116 @@
 
 | Metric | Source | Target |
 |---|---|---|
-| **Crash-free users** | Firebase Crashlytics / Android Vitals | > 99.5% |
+| **Crash-free users** | Firebase Crashlytics, selected window/cohort | > 99.5% (example product target) |
 | **Crash-free sessions** | Firebase Crashlytics | > 99.7% |
-| **ANR rate** | Android Vitals | < 0.47% (Play's threshold) |
-| **User-perceived ANR** | Android Vitals | < 0.20% |
+| **User-perceived ANR rate** | Android Vitals | < 0.47% of daily active users (Play overall threshold) |
+| **User-perceived crash rate** | Android Vitals, daily active users | Below the declared internal gate; Play overall threshold is 1.09% |
 | **Slow cold start rate** | Android Vitals | < 5% |
 | **Slow rendering rate** | Android Vitals | < 5% |
 
-"Crash-free users" is the gold standard: of all users who interacted with this version today, what fraction did NOT experience a crash? Above 99.5% is healthy. Below 99% is "do not promote." Below 98% is "halt the rollout immediately."
+Crashlytics crash-free users measures unique active installations without a fatal crash in the selected period. Play uses its own daily active-user population and user-perceived subset. Do not interchange the two. Targets here are example internal policy, not proof that every cohort is healthy.
 
-Always compare against a **baseline** (previous version) over the same time window. A 99.6% crash-free rate is great unless the previous version was 99.9%.
+Compare the same metric and eligible cohorts over comparable complete windows. Record version, source, measurement definition, freshness, sample size, and coverage. A small delta can be sampling noise; severe cohort harm can require action before an aggregate threshold is crossed.
 
 ---
 
-## 2. Reading Android Vitals (Play Developer API)
+## 2. Reading Android Vitals (Play Developer Reporting API)
+
+Use the official [`vitals.crashrate`](https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.crashrate) and [`vitals.anrrate`](https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.anrrate) resource definitions. An adapter must:
+
+- Select `userPerceivedCrashRate` or `userPerceivedAnrRate` when checking the corresponding Play stability threshold; `crashRate` and `anrRate` include broader outcomes.
+- Verify the numeric encoding before enabling the gate. The resource reference calls these metrics percentages and uses `google.type.Decimal`, but the references checked here do not provide an explicit numeric response example establishing whether the payload uses 0–100 or 0–1. No live response was verified for this example. Require a documented, verified adapter setting for the exact metric/API version; do not infer the encoding from the value's magnitude. A rate is not an affected-user count to divide by `distinctUsers` again.
+- Use `distinctUsers` as the reported normalisation population for that row, respecting its rounding. Do not sum overlapping distinct-user rows into a purported unique-user count for the whole window.
+- Use supported aggregation/timezone combinations, filter by version and eligible cohorts, handle pagination, and check the resource's freshness information. Missing rows, incomplete periods, or an adapter error must hold promotion, not return 100% crash-free.
+
+The following converter supports two explicitly selected assumptions. It returns unknown until the adapter's encoding has been verified. Neither branch is a claim about the actual Play payload:
 
 ```python
-# scripts/vitals_crashrate.py
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-import argparse, sys, json
-from datetime import datetime, timedelta
+from decimal import Decimal, InvalidOperation
 
-SCOPES = ['https://www.googleapis.com/auth/playdeveloperreporting']
-PACKAGE = 'com.example.app'
-
-def crash_free_users(version_code: int, hours: int) -> float:
-    creds = service_account.Credentials.from_service_account_file(
-        os.environ['PLAY_VITALS_SA'], scopes=SCOPES,
-    )
-    service = build('playdeveloperreporting', 'v1beta1', credentials=creds)
-
-    now = datetime.utcnow()
-    start = now - timedelta(hours=hours)
-
-    body = {
-        "timelineSpec": {
-            "aggregationPeriod": "HOURLY",
-            "startTime": {"year": start.year, "month": start.month, "day": start.day,
-                          "hours": start.hour, "minutes": 0},
-            "endTime":   {"year": now.year,   "month": now.month,   "day": now.day,
-                          "hours": now.hour,   "minutes": 0},
-        },
-        "metrics": ["distinctUsers", "crashRate"],
-        "filter": f'versionCode = {version_code}',
-        "dimensions": ["versionCode"],
-    }
-
-    resp = service.vitals().crashrate().query(
-        name=f"apps/{PACKAGE}/crashRateMetricSet",
-        body=body,
-    ).execute()
-
-    rows = resp.get('rows', [])
-    total_users = sum(int(r['metrics'][0]['decimalValue']['value']) for r in rows)
-    crashed = sum(int(r['metrics'][1]['decimalValue']['value']) for r in rows)
-    return 1.0 - (crashed / total_users) if total_users else 1.0
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--version-code', type=int, required=True)
-    parser.add_argument('--hours', type=int, default=24)
-    args = parser.parse_args()
-
-    rate = crash_free_users(args.version_code, args.hours)
-    print(json.dumps({"crashFreeUsers": rate, "versionCode": args.version_code, "hours": args.hours}))
+def play_rate_to_fraction(raw: str, *, verified_encoding: str | None = None) -> Decimal | None:
+    if verified_encoding not in ("percent", "fraction"):
+        return None
+    try:
+        value = Decimal(raw)
+    except InvalidOperation:
+        return None
+    upper = Decimal(100) if verified_encoding == "percent" else Decimal(1)
+    if not value.is_finite() or not Decimal(0) <= value <= upper:
+        return None
+    return value / Decimal(100) if verified_encoding == "percent" else value
 ```
 
-```bash
-python scripts/vitals_crashrate.py --version-code 12340 --hours 24
-# {"crashFreeUsers": 0.9962, "versionCode": 12340, "hours": 24}
-```
-
-The Vitals API is the same Play Console reads; trust it.
+For example, `"0.47"` maps to `0.0047` only under the percent assumption; it maps to `0.47` under the fraction assumption. Both are numerically plausible, so range checks cannot establish the encoding. Before setting `verified_encoding`, retain a redacted real response or explicit official encoding statement and verify it against the metric, API version, aggregation, and reported value. Without that evidence, keep the setting unset and hold promotion. The converter does not combine rows or establish complete coverage; preserve all source metadata.
 
 ---
 
 ## 3. Reading Firebase Crashlytics
 
-Crashlytics doesn't expose a streaming API; you BigQuery-export and read from there:
+[Crash-free users](https://firebase.google.com/docs/crashlytics/crash-free-metrics) requires both unique crash-affected users and **all eligible active users** in the same selected window/cohort. Counting installations only in crash-event rows excludes healthy users, so that query cannot produce the denominator. Counting crash reports also overcounts a user who crashes repeatedly.
 
-```sql
--- BigQuery dataset: firebase_crashlytics.<package_name>_ANDROID
-WITH window_users AS (
-  SELECT
-    COUNT(DISTINCT installation_uuid) AS users,
-    COUNTIF(crashed) AS crashed_users,
-  FROM `proj.firebase_crashlytics.com_example_app_ANDROID`
-  WHERE event_timestamp BETWEEN
-        TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 24 HOUR) AND CURRENT_TIMESTAMP()
-    AND app_display_version = '2.0.0'
-)
-SELECT
-  1 - (SAFE_DIVIDE(crashed_users, users)) AS crash_free_rate,
-  users
-FROM window_users;
+For warehouse analysis, [enable Firebase sessions export](https://firebase.google.com/docs/crashlytics/bigquery-export), including streaming when the required freshness and plan support it. Verify the actual schemas, identifiers, version fields, and SDK coverage before joining sessions and fatal events. Deduplicate the population and affected-user sets under one identity definition; do not assume an installation identifier is a person across devices.
+
+The warehouse contract is:
+
+```text
+eligible = distinct active installation IDs in the declared window and cohort
+bad = distinct IDs in eligible with at least one qualifying fatal crash
+crash_free_fraction = 1 - count(bad) / count(eligible)
 ```
 
-```python
-# scripts/crashlytics_bq.py
-from google.cloud import bigquery
-import sys, json
-
-def crash_free_rate(version_name: str, hours: int) -> dict:
-    client = bigquery.Client()
-    query = f"""
-        WITH window_users AS (
-          SELECT
-            COUNT(DISTINCT installation_uuid) AS users,
-            COUNTIF(crashed) AS crashed_users
-          FROM `proj.firebase_crashlytics.com_example_app_ANDROID`
-          WHERE event_timestamp BETWEEN
-                TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {hours} HOUR) AND CURRENT_TIMESTAMP()
-            AND app_display_version = '{version_name}'
-        )
-        SELECT 1 - SAFE_DIVIDE(crashed_users, users) AS rate, users
-        FROM window_users
-    """
-    row = list(client.query(query).result())[0]
-    return {"crashFreeRate": float(row.rate), "users": int(row.users)}
-```
-
-Crashlytics gives richer per-issue breakdowns; Vitals is more authoritative for promote/halt decisions because it's the same source Play uses.
+This is an aggregation specification, not SQL against invented export columns. Empty population, missing session coverage, delayed export, or incompatible identity mappings yields unknown evidence. Crashlytics and Play offer complementary views; neither is a complete real-time census of every install.
 
 ---
 
 ## 4. The Auto-Halt Workflow
 
-```yaml
-# .github/workflows/crash-gate.yml
-on:
-  schedule:
-    - cron: '*/30 * * * *'   # every 30 min during a rollout
-  workflow_dispatch:
+Feed validated observations into a policy evaluator. The following pure example handles fractions and exact decimal boundaries; it deliberately does not implement vendor access or Play mutations:
 
-jobs:
-  evaluate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
-      - run: pip install google-api-python-client google-auth google-cloud-bigquery
+```python
+from dataclasses import dataclass
+from decimal import Decimal
 
-      - name: Get current release status
-        id: status
-        run: |
-          python scripts/play_status.py > status.json
-          echo "version_code=$(jq -r .versionCode status.json)" >> $GITHUB_OUTPUT
-          echo "fraction=$(jq -r .userFraction status.json)" >> $GITHUB_OUTPUT
-        env: { PLAY_SERVICE_ACCOUNT: ${{ secrets.PLAY_PUBLISHER_SA_JSON }} }
+@dataclass(frozen=True)
+class GateSample:
+    crash_free_fraction: Decimal | None
+    users: int
+    ready: bool  # adapter verified freshness, coverage, and complete window
+    comparison_key: str  # source, metric, eligibility, cohort, and window definition
 
-      - name: Read crash-free rate (Vitals)
-        id: crash
-        run: |
-          python scripts/vitals_crashrate.py \
-            --version-code "${{ steps.status.outputs.version_code }}" \
-            --hours 6 > vitals.json
-          echo "rate=$(jq -r .crashFreeUsers vitals.json)" >> $GITHUB_OUTPUT
-        env: { PLAY_VITALS_SA: ${{ secrets.PLAY_VITALS_SA_JSON }} }
-
-      - name: Read baseline rate (previous version)
-        id: baseline
-        run: |
-          prev=$(python scripts/previous_version.py "${{ steps.status.outputs.version_code }}")
-          python scripts/vitals_crashrate.py --version-code "$prev" --hours 168 > baseline.json
-          echo "rate=$(jq -r .crashFreeUsers baseline.json)" >> $GITHUB_OUTPUT
-        env: { PLAY_VITALS_SA: ${{ secrets.PLAY_VITALS_SA_JSON }} }
-
-      - name: Decision
-        id: decide
-        env:
-          NOW: ${{ steps.crash.outputs.rate }}
-          BASE: ${{ steps.baseline.outputs.rate }}
-        run: |
-          delta=$(python -c "print($BASE - $NOW)")
-          echo "delta=$delta" >> $GITHUB_OUTPUT
-          if (( $(python -c "print(int($NOW < 0.98))") )); then
-            echo "action=halt-critical" >> $GITHUB_OUTPUT
-          elif (( $(python -c "print(int($delta > 0.005))") )); then
-            echo "action=halt-regression" >> $GITHUB_OUTPUT
-          elif (( $(python -c "print(int($delta > 0.001))") )); then
-            echo "action=hold" >> $GITHUB_OUTPUT
-          else
-            echo "action=promote-eligible" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Apply
-        run: |
-          case "${{ steps.decide.outputs.action }}" in
-            halt-critical)
-              python scripts/halt.py production
-              python scripts/slack_alert.py "🚨 HALTED v${{ steps.status.outputs.version_code }} — crash-free $NOW below 98%"
-              ;;
-            halt-regression)
-              python scripts/halt.py production
-              python scripts/slack_alert.py "⚠️ HALTED v${{ steps.status.outputs.version_code }} — crash regression $(printf %.2f%% "$(echo "${{steps.decide.outputs.delta}} * 100" | bc)") vs baseline"
-              ;;
-            hold)
-              python scripts/slack_alert.py "⏸ HOLDING v${{ steps.status.outputs.version_code }} — minor regression; re-evaluating"
-              ;;
-            promote-eligible)
-              # Only auto-promote on weekdays during business hours.
-              dow=$(date -u +%u); hr=$(date -u +%H)
-              if [ "$dow" -lt 6 ] && [ "$hr" -ge 14 ] && [ "$hr" -lt 22 ]; then
-                next=$(python -c "print(min(1.0, ${{ steps.status.outputs.fraction }} * 2))")
-                python scripts/promote.py production "$next"
-                python scripts/slack_alert.py "✅ Promoted to $next"
-              fi
-              ;;
-          esac
-        env:
-          PLAY_SERVICE_ACCOUNT: ${{ secrets.PLAY_PUBLISHER_SA_JSON }}
-          SLACK_WEBHOOK: ${{ secrets.RELEASE_SLACK_WEBHOOK }}
-          NOW: ${{ steps.crash.outputs.rate }}
+def evaluate_crash_gate(now: GateSample, baseline: GateSample, min_users: int) -> str:
+    if min_users <= 0 or not now.comparison_key or now.comparison_key != baseline.comparison_key:
+        return "hold"
+    for sample in (now, baseline):
+        value = sample.crash_free_fraction
+        if (not sample.ready or sample.users < min_users or value is None or
+                not value.is_finite() or not Decimal(0) <= value <= Decimal(1)):
+            return "hold"
+    delta = baseline.crash_free_fraction - now.crash_free_fraction
+    if now.crash_free_fraction < Decimal("0.98"):
+        return "halt-critical"
+    if delta > Decimal("0.005"):
+        return "halt-regression"
+    if now.crash_free_fraction < Decimal("0.995") or delta > Decimal("0.001"):
+        return "hold"
+    return "promote-eligible"
 ```
 
-Decision rules tuned to the org's risk profile. The thresholds (0.001, 0.005, 0.98) are starting points; calibrate on historical data.
+These thresholds illustrate one release policy. They do not supply confidence intervals or account for every cohort. `ready` and `comparison_key` are trusted adapter outputs, not values to default to true or fill with a generic label. Version/time boundaries and cohort evidence must accompany the persisted decision.
+
+The orchestrator's responsibilities are:
+
+```text
+read the active release version and fraction
+fetch complete, fresh current/baseline evidence for comparable cohorts
+on missing, invalid, stale, or insufficient evidence: HOLD and notify the owner
+on a confirmed actionable guardrail breach: HALT that release and run mitigation
+on promote-eligible: check all other signals, approval policy, and staffed release hours
+before any mutation: re-read the release version/fraction and reject a stale decision
+persist the evidence and applied action; make retries safe and auditable
+```
+
+`promote-eligible` is permission to consider promotion, not an automatic call to increase rollout. Handle obvious catastrophic failures through a separate emergency policy even when samples are small. Alerting failure or missing data must never silently advance a release.
 
 ---
 
@@ -270,23 +163,17 @@ Persist this as a CI artifact and post it to the release channel. Humans should 
 
 ## 6. Per-Cohort Crash Rates
 
-A single global rate hides cohort regressions:
+A global rate can hide cohort harm. Define a cohort contract rather than assuming that every export has columns such as `ram_mb` or `device_manufacturer`:
 
-```python
-# scripts/cohort_breakdown.py
-COHORTS = [
-    ("emerging_market_lowend",  "country IN ('IN','BR','ID') AND ram_mb < 4000"),
-    ("flagship",                "country NOT IN ('IN','BR','ID') AND ram_mb >= 6000"),
-    ("samsung_a_series",        "device_model LIKE 'SM-A%'"),
-    ("oem_xiaomi",              "device_manufacturer = 'Xiaomi'"),
-]
+| Example cohort | Adapter evidence required |
+|---|---|
+| Lower-memory devices in selected markets | Verified country and memory-tier mappings in that source, with matching eligible and crash-affected populations |
+| Selected phone-model family | Reviewed set of actual source device-model identifiers, not an assumed SQL column or wildcard |
+| Selected manufacturer/API group | Verified manufacturer/model and API-level mapping with sufficient fresh observations |
 
-for name, filter_clause in COHORTS:
-    rate = crash_free_with_filter(version_name, filter_clause)
-    print(f"{name:30s}: {rate * 100:.2f}%")
-```
+For each cohort, record its definition/version, source fields and mapping, population, measurement window, coverage, and baseline comparison. If required fields or sufficient observations are absent, return unknown and hold the cohort decision; do not silently broaden the selection.
 
-If global is fine but `samsung_a_series` is at 96%, you've found a vendor-specific bug. Halt or kill-switch the offending feature on that cohort only.
+A 96% crash-free result in a model family identifies an affected population, not proof that the OEM caused the bug. Investigate client/backend/version differences, then halt or apply a targeted kill switch under the declared policy.
 
 ---
 
@@ -322,7 +209,7 @@ A 6-hour window at 1% rollout might only have 5K active users. Crash-free rate i
 | 1% | 10K users | 12h |
 | 5% | 50K users | 6h |
 | 10% | 100K users | 4h |
-| 25%+ | 250K users | 2h |
+| 25%+ | 1,000,000 × rollout fraction: 250K at 25%, 500K at 50%, 1M at 100% | 2h |
 
 Don't promote prematurely just because the crash-free rate looks good with 200 users.
 
@@ -338,15 +225,11 @@ def is_sample_sufficient(rollout_fraction: float, users_observed: int) -> bool:
 
 ANRs (Application Not Responding) have their own threshold:
 
-```python
-def anr_rate(version_code: int, hours: int) -> float:
-    # via Vitals anrRateMetricSet, same shape as crashRateMetricSet
-    ...
-```
+Read `userPerceivedAnrRate` from `anrRateMetricSet` through a validated adapter. Use the same explicit encoding-verification requirement as section 2; no ANR response encoding was verified here. Retain window/population metadata. Missing or insufficient observations are unknown, never a zero ANR rate.
 
-Play's "bad behavior threshold" is 0.47% ANR rate (1 in 200 sessions). Above that, Play deprioritizes the app in Search and may eventually remove it. Gate at 0.30% to give margin.
+Play's overall bad-behavior threshold is a **user-perceived ANR rate of 0.47% of daily active users**, with an 8% per-phone-model threshold. Exceeding it can reduce discoverability; this is not a session rate or an automatic app-removal rule. A 0.30% release gate is an example internal target, not a second Play threshold.
 
-User-perceived ANRs (those that happened while the user was actually interacting) are stricter — gate at 0.20%.
+Play currently counts input-dispatch timeouts in the user-perceived subset of ANRs. Use `userPerceivedAnrRate`, state the API's units, and compare cohorts/windows with sufficient fresh data; overall `anrRate` is a different numerator. See the canonical [SLO definitions](../observability/slos.md#mobile-implementation-android).
 
 ---
 
@@ -369,11 +252,14 @@ User-perceived ANRs (those that happened while the user was actually interacting
 ## 11. Further Reading
 
 - [Play Developer Reporting API](https://developers.google.com/play/developer/reporting) — Vitals access.
+- [Crash-rate resource and units](https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.crashrate)
+- [ANR-rate resource and units](https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.anrrate)
+- [Crashlytics crash-free definitions](https://firebase.google.com/docs/crashlytics/crash-free-metrics)
 - [Android Vitals — Crash rate & ANR](https://developer.android.com/topic/performance/vitals) — what Play measures.
 - [Firebase Crashlytics BigQuery export](https://firebase.google.com/docs/crashlytics/bigquery-export) — historical cohort queries.
-- [Play "bad behavior threshold"](https://support.google.com/googleplay/android-developer/answer/9859174) — the 0.47% ANR cutoff.
+- [Play bad-behavior thresholds](https://developer.android.com/google/play/vitals) — user-perceived daily crash/ANR rates.
 - [Site Reliability Engineering (SRE) ch. 33 — Lessons learned from other incidents](https://sre.google/sre-book/lessons-learned/) — incident discipline transferable to releases.
 
 ---
 
-> **In short:** Vitals as the source of truth; compare against baseline; per-cohort breakdown; auto-halt with Slack alert; auto-promote only in business hours; sample-size minimums; ANR < 0.30% target. Don't make humans babysit dashboards.
+> A release decision needs comparable, fresh evidence and a safe mitigation path. Keep source definitions distinct, hold on unknown data, and record why a release was promoted, held, or halted.
