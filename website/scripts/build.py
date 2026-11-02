@@ -30,6 +30,7 @@ TREES = {
     'android': {'title': 'Android', 'phases': [1, 2, 3, 4, 5, 6, 7, 8, 9]},
     'mobile-system-design': {'title': 'Mobile System Design', 'phases': None},
     'observability': {'title': 'Observability', 'phases': None},
+    'distributed-systems': {'title': 'Distributed Systems', 'phases': [1], 'pilot': ['distributed-systems/delivery-semantics.md']},
 }
 
 
@@ -43,6 +44,10 @@ def phases(slug):
         sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
         paths=re.findall(r'\]\((computer-science/[^)#]+\.md)\)',sequence)
         return [('Phase 1 — Data structures',paths[:7]),('Phase 2 — Algorithms',paths[7:11]),('Phase 3 — Systems',paths[11:])]
+    if slug == 'distributed-systems':
+        sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
+        paths=re.findall(r'\]\((distributed-systems/[^)#]+\.md)\)',sequence)
+        return [('Phase 1 — Guarantees and client contracts',paths[:5]),('Phase 2 — Conflict and coordination',paths[5:10]),('Phase 3 — Logs and tracing',paths[10:])]
     if slug == 'observability':
         sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
         paths=re.findall(r'\]\((observability/[^)#]+\.md)\)',sequence)
@@ -90,6 +95,13 @@ for path in sorted((WEB/'content').glob('corrections-*.json')):
 APPROVED_CORRECTIONS = [fix for fix in ALL_CORRECTIONS if fix.get('status') == 'approved']
 CODE_PAIRS = json.loads((WEB/'content/code-pairs.json').read_text()) if (WEB/'content/code-pairs.json').exists() else {}
 KOTLIN_ONLY = json.loads((WEB/'content/code-kotlin-only.json').read_text())
+
+
+def source_url(path):
+    if path == 'distributed-systems.md' or path.startswith('distributed-systems/'):
+        provenance=json.loads((ROOT/'source-snapshot.json').read_text())['distributed-systems_provenance']
+        return provenance['repository']+'/blob/'+provenance['commit']+'/'+quote(path)
+    return SOURCE_ROOT+quote(path)
 
 
 def route(path):
@@ -190,7 +202,7 @@ def link_rules(path):
                 if relative in PATHS:
                     token.attrSet('href', route(relative)+suffix)
                 else:
-                    token.attrSet('href', SOURCE_ROOT+quote(relative)+suffix)
+                    token.attrSet('href', source_url(relative)+suffix)
                     token.attrSet('target','_blank'); token.attrSet('rel','noreferrer')
         return MD.renderer.renderToken(tokens, idx, options, env)
     MD.renderer.rules['link_open'] = link_open
@@ -302,6 +314,9 @@ def steps_as_text(html):
     def scene_text(match):
         fragment = match.group(0)
         data = json.loads(re.search(r'<script type="application/json">(.*?)</script>', fragment, re.S)[1])
+        from scene_data import resolve
+        data=resolve(data)
+        fragment=re.sub(r'(<script type="application/json">).*?(</script>)',lambda m:m[1]+json.dumps(data).replace('</','<\\/')+m[2],fragment,flags=re.S)
         modes = list(data['modes'].values())
         items = ''.join('<li>'+s['caption']+'</li>' for s in modes[0]['steps'])
         fragment = fragment.replace('<ol></ol>', '<ol>'+items+'</ol>', 1)
@@ -634,7 +649,7 @@ INTRO = {
 
 def intro(path):
     extras={}
-    for name in ('engineering-fundamentals','computer-science','platform-engineering','mobile-system-design','observability'):
+    for name in ('engineering-fundamentals','computer-science','platform-engineering','mobile-system-design','observability','distributed-systems'):
         extras.update(json.loads((WEB/f'content/{name}.json').read_text()))
     return extras.get(path) or INTRO.get(path) or INTRO[Path(path).stem]
 
@@ -735,6 +750,9 @@ def design_gallery(asset_version):
         if not scene: raise ValueError('Gallery illustrated stepper missing: '+name)
         sample=diagram_models.enhance(steps_as_text(scene[0]),name+'.md',OUT,BASE,diagram_models.models())
         samples.append('<section class="demo"><h3>'+label+'</h3>'+sample+'</section>')
+    source=(WEB/'content/blend/distributed-systems/delivery-semantics.blend').read_text()
+    scene=re.search(r'<section class="pb-figure" data-pb-flow="scene".*?</section>',source,re.S)
+    samples.append('<section class="demo"><h3>Manual request and local transaction</h3>'+steps_as_text(scene[0])+'</section>')
     page_walkthrough=walkthrough_gallery()
     prose=tokens['type']['prose']
     fonts=''.join(f'<figure class="specimen" style="--specimen:var(--font-{o["family"]});--measure-prose:{o["measure"]}"><figcaption><strong>{escape(o["label"])}</strong> · {escape(o["description"])}</figcaption>'
@@ -811,7 +829,8 @@ def build(skip_diagrams=False):
         catalog_positions=[phase_positions[section[p]] for p in tree_order if p in section]
         if catalog_positions != sorted(catalog_positions):
             raise ValueError(f'{tree["slug"]} Topics phases are not contiguous')
-        tree['chapters']=[{'title':title(ROOT/p),'path':p,'section':section.get(p,'More chapters'),'rendered':p in PATHS} for p in tree_order]
+        guided_titles=dict((p,t) for t,p in re.findall(r'\[([^\]]+)\]\((distributed-systems/[^)#]+\.md)\)',tree_index.read_text())) if tree['slug']=='distributed-systems' else {}
+        tree['chapters']=[{'title':guided_titles.get(p) or title(ROOT/p),'path':p,'section':section.get(p,'More chapters'),'rendered':p in PATHS,'source_url':source_url(p)} for p in tree_order]
     (OUT/'nav-data.js').write_text('window.PLAYBOOK_CATALOG = '+json.dumps(catalog,ensure_ascii=False)+';\n')
     # Include the generated catalog in the asset version. A newly rendered tree must
     # not reuse a cached catalog that still sends its chapters to GitHub.
@@ -866,7 +885,7 @@ def build(skip_diagrams=False):
             hero=f'<div class="lesson-hero"><span class="eyebrow">{escape(tree.upper())} · INTERVIEW WALKTHROUGH</span><h1>{escape(name)}</h1><p>{escape(intro(path))}</p><div class="lesson-meta"><span id="reading-time" data-pacing>{escape(report['pacing'])}</span><button id="bookmark" class="text-button" aria-pressed="false">☆ Save lesson</button></div></div>'
         else:
             hero=f'<div class="lesson-hero"><span class="eyebrow">{escape(tree.upper())} · BEGINNER TO STAFF</span><h1>{escape(name)}</h1><p>{escape(intro(path))}</p><div class="lesson-meta"><span id="reading-time">Read at your pace · experiments extra</span><button id="bookmark" class="text-button" aria-pressed="false">☆ Save lesson</button></div></div>'
-        values={'title':escape(name),'description':escape(intro(path)),'tree_title':escape(tree),'tree_route':route(f'{slug}.md'),'tree_eyebrow':escape(tree.upper()),'article':article,'outline':outline,'source':path,'source_url':SOURCE_ROOT+path,'category':escape(category),'chapter_navigation':navigation,'lesson_scripts':scripts,'playground_panel':playground,'page_kind':page_kind,'page_label':'learning path' if is_index else 'lesson','page_hero':hero,'page_tabs':tabs,'path_overview':path_overview,'qa_panel':qa_panel,'resources_panel':resources,'correction_history':correction_note(page_fixes),'outline_label':'ON THIS PATH' if is_index else 'ON THIS PAGE','content_semantics':'role="region" aria-label="Learning path"' if is_index else 'role="tabpanel" aria-labelledby="tab-content"'}
+        values={'title':escape(name),'description':escape(intro(path)),'tree_title':escape(tree),'tree_route':route(f'{slug}.md'),'tree_eyebrow':escape(tree.upper()),'article':article,'outline':outline,'source':path,'source_url':source_url(path),'category':escape(category),'chapter_navigation':navigation,'lesson_scripts':scripts,'playground_panel':playground,'page_kind':page_kind,'page_label':'learning path' if is_index else 'lesson','page_hero':hero,'page_tabs':tabs,'path_overview':path_overview,'qa_panel':qa_panel,'resources_panel':resources,'correction_history':correction_note(page_fixes),'outline_label':'ON THIS PATH' if is_index else 'ON THIS PAGE','content_semantics':'role="region" aria-label="Learning path"' if is_index else 'role="tabpanel" aria-labelledby="tab-content"'}
         html=template
         for key,value in values.items():html=html.replace('{{'+key+'}}',value)
         if re.search(r'\{\{[a-z_]+\}\}',html):raise ValueError('Unexpanded page template')

@@ -1,0 +1,4 @@
+{
+  "distributed-systems.md": "Begin with the guided source path. Delivery Semantics is the reader pilot; other chapters open their source text.",
+  "distributed-systems/delivery-semantics.md": "One message commits, its acknowledgement disappears, and the sender retries. Follow two deliveries and one committed local effect."
+}

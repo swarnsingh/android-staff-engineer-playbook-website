@@ -407,7 +407,7 @@ function chapterLink(chapter){
   const link=document.createElement('a');link.textContent=chapter.title;
   if(active){link.href='#problem';link.setAttribute('aria-current','page');link.addEventListener('click',e=>{e.preventDefault();closeCurriculum();setView('content',{anchor:'problem'});});}
   else if(chapter.rendered){link.href=(document.body.dataset.base||'/')+chapter.path.replace(/\.md$/,'/');}
-  else{link.href=sourceRoot+chapter.path;link.target='_blank';link.rel='noreferrer';link.setAttribute('aria-describedby','external-note');const cue=document.createElement('span');cue.className='external-cue';cue.textContent='GitHub ↗';link.append(cue);}
+  else{link.href=chapter.source_url || sourceRoot+chapter.path;link.target='_blank';link.rel='noreferrer';link.setAttribute('aria-describedby','external-note');const cue=document.createElement('span');cue.className='external-cue';cue.textContent='GitHub ↗';link.append(cue);}
   return link;
 }
 // Curriculum scope is local to this page: the whole catalog remains one explicit action away.

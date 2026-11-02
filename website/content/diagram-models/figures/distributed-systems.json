@@ -1,0 +1,477 @@
+[
+  {
+    "path": "distributed-systems/delivery-semantics",
+    "diagram": "90cbb7fbd8d77614",
+    "kind": "map",
+    "number": 1,
+    "title": "One send can end without a delivery",
+    "caption": "Fire-and-forget adds no application retry. An arrival and a loss are alternative outcomes; the network itself does not promise duplicate suppression.",
+    "nodes": [
+      {
+        "id": "p",
+        "title": "Producer",
+        "role": "client",
+        "detail": "One send attempt"
+      },
+      {
+        "id": "net",
+        "title": "Network",
+        "role": "neutral",
+        "detail": "May lose or duplicate"
+      },
+      {
+        "id": "c",
+        "title": "Consumer",
+        "role": "runtime",
+        "detail": [
+          "Zero or one, under the",
+          "at-most-once contract"
+        ]
+      },
+      {
+        "id": "lost",
+        "title": "No arrival",
+        "role": "neutral",
+        "detail": "No application retry"
+      }
+    ],
+    "groups": [
+      {
+        "id": "app",
+        "label": "Sender",
+        "nodes": [
+          "p"
+        ]
+      },
+      {
+        "id": "link",
+        "label": "Transport",
+        "nodes": [
+          "net"
+        ]
+      },
+      {
+        "id": "recv",
+        "label": "Receiver",
+        "nodes": [
+          "c",
+          "lost"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "p",
+        "to": "net",
+        "label": "send once"
+      },
+      {
+        "from": "net",
+        "to": "c",
+        "label": "if delivered"
+      },
+      {
+        "from": "net",
+        "to": "lost",
+        "label": "if lost",
+        "style": "dashed"
+      }
+    ],
+    "sources": [
+      "https://www.rabbitmq.com/docs/confirms"
+    ]
+  },
+  {
+    "path": "distributed-systems/delivery-semantics",
+    "diagram": "57abeb0debfaf178",
+    "kind": "map",
+    "number": 2,
+    "title": "A missing acknowledgement leaves uncertainty",
+    "caption": "The first delivery may already have completed. Retrying can create a second delivery; it does not establish whether the business effect repeats.",
+    "nodes": [
+      {
+        "id": "p",
+        "title": "Producer",
+        "role": "client",
+        "detail": "Waits for confirmation"
+      },
+      {
+        "id": "net",
+        "title": "Network",
+        "role": "neutral",
+        "detail": "Reply can disappear"
+      },
+      {
+        "id": "c",
+        "title": "Consumer",
+        "role": "runtime",
+        "detail": "Receives the retry too"
+      }
+    ],
+    "groups": [
+      {
+        "id": "app",
+        "label": "Sender",
+        "nodes": [
+          "p"
+        ]
+      },
+      {
+        "id": "link",
+        "label": "Unreliable transport",
+        "nodes": [
+          "net"
+        ]
+      },
+      {
+        "id": "recv",
+        "label": "Receiver",
+        "nodes": [
+          "c"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "p",
+        "to": "net",
+        "label": "message or retry"
+      },
+      {
+        "from": "net",
+        "to": "c",
+        "label": "deliver each attempt"
+      },
+      {
+        "from": "c",
+        "to": "net",
+        "label": "acknowledge receipt"
+      },
+      {
+        "from": "net",
+        "to": "p",
+        "label": "reply may be lost",
+        "style": "dashed"
+      }
+    ],
+    "sources": [
+      "https://www.rabbitmq.com/docs/confirms"
+    ]
+  },
+  {
+    "path": "distributed-systems/delivery-semantics",
+    "diagram": "f0a43f335155f237",
+    "kind": "map",
+    "number": 3,
+    "title": "Capture the local effect with its replay record",
+    "caption": "The new-key branch commits the local mutation, scoped key, payload binding and result in one database transaction. The seen-key branch returns that result. An external service is outside this boundary.",
+    "nodes": [
+      {
+        "id": "p",
+        "title": "Producer",
+        "role": "client",
+        "detail": "Same operation identity"
+      },
+      {
+        "id": "c",
+        "title": "Consumer",
+        "role": "runtime",
+        "detail": "Authenticate; bind payload"
+      },
+      {
+        "id": "check",
+        "title": "Scoped key lookup",
+        "role": "storage",
+        "detail": "Serialize duplicates"
+      },
+      {
+        "id": "stored",
+        "title": "Stored result",
+        "role": "storage",
+        "detail": "Seen: reuse the result"
+      },
+      {
+        "id": "process",
+        "title": "Local mutation",
+        "role": "storage",
+        "detail": "New: write through txn"
+      },
+      {
+        "id": "capture",
+        "title": "Commit capture",
+        "role": "storage",
+        "detail": "Effect + key + result",
+        "key": true
+      },
+      {
+        "id": "ack",
+        "title": "Acknowledge",
+        "role": "runtime",
+        "detail": "Only after commit"
+      }
+    ],
+    "groups": [
+      {
+        "id": "app",
+        "label": "Sender",
+        "nodes": [
+          "p"
+        ]
+      },
+      {
+        "id": "svc",
+        "label": "Receiver",
+        "nodes": [
+          "c",
+          "ack"
+        ]
+      },
+      {
+        "id": "db",
+        "label": "One local database transaction",
+        "nodes": [
+          "check",
+          "stored",
+          "process",
+          "capture"
+        ],
+        "parent": "svc"
+      }
+    ],
+    "edges": [
+      {
+        "from": "p",
+        "to": "c",
+        "label": "message + scoped key",
+        "route": "vh"
+      },
+      {
+        "from": "c",
+        "to": "check",
+        "label": "begin or replay"
+      },
+      {
+        "from": "check",
+        "to": "stored",
+        "label": "seen; payload matches"
+      },
+      {
+        "from": "check",
+        "to": "process",
+        "label": "new scoped key"
+      },
+      {
+        "from": "process",
+        "to": "capture",
+        "label": "atomic capture"
+      },
+      {
+        "from": "stored",
+        "to": "ack",
+        "label": "return saved result"
+      },
+      {
+        "from": "capture",
+        "to": "ack",
+        "label": "return committed result"
+      },
+      {
+        "from": "ack",
+        "to": "p",
+        "label": "operation result"
+      }
+    ],
+    "sources": [
+      "https://docs.stripe.com/api/idempotent_requests",
+      "https://www.postgresql.org/docs/current/transaction-iso.html",
+      "https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html"
+    ]
+  },
+  {
+    "path": "distributed-systems/delivery-semantics",
+    "diagram": "6d2bac3d59dd97d6",
+    "kind": "map",
+    "number": 4,
+    "title": "Kafka transactions have a defined scope",
+    "caption": "Producer retry deduplication and transactional output/offset commits address different failures. A read_committed consumer hides aborted transactional output; a payment API is outside that transaction.",
+    "nodes": [
+      {
+        "id": "p",
+        "title": "Idempotent producer",
+        "role": "client",
+        "detail": "Producer ID + sequence"
+      },
+      {
+        "id": "b",
+        "title": "Broker",
+        "role": "queue",
+        "detail": "Deduplicate producer retry"
+      },
+      {
+        "id": "t",
+        "title": "Output + input offset",
+        "role": "storage",
+        "detail": "Atomic Kafka transaction",
+        "key": true
+      },
+      {
+        "id": "c",
+        "title": "Consumer",
+        "role": "runtime",
+        "detail": "read_committed"
+      }
+    ],
+    "groups": [
+      {
+        "id": "producer",
+        "label": "Producer process",
+        "nodes": [
+          "p"
+        ]
+      },
+      {
+        "id": "kafka",
+        "label": "Kafka cluster",
+        "nodes": [
+          "b",
+          "t"
+        ]
+      },
+      {
+        "id": "consumer",
+        "label": "Downstream process",
+        "nodes": [
+          "c"
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "from": "p",
+        "to": "b",
+        "label": "write with sequence"
+      },
+      {
+        "from": "b",
+        "to": "t",
+        "label": "commit output + offset"
+      },
+      {
+        "from": "t",
+        "to": "c",
+        "label": "committed visibility"
+      }
+    ],
+    "sources": [
+      "https://kafka.apache.org/41/design/design/"
+    ]
+  },
+  {
+    "path": "distributed-systems/delivery-semantics",
+    "diagram": "727c34f7a87a6f63",
+    "kind": "map",
+    "number": 5,
+    "title": "Where retries and deduplication enter the path",
+    "caption": "A sends without an application retry. B adds broker delivery and acknowledgement. C also uses a stable operation key and captures the replay record with the local effect. These are alternative policies on the labelled paths; duplicate delivery can still occur under C.",
+    "nodes": [
+      {
+        "id": "p",
+        "title": "Producer",
+        "detail": "A: send once; B/C: retry",
+        "role": "client"
+      },
+      {
+        "id": "q",
+        "title": "Queue / broker",
+        "detail": "B/C: retain unacked work",
+        "role": "queue"
+      },
+      {
+        "id": "c",
+        "title": "Consumer",
+        "detail": "C: replay a saved result",
+        "role": "runtime"
+      },
+      {
+        "id": "ds",
+        "title": "Dedup record",
+        "detail": "C: scoped key + result",
+        "role": "storage"
+      },
+      {
+        "id": "h",
+        "title": "Local effect",
+        "detail": "C: same atomic capture",
+        "role": "storage"
+      }
+    ],
+    "groups": [
+      {
+        "id": "sender",
+        "label": "Sender",
+        "nodes": [
+          "p"
+        ]
+      },
+      {
+        "id": "transport",
+        "label": "Broker",
+        "nodes": [
+          "q"
+        ]
+      },
+      {
+        "id": "service",
+        "label": "Receiver",
+        "nodes": [
+          "c"
+        ]
+      },
+      {
+        "id": "db",
+        "label": "Local transaction",
+        "nodes": [
+          "ds",
+          "h"
+        ],
+        "parent": "service"
+      }
+    ],
+    "edges": [
+      {
+        "from": "p",
+        "to": "c",
+        "label": "A: fire and forget"
+      },
+      {
+        "from": "p",
+        "to": "q",
+        "label": "B/C: send + retry"
+      },
+      {
+        "from": "q",
+        "to": "c",
+        "label": "B/C: deliver"
+      },
+      {
+        "from": "c",
+        "to": "q",
+        "label": "B/C: ack after work"
+      },
+      {
+        "from": "c",
+        "to": "ds",
+        "label": "C: check scoped key"
+      },
+      {
+        "from": "ds",
+        "to": "h",
+        "label": "C: apply only if new"
+      }
+    ],
+    "sources": [
+      "https://www.rabbitmq.com/docs/confirms",
+      "https://www.postgresql.org/docs/current/transaction-iso.html"
+    ]
+  }
+]

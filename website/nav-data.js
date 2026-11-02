@@ -930,48 +930,48 @@ window.PLAYBOOK_CATALOG = [
         "path": "distributed-systems/cap-theorem.md"
       },
       {
-        "title": "Consensus Basics",
-        "path": "distributed-systems/consensus-basics.md"
-      },
-      {
         "title": "Consistency Models",
         "path": "distributed-systems/consistency-models.md"
-      },
-      {
-        "title": "CRDTs",
-        "path": "distributed-systems/crdts.md"
-      },
-      {
-        "title": "Delivery Semantics",
-        "path": "distributed-systems/delivery-semantics.md"
-      },
-      {
-        "title": "Distributed Tracing",
-        "path": "distributed-systems/distributed-tracing.md"
       },
       {
         "title": "Idempotency",
         "path": "distributed-systems/idempotency.md"
       },
       {
-        "title": "ADR 008 — Last-Write-Wins vs CRDTs for Offline Sync Conflict Resolution",
-        "path": "distributed-systems/lww-vs-crdt.md"
+        "title": "Delivery Semantics",
+        "path": "distributed-systems/delivery-semantics.md"
       },
       {
         "title": "Mobile Client Consistency Contracts",
         "path": "distributed-systems/mobile-client-consistency-contracts.md"
       },
       {
-        "title": "Replication and Leader Election",
+        "title": "Vector Clocks",
+        "path": "distributed-systems/vector-clocks.md"
+      },
+      {
+        "title": "CRDTs",
+        "path": "distributed-systems/crdts.md"
+      },
+      {
+        "title": "LWW vs CRDT",
+        "path": "distributed-systems/lww-vs-crdt.md"
+      },
+      {
+        "title": "Consensus Basics",
+        "path": "distributed-systems/consensus-basics.md"
+      },
+      {
+        "title": "Replication & Leader Election",
         "path": "distributed-systems/replication-and-leader-election.md"
       },
       {
-        "title": "Streaming Logs and Partitioning",
+        "title": "Streaming Logs & Partitioning",
         "path": "distributed-systems/streaming-logs-partitioning.md"
       },
       {
-        "title": "Vector Clocks",
-        "path": "distributed-systems/vector-clocks.md"
+        "title": "Distributed Tracing",
+        "path": "distributed-systems/distributed-tracing.md"
       }
     ]
   },

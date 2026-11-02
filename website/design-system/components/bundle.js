@@ -154,7 +154,7 @@
     if (!data.layouts) data.layouts = autoLayouts(data);
     // Cross-process/lane scenes keep their authored topology. A local scroll
     // viewport protects legibility without turning side-by-side owners into a list.
-    if(root.dataset.pbFlow === 'scene')return 'wide';
+    if(root.dataset.pbFlow === 'scene' && !data.responsive)return 'wide';
     var paper = root.querySelector('.pb-paper') || root, size = data.layouts.wide.size[0];
     var scale = Math.min(paper.clientWidth, size * 1.2) / size;
     return scale >= needScale('wide') ? 'wide' : 'narrow';
@@ -211,7 +211,7 @@
     svg.setAttribute('data-layout', key);
     // Never scale far past the drawn size: the stacked layout stops at phone scale, the wide one at 1.2x.
     svg.style.maxWidth = key === 'narrow' ? '440px' : Math.round(L.size[0] * 1.2) + 'px'; svg.style.marginInline = 'auto';
-    if(svg.closest('[data-pb-flow="scene"]'))svg.style.minWidth=Math.ceil(L.size[0]*needScale('wide'))+'px';
+    if(svg.closest('[data-pb-flow="scene"]'))svg.style.minWidth=Math.ceil(L.size[0]*needScale(key))+'px';
     var defs = el('defs', {}, svg);
     var f = el('filter', { id: id + 'r', x: '-4%', y: '-12%', width: '108%', height: '124%' }, defs);
     el('feTurbulence', { type: 'fractalNoise', baseFrequency: '0.035', numOctaves: '2', seed: '5' }, f);
@@ -420,7 +420,8 @@
       bar = root.querySelector('.pb-progress i'), list = root.querySelector('.pb-steps ol');
     var btn = {}; root.querySelectorAll('[data-act]').forEach(function (b) { btn[b.dataset.act] = b; });
     var mode = Object.keys(data.modes)[0], idx = 0, token = 0, flying = false, playing = false, timer = 0, ref, key;
-    var turn;
+    var turn, manual = data.playback === 'manual';
+    if(manual){btn.play.hidden=true;btn.play.disabled=true;}
     // Keep the live explanation and its controls together; optional help and the
     // full transcript share one disclosure instead of competing with the scene.
     var interaction = document.createElement('div'); interaction.className = 'pb-interaction';
@@ -437,6 +438,7 @@
     guide.classList.add('pb-guide');
     guide.querySelector('summary').textContent = 'Help & step transcript';
     var help=document.createElement('p');help.textContent='Use Next to follow cause and effect, Previous to compare states' + (data.illustrated ? ', or choose a numbered step. ' : '. ') + 'Reset returns to the first step. Play follows the sequence; Pause finishes the current step. With reduced motion, use the step controls.';
+    if(manual)help.textContent='Use Next, Previous or a numbered step to compare final states. Reset returns to the first step. This walkthrough advances manually, with no playback or packet animation. Every step is listed below.';
     guide.insertBefore(help, list);
     if(data.illustrated){
       root.classList.add('is-illustrated');
@@ -471,11 +473,11 @@
       countEl.textContent = 'Step ' + (idx + 1) + ' of ' + n;
       capEl.innerHTML = track().steps[idx].caption;
       bar.style.width = ((idx + 1) / n * 100) + '%';
-      btn.prev.disabled = idx === 0; btn.next.disabled = idx === n - 1;
+      btn.prev.setAttribute('aria-disabled',idx === 0); btn.next.setAttribute('aria-disabled',idx === n - 1);
       btn.play.textContent = playing || flying ? 'Pause' : 'Play';
       btn.play.setAttribute('aria-pressed', playing || flying ? 'true' : 'false');
       btn.play.setAttribute('aria-label', playing || flying ? 'Pause playback' : (idx === n - 1 ? 'Play from the first step' : 'Play sequence'));
-      btn.play.disabled = motion.reduced();
+      btn.play.disabled = manual || motion.reduced();
       root.querySelectorAll('[data-step]').forEach(function(b){if(Number(b.dataset.step)===idx)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');});
     }
     function fly(p, my) {
@@ -492,6 +494,7 @@
       });
     }
     function go(i, animate) {
+      animate = animate && !manual;
       settle(); idx = i; ui();
       var step = track().steps[i], my = token, changed = Object.keys((step.set || {}).nodes || {});
       if (!animate || motion.reduced() || !(step.packets || []).length) {
@@ -520,7 +523,7 @@
     btn.reset.addEventListener('click', function () { stop(); go(0, false); });
     btn.play.addEventListener('click', function () {
       if (playing || flying) { stop(); return; }
-      if (motion.reduced()) return;
+      if (manual || motion.reduced()) return;
       playing = true; turn.claim();
       if (idx >= track().steps.length - 1) go(0, false);
       ui(); timer = setTimeout(loop, 400);

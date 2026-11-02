@@ -1,0 +1,48 @@
+<!-- Delivery Semantics pilot. Exact approved source revision and scope are in source-snapshot.json. -->
+<!-- @opening -->
+<p class="story-lead">The consumer commits order M42. Its acknowledgement disappears. The sender times out and sends M42 again. A second delivery has happened; a second order does not have to.</p>
+
+Follow the message, the committed effect and the sender's knowledge separately. This chapter's retry loop cannot remove uncertainty on its own. The receiver's replay contract decides whether uncertainty becomes a duplicate effect.
+
+<!-- @before Historical Context :: guide -->
+### Name the boundary before naming the guarantee
+
+A transport acknowledgement, broker acceptance and completed business operation confirm different things. [RabbitMQ distinguishes publisher confirms from consumer acknowledgements](https://www.rabbitmq.com/docs/confirms); neither alone is an end-to-end business receipt. Also, UDP itself can duplicate datagrams: “send once” is an application policy, not duplicate suppression by UDP ([RFC 8085 §3.3](https://www.rfc-editor.org/rfc/rfc8085.html#section-3.3)).
+
+<!-- @before First Principles :: animation -->
+### Follow M42 before choosing a delivery policy
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="M42 lost acknowledgement and retry">
+<h3>Walkthrough 1. Two deliveries, one local order</h3><p class="pb-sub">An illustrative sequence, advanced manually. Counts describe this run; they are not a delivery guarantee.</p>
+<div class="pb-paper" role="region" aria-label="Message and local transaction scene; scroll if needed" tabindex="0"><svg class="pb-svg" role="img" aria-label="Sender, consumer and business database. Only the business database is the atomic transaction boundary. Every step is available as text below."></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div><div class="pb-caption" aria-live="polite"><span class="pb-count"></span><p></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" hidden aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">{"illustrated": true, "playback": "manual", "layout": "request-store", "owners": {"sender": "SENDER: durable intent", "service": "RECEIVER", "transaction": "LOCAL TX"}, "nodes": [{"id": "sender", "label": "Sender / M42", "art": {"kind": "phone", "role": "client"}}, {"id": "receiver", "label": "Consumer", "art": {"kind": "server", "role": "runtime"}}, {"id": "store", "label": "Business DB", "art": {"kind": "database", "role": "storage"}}], "edges": [{"id": "send", "from": "sender", "to": "receiver", "label": "1 request"}, {"id": "reply", "from": "receiver", "to": "sender", "label": "4 reply", "tone": "back"}, {"id": "write", "from": "receiver", "to": "store", "label": "2 capture"}, {"id": "read", "from": "store", "to": "receiver", "label": "3 result", "tone": "back"}], "modes": {"retry": {"initial": {"nodes": {"sender": ["", "M42 pending"], "receiver": ["", "deliveries: 0"], "store": ["", "effects: 0"]}, "visuals": {"store": {"rows": 0}}}, "steps": [{"caption": "Persist intent M42 before sending. Its account and payload stay fixed across attempts. Here the business effect is a local order row; no payment provider is called."}, {"caption": "Deliver M42 the first time. The consumer authenticates the account and validates the operation identity and payload. Deliveries: 1; committed local effects: 0.", "set": {"nodes": {"sender": ["is-active", "awaiting reply"], "receiver": ["is-active", "deliveries: 1"]}}}, {"caption": "In one local transaction, apply the order change and capture M42 with result R42. Commit both. Deliveries: 1; committed local effects: 1.", "set": {"nodes": {"receiver": ["is-done", "R42 ready"], "store": ["is-done", "effects: 1; R42"]}, "visuals": {"store": {"rows": 1}}}}, {"caption": "The R42 acknowledgement is lost after commit. The sender knows only that its wait ended without confirmation. The receiver still has one committed effect.", "set": {"nodes": {"sender": ["is-warn", "outcome unknown"], "receiver": ["is-done", "reply lost"]}}}, {"caption": "Retry M42 with the same account and payload while its replay record is retained. Deliveries rise to 2. The local effect remains 1.", "set": {"nodes": {"sender": ["is-active", "retry same M42"], "receiver": ["is-active", "deliveries: 2"]}}}, {"caption": "The consumer finds the matching M42 record and returns R42 without applying the local mutation again. A mismatched payload must be rejected.", "set": {"nodes": {"receiver": ["is-done", "replay R42"], "store": ["is-done", "effects: 1; R42"]}}}, {"caption": "R42 reaches the sender, which marks its durable intent complete. Two deliveries produced one committed local effect. An external-service effect needs its own replay and reconciliation contract.", "set": {"nodes": {"sender": ["is-done", "M42 confirmed"], "receiver": ["is-done", "deliveries: 2"]}}}]}}}</script>
+</section>
+
+The picture's database boundary matters: the consumer's external API calls would sit outside it. The full text sequence remains available with JavaScript disabled.
+
+<!-- @before Internal Mechanics :: guide -->
+### What the capture transaction must own
+
+The Kotlin blocks below are application-shaped fragments: they assume the shown app APIs, a transport adapter and, where used, coroutine/time imports. They are not standalone programs. The consumer requires a real database implementation. Its database adapter must serialize duplicate scoped keys and retry serialization conflicts as appropriate. Only writes through that same transaction are captured. A pre-transaction lookup is an optimization, not the concurrency guard ([PostgreSQL isolation](https://www.postgresql.org/docs/current/transaction-iso.html)).
+
+For an external payment or email, commit an outbox intent locally, then use downstream idempotency and reconciliation. The outbox relay can deliver twice; a local commit does not atomically charge a provider ([transactional outbox](https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html)).
+
+<!-- @before Tradeoffs :: guide -->
+### Read the comparison under its failure assumptions
+
+“No data loss” assumes durable retention, retries and eventual recovery, within the system's stated failure envelope. A finite attempt limit, message expiry, cancellation or unhandled storage loss can end the attempt without confirming success. Latency rankings depend on batching, durability and acknowledgement policy; deduplication does not prescribe a round trip per record ([Kafka delivery semantics](https://kafka.apache.org/41/design/design/)).
+
+<!-- @after Failure Modes :: staff -->
+### Keep the identity through uncertainty
+
+For M42, retain the original account, immutable payload and operation key. If the replay record expires before a late retry, reconcile authoritative state rather than mint a new key and risk another order. Key retention and duplicate-effect protection must be agreed together ([Stripe API v1 replay contract](https://docs.stripe.com/api/idempotent_requests)).
+
+<!-- @after Answer Key :: guide -->
+### Scope the original answers
+
+Read answers 1–3 and 8 as claims about a specified boundary: general unreliable communication leaves uncertainty, while coordinated systems can provide scoped guarantees. Kafka's transaction covers its output and input offsets; external effects need destination cooperation ([Kafka design](https://kafka.apache.org/41/design/design/)).
+
+For answer 4, persisting the key is necessary but also requires backend account/payload binding, atomic capture and retention. For answer 7, a late key needs reconciliation when retry lifetime cannot be bounded ([Stripe idempotency](https://docs.stripe.com/api/idempotent_requests)). For answer 10, distinguish a durable notification record from a push hint: provider acceptance does not prove device delivery or display ([FCM message lifetime](https://firebase.google.com/docs/cloud-messaging/customize-messages/setting-message-lifespan)).

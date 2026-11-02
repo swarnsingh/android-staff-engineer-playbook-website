@@ -62,3 +62,11 @@ The object renderer is also available as `Playbook.Actor` to HTML state figures.
 Keep the mechanism's arrows and ownership boundaries explicit. Current captions and controls lead the drawing, so readers know what to follow before advancing. Transfer scenes preserve the authored wide layout in a labelled local scroll viewport when a smaller composition would lose relationships. Labels retain their reading size. Resting arrows remain visible; packet motion is additional evidence, not the only indication of direction.
 
 The 119 other state figures use topic-authored relationship maps and named walkthrough steps; ViewModel uses a three-scenario nested ownership scene. A state comparison is not a transport animation. See `website/content/diagram-models/` and `website/sequence.css`.
+
+## Manual walkthroughs and shared request/store layout
+
+Set `playback: "manual"` to use Previous / Next / Reset and numbered steps only. Play is hidden and disabled, no packets or state transitions animate, and reduced-motion use preserves every state. Previous and Next retain keyboard focus at the ends with `aria-disabled`; their handlers clamp the step. Existing scenes retain their playback option. The static build prints the entire transcript before JavaScript runs.
+
+For a sender, receiver and local store, set `layout: "request-store"`, use node IDs `sender`, `receiver`, `store`, and edge IDs `send`, `reply`, `write`, `read`. Supply `owners` labels for `sender`, `service`, `transaction`, and an `edges` list containing the four semantic labels. `scene_data.resolve` reads `sceneLayouts.request-store` in `tokens.json` and expands the layout only into generated HTML. Topic files contain no coordinates, SVG paths or styles. Unknown presets/actors fail the build.
+
+The preset includes wide and stacked phone layouts. Labels keep the existing scene type scale, role colours and border cues; a bounded local scroll remains available when needed. All geometry, region padding and edge/label positions are in the named design token. There are no topic-specific colour or type tokens. The design-system gallery includes the real Delivery Semantics manual scene as its example, with the same static transcript.
