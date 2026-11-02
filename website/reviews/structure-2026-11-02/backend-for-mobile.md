@@ -14,7 +14,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Client/BFF/upstream boundary map; optional timeout trace.
 - **Production / staff decisions:** Keep business truth in domain services; budget latency and own schema compatibility.
 - **Prerequisites:** Distributed Systems through mobile contracts.
-- **Official sources:** [learn.microsoft.com](https://learn.microsoft.com/en-us/azure/architecture/patterns/backends-for-frontends).
+- **Official sources:** [Azure Architecture Center: Backends for Frontends pattern](https://learn.microsoft.com/en-us/azure/architecture/patterns/backends-for-frontends).
 
 ## 2. API Design for Mobile
 
@@ -24,7 +24,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Old/new client contract map; static compatibility matrix.
 - **Production / staff decisions:** Agree required vs optional fields and long-tail client support; choose REST/BFF/GraphQL by evidence.
 - **Prerequisites:** BFF pattern; delivery and idempotency.
-- **Official sources:** [google.aip.dev](https://google.aip.dev/180).
+- **Official sources:** [Google AIP-180: Backwards compatibility](https://google.aip.dev/180).
 
 ## 3. Data Formats (JSON, Protobuf, FlatBuffers)
 
@@ -34,7 +34,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Wire-field ownership map; old/new reader table.
 - **Production / staff decisions:** Choose format by payload/access/evolution costs and test cross-version pairs.
 - **Prerequisites:** API design and schema evolution.
-- **Official sources:** [protobuf.dev](https://protobuf.dev/programming-guides/proto3/); [flatbuffers.dev](https://flatbuffers.dev/).
+- **Official sources:** [Protocol Buffers: Proto3 Language Guide](https://protobuf.dev/programming-guides/proto3/); [FlatBuffers documentation](https://flatbuffers.dev/).
 
 ## 4. Transport Protocols (HTTP/2, HTTP/3, gRPC)
 
@@ -44,7 +44,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Connection/stream map; reconnect trace with app cursor.
 - **Production / staff decisions:** Set deadlines and resume contracts; transport recovery does not recover business state.
 - **Prerequisites:** Data formats; delivery semantics.
-- **Official sources:** [www.rfc-editor.org](https://www.rfc-editor.org/rfc/rfc9113); [www.rfc-editor.org](https://www.rfc-editor.org/rfc/rfc9000); [grpc.io](https://grpc.io/docs/guides/).
+- **Official sources:** [RFC 9113: HTTP/2](https://www.rfc-editor.org/rfc/rfc9113); [RFC 9000: QUIC — A UDP-Based Multiplexed and Secure Transport](https://www.rfc-editor.org/rfc/rfc9000); [gRPC: Guides](https://grpc.io/docs/guides/).
 
 ## 5. API Contracts: GraphQL vs REST
 
@@ -54,7 +54,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Static request/cache ownership comparison; optimistic result trace if needed.
 - **Production / staff decisions:** Evaluate schema governance, complexity controls, compatibility and operational cost.
 - **Prerequisites:** API design and data formats.
-- **Official sources:** [spec.graphql.org](https://spec.graphql.org/); [www.apollographql.com](https://www.apollographql.com/docs/kotlin/caching/normalized-cache).
+- **Official sources:** [GraphQL Specification](https://spec.graphql.org/); [Apollo Kotlin: Normalized caches](https://www.apollographql.com/docs/kotlin/caching/normalized-cache).
 
 ## 6. Real-Time Data (Push vs Poll vs SSE vs WebSockets)
 
@@ -64,7 +64,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** OS/app/server boundary map; hint-loss to cursor-reconciliation trace.
 - **Production / staff decisions:** Choose foreground vs background contracts and acceptable staleness, not a transport popularity ranking.
 - **Prerequisites:** Delivery semantics; Android background execution.
-- **Official sources:** [firebase.google.com](https://firebase.google.com/docs/cloud-messaging/customize-messages/setting-message-lifespan); [html.spec.whatwg.org](https://html.spec.whatwg.org/multipage/server-sent-events.html).
+- **Official sources:** [Firebase Cloud Messaging: Set the lifespan of a message](https://firebase.google.com/docs/cloud-messaging/customize-messages/setting-message-lifespan); [HTML Living Standard: Server-sent events](https://html.spec.whatwg.org/multipage/server-sent-events.html).
 
 ## 7. Real-Time Data: SSE vs WebSockets
 
@@ -74,7 +74,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Static duplex comparison; manual expired-cursor reset trace.
 - **Production / staff decisions:** Own replay retention and authorization on reconnect; select bidirectionality only when required.
 - **Prerequisites:** Broad push/poll comparison and transport protocols.
-- **Official sources:** [html.spec.whatwg.org](https://html.spec.whatwg.org/multipage/server-sent-events.html); [www.rfc-editor.org](https://www.rfc-editor.org/rfc/rfc6455).
+- **Official sources:** [HTML Living Standard: Server-sent events](https://html.spec.whatwg.org/multipage/server-sent-events.html); [RFC 6455: The WebSocket Protocol](https://www.rfc-editor.org/rfc/rfc6455).
 
 ## 8. Rate Limiting
 
@@ -84,4 +84,4 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Request ownership map; manual stale-search-result trace.
 - **Production / staff decisions:** Use retry budgets and cancellation; do not treat local pacing as server authorization.
 - **Prerequisites:** API design; coroutines and cancellation.
-- **Official sources:** [www.rfc-editor.org](https://www.rfc-editor.org/rfc/rfc6585#section-4); [www.rfc-editor.org](https://www.rfc-editor.org/rfc/rfc9110#section-10.2.3).
+- **Official sources:** [RFC 6585 §4: 429 Too Many Requests](https://www.rfc-editor.org/rfc/rfc6585#section-4); [RFC 9110 §10.2.3: Retry-After](https://www.rfc-editor.org/rfc/rfc9110#section-10.2.3).

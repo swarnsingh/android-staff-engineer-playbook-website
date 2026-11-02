@@ -14,7 +14,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Data custody/region map; deletion acknowledgement lifecycle.
 - **Production / staff decisions:** Name data/controller ownership and verify jurisdictional obligations before conversion.
 - **Prerequisites:** Android storage/networking; backend auth.
-- **Official sources:** [eur-lex.europa.eu](https://eur-lex.europa.eu/eli/reg/2016/679/oj).
+- **Official sources:** [EU Regulation 2016/679: General Data Protection Regulation](https://eur-lex.europa.eu/eli/reg/2016/679/oj).
 
 ## 2. Privacy Sandbox on Android: Architecture, Phaseout and Migration
 
@@ -24,7 +24,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Dated static timeline; no simulated policy animation.
 - **Production / staff decisions:** Reverify announcements at conversion; separate historical availability from current planning.
 - **Prerequisites:** Privacy and data minimization.
-- **Official sources:** [privacysandbox.google.com](https://privacysandbox.google.com/blog).
+- **Official sources:** [Privacy Sandbox: Official announcements](https://privacysandbox.google.com/blog).
 
 ## 3. Security: Authentication on Mobile (OAuth, PKCE, Tokens, Biometric Step-Up)
 
@@ -34,7 +34,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Browser/app/IdP boundary map; manual refresh vs logout trace.
 - **Production / staff decisions:** Server authorization and revocation remain explicit; scope old-response rejection and account binding.
 - **Prerequisites:** Privacy; backend authentication and lifecycle.
-- **Official sources:** [www.rfc-editor.org](https://www.rfc-editor.org/rfc/rfc8252); [www.rfc-editor.org](https://www.rfc-editor.org/rfc/rfc9700).
+- **Official sources:** [RFC 8252: OAuth 2.0 for Native Apps](https://www.rfc-editor.org/rfc/rfc8252); [RFC 9700: Best Current Practice for OAuth 2.0 Security](https://www.rfc-editor.org/rfc/rfc9700).
 
 ## 4. Secure Storage on Android
 
@@ -44,7 +44,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Key/file custody map; missing/invalidated-key recovery state trace.
 - **Production / staff decisions:** Specify what remains exposed in process and how recovery avoids silent plaintext fallback.
 - **Prerequisites:** Android storage; authentication.
-- **Official sources:** [developer.android.com](https://developer.android.com/privacy-and-security/keystore); [developer.android.com](https://developer.android.com/identity/data/autobackup).
+- **Official sources:** [Android Keystore system](https://developer.android.com/privacy-and-security/keystore); [Android: Back up user data with Auto Backup](https://developer.android.com/identity/data/autobackup).
 
 ## 5. Security: Key Management & Secrets on Android
 
@@ -54,7 +54,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Secret owner/lifetime map; static rotation overlap.
 - **Production / staff decisions:** Make extraction assumptions explicit and define recovery for each key class.
 - **Prerequisites:** Secure storage; authentication.
-- **Official sources:** [developer.android.com](https://developer.android.com/privacy-and-security/keystore); [cloud.google.com](https://cloud.google.com/kms/docs/key-management-service).
+- **Official sources:** [Android Keystore system](https://developer.android.com/privacy-and-security/keystore); [Google Cloud: Cloud KMS overview](https://cloud.google.com/kms/docs/key-management-service).
 
 ## 6. Security: Certificate Pinning (Defeating Active MITM)
 
@@ -64,7 +64,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Trust-chain and stack enforcement maps; manual pin-overlap trace.
 - **Production / staff decisions:** Balance added trust restrictions against outage/recovery risk and installed-client lifetime.
 - **Prerequisites:** TLS; key management.
-- **Official sources:** [developer.android.com](https://developer.android.com/privacy-and-security/security-config); [square.github.io](https://square.github.io/okhttp/features/https/).
+- **Official sources:** [Android: Network Security Configuration](https://developer.android.com/privacy-and-security/security-config); [OkHttp: HTTPS](https://square.github.io/okhttp/features/https/).
 
 ## 7. Security: App and Device Attestation
 
@@ -74,7 +74,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** App/Google/backend trust map; challenge-verification trace.
 - **Production / staff decisions:** Treat evidence as one risk signal; define freshness, failure policy and revocation owner.
 - **Prerequisites:** Auth, key management and replay protection.
-- **Official sources:** [developer.android.com](https://developer.android.com/google/play/integrity/standard); [developer.android.com](https://developer.android.com/google/play/integrity/classic); [developer.android.com](https://developer.android.com/privacy-and-security/security-key-attestation).
+- **Official sources:** [Play Integrity: Standard API requests](https://developer.android.com/google/play/integrity/standard); [Play Integrity: Classic API requests](https://developer.android.com/google/play/integrity/classic); [Android: Verify hardware-backed key pairs with key attestation](https://developer.android.com/privacy-and-security/security-key-attestation).
 
 ## Separate prerequisite follow-up
 

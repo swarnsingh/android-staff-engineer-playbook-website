@@ -14,7 +14,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Signer/custodian boundary map; static rotation lineage.
 - **Production / staff decisions:** Assign key custody and independent verification; avoid recovery promises unsupported by distribution path.
 - **Prerequisites:** Android builds; security key management.
-- **Official sources:** [developer.android.com](https://developer.android.com/studio/publish/app-signing); [source.android.com](https://source.android.com/docs/security/features/apksigning/v3-2).
+- **Official sources:** [Android: Sign your app](https://developer.android.com/studio/publish/app-signing); [AOSP: APK signature scheme v3.1](https://source.android.com/docs/security/features/apksigning/v3-2).
 
 ## 2. Release Engineering: CI/CD for Mobile
 
@@ -24,7 +24,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Artifact/evidence lineage map; promotion trace only for state changes.
 - **Production / staff decisions:** Pin provenance and release identity; own secrets, flaky-test disposition and cache trust.
 - **Prerequisites:** Code signing; observability SLIs/SLOs.
-- **Official sources:** [docs.github.com](https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions); [docs.gradle.org](https://docs.gradle.org/current/userguide/build_cache.html).
+- **Official sources:** [GitHub Actions: Security hardening](https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions); [Gradle: Build Cache](https://docs.gradle.org/current/userguide/build_cache.html).
 
 ## 3. Release Engineering: Android App Bundles (AAB)
 
@@ -34,7 +34,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Bundle/Play/device ownership map; static split configuration matrix.
 - **Production / staff decisions:** Test delivered configurations and define install/on-demand failure UX.
 - **Prerequisites:** CI/CD and artifact signing.
-- **Official sources:** [developer.android.com](https://developer.android.com/guide/app-bundle); [developer.android.com](https://developer.android.com/tools/bundletool).
+- **Official sources:** [Android App Bundle overview](https://developer.android.com/guide/app-bundle); [Android: bundletool](https://developer.android.com/tools/bundletool).
 
 ## 4. Release Engineering: Play Store Internals
 
@@ -44,7 +44,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Evidence-source map; cohort drill-down as static tables.
 - **Production / staff decisions:** Separate rollout eligibility from adoption and telemetry coverage; assign incident evidence owner.
 - **Prerequisites:** App bundles; metrics and SLIs.
-- **Official sources:** [developer.android.com](https://developer.android.com/google/play/vitals); [developers.google.com](https://developers.google.com/play/developer/reporting).
+- **Official sources:** [Android vitals](https://developer.android.com/google/play/vitals); [Google Play Developer Reporting API](https://developers.google.com/play/developer/reporting).
 
 ## 5. Android Developer Verification
 
@@ -54,7 +54,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Publisher/package/signing identity map; no invented enforcement timeline.
 - **Production / staff decisions:** Track official policy dates and exemptions at conversion; define proof custody and escalation.
 - **Prerequisites:** Code signing and Play distribution.
-- **Official sources:** [developer.android.com](https://developer.android.com/developer-verification); [developer.android.com](https://developer.android.com/developer-verification/guides/faq).
+- **Official sources:** [Android developer verification](https://developer.android.com/developer-verification); [Android developer verification: FAQs](https://developer.android.com/developer-verification/guides/faq).
 
 ## 6. Android Platform Compatibility Program
 
@@ -64,7 +64,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Requirement-to-owner map; dated evidence table.
 - **Production / staff decisions:** Verify current deadlines and supported toolchain; do not hard-code a permanent annual answer.
 - **Prerequisites:** Developer verification; Android builds.
-- **Official sources:** [developer.android.com](https://developer.android.com/google/play/requirements/target-sdk); [developer.android.com](https://developer.android.com/build/releases/gradle-plugin).
+- **Official sources:** [Google Play: Target API level requirements](https://developer.android.com/google/play/requirements/target-sdk); [Android Gradle plugin release notes](https://developer.android.com/build/releases/gradle-plugin).
 
 ## 7. 16 KB Page Sizes: The Native-Code Compliance Gate
 
@@ -74,7 +74,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** APK/ELF/runtime boundary map; static compliance evidence matrix.
 - **Production / staff decisions:** Own transitive native SDK readiness and real-device evidence; compatibility mode is not readiness proof.
 - **Prerequisites:** Bundles and platform compatibility.
-- **Official sources:** [developer.android.com](https://developer.android.com/guide/practices/page-sizes).
+- **Official sources:** [Android: Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes).
 
 ## 8. Release Engineering: Staged Rollouts
 
@@ -84,7 +84,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Rollout state FigureMap; manual halt/promotion trace.
 - **Production / staff decisions:** Set promotion owner and halt criteria; distinguish halt from rollback of already installed apps.
 - **Prerequisites:** Play internals; CI/CD and SLIs.
-- **Official sources:** [support.google.com](https://support.google.com/googleplay/android-developer/answer/6346149); [developers.google.com](https://developers.google.com/android-publisher/tracks).
+- **Official sources:** [Play Console: Release app updates with staged rollouts](https://support.google.com/googleplay/android-developer/answer/6346149); [Google Play Developer API: Tracks and staged rollouts](https://developers.google.com/android-publisher/tracks).
 
 ## 9. Release Engineering: Crash-Rate Gating (Automated Holds and Halts)
 
@@ -94,7 +94,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Signal/decision ownership map; missing-data decision trace.
 - **Production / staff decisions:** Treat unknown evidence explicitly; retain auditable override and cohort ownership.
 - **Prerequisites:** Staged rollout; observability SLIs/SLOs.
-- **Official sources:** [developers.google.com](https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.crashrate); [firebase.google.com](https://firebase.google.com/docs/crashlytics/crash-free-metrics).
+- **Official sources:** [Play Developer Reporting API: vitals.crashrate](https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.crashrate); [Firebase Crashlytics: Crash-free metrics](https://firebase.google.com/docs/crashlytics/crash-free-metrics).
 
 ## 10. Release Engineering: Kill Switches
 
@@ -104,7 +104,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Control-plane/app/worker map; manual pending-to-active trace.
 - **Production / staff decisions:** Define safe defaults, stale/offline behaviour and cancellation/continuation semantics.
 - **Prerequisites:** Crash gates; auth and background work.
-- **Official sources:** [firebase.google.com](https://firebase.google.com/docs/remote-config/loading); [developer.android.com](https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/manage-work).
+- **Official sources:** [Firebase Remote Config: Loading strategies](https://firebase.google.com/docs/remote-config/loading); [WorkManager: Managing work](https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/manage-work).
 
 ## 11. Release Engineering: Release Strategy (Trains, Branches, Cadence)
 
@@ -114,4 +114,4 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Control/owner decision map; static incident decision table.
 - **Production / staff decisions:** Tie each lever to its actual reach and revisit trigger; preserve old-client API compatibility.
 - **Prerequisites:** All preceding release chapters; Security.
-- **Official sources:** [sre.google](https://sre.google/sre-book/release-engineering/); [developer.android.com](https://developer.android.com/studio/publish/versioning).
+- **Official sources:** [Google SRE Book: Release Engineering](https://sre.google/sre-book/release-engineering/); [Android: Version your app](https://developer.android.com/studio/publish/versioning).

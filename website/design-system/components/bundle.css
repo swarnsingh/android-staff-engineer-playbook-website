@@ -399,3 +399,7 @@ blockquote.pushback>p>strong:first-child{display:block;margin-bottom:var(--space
 }
 @media print{.wt-progress{position:static}.wt-now{display:none}}
 [data-theme="contrast"] :is(.wt-timeline,.wt-steps a,table.decision-cards tbody tr,blockquote.pushback){background:transparent}
+
+/* FlowScene named-step navigation keeps controls compact without reducing actor or label sizes. */
+.pb-step-select{flex:1;min-width:min(100%,var(--scene-step-select-min));max-width:100%}
+@media(max-width:520px){.pb-controls:has(.pb-step-select) .pb-step-select{flex-basis:100%}.pb-controls:has(.pb-step-select) .spacer{display:none}}

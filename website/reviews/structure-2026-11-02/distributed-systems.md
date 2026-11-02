@@ -14,7 +14,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Partition boundary map; static paired read outcomes.
 - **Production / staff decisions:** Specify stale/failed reads and recovery rather than label a whole product CP or AP.
 - **Prerequisites:** Engineering Fundamentals: state machines, time, fault tolerance.
-- **Official sources:** [www.cs.princeton.edu](https://www.cs.princeton.edu/courses/archive/spring13/cos598C/brewer.pdf).
+- **Official sources:** [Gilbert & Lynch: Perspectives on the CAP Theorem](https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf).
 
 ## 2. Consistency Models
 
@@ -24,7 +24,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Read/write histories; manual history comparison only if observer order matters.
 - **Production / staff decisions:** Choose guarantees per feature; define session identity and failover behaviour.
 - **Prerequisites:** CAP; happens-before and clocks.
-- **Official sources:** [www.microsoft.com](https://www.microsoft.com/en-us/research/publication/session-guarantees-for-weakly-consistent-replicated-data/).
+- **Official sources:** [Terry et al.: Session Guarantees for Weakly Consistent Replicated Data](https://www.cs.cornell.edu/courses/cs734/2000FA/cached%20papers/SessionGuaranteesPDIS_1.html).
 
 ## 3. Idempotency
 
@@ -34,7 +34,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Local transaction boundary map; replay/expired-key state trace.
 - **Production / staff decisions:** Own retention and reconciliation; reject changed payloads and cross-account replay.
 - **Prerequisites:** Consistency models; transactions.
-- **Official sources:** [docs.stripe.com](https://docs.stripe.com/api/idempotent_requests).
+- **Official sources:** [Stripe: Idempotent requests](https://docs.stripe.com/api/idempotent_requests).
 
 ## 4. Delivery Semantics
 
@@ -44,7 +44,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Five original-diagram FigureMaps; one manual illustrated state trace showing delivery/effect counts and knowledge.
 - **Production / staff decisions:** Separate delivery attempts from committed business effects; define the local transaction boundary and external-service recovery.
 - **Prerequisites:** Idempotency; queues, state machines and fault tolerance.
-- **Official sources:** [www.rabbitmq.com](https://www.rabbitmq.com/docs/confirms); [kafka.apache.org](https://kafka.apache.org/41/design/design/); [www.postgresql.org](https://www.postgresql.org/docs/current/transaction-iso.html).
+- **Official sources:** [RabbitMQ: Consumer Acknowledgements and Publisher Confirms](https://www.rabbitmq.com/docs/confirms); [Apache Kafka 4.1: Design and message delivery semantics](https://kafka.apache.org/41/design/design/); [PostgreSQL: Transaction Isolation](https://www.postgresql.org/docs/current/transaction-iso.html).
 
 ## 5. Mobile Client Consistency Contracts
 
@@ -54,7 +54,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Versioned response map; manual late-response trace.
 - **Production / staff decisions:** Define canonical authority, stale-response rejection, conflict UX and pending-operation lifetime.
 - **Prerequisites:** Delivery semantics and consistency models.
-- **Official sources:** [www.microsoft.com](https://www.microsoft.com/en-us/research/publication/session-guarantees-for-weakly-consistent-replicated-data/).
+- **Official sources:** [Terry et al.: Session Guarantees for Weakly Consistent Replicated Data](https://www.cs.cornell.edu/courses/cs734/2000FA/cached%20papers/SessionGuaranteesPDIS_1.html).
 
 ## 6. Vector Clocks
 
@@ -64,7 +64,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Three-device causal map; manual merge trace.
 - **Production / staff decisions:** Bound membership metadata without falsely discarding causal history.
 - **Prerequisites:** Consistency models; logical clocks.
-- **Official sources:** [www.allthingsdistributed.com](https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf).
+- **Official sources:** [DeCandia et al.: Dynamo — Amazon’s Highly Available Key-value Store (SOSP 2007)](https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf).
 
 ## 7. CRDTs
 
@@ -74,7 +74,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Merge-law FigureMaps; OR-set observed-remove trace only where tags explain the result.
 - **Production / staff decisions:** Separate convergence from user intent, authorization and bounded metadata.
 - **Prerequisites:** Vector clocks; set operations and partial orders.
-- **Official sources:** [inria.hal.science](https://inria.hal.science/inria-00555588/document).
+- **Official sources:** [Shapiro et al.: A Comprehensive Study of Convergent and Commutative Replicated Data Types (INRIA RR-7506)](https://inria.hal.science/inria-00555588/document).
 
 ## 8. LWW Registers vs Richer CRDT Semantics
 
@@ -84,7 +84,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Static decision matrix; concurrent-edit outcomes for each data type.
 - **Production / staff decisions:** Choose by intent and invariants; avoid a universal LWW/CRDT winner.
 - **Prerequisites:** CRDTs and vector clocks.
-- **Official sources:** [inria.hal.science](https://inria.hal.science/inria-00555588/document).
+- **Official sources:** [Shapiro et al.: A Comprehensive Study of Convergent and Commutative Replicated Data Types (INRIA RR-7506)](https://inria.hal.science/inria-00555588/document).
 
 ## 9. Consensus Basics
 
@@ -94,7 +94,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Raft ownership map; manual election/log-commit trace.
 - **Production / staff decisions:** State the failure assumptions, quorum cost and availability consequences.
 - **Prerequisites:** CAP; queues, state machines and clocks.
-- **Official sources:** [raft.github.io](https://raft.github.io/raft.pdf).
+- **Official sources:** [Ongaro & Ousterhout: In Search of an Understandable Consensus Algorithm (Raft)](https://raft.github.io/raft.pdf).
 
 ## 10. Replication and Leader Election
 
@@ -104,7 +104,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Leader/follower boundaries; stale-leader fencing trace.
 - **Production / staff decisions:** Name RPO/RTO, read routing and fencing enforcement owner.
 - **Prerequisites:** Consensus and consistency models.
-- **Official sources:** [raft.github.io](https://raft.github.io/raft.pdf).
+- **Official sources:** [Ongaro & Ousterhout: In Search of an Understandable Consensus Algorithm (Raft)](https://raft.github.io/raft.pdf).
 
 ## 11. Streaming Logs and Partitioning
 
@@ -114,7 +114,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** Partition lanes; manual retry/rebalance trace when order matters.
 - **Production / staff decisions:** Choose entity ordering scope, hot-key budget and expired-cursor reset protocol.
 - **Prerequisites:** Delivery semantics and replication.
-- **Official sources:** [kafka.apache.org](https://kafka.apache.org/41/design/design/).
+- **Official sources:** [Apache Kafka 4.1: Design and message delivery semantics](https://kafka.apache.org/41/design/design/).
 
 ## 12. Distributed Tracing
 
@@ -124,7 +124,7 @@ The content layer supplies content and component selection only. Layout and beha
 - **Figures / step-throughs:** No new scene; a meaningful canonical continuation link.
 - **Production / staff decisions:** Keep correlation/redaction policy with Observability ownership.
 - **Prerequisites:** Streaming logs; Observability distributed tracing.
-- **Official sources:** [www.w3.org](https://www.w3.org/TR/trace-context/).
+- **Official sources:** [W3C: Trace Context](https://www.w3.org/TR/trace-context/).
 
 ## Pilot boundary and known review issues
 

@@ -237,7 +237,7 @@
       if(n.art){
         rec.art=n.art;
         rec.picture=el('g',{'class':'pb-art','aria-hidden':'true',transform:'translate('+(portrait?p.x+(p.w-72)/2:p.x+12)+' '+(portrait?p.y+8:p.y+(p.h-64)/2)+')'},g);
-        rec.tx=portrait?p.x+p.w/2:p.x+96;rec.tw=portrait?p.w-20:p.w-108;rec.sy=portrait?p.y+132:p.y+75;
+        rec.tx=portrait?p.x+p.w/2:p.x+96;rec.tw=portrait?p.w-20:p.w-108;rec.sy=portrait?p.y+132:p.y+(L.actor?.statusOffset || 75);
         if(portrait){title.setAttribute('text-anchor','middle');rec.sub.setAttribute('text-anchor','middle');}
         lines(title,n.label,rec.tw,rec.tx,portrait?p.y+88:p.y+27,21);
       }else title.textContent=n.label;
@@ -438,7 +438,7 @@
     guide.classList.add('pb-guide');
     guide.querySelector('summary').textContent = 'Help & step transcript';
     var help=document.createElement('p');help.textContent='Use Next to follow cause and effect, Previous to compare states' + (data.illustrated ? ', or choose a numbered step. ' : '. ') + 'Reset returns to the first step. Play follows the sequence; Pause finishes the current step. With reduced motion, use the step controls.';
-    if(manual)help.textContent='Use Next, Previous or a numbered step to compare final states. Reset returns to the first step. This walkthrough advances manually, with no playback or packet animation. Every step is listed below.';
+    if(manual)help.textContent='Use Next, Previous or a numbered step to compare final states. Reset returns to the first step. Next follows the declared message transfers; automatic playback is off. Reduced motion shows each final state immediately. Every step is listed below.';
     guide.insertBefore(help, list);
     if(data.illustrated){
       root.classList.add('is-illustrated');
@@ -479,6 +479,7 @@
       btn.play.setAttribute('aria-label', playing || flying ? 'Pause playback' : (idx === n - 1 ? 'Play from the first step' : 'Play sequence'));
       btn.play.disabled = manual || motion.reduced();
       root.querySelectorAll('[data-step]').forEach(function(b){if(Number(b.dataset.step)===idx)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');});
+      var selector=root.querySelector('.pb-step-select');if(selector)selector.value=String(idx);
     }
     function fly(p, my) {
       return new Promise(function (done) {
@@ -493,9 +494,23 @@
         requestAnimationFrame(frame);
       });
     }
-    function go(i, animate) {
-      animate = animate && !manual;
+    function keepWorkVisible() {
+      if(!data.responsive)return;
+      var actors=[...root.querySelectorAll('.pb-node')];
+      var header=Math.max(0,...[...document.querySelectorAll('.topbar,.lesson-tabs,.mobile-outline')]
+        .filter(function(e){return getComputedStyle(e).position==='sticky';})
+        .map(function(e){return e.getBoundingClientRect().bottom;}));
+      var gap=parseFloat(getComputedStyle(root).getPropertyValue('--space-2')) || 0;
+      var top=Math.min(...actors.map(function(e){return e.getBoundingClientRect().top;}));
+      var bottom=controls.getBoundingClientRect().bottom;
+      // Only scroll on explicit navigation, and only when the whole working area can fit.
+      if(bottom-top>innerHeight-header-2*gap)return;
+      var delta=bottom>innerHeight-gap ? bottom-innerHeight+gap : top<header+gap ? top-header-gap : 0;
+      if(delta)window.scrollBy({top:delta,behavior:'instant'});
+    }
+    function go(i, animate, keepVisible) {
       settle(); idx = i; ui();
+      if(keepVisible)keepWorkVisible();
       var step = track().steps[i], my = token, changed = Object.keys((step.set || {}).nodes || {});
       if (!animate || motion.reduced() || !(step.packets || []).length) {
         paint(ref, stateAt(i), changed, !animate || motion.reduced()); edgesFor(step, false);
@@ -518,9 +533,9 @@
       if (idx >= track().steps.length - 1) { stop(); return; }
       go(idx + 1, true).then(function (ok) { if (ok && playing) timer = setTimeout(loop, 2600); });
     }
-    btn.next.addEventListener('click', function () { stop(); turn.claim(); if (idx < track().steps.length - 1) go(idx + 1, true); });
-    btn.prev.addEventListener('click', function () { stop(); if (idx > 0) go(idx - 1, false); });
-    btn.reset.addEventListener('click', function () { stop(); go(0, false); });
+    btn.next.addEventListener('click', function () { stop(); turn.claim(); if (idx < track().steps.length - 1) go(idx + 1, true, true); });
+    btn.prev.addEventListener('click', function () { stop(); if (idx > 0) go(idx - 1, false, true); });
+    btn.reset.addEventListener('click', function () { stop(); go(0, false, true); });
     btn.play.addEventListener('click', function () {
       if (playing || flying) { stop(); return; }
       if (manual || motion.reduced()) return;
@@ -530,15 +545,24 @@
     });
     root.querySelectorAll('[data-mode]').forEach(function (b) {
       b.addEventListener('click', function () {
-        stop(); mode = b.dataset.mode; idx = 0;
+        stop(); mode = b.dataset.mode; idx = data.compareAtCurrentStep ? Math.min(idx, track().steps.length - 1) : 0;
         root.querySelectorAll('[data-mode]').forEach(function (o) { o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
-        fillList(); go(0, false);
+        fillList(); go(idx, false);
       });
     });
     function fillList() {
       list.innerHTML = '';
       track().steps.forEach(function (s) { var li = document.createElement('li'); li.innerHTML = s.caption; list.appendChild(li); });
-      if(data.illustrated){
+      if(data.stepNavigation === 'select'){
+        var select=root.querySelector('.pb-step-select');
+        if(!select){
+          select=document.createElement('select');select.className='pb-btn pb-step-select';select.setAttribute('aria-label','Walkthrough step');
+          controls.prepend(select);
+          select.addEventListener('change',function(){var next=Number(select.value);stop();turn.claim();go(next,false,true);});
+        }
+        select.replaceChildren();
+        track().steps.forEach(function(s,i){var option=document.createElement('option');option.value=i;option.textContent=(i+1)+' / '+track().steps.length+' · '+(s.label || 'Step '+(i+1));select.append(option);});
+      }else if(data.illustrated){
         var nav=root.querySelector('.pb-step-nav');
         if(!nav){nav=document.createElement('nav');nav.className='pb-step-nav';nav.setAttribute('aria-label','Scene steps');controls.prepend(nav);}
         nav.innerHTML='';
