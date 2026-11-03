@@ -198,7 +198,8 @@ A transport acknowledgement, broker acceptance and completed business operation 
               "edge": "lostReply",
               "label": "R42 lost",
               "tone": "stuck",
-              "kind": "page"
+              "kind": "page",
+              "lost": true
             }
           ]
         },
@@ -312,7 +313,7 @@ A transport acknowledgement, broker acceptance and completed business operation 
           "packets": []
         },
         {
-          "caption": "M42 arrives once. Authenticate the account and bind the payload to its operation ID. Deliveries: 1; committed effects: 0.",
+          "caption": "M42 arrives once. Authenticate the account; this run keeps no replay record. Deliveries: 1; committed effects: 0.",
           "set": {
             "nodes": {
               "sender": [
@@ -390,7 +391,8 @@ A transport acknowledgement, broker acceptance and completed business operation 
               "edge": "lostReply",
               "label": "R42 lost",
               "tone": "stuck",
-              "kind": "page"
+              "kind": "page",
+              "lost": true
             }
           ]
         },

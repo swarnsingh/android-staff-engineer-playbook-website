@@ -6,8 +6,10 @@ def resolve(data):
     if 'layout' not in data:
         return data
     result=copy.deepcopy(data)
-    presets=json.loads((WEB/'design-system/tokens.json').read_text())['sceneLayouts']
+    tokens=json.loads((WEB/'design-system/tokens.json').read_text())
+    presets=tokens['sceneLayouts']
     result['layouts']=copy.deepcopy(presets[result['layout']])
+    result['lossMarker']=copy.deepcopy(tokens['sceneMarkers']['loss'])
     result['responsive']=True
     edges={e['id']:e for e in result['edges']}
     for layout in result['layouts'].values():

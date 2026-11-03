@@ -220,6 +220,10 @@
       var m = el('marker', { id: id + 'h' + t, viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto' }, defs);
       el('path', { 'class': 'pb-head ' + t, d: 'M0 1 L9 5 L0 9 z' }, m);
     });
+    if(data.lossMarker){
+      var loss = el('marker', Object.assign({id:id+'hlost'},data.lossMarker.attributes), defs);
+      el('path', { 'class': 'pb-loss', d: data.lossMarker.path }, loss);
+    }
     (L.regions || []).forEach(function (r) {
       var g = el('g', { 'class': 'pb-region' }, svg);
       el('rect', { x: r.x, y: r.y, width: r.w, height: r.h, rx: 14 }, g);
@@ -439,6 +443,7 @@
     guide.querySelector('summary').textContent = 'Help & step transcript';
     var help=document.createElement('p');help.textContent='Use Next to follow cause and effect, Previous to compare states' + (data.illustrated ? ', or choose a numbered step. ' : '. ') + 'Reset returns to the first step. Play follows the sequence; Pause finishes the current step. With reduced motion, use the step controls.';
     if(manual)help.textContent='Use Next, Previous or a numbered step to compare final states. Reset returns to the first step. Next follows the declared message transfers; automatic playback is off. Reduced motion shows each final state immediately. Every step is listed below.';
+    if(data.stepNavigation === 'select')help.textContent=help.textContent.replace('a numbered step','the step dropdown');
     guide.insertBefore(help, list);
     if(data.illustrated){
       root.classList.add('is-illustrated');
@@ -460,7 +465,10 @@
     }
     function edgesFor(step, moving) {
       Object.keys(ref.edges).forEach(function (k) { setEdge(ref, k, null, false); });
-      (step.packets || []).forEach(function (p) { setEdge(ref, p.edge, p.tone, moving); });
+      (step.packets || []).forEach(function (p) {
+        setEdge(ref, p.edge, p.tone, moving);
+        if(p.lost && data.lossMarker && ref.edges[p.edge])ref.edges[p.edge].setAttribute('marker-end','url(#'+ref.id+'hlost)');
+      });
     }
     function settle() { // show the current step's final state with no motion
       token++; flying = false; root.classList.remove('is-moving');

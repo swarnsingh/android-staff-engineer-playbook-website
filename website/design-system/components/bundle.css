@@ -105,6 +105,7 @@
 @keyframes pb-m65 { from { stroke-dashoffset: 6.5; } to { stroke-dashoffset: 0; } }
 @keyframes pb-m20 { from { stroke-dashoffset: 20; } to { stroke-dashoffset: 0; } }
 .pb-head { fill: var(--line-strong); } .pb-head.fwd { fill: var(--accent); } .pb-head.back { fill: var(--event); } .pb-head.stuck { fill: var(--warn); }
+.pb-loss { fill: none; stroke: var(--warn); stroke-width: var(--scene-loss-stroke); stroke-linecap: round; }
 .pb-pk circle, .pb-pk path { stroke: var(--sheet); stroke-width: 2; }
 .pb-pk.fwd circle { fill: var(--accent); } .pb-pk.back path { fill: var(--event); } .pb-pk.stuck circle { fill: var(--warn); }
 .pb-pk text { font: var(--ui-xl) var(--font-hand); paint-order: stroke; stroke: var(--sheet-sunken); stroke-width: 4px; }
