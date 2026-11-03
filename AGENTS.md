@@ -91,6 +91,6 @@ The 3 November migration covers all 197 older teaching figures in Kotlin and And
 ## Known open work
 
 - Finish tokenizing the remaining legacy layout dimensions in ReaderShell and FigureMap. Automatic card sizing and the compact figure profile now use tokens; other geometry constants remain.
-- Review lesson length before trimming. The rough prose inventory flags 31 of 221 chapters with authored blends above the quarter-length working target, including two cross-reference stubs where the ratio is not useful. Counts alone are not an editorial finding.
+- Review lesson length before trimming. Use the roughly quarter-length working target alongside the value of each addition; exclude visuals and animations, and treat cross-reference stubs separately. Counts alone are not an editorial finding.
 - 57 maps have a narrower, collision-checked phone composition. Complex maps and sequences retain labelled local scrolling; additional compositions need individual semantic review.
 - The single consolidated full manual phone review remains deferred until all planned topic trees and pages are integrated, as required by the rulebook. Automated mobile checks continue during this work.
