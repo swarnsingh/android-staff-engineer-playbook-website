@@ -1,0 +1,5074 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "name": "backend-for-mobile/bff-pattern/ has two comparable runs",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ 375 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ 1024 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ bounded shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ wait shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ 1280 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ comparison retains the selected step",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ 320px has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/bff-pattern/ static transcript retains every run",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ has two comparable runs",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ 375 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ 1024 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ latest shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ arrival shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ 1280 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ comparison retains the selected step",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ 320px has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/rate-limiting/ static transcript retains every run",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ has two comparable runs",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ 375 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ 1024 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ preserve shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ wipe shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ 1280 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ comparison retains the selected step",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ 320px has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile/sse-vs-websockets/ static transcript retains every run",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile includes the expected walkthroughs",
+      "ok": true
+    },
+    {
+      "name": "backend-for-mobile has no application console or runtime errors",
+      "ok": true
+    }
+  ],
+  "geometry": [
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "bounded",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 236.56536865234375,
+          "bottom": 300.23980712890625,
+          "text": "Mobile clienthome not loaded"
+        },
+        {
+          "top": 356.83929443359375,
+          "bottom": 420.51373291015625,
+          "text": "Mobile BFFcatalog ready"
+        },
+        {
+          "top": 477.1131896972656,
+          "bottom": 540.78759765625,
+          "text": "Promosready"
+        },
+        {
+          "top": 587.9375,
+          "bottom": 695.9375,
+          "text": "Step 1 of 5The home request needs catalog data and optional promos. This run starts after the required catalog is ready."
+        },
+        {
+          "top": 705.9375,
+          "bottom": 811.9375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "bounded",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.56536865234375,
+          "bottom": 292.23980712890625,
+          "text": "Mobile clienthome pending"
+        },
+        {
+          "top": 348.83929443359375,
+          "bottom": 412.51373291015625,
+          "text": "Mobile BFFcatalog ready"
+        },
+        {
+          "top": 469.1131896972656,
+          "bottom": 532.78759765625,
+          "text": "Promosready"
+        },
+        {
+          "top": 579.9375,
+          "bottom": 687.9375,
+          "text": "Step 2 of 5The client requests the screen; the BFF already has its required catalog result."
+        },
+        {
+          "top": 697.9375,
+          "bottom": 803.9375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "bounded",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.56536865234375,
+          "bottom": 292.23980712890625,
+          "text": "Mobile clienthome pending"
+        },
+        {
+          "top": 348.83929443359375,
+          "bottom": 412.51373291015625,
+          "text": "Mobile BFFcatalog ready"
+        },
+        {
+          "top": 469.1131896972656,
+          "bottom": 532.78759765625,
+          "text": "Promospromos pending"
+        },
+        {
+          "top": 579.9375,
+          "bottom": 661.9375,
+          "text": "Step 3 of 5The BFF requests promos. That optional upstream remains slow."
+        },
+        {
+          "top": 671.9375,
+          "bottom": 777.9375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "bounded",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.56536865234375,
+          "bottom": 292.23980712890625,
+          "text": "Mobile clientcatalog visible"
+        },
+        {
+          "top": 348.83929443359375,
+          "bottom": 412.51373291015625,
+          "text": "Mobile BFFcatalog response"
+        },
+        {
+          "top": 469.1131896972656,
+          "bottom": 532.78759765625,
+          "text": "Promospromos pending"
+        },
+        {
+          "top": 579.9375,
+          "bottom": 687.9375,
+          "text": "Step 4 of 5The optional deadline expires. The BFF completes the response without promos."
+        },
+        {
+          "top": 697.9375,
+          "bottom": 803.9375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "bounded",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 202.56536865234375,
+          "bottom": 266.23980712890625,
+          "text": "Mobile clientat deadline"
+        },
+        {
+          "top": 322.83929443359375,
+          "bottom": 386.51373291015625,
+          "text": "Mobile BFFresponse completed"
+        },
+        {
+          "top": 443.1131896972656,
+          "bottom": 506.7876281738281,
+          "text": "Promospromos returned"
+        },
+        {
+          "top": 553.9375,
+          "bottom": 687.9375,
+          "text": "Step 5 of 5A late promo result cannot replace the completed response. Cancellation does not prove the upstream did no work."
+        },
+        {
+          "top": 697.9375,
+          "bottom": 803.9375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "wait",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 236.56536865234375,
+          "bottom": 300.23980712890625,
+          "text": "Mobile clienthome not loaded"
+        },
+        {
+          "top": 356.83929443359375,
+          "bottom": 420.51373291015625,
+          "text": "Mobile BFFcatalog ready"
+        },
+        {
+          "top": 477.1131896972656,
+          "bottom": 540.78759765625,
+          "text": "Promosready"
+        },
+        {
+          "top": 587.9375,
+          "bottom": 695.9375,
+          "text": "Step 1 of 5The home request needs catalog data and optional promos. This run starts after the required catalog is ready."
+        },
+        {
+          "top": 705.9375,
+          "bottom": 811.9375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "wait",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.56536865234375,
+          "bottom": 292.23980712890625,
+          "text": "Mobile clienthome pending"
+        },
+        {
+          "top": 348.83929443359375,
+          "bottom": 412.51373291015625,
+          "text": "Mobile BFFcatalog ready"
+        },
+        {
+          "top": 469.1131896972656,
+          "bottom": 532.78759765625,
+          "text": "Promosready"
+        },
+        {
+          "top": 579.9375,
+          "bottom": 687.9375,
+          "text": "Step 2 of 5The client requests the screen; the BFF already has its required catalog result."
+        },
+        {
+          "top": 697.9375,
+          "bottom": 803.9375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "wait",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.56536865234375,
+          "bottom": 292.23980712890625,
+          "text": "Mobile clienthome pending"
+        },
+        {
+          "top": 348.83929443359375,
+          "bottom": 412.51373291015625,
+          "text": "Mobile BFFcatalog ready"
+        },
+        {
+          "top": 469.1131896972656,
+          "bottom": 532.78759765625,
+          "text": "Promospromos pending"
+        },
+        {
+          "top": 579.9375,
+          "bottom": 661.9375,
+          "text": "Step 3 of 5The BFF requests promos. That optional upstream remains slow."
+        },
+        {
+          "top": 671.9375,
+          "bottom": 777.9375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "wait",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.56536865234375,
+          "bottom": 292.23980712890625,
+          "text": "Mobile clienthome pending"
+        },
+        {
+          "top": 348.83929443359375,
+          "bottom": 412.51373291015625,
+          "text": "Mobile BFFstill waiting"
+        },
+        {
+          "top": 469.1131896972656,
+          "bottom": 532.78759765625,
+          "text": "Promospromos pending"
+        },
+        {
+          "top": 579.9375,
+          "bottom": 687.9375,
+          "text": "Step 4 of 5The optional deadline passes, but this policy keeps waiting. The required catalog still cannot reach the screen."
+        },
+        {
+          "top": 697.9375,
+          "bottom": 803.9375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "wait",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.56536865234375,
+          "bottom": 292.23980712890625,
+          "text": "Mobile clientafter slow promo"
+        },
+        {
+          "top": 348.83929443359375,
+          "bottom": 412.51373291015625,
+          "text": "Mobile BFFresponse completed"
+        },
+        {
+          "top": 469.1131896972656,
+          "bottom": 532.78759765625,
+          "text": "Promospromos returned"
+        },
+        {
+          "top": 579.9375,
+          "bottom": 661.9375,
+          "text": "Step 5 of 5Promos finally return; only now can the BFF finish the home response."
+        },
+        {
+          "top": 671.9375,
+          "bottom": 777.9375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "bounded",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 304.921875,
+          "bottom": 530.5218505859375,
+          "text": "Mobile clienthome not loaded"
+        },
+        {
+          "top": 304.921875,
+          "bottom": 530.5218505859375,
+          "text": "Mobile BFFcatalog ready"
+        },
+        {
+          "top": 304.921875,
+          "bottom": 530.5218505859375,
+          "text": "Promosready"
+        },
+        {
+          "top": 657.921875,
+          "bottom": 713.921875,
+          "text": "Step 1 of 5The home request needs catalog data and optional promos. This run starts after the required catalog is ready."
+        },
+        {
+          "top": 723.921875,
+          "bottom": 767.921875,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "bounded",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Mobile clienthome pending"
+        },
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Mobile BFFcatalog ready"
+        },
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Promosready"
+        },
+        {
+          "top": 649.921875,
+          "bottom": 705.921875,
+          "text": "Step 2 of 5The client requests the screen; the BFF already has its required catalog result."
+        },
+        {
+          "top": 715.921875,
+          "bottom": 759.921875,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "bounded",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Mobile clienthome pending"
+        },
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Mobile BFFcatalog ready"
+        },
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Promospromos pending"
+        },
+        {
+          "top": 649.921875,
+          "bottom": 705.921875,
+          "text": "Step 3 of 5The BFF requests promos. That optional upstream remains slow."
+        },
+        {
+          "top": 715.921875,
+          "bottom": 759.921875,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "bounded",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Mobile clientcatalog visible"
+        },
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Mobile BFFcatalog response"
+        },
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Promospromos pending"
+        },
+        {
+          "top": 649.921875,
+          "bottom": 705.921875,
+          "text": "Step 4 of 5The optional deadline expires. The BFF completes the response without promos."
+        },
+        {
+          "top": 715.921875,
+          "bottom": 759.921875,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "bounded",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Mobile clientat deadline"
+        },
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Mobile BFFresponse completed"
+        },
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Promospromos returned"
+        },
+        {
+          "top": 649.921875,
+          "bottom": 705.921875,
+          "text": "Step 5 of 5A late promo result cannot replace the completed response. Cancellation does not prove the upstream did no work."
+        },
+        {
+          "top": 715.921875,
+          "bottom": 759.921875,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "wait",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 304.921875,
+          "bottom": 530.5218505859375,
+          "text": "Mobile clienthome not loaded"
+        },
+        {
+          "top": 304.921875,
+          "bottom": 530.5218505859375,
+          "text": "Mobile BFFcatalog ready"
+        },
+        {
+          "top": 304.921875,
+          "bottom": 530.5218505859375,
+          "text": "Promosready"
+        },
+        {
+          "top": 657.921875,
+          "bottom": 713.921875,
+          "text": "Step 1 of 5The home request needs catalog data and optional promos. This run starts after the required catalog is ready."
+        },
+        {
+          "top": 723.921875,
+          "bottom": 767.921875,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "wait",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Mobile clienthome pending"
+        },
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Mobile BFFcatalog ready"
+        },
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Promosready"
+        },
+        {
+          "top": 649.921875,
+          "bottom": 705.921875,
+          "text": "Step 2 of 5The client requests the screen; the BFF already has its required catalog result."
+        },
+        {
+          "top": 715.921875,
+          "bottom": 759.921875,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "wait",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Mobile clienthome pending"
+        },
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Mobile BFFcatalog ready"
+        },
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Promospromos pending"
+        },
+        {
+          "top": 649.921875,
+          "bottom": 705.921875,
+          "text": "Step 3 of 5The BFF requests promos. That optional upstream remains slow."
+        },
+        {
+          "top": 715.921875,
+          "bottom": 759.921875,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "wait",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Mobile clienthome pending"
+        },
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Mobile BFFstill waiting"
+        },
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Promospromos pending"
+        },
+        {
+          "top": 649.921875,
+          "bottom": 705.921875,
+          "text": "Step 4 of 5The optional deadline passes, but this policy keeps waiting. The required catalog still cannot reach the screen."
+        },
+        {
+          "top": 715.921875,
+          "bottom": 759.921875,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "wait",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Mobile clientafter slow promo"
+        },
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Mobile BFFresponse completed"
+        },
+        {
+          "top": 296.921875,
+          "bottom": 522.5218505859375,
+          "text": "Promospromos returned"
+        },
+        {
+          "top": 649.921875,
+          "bottom": 705.921875,
+          "text": "Step 5 of 5Promos finally return; only now can the BFF finish the home response."
+        },
+        {
+          "top": 715.921875,
+          "bottom": 759.921875,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "bounded",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 436.984375,
+          "bottom": 662.5843505859375,
+          "text": "Mobile clienthome not loaded"
+        },
+        {
+          "top": 436.984375,
+          "bottom": 662.5843505859375,
+          "text": "Mobile BFFcatalog ready"
+        },
+        {
+          "top": 436.984375,
+          "bottom": 662.5843505859375,
+          "text": "Promosready"
+        },
+        {
+          "top": 789.984375,
+          "bottom": 845.984375,
+          "text": "Step 1 of 5The home request needs catalog data and optional promos. This run starts after the required catalog is ready."
+        },
+        {
+          "top": 855.984375,
+          "bottom": 899.984375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "bounded",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Mobile clienthome pending"
+        },
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Mobile BFFcatalog ready"
+        },
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Promosready"
+        },
+        {
+          "top": 781.984375,
+          "bottom": 837.984375,
+          "text": "Step 2 of 5The client requests the screen; the BFF already has its required catalog result."
+        },
+        {
+          "top": 847.984375,
+          "bottom": 891.984375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "bounded",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Mobile clienthome pending"
+        },
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Mobile BFFcatalog ready"
+        },
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Promospromos pending"
+        },
+        {
+          "top": 781.984375,
+          "bottom": 837.984375,
+          "text": "Step 3 of 5The BFF requests promos. That optional upstream remains slow."
+        },
+        {
+          "top": 847.984375,
+          "bottom": 891.984375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "bounded",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Mobile clientcatalog visible"
+        },
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Mobile BFFcatalog response"
+        },
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Promospromos pending"
+        },
+        {
+          "top": 781.984375,
+          "bottom": 837.984375,
+          "text": "Step 4 of 5The optional deadline expires. The BFF completes the response without promos."
+        },
+        {
+          "top": 847.984375,
+          "bottom": 891.984375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "bounded",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Mobile clientat deadline"
+        },
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Mobile BFFresponse completed"
+        },
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Promospromos returned"
+        },
+        {
+          "top": 781.984375,
+          "bottom": 837.984375,
+          "text": "Step 5 of 5A late promo result cannot replace the completed response. Cancellation does not prove the upstream did no work."
+        },
+        {
+          "top": 847.984375,
+          "bottom": 891.984375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "wait",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 436.984375,
+          "bottom": 662.5843505859375,
+          "text": "Mobile clienthome not loaded"
+        },
+        {
+          "top": 436.984375,
+          "bottom": 662.5843505859375,
+          "text": "Mobile BFFcatalog ready"
+        },
+        {
+          "top": 436.984375,
+          "bottom": 662.5843505859375,
+          "text": "Promosready"
+        },
+        {
+          "top": 789.984375,
+          "bottom": 845.984375,
+          "text": "Step 1 of 5The home request needs catalog data and optional promos. This run starts after the required catalog is ready."
+        },
+        {
+          "top": 855.984375,
+          "bottom": 899.984375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "wait",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Mobile clienthome pending"
+        },
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Mobile BFFcatalog ready"
+        },
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Promosready"
+        },
+        {
+          "top": 781.984375,
+          "bottom": 837.984375,
+          "text": "Step 2 of 5The client requests the screen; the BFF already has its required catalog result."
+        },
+        {
+          "top": 847.984375,
+          "bottom": 891.984375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "wait",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Mobile clienthome pending"
+        },
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Mobile BFFcatalog ready"
+        },
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Promospromos pending"
+        },
+        {
+          "top": 781.984375,
+          "bottom": 837.984375,
+          "text": "Step 3 of 5The BFF requests promos. That optional upstream remains slow."
+        },
+        {
+          "top": 847.984375,
+          "bottom": 891.984375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "wait",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Mobile clienthome pending"
+        },
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Mobile BFFstill waiting"
+        },
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Promospromos pending"
+        },
+        {
+          "top": 781.984375,
+          "bottom": 837.984375,
+          "text": "Step 4 of 5The optional deadline passes, but this policy keeps waiting. The required catalog still cannot reach the screen."
+        },
+        {
+          "top": 847.984375,
+          "bottom": 891.984375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/bff-pattern/",
+      "mode": "wait",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Mobile clientafter slow promo"
+        },
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Mobile BFFresponse completed"
+        },
+        {
+          "top": 428.984375,
+          "bottom": 654.5843505859375,
+          "text": "Promospromos returned"
+        },
+        {
+          "top": 781.984375,
+          "bottom": 837.984375,
+          "text": "Step 5 of 5Promos finally return; only now can the BFF finish the home response."
+        },
+        {
+          "top": 847.984375,
+          "bottom": 891.984375,
+          "text": "1 / 5 · Start2 / 5 · Request3 / 5 · Optional4 / 5 · Deadline5 / 5 · Late resultPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "latest",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.47161865234375,
+          "bottom": 274.14605712890625,
+          "text": "Search UIquery A pending"
+        },
+        {
+          "top": 330.74554443359375,
+          "bottom": 394.41998291015625,
+          "text": "Search APIA response delayed"
+        },
+        {
+          "top": 451.0194396972656,
+          "bottom": 514.69384765625,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 561.84375,
+          "bottom": 695.84375,
+          "text": "Step 1 of 5Query A is already in flight for ca. Its delayed result must not take ownership of a newer query’s screen state."
+        },
+        {
+          "top": 705.84375,
+          "bottom": 811.84375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "latest",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.47161865234375,
+          "bottom": 274.14605712890625,
+          "text": "Search UIquery A pending"
+        },
+        {
+          "top": 330.74554443359375,
+          "bottom": 394.41998291015625,
+          "text": "Search APIquery B: cat"
+        },
+        {
+          "top": 451.0194396972656,
+          "bottom": 514.69384765625,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 561.84375,
+          "bottom": 669.84375,
+          "text": "Step 2 of 5The user changes the query to cat and starts B. The server admits B under its separate budget."
+        },
+        {
+          "top": 679.84375,
+          "bottom": 785.84375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "latest",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.47161865234375,
+          "bottom": 274.14605712890625,
+          "text": "Search UIresults: cat"
+        },
+        {
+          "top": 330.74554443359375,
+          "bottom": 394.41998291015625,
+          "text": "Search APIquery B: cat"
+        },
+        {
+          "top": 451.0194396972656,
+          "bottom": 514.69384765625,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 561.84375,
+          "bottom": 669.84375,
+          "text": "Step 3 of 5B returns first. The screen now belongs to query B and displays cat results."
+        },
+        {
+          "top": 679.84375,
+          "bottom": 785.84375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "latest",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.47161865234375,
+          "bottom": 274.14605712890625,
+          "text": "Search UIresults: cat"
+        },
+        {
+          "top": 330.74554443359375,
+          "bottom": 394.41998291015625,
+          "text": "Search APIlate A response"
+        },
+        {
+          "top": 451.0194396972656,
+          "bottom": 514.69384765625,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 561.84375,
+          "bottom": 643.84375,
+          "text": "Step 4 of 5A arrives late. Its request identity is stale, so retain B’s result."
+        },
+        {
+          "top": 653.84375,
+          "bottom": 759.84375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "latest",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.47161865234375,
+          "bottom": 274.14605712890625,
+          "text": "Search UIresults: cat"
+        },
+        {
+          "top": 330.74554443359375,
+          "bottom": 394.41998291015625,
+          "text": "Search APIlate A response"
+        },
+        {
+          "top": 451.0194396972656,
+          "bottom": 514.69384765625,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 561.84375,
+          "bottom": 669.84375,
+          "text": "Step 5 of 5Keep the current-query guard. Server 429 handling still needs its own bucket and retry deadline."
+        },
+        {
+          "top": 679.84375,
+          "bottom": 785.84375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "arrival",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.47161865234375,
+          "bottom": 274.14605712890625,
+          "text": "Search UIquery A pending"
+        },
+        {
+          "top": 330.74554443359375,
+          "bottom": 394.41998291015625,
+          "text": "Search APIA response delayed"
+        },
+        {
+          "top": 451.0194396972656,
+          "bottom": 514.69384765625,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 561.84375,
+          "bottom": 695.84375,
+          "text": "Step 1 of 5Query A is already in flight for ca. Its delayed result must not take ownership of a newer query’s screen state."
+        },
+        {
+          "top": 705.84375,
+          "bottom": 811.84375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "arrival",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.47161865234375,
+          "bottom": 274.14605712890625,
+          "text": "Search UIquery A pending"
+        },
+        {
+          "top": 330.74554443359375,
+          "bottom": 394.41998291015625,
+          "text": "Search APIquery B: cat"
+        },
+        {
+          "top": 451.0194396972656,
+          "bottom": 514.69384765625,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 561.84375,
+          "bottom": 669.84375,
+          "text": "Step 2 of 5The user changes the query to cat and starts B. The server admits B under its separate budget."
+        },
+        {
+          "top": 679.84375,
+          "bottom": 785.84375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "arrival",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.47161865234375,
+          "bottom": 274.14605712890625,
+          "text": "Search UIresults: cat"
+        },
+        {
+          "top": 330.74554443359375,
+          "bottom": 394.41998291015625,
+          "text": "Search APIquery B: cat"
+        },
+        {
+          "top": 451.0194396972656,
+          "bottom": 514.69384765625,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 561.84375,
+          "bottom": 669.84375,
+          "text": "Step 3 of 5B returns first. The screen now belongs to query B and displays cat results."
+        },
+        {
+          "top": 679.84375,
+          "bottom": 785.84375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "arrival",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.47161865234375,
+          "bottom": 274.14605712890625,
+          "text": "Search UIresults: ca"
+        },
+        {
+          "top": 330.74554443359375,
+          "bottom": 394.41998291015625,
+          "text": "Search APIlate A response"
+        },
+        {
+          "top": 451.0194396972656,
+          "bottom": 514.69384765625,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 561.84375,
+          "bottom": 669.84375,
+          "text": "Step 4 of 5A arrives late. Blindly applying the latest callback replaces B with ca results."
+        },
+        {
+          "top": 679.84375,
+          "bottom": 785.84375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "arrival",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.47161865234375,
+          "bottom": 274.14605712890625,
+          "text": "Search UIresults: ca"
+        },
+        {
+          "top": 330.74554443359375,
+          "bottom": 394.41998291015625,
+          "text": "Search APIlate A response"
+        },
+        {
+          "top": 451.0194396972656,
+          "bottom": 514.69384765625,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 561.84375,
+          "bottom": 669.84375,
+          "text": "Step 5 of 5UI pacing did not prevent a stale result. It also did not grant permission to bypass a server limit."
+        },
+        {
+          "top": 679.84375,
+          "bottom": 785.84375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "latest",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 305.3125,
+          "bottom": 530.9124755859375,
+          "text": "Search UIquery A pending"
+        },
+        {
+          "top": 305.3125,
+          "bottom": 530.9124755859375,
+          "text": "Search APIA response delayed"
+        },
+        {
+          "top": 305.3125,
+          "bottom": 530.9124755859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 658.3125,
+          "bottom": 714.3125,
+          "text": "Step 1 of 5Query A is already in flight for ca. Its delayed result must not take ownership of a newer query’s screen state."
+        },
+        {
+          "top": 724.3125,
+          "bottom": 768.3125,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "latest",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Search UIquery A pending"
+        },
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Search APIquery B: cat"
+        },
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 650.3125,
+          "bottom": 706.3125,
+          "text": "Step 2 of 5The user changes the query to cat and starts B. The server admits B under its separate budget."
+        },
+        {
+          "top": 716.3125,
+          "bottom": 760.3125,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "latest",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Search UIresults: cat"
+        },
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Search APIquery B: cat"
+        },
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 650.3125,
+          "bottom": 706.3125,
+          "text": "Step 3 of 5B returns first. The screen now belongs to query B and displays cat results."
+        },
+        {
+          "top": 716.3125,
+          "bottom": 760.3125,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "latest",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Search UIresults: cat"
+        },
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Search APIlate A response"
+        },
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 650.3125,
+          "bottom": 706.3125,
+          "text": "Step 4 of 5A arrives late. Its request identity is stale, so retain B’s result."
+        },
+        {
+          "top": 716.3125,
+          "bottom": 760.3125,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "latest",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Search UIresults: cat"
+        },
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Search APIlate A response"
+        },
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 650.3125,
+          "bottom": 706.3125,
+          "text": "Step 5 of 5Keep the current-query guard. Server 429 handling still needs its own bucket and retry deadline."
+        },
+        {
+          "top": 716.3125,
+          "bottom": 760.3125,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "arrival",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 305.3125,
+          "bottom": 530.9124755859375,
+          "text": "Search UIquery A pending"
+        },
+        {
+          "top": 305.3125,
+          "bottom": 530.9124755859375,
+          "text": "Search APIA response delayed"
+        },
+        {
+          "top": 305.3125,
+          "bottom": 530.9124755859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 658.3125,
+          "bottom": 714.3125,
+          "text": "Step 1 of 5Query A is already in flight for ca. Its delayed result must not take ownership of a newer query’s screen state."
+        },
+        {
+          "top": 724.3125,
+          "bottom": 768.3125,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "arrival",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Search UIquery A pending"
+        },
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Search APIquery B: cat"
+        },
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 650.3125,
+          "bottom": 706.3125,
+          "text": "Step 2 of 5The user changes the query to cat and starts B. The server admits B under its separate budget."
+        },
+        {
+          "top": 716.3125,
+          "bottom": 760.3125,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "arrival",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Search UIresults: cat"
+        },
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Search APIquery B: cat"
+        },
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 650.3125,
+          "bottom": 706.3125,
+          "text": "Step 3 of 5B returns first. The screen now belongs to query B and displays cat results."
+        },
+        {
+          "top": 716.3125,
+          "bottom": 760.3125,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "arrival",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Search UIresults: ca"
+        },
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Search APIlate A response"
+        },
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 650.3125,
+          "bottom": 706.3125,
+          "text": "Step 4 of 5A arrives late. Blindly applying the latest callback replaces B with ca results."
+        },
+        {
+          "top": 716.3125,
+          "bottom": 760.3125,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "arrival",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Search UIresults: ca"
+        },
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Search APIlate A response"
+        },
+        {
+          "top": 297.3125,
+          "bottom": 522.9124755859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 650.3125,
+          "bottom": 706.3125,
+          "text": "Step 5 of 5UI pacing did not prevent a stale result. It also did not grant permission to bypass a server limit."
+        },
+        {
+          "top": 716.3125,
+          "bottom": 760.3125,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "latest",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 437.34375,
+          "bottom": 662.9437255859375,
+          "text": "Search UIquery A pending"
+        },
+        {
+          "top": 437.34375,
+          "bottom": 662.9437255859375,
+          "text": "Search APIA response delayed"
+        },
+        {
+          "top": 437.34375,
+          "bottom": 662.9437255859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 790.34375,
+          "bottom": 846.34375,
+          "text": "Step 1 of 5Query A is already in flight for ca. Its delayed result must not take ownership of a newer query’s screen state."
+        },
+        {
+          "top": 856.34375,
+          "bottom": 900.34375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "latest",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Search UIquery A pending"
+        },
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Search APIquery B: cat"
+        },
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 782.34375,
+          "bottom": 838.34375,
+          "text": "Step 2 of 5The user changes the query to cat and starts B. The server admits B under its separate budget."
+        },
+        {
+          "top": 848.34375,
+          "bottom": 892.34375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "latest",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Search UIresults: cat"
+        },
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Search APIquery B: cat"
+        },
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 782.34375,
+          "bottom": 838.34375,
+          "text": "Step 3 of 5B returns first. The screen now belongs to query B and displays cat results."
+        },
+        {
+          "top": 848.34375,
+          "bottom": 892.34375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "latest",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Search UIresults: cat"
+        },
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Search APIlate A response"
+        },
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 782.34375,
+          "bottom": 838.34375,
+          "text": "Step 4 of 5A arrives late. Its request identity is stale, so retain B’s result."
+        },
+        {
+          "top": 848.34375,
+          "bottom": 892.34375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "latest",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Search UIresults: cat"
+        },
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Search APIlate A response"
+        },
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 782.34375,
+          "bottom": 838.34375,
+          "text": "Step 5 of 5Keep the current-query guard. Server 429 handling still needs its own bucket and retry deadline."
+        },
+        {
+          "top": 848.34375,
+          "bottom": 892.34375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "arrival",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 437.34375,
+          "bottom": 662.9437255859375,
+          "text": "Search UIquery A pending"
+        },
+        {
+          "top": 437.34375,
+          "bottom": 662.9437255859375,
+          "text": "Search APIA response delayed"
+        },
+        {
+          "top": 437.34375,
+          "bottom": 662.9437255859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 790.34375,
+          "bottom": 846.34375,
+          "text": "Step 1 of 5Query A is already in flight for ca. Its delayed result must not take ownership of a newer query’s screen state."
+        },
+        {
+          "top": 856.34375,
+          "bottom": 900.34375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "arrival",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Search UIquery A pending"
+        },
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Search APIquery B: cat"
+        },
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 782.34375,
+          "bottom": 838.34375,
+          "text": "Step 2 of 5The user changes the query to cat and starts B. The server admits B under its separate budget."
+        },
+        {
+          "top": 848.34375,
+          "bottom": 892.34375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "arrival",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Search UIresults: cat"
+        },
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Search APIquery B: cat"
+        },
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 782.34375,
+          "bottom": 838.34375,
+          "text": "Step 3 of 5B returns first. The screen now belongs to query B and displays cat results."
+        },
+        {
+          "top": 848.34375,
+          "bottom": 892.34375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "arrival",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Search UIresults: ca"
+        },
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Search APIlate A response"
+        },
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 782.34375,
+          "bottom": 838.34375,
+          "text": "Step 4 of 5A arrives late. Blindly applying the latest callback replaces B with ca results."
+        },
+        {
+          "top": 848.34375,
+          "bottom": 892.34375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/rate-limiting/",
+      "mode": "arrival",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Search UIresults: ca"
+        },
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Search APIlate A response"
+        },
+        {
+          "top": 429.34375,
+          "bottom": 654.9437255859375,
+          "text": "Budgetserver policy"
+        },
+        {
+          "top": 782.34375,
+          "bottom": 838.34375,
+          "text": "Step 5 of 5UI pacing did not prevent a stale result. It also did not grant permission to bypass a server limit."
+        },
+        {
+          "top": 848.34375,
+          "bottom": 892.34375,
+          "text": "1 / 5 · Request A2 / 5 · Request B3 / 5 · Result B4 / 5 · Late A5 / 5 · Separate rulesPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "preserve",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 236.37786865234375,
+          "bottom": 300.05230712890625,
+          "text": "Mobile clientcursor C7"
+        },
+        {
+          "top": 356.65179443359375,
+          "bottom": 420.32623291015625,
+          "text": "Sync APIready"
+        },
+        {
+          "top": 476.9256896972656,
+          "bottom": 540.60009765625,
+          "text": "Replay logbounded history"
+        },
+        {
+          "top": 587.75,
+          "bottom": 695.75,
+          "text": "Step 1 of 5The client disconnects with cursor C7. Its supported replay history will expire while it is offline."
+        },
+        {
+          "top": 705.75,
+          "bottom": 811.75,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "preserve",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 236.37786865234375,
+          "bottom": 300.05230712890625,
+          "text": "Mobile clientoutbox: 1"
+        },
+        {
+          "top": 356.65179443359375,
+          "bottom": 420.32623291015625,
+          "text": "Sync APIready"
+        },
+        {
+          "top": 476.9256896972656,
+          "bottom": 540.60009765625,
+          "text": "Replay logbounded history"
+        },
+        {
+          "top": 587.75,
+          "bottom": 669.75,
+          "text": "Step 2 of 5The user makes local edit P1. It is pending in the durable client outbox."
+        },
+        {
+          "top": 679.75,
+          "bottom": 785.75,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "preserve",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 236.37786865234375,
+          "bottom": 300.05230712890625,
+          "text": "Mobile clientoutbox: 1"
+        },
+        {
+          "top": 356.65179443359375,
+          "bottom": 420.32623291015625,
+          "text": "Sync APIreset required"
+        },
+        {
+          "top": 476.9256896972656,
+          "bottom": 540.60009765625,
+          "text": "Replay logC7 expired"
+        },
+        {
+          "top": 587.75,
+          "bottom": 669.75,
+          "text": "Step 3 of 5The API receives C7 and finds that its replay history is no longer available."
+        },
+        {
+          "top": 679.75,
+          "bottom": 785.75,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "preserve",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.37786865234375,
+          "bottom": 292.05230712890625,
+          "text": "Mobile clientoutbox: 1"
+        },
+        {
+          "top": 348.65179443359375,
+          "bottom": 412.32623291015625,
+          "text": "Sync APIsnapshot ready"
+        },
+        {
+          "top": 468.9256896972656,
+          "bottom": 532.60009765625,
+          "text": "Replay logC7 expired"
+        },
+        {
+          "top": 579.75,
+          "bottom": 687.75,
+          "text": "Step 4 of 5The API returns a replacement snapshot under this illustrative reset contract."
+        },
+        {
+          "top": 697.75,
+          "bottom": 803.75,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "preserve",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.37786865234375,
+          "bottom": 292.05230712890625,
+          "text": "Mobile clientoutbox: 1 retained"
+        },
+        {
+          "top": 348.65179443359375,
+          "bottom": 412.32623291015625,
+          "text": "Sync APIsnapshot ready"
+        },
+        {
+          "top": 468.9256896972656,
+          "bottom": 532.60009765625,
+          "text": "Replay logC7 expired"
+        },
+        {
+          "top": 579.75,
+          "bottom": 687.75,
+          "text": "Step 5 of 5Replace the authoritative base, retain P1 separately, then rebase or resolve it under the API contract."
+        },
+        {
+          "top": 697.75,
+          "bottom": 803.75,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "wipe",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 236.37786865234375,
+          "bottom": 300.05230712890625,
+          "text": "Mobile clientcursor C7"
+        },
+        {
+          "top": 356.65179443359375,
+          "bottom": 420.32623291015625,
+          "text": "Sync APIready"
+        },
+        {
+          "top": 476.9256896972656,
+          "bottom": 540.60009765625,
+          "text": "Replay logbounded history"
+        },
+        {
+          "top": 587.75,
+          "bottom": 695.75,
+          "text": "Step 1 of 5The client disconnects with cursor C7. Its supported replay history will expire while it is offline."
+        },
+        {
+          "top": 705.75,
+          "bottom": 811.75,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "wipe",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 236.37786865234375,
+          "bottom": 300.05230712890625,
+          "text": "Mobile clientoutbox: 1"
+        },
+        {
+          "top": 356.65179443359375,
+          "bottom": 420.32623291015625,
+          "text": "Sync APIready"
+        },
+        {
+          "top": 476.9256896972656,
+          "bottom": 540.60009765625,
+          "text": "Replay logbounded history"
+        },
+        {
+          "top": 587.75,
+          "bottom": 669.75,
+          "text": "Step 2 of 5The user makes local edit P1. It is pending in the durable client outbox."
+        },
+        {
+          "top": 679.75,
+          "bottom": 785.75,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "wipe",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 236.37786865234375,
+          "bottom": 300.05230712890625,
+          "text": "Mobile clientoutbox: 1"
+        },
+        {
+          "top": 356.65179443359375,
+          "bottom": 420.32623291015625,
+          "text": "Sync APIreset required"
+        },
+        {
+          "top": 476.9256896972656,
+          "bottom": 540.60009765625,
+          "text": "Replay logC7 expired"
+        },
+        {
+          "top": 587.75,
+          "bottom": 669.75,
+          "text": "Step 3 of 5The API receives C7 and finds that its replay history is no longer available."
+        },
+        {
+          "top": 679.75,
+          "bottom": 785.75,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "wipe",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.37786865234375,
+          "bottom": 292.05230712890625,
+          "text": "Mobile clientoutbox: 1"
+        },
+        {
+          "top": 348.65179443359375,
+          "bottom": 412.32623291015625,
+          "text": "Sync APIsnapshot ready"
+        },
+        {
+          "top": 468.9256896972656,
+          "bottom": 532.60009765625,
+          "text": "Replay logC7 expired"
+        },
+        {
+          "top": 579.75,
+          "bottom": 687.75,
+          "text": "Step 4 of 5The API returns a replacement snapshot under this illustrative reset contract."
+        },
+        {
+          "top": 697.75,
+          "bottom": 803.75,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "wipe",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.37786865234375,
+          "bottom": 292.05230712890625,
+          "text": "Mobile clientoutbox: 0; P1 lost"
+        },
+        {
+          "top": 348.65179443359375,
+          "bottom": 412.32623291015625,
+          "text": "Sync APIsnapshot ready"
+        },
+        {
+          "top": 468.9256896972656,
+          "bottom": 532.60009765625,
+          "text": "Replay logC7 expired"
+        },
+        {
+          "top": 579.75,
+          "bottom": 687.75,
+          "text": "Step 5 of 5Replacing all local state also deletes P1. A backend retention limit has become lost user work."
+        },
+        {
+          "top": 697.75,
+          "bottom": 803.75,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "preserve",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 304.671875,
+          "bottom": 530.2718505859375,
+          "text": "Mobile clientcursor C7"
+        },
+        {
+          "top": 304.671875,
+          "bottom": 530.2718505859375,
+          "text": "Sync APIready"
+        },
+        {
+          "top": 304.671875,
+          "bottom": 530.2718505859375,
+          "text": "Replay logbounded history"
+        },
+        {
+          "top": 657.671875,
+          "bottom": 713.671875,
+          "text": "Step 1 of 5The client disconnects with cursor C7. Its supported replay history will expire while it is offline."
+        },
+        {
+          "top": 723.671875,
+          "bottom": 767.671875,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "preserve",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Mobile clientoutbox: 1"
+        },
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Sync APIready"
+        },
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Replay logbounded history"
+        },
+        {
+          "top": 649.671875,
+          "bottom": 705.671875,
+          "text": "Step 2 of 5The user makes local edit P1. It is pending in the durable client outbox."
+        },
+        {
+          "top": 715.671875,
+          "bottom": 759.671875,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "preserve",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Mobile clientoutbox: 1"
+        },
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Sync APIreset required"
+        },
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Replay logC7 expired"
+        },
+        {
+          "top": 649.671875,
+          "bottom": 705.671875,
+          "text": "Step 3 of 5The API receives C7 and finds that its replay history is no longer available."
+        },
+        {
+          "top": 715.671875,
+          "bottom": 759.671875,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "preserve",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Mobile clientoutbox: 1"
+        },
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Sync APIsnapshot ready"
+        },
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Replay logC7 expired"
+        },
+        {
+          "top": 649.671875,
+          "bottom": 705.671875,
+          "text": "Step 4 of 5The API returns a replacement snapshot under this illustrative reset contract."
+        },
+        {
+          "top": 715.671875,
+          "bottom": 759.671875,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "preserve",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Mobile clientoutbox: 1 retained"
+        },
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Sync APIsnapshot ready"
+        },
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Replay logC7 expired"
+        },
+        {
+          "top": 649.671875,
+          "bottom": 705.671875,
+          "text": "Step 5 of 5Replace the authoritative base, retain P1 separately, then rebase or resolve it under the API contract."
+        },
+        {
+          "top": 715.671875,
+          "bottom": 759.671875,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "wipe",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 304.671875,
+          "bottom": 530.2718505859375,
+          "text": "Mobile clientcursor C7"
+        },
+        {
+          "top": 304.671875,
+          "bottom": 530.2718505859375,
+          "text": "Sync APIready"
+        },
+        {
+          "top": 304.671875,
+          "bottom": 530.2718505859375,
+          "text": "Replay logbounded history"
+        },
+        {
+          "top": 657.671875,
+          "bottom": 713.671875,
+          "text": "Step 1 of 5The client disconnects with cursor C7. Its supported replay history will expire while it is offline."
+        },
+        {
+          "top": 723.671875,
+          "bottom": 767.671875,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "wipe",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Mobile clientoutbox: 1"
+        },
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Sync APIready"
+        },
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Replay logbounded history"
+        },
+        {
+          "top": 649.671875,
+          "bottom": 705.671875,
+          "text": "Step 2 of 5The user makes local edit P1. It is pending in the durable client outbox."
+        },
+        {
+          "top": 715.671875,
+          "bottom": 759.671875,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "wipe",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Mobile clientoutbox: 1"
+        },
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Sync APIreset required"
+        },
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Replay logC7 expired"
+        },
+        {
+          "top": 649.671875,
+          "bottom": 705.671875,
+          "text": "Step 3 of 5The API receives C7 and finds that its replay history is no longer available."
+        },
+        {
+          "top": 715.671875,
+          "bottom": 759.671875,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "wipe",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Mobile clientoutbox: 1"
+        },
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Sync APIsnapshot ready"
+        },
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Replay logC7 expired"
+        },
+        {
+          "top": 649.671875,
+          "bottom": 705.671875,
+          "text": "Step 4 of 5The API returns a replacement snapshot under this illustrative reset contract."
+        },
+        {
+          "top": 715.671875,
+          "bottom": 759.671875,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "wipe",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Mobile clientoutbox: 0; P1 lost"
+        },
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Sync APIsnapshot ready"
+        },
+        {
+          "top": 296.671875,
+          "bottom": 522.2718505859375,
+          "text": "Replay logC7 expired"
+        },
+        {
+          "top": 649.671875,
+          "bottom": 705.671875,
+          "text": "Step 5 of 5Replacing all local state also deletes P1. A backend retention limit has become lost user work."
+        },
+        {
+          "top": 715.671875,
+          "bottom": 759.671875,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "preserve",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 436.734375,
+          "bottom": 662.3343505859375,
+          "text": "Mobile clientcursor C7"
+        },
+        {
+          "top": 436.734375,
+          "bottom": 662.3343505859375,
+          "text": "Sync APIready"
+        },
+        {
+          "top": 436.734375,
+          "bottom": 662.3343505859375,
+          "text": "Replay logbounded history"
+        },
+        {
+          "top": 789.734375,
+          "bottom": 845.734375,
+          "text": "Step 1 of 5The client disconnects with cursor C7. Its supported replay history will expire while it is offline."
+        },
+        {
+          "top": 855.734375,
+          "bottom": 899.734375,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "preserve",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Mobile clientoutbox: 1"
+        },
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Sync APIready"
+        },
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Replay logbounded history"
+        },
+        {
+          "top": 781.734375,
+          "bottom": 837.734375,
+          "text": "Step 2 of 5The user makes local edit P1. It is pending in the durable client outbox."
+        },
+        {
+          "top": 847.734375,
+          "bottom": 891.734375,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "preserve",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Mobile clientoutbox: 1"
+        },
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Sync APIreset required"
+        },
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Replay logC7 expired"
+        },
+        {
+          "top": 781.734375,
+          "bottom": 837.734375,
+          "text": "Step 3 of 5The API receives C7 and finds that its replay history is no longer available."
+        },
+        {
+          "top": 847.734375,
+          "bottom": 891.734375,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "preserve",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Mobile clientoutbox: 1"
+        },
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Sync APIsnapshot ready"
+        },
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Replay logC7 expired"
+        },
+        {
+          "top": 781.734375,
+          "bottom": 837.734375,
+          "text": "Step 4 of 5The API returns a replacement snapshot under this illustrative reset contract."
+        },
+        {
+          "top": 847.734375,
+          "bottom": 891.734375,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "preserve",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Mobile clientoutbox: 1 retained"
+        },
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Sync APIsnapshot ready"
+        },
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Replay logC7 expired"
+        },
+        {
+          "top": 781.734375,
+          "bottom": 837.734375,
+          "text": "Step 5 of 5Replace the authoritative base, retain P1 separately, then rebase or resolve it under the API contract."
+        },
+        {
+          "top": 847.734375,
+          "bottom": 891.734375,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "wipe",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 436.734375,
+          "bottom": 662.3343505859375,
+          "text": "Mobile clientcursor C7"
+        },
+        {
+          "top": 436.734375,
+          "bottom": 662.3343505859375,
+          "text": "Sync APIready"
+        },
+        {
+          "top": 436.734375,
+          "bottom": 662.3343505859375,
+          "text": "Replay logbounded history"
+        },
+        {
+          "top": 789.734375,
+          "bottom": 845.734375,
+          "text": "Step 1 of 5The client disconnects with cursor C7. Its supported replay history will expire while it is offline."
+        },
+        {
+          "top": 855.734375,
+          "bottom": 899.734375,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "wipe",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Mobile clientoutbox: 1"
+        },
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Sync APIready"
+        },
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Replay logbounded history"
+        },
+        {
+          "top": 781.734375,
+          "bottom": 837.734375,
+          "text": "Step 2 of 5The user makes local edit P1. It is pending in the durable client outbox."
+        },
+        {
+          "top": 847.734375,
+          "bottom": 891.734375,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "wipe",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Mobile clientoutbox: 1"
+        },
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Sync APIreset required"
+        },
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Replay logC7 expired"
+        },
+        {
+          "top": 781.734375,
+          "bottom": 837.734375,
+          "text": "Step 3 of 5The API receives C7 and finds that its replay history is no longer available."
+        },
+        {
+          "top": 847.734375,
+          "bottom": 891.734375,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "wipe",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Mobile clientoutbox: 1"
+        },
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Sync APIsnapshot ready"
+        },
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Replay logC7 expired"
+        },
+        {
+          "top": 781.734375,
+          "bottom": 837.734375,
+          "text": "Step 4 of 5The API returns a replacement snapshot under this illustrative reset contract."
+        },
+        {
+          "top": 847.734375,
+          "bottom": 891.734375,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "backend-for-mobile/sse-vs-websockets/",
+      "mode": "wipe",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Mobile clientoutbox: 0; P1 lost"
+        },
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Sync APIsnapshot ready"
+        },
+        {
+          "top": 428.734375,
+          "bottom": 654.3343505859375,
+          "text": "Replay logC7 expired"
+        },
+        {
+          "top": 781.734375,
+          "bottom": 837.734375,
+          "text": "Step 5 of 5Replacing all local state also deletes P1. A backend retention limit has become lost user work."
+        },
+        {
+          "top": 847.734375,
+          "bottom": 891.734375,
+          "text": "1 / 5 · Offline2 / 5 · Edit3 / 5 · Reconnect4 / 5 · Snapshot5 / 5 · InstallPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    }
+  ],
+  "pages": [
+    "backend-for-mobile/bff-pattern/",
+    "backend-for-mobile/rate-limiting/",
+    "backend-for-mobile/sse-vs-websockets/"
+  ],
+  "errors": [],
+  "limits": "Headless Chromium; default reading size. Favicon 404 is excluded. No physical-device, network or service integration certification."
+}

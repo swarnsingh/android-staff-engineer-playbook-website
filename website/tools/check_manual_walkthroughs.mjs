@@ -15,6 +15,9 @@ page.on('pageerror',e=>errors.push(String(e)));
 page.on('console',m=>{if(m.type()==='error'&&!(m.location().url||'').endsWith('/favicon.ico'))errors.push(m.text());});
 async function settle(){await page.waitForFunction(s=>!document.querySelector(s).classList.contains('is-moving'),{},sc);}
 const known={
+ 'bff-pattern':{bounded:'at deadline',wait:'after slow promo'},
+ 'sse-vs-websockets':{preserve:'outbox: 1 retained',wipe:'outbox: 0; P1 lost'},
+ 'rate-limiting':{latest:'results: cat',arrival:'results: ca'},
  'idempotency':{retained:'effects: 1',pruned:'effects: 2'},
  'mobile-client-consistency-contracts':{version:'visible v8',arrival:'visible v7'},
  'vector-clocks':{causal:'siblings x1,x2',arrival:'only x2 retained'},
@@ -58,11 +61,15 @@ try{
       const boxes=[...e.querySelectorAll('.pb-node,.pb-caption,.pb-controls')].map(e=>{const r=e.getBoundingClientRect();return {top:r.top,bottom:r.bottom,text:e.textContent};});
       const labels=[...e.querySelectorAll('.pb-label,.pb-region text')].map(e=>e.getBoundingClientRect());
       const labelOverlap=labels.some((a,i)=>labels.slice(i+1).some(b=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>1&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1));
-      return {header,boxes,labelOverlap,ok:boxes.every(r=>r.top>=header-1&&r.bottom<=innerHeight+1),focused:e.querySelector('[data-act=next]')===document.activeElement,moving:e.classList.contains('is-moving'),packets:e.querySelectorAll('.pb-pk').length};
+      const drawing=e.querySelector('svg').getBoundingClientRect();
+      const clippedText=[...e.querySelectorAll('.pb-label,.pb-node > .t,.pb-node > .s,.pb-region text')].some(t=>{const r=t.getBoundingClientRect();return r.left<drawing.left-1||r.right>drawing.right+1||r.top<drawing.top-1||r.bottom>drawing.bottom+1;});
+      const titleOverlap=[...e.querySelectorAll('.pb-node')].some(n=>{const a=n.querySelector('.t').getBoundingClientRect(),b=n.querySelector('.s').getBoundingClientRect();return Math.min(a.right,b.right)-Math.max(a.left,b.left)>1&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1;});
+      return {header,boxes,labelOverlap,clippedText,titleOverlap,ok:boxes.every(r=>r.top>=header-1&&r.bottom<=innerHeight+1),focused:e.querySelector('[data-act=next]')===document.activeElement,moving:e.classList.contains('is-moving'),packets:e.querySelectorAll('.pb-pk').length};
      });
      geometry.push({route,mode,width,height,step:i+1,...g});
      check(route+' '+mode+' '+width+' step '+(i+1)+' fits with stable focus',g.ok&&g.focused&&!g.moving&&!g.packets);
      check(route+' '+mode+' '+width+' step '+(i+1)+' labels do not overlap',!g.labelOverlap);
+     check(route+' '+mode+' '+width+' step '+(i+1)+' text stays in its drawing without title/status overlap',!g.clippedText&&!g.titleOverlap);
      if(run.steps[i].packets?.some(p=>p.lost)){
       const loss=await page.$eval(sc,e=>!![...e.querySelectorAll('.pb-edge')].find(p=>p.getAttribute('marker-end')?.includes('hlost')));
       check(route+' '+mode+' '+width+' settled loss remains marked',loss);

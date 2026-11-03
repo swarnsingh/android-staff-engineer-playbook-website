@@ -157,40 +157,9 @@ Data activity can add radio promotion and tail energy, but the magnitude varies 
 
 If chat, live map, and notifications share lifecycle, authorization, service ownership, protocol, and fault-isolation requirements, a `ConnectionManager` can multiplex them. Keep separate connections when those boundaries differ:
 
-```kotlin
-@Singleton
-class ConnectionManager @Inject constructor(
-    private val client: OkHttpClient,
-    private val authProvider: AuthProvider,
-) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var socket: WebSocket? = null
-    private val events = MutableSharedFlow<ServerEvent>(replay = 0, extraBufferCapacity = 64)
+A production adapter needs one explicitly owned authenticated session. Process callbacks through a bounded, sequential inbox, reject callbacks from retired sessions, and persist accepted events/cursors before broadcasting UI updates. Overflow, parse failure or a subscriber gap requires reconciliation; never launch an unbounded coroutine per frame.
 
-    val chat: Flow<ChatEvent> = events.filterIsInstance()
-    val locations: Flow<LocationEvent> = events.filterIsInstance()
-    val notifications: Flow<NotificationEvent> = events.filterIsInstance()
-
-    fun connect() {
-        val request = Request.Builder()
-            .url("wss://api.example.com/multiplex")
-            .header("Authorization", "Bearer ${authProvider.token}")
-            .build()
-        socket = client.newWebSocket(request, ConnListener())
-    }
-
-    fun disconnect() = socket?.close(1000, null)
-
-    private inner class ConnListener : WebSocketListener() {
-        override fun onMessage(ws: WebSocket, text: String) {
-            scope.launch {
-                events.emit(parseEvent(text))   // sealed type discriminator
-            }
-        }
-        // ... onFailure → reconnection logic ...
-    }
-}
-```
+A replay-zero `SharedFlow` loses events while no subscriber exists, regardless of extra buffer capacity. It may broadcast transient updates after durable reduction, but must not be the only copy of a chat event. Expose current renderable state from storage, and close/cancel the session when its owner ends. These are required implementation contracts rather than a complete connection-manager implementation.
 
 Server side sends a discriminator in each frame:
 
@@ -296,6 +265,8 @@ These don't usually live in app code, but staff engineers must know them:
     The server may have sent an FCM notification payload that the SDK displayed, or a data/mixed message may have reached app code under current app/device/priority policy. The exact callback and display path depends on payload type, app state, permission, delegation, and platform policy; the app reconciles durable message state independently.
 
 ## Further Reading
+
+- [SharedFlow buffering and absent subscribers](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/).
 
 - [`push-vs-poll-vs-sse-vs-websockets.md`](push-vs-poll-vs-sse-vs-websockets.md) — canonical transport, lifecycle, retry, and reconciliation mechanics.
 - [`graphql-vs-rest.md`](graphql-vs-rest.md) — GraphQL subscriptions live on WebSocket.

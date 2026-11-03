@@ -1,0 +1,13 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">An absent Boolean used to mean “not entitled.” A serializer migration starts treating a missing, null or unknown value differently. The payload still looks small; the product meaning has changed.</p>
+
+<!-- @before Defaults, Nulls and Unknown Values :: guide -->
+### Test the wire states separately
+
+Absence, explicit null, an unknown field and an unknown enum are different inputs. A decoder setting that permits additive keys does not define entitlement fallback. Preserve the intended unavailable or reconciliation state instead of mapping uncertainty to access. [Protobuf presence and evolution](https://protobuf.dev/programming-guides/proto3/) and [FlatBuffers evolution](https://flatbuffers.dev/evolution/) document format-specific boundaries.
+
+<!-- @before Staff Engineer Thinking :: staff -->
+### Measure the whole path before migrating
+
+Compare representative compressed bytes, decoding/access work and retained application objects on supported devices. Direct buffer access does not remove decompression, validation or application copies. Keep the old wire and stored-cache contract available for supported readers and rollback.

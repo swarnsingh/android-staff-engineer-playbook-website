@@ -1,0 +1,32 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">A screen needs a product and its seller. One API returns a large representation; another needs two calls. The useful comparison is the screen’s actual request and cache behavior under each contract.</p>
+
+<!-- @before Three Axes (Don't Conflate Them) :: guide -->
+### Change the query contract deliberately
+
+A REST/BFF endpoint can aggregate the screen; a GraphQL operation can select its fields. Either can still fan out behind the server. Keep encoding, transport and client request count as separate measured choices rather than inferring them from the API label.
+
+<!-- @before Error Handling Differences :: guide -->
+### Partial data is an explicit product state
+
+GraphQL execution can return data alongside errors, with null propagation determined by the schema. Map the available fields and error paths into the screen’s contract rather than treating every nonempty error list as identical. [GraphQL response rules](https://spec.graphql.org/September2025/).
+
+<!-- @before The Caching Tradeoff :: staff -->
+### Choose cache identity and invalidation owners
+
+An HTTP cache stores eligible representations under HTTP metadata. A normalized application cache stores identified records and selected fields. Neither is automatically correct after a mutation; define keys, invalidation and uncertainty recovery. [Apollo normalized-cache behavior](https://www.apollographql.com/docs/kotlin/caching/normalized-cache).
+
+<!-- @before The Caching Tradeoff :: visual -->
+### Two caches answer different reuse questions
+
+```mermaid
+flowchart TB
+ r["HTTP representation Request key and validators"]
+ e["Normalized records Entity keys and fields"]
+ u["Screen state Accepted data and errors"]
+ r -->|"reuse eligible representation"| u
+ e -->|"assemble selected records"| u
+```
+
+A cacheable HTTP representation and a normalized entity record are different units. Either API style still needs deliberate identity, freshness and mutation policies.

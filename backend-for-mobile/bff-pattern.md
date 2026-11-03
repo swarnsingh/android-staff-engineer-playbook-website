@@ -6,7 +6,7 @@
 
 ## Overview
 
-Historically, backends exposed generic, "one-size-fits-all" APIs. The Web app, the Android app, and the iOS app all consumed the exact same `/api/v1/users` endpoint. 
+Historically, backends exposed generic, "one-size-fits-all" APIs. The Web app, the Android app, and the iOS app all consumed the exact same `/api/v1/users` endpoint.
 
 As microservices took over, the Android app had to start acting like a database aggregator. To render the "Home" screen, the app had to call:
 1. `AuthService` (to get permissions)
@@ -29,34 +29,31 @@ If the Android app has to do the orchestration, the ViewModel or Repository look
 
 ```kotlin
 // BAD: Orchestration on the mobile client
-suspend fun fetchHomeScreenData(): HomeState {
-    return coroutineScope {
-        // Launch 4 simultaneous network requests over a mobile radio
-        val profileDeferred = async { userApi.getProfile() }
-        val inventoryDeferred = async { inventoryApi.getProducts() }
-        val promosDeferred = async { promoApi.getBanners() }
-        val cartDeferred = async { cartApi.getCartCount() }
-        
-        try {
-            // Wait for the SLOWEST request to finish
-            HomeState.Success(
-                profile = profileDeferred.await(),
-                inventory = inventoryDeferred.await(),
-                promos = promosDeferred.await(),
-                cartCount = cartDeferred.await()
-            )
-        } catch (e: Exception) {
-            // If ANY request fails, the entire screen fails!
-            HomeState.Error
-        }
+suspend fun fetchHomeScreenData(): HomeState = try {
+    coroutineScope {
+        val profile = async { userApi.getProfile() }
+        val inventory = async { inventoryApi.getProducts() }
+        val promos = async { promoApi.getBanners() }
+        val cart = async { cartApi.getCartCount() }
+        HomeState.Success(profile.await(), inventory.await(), promos.await(), cart.await())
     }
+} catch (e: CancellationException) {
+    throw e
+} catch (e: HttpException) {
+    HomeState.Error
+} catch (e: SerializationException) {
+    HomeState.Error
+} catch (e: IOException) {
+    HomeState.Error
 }
 ```
 
-**Why this fails on mobile:**
-1. **Radio Wakeup:** Making 4 requests keeps the cellular radio active longer.
-2. **Head-of-Line Blocking:** HTTP/2 helps, but multiple massive JSON payloads competing for bandwidth will stutter.
-3. **Over-fetching:** The `userApi` returns 50 fields, but the Home screen only needs `avatarUrl` and `firstName`. The Android CPU wastes time parsing data it throws away.
+This all-required example deliberately fails the screen if one call fails. The catch surrounds `coroutineScope`: catching only `await()` inside it cannot recover a scope already cancelled by a failed child. Production code also classifies HTTP/decoding failures from its chosen client.
+
+**Costs to measure on mobile:**
+1. **Radio Wakeup:** Several concurrent requests may share connection and radio activity; extra work can increase energy, but request count is not a radio-wakeup count.
+2. **Head-of-Line Blocking:** Competing payloads can increase transfer/decoding pressure; distinguish TCP head-of-line blocking from CPU or bandwidth contention.
+3. **Over-fetching:** The `userApi` returns 50 fields, but the Home screen only needs `avatarUrl` and `firstName`. Unknown fields may be skipped without allocating their model values, although bytes and tokenization still cost work.
 4. **Partial Failure:** Handling partial failures (e.g. promos fail, but inventory succeeds) on the client requires complex, stateful logic in the ViewModel.
 
 ---
@@ -79,20 +76,37 @@ The BFF must be versioned and operated like a product API, not like throwaway gl
 
 This is why ownership matters. If the mobile organization owns the BFF, Android engineers can evolve the screen contract with the same care they apply to client code. If a central backend team owns it, the team needs an explicit API review path, service-level objectives, and a deprecation policy for mobile contracts.
 
+### Optional Upstream Boundary
+
+This server example uses Ktor with `expectSuccess = true` and content negotiation. Its adapter surfaces status failures as `ResponseException`, converter failures as `ContentConvertException` (or a direct `SerializationException`), and transport failures as `IOException`. Only the optional promo dependency gets a fallback; required dependencies still fail the response through the BFF's reviewed error mapper.
+
+```kotlin
+suspend fun <T> optionalUpstream(load: suspend () -> List<T>): List<T> = try {
+    load()
+} catch (e: CancellationException) {
+    throw e
+} catch (e: ResponseException) {
+    emptyList()
+} catch (e: ContentConvertException) {
+    emptyList()
+} catch (e: SerializationException) {
+    emptyList()
+} catch (e: IOException) {
+    emptyList()
+}
+```
+
+The exception imports are `io.ktor.client.plugins.ResponseException`, `io.ktor.serialization.ContentConvertException`, `kotlinx.serialization.SerializationException`, `java.io.IOException`, and `kotlinx.coroutines.CancellationException`; another client needs its own error classification. Never turn cancellation, authentication for required data, or arbitrary programming errors into an apparently healthy complete response. A richer product can expose unavailable section metadata instead of an empty list.
+
 ### The BFF Server Logic (e.g., Ktor)
 ```kotlin
 // Server-side BFF logic (running in AWS/GCP)
 get("/android/v1/home") {
-    // These calls happen over 10Gbps internal data center network
-    // Latency is <5ms
+    // Upstream latency and deadlines are deployment-specific; measure them.
     val profile = internalUserClient.getProfile(userId)
     val inventory = internalInventoryClient.getProducts()
-    val promos = try {
-        internalPromoClient.getBanners()
-    } catch (e: Exception) {
-        emptyList() // Server handles partial failure gracefully!
-    }
-    
+    val promos = optionalUpstream { internalPromoClient.getBanners() }
+
     // Shape the payload strictly for the Android UI
     val response = AndroidHomeResponse(
         greeting = "Hello, ${profile.firstName}",
@@ -100,22 +114,28 @@ get("/android/v1/home") {
         items = inventory.map { it.toAndroidItem() },
         banners = promos.map { it.toAndroidBanner() }
     )
-    
+
     call.respond(response)
 }
 ```
 
 ### The Android Client Logic (With BFF)
-The mobile code collapses into a single, clean network call.
+The mobile code makes one call. These Android examples use Retrofit with a Kotlinx Serialization converter: handle `HttpException` and `SerializationException` as well as I/O failure, while cancellation propagates.
 
 ```kotlin
 // GOOD: Client simply consumes the BFF payload
 suspend fun fetchHomeScreenData(): HomeState {
     return try {
         // ONE request, shaped perfectly for the UI
-        val response = bffApi.getHomeScreen() 
+        val response = bffApi.getHomeScreen()
         HomeState.Success(response)
-    } catch (e: Exception) {
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: HttpException) {
+        HomeState.Error
+    } catch (e: SerializationException) {
+        HomeState.Error
+    } catch (e: IOException) {
         HomeState.Error
     }
 }
@@ -125,7 +145,7 @@ suspend fun fetchHomeScreenData(): HomeState {
 
 ## 3. Server-Driven UI (SDUI)
 
-The ultimate evolution of the BFF pattern is **Server-Driven UI**. 
+A BFF can support **Server-Driven UI**, but neither pattern requires the other.
 
 If the BFF is already aggregating data specifically for the Android screen, why not have the BFF dictate *how* the screen should be laid out? This allows you to redesign the app's layout without shipping a new APK to the Play Store.
 
@@ -151,7 +171,7 @@ If the BFF is already aggregating data specifically for the Android screen, why 
 ```
 
 ### The Android Compose Implementation
-The Android app acts as a "dumb renderer" that loops over the components sent by the BFF.
+The client validates supported components and owns accessibility, local state and safe actions. Required unknown components must trigger a supported fallback, not silently disappear.
 
 ```kotlin
 @Composable
@@ -162,7 +182,7 @@ fun SduiScreen(components: List<SduiComponent>) {
                 "HeroBanner" -> HeroBannerUI(component.data)
                 "HorizontalCarousel" -> CarouselUI(component.data)
                 "TextHeader" -> HeaderUI(component.data)
-                else -> { /* Ignore unknown components (forward compatibility!) */ }
+                else -> { /* Only optional components may be skipped; required ones need fallback. */ }
             }
         }
     }
@@ -185,11 +205,11 @@ fun SduiScreen(components: List<SduiComponent>) {
 ## 5. Common Pitfalls
 
 ### Pitfall 1: Leaking Internal Microservice Errors
-If the internal `InventoryService` returns a `503 Service Unavailable`, the BFF must not simply forward the `503` to the mobile app. The mobile app doesn't know what "InventoryService" is. 
+If the internal `InventoryService` returns a `503 Service Unavailable`, the BFF must not simply forward the `503` to the mobile app. The mobile app doesn't know what "InventoryService" is.
 *Fix:* The BFF must catch internal errors and either return a partial success (e.g., UI loads without inventory) or translate the error into a semantic mobile error envelope (e.g., `{"error": "CART_UNAVAILABLE"}`).
 
 ### Pitfall 2: Using the BFF as a Business Logic Layer
-The BFF is an *orchestration* and *presentation* layer. It should not calculate taxes, verify passwords, or update database records. 
+The BFF is an *orchestration* and *presentation* layer. It should not calculate taxes, verify passwords, or update database records.
 *Fix:* If you are writing SQL queries or complex state machines in the BFF, you have created a Monolith. Push business logic down to the domain microservices.
 
 ---
@@ -216,6 +236,12 @@ The BFF is an *orchestration* and *presentation* layer. It should not calculate 
    Caching should ideally happen at both layers depending on volatility. The BFF caches slow microservice responses (e.g., static inventory) via Redis to reduce backend load. The Android app caches the final BFF response (via HTTP headers) to enable offline launch and instant UI rendering.
 
 ## Further Reading
+
+- [Ktor HTTP response validation](https://ktor.io/docs/client-response-validation.html).
+- [Retrofit HTTP exception source](https://github.com/square/retrofit/blob/trunk/retrofit/src/main/java/retrofit2/HttpException.java).
+
+- [Kotlin coroutine exception propagation](https://kotlinlang.org/docs/exception-handling.html).
+- [Structured concurrent calls](https://kotlinlang.org/docs/composing-suspending-functions.html).
 
 - [`api-design-for-mobile.md`](api-design-for-mobile.md) — The physical mobile constraints that make BFFs necessary.
 - [`graphql-vs-rest.md`](graphql-vs-rest.md) — How GraphQL offers an alternative to dedicated BFF servers.

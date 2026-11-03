@@ -18,24 +18,46 @@ The most common rate-limiting scenario on mobile is a "Search-as-you-type" featu
 
 We use Kotlin `Flow` operators to rate-limit the input.
 
-### Debounce
-`debounce` waits for a period of *silence* before emitting the latest value. If the user keeps typing, the timer resets.
+### Search Pacing and Latest-Query Ownership
+`debounce` waits for silence, but placing it before the latest-query switch delays cancellation of an old request. Here a delay **inside** `flatMapLatest` replaces that operator: new input immediately cancels the old delay/request, including when the new query is too short.
 
 ```kotlin
+// Retrofit + Kotlinx Serialization boundary; import their concrete exception types.
+sealed interface SearchUiState {
+    data object Idle : SearchUiState
+    data class Loading(val query: String) : SearchUiState
+    data class Data(val query: String, val items: List<SearchResult>) : SearchUiState
+    data class Error(val query: String) : SearchUiState
+}
+
 // In the ViewModel
 private val _searchQuery = MutableStateFlow("")
 val searchQuery = _searchQuery.asStateFlow()
 
 val searchResults = _searchQuery
-    .debounce(300L) // Wait for 300ms of silence
-    .filter { it.length >= 3 } // Don't search for 1 or 2 characters
-    .distinctUntilChanged() // Don't search if the query hasn't actually changed
+    .map { it.trim() }
+    .distinctUntilChanged()
     .flatMapLatest { query ->
-        // Cancels the previous API call if a new one starts
-        api.search(query) 
+        flow<SearchUiState> {
+            if (query.length < 3) {
+                emit(SearchUiState.Idle)
+            } else {
+                emit(SearchUiState.Loading(query))
+                delay(300L)
+                emitAll(api.search(query).map { SearchUiState.Data(query, it) })
+            }
+        }.catch { failure ->
+            when (failure) {
+                is IOException, is HttpException, is SerializationException ->
+                    emit(SearchUiState.Error(query))
+                else -> throw failure
+            }
+        }
     }
-    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchUiState.Idle)
 ```
+The inner catch converts expected transport, HTTP and decode failures to state, so another query can run. Flow catch preserves cancellation. A catch only outside the switch would complete the query stream after its fallback; unhandled exceptions upstream of `stateIn` fail its sharing coroutine instead of becoming a UI error. Adapt the concrete decoder exceptions when using another converter.
+
 **Staff Insight:** `flatMapLatest` cancels collection of the previous inner flow when a new query arrives. It can reduce obsolete work when the networking layer cooperates with cancellation, but it is not a server rate-limit guarantee and brief overlap may occur while cancellation propagates.
 
 ### Throttle (Sample)
@@ -202,7 +224,7 @@ fun CheckoutButton(
 |---|---|---|
 | **Global 429 Lockout** | Using a single global interceptor to block *all* network traffic when an image CDN returns a 429, preventing the user from using the core API. | Implement domain-specific rate limits. Keep a map of `[Domain -> LockoutTime]` in the interceptor, so hitting a limit on `images.example.com` doesn't block `api.example.com`. |
 | **Missing or invalid `Retry-After`** | The client immediately repeats an otherwise eligible request. | This interceptor records a bounded first bucket embargo. A separate retry scheduler owns attempt count and capped exponential backoff with jitter for later replay-safe attempts; it still enforces deadlines and cancellation. |
-| **Double Clicks bypassing UI** | A button is disabled during `Loading`, but the ViewModel takes 50ms to transition from `Idle` to `Loading`. The user clicks twice in 20ms. | Use a fast-path local boolean flag or a click-debouncer at the View layer (e.g., a custom `Modifier.debouncedClick` in Compose) to ignore clicks within 300ms of each other. |
+| **Double Clicks bypassing UI** | A button is disabled during `Loading`, but the ViewModel takes 50ms to transition from `Idle` to `Loading`. The user clicks twice in 20ms. | Atomically claim the operation in its state owner before launching work. A timed UI debounce alone does not prevent concurrent submissions; persist the operation identity for retry-safe writes. |
 
 ---
 
@@ -241,6 +263,11 @@ If `sample(5000L)` is the only consumer of three critical events emitted inside 
    Persist the payload, bucket, attempt state, and a durable epoch deadline or original server retry metadata—not the in-process `elapsedRealtime()` absolute value, which resets on reboot. On restore, derive a nonnegative delay from the durable value (with a conservative policy if wall-clock trust matters), build and enqueue/replace a unique `OneTimeWorkRequest` with `setInitialDelay`, and return promptly rather than sleeping inside a worker. Use `Result.retry()` only when its configured backoff matches the server/client policy.
 
 ## Further Reading
+
+- [stateIn upstream exceptions](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/state-in.html).
+- [Flow catch and cancellation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/catch.html).
+
+- [flatMapLatest cancellation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flat-map-latest.html).
 
 - [`../patterns/circuit-breaker.md`](../patterns/circuit-breaker.md) — How rate limiting relates to full circuit tripping.
 - [`../patterns/retry.md`](../patterns/retry.md) — How bounded retry, idempotency, deadlines, backoff, and jitter interact.
