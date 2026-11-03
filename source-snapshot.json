@@ -240,13 +240,24 @@
   "observability_slos_reference_commit": "1f5085812813042fbacf6be7b26cbbef98d1627b",
   "distributed-systems_sha256": {
     "distributed-systems.md": "98794cf1a8aa1a610b99e918c96c2990ef6551127cd1a0eeb77cd44d7170715c",
-    "distributed-systems/delivery-semantics.md": "5c618201cf04b97541c112e4cd213560ee4b6f5951c86579d198560291cc0509"
+    "distributed-systems/cap-theorem.md": "1d0c5cc31c6f1147b5a44bb7fb99e71edc61677aac688716ffadfbad8bdc94fd",
+    "distributed-systems/consistency-models.md": "d77c8ec6e5a1907d3b0c823bfb6cd84870785e49db65481c17f53bed10ab2fe1",
+    "distributed-systems/idempotency.md": "68a07ab8fc3f62b3f1e62196f6fbbb834bbd30205779abb057f16d03d45dc4ad",
+    "distributed-systems/delivery-semantics.md": "5c618201cf04b97541c112e4cd213560ee4b6f5951c86579d198560291cc0509",
+    "distributed-systems/mobile-client-consistency-contracts.md": "a658004a54a9a366463547fba39a60ea3624a57dcaa24825f4c3c6f83435dab5",
+    "distributed-systems/vector-clocks.md": "1d9d9426d39cdf099e2e128cc02de0eb01b587b765b8a15368d263b640c7065c",
+    "distributed-systems/crdts.md": "6e63e247eb54226620b0bd1d7ff0ed7429ce0b3b227ca95df6aa627543993325",
+    "distributed-systems/lww-vs-crdt.md": "27c97fe1479b4080f1650cab9dbf2a41b97ec0417181c88447e1c5171f8a37f3",
+    "distributed-systems/consensus-basics.md": "be61cb22bc801bb2529c783e6aca9cc969c18997a5c62e32e8a284bbed01f72a",
+    "distributed-systems/replication-and-leader-election.md": "48416110857c0e167ed0d77ed00b877221586d175a2823cbd11fee40add35b3c",
+    "distributed-systems/streaming-logs-partitioning.md": "f3383458921fbb75db593d8398085c7eb79c7999bb72fd68e86c77f1b894c8ec",
+    "distributed-systems/distributed-tracing.md": "bd7eb9ec50de9a6c4d0157b64438b50a8362224eee0e62d0534e5af570995d6e"
   },
   "distributed-systems_provenance": {
     "repository": "https://github.com/swarnsingh/android-staff-engineer-playbook",
     "commit": "fb8354edb079e901edf18710ca9388a124712a5b",
     "source_pr": 76,
-    "scope": "Guided index and Delivery Semantics pilot only; other chapter snapshots remain unconverted.",
+    "scope": "Complete guided Distributed Systems tree: exact approved index and all 12 chapters.",
     "method": "Exact git show bytes from approved combined main; SHA-256 over raw bytes."
   }
 }

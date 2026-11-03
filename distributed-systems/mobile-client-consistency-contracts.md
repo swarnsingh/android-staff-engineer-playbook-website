@@ -105,7 +105,9 @@ fun shouldApply(incoming: EntityDto, current: EntityRow?): Boolean =
     current == null || incoming.version > current.version
 ```
 
-This protects against:
+Evaluate the predicate and write in the **same transaction or conditional SQL statement**. Two independent check-then-write operations can both pass and apply in reverse order. Keep pending local edits separately, retain tombstone revisions, and scope revisions to the entity incarnation so a deleted/recreated ID cannot regress.
+
+With those conditions, this protects against:
 
 - Replica lag.
 - Out-of-order sync batches.
@@ -113,6 +115,8 @@ This protects against:
 - Cache race between old and new responses.
 
 The subtle prerequisite: `version` must come from a **single authority** (the server), not from device clocks. Client timestamps regress across devices, timezone changes, and clock corrections — the moment two writers timestamp independently you are in [`vector-clocks.md`](vector-clocks.md) territory, and a single integer comparison silently drops writes.
+
+For offline edits, submit the base revision (for example, `If-Match`) and have the backend compare it atomically with the mutation. A version in a response alone cannot detect whether the submitted edit was based on stale state.
 
 ## Conflict UX
 
@@ -221,6 +225,10 @@ Use fake backend scripts that deliberately violate happy-path timing.
    Paging: widespread failures in strong consistency paths (e.g., duplicate payments, missing idempotency). Dashboards: eventual consistency lag, optimistic UI rollback rates. Telemetry: `optimistic_rollback_count`, `sync_conflict_rate`, `idempotency_replay_ratio`.
 
 ## Further Reading
+
+- [HTTP preconditions](https://www.rfc-editor.org/rfc/rfc9110.html#section-13).
+- [Room transaction contract](https://developer.android.com/reference/androidx/room/RoomDatabaseKt).
+
 
 - [`consistency-models.md`](consistency-models.md) - formal consistency models.
 - [`replication-and-leader-election.md`](replication-and-leader-election.md) - replication lag and failover.

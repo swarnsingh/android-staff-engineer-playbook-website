@@ -1,0 +1,30 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">The same two concurrent edits can yield one winning value, two retained alternatives, or a merged structure. Each result can converge; the product decision is which information it may discard.</p>
+
+<!-- @before Comparison Matrix :: guide -->
+### Compare the lost information
+
+An LWW register chooses one ordered write and discards another from the current value. An OR-set preserves type-defined membership intent; a counter preserves contributions. None of these choices automatically protects inventory, permissions or money. [The CRDT study](https://www.lip6.fr/Marc.Shapiro/papers/2011/Comprehensive-CRDTs-RR7506-2011-01.pdf) separates convergence conditions from application semantics.
+
+<!-- @before Migration and Reversibility :: staff -->
+### Older writers remain part of the protocol
+
+A legacy replacement request can erase the metadata a new merge endpoint needs. Gate capabilities or retire those writers at an explicit reset boundary. Include lost-edit recovery and offline-replica lifetime in the migration decision, rather than treating schema conversion as the entire rollout.
+
+<!-- @before Comparison Matrix :: visual -->
+### The same concurrent intent can have different surviving state
+
+```mermaid
+flowchart TB
+ A["A removes x; replacement set empty; stamp 9"]
+ B["B concurrently re-adds x; new tag; stamp 8"]
+ L["LWW whole-set register: empty"]
+ O["Observed-remove set: x survives"]
+ A -->|"ordered replacement"| L
+ B -->|"ordered replacement"| L
+ A -->|"remove observed tags"| O
+ B -->|"retain new tag"| O
+```
+
+Starting with x present, A removes the observed membership while B concurrently re-adds x under a new tag. An LWW register holding the entire set can select A’s empty replacement; an observed-remove set preserves B’s unseen add. The chosen stamps and tags are illustrative.

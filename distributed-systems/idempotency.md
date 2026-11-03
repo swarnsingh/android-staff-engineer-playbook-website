@@ -55,13 +55,13 @@ Two flavors. Both work; they pay different costs.
 - **Idempotent by construction.** The operation itself, when re-executed, produces the same result. `SET x = 5` is idempotent by construction — running it twice leaves `x = 5`. So is `PUT /users/alice {email: "..."}` if the server's semantics are "replace the entire user record." This requires zero deduplication infrastructure.
 - **Idempotent by deduplication.** The operation has side effects (charge a card, send an email) that *cannot* be made idempotent by construction. Idempotency comes from a deduplication layer that intercepts retries before the side effect runs. Stripe charges are the canonical example.
 
-Idempotent-by-construction is always preferable when available. It costs nothing and cannot get out of sync. Idempotent-by-deduplication is necessary for everything else.
+Prefer naturally idempotent operations when their semantics fit. A repeated PUT can still overwrite an intervening edit; idempotency is not commutativity or concurrency control. Use preconditions when replacement must not overwrite a newer value.
 
 ### Idempotency vs. exactly-once delivery
 
-These are easily confused. Exactly-once delivery is a guarantee about *the network*: a message is delivered to its destination exactly once. In a network that can lose messages and processes that can die, exactly-once delivery is generally impossible — or, more accurately, indistinguishable in cost from at-least-once delivery plus idempotent handlers. Modern systems achieve "effectively exactly-once" semantics through at-least-once delivery + idempotent handlers + deduplication. There is no need for the network itself to deliver exactly once.
+Exactly-once claims need a boundary. Kafka transactions cover Kafka output records and input offsets, not arbitrary external effects. Pub/Sub offers a documented regional pull-delivery guarantee. An API can promise one logical effect within a scoped key-retention contract even though requests are retried. None of these is a magical property of an unreliable network alone.
 
-When someone says "we need exactly-once," they almost always mean "we need idempotent handlers." The phrasing matters because the engineering response is different. Exactly-once at the transport layer (Kafka transactions, distributed two-phase commit) is heavy and expensive. Idempotent handlers at the application layer are cheap.
+Ask whether the requirement concerns delivery, local processing, or an external business effect. Idempotent handling, atomic capture and reconciliation are often the right tools, but broker transactions and API contracts solve different scopes.
 
 ---
 
@@ -93,12 +93,12 @@ sequenceDiagram
     participant S as Server
     participant DB as Database<br/>(deduplication store)
 
-    C->>S: POST /charge with Idempotency-Key: K
+    C->>S: POST /local-ledger-entry with Idempotency-Key: K
     S->>DB: SELECT * FROM idempotency WHERE key=K
     alt key not found
         S->>DB: BEGIN TX
         S->>DB: INSERT idempotency(key=K, status='processing')
-        S->>S: Execute charge
+        S->>DB: Apply local business mutation in same TX
         S->>DB: UPDATE idempotency(key=K, status='completed', response=...)
         S->>DB: COMMIT
         S-->>C: 200 OK + response
@@ -113,7 +113,7 @@ Three failure modes need explicit handling:
 
 **1. Crash between row insert and transaction commit.** The `status='processing'` row was never written (transaction rolled back). On retry, the key is not found, and the operation runs normally. Safe.
 
-**2. Crash between operation execution and `UPDATE`.** The transaction never commits, so the row was never written. The side effect did run, though. This is only safe if the side effect is itself idempotent — usually because the operation calls a *downstream* idempotent API with the same key. This is why idempotency tends to cascade: each layer must propagate the key down so the next layer can deduplicate too.
+**2. Crash between operation execution and `UPDATE`.** In this diagram the business mutation and deduplication row are in the same database transaction, so both roll back. An external charge cannot roll back with that transaction: it needs a downstream idempotency contract, durable recovery state and reconciliation. Never infer external exactly-once effects from a local transaction.
 
 **3. Concurrent retries.** Two requests with the same key arrive at the same instant. One inserts the row first; the other gets a uniqueness violation. The losing request must either wait for the winner to finish (and then return the stored response) or return `409 Conflict` and let the client retry. Most production systems wait, because clients don't always handle 409 well.
 
@@ -129,7 +129,7 @@ A TTL of 24 hours is a common default for HTTP APIs. Mobile-oriented systems (wh
 
 Client-generated, not server-generated. The whole point is that the *client* knows which operation it's retrying. If the server generates the key, the client can't carry it across retries.
 
-UUIDv4 is standard. Some systems use a hash of (user_id, operation_type, timestamp_bucket) to make keys deterministic from intent — this trades off privacy (the key encodes information) for the ability to recover a lost key.
+Use a random operation identifier, persist it before sending, and reuse it only for that logical action. Hashing user/type/time-bucket can collapse two legitimate actions in the same bucket. Scope keys by authenticated owner and operation; bind them to canonical parameters and reject reuse with different parameters.
 
 ---
 
@@ -162,7 +162,7 @@ The deduplication store is a separate concern from the application's primary dat
 
 ## Production Example
 
-**Stripe payments.** `POST /v1/payment_intents` with `Idempotency-Key: <uuid>`. Stripe stores the key for 24 hours and returns the same response (including the payment intent ID) for any retry within that window. This is what makes "charge this card" safe to retry.
+**Stripe API v1 payments.** For `/v1/payment_intents`, results are retained once endpoint execution starts, including error results. Keys may be removed after they are at least 24 hours old; a pruned key can execute a new request. Parameters are compared on reuse. API v2 has a different idempotency contract. A mobile retry policy must respect the endpoint-specific retention horizon and reconcile older uncertain operations instead of blindly resubmitting.
 
 **AWS EC2 `RunInstances`.** A `ClientToken` parameter on the request. AWS uses it to deduplicate launch requests so that a retry under network failure doesn't launch two instances.
 
@@ -219,13 +219,13 @@ For operations that persist their state (background uploads, scheduled tasks), t
 
 - Race conditions during concurrent retries. The atomic-capture requirement is subtle and easy to miss in code review. Tests must exercise this case explicitly.
 - Cross-layer key propagation. An idempotent API that internally calls another API must propagate the same key downward, or the second call won't be deduplicated. Easy to forget.
-- Migrations. Changing the operation's behavior while old idempotent responses are still cached means new requests can get old responses. Either invalidate the cache or version the operation.
+- Migrations. Changing the operation's behavior while old idempotent responses are still cached means new requests can get old responses. Retain the historical outcome of the original action; a new business action receives a new operation identity. Never invalidate a committed charge result merely because prices or rules changed.
 
 **When not to use**
 
 - Reads. Idempotency is implicit for reads; you don't need a deduplication store for `GET`.
 - Operations that are idempotent by construction (`PUT`, `SET`). The deduplication store would be redundant.
-- Operations that *must* run on every invocation by design — incrementing a counter, appending to a log. These deliberately reject idempotency; the framing should be "we do not want safe retry here" and document why.
+- Fresh logical operations such as increments or log appends must each take effect. Distinguish those new operations from retries: a stable event ID can deduplicate one increment without collapsing separate increments.
 
 ---
 
@@ -239,7 +239,7 @@ For operations that persist their state (background uploads, scheduled tasks), t
 
 **Non-atomic capture.** Side effect ran, deduplication key wasn't stored — or vice versa. This is the canonical idempotency bug. Mitigation: hold the key insert and the side effect inside one transaction. If the side effect is external (e.g., calling another service), the external service must itself be idempotent on the same key.
 
-**Cached response staleness.** Operation's behavior changes (price changes, business rule updates) while a previous idempotent response is still cached. Retry returns the old response. Mitigation: invalidate the cache on rule changes, or version the operation in the key.
+**Historical result mistaken for current state.** A replay returns the original operation outcome, not a fresh quote. Keep completed deduplication records for the promised retry horizon; fetch current state separately. Changing a key or deleting a result to force re-execution can duplicate the original effect.
 
 **Concurrent retries with different keys.** Client doesn't realize its retry-on-timeout path generated a new key when the original was still in flight. Both arrive at the server; both execute. Mitigation: keys must be tied to logical operations, generated up front and persisted with the operation's state.
 
@@ -307,7 +307,7 @@ Canonical observability concepts: [`../observability/metrics.md`](../observabili
 
 **Push for an idempotency policy at the org level.** Without a policy, each team picks defaults independently — some use keys, some don't, some scope them differently. A platform-level policy ("all mutation endpoints accept `Idempotency-Key`; here's the shared library that implements it") amortizes the cost across teams and makes integration predictable.
 
-**Reject "exactly-once" framing.** When stakeholders ask for "exactly-once delivery," redirect to "at-least-once delivery with idempotent handlers." It's almost always cheaper and almost always what they actually need. The "exactly-once" framing leads to expensive, fragile transport-layer solutions; the idempotency framing leads to robust, simple application-layer ones.
+**Define "exactly-once" scope.** Ask which deliveries, state changes or external effects must occur once, under which retry and retention conditions. A broker transaction can atomically commit its own records and offsets; an external effect needs a cooperating idempotency/transaction contract or reconciliation. Choose mechanisms after defining that boundary and its failure model, rather than rejecting the term or assuming deduplication solves every scope.
 
 ---
 
@@ -366,6 +366,10 @@ Questions a Staff engineer should be able to answer cold:
 ---
 
 ## Further Reading
+
+- [Stripe API idempotency contracts](https://docs.stripe.com/api/idempotent_requests).
+- [HTTP method idempotency and conditional requests](https://www.rfc-editor.org/rfc/rfc9110.html#section-9.2.2).
+
 
 In this repository:
 

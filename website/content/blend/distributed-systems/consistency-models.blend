@@ -1,0 +1,18 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">The phone saves a new display name. A tablet still reads the old one. A later phone refresh must decide whether to show that older value too: these are different promises.</p>
+
+<!-- @before First Principles :: guide -->
+### Separate observer order from eventual progress
+
+Read-your-writes is scoped to the writer’s session. Monotonic reads prevent that session from going backward after a newer observation. Neither alone says when another replica catches up. Session identity and eligible server selection are part of the implementation, as the [session-guarantees paper](https://www.cs.cornell.edu/courses/cs734/2000FA/cached%20papers/SessionGuaranteesPDIS_1.html) shows.
+
+<!-- @before Internal Mechanics :: guide -->
+### An acknowledgement diagram is an implementation example
+
+The trace below waits for both shown followers. Do not infer that linearizability always requires every replica to acknowledge, or that asynchronous replication alone determines the entire API contract. Judge the permitted read/write histories and the protocol’s failure assumptions. [Raft](https://raft.github.io/raft.pdf) illustrates a majority-based implementation.
+
+<!-- @before Staff Engineer Thinking :: staff -->
+### Make failover part of the promise
+
+Record which session metadata survives process death and what happens when no reachable replica is fresh enough. A sticky connection is not a complete recovery contract.

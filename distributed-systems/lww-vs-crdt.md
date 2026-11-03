@@ -1,135 +1,79 @@
-# ADR 008 — Last-Write-Wins vs CRDTs for Offline Sync Conflict Resolution
+# LWW Registers vs Richer CRDT Semantics
 
-**Status:** Accepted
-**Date:** *replace with actual decision date*
-**Deciders:** *replace with actual deciders*
+## Decision Context
 
----
+An LWW register is itself a CRDT when it has a deterministic total order of unique write stamps. The useful choice is which concurrency semantics preserve the product's intent: overwrite a field, merge membership, accumulate operations, retain alternatives, or ask a user. This is a reusable comparison, not an accepted decision for an unspecified project.
 
-## Context
+See [CRDT mechanics](crdts.md) and [vector clocks](vector-clocks.md) for the algorithms. A vector clock is a partial causal order, not an LWW timestamp: concurrent vectors need another resolution policy.
 
-We are building an offline-first feature where users can mutate shared state from any device while disconnected, and those mutations must reconcile when devices reconnect. The mutations are not strictly user-private (a user-only note app would be trivially LWW per device); multiple devices, possibly multiple users, can edit the same logical entity concurrently.
+## Decision Criteria
 
-The relevant constraints:
+Decide which concurrent intent may be discarded, whether a business invariant needs coordination, the supported offline lifetime, available metadata/storage, library maturity and the team's recovery burden. Keep the existing representation if its measured conflict behavior already meets the product contract.
 
-- **Concurrency model.** Two writes to the same field from different devices, neither aware of the other, may happen during the offline window.
-- **Convergence requirement.** After all devices come online and replicate their changes, every replica must arrive at the same final state. No "split brain" allowed.
-- **Causality.** Most mutations are independent of each other (different fields, different entities), but a small fraction are causally related (e.g., "create item X" then "rename X to Y").
-- **Mobile constraints.** Sync metadata is sent over slow, costly cellular networks. Per-mutation metadata size matters. Local computation cost matters (older devices have limited CPU).
-- **User expectation.** Users expect their last action to "win" when they consciously edit, but they expect *both* edits to be preserved when two concurrent edits genuinely disagree.
+## Comparison Matrix
 
-The choice is between two broad strategies for resolving concurrent conflicting writes:
+| Option | Concurrent result | Main cost | Fits when |
+|---|---|---|---|
+| LWW register | One ordered winner | Lost-edit recovery and clock/identity discipline | Overwrite semantics are accepted |
+| OR-set / counter | Type-defined membership or totals | Metadata and safe retirement; business invariants remain | Those operation semantics match the feature |
+| Collaborative text / alternatives | Merged text or retained conflicts | More history, migration and UX work | Concurrent authors must retain/recover intent |
+| Keep current model | Existing behavior | Existing conflict and support cost | Evidence shows the contract is already met |
 
-1. **Last-Write-Wins (LWW)** — the write with the latest timestamp (or vector clock, or hybrid logical clock) is the surviving value. Earlier concurrent writes are dropped.
-2. **Conflict-Free Replicated Data Types (CRDTs)** — data structures designed so that concurrent operations produce the same merged result regardless of order, by construction. No information is dropped.
+## Options
 
-There is also a hybrid path — LWW for most fields with CRDTs for specific collaborative fields — that we evaluate.
+### LWW register
 
----
+Pick the maximum unique write stamp. The stamp can combine logical or hybrid time with a stable writer ID. Every retry of one write must retain its identity; never assign the same stamp to different values. A hash of the value is not a collision-free tie-breaker.
 
-## Problem
+LWW is compact and straightforward when overwriting concurrent edits is acceptable. It can discard a legitimate edit from another device. A wall clock does not establish which action a user intended to take last; skew can make an old action win. The same user on two offline devices still creates concurrency.
 
-What conflict-resolution strategy should the offline sync layer use for shared mutable state?
+Hybrid logical clocks preserve causal order when send/receive updates are implemented correctly. They do not detect concurrency, recover overwritten values, or quarantine bad clocks automatically. Drift limits, rejection and recovery are separate policies. Persist clock state and advance it past observed values before issuing a causally later write.
 
----
+### Membership and counter CRDTs
 
-## Alternatives
+An OR-Set gives a defined add-versus-remove result. A PN-counter preserves increments and decrements under its synchronization contract. Neither makes every business rule automatic: add-wins may resurrect a removed item, and independent decrements can produce a negative total. A display clamp does not enforce inventory or balance constraints.
 
-### Last-Write-Wins with wall-clock timestamps
+State-based merge needs a valid semilattice, inflationary local updates and eventual dissemination. Classical operation-based designs need reliable causal delivery and duplicate suppression unless operations are intrinsically idempotent. Use the chosen library's documented contract; Yjs updates, for example, are idempotent and order-independent. OT is a different collaboration technique, not a CRDT subtype.
 
-Each write carries a wall-clock timestamp. On merge, the value with the highest timestamp wins.
+### Collaborative text or retained alternatives
 
-- **Pros:** dead simple to implement; tiny metadata (one timestamp per write); trivial to reason about; matches user mental model in most cases ("my last action wins").
-- **Cons:** depends on synchronized clocks — wall clocks across devices drift, can be set wrong by the user, and have no causal ordering; ties (same timestamp from two devices) need a tie-breaker; some legitimate concurrent edits are silently dropped; offers no protection when one device's clock is wildly wrong.
+Use a text CRDT when preserving concurrent edits is part of the feature, or retain conflicting versions for explicit resolution. Convergence is not a promise that the merged sentence matches either author's intent. Undo, attribution and conflict presentation remain product work.
 
-### Last-Write-Wins with Hybrid Logical Clocks (HLC)
+## Default Recommendation
 
-Each write carries an HLC timestamp (physical time + logical counter, see [`../engineering-fundamentals/time-and-clocks.md`](../engineering-fundamentals/time-and-clocks.md)). HLC respects causal ordering — if A causally precedes B, A's HLC < B's HLC, even if their physical clocks disagree.
+For a field whose concurrent value may be discarded, consider an LWW register with an audit/recovery path appropriate to its value. For shared membership, counters or text, evaluate a data type whose documented concurrency semantics match the feature. For money, permissions or workflow invariants, use authoritative validation or coordination where required; changing the merge function does not remove that requirement.
 
-- **Pros:** still simple to implement; metadata is small (a few extra bytes per write for the logical counter); preserves causality so "A then B" is never reordered; tolerant to bounded clock skew.
-- **Cons:** still drops information on concurrent edits — the "losing" write is gone forever; still requires a tie-breaker for genuinely concurrent edits (typically the device ID); HLC doesn't *detect* concurrency, just respects causality.
+A hybrid schema is reasonable, but document each field's semantics. There is no evidence for a universal percentage of fields that should use LWW. Names, assignees and status can be high-value edits in one product and replaceable preferences in another.
 
-### State-based CRDTs (e.g., LWW-Register, OR-Set, RGA for text)
+## Failure Modes and Hidden Costs
 
-Each data type is replaced with a CRDT that mathematically guarantees deterministic merges. Examples: an LWW-Register stores both timestamp and value; a 2P-Set tracks adds and removes separately; an OR-Set assigns unique tags to additions so adds and concurrent removes can be reconciled.
+- **Metadata:** registers are usually compact; sets and text can retain tags, history or tombstones. Exact size depends on encoding and garbage collection.
+- **Recovery:** LWW converges by choosing one value. Keeping history improves recovery but adds storage, privacy and retention work.
+- **Migration:** moving from replacement to operation/state merge needs old-client compatibility, snapshot conversion and a protocol version boundary.
+- **Transport:** replacement PUT is not a CRDT merge endpoint. Both client and server must preserve metadata and merge against current state atomically.
+- **Retirement:** do not discard tombstones or actor history merely because they are old. A supported offline device must not resurrect deleted data; define replica retirement or a reset contract.
 
-- **Pros:** mathematically guaranteed convergence with no information loss; handles arbitrary concurrent edits correctly; well-studied; libraries exist (Yjs, Automerge, Y-CRDT).
-- **Cons:** metadata grows per operation — large state when many writes accumulate; some CRDTs (especially text/RGA) carry per-character metadata; merge complexity is type-specific (each data type needs its own CRDT); some CRDT semantics (e.g., 2P-Set's "you can't re-add after removing") surprise users.
+## Migration and Reversibility
 
-### Operation-based CRDTs (CmRDTs)
+Introduce versioned envelopes before changing representation. Convert a known snapshot, preserve supported older-client behavior at the server boundary, and stage by capability. Do not allow a legacy replacement writer to erase CRDT metadata. Reversing to a scalar can discard history needed to merge offline replicas; define retirement/reset and user recovery before that transition.
 
-Instead of merging full states, operations are propagated and replayed in any causally-consistent order to produce the same result.
+## Staff Engineer Review
 
-- **Pros:** smaller per-message payload than state-based; precise semantics; popular for collaborative text editing (OT/Yjs).
-- **Cons:** require reliable causal broadcast of every operation — losing an operation breaks convergence; not naturally offline-tolerant unless paired with persistent buffers; harder to retrofit onto an existing REST-style backend.
+Test duplicate delivery, out-of-order updates, concurrent add/remove, remove/re-add, actor restart and clock skew. Check algebraic properties as well as user-visible outcomes. Revisit the choice when lost-edit reports exceed the agreed recovery contract, metadata exceeds measured budgets, or collaboration changes the semantics. A good merge proof and property tests complement each other; neither replaces product review.
 
-### Hybrid: LWW with HLC for most fields, CRDTs for genuinely collaborative ones
+## Probing Questions
 
-Use HLC-LWW as the default for fields where last-write-wins matches the user mental model (e.g., "name", "status", "priority"). Use specific CRDTs only for fields that are genuinely collaborative (e.g., shared lists, text editing).
+1. Why is LWW versus CRDT a misleading binary choice?
+2. When is retaining an existing LWW field reasonable?
+3. Can an HLC prove that two edits were concurrent?
+4. Why does migrating an OR-set back to a plain set require an offline-replica plan?
 
-- **Pros:** keeps the common case simple; uses CRDT complexity only where it's worth it; metadata size is bounded for non-CRDT fields.
-- **Cons:** two strategies in one codebase; team must decide per-field which strategy applies; harder to explain to new engineers; field-by-field merges complicate the schema model.
+## Answer Key
 
----
-
-## Decision
-
-**Hybrid: HLC-LWW as the default conflict-resolution strategy, with specific CRDTs for genuinely-collaborative data types.**
-
-For 90%+ of the fields (status, priority, assignee, name, due date, single-user-owned fields), the user mental model is "my last change wins." HLC-LWW gives us:
-
-- Causally-correct ordering (no "A then B" reordering bug).
-- Small per-write metadata (HLC is ~12-16 bytes).
-- A deterministic tie-break for the rare case of identical HLCs from concurrent devices (device ID lexicographic order).
-
-For specific collaborative data types — shared task lists, comment threads, shared text fields — we use the appropriate CRDT (OR-Set for the list, log-based CRDT for the comment thread, RGA or Yjs for collaborative text). These types pay the CRDT cost where the collaborative semantics demand it.
-
----
-
-## Consequences
-
-**Positive**
-
-- The default path is simple: every mutation carries an HLC, every merge picks the higher HLC, ties broken by device ID. Easy to implement, easy to debug.
-- HLC keeps clock-skew problems bounded — devices with wildly wrong wall clocks are quarantined (see HLC's drift-detection mechanism), not silently corrupting data.
-- Per-field CRDT use is localized. Engineers building new features default to HLC-LWW and only adopt a CRDT when they specifically need collaborative semantics for that field.
-- We do not pay the CRDT complexity tax across the entire schema. Metadata stays small for the bulk of the data.
-
-**Negative**
-
-- We will lose data on genuinely-concurrent conflicting edits to non-CRDT fields. The "losing" write is dropped silently. The mitigation is a per-field activity log so users can audit recent changes and recover via undo if a critical edit was lost.
-- Adding a CRDT to a previously-LWW field is a schema migration with backward-compatibility implications.
-- Engineers need to be trained to recognize "is this field truly LWW-acceptable, or is it secretly collaborative?" PR review and a small architecture-doc checklist help.
-- Two conflict strategies in one codebase is more cognitive load than one. We accept the tradeoff for the implementation simplicity savings.
-
----
-
-## Tradeoffs
-
-We accept:
-
-- **Some lost concurrent edits.** For non-CRDT fields, two concurrent writes will deterministically resolve to one — the other is gone. This matches user expectation for most fields (name, status) but is wrong for genuinely-collaborative semantics, which is why we use CRDTs there.
-- **Implementation cost of HLC.** Every device must track its HLC, persist it across restarts, and merge it on every received write. The cost is small but pervasive.
-- **Field-by-field strategy decisions.** Adding a field requires asking "LWW or CRDT?" The answer is usually obvious, but the question is not optional.
-
-We give up:
-
-- **Universal mathematical guarantees of CRDT-style convergence.** If we were building Google Docs (every byte is collaborative), we would adopt CRDTs universally. For our use case, where most fields are single-owner-at-a-time, the simpler LWW path wins.
-- **Full-state CRDT semantics on most fields.** A non-CRDT field can't, for example, support "concurrent additions to a list" — adopt OR-Set if you need that.
-
----
-
-## Future Revisit Conditions
-
-Re-open this decision if any of the following becomes true:
-
-- The fraction of CRDT fields exceeds *replace with threshold* of the schema, indicating that LWW was the wrong default and most data is actually collaborative.
-- We observe a measurable rate of user complaints about lost concurrent edits beyond what an activity-log/undo flow can mitigate.
-- HLC's quarantine mechanism is triggered frequently in production, indicating clock-drift problems beyond what we expected.
-- A future product direction (e.g., realtime collaborative editing across the entire schema) requires us to converge on CRDTs universally, at which point LWW's information-loss tradeoff becomes unacceptable.
-- Sync metadata size approaches a problem on cellular networks because of CRDT-field accumulation (in which case we evaluate operation-based CRDTs or state-pruning strategies).
-
----
+1. An LWW register is a CRDT with overwrite semantics; compare the supported concurrency semantics rather than the label.
+2. When discarded concurrent intent is acceptable and measured support/recovery costs meet the product's contract. New collaboration or lost-edit evidence can change the choice.
+3. No. Correct HLC updates preserve causal order, but ordered stamps do not prove causation; use causal metadata when detection matters.
+4. Removing tags/tombstones can let an old replica resurrect deleted membership or erase newer updates. Retire incompatible writers or require a supported reset/migration boundary.
 
 ## Related
 
@@ -143,10 +87,8 @@ Re-open this decision if any of the following becomes true:
 
 ---
 
-## References
+## Further Reading
 
-- Marc Shapiro et al., *"Conflict-Free Replicated Data Types"* (2011) — the founding CRDT paper.
-- Sandeep Kulkarni et al., *"Logical Physical Clocks and Consistent Snapshots in Globally Distributed Databases"* (2014) — the HLC paper.
-- Martin Kleppmann, *Designing Data-Intensive Applications* (2017) — Chapter 5 on replication, Chapter 9 on consistency and consensus.
-- Yjs documentation (https://docs.yjs.dev/) — practical CRDT library widely used for collaborative editing.
-- Automerge documentation (https://automerge.org/) — alternative CRDT library with broader data structure support.
+- [Preguiça, Baquero and Shapiro: CRDT concurrency and synchronization models](https://arxiv.org/abs/1805.06358).
+- [Original HLC paper](https://cse.buffalo.edu/tech-reports/2014-04.pdf).
+- [Yjs document update guarantees](https://docs.yjs.dev/api/document-updates).

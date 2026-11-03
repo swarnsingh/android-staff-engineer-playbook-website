@@ -1,0 +1,247 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">A leader writes an entry to its own disk and then loses contact with its followers. The bytes exist, but the client still needs to know whether the group committed the operation.</p>
+
+<!-- @before Internal Mechanics :: animation -->
+### Local persistence is not group commit
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="One copy versus a current-term majority">
+<h3>Walkthrough 1. One copy versus a current-term majority</h3><p class="pb-sub">Illustrative three-member Raft group; fixed membership and crash faults. No timing guarantee is simulated.</p>
+<div class="pb-seg" role="group" aria-label="Comparison policy"><button type="button" data-mode="majority" aria-pressed="true">Reachable majority</button><button type="button" data-mode="isolated" aria-pressed="false">Isolated leader</button></div>
+<div class="pb-paper" role="region" aria-label="Illustrative system; scroll if needed" tabindex="0"><svg class="pb-svg" role="img" aria-label="One copy versus a current-term majority; every step is available as text below"></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div><div class="pb-caption" aria-live="polite"><span class="pb-count"></span><p></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" hidden aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">
+{
+  "illustrated": true,
+  "playback": "manual",
+  "layout": "three-peers",
+  "owners": {
+    "a": "VOTING MEMBER A",
+    "b": "VOTING MEMBER B",
+    "c": "VOTING MEMBER C"
+  },
+  "nodes": [
+    {
+      "id": "a",
+      "label": "Leader A",
+      "art": {
+        "kind": "server",
+        "role": "runtime"
+      }
+    },
+    {
+      "id": "b",
+      "label": "Follower B",
+      "art": {
+        "kind": "server",
+        "role": "storage"
+      }
+    },
+    {
+      "id": "c",
+      "label": "Follower C",
+      "art": {
+        "kind": "server",
+        "role": "storage"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "ab",
+      "from": "a",
+      "to": "b",
+      "label": "entry X"
+    },
+    {
+      "id": "ba",
+      "from": "b",
+      "to": "a",
+      "label": "durable ack"
+    },
+    {
+      "id": "lostAB",
+      "from": "a",
+      "to": "b",
+      "label": "entry lost"
+    }
+  ],
+  "modes": {
+    "majority": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "leader; term 4"
+          ],
+          "b": [
+            "",
+            "follower; term 4"
+          ],
+          "c": [
+            "",
+            "follower; term 4"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Start",
+          "caption": "Three voting members begin in term 4. This run proposes a new entry from the leader’s current term.",
+          "packets": []
+        },
+        {
+          "label": "Append",
+          "caption": "A appends X locally. It is not committed yet.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-active",
+                "X local; commit 0"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Replicate",
+          "caption": "B durably receives X; A and B now hold the current-term entry.",
+          "packets": [
+            {
+              "edge": "ab",
+              "label": "entry X",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-done",
+                "X stored"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Commit",
+          "caption": "B’s acknowledgement establishes two of three. A commits X under the current-term rule.",
+          "packets": [
+            {
+              "edge": "ba",
+              "label": "durable ack",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-done",
+                "X committed"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Apply",
+          "caption": "A may apply committed X and report success. C can catch up later.",
+          "packets": []
+        }
+      ]
+    },
+    "isolated": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "leader; term 4"
+          ],
+          "b": [
+            "",
+            "follower; term 4"
+          ],
+          "c": [
+            "",
+            "follower; term 4"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Start",
+          "caption": "Three voting members begin in term 4. This run proposes a new entry from the leader’s current term.",
+          "packets": []
+        },
+        {
+          "label": "Append",
+          "caption": "A appends X locally. It is not committed yet.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-active",
+                "X local; commit 0"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Replicate",
+          "caption": "The A-to-B attempt is lost. A remains isolated; only one copy is known.",
+          "packets": [
+            {
+              "edge": "lostAB",
+              "label": "X lost",
+              "tone": "stuck",
+              "kind": "page",
+              "lost": true
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "",
+                "no X"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Commit",
+          "caption": "No acknowledgement arrives. A cannot announce a majority commit.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-warn",
+                "X uncommitted"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Apply",
+          "caption": "A retains an uncertain attempt. A timeout or a leader label cannot turn it into a committed entry.",
+          "packets": []
+        }
+      ]
+    }
+  },
+  "stepNavigation": "select",
+  "compareAtCurrentStep": true
+}
+</script>
+</section>
+
+<!-- @before Staff Engineer Thinking :: staff -->
+### Keep the safety conditions in the summary
+
+Raft’s majority-counting commit rule applies directly to current-term entries. Prior-term entries become committed indirectly through a current-term commit; an uncommitted entry can survive or be overwritten. Eligible logs and durable voting rules preserve committed entries across terms. A linearizable read also needs the protocol’s read safety steps. [Raft §§5.4 and 8](https://raft.github.io/raft.pdf).
+
+<!-- @before Answer Key :: guide -->
+### Read the short answers with the protocol rules
+
+In answer 6, “not committed” does not mean “certainly lost”: the entry may survive a later election. In answer 7, a new leader need not be a particular old-majority member; the vote/log eligibility rules ensure it contains committed entries. For answer 3, a reachable quorum enables the protocol, while linearizable reads still require its read-safety procedure. [Raft §§5.4 and 8](https://raft.github.io/raft.pdf).

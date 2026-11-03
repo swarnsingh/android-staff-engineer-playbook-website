@@ -296,7 +296,7 @@
     e.setAttribute('class', 'pb-edge' + (tone ? ' ' + tone : '') + (moving ? ' moving' : ''));
     e.setAttribute('marker-end', 'url(#' + ref.id + 'h' + (tone || 'rest') + ')');
   }
-  function packet(ref, tone, label, kind, value) {
+  function packet(ref, tone, label, kind, value, edgeKey) {
     var g = el('g', { 'class': 'pb-pk ' + tone, opacity: 0 }, ref.packets);
     if(ref.illustrated){
       g.classList.add('is-object');
@@ -309,7 +309,7 @@
       if(tone==='back')el('path',{d:'M10 -14 L16 -8 L10 -2 L4 -8 Z','class':'return-cue'},g);
     }else if (tone === 'back') el('path', { d: 'M0 -7 L7 0 L0 7 L-7 0 z' }, g); else el('circle', { r: 6.5 }, g);
     if (label) {
-      var pk = ref.L.pk || { dx: 0, dy: -12, anchor: 'middle' };
+      var pk = (ref.L.packetLabels || {})[edgeKey] || ref.L.pk || { dx: 0, dy: -12, anchor: 'middle' };
       el('text', { x: pk.dx, y: pk.dy, 'text-anchor': pk.anchor }, g).textContent = label;
     }
     return g;
@@ -491,7 +491,7 @@
     }
     function fly(p, my) {
       return new Promise(function (done) {
-        var g = packet(ref, p.tone, p.label, p.kind), t0 = null;
+        var g = packet(ref, p.tone, p.label, p.kind, null, p.edge), t0 = null;
         function frame(ts) {
           if (my !== token) { if (g.parentNode) g.parentNode.removeChild(g); return done(false); }
           if (t0 === null) t0 = ts;

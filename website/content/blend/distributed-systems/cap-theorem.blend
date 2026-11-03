@@ -1,0 +1,20 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">A write reaches replica A. The next read reaches B, but the link between them is down. B must decide what it can honestly return before the network recovers.</p>
+
+<!-- @before First Principles :: guide -->
+### Keep the request and the failure in view
+
+CAP consistency constrains the returned history; availability requires a qualifying request to finish. A timeout or refusal can preserve freshness while sacrificing availability. A locally stored write is not automatically a committed write under a quorum protocol.
+
+Read the two partition traces as alternative operation contracts, not as a promise that any named database behaves that way under every configuration. [Gilbert and Lynch explain the safety/liveness tradeoff](https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf).
+
+<!-- @before Architecture :: guide -->
+### Product labels are not read contracts
+
+The original product sketch needs its configuration context. DynamoDB exposes documented read modes and scopes; the API does not expose a generic client-selected `W` and `R`. Quorum intersection is only one ingredient of a consistency proof. Check the actual [DynamoDB read contract](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html).
+
+<!-- @before Staff Engineer Thinking :: staff -->
+### Write down the degraded experience
+
+For each operation, specify the acceptable stale result, refusal or pending state, and what the client does after healing. Keep that decision separate from a database-wide CP/AP label.

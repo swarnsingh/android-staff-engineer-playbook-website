@@ -473,5 +473,1165 @@
       "https://www.rabbitmq.com/docs/confirms",
       "https://www.postgresql.org/docs/current/transaction-iso.html"
     ]
+  },
+  {
+    "path": "distributed-systems/cap-theorem",
+    "diagram": "bb3f7f148b80748e",
+    "kind": "sequence",
+    "number": 1,
+    "title": "Refusing a read preserves its freshness contract",
+    "caption": "During this partition, B cannot establish the required read result. An error sacrifices CAP availability; storing a write at A alone does not establish a quorum commit.",
+    "participants": [
+      {
+        "id": "c",
+        "title": "Client",
+        "role": "client"
+      },
+      {
+        "id": "a",
+        "title": "Replica A",
+        "role": "storage"
+      },
+      {
+        "id": "b",
+        "title": "Replica B",
+        "role": "storage"
+      }
+    ],
+    "events": [
+      {
+        "over": [
+          "a",
+          "b"
+        ],
+        "text": "A and B cannot communicate"
+      },
+      {
+        "from": "c",
+        "to": "a",
+        "label": "write x=5"
+      },
+      {
+        "at": "a",
+        "label": "Store locally; commit rules still apply"
+      },
+      {
+        "over": [
+          "a",
+          "b"
+        ],
+        "text": "Replication attempt cannot cross the partition"
+      },
+      {
+        "from": "c",
+        "to": "b",
+        "label": "read x"
+      },
+      {
+        "from": "b",
+        "to": "c",
+        "label": "Refuse freshness-required read"
+      }
+    ],
+    "sources": [
+      "https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf"
+    ]
+  },
+  {
+    "path": "distributed-systems/cap-theorem",
+    "diagram": "6204647fcef55790",
+    "kind": "sequence",
+    "number": 2,
+    "title": "A reachable replica can answer with an older value",
+    "caption": "This available read returns x=3 while A holds x=5. Healing the network enables reconciliation; the partition-time answer was still stale.",
+    "participants": [
+      {
+        "id": "a",
+        "title": "Writer",
+        "role": "client"
+      },
+      {
+        "id": "b",
+        "title": "Replica A",
+        "role": "storage"
+      },
+      {
+        "id": "c",
+        "title": "Replica B",
+        "role": "storage"
+      },
+      {
+        "id": "d",
+        "title": "Reader",
+        "role": "client"
+      }
+    ],
+    "events": [
+      {
+        "over": [
+          "b",
+          "c"
+        ],
+        "text": "Partition; B still holds x=3"
+      },
+      {
+        "from": "a",
+        "to": "b",
+        "label": "write x=5"
+      },
+      {
+        "at": "b",
+        "label": "Store x=5 locally"
+      },
+      {
+        "from": "d",
+        "to": "c",
+        "label": "read x"
+      },
+      {
+        "from": "c",
+        "to": "d",
+        "label": "Return x=3"
+      },
+      {
+        "over": [
+          "b",
+          "c"
+        ],
+        "text": "After healing, exchange versions and reconcile"
+      }
+    ],
+    "sources": [
+      "https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf",
+      "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf"
+    ]
+  },
+  {
+    "path": "distributed-systems/cap-theorem",
+    "diagram": "c8ad2184cd8b588f",
+    "kind": "map",
+    "number": 3,
+    "title": "Choose the operation contract, then verify the product",
+    "caption": "The original product sketch is illustrative. Availability depends on the requested operation and configuration; intersecting quorums alone do not prove linearizability.",
+    "nodes": [
+      {
+        "id": "cp",
+        "title": "Freshness required",
+        "role": "runtime",
+        "detail": "Refuse if not provable"
+      },
+      {
+        "id": "ap",
+        "title": "Stale read accepted",
+        "role": "storage",
+        "detail": "Reconcile after healing"
+      },
+      {
+        "id": "cfg",
+        "title": "Product API",
+        "role": "neutral",
+        "detail": "Check mode and scope"
+      },
+      {
+        "id": "q",
+        "title": "Quorum overlap",
+        "role": "runtime",
+        "detail": "One proof ingredient"
+      }
+    ],
+    "edges": [
+      {
+        "from": "cfg",
+        "to": "cp",
+        "label": "freshness contract"
+      },
+      {
+        "from": "cfg",
+        "to": "ap",
+        "label": "staleness contract"
+      },
+      {
+        "from": "q",
+        "to": "cp",
+        "label": "additional rules needed"
+      }
+    ],
+    "sources": [
+      "https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf",
+      "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html"
+    ]
+  },
+  {
+    "path": "distributed-systems/consistency-models",
+    "diagram": "dd2523371ef59d90",
+    "kind": "map",
+    "number": 1,
+    "title": "Safety implications do not establish convergence",
+    "caption": "Under the same operation and session scope, stronger ordering implies weaker ordering promises. Eventual dissemination is a separate progress obligation.",
+    "nodes": [
+      {
+        "id": "l",
+        "title": "Linearizable",
+        "role": "runtime",
+        "detail": "Real-time order"
+      },
+      {
+        "id": "s",
+        "title": "Sequential",
+        "role": "runtime",
+        "detail": "One program-order history"
+      },
+      {
+        "id": "c",
+        "title": "Causal",
+        "role": "runtime",
+        "detail": "Respect dependencies"
+      },
+      {
+        "id": "r",
+        "title": "Read your writes",
+        "role": "client",
+        "detail": "Within a session"
+      },
+      {
+        "id": "m",
+        "title": "Monotonic reads",
+        "role": "client",
+        "detail": "Do not regress"
+      },
+      {
+        "id": "e",
+        "title": "Eventual convergence",
+        "role": "storage",
+        "detail": "Disseminate and reconcile"
+      }
+    ],
+    "edges": [
+      {
+        "from": "l",
+        "to": "s",
+        "label": "implies"
+      },
+      {
+        "from": "s",
+        "to": "c",
+        "label": "implies"
+      },
+      {
+        "from": "c",
+        "to": "r",
+        "label": "same-session scope"
+      },
+      {
+        "from": "c",
+        "to": "m",
+        "label": "same-session scope"
+      }
+    ],
+    "sources": [
+      "https://www.cs.cornell.edu/courses/cs734/2000FA/cached%20papers/SessionGuaranteesPDIS_1.html",
+      "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf"
+    ]
+  },
+  {
+    "path": "distributed-systems/consistency-models",
+    "diagram": "2f0977dd0ad875a9",
+    "kind": "sequence",
+    "number": 2,
+    "title": "This illustrative write waits for both followers",
+    "caption": "The example waits for every shown replica. Linearizability is a history property, not a universal requirement to acknowledge every replica.",
+    "participants": [
+      {
+        "id": "c",
+        "title": "Client",
+        "role": "client"
+      },
+      {
+        "id": "l",
+        "title": "Leader",
+        "role": "runtime"
+      },
+      {
+        "id": "a",
+        "title": "Follower 1",
+        "role": "storage"
+      },
+      {
+        "id": "b",
+        "title": "Follower 2",
+        "role": "storage"
+      }
+    ],
+    "events": [
+      {
+        "from": "c",
+        "to": "l",
+        "label": "write x=5"
+      },
+      {
+        "from": "l",
+        "to": "a",
+        "label": "replicate x=5"
+      },
+      {
+        "from": "l",
+        "to": "b",
+        "label": "replicate x=5"
+      },
+      {
+        "from": "a",
+        "to": "l",
+        "label": "acknowledge"
+      },
+      {
+        "from": "b",
+        "to": "l",
+        "label": "acknowledge"
+      },
+      {
+        "from": "l",
+        "to": "c",
+        "label": "success in this example"
+      }
+    ],
+    "sources": [
+      "https://raft.github.io/raft.pdf",
+      "https://www.cs.cornell.edu/courses/cs734/2000FA/cached%20papers/SessionGuaranteesPDIS_1.html"
+    ]
+  },
+  {
+    "path": "distributed-systems/consistency-models",
+    "diagram": "6a722737865f8d91",
+    "kind": "sequence",
+    "number": 3,
+    "title": "Confirmation at one replica does not refresh another",
+    "caption": "Client 2 reads B before replication reaches it. The write acknowledgement and eventual dissemination are separate events.",
+    "participants": [
+      {
+        "id": "a",
+        "title": "Writer",
+        "role": "client"
+      },
+      {
+        "id": "b",
+        "title": "Replica A",
+        "role": "storage"
+      },
+      {
+        "id": "c",
+        "title": "Replica B",
+        "role": "storage"
+      },
+      {
+        "id": "d",
+        "title": "Reader",
+        "role": "client"
+      }
+    ],
+    "events": [
+      {
+        "from": "a",
+        "to": "b",
+        "label": "write x=5"
+      },
+      {
+        "from": "b",
+        "to": "a",
+        "label": "locally accepted"
+      },
+      {
+        "from": "d",
+        "to": "c",
+        "label": "read x"
+      },
+      {
+        "from": "c",
+        "to": "d",
+        "label": "x=3"
+      },
+      {
+        "from": "b",
+        "to": "c",
+        "label": "later: replicate x=5"
+      }
+    ],
+    "sources": [
+      "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf",
+      "https://www.cs.cornell.edu/courses/cs734/2000FA/cached%20papers/SessionGuaranteesPDIS_1.html"
+    ]
+  },
+  {
+    "path": "distributed-systems/idempotency",
+    "diagram": "e3aeb10727cace00",
+    "kind": "sequence",
+    "number": 1,
+    "title": "One transaction captures the local effect and replay result",
+    "caption": "The lookup alone is not a concurrency guard. A scoped unique key and atomic local mutation/result capture decide which concurrent attempt wins; external effects need their own contract.",
+    "participants": [
+      {
+        "id": "c",
+        "title": "Client",
+        "role": "client",
+        "detail": "Keeps key K"
+      },
+      {
+        "id": "s",
+        "title": "API",
+        "role": "runtime",
+        "detail": "Authenticates scope"
+      },
+      {
+        "id": "d",
+        "title": "Local database",
+        "role": "storage",
+        "detail": "Unique key and transaction"
+      }
+    ],
+    "events": [
+      {
+        "from": "c",
+        "to": "s",
+        "label": "request with K"
+      },
+      {
+        "from": "s",
+        "to": "d",
+        "label": "look up scoped K"
+      },
+      {
+        "over": [
+          "s",
+          "d"
+        ],
+        "text": "If absent: serialize concurrent claims of K"
+      },
+      {
+        "from": "s",
+        "to": "d",
+        "label": "begin; claim K; mutate local ledger"
+      },
+      {
+        "from": "s",
+        "to": "d",
+        "label": "capture response and commit atomically"
+      },
+      {
+        "from": "s",
+        "to": "c",
+        "label": "return captured response"
+      },
+      {
+        "over": [
+          "c",
+          "d"
+        ],
+        "text": "Later completed K: replay; in-flight K: wait or conflict"
+      }
+    ],
+    "sources": [
+      "https://docs.stripe.com/api/idempotent_requests",
+      "https://www.postgresql.org/docs/current/transaction-iso.html"
+    ]
+  },
+  {
+    "path": "distributed-systems/idempotency",
+    "diagram": "7f618a77d1e68e2a",
+    "kind": "map",
+    "number": 2,
+    "title": "Keep replay identity with the local mutation",
+    "caption": "Completed, new and in-flight requests are distinct outcomes. Only the local database boundary is atomic; a payment provider is outside it.",
+    "nodes": [
+      {
+        "id": "c",
+        "title": "Client",
+        "role": "client",
+        "detail": "Stable scoped operation"
+      },
+      {
+        "id": "api",
+        "title": "API",
+        "role": "runtime",
+        "detail": "Check account and payload"
+      },
+      {
+        "id": "gate",
+        "title": "Claim key",
+        "role": "storage",
+        "detail": "Unique scoped identity"
+      },
+      {
+        "id": "effect",
+        "title": "Local mutation",
+        "role": "storage"
+      },
+      {
+        "id": "result",
+        "title": "Captured result",
+        "role": "storage"
+      },
+      {
+        "id": "replay",
+        "title": "Replay or wait",
+        "role": "runtime",
+        "detail": "Depends on stored status"
+      }
+    ],
+    "edges": [
+      {
+        "from": "c",
+        "to": "api",
+        "label": "request with K"
+      },
+      {
+        "from": "api",
+        "to": "gate",
+        "label": "new key"
+      },
+      {
+        "from": "gate",
+        "to": "effect",
+        "label": "winning claim"
+      },
+      {
+        "from": "effect",
+        "to": "result",
+        "label": "same transaction"
+      },
+      {
+        "from": "api",
+        "to": "replay",
+        "label": "existing key"
+      },
+      {
+        "from": "result",
+        "to": "c",
+        "label": "new response"
+      },
+      {
+        "from": "replay",
+        "to": "c",
+        "label": "stored result or conflict"
+      }
+    ],
+    "sources": [
+      "https://docs.stripe.com/api/idempotent_requests"
+    ],
+    "groups": [
+      {
+        "id": "tx",
+        "label": "Local database transaction",
+        "nodes": [
+          "gate",
+          "effect",
+          "result"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "distributed-systems/vector-clocks",
+    "diagram": "8aa274df9c32a247",
+    "kind": "sequence",
+    "number": 1,
+    "title": "Compare write versions, not the receiver clock",
+    "caption": "A and C write independently. B advances its process clock on receipt while preserving each original write version, so neither independent write is falsely ordered after the other.",
+    "participants": [
+      {
+        "id": "a",
+        "title": "Replica A",
+        "role": "storage"
+      },
+      {
+        "id": "b",
+        "title": "Replica B",
+        "role": "storage"
+      },
+      {
+        "id": "c",
+        "title": "Replica C",
+        "role": "storage"
+      }
+    ],
+    "events": [
+      {
+        "over": [
+          "a",
+          "b",
+          "c"
+        ],
+        "text": "Start [A:0, B:0, C:0]"
+      },
+      {
+        "at": "a",
+        "label": "write x=1 at [1,0,0]"
+      },
+      {
+        "from": "a",
+        "to": "b",
+        "label": "x=1, write version [1,0,0]"
+      },
+      {
+        "over": "b",
+        "text": "Process [1,1,0]; stored write remains [1,0,0]"
+      },
+      {
+        "at": "c",
+        "label": "independent x=2 at [0,0,1]"
+      },
+      {
+        "from": "c",
+        "to": "b",
+        "label": "x=2, write version [0,0,1]"
+      },
+      {
+        "over": "b",
+        "text": "Neither write version dominates: retain or resolve siblings"
+      }
+    ],
+    "sources": [
+      "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf"
+    ]
+  },
+  {
+    "path": "distributed-systems/vector-clocks",
+    "diagram": "3acc58746c36ca91",
+    "kind": "map",
+    "number": 2,
+    "title": "A received value is judged by its causal version",
+    "caption": "Advance the local event clock on receipt, then compare stored write versions. A concurrent pair requires a resolution policy; a vector does not choose the business winner.",
+    "nodes": [
+      {
+        "id": "w",
+        "title": "Local write",
+        "role": "client",
+        "detail": "Increment local clock"
+      },
+      {
+        "id": "s",
+        "title": "Store and replicate",
+        "role": "storage",
+        "detail": "Value with write version"
+      },
+      {
+        "id": "p",
+        "title": "Receiving replica",
+        "role": "runtime",
+        "detail": "Advance process clock"
+      },
+      {
+        "id": "cmp",
+        "title": "Compare write versions",
+        "role": "runtime"
+      },
+      {
+        "id": "new",
+        "title": "Remote dominates",
+        "role": "storage",
+        "detail": "Accept remote value"
+      },
+      {
+        "id": "old",
+        "title": "Local dominates",
+        "role": "storage",
+        "detail": "Keep local value"
+      },
+      {
+        "id": "both",
+        "title": "Concurrent",
+        "role": "storage",
+        "detail": "Siblings or new merge write"
+      }
+    ],
+    "edges": [
+      {
+        "from": "w",
+        "to": "s",
+        "label": "capture write version"
+      },
+      {
+        "from": "s",
+        "to": "p",
+        "label": "replicate"
+      },
+      {
+        "from": "p",
+        "to": "cmp",
+        "label": "preserve write version"
+      },
+      {
+        "from": "cmp",
+        "to": "new",
+        "label": "causally newer"
+      },
+      {
+        "from": "cmp",
+        "to": "old",
+        "label": "causally older"
+      },
+      {
+        "from": "cmp",
+        "to": "both",
+        "label": "neither dominates"
+      }
+    ],
+    "sources": [
+      "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf"
+    ]
+  },
+  {
+    "path": "distributed-systems/crdts",
+    "diagram": "d0351ef0278bf418",
+    "kind": "map",
+    "number": 1,
+    "title": "Independent replicas exchange mergeable state",
+    "caption": "Valid local updates and eventual dissemination let this state-based design converge. The merge does not impose authorization or a nonnegative balance invariant.",
+    "nodes": [
+      {
+        "id": "a",
+        "title": "Replica A",
+        "role": "storage",
+        "detail": "Local state"
+      },
+      {
+        "id": "b",
+        "title": "Replica B",
+        "role": "storage",
+        "detail": "Local state"
+      },
+      {
+        "id": "c",
+        "title": "Replica C",
+        "role": "storage",
+        "detail": "Local state"
+      }
+    ],
+    "edges": [
+      {
+        "from": "a",
+        "to": "b",
+        "label": "merge state"
+      },
+      {
+        "from": "b",
+        "to": "c",
+        "label": "merge state"
+      },
+      {
+        "from": "c",
+        "to": "a",
+        "label": "merge state"
+      }
+    ],
+    "sources": [
+      "https://www.lip6.fr/Marc.Shapiro/papers/2011/Comprehensive-CRDTs-RR7506-2011-01.pdf"
+    ],
+    "groups": [
+      {
+        "id": "a",
+        "label": "Independent replica A",
+        "nodes": [
+          "a"
+        ]
+      },
+      {
+        "id": "b",
+        "label": "Independent replica B",
+        "nodes": [
+          "b"
+        ]
+      },
+      {
+        "id": "c",
+        "label": "Independent replica C",
+        "nodes": [
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "distributed-systems/crdts",
+    "diagram": "3f2adb1541a2901a",
+    "kind": "map",
+    "number": 2,
+    "title": "The delivery contract depends on what is sent",
+    "caption": "State-based designs merge monotone state. Classical operation-based designs need their specified ordering and duplicate handling. A generic broadcast arrow supplies neither.",
+    "nodes": [
+      {
+        "id": "op",
+        "title": "Local update",
+        "role": "client"
+      },
+      {
+        "id": "s",
+        "title": "Retained state",
+        "role": "storage"
+      },
+      {
+        "id": "send",
+        "title": "Dissemination",
+        "role": "queue",
+        "detail": "State or operation"
+      },
+      {
+        "id": "p1",
+        "title": "Replica 1",
+        "role": "storage"
+      },
+      {
+        "id": "p2",
+        "title": "Replica 2",
+        "role": "storage"
+      },
+      {
+        "id": "c",
+        "title": "Converged result",
+        "role": "storage",
+        "detail": "When assumptions hold"
+      }
+    ],
+    "edges": [
+      {
+        "from": "op",
+        "to": "s",
+        "label": "valid type-specific update"
+      },
+      {
+        "from": "s",
+        "to": "send",
+        "label": "choose replication contract"
+      },
+      {
+        "from": "send",
+        "to": "p1",
+        "label": "merge or apply safely"
+      },
+      {
+        "from": "send",
+        "to": "p2",
+        "label": "merge or apply safely"
+      },
+      {
+        "from": "p1",
+        "to": "c",
+        "label": "same delivered information"
+      },
+      {
+        "from": "p2",
+        "to": "c",
+        "label": "same delivered information"
+      }
+    ],
+    "sources": [
+      "https://www.lip6.fr/Marc.Shapiro/papers/2011/Comprehensive-CRDTs-RR7506-2011-01.pdf"
+    ]
+  },
+  {
+    "path": "distributed-systems/consensus-basics",
+    "diagram": "25550e440caaaadd",
+    "kind": "sequence",
+    "number": 1,
+    "title": "Prepared participants need the commit decision",
+    "caption": "Two-phase commit coordinates a transaction decision. Prepared participants may block when they cannot discover that decision; a majority of ordinary participants is not a replacement coordinator.",
+    "participants": [
+      {
+        "id": "c",
+        "title": "Coordinator",
+        "role": "runtime"
+      },
+      {
+        "id": "a",
+        "title": "Participant 1",
+        "role": "storage"
+      },
+      {
+        "id": "b",
+        "title": "Participant 2",
+        "role": "storage"
+      }
+    ],
+    "events": [
+      {
+        "from": "c",
+        "to": "a",
+        "label": "prepare"
+      },
+      {
+        "from": "c",
+        "to": "b",
+        "label": "prepare"
+      },
+      {
+        "from": "a",
+        "to": "c",
+        "label": "yes"
+      },
+      {
+        "from": "b",
+        "to": "c",
+        "label": "yes"
+      },
+      {
+        "from": "c",
+        "to": "a",
+        "label": "commit decision"
+      },
+      {
+        "from": "c",
+        "to": "b",
+        "label": "commit decision"
+      },
+      {
+        "from": "a",
+        "to": "c",
+        "label": "acknowledge"
+      },
+      {
+        "from": "b",
+        "to": "c",
+        "label": "acknowledge"
+      }
+    ],
+    "sources": [
+      "https://raft.github.io/raft.pdf",
+      "https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/tr-2003-96.pdf"
+    ]
+  },
+  {
+    "path": "distributed-systems/consensus-basics",
+    "diagram": "3d2cd78a31fd1890",
+    "kind": "map",
+    "number": 2,
+    "title": "A current-term majority can establish commit",
+    "caption": "A five-member Raft group needs three replicas including the leader. The current-term restriction and election/log rules matter; arbitrary copies or all powered-on machines are insufficient.",
+    "nodes": [
+      {
+        "id": "l",
+        "title": "Leader",
+        "role": "runtime",
+        "detail": "Current-term entry"
+      },
+      {
+        "id": "a",
+        "title": "Follower 1",
+        "role": "storage"
+      },
+      {
+        "id": "b",
+        "title": "Follower 2",
+        "role": "storage"
+      },
+      {
+        "id": "c",
+        "title": "Follower 3",
+        "role": "storage"
+      },
+      {
+        "id": "d",
+        "title": "Follower 4",
+        "role": "storage"
+      },
+      {
+        "id": "sm",
+        "title": "State machine",
+        "role": "storage",
+        "detail": "Apply committed entries"
+      }
+    ],
+    "edges": [
+      {
+        "from": "l",
+        "to": "a",
+        "label": "replicate; acknowledge"
+      },
+      {
+        "from": "l",
+        "to": "b",
+        "label": "replicate; acknowledge"
+      },
+      {
+        "from": "l",
+        "to": "c",
+        "label": "replicate; acknowledge"
+      },
+      {
+        "from": "l",
+        "to": "d",
+        "label": "replicate; acknowledge"
+      },
+      {
+        "from": "l",
+        "to": "sm",
+        "label": "current-term majority commit"
+      }
+    ],
+    "sources": [
+      "https://raft.github.io/raft.pdf"
+    ]
+  },
+  {
+    "path": "distributed-systems/consensus-basics",
+    "diagram": "308e2dac5492bf44",
+    "kind": "map",
+    "number": 3,
+    "title": "A timeout starts an election, not a leadership guarantee",
+    "caption": "A candidate needs a majority and an eligible log. Split votes can repeat; higher terms make an obsolete leader step down when it learns them.",
+    "nodes": [
+      {
+        "id": "f",
+        "title": "Follower",
+        "role": "runtime"
+      },
+      {
+        "id": "c",
+        "title": "Candidate",
+        "role": "runtime",
+        "detail": "New term, request votes"
+      },
+      {
+        "id": "l",
+        "title": "Leader",
+        "role": "runtime",
+        "detail": "Majority elected"
+      }
+    ],
+    "edges": [
+      {
+        "from": "f",
+        "to": "c",
+        "label": "election timeout"
+      },
+      {
+        "from": "c",
+        "to": "l",
+        "label": "win eligible majority"
+      },
+      {
+        "from": "c",
+        "to": "f",
+        "label": "recognize valid leader"
+      },
+      {
+        "from": "l",
+        "to": "f",
+        "label": "observe higher term"
+      }
+    ],
+    "sources": [
+      "https://raft.github.io/raft.pdf"
+    ]
+  },
+  {
+    "path": "distributed-systems/lww-vs-crdt",
+    "diagram": "fbe8b2818f1b5742",
+    "kind": "map",
+    "number": 1,
+    "title": "The same concurrent intent can have different surviving state",
+    "caption": "Starting with x present, A removes the observed membership while B concurrently re-adds x under a new tag. An LWW register holding the entire set can select A’s empty replacement; an observed-remove set preserves B’s unseen add. The chosen stamps and tags are illustrative.",
+    "nodes": [
+      {
+        "id": "a",
+        "title": "A removes x",
+        "detail": "Empty set; stamp 9",
+        "role": "client"
+      },
+      {
+        "id": "b",
+        "title": "B re-adds x",
+        "detail": "New add tag; stamp 8",
+        "role": "client"
+      },
+      {
+        "id": "l",
+        "title": "LWW whole-set register",
+        "detail": "A wins: empty set",
+        "role": "storage"
+      },
+      {
+        "id": "o",
+        "title": "Observed-remove set",
+        "detail": "Unseen add survives: x",
+        "role": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "a",
+        "to": "l",
+        "label": "max unique stamp"
+      },
+      {
+        "from": "b",
+        "to": "l",
+        "label": "lower stamp discarded"
+      },
+      {
+        "from": "a",
+        "to": "o",
+        "label": "remove observed tags"
+      },
+      {
+        "from": "b",
+        "to": "o",
+        "label": "new tag survives"
+      }
+    ],
+    "sources": [
+      "https://www.lip6.fr/Marc.Shapiro/papers/2011/Comprehensive-CRDTs-RR7506-2011-01.pdf"
+    ]
+  },
+  {
+    "path": "distributed-systems/streaming-logs-partitioning",
+    "diagram": "b591fb6de6e037ed",
+    "kind": "map",
+    "number": 1,
+    "title": "Partition order stops at the partition boundary",
+    "caption": "Each partition has its own record order. Combining them into a mobile read model does not create a guaranteed global event order; entity revisions and completeness need their own API contract.",
+    "nodes": [
+      {
+        "id": "p0",
+        "title": "Partition 0",
+        "detail": "Thread 1: message, receipt",
+        "role": "queue"
+      },
+      {
+        "id": "p1",
+        "title": "Partition 1",
+        "detail": "Thread 2: message, receipt",
+        "role": "queue"
+      },
+      {
+        "id": "v",
+        "title": "Read-model consumer",
+        "detail": "Combine independent inputs",
+        "role": "runtime"
+      },
+      {
+        "id": "m",
+        "title": "Mobile contract",
+        "detail": "Revision and continuation",
+        "role": "client"
+      }
+    ],
+    "edges": [
+      {
+        "from": "p0",
+        "to": "v",
+        "label": "partition-local order"
+      },
+      {
+        "from": "p1",
+        "to": "v",
+        "label": "independent order"
+      },
+      {
+        "from": "v",
+        "to": "m",
+        "label": "entity revisions and cursor"
+      }
+    ],
+    "sources": [
+      "https://kafka.apache.org/41/design/design/"
+    ]
   }
 ]

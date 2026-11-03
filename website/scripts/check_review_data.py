@@ -61,7 +61,7 @@ def check():
             raise ValueError('Markdown/JSON wording differs: '+fix['id'])
     snapshot = json.loads((ROOT/'source-snapshot.json').read_text())
     verified = 0
-    for tree in ('kotlin', 'android', 'engineering-fundamentals', 'computer-science', 'platform-engineering', 'mobile-system-design', 'observability'):
+    for tree in ('kotlin', 'android', 'engineering-fundamentals', 'computer-science', 'platform-engineering', 'mobile-system-design', 'observability', 'distributed-systems'):
         hashes = snapshot[tree+'_sha256']
         actual_paths = {tree+'.md'} | {str(p.relative_to(ROOT)) for p in (ROOT/tree).rglob('*.md')}
         if actual_paths != set(hashes):
@@ -70,13 +70,6 @@ def check():
             if hashlib.sha256((ROOT/path).read_bytes()).hexdigest() != digest:
                 raise ValueError('Read-only source changed: '+path)
         verified += len(hashes)
-    pilot = snapshot['distributed-systems_sha256']
-    if set(pilot) != {'distributed-systems.md', 'distributed-systems/delivery-semantics.md'}:
-        raise ValueError('Distributed Systems pilot snapshot scope changed')
-    for path, digest in pilot.items():
-        if hashlib.sha256((ROOT/path).read_bytes()).hexdigest() != digest:
-            raise ValueError('Read-only pilot source changed: '+path)
-    verified += len(pilot)
     linked = snapshot['observability_link_targets_sha256']
     if set(linked) != {'release-engineering/crash-rate-gating.md', 'milestones.md'}:
         raise ValueError('Observability linked-source snapshot scope changed')
