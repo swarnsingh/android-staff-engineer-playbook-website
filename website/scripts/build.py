@@ -261,6 +261,15 @@ BLEND_LABELS = {'story': 'Start here', 'guide': 'In plain words', 'visual': 'See
                 'tryfirst': 'Try first', 'pushback': 'Interviewer pushes back', 'recap': 'Interview recap · added by this site'}
 
 
+def blend_file(path):
+    # Kotlin blends predate other trees and sit at the top level; other trees use a folder per tree.
+    folder = WEB / 'content/blend' if tree_of(path) == 'kotlin' else WEB / 'content/blend' / tree_of(path)
+    # Full chapter paths prevent collisions such as data-and-di/dependency-injection
+    # and kotlin-multiplatform/ecosystem/dependency-injection. Retain legacy locations.
+    scoped = WEB / 'content/blend' / Path(path).with_suffix('.blend')
+    return scoped if scoped.exists() else folder / (Path(path).stem + '.blend')
+
+
 def load_blend(path):
     """Read website/content/blend/<chapter>.blend: Markdown fragments placed by markers.
 
@@ -271,15 +280,12 @@ def load_blend(path):
     <!-- @part Heading :: KEY -->          force the part a section belongs to
     Headings are matched on their visible text (backticks and emphasis removed).
     """
-    # Kotlin blends predate other trees and sit at the top level; other trees use a folder per tree.
-    folder = WEB / 'content/blend' if tree_of(path) == 'kotlin' else WEB / 'content/blend' / tree_of(path)
-    # Full chapter paths prevent collisions such as data-and-di/dependency-injection
-    # and kotlin-multiplatform/ecosystem/dependency-injection. Retain legacy locations.
-    scoped = WEB / 'content/blend' / Path(path).with_suffix('.blend')
-    file = scoped if scoped.exists() else folder / (Path(path).stem + '.blend')
+    file=blend_file(path)
     if not file.exists():
         return {}
-    pieces = re.split(r'<!--\s*@(opening|before|after|diagram|part)\b(.*?)-->', file.read_text(), flags=re.S)
+    import static_figures
+    source=static_figures.render(path,file.read_text())
+    pieces = re.split(r'<!--\s*@(opening|before|after|diagram|part)\b(.*?)-->', source, flags=re.S)
     blend = {}
     for i in range(1, len(pieces), 3):
         marker, argument, content = pieces[i], pieces[i + 1].strip(), pieces[i + 2].strip()
@@ -775,11 +781,23 @@ def design_gallery(asset_version):
     source=(WEB/'content/blend/security/auth-on-mobile.blend').read_text()
     scene=re.search(r'<section class="pb-figure" data-pb-flow="scene".*?</section>',source,re.S)
     samples.append('<section class="demo"><h3>Session-bound token custody</h3>'+steps_as_text(scene[0])+'</section>')
+    import static_figures
+    static_samples=[]
+    for path,number in [('kotlin/language-core/variables',3),('kotlin/runtime-and-jvm/memory-model',1),('kotlin/language-core/variables',1)]:
+        row=static_figures.load().get((path,number))
+        if row is None: raise ValueError('Static gallery model missing: '+path)
+        source=static_figures.source_for(row)
+        if row['kind']=='map': sample=__import__('figure_maps').render(static_figures.as_map(row,source),'','teaching')[0]
+        else:
+            # render() numbers from the complete blend, then select the requested complete figure.
+            rendered=static_figures.render(path,blend_file(path+'.md').read_text())
+            sample=next(m[0] for m in re.finditer(r'<figure class="viz pb-static[^"]*".*?</figure>',rendered,re.S) if f'data-static-figure="{static_figures.figure_key(row)}"' in m[0])
+        static_samples.append('<section class="demo"><h3>'+escape(row['title'])+'</h3>'+timeline_labels(component_parameters(sample))+'</section>')
     page_walkthrough=walkthrough_gallery()
     prose=tokens['type']['prose']
     fonts=''.join(f'<figure class="specimen" style="--specimen:var(--font-{o["family"]});--measure-prose:{o["measure"]}"><figcaption><strong>{escape(o["label"])}</strong> · {escape(o["description"])}</figcaption>'
                   '<p>A suspended call gives its thread back. When the result arrives, the coroutine resumes where it stopped, with its state intact.</p></figure>' for o in prose['options'])
-    page=(DESIGN/'gallery.html').read_text().replace('{{swatches}}',swatches).replace('{{fonts}}',fonts).replace('{{scenes}}',''.join(samples)).replace('{{walkthrough}}',page_walkthrough)
+    page=(DESIGN/'gallery.html').read_text().replace('{{swatches}}',swatches).replace('{{fonts}}',fonts).replace('{{scenes}}',''.join(samples)).replace('{{walkthrough}}',page_walkthrough).replace('{{static_figures}}',''.join(static_samples))
     for asset in ('styles.css','blend.css','theme.css','tokens.css','flow.css','sequence.css','flow.js','blend.js'):page=page.replace('"/'+asset+'"','"'+BASE+asset+'?v='+asset_version+'"')
     page=page.replace('href="/android/"','href="'+route('android.md')+'"')
     destination=OUT/'design-system';destination.mkdir(exist_ok=True)
@@ -801,7 +819,10 @@ def walkthrough_gallery():
     parts=[walkthrough.timeline(steps),walkthrough.try_first('clarifying'),walkthrough.decision_cards(MD.render(table[1])),walkthrough.pushbacks(MD.render(question[1]))]
     return '<section class="demo"><div class="reading-content">'+''.join(parts)+'</div></section>'
 
-SHARED_CSS=['styles.css','blend.css','theme.css','sequence.css','learning-path.css','navigation.css','design-system/components/bundle.css']
+# Keep public stylesheet URLs stable; source ownership is the shared design system.
+READER_STYLES={name:DESIGN/'components/ReaderShell'/name for name in
+               ['styles.css','blend.css','sequence.css','theme.css','learning-path.css','navigation.css']}
+SHARED_CSS=[str(p.relative_to(WEB)) for p in READER_STYLES.values()]+['design-system/components/bundle.css']
 
 
 def check_design_boundary():
@@ -823,6 +844,8 @@ def check_design_boundary():
 
 
 def build(skip_diagrams=False):
+    import static_figures
+    static_figures.begin()
     check_design_boundary()
     import diagram_models
     relationship_models=diagram_models.check()
@@ -857,7 +880,7 @@ def build(skip_diagrams=False):
     # Include the generated catalog in the asset version. A newly rendered tree must
     # not reuse a cached catalog that still sends its chapters to GitHub.
     tokens_css=design_tokens_css().encode()
-    asset_inputs=['styles.css','blend.css','sequence.css','theme.css','learning-path.css','navigation.css','app.js','blend.js','coroutines.js','lesson-model.js','design-system/components/bundle.css','design-system/components/bundle.js']
+    asset_inputs=[str(p.relative_to(WEB)) for p in READER_STYLES.values()]+['app.js','blend.js','coroutines.js','lesson-model.js','design-system/components/bundle.css','design-system/components/bundle.js']
     asset_version=hashlib.sha256(tokens_css+b''.join((WEB/n).read_bytes() for n in asset_inputs)+(OUT/'nav-data.js').read_bytes()).hexdigest()[:10]
     font_options,font_head=reader_font_markup()
     template=(WEB/'templates/reader.html').read_text().replace('{{font_head}}',font_head).replace('{{font_options}}',font_options).replace('{{base}}',BASE).replace('{{asset_version}}',asset_version)
@@ -917,7 +940,9 @@ def build(skip_diagrams=False):
     home=(WEB/'templates/home.html').read_text().replace('{{base}}',BASE).replace('{{version}}',asset_version).replace('{{android_count}}',str(len(ORDER['android']))).replace('{{kotlin_count}}',str(len(ORDER['kotlin']))).replace('{{fundamentals_count}}',str(len(ORDER['engineering-fundamentals'])))
     (OUT/'index.html').write_text(home)
     (OUT/'.nojekyll').touch()
-    for name in ['styles.css','blend.css','sequence.css','theme.css','learning-path.css','navigation.css','app.js','blend.js','coroutines.js','lesson-model.js']:
+    for name,source in READER_STYLES.items():
+        shutil.copy2(source,OUT/name)
+    for name in ['app.js','blend.js','coroutines.js','lesson-model.js']:
         shutil.copy2(WEB/name,OUT/name)
     # The design system is the source for tokens, the diagram runtime and the self-hosted fonts.
     (OUT/'tokens.css').write_bytes(tokens_css)
@@ -928,6 +953,7 @@ def build(skip_diagrams=False):
     # Each bundled family travels with its SIL Open Font License and provenance.
     shutil.copytree(DESIGN/'fonts/licenses',OUT/'fonts/licenses'); shutil.copy2(DESIGN/'fonts/README.md',OUT/'fonts/README.md')
     design_gallery(asset_version)
+    static_figures.check_coverage()
     # Rulebook §20 "Designed visuals only": no page may show a rendered Mermaid picture.
     mermaid_pages=sorted(str(f.relative_to(OUT)) for f in OUT.rglob('*.html') if re.search(r'<img data-(original|teaching)-diagram=',f.read_text()))
     if mermaid_pages:

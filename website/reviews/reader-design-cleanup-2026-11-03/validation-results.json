@@ -1,0 +1,22 @@
+{
+  "build": {
+    "pages": 249,
+    "original_units": 30397,
+    "problems": 0
+  },
+  "figure_models": {
+    "original": 220,
+    "teaching": 197,
+    "teaching_source_cards": 811,
+    "compact_variants": 57,
+    "problems": 0
+  },
+  "tests": {
+    "website": 55,
+    "docs_checker": 31,
+    "java_snippets": 74,
+    "browser_script_syntax": 15,
+    "passed": true
+  },
+  "approved_source_files_unchanged": 43
+}
