@@ -42,6 +42,8 @@ THIN_FILE_ALLOWLIST: set[str] = {
     # Agent skill instructions stay short so they cost few tokens on every load.
     ".claude/skills/publish-website/SKILL.md",
     # Component contracts are short references; the 400-word chapter floor does not apply.
+    "website/design-system/components/ReaderShell/README.md",
+    "website/design-system/components/StaticFigure/README.md",
     "website/design-system/components/Checkpoint/README.md",
     "website/design-system/components/ReadingSheet/README.md",
     "website/design-system/components/CodeCard/README.md",

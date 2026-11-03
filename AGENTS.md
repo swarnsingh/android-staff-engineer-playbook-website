@@ -19,6 +19,7 @@ Use a Python with `website/requirements.txt` installed (the owner's venv: `../an
 | Local build (all checks except the publication gate) | `python3 website/tools/dev.py build` |
 | Check every FigureMap diagram model | `python3 website/tools/dev.py figures` |
 | In Chrome: nothing outside its box, no sideways scroll, labels fit (after `build`) | `python3 website/tools/dev.py frames` |
+| In Chrome: phone frames, readable labels and labelled local scrolls | `python3 website/tools/dev.py frames-phone` |
 | In Chrome: audit startup and deliberately broken asset/inspector cases (after `build`) | `python3 website/tools/dev.py readiness` |
 | Everything CI runs (tests, docs check, script syntax) | `python3 website/tools/dev.py ci` |
 | Fresh browser evidence (six audits) | `python3 website/tools/dev.py audit <review-folder>` |
@@ -83,14 +84,13 @@ Content-only edits to blend files also change fingerprints, so they follow the s
 - **Design system.** Tokens are in `website/design-system/tokens.json`; components are in `website/design-system/components/bundle.css` and `bundle.js`.
 - **Evidence.** `website/reviews/<topic>-<date>/`; the latest folder is named by `ux_review` in `website/reviews/completion/validation.json`.
 
+## Reader cleanup status
+
+The 3 November migration covers all 197 older teaching figures in Kotlin and Android: 75 explicit FigureMaps and 122 comparisons/timelines with role colours, border patterns, legends and numbered captions. Their models are hash-bound in `website/content/static-figures.json`; `dev.py figures` checks them with the original redraw models. The six reader stylesheet sources now live in `design-system/components/ReaderShell/`; their emitted public URLs are unchanged. Lesson content contains no inline styling, and the shared CSS boundary rejects raw colours and px font sizes.
+
 ## Known open work
 
-- **Centralization debt (§20 "Content is the only per-topic layer"):**
-  - 318 inline styles in lesson files (227 grid column counts, 83 timeline positions, 8 raw margins or widths);
-  - 458 CSS lines outside the design system, with 72 hard-coded colours in `styles.css`;
-  - about 50 raw px font sizes;
-  - FigureMap geometry constants in Python rather than in `tokens.json`.
-
-- 181 teaching-layer HTML diagrams in Kotlin and Android lessons still use neutral cards. Under §20 they need role colours, legends and numbered captions.
-- Some lessons may exceed the §18 length target; review them before trimming.
-- Wide figures scroll sideways on phones; there are no dedicated phone layouts yet.
+- Finish tokenizing the remaining legacy layout dimensions in ReaderShell and FigureMap. Automatic card sizing and the compact figure profile now use tokens; other geometry constants remain.
+- Review lesson length before trimming. Use the roughly quarter-length working target alongside the value of each addition; exclude visuals and animations, and treat cross-reference stubs separately. Counts alone are not an editorial finding.
+- 57 maps have a narrower, collision-checked phone composition. Complex maps and sequences retain labelled local scrolling; additional compositions need individual semantic review.
+- The single consolidated full manual phone review remains deferred until all planned topic trees and pages are integrated, as required by the rulebook. Automated mobile checks continue during this work.
