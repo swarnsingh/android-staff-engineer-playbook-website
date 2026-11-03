@@ -1,0 +1,292 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">A refresh is already in flight when the user signs out. Its successful response arrives later. Saving that response into a generic current-token slot can bring the old session back.</p>
+
+<!-- @before 4. OkHttp Authenticator (Silent Refresh) :: animation -->
+### The response still belongs to the retired session
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="A refresh reply arrives after logout">
+<h3>Walkthrough 1. A refresh reply arrives after logout</h3><p class="pb-sub">Illustrative local ownership race. One vault belongs to one login; encryption and server revocation are separate controls.</p>
+<div class="pb-seg" role="group" aria-label="Comparison policy"><button type="button" data-mode="guarded" aria-pressed="true">Atomic session-bound vault</button><button type="button" data-mode="unchecked" aria-pressed="false">Unchecked late save</button></div>
+<div class="pb-paper" role="region" aria-label="Illustrative system; scroll if needed" tabindex="0"><svg class="pb-svg" role="img" aria-label="A refresh reply arrives after logout; every step is available as text below"></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div><div class="pb-caption" aria-live="polite"><span class="pb-count"></span><p></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" hidden aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">
+{
+  "illustrated": true,
+  "playback": "manual",
+  "layout": "three-peers",
+  "owners": {
+    "a": "APP SESSION A",
+    "b": "IDENTITY PROVIDER",
+    "c": "APP VAULT A"
+  },
+  "nodes": [
+    {
+      "id": "a",
+      "label": "Session A",
+      "art": {
+        "kind": "phone",
+        "role": "client"
+      }
+    },
+    {
+      "id": "b",
+      "label": "Identity",
+      "art": {
+        "kind": "server",
+        "role": "runtime"
+      }
+    },
+    {
+      "id": "c",
+      "label": "Vault A",
+      "art": {
+        "kind": "database",
+        "role": "storage"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "ab",
+      "from": "a",
+      "to": "b",
+      "label": "refresh"
+    },
+    {
+      "id": "ba",
+      "from": "b",
+      "to": "a",
+      "label": "tokens"
+    },
+    {
+      "id": "ac",
+      "from": "a",
+      "to": "c",
+      "label": "vault write"
+    }
+  ],
+  "modes": {
+    "guarded": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "A active"
+          ],
+          "b": [
+            "",
+            "ready"
+          ],
+          "c": [
+            "",
+            "A tokens"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Start",
+          "caption": "Session A is active. Its next refresh will race with local logout.",
+          "packets": []
+        },
+        {
+          "label": "Refresh",
+          "caption": "Session A starts a refresh against its own identity provider and token vault.",
+          "packets": [
+            {
+              "edge": "ab",
+              "label": "refresh A",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-active",
+                "refresh A pending"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Logout",
+          "caption": "Local logout retires A and atomically invalidates its vault before optional network revocation.",
+          "packets": [
+            {
+              "edge": "ac",
+              "label": "invalidate A",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-warn",
+                "A retired"
+              ],
+              "c": [
+                "is-warn",
+                "invalidated; empty"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Late reply",
+          "caption": "The old refresh returns credentials for A after logout. It is not permission to restore that retired session.",
+          "packets": [
+            {
+              "edge": "ba",
+              "label": "late A tokens",
+              "tone": "back",
+              "kind": "page"
+            }
+          ]
+        },
+        {
+          "label": "Install",
+          "caption": "The captured vault rejects replacement after invalidation. A remains retired.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-done",
+                "invalidated; empty"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Keep boundary",
+          "caption": "Local token resurrection is prevented. Server-wide revocation still needs the identity service’s contract.",
+          "packets": []
+        }
+      ]
+    },
+    "unchecked": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "A active"
+          ],
+          "b": [
+            "",
+            "ready"
+          ],
+          "c": [
+            "",
+            "A tokens"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Start",
+          "caption": "Session A is active. Its next refresh will race with local logout.",
+          "packets": []
+        },
+        {
+          "label": "Refresh",
+          "caption": "Session A starts a refresh against its own identity provider and token vault.",
+          "packets": [
+            {
+              "edge": "ab",
+              "label": "refresh A",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-active",
+                "refresh A pending"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Logout",
+          "caption": "Local logout retires A and atomically invalidates its vault before optional network revocation.",
+          "packets": [
+            {
+              "edge": "ac",
+              "label": "invalidate A",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-warn",
+                "A retired"
+              ],
+              "c": [
+                "is-warn",
+                "invalidated; empty"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Late reply",
+          "caption": "The old refresh returns credentials for A after logout. It is not permission to restore that retired session.",
+          "packets": [
+            {
+              "edge": "ba",
+              "label": "late A tokens",
+              "tone": "back",
+              "kind": "page"
+            }
+          ]
+        },
+        {
+          "label": "Install",
+          "caption": "An unchecked save installs the old credentials again. Encryption alone did not prevent the stale write.",
+          "packets": [
+            {
+              "edge": "ac",
+              "label": "stale save",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-warn",
+                "A tokens restored"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Keep boundary",
+          "caption": "The old session’s local credentials are back. A successful refresh response did not establish current ownership.",
+          "packets": []
+        }
+      ]
+    }
+  },
+  "stepNavigation": "select",
+  "compareAtCurrentStep": true
+}
+</script>
+</section>
+
+<!-- @before 2. OAuth 2.0 Authorization Code + PKCE (the Login) :: guide -->
+### Bind the browser response before exchanging the code
+
+Use an external user agent and the registered redirect contract. PKCE binds code exchange to the verifier; state and issuer/redirect checks address other mix-up and response-binding threats. Token types depend on the requested protocol, grants and provider: an ID token is an OpenID Connect result, not mandatory in every OAuth exchange. [Native-app OAuth](https://www.rfc-editor.org/rfc/rfc8252.html) and [current security BCP](https://www.rfc-editor.org/rfc/rfc9700.html) and [OpenID Connect token semantics](https://openid.net/specs/openid-connect-core-1_0.html#IDToken).
+
+<!-- @before 5. Logout :: staff -->
+### Local retirement and remote revocation have different completion rules
+
+The source vault contract atomically rejects replacement after invalidation. Retire captured-session work and data without clearing a newer account. Best-effort revocation is not proof of account-wide logout; use the provider’s server session/revocation contract for that guarantee.

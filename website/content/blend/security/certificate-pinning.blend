@@ -1,0 +1,247 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">A server certificate rotates successfully, yet an older installed app loses every connection. The trust chain is valid; the app’s extra pin restriction is now the failure boundary.</p>
+
+<!-- @before 5. Pin Rotation: The Two-Pin Rule :: animation -->
+### The backup must reach the old cohort first
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="The valid certificate still needs an accepted pin">
+<h3>Walkthrough 1. The valid certificate still needs an accepted pin</h3><p class="pb-sub">Illustrative SPKI pin sets in one participating stack. K1 and K2 denote public-key pins, not private keys.</p>
+<div class="pb-seg" role="group" aria-label="Comparison policy"><button type="button" data-mode="overlap" aria-pressed="true">Backup pin installed</button><button type="button" data-mode="missing" aria-pressed="false">No old-client overlap</button></div>
+<div class="pb-paper" role="region" aria-label="Illustrative system; scroll if needed" tabindex="0"><svg class="pb-svg" role="img" aria-label="The valid certificate still needs an accepted pin; every step is available as text below"></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div><div class="pb-caption" aria-live="polite"><span class="pb-count"></span><p></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" hidden aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">
+{
+  "illustrated": true,
+  "playback": "manual",
+  "layout": "three-peers",
+  "owners": {
+    "a": "OLD APP COHORT",
+    "b": "NEW APP COHORT",
+    "c": "TLS SERVICE"
+  },
+  "nodes": [
+    {
+      "id": "a",
+      "label": "Old cohort",
+      "art": {
+        "kind": "phone",
+        "role": "client"
+      }
+    },
+    {
+      "id": "b",
+      "label": "New cohort",
+      "art": {
+        "kind": "phone",
+        "role": "client"
+      }
+    },
+    {
+      "id": "c",
+      "label": "TLS server",
+      "art": {
+        "kind": "server",
+        "role": "runtime"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "ca",
+      "from": "c",
+      "to": "a",
+      "label": "chain K2"
+    },
+    {
+      "id": "cb",
+      "from": "c",
+      "to": "b",
+      "label": "chain K2"
+    }
+  ],
+  "modes": {
+    "overlap": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "pins K1,K2"
+          ],
+          "b": [
+            "",
+            "pins K1,K2"
+          ],
+          "c": [
+            "",
+            "valid chain; K1"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Installed",
+          "caption": "Before server rotation, the old cohort has K1 and backup K2.",
+          "packets": []
+        },
+        {
+          "label": "Rotate",
+          "caption": "The server rotates to a valid certificate chain using public key K2.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-done",
+                "valid chain; K2"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Old client",
+          "caption": "The old client validates the chain and matches backup pin K2.",
+          "packets": [
+            {
+              "edge": "ca",
+              "label": "chain: K2",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-done",
+                "K2 accepted"
+              ]
+            }
+          }
+        },
+        {
+          "label": "New client",
+          "caption": "The newer cohort also validates the chain and matches K2.",
+          "packets": [
+            {
+              "edge": "cb",
+              "label": "chain: K2",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-done",
+                "K2 accepted"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Recovery",
+          "caption": "Both cohorts can reach the service. Prepare the next supported overlap before removing old pins.",
+          "packets": []
+        }
+      ]
+    },
+    "missing": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "pin K1 only"
+          ],
+          "b": [
+            "",
+            "pins K1,K2"
+          ],
+          "c": [
+            "",
+            "valid chain; K1"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Installed",
+          "caption": "Before server rotation, the old cohort has only K1. The newer cohort has K1 and K2.",
+          "packets": []
+        },
+        {
+          "label": "Rotate",
+          "caption": "The server rotates to a valid certificate chain using public key K2.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-done",
+                "valid chain; K2"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Old client",
+          "caption": "The chain is valid, but K2 matches no old-client pin. That installed cohort cannot connect.",
+          "packets": [
+            {
+              "edge": "ca",
+              "label": "chain: K2",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-warn",
+                "pin failure"
+              ]
+            }
+          }
+        },
+        {
+          "label": "New client",
+          "caption": "The newer cohort also validates the chain and matches K2.",
+          "packets": [
+            {
+              "edge": "cb",
+              "label": "chain: K2",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-done",
+                "K2 accepted"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Recovery",
+          "caption": "The broken cohort cannot fetch recovery over this same blocked pinned channel. Rotation needed an earlier overlap.",
+          "packets": []
+        }
+      ]
+    }
+  },
+  "stepNavigation": "select",
+  "compareAtCurrentStep": true
+}
+</script>
+</section>
+
+<!-- @before 1. The Threat Model :: guide -->
+### Choose the extra trust restriction deliberately
+
+Pinning adds operational restrictions to ordinary certificate and hostname validation; it does not replace them. Define the actual threat, participating networking stacks, installed-client lifetime and recovery path before opting in. Android cautions about the outage risk when server identities change. [Android TLS guidance](https://developer.android.com/privacy-and-security/security-ssl) and [Network Security Configuration](https://developer.android.com/privacy-and-security/security-config).
+
+<!-- @before 6. The Kill Switch (Pragmatic, Controversial) :: staff -->
+### A recovery channel has its own trust boundary
+
+A remotely fetched flag cannot arrive through the very channel that obsolete pins block. An independent recovery mechanism still needs authentication and downgrade resistance. Do not convert a pin mismatch into disabled TLS validation or assume one configuration controls every stack.

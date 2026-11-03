@@ -277,5 +277,22 @@
     "source_pr": 77,
     "scope": "Complete guided tree: exact approved index and all 8 chapters.",
     "method": "Exact git show bytes from approved combined main; SHA-256 over raw bytes."
+  },
+  "security_sha256": {
+    "security.md": "ecfa10623609395155b8dfd19e09e09a16ec19e75f576f1c53ee2345a8d41307",
+    "security/privacy-gdpr-data-residency.md": "35c352c8dcc5bb3dc7b1239f04d19e4472961bda92ca51b6a2b4dfbd85404f3f",
+    "security/privacy-sandbox.md": "d2e5e3eb87955beddc09cdf910e24268ff1e1ab19508f9311cb8b8c0354b60f4",
+    "security/auth-on-mobile.md": "8e0581163a58ca1f22d29da3080719e38d21c815a6e846ea0f120bf352716357",
+    "security/secure-storage-on-android.md": "6cbe838fec1173fddb05cc9c070b7bac8582ecc711615e9e133ffbaef6ef1f82",
+    "security/key-management.md": "bf809f7ea4a9f9044c22591e75feb5a0fc1e2f96cce7c172cad1660b689fc6e1",
+    "security/certificate-pinning.md": "4f4f5fc4812a94895ebae42335321530ec8fee359331e4775e852abf6cf07373",
+    "security/attestation.md": "058f9f16f2778f0057e7278dbeacf36488006ddb50b9775a6df10bee7d5af646"
+  },
+  "security_provenance": {
+    "repository": "https://github.com/swarnsingh/android-staff-engineer-playbook",
+    "commit": "fb8354edb079e901edf18710ca9388a124712a5b",
+    "source_pr": 78,
+    "scope": "Complete guided tree: exact approved index and all 7 chapters.",
+    "method": "Exact git show bytes from approved combined main; SHA-256 over raw bytes."
   }
 }

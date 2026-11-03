@@ -1,0 +1,29 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">A roadmap relies on an advertising API whose official lifecycle status changes before the app ships. The architectural ideas remain useful, but the release plan now needs an exit path.</p>
+
+<!-- @before 2. Status and Planning Implications :: guide -->
+### Keep the status date with the claim
+
+The official page dated 14 August 2026 lists the Android Sandbox APIs as scheduled for phaseout. That is different from asserting every supported installation has already lost them. Check the relevant API’s release status when scheduling migration, and keep privacy duties separate from that dependency’s lifecycle. [Official status](https://privacysandbox.google.com/overview/status).
+
+<!-- @before 4. The Staff-Level Lesson: Platform Bets :: staff -->
+### Retain ownership outside the vendor adapter
+
+Keep event meaning, purpose controls, stored-data retention and migration decisions under an application owner. Replacing an advertising integration must not quietly widen collection or reinterpret old records. No explanation of the vendor’s commercial motives is inferred from the status list.
+
+<!-- @before 2. Status and Planning Implications :: visual -->
+### A lifecycle update changes the plan, not the underlying duties
+
+```mermaid
+flowchart TB
+ h["Historical Android APIs Program and integration history"]
+ s["Official status 14 August 2026: phaseout"]
+ i["Dependency inventory Features, cohorts, retained data"]
+ m["Migration owner Measured replacement and exit"]
+ h -->|"later lifecycle update"| s
+ s -->|"review exposed dependencies"| i
+ i -->|"define compatibility and exit"| m
+```
+
+The Android APIs’ scheduled phaseout is a dated planning input. It does not establish universal removal or erase the application’s privacy and compatibility obligations.

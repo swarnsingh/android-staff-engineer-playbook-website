@@ -1,0 +1,329 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">The backend receives a genuine-looking device verdict beside a different action than the token was requested for. A positive device signal cannot establish that these parameters belong to this piece of evidence.</p>
+
+<!-- @before Server Verification Contract :: animation -->
+### Bind the verified details to the received action
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="Evidence for A is not evidence for B">
+<h3>Walkthrough 1. Evidence for A is not evidence for B</h3><p class="pb-sub">Illustrative Standard request-hash check under an action-bound endpoint policy. No real token service is called.</p>
+<div class="pb-seg" role="group" aria-label="Comparison policy"><button type="button" data-mode="bound" aria-pressed="true">Validate action binding</button><button type="button" data-mode="verdict" aria-pressed="false">Trust verdict alone</button></div>
+<div class="pb-paper" role="region" aria-label="Illustrative system; scroll if needed" tabindex="0"><svg class="pb-svg" role="img" aria-label="Evidence for A is not evidence for B; every step is available as text below"></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div><div class="pb-caption" aria-live="polite"><span class="pb-count"></span><p></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" hidden aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">
+{
+  "illustrated": true,
+  "playback": "manual",
+  "layout": "three-peers",
+  "owners": {
+    "a": "UNTRUSTED CLIENT",
+    "b": "GOOGLE INTEGRITY",
+    "c": "SERVER POLICY"
+  },
+  "nodes": [
+    {
+      "id": "a",
+      "label": "App",
+      "art": {
+        "kind": "phone",
+        "role": "client"
+      }
+    },
+    {
+      "id": "b",
+      "label": "Integrity",
+      "art": {
+        "kind": "server",
+        "role": "runtime"
+      }
+    },
+    {
+      "id": "c",
+      "label": "Backend",
+      "art": {
+        "kind": "server",
+        "role": "runtime"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "ab",
+      "from": "a",
+      "to": "b",
+      "label": "hash A"
+    },
+    {
+      "id": "ba",
+      "from": "b",
+      "to": "a",
+      "label": "token"
+    },
+    {
+      "id": "ac",
+      "from": "a",
+      "to": "c",
+      "label": "action B"
+    },
+    {
+      "id": "cb",
+      "from": "c",
+      "to": "b",
+      "label": "decode"
+    },
+    {
+      "id": "bc",
+      "from": "b",
+      "to": "c",
+      "label": "details"
+    }
+  ],
+  "modes": {
+    "bound": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "prepares A"
+          ],
+          "b": [
+            "",
+            "ready"
+          ],
+          "c": [
+            "",
+            "bind action"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Start",
+          "caption": "The Standard provider is prepared. The app plans action A; the endpoint requires evidence bound to that action.",
+          "packets": []
+        },
+        {
+          "label": "Prepare",
+          "caption": "This endpoint requires request-bound evidence. The app obtains a Standard token for canonical action A.",
+          "packets": [
+            {
+              "edge": "ab",
+              "label": "hash A",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "ba",
+              "label": "A token",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-done",
+                "hash: action A"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Substitute",
+          "caption": "The app submits different action B with A’s token. Authentication alone does not make that evidence match.",
+          "packets": [
+            {
+              "edge": "ac",
+              "label": "B + A token",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-warn",
+                "submits B"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Decode",
+          "caption": "The backend decodes the token and receives verified request details for A.",
+          "packets": [
+            {
+              "edge": "cb",
+              "label": "decode token",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "bc",
+              "label": "hash A",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-active",
+                "verified hash A"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Bind",
+          "caption": "The backend recomputes B’s canonical hash. It differs from A, so the required action binding fails.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-done",
+                "B rejected"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Authorize",
+          "caption": "Request fresh correctly bound evidence if policy permits, then enforce authorization and idempotency independently.",
+          "packets": []
+        }
+      ]
+    },
+    "verdict": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "prepares A"
+          ],
+          "b": [
+            "",
+            "ready"
+          ],
+          "c": [
+            "",
+            "bind action"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Start",
+          "caption": "The Standard provider is prepared. The app plans action A; the endpoint requires evidence bound to that action.",
+          "packets": []
+        },
+        {
+          "label": "Prepare",
+          "caption": "This endpoint requires request-bound evidence. The app obtains a Standard token for canonical action A.",
+          "packets": [
+            {
+              "edge": "ab",
+              "label": "hash A",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "ba",
+              "label": "A token",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-done",
+                "hash: action A"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Substitute",
+          "caption": "The app submits different action B with A’s token. Authentication alone does not make that evidence match.",
+          "packets": [
+            {
+              "edge": "ac",
+              "label": "B + A token",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-warn",
+                "submits B"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Decode",
+          "caption": "The backend decodes the token and receives verified request details for A.",
+          "packets": [
+            {
+              "edge": "cb",
+              "label": "decode token",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "bc",
+              "label": "hash A",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-active",
+                "verified hash A"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Bind",
+          "caption": "Checking only a positive device verdict skips the A-versus-B mismatch. The required evidence policy is bypassed.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-warn",
+                "B wrongly accepted"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Authorize",
+          "caption": "A device signal was treated as a reusable action grant. Neither authorization nor request binding follows from that signal.",
+          "packets": []
+        }
+      ]
+    }
+  },
+  "stepNavigation": "select",
+  "compareAtCurrentStep": true
+}
+</script>
+</section>
+
+<!-- @before Which Evidence Fits the Action? :: guide -->
+### A token and an enrolled key answer different questions
+
+Standard and Classic have different request-binding and replay contracts. A key-attestation chain describes an enrolled key and device properties at that assessment; it is not perpetual device health or proof of human intent. Keep account authorization, freshness, replay defense and business idempotency explicit. [Standard](https://developer.android.com/google/play/integrity/standard), [Classic](https://developer.android.com/google/play/integrity/classic) and [key attestation](https://developer.android.com/privacy-and-security/security-key-attestation).
+
+<!-- @before Keystore Key Attestation :: staff -->
+### Trust roots and verification belong off device
+
+Validate the challenge, owner binding, certificate path, documented security level and revocation against the maintained trusted-root set. A client-supplied root is not a trust anchor merely because it signs the rest of the chain. Follow the current official root guidance rather than freezing one certificate into a timeless example.

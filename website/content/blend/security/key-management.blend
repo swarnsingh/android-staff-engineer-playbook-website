@@ -1,0 +1,13 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">The build hides a vendor credential in generated code. The installed APK still has everything needed to use it. Moving the string into another client-side file changes its location, not its owner.</p>
+
+<!-- @before 2. Build-Time Constants vs Runtime Secrets :: guide -->
+### Classify the credential before protecting it
+
+A public client identifier, a restricted API key, a device-generated private key and a server secret have different contracts. An APK cannot keep an embedded shared secret from the person controlling that installation. Use the provider’s intended public-client restrictions, or retain the service secret on a trusted server. [Android hardcoded-secret risks](https://developer.android.com/privacy-and-security/risks/hardcoded-cryptographic-secrets).
+
+<!-- @before 6. The Backend Proxy Pattern (For Third-Party API Keys) :: staff -->
+### The proxy must authorize the requested operation
+
+Keeping the vendor credential on the backend prevents shipping it with the app. It does not make an unrestricted proxy safe: validate caller, resource and allowed operation, bound abuse, and rotate credentials under a named server owner. A device Keystore key protects a different identity and lifetime.
