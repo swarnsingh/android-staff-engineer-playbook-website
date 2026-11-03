@@ -5,6 +5,13 @@ window.__runAudit = async (pages, widths = [320, 390, 768, 1181, 1280, 1439, 144
     const output = document.getElementById('qa-results');
     if (output) output.textContent = JSON.stringify(window.__R, null, 2);
   };
+  const readiness = (frame, href) => {
+    const doc=frame.contentDocument,win=frame.contentWindow;
+    return {expectedRoute:href,route:doc?.documentElement?.dataset.qaRoute,
+      readyState:doc?.readyState,source:doc?.body?.dataset.source,
+      inspector:typeof win?.__inspectOriginalContent,
+      resourceErrors:win?.__qaResourceErrors||[]};
+  };
   try {
     const diag = await (await fetch('/coverage/diagram-sources.json')).json();
     const units = await (await fetch('/coverage/original-units.json')).json();
@@ -22,8 +29,13 @@ window.__runAudit = async (pages, widths = [320, 390, 768, 1181, 1280, 1439, 144
         await new Promise((resolve,reject)=>{
           const start=Date.now();
           function poll(){
-            const doc=frame.contentDocument;
-            if(doc?.readyState==='complete' && doc.documentElement.dataset.qaRoute===href && doc.body?.dataset.source && typeof frame.contentWindow.__inspectOriginalContent==='function')return resolve();
+            const state=readiness(frame,href);
+            if(state.route===href && state.readyState==='complete'){
+              if(state.resourceErrors.length)return reject(new Error('Page resources failed: '+state.resourceErrors.map(r=>r.url).join(', ')));
+              if(!state.source)return reject(new Error('Page source identity missing'));
+              if(state.inspector!=='function')return reject(new Error('QA inspector missing'));
+              return resolve();
+            }
             if(Date.now()-start>30000)return reject(new Error('Page readiness timed out'));
             setTimeout(poll,50);
           }
@@ -206,7 +218,7 @@ window.__runAudit = async (pages, widths = [320, 390, 768, 1181, 1280, 1439, 144
         const answerLabels = answers.every(item=>item.closest('.qa-answer-pair')?.querySelector('.qa-answer-label'));
         window.__R.pages.push({href,preservation,steppers,ready,scenes,sceneReady,runtimeErrors,sceneChecks,illustratedChecks,codeChecks,layouts,qaSeparation,answerLabels,ok:runtimeErrors.length===0&&codeChecks.every(c=>c.ok)&&illustratedChecks.every(c=>c.ok)&&sceneChecks.every(c=>c.ok)&&preservation.problems.length===0&&steppers===ready&&scenes===sceneReady&&qaSeparation&&answerLabels&&layouts.every(l=>!l.overflow&&!l.clipped&&!l.smallLabels.length)});
       } catch(error) {
-        window.__R.pages.push({href,ok:false,error:String(error),loadState:frame.contentDocument?.readyState,title:frame.contentDocument?.title,runtimeErrors:frame.contentWindow?.__qaErrors});
+        window.__R.pages.push({href,ok:false,error:String(error),loadState:frame.contentDocument?.readyState,title:frame.contentDocument?.title,runtimeErrors:frame.contentWindow?.__qaErrors,readiness:readiness(frame,href)});
       } finally {
         show();
       }

@@ -1,6 +1,7 @@
 // Disposable regression fixtures for the read-only question/answer audit.
 window.runQAFixtures = async () => {
   const report={done:false,ok:false,checks:[]},out=document.querySelector('#qa-fixture-results'),frame=document.querySelector('iframe');
+  const inspector='<script>'+window.__qaInspectorSource+'</script>';
   const save=()=>out.textContent=JSON.stringify(report,null,2);
   const hash=async text=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text.replace(/\s+/g,' ').trim())))].map(b=>b.toString(16).padStart(2,'0')).join('');
   const manifest={fixture:[
@@ -20,7 +21,7 @@ window.runQAFixtures = async () => {
   const b='<li data-original-section="section-answer-key" data-original-answer-index="2"><p>Second answer.</p><pre><code>val n = 1</code></pre></li>';
   function documentHTML(first=a,second=b){
     const question=(n,text,answer)=>'<li data-qa-question-index="'+n+'">'+text+'<div class="qa-answer-pair"><h3 class="qa-answer-label">Answer</h3><ol start="'+n+'">'+answer+'</ol></div></li>';
-    return '<!doctype html><html><head><meta charset="utf-8"><title>QA fixture</title></head><body data-source="fixture"><main><div class="lesson-hero"><h1>Fixture</h1></div><section id="panel-qa"><section id="section-probing-questions" data-source-order="1"><h2>Questions</h2><section id="section-answer-key" data-source-order="2"><h2>Answer Key</h2><ol hidden data-qa-answer-slot="section-answer-key"></ol></section><ol>'+question(1,'First question?',first)+question(2,'Second question?',second)+'</ol></section></section></main><script src="/fx/audit.js"></script></body></html>';
+    return '<!doctype html><html><head><meta charset="utf-8"><title>QA fixture</title></head><body data-source="fixture"><main><div class="lesson-hero"><h1>Fixture</h1></div><section id="panel-qa"><section id="section-probing-questions" data-source-order="1"><h2>Questions</h2><section id="section-answer-key" data-source-order="2"><h2>Answer Key</h2><ol hidden data-qa-answer-slot="section-answer-key"></ol></section><ol>'+question(1,'First question?',first)+question(2,'Second question?',second)+'</ol></section></section></main>'+inspector+'</body></html>';
   }
   const base=documentHTML();
   const cases=[
@@ -48,7 +49,7 @@ window.runQAFixtures = async () => {
     // original missing/repeated/hidden-content and failed-diagram detections.
     const legacy=await (await fetch('/fixtures/cases.json')).json();
     for(const fixture of legacy){
-      const html=(await (await fetch('/fixtures/'+fixture.file)).text()).replace('</body>','<script src="/fx/audit.js"></script></body>');
+      const html=(await (await fetch('/fixtures/'+fixture.file)).text()).replace('</body>',inspector+'</body>');
       const loaded=new Promise(r=>frame.onload=r);frame.srcdoc=html;await loaded;
       const result=await frame.contentWindow.__inspectOriginalContent(fixture.diagrams,fixture.units,'content');
       const actual=result.problems.length===0;
