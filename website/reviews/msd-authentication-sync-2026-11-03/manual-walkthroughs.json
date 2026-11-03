@@ -1,0 +1,2684 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "name": "mobile-system-design/authentication/ has two comparable runs",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ starts with a readable precondition before packet travel",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 7 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 7 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 7 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 8 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 8 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 375 step 8 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 7 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 7 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 7 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 8 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 8 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 375 step 8 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ 375 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 7 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 7 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 7 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 8 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 8 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1024 step 8 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 7 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 7 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 7 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 8 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 8 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1024 step 8 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ 1024 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 7 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 7 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 7 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 8 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 8 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single 1280 step 8 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ single shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 7 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 7 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 7 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 8 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 8 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent 1280 step 8 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ independent shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ 1280 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ comparison retains the selected step",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ 320px has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design/authentication/ static transcript retains every run",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design includes the expected walkthroughs",
+      "ok": true
+    },
+    {
+      "name": "mobile-system-design has no application console or runtime errors",
+      "ok": true
+    }
+  ],
+  "geometry": [
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 211.03411865234375,
+          "bottom": 274.70855712890625,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 331.30804443359375,
+          "bottom": 394.98248291015625,
+          "text": "Sessionvault T1 / R1"
+        },
+        {
+          "top": 451.5819396972656,
+          "bottom": 515.25634765625,
+          "text": "IdentityR1 current"
+        },
+        {
+          "top": 562.40625,
+          "bottom": 696.40625,
+          "text": "Step 1 of 8Two bodyless reads received 401 for T1. Both retain this login’s objects; the resource API is outside this compact scene."
+        },
+        {
+          "top": 706.40625,
+          "bottom": 812.40625,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 211.03411865234375,
+          "bottom": 274.70855712890625,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 331.30804443359375,
+          "bottom": 394.98248291015625,
+          "text": "SessionA owns; B waits"
+        },
+        {
+          "top": 451.5819396972656,
+          "bottom": 515.25634765625,
+          "text": "IdentityR1 current"
+        },
+        {
+          "top": 562.40625,
+          "bottom": 644.40625,
+          "text": "Step 2 of 8A owns the shared mutex; B waits and may cancel its wait."
+        },
+        {
+          "top": 654.40625,
+          "bottom": 760.40625,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 203.03411865234375,
+          "bottom": 266.70855712890625,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 323.30804443359375,
+          "bottom": 386.98248291015625,
+          "text": "SessionA owns; B waits"
+        },
+        {
+          "top": 443.5819396972656,
+          "bottom": 507.2563781738281,
+          "text": "Identityrotating R1"
+        },
+        {
+          "top": 554.40625,
+          "bottom": 688.40625,
+          "text": "Step 3 of 8A starts refresh R1. If its caller cancels now, bounded rotation and atomic commit still finish before cancellation propagates."
+        },
+        {
+          "top": 698.40625,
+          "bottom": 804.40625,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 203.03411865234375,
+          "bottom": 266.70855712890625,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 323.30804443359375,
+          "bottom": 386.98248291015625,
+          "text": "SessionA owns; B waits"
+        },
+        {
+          "top": 443.5819396972656,
+          "bottom": 507.2563781738281,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 554.40625,
+          "bottom": 688.40625,
+          "text": "Step 4 of 8Assume this provider revokes the token family on rotated-token reuse. A’s refresh returns T2/R2; R1 is now used."
+        },
+        {
+          "top": 698.40625,
+          "bottom": 804.40625,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 203.03411865234375,
+          "bottom": 266.70855712890625,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 323.30804443359375,
+          "bottom": 386.98248291015625,
+          "text": "Sessionvault T2 / R2"
+        },
+        {
+          "top": 443.5819396972656,
+          "bottom": 507.2563781738281,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 554.40625,
+          "bottom": 688.40625,
+          "text": "Step 5 of 8The session atomically commits T2/R2 before A’s cancellation is propagated. A retired vault would reject replacement."
+        },
+        {
+          "top": 698.40625,
+          "bottom": 804.40625,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 375,
+      "height": 812,
+      "step": 6,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 203.03411865234375,
+          "bottom": 266.70855712890625,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 323.30804443359375,
+          "bottom": 386.98248291015625,
+          "text": "SessionT2; no second POST"
+        },
+        {
+          "top": 443.5819396972656,
+          "bottom": 507.2563781738281,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 554.40625,
+          "bottom": 662.40625,
+          "text": "Step 6 of 8B re-reads the vault under the same mutex. T2 differs from failed T1, so B makes no second token request."
+        },
+        {
+          "top": 672.40625,
+          "bottom": 778.40625,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 375,
+      "height": 812,
+      "step": 7,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 203.03411865234375,
+          "bottom": 266.70855712890625,
+          "text": "Callers A/BB uses T2"
+        },
+        {
+          "top": 323.30804443359375,
+          "bottom": 386.98248291015625,
+          "text": "SessionT2; no second POST"
+        },
+        {
+          "top": 443.5819396972656,
+          "bottom": 507.2563781738281,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 554.40625,
+          "bottom": 662.40625,
+          "text": "Step 7 of 8B can retry its bodyless read once with T2. Writes remain caller-owned; the scene does not replay them."
+        },
+        {
+          "top": 672.40625,
+          "bottom": 778.40625,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 375,
+      "height": 812,
+      "step": 8,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 203.03411865234375,
+          "bottom": 266.70855712890625,
+          "text": "Callers A/BB uses T2"
+        },
+        {
+          "top": 323.30804443359375,
+          "bottom": 386.98248291015625,
+          "text": "SessionT2; no second POST"
+        },
+        {
+          "top": 443.5819396972656,
+          "bottom": 507.2563781738281,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 554.40625,
+          "bottom": 688.40625,
+          "text": "Step 8 of 8Mutex and NonCancellable cannot protect process death, another process or ambiguous rotation. Recovery follows the provider’s policy."
+        },
+        {
+          "top": 698.40625,
+          "bottom": 804.40625,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 211.03411865234375,
+          "bottom": 274.70855712890625,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 331.30804443359375,
+          "bottom": 394.98248291015625,
+          "text": "Sessionvault T1 / R1"
+        },
+        {
+          "top": 451.5819396972656,
+          "bottom": 515.25634765625,
+          "text": "IdentityR1 current"
+        },
+        {
+          "top": 562.40625,
+          "bottom": 696.40625,
+          "text": "Step 1 of 8Two bodyless reads received 401 for T1. Both retain this login’s objects; the resource API is outside this compact scene."
+        },
+        {
+          "top": 706.40625,
+          "bottom": 812.40625,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 211.03411865234375,
+          "bottom": 274.70855712890625,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 331.30804443359375,
+          "bottom": 394.98248291015625,
+          "text": "Sessionindependent owners"
+        },
+        {
+          "top": 451.5819396972656,
+          "bottom": 515.25634765625,
+          "text": "IdentityR1 current"
+        },
+        {
+          "top": 562.40625,
+          "bottom": 670.40625,
+          "text": "Step 2 of 8A and B use independent refresh owners. Neither serializes its decision against the other."
+        },
+        {
+          "top": 680.40625,
+          "bottom": 786.40625,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 203.03411865234375,
+          "bottom": 266.70855712890625,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 323.30804443359375,
+          "bottom": 386.98248291015625,
+          "text": "Sessionindependent owners"
+        },
+        {
+          "top": 443.5819396972656,
+          "bottom": 507.2563781738281,
+          "text": "Identityrotating R1"
+        },
+        {
+          "top": 554.40625,
+          "bottom": 688.40625,
+          "text": "Step 3 of 8A starts refresh R1. If its caller cancels now, bounded rotation and atomic commit still finish before cancellation propagates."
+        },
+        {
+          "top": 698.40625,
+          "bottom": 804.40625,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 203.03411865234375,
+          "bottom": 266.70855712890625,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 323.30804443359375,
+          "bottom": 386.98248291015625,
+          "text": "Sessionindependent owners"
+        },
+        {
+          "top": 443.5819396972656,
+          "bottom": 507.2563781738281,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 554.40625,
+          "bottom": 688.40625,
+          "text": "Step 4 of 8Assume this provider revokes the token family on rotated-token reuse. A’s refresh returns T2/R2; R1 is now used."
+        },
+        {
+          "top": 698.40625,
+          "bottom": 804.40625,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 203.03411865234375,
+          "bottom": 266.70855712890625,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 323.30804443359375,
+          "bottom": 386.98248291015625,
+          "text": "Sessionvault T2 / R2"
+        },
+        {
+          "top": 443.5819396972656,
+          "bottom": 507.2563781738281,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 554.40625,
+          "bottom": 688.40625,
+          "text": "Step 5 of 8The session atomically commits T2/R2 before A’s cancellation is propagated. A retired vault would reject replacement."
+        },
+        {
+          "top": 698.40625,
+          "bottom": 804.40625,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 375,
+      "height": 812,
+      "step": 6,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 203.03411865234375,
+          "bottom": 266.70855712890625,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 323.30804443359375,
+          "bottom": 386.98248291015625,
+          "text": "SessionR1 reuse rejected"
+        },
+        {
+          "top": 443.5819396972656,
+          "bottom": 507.2563781738281,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 554.40625,
+          "bottom": 662.40625,
+          "text": "Step 6 of 8B’s independent owner sends its captured R1 after rotation; this illustrative provider rejects reuse."
+        },
+        {
+          "top": 672.40625,
+          "bottom": 778.40625,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 375,
+      "height": 812,
+      "step": 7,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 203.03411865234375,
+          "bottom": 266.70855712890625,
+          "text": "Callers A/Breauth required"
+        },
+        {
+          "top": 323.30804443359375,
+          "bottom": 386.98248291015625,
+          "text": "SessionR1 reuse rejected"
+        },
+        {
+          "top": 443.5819396972656,
+          "bottom": 507.2563781738281,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 554.40625,
+          "bottom": 688.40625,
+          "text": "Step 7 of 8Confirmed terminal rejection retires this captured login. Under this provider’s family-revocation policy, the user must reauthenticate."
+        },
+        {
+          "top": 698.40625,
+          "bottom": 804.40625,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 375,
+      "height": 812,
+      "step": 8,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 203.03411865234375,
+          "bottom": 266.70855712890625,
+          "text": "Callers A/Breauth required"
+        },
+        {
+          "top": 323.30804443359375,
+          "bottom": 386.98248291015625,
+          "text": "SessionR1 reuse rejected"
+        },
+        {
+          "top": 443.5819396972656,
+          "bottom": 507.2563781738281,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 554.40625,
+          "bottom": 688.40625,
+          "text": "Step 8 of 8Mutex and NonCancellable cannot protect process death, another process or ambiguous rotation. Recovery follows the provider’s policy."
+        },
+        {
+          "top": 698.40625,
+          "bottom": 804.40625,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 305.03125,
+          "bottom": 530.6312255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 305.03125,
+          "bottom": 530.6312255859375,
+          "text": "Sessionvault T1 / R1"
+        },
+        {
+          "top": 305.03125,
+          "bottom": 530.6312255859375,
+          "text": "IdentityR1 current"
+        },
+        {
+          "top": 658.03125,
+          "bottom": 714.03125,
+          "text": "Step 1 of 8Two bodyless reads received 401 for T1. Both retain this login’s objects; the resource API is outside this compact scene."
+        },
+        {
+          "top": 724.03125,
+          "bottom": 768.03125,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "SessionA owns; B waits"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "IdentityR1 current"
+        },
+        {
+          "top": 650.03125,
+          "bottom": 706.03125,
+          "text": "Step 2 of 8A owns the shared mutex; B waits and may cancel its wait."
+        },
+        {
+          "top": 716.03125,
+          "bottom": 760.03125,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "SessionA owns; B waits"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "Identityrotating R1"
+        },
+        {
+          "top": 650.03125,
+          "bottom": 706.03125,
+          "text": "Step 3 of 8A starts refresh R1. If its caller cancels now, bounded rotation and atomic commit still finish before cancellation propagates."
+        },
+        {
+          "top": 716.03125,
+          "bottom": 760.03125,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "SessionA owns; B waits"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 650.03125,
+          "bottom": 706.03125,
+          "text": "Step 4 of 8Assume this provider revokes the token family on rotated-token reuse. A’s refresh returns T2/R2; R1 is now used."
+        },
+        {
+          "top": 716.03125,
+          "bottom": 760.03125,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "Sessionvault T2 / R2"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 650.03125,
+          "bottom": 706.03125,
+          "text": "Step 5 of 8The session atomically commits T2/R2 before A’s cancellation is propagated. A retired vault would reject replacement."
+        },
+        {
+          "top": 716.03125,
+          "bottom": 760.03125,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 1024,
+      "height": 768,
+      "step": 6,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "SessionT2; no second POST"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 650.03125,
+          "bottom": 706.03125,
+          "text": "Step 6 of 8B re-reads the vault under the same mutex. T2 differs from failed T1, so B makes no second token request."
+        },
+        {
+          "top": 716.03125,
+          "bottom": 760.03125,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 1024,
+      "height": 768,
+      "step": 7,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "Callers A/BB uses T2"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "SessionT2; no second POST"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 650.03125,
+          "bottom": 706.03125,
+          "text": "Step 7 of 8B can retry its bodyless read once with T2. Writes remain caller-owned; the scene does not replay them."
+        },
+        {
+          "top": 716.03125,
+          "bottom": 760.03125,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 1024,
+      "height": 768,
+      "step": 8,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 271.03125,
+          "bottom": 496.6312561035156,
+          "text": "Callers A/BB uses T2"
+        },
+        {
+          "top": 271.03125,
+          "bottom": 496.6312561035156,
+          "text": "SessionT2; no second POST"
+        },
+        {
+          "top": 271.03125,
+          "bottom": 496.6312561035156,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 624.03125,
+          "bottom": 706.03125,
+          "text": "Step 8 of 8Mutex and NonCancellable cannot protect process death, another process or ambiguous rotation. Recovery follows the provider’s policy."
+        },
+        {
+          "top": 716.03125,
+          "bottom": 760.03125,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 305.03125,
+          "bottom": 530.6312255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 305.03125,
+          "bottom": 530.6312255859375,
+          "text": "Sessionvault T1 / R1"
+        },
+        {
+          "top": 305.03125,
+          "bottom": 530.6312255859375,
+          "text": "IdentityR1 current"
+        },
+        {
+          "top": 658.03125,
+          "bottom": 714.03125,
+          "text": "Step 1 of 8Two bodyless reads received 401 for T1. Both retain this login’s objects; the resource API is outside this compact scene."
+        },
+        {
+          "top": 724.03125,
+          "bottom": 768.03125,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "Sessionindependent owners"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "IdentityR1 current"
+        },
+        {
+          "top": 650.03125,
+          "bottom": 706.03125,
+          "text": "Step 2 of 8A and B use independent refresh owners. Neither serializes its decision against the other."
+        },
+        {
+          "top": 716.03125,
+          "bottom": 760.03125,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "Sessionindependent owners"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "Identityrotating R1"
+        },
+        {
+          "top": 650.03125,
+          "bottom": 706.03125,
+          "text": "Step 3 of 8A starts refresh R1. If its caller cancels now, bounded rotation and atomic commit still finish before cancellation propagates."
+        },
+        {
+          "top": 716.03125,
+          "bottom": 760.03125,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "Sessionindependent owners"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 650.03125,
+          "bottom": 706.03125,
+          "text": "Step 4 of 8Assume this provider revokes the token family on rotated-token reuse. A’s refresh returns T2/R2; R1 is now used."
+        },
+        {
+          "top": 716.03125,
+          "bottom": 760.03125,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "Sessionvault T2 / R2"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 650.03125,
+          "bottom": 706.03125,
+          "text": "Step 5 of 8The session atomically commits T2/R2 before A’s cancellation is propagated. A retired vault would reject replacement."
+        },
+        {
+          "top": 716.03125,
+          "bottom": 760.03125,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 1024,
+      "height": 768,
+      "step": 6,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "SessionR1 reuse rejected"
+        },
+        {
+          "top": 297.03125,
+          "bottom": 522.6312255859375,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 650.03125,
+          "bottom": 706.03125,
+          "text": "Step 6 of 8B’s independent owner sends its captured R1 after rotation; this illustrative provider rejects reuse."
+        },
+        {
+          "top": 716.03125,
+          "bottom": 760.03125,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 1024,
+      "height": 768,
+      "step": 7,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 271.03125,
+          "bottom": 496.6312561035156,
+          "text": "Callers A/Breauth required"
+        },
+        {
+          "top": 271.03125,
+          "bottom": 496.6312561035156,
+          "text": "SessionR1 reuse rejected"
+        },
+        {
+          "top": 271.03125,
+          "bottom": 496.6312561035156,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 624.03125,
+          "bottom": 706.03125,
+          "text": "Step 7 of 8Confirmed terminal rejection retires this captured login. Under this provider’s family-revocation policy, the user must reauthenticate."
+        },
+        {
+          "top": 716.03125,
+          "bottom": 760.03125,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 1024,
+      "height": 768,
+      "step": 8,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 271.03125,
+          "bottom": 496.6312561035156,
+          "text": "Callers A/Breauth required"
+        },
+        {
+          "top": 271.03125,
+          "bottom": 496.6312561035156,
+          "text": "SessionR1 reuse rejected"
+        },
+        {
+          "top": 271.03125,
+          "bottom": 496.6312561035156,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 624.03125,
+          "bottom": 706.03125,
+          "text": "Step 8 of 8Mutex and NonCancellable cannot protect process death, another process or ambiguous rotation. Recovery follows the provider’s policy."
+        },
+        {
+          "top": 716.03125,
+          "bottom": 760.03125,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 437.09375,
+          "bottom": 662.6937255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 437.09375,
+          "bottom": 662.6937255859375,
+          "text": "Sessionvault T1 / R1"
+        },
+        {
+          "top": 437.09375,
+          "bottom": 662.6937255859375,
+          "text": "IdentityR1 current"
+        },
+        {
+          "top": 790.09375,
+          "bottom": 846.09375,
+          "text": "Step 1 of 8Two bodyless reads received 401 for T1. Both retain this login’s objects; the resource API is outside this compact scene."
+        },
+        {
+          "top": 856.09375,
+          "bottom": 900.09375,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "SessionA owns; B waits"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "IdentityR1 current"
+        },
+        {
+          "top": 782.09375,
+          "bottom": 838.09375,
+          "text": "Step 2 of 8A owns the shared mutex; B waits and may cancel its wait."
+        },
+        {
+          "top": 848.09375,
+          "bottom": 892.09375,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "SessionA owns; B waits"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "Identityrotating R1"
+        },
+        {
+          "top": 782.09375,
+          "bottom": 838.09375,
+          "text": "Step 3 of 8A starts refresh R1. If its caller cancels now, bounded rotation and atomic commit still finish before cancellation propagates."
+        },
+        {
+          "top": 848.09375,
+          "bottom": 892.09375,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "SessionA owns; B waits"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 782.09375,
+          "bottom": 838.09375,
+          "text": "Step 4 of 8Assume this provider revokes the token family on rotated-token reuse. A’s refresh returns T2/R2; R1 is now used."
+        },
+        {
+          "top": 848.09375,
+          "bottom": 892.09375,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "Sessionvault T2 / R2"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 782.09375,
+          "bottom": 838.09375,
+          "text": "Step 5 of 8The session atomically commits T2/R2 before A’s cancellation is propagated. A retired vault would reject replacement."
+        },
+        {
+          "top": 848.09375,
+          "bottom": 892.09375,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 1280,
+      "height": 900,
+      "step": 6,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "SessionT2; no second POST"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 782.09375,
+          "bottom": 838.09375,
+          "text": "Step 6 of 8B re-reads the vault under the same mutex. T2 differs from failed T1, so B makes no second token request."
+        },
+        {
+          "top": 848.09375,
+          "bottom": 892.09375,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 1280,
+      "height": 900,
+      "step": 7,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "Callers A/BB uses T2"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "SessionT2; no second POST"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 782.09375,
+          "bottom": 838.09375,
+          "text": "Step 7 of 8B can retry its bodyless read once with T2. Writes remain caller-owned; the scene does not replay them."
+        },
+        {
+          "top": 848.09375,
+          "bottom": 892.09375,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "single",
+      "width": 1280,
+      "height": 900,
+      "step": 8,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 403.09375,
+          "bottom": 628.6937255859375,
+          "text": "Callers A/BB uses T2"
+        },
+        {
+          "top": 403.09375,
+          "bottom": 628.6937255859375,
+          "text": "SessionT2; no second POST"
+        },
+        {
+          "top": 403.09375,
+          "bottom": 628.6937255859375,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 756.09375,
+          "bottom": 838.09375,
+          "text": "Step 8 of 8Mutex and NonCancellable cannot protect process death, another process or ambiguous rotation. Recovery follows the provider’s policy."
+        },
+        {
+          "top": 848.09375,
+          "bottom": 892.09375,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 437.09375,
+          "bottom": 662.6937255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 437.09375,
+          "bottom": 662.6937255859375,
+          "text": "Sessionvault T1 / R1"
+        },
+        {
+          "top": 437.09375,
+          "bottom": 662.6937255859375,
+          "text": "IdentityR1 current"
+        },
+        {
+          "top": 790.09375,
+          "bottom": 846.09375,
+          "text": "Step 1 of 8Two bodyless reads received 401 for T1. Both retain this login’s objects; the resource API is outside this compact scene."
+        },
+        {
+          "top": 856.09375,
+          "bottom": 900.09375,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "Sessionindependent owners"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "IdentityR1 current"
+        },
+        {
+          "top": 782.09375,
+          "bottom": 838.09375,
+          "text": "Step 2 of 8A and B use independent refresh owners. Neither serializes its decision against the other."
+        },
+        {
+          "top": 848.09375,
+          "bottom": 892.09375,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "Sessionindependent owners"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "Identityrotating R1"
+        },
+        {
+          "top": 782.09375,
+          "bottom": 838.09375,
+          "text": "Step 3 of 8A starts refresh R1. If its caller cancels now, bounded rotation and atomic commit still finish before cancellation propagates."
+        },
+        {
+          "top": 848.09375,
+          "bottom": 892.09375,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "Sessionindependent owners"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 782.09375,
+          "bottom": 838.09375,
+          "text": "Step 4 of 8Assume this provider revokes the token family on rotated-token reuse. A’s refresh returns T2/R2; R1 is now used."
+        },
+        {
+          "top": 848.09375,
+          "bottom": 892.09375,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "Sessionvault T2 / R2"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 782.09375,
+          "bottom": 838.09375,
+          "text": "Step 5 of 8The session atomically commits T2/R2 before A’s cancellation is propagated. A retired vault would reject replacement."
+        },
+        {
+          "top": 848.09375,
+          "bottom": 892.09375,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 1280,
+      "height": 900,
+      "step": 6,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "Callers A/Btwo reads; 401 T1"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "SessionR1 reuse rejected"
+        },
+        {
+          "top": 429.09375,
+          "bottom": 654.6937255859375,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 782.09375,
+          "bottom": 838.09375,
+          "text": "Step 6 of 8B’s independent owner sends its captured R1 after rotation; this illustrative provider rejects reuse."
+        },
+        {
+          "top": 848.09375,
+          "bottom": 892.09375,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 1280,
+      "height": 900,
+      "step": 7,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 403.09375,
+          "bottom": 628.6937255859375,
+          "text": "Callers A/Breauth required"
+        },
+        {
+          "top": 403.09375,
+          "bottom": 628.6937255859375,
+          "text": "SessionR1 reuse rejected"
+        },
+        {
+          "top": 403.09375,
+          "bottom": 628.6937255859375,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 756.09375,
+          "bottom": 838.09375,
+          "text": "Step 7 of 8Confirmed terminal rejection retires this captured login. Under this provider’s family-revocation policy, the user must reauthenticate."
+        },
+        {
+          "top": 848.09375,
+          "bottom": 892.09375,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "mobile-system-design/authentication/",
+      "mode": "independent",
+      "width": 1280,
+      "height": 900,
+      "step": 8,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 403.09375,
+          "bottom": 628.6937255859375,
+          "text": "Callers A/Breauth required"
+        },
+        {
+          "top": 403.09375,
+          "bottom": 628.6937255859375,
+          "text": "SessionR1 reuse rejected"
+        },
+        {
+          "top": 403.09375,
+          "bottom": 628.6937255859375,
+          "text": "IdentityR1 used; R2 issued"
+        },
+        {
+          "top": 756.09375,
+          "bottom": 838.09375,
+          "text": "Step 8 of 8Mutex and NonCancellable cannot protect process death, another process or ambiguous rotation. Recovery follows the provider’s policy."
+        },
+        {
+          "top": 848.09375,
+          "bottom": 892.09375,
+          "text": "1 / 8 · Two 401s2 / 8 · Acquire3 / 8 · Rotate4 / 8 · Response5 / 8 · Commit6 / 8 · B resumes7 / 8 · Outcome8 / 8 · LimitsPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    }
+  ],
+  "pages": [
+    "mobile-system-design/authentication/"
+  ],
+  "errors": [],
+  "limits": "Headless Chromium; default reading size. Favicon 404 is excluded. No physical-device, network or service integration certification."
+}

@@ -182,7 +182,7 @@
     "mobile-system-design/accessibility.md": "2906b363798ab28e4e6a609726b7d64a1c8848a2161e639074c513d3e08517c0",
     "mobile-system-design/analytics-sdk.md": "454f4ff8f6f4da4c90334d8f15de6e9705959d84efde854fdab349397972faf0",
     "mobile-system-design/app-startup.md": "f3d39fc54acb76bf317db6eb31583a4612a61811b9e0695a57eb73256f23bdac",
-    "mobile-system-design/authentication.md": "1194729ed37167ae85f4f81335a3a70d8078fb9d7e565cdde9302061419abbdc",
+    "mobile-system-design/authentication.md": "38e8880d5271e8debb6a634e161e8928ba4e329b03b68c4f31a45d6af990d0ad",
     "mobile-system-design/caching-library.md": "bf456b84881d86d80b66cc9dad9dbf0db96bddff4c21202a1dd602ec263a6a0b",
     "mobile-system-design/chat-messaging.md": "eba9bc6f3192b2ea06a6b53d26787f41796aacbe9ecbe9b3ef837e90dbafe5af",
     "mobile-system-design/collaborative-editing.md": "7ec3271e0effd5e267af5d7b8803645a570d29bf7c53f262d03b3b37fba0e878",
@@ -236,7 +236,7 @@
     "release-engineering/crash-rate-gating.md": "b87f6838fb304c0e018ae2403f882b278ebccd7ebd55db83816b0aa3b8a9bd04",
     "milestones.md": "25df271211d99bb3d6c6ca984e092032f5fb316d5d8b2b7e7f3c19a9db74931b"
   },
-  "mobile-system-design_authentication_reference_commit": "8e152a8ead842de3c7f20ac6f88118d5b3e70fc6",
+  "mobile-system-design_authentication_reference_commit": "fb8354edb079e901edf18710ca9388a124712a5b",
   "observability_slos_reference_commit": "1f5085812813042fbacf6be7b26cbbef98d1627b",
   "distributed-systems_sha256": {
     "distributed-systems.md": "98794cf1a8aa1a610b99e918c96c2990ef6551127cd1a0eeb77cd44d7170715c",
@@ -294,5 +294,13 @@
     "source_pr": 78,
     "scope": "Complete guided tree: exact approved index and all 7 chapters.",
     "method": "Exact git show bytes from approved combined main; SHA-256 over raw bytes."
+  },
+  "file_provenance": {
+    "mobile-system-design/authentication.md": {
+      "repository": "https://github.com/swarnsingh/android-staff-engineer-playbook",
+      "commit": "fb8354edb079e901edf18710ca9388a124712a5b",
+      "source_pr": 80,
+      "scope": "Only the approved Authentication chapter; other MSD snapshots retain their recorded provenance."
+    }
   }
 }

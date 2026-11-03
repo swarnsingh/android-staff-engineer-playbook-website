@@ -74,7 +74,7 @@ The browser owns interactive authentication, PKCE binds the returned code to the
 Passkeys stay inside this browser-hosted IdP boundary. The IdP sends the WebAuthn challenge, the browser invokes the platform passkey provider, and the IdP verifies the signed assertion, RP ID, origin, and replay controls before continuing the OAuth flow. The Android app never handles WebAuthn challenge/assertion JSON; after successful passkey authentication it receives the same authorization-code redirect as every other IdP method. A native Credential Manager flow would require app-owned challenge and assertion endpoints plus relying-party verification and is a separate design.
 
 **Components on device:**
-- **`AuthBrowserClient`** — Chrome Custom Tabs for the IdP redirect.
+- **AppAuth integration** — launches the IdP authorization in an external browser and owns the pending attempt/result lifecycle.
 - **`TokenVault`** — encrypted at rest (Keystore-wrapped).
 - **`TokenRefresher`** — single-flight refresh coroutine.
 - **`SessionAuthInterceptor`** — adds `Authorization: Bearer …` and handles 401s.
@@ -143,7 +143,7 @@ token=…&token_type_hint=refresh_token
 ```mermaid
 flowchart LR
     UI["Compose UI"] --> VM["AuthViewModel"] --> Repo["AuthRepository"]
-    Repo --> Browser["AuthBrowserClient<br/>Custom Tabs"]
+    Repo --> Browser["AppAuth integration<br/>External browser"]
     Repo --> IdP["IdP API<br/>token + revoke"]
     Repo --> Vault["TokenVault<br/>Keystore-wrapped"]
 
@@ -211,29 +211,23 @@ Persist only through the session vault's atomic operations, using a versioned `I
 
 ### Login (Authorization Code + PKCE)
 
+Use a maintained native OAuth/OIDC library such as [AppAuth-Android](https://github.com/openid/AppAuth-Android), with an external browser and its completion/cancellation flow. The request core below uses AppAuth; it is not a complete Activity or process-restoration implementation.
+
 ```kotlin
-class AuthBrowserClient @Inject constructor(...) {
-    suspend fun login(): Tokens = suspendCancellableCoroutine { cont ->
-        val verifier = generatePkceVerifier()
-        val challenge = sha256Base64Url(verifier)
-        val state = ByteArray(16).also(SecureRandom()::nextBytes).base64Url()
-        verifierStore.put(state, verifier)
-        val authUri = Uri.parse(idp.authorizeEndpoint).buildUpon()
-            .appendQueryParameter("response_type", "code")
-            .appendQueryParameter("client_id", clientId)
-            .appendQueryParameter("redirect_uri", REDIRECT_URI)
-            .appendQueryParameter("code_challenge", challenge)
-            .appendQueryParameter("code_challenge_method", "S256")
-            .appendQueryParameter("scope", "openid profile offline_access")
-            .appendQueryParameter("state", state)
-            .build()
-        CustomTabsIntent.Builder().build().launchUrl(activity, authUri)
-        // Callback resumes via redirect handling Activity
-    }
-}
+fun authorizationRequest(
+    configuration: AuthorizationServiceConfiguration,
+    clientId: String,
+    registeredRedirect: Uri,
+): AuthorizationRequest = AuthorizationRequest.Builder(
+    configuration, clientId, ResponseTypeValues.CODE, registeredRedirect,
+).setScope("openid profile offline_access").build()
 ```
 
-The redirect lands in an Activity registered for the verified App Link `https://auth.example.com/callback` (a claimed `https` redirect, RFC 8252 §7.2). It extracts `code`, validates `state`, exchanges for tokens, and resumes the suspended coroutine. If you cannot host an App Link, use a private-use scheme based on a reverse domain you control, such as `com.example.app:/oauth2redirect` (RFC 8252 §7.1).
+AppAuth generates state and PKCE values for this request. Persist one bounded pending attempt before browser launch using its documented request serialization and result flow. The application owns expiry, cancellation and recovery after process recreation; a raw suspended Activity continuation is not durable login state.
+
+For both successful and error callbacks, validate the exact registered scheme/host/path, issuer and pending attempt, including state. Apply the same checks on cold launch and `onNewIntent`, consume the attempt once, and reject duplicate, expired, cancelled or superseded results. Exchange only against the configured issuer's token endpoint. For OIDC, apply the library's ID-token/nonce validation and the provider's documented requirements. Admit tokens only while that attempt remains current, so an old callback cannot restore a cancelled login or replace a newer account.
+
+Prefer the registered verified App Link `https://auth.example.com/callback` when the provider supports it (RFC 8252 §7.2). Domain verification does not replace callback validation. A private-use scheme such as `com.example.app:/oauth2redirect` can be intercepted and still needs PKCE and exact response validation (RFC 8252 §7.1). See the [canonical login integration contract](../security/auth-on-mobile.md#2-oauth-20-authorization-code--pkce-the-login).
 
 ### Single-flight refresh
 
@@ -334,19 +328,11 @@ Use the HTTPS scheme/host/port predicate from [Retrofit and OkHttp](../android/n
 
 ### Biometric re-auth (sensitive actions)
 
-For sensitive actions (large transfer, password change), require biometric *and* recent re-auth:
+A local prompt or `lastReauthAt` timestamp can gate UI, but cannot authorize a server-side transfer or password change. For a product that requires biometric-bound proof, use an enrolled Keystore key with the appropriate per-use authentication policy and a `BiometricPrompt.CryptoObject`; a prompt result alone is not cryptographic action binding.
 
-```kotlin
-suspend fun guardSensitiveAction(activity: FragmentActivity, vault: TokenVault): Boolean {
-    if (vault.load() == null) return false
-    val lastReauth = vault.lastReauthAt()
-    if (lastReauth > 0 && clock.now() - lastReauth in 0 until 5.minutes.inWholeMilliseconds) return true
-    val ok = biometric.require(activity, "Confirm it's you")
-    return ok is BiometricResult.Ok && vault.recordReauthIfActive(clock.now())
-}
-```
+The server issues a fresh challenge bound to the authenticated session, action ID, endpoint and canonical parameters. The client signs those bytes after authentication and submits the proof. The backend verifies the enrolled key and binding and atomically consumes the challenge with authorization/durable operation creation; uncertain retries return the recorded outcome. A server-issued recent-auth grant, if supported, needs server-enforced scope, expiry and replay policy rather than a client clock decision.
 
-The passed vault belongs to the initiating session. A late prompt result cannot record re-auth in a different account or restore old tokens. This is a local UX gate; sensitive server actions still enforce their own authorization and any required step-up proof.
+Use the [canonical step-up contract](../security/auth-on-mobile.md#6-biometric-step-up) and [key enrollment guidance](../security/attestation.md) for implementation. Cancellation, no enrollment, invalidated keys and account changes fail closed or enter a separately authenticated recovery flow. Do not fall back to an unverified local timestamp or log proof material.
 
 ### Sign out
 
@@ -400,9 +386,9 @@ Then attempt bounded server revocation using the captured refresh token on the d
 
 | Option | Verdict |
 |---|---|
-| **Chrome Custom Tabs** | Pick — shared cookies, OS-style |
+| **External browser via AppAuth** | Pick — prefer a compatible browser with Custom Tabs; other supported browsers remain valid |
 | WebView | Don't — the host app can read credentials and cookies (RFC 8252 §8.12), and there is no SSO with the browser |
-| External Chrome | OK but loses styling control |
+| Standalone external browser | Supported fallback; browser choice and cookie/SSO behavior depend on the selected browser |
 
 ### Biometric
 
@@ -424,7 +410,7 @@ Then attempt bounded server revocation using the captured refresh token on the d
 - **Sign-out hygiene.** Invalidate the captured login before network revocation; cancel and clear its calls, work and namespaced data. Browser SSO cookies require a separate IdP logout flow; an app cannot promise to clear the browser cookie jar.
 - **Multi-account.** If supported, bind a fresh vault/client to each login session, including re-login to the same account; namespace account data and reject retired-session results.
 - **Backups.** Exclude token-vault ciphertext and metadata from cloud backup/device transfer, or deliberately disable backup when product requirements allow it.
-- **Phishing.** Don't render IdP UI in WebView. Custom Tabs only.
+- **Phishing.** Keep IdP login in an external browser, preferably a compatible Custom Tab through AppAuth. Do not use an embedded WebView; Chrome and Custom Tabs are not mandatory.
 
 ---
 
@@ -443,7 +429,7 @@ Then attempt bounded server revocation using the captured refresh token on the d
 > That is the stricter option: keep the short-lived access token in memory and persist only the refresh token, paying one refresh call after process death. This design persists both in the Keystore-backed vault so a relaunched app can call the API immediately; the access token's short lifetime and server-side revocation limit the extra exposure.
 
 > **Q: How is the redirect deep link secured?**
-> The redirect uses `https://auth.example.com/callback` with App Links + Digital Asset Links — verified domain, not interceptable by a malicious app installed alongside. PKCE is a second layer of defense.
+> The redirect uses `https://auth.example.com/callback` with App Links + Digital Asset Links, plus exact callback/issuer/state validation and single-use pending-attempt handling. Prefer a verified domain, but do not treat routing alone as authorization. PKCE binds the code exchange to the initiating client.
 
 > **Q: How do you test the auth flow?**
 > OkHttp `MockWebServer` for IdP endpoints. Fake `TokenVault` with in-memory map. Espresso/Compose UI tests against the fake. Manual real-IdP smoke test on each release.
@@ -467,7 +453,7 @@ Then attempt bounded server revocation using the captured refresh token on the d
 - [OAuth 2.0 Security Best Current Practice (RFC 9700)](https://www.rfc-editor.org/rfc/rfc9700) — why implicit and password grants are out.
 - [AppAuth for Android](https://github.com/openid/AppAuth-Android) — reference OIDC + PKCE client library.
 - [Android Developers — Android Keystore](https://developer.android.com/privacy-and-security/keystore) — current key-custody primitive.
-- [Android Developers — Biometric authentication](https://developer.android.com/training/sign-in/biometric-auth) — Class-3 prompts.
+- [Android Developers — Biometric authentication](https://developer.android.com/identity/sign-in/biometric-auth) — Class-3 prompts.
 - [OAuth 2.0, RFC 6749 §5.2 and §6](https://www.rfc-editor.org/rfc/rfc6749) — terminal grant errors and optional refresh-token replacement.
 - [Kotlin Mutex cancellation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/lock.html) and [NonCancellable](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-non-cancellable/) — cancelable waiters and bounded commit protection.
 - [OkHttp Call contract (official source)](https://raw.githubusercontent.com/square/okhttp/master/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Call.kt) — synchronous execution, enqueue and cancellation.
