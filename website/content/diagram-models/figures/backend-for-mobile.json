@@ -1,0 +1,509 @@
+[
+  {
+    "path": "backend-for-mobile/bff-pattern",
+    "diagram": "6adcd9bb8d32c056",
+    "kind": "map",
+    "number": 1,
+    "title": "The BFF owns the screen contract",
+    "caption": "The BFF shapes required and optional dependency outcomes for one supported mobile contract. It does not become the authority for every upstream business rule.",
+    "nodes": [
+      {
+        "id": "m",
+        "title": "Mobile client",
+        "role": "client",
+        "detail": "Supported screen contract"
+      },
+      {
+        "id": "b",
+        "title": "Mobile BFF",
+        "role": "runtime",
+        "detail": "Orchestrate and shape"
+      },
+      {
+        "id": "r",
+        "title": "Required domain",
+        "role": "runtime",
+        "detail": "Authoritative core data"
+      },
+      {
+        "id": "o",
+        "title": "Optional dependency",
+        "role": "runtime",
+        "detail": "Bounded enrichment"
+      }
+    ],
+    "edges": [
+      {
+        "from": "m",
+        "to": "b",
+        "label": "one screen request"
+      },
+      {
+        "from": "b",
+        "to": "r",
+        "label": "required contract"
+      },
+      {
+        "from": "b",
+        "to": "o",
+        "label": "optional deadline"
+      },
+      {
+        "from": "b",
+        "to": "m",
+        "label": "stable response or error"
+      }
+    ],
+    "sources": [
+      "https://learn.microsoft.com/en-us/azure/architecture/patterns/backends-for-frontends"
+    ]
+  },
+  {
+    "path": "backend-for-mobile/api-design-for-mobile",
+    "diagram": "fde3a2dde6cad9d7",
+    "kind": "map",
+    "number": 1,
+    "title": "Compatibility crosses the release boundary",
+    "caption": "The new server must serve the contracts still present in shipped apps. Testing only the newest generated client leaves the older binary outside the check.",
+    "nodes": [
+      {
+        "id": "s",
+        "title": "Server release",
+        "role": "runtime",
+        "detail": "New response behavior"
+      },
+      {
+        "id": "o",
+        "title": "Shipped old app",
+        "role": "client",
+        "detail": "Old parser and semantics"
+      },
+      {
+        "id": "n",
+        "title": "Current app",
+        "role": "client",
+        "detail": "New capabilities"
+      },
+      {
+        "id": "c",
+        "title": "Compatibility fixtures",
+        "role": "storage",
+        "detail": "Old and new expectations"
+      }
+    ],
+    "edges": [
+      {
+        "from": "c",
+        "to": "s",
+        "label": "validate retained contracts"
+      },
+      {
+        "from": "s",
+        "to": "o",
+        "label": "supported old representation"
+      },
+      {
+        "from": "s",
+        "to": "n",
+        "label": "negotiated new representation"
+      }
+    ],
+    "sources": [
+      "https://google.aip.dev/180"
+    ]
+  },
+  {
+    "path": "backend-for-mobile/data-formats",
+    "diagram": "09f59456ed229fd8",
+    "kind": "map",
+    "number": 1,
+    "title": "Bytes become application state through different paths",
+    "caption": "Content decompression precedes decoding or direct buffer access. Each path still pays for the application values it retains; no format is declared universally fastest.",
+    "nodes": [
+      {
+        "id": "w",
+        "title": "Received bytes",
+        "role": "queue"
+      },
+      {
+        "id": "d",
+        "title": "Content decompression",
+        "role": "runtime",
+        "detail": "When encoded"
+      },
+      {
+        "id": "b",
+        "title": "Usable buffer",
+        "role": "storage"
+      },
+      {
+        "id": "j",
+        "title": "JSON decoder",
+        "role": "runtime",
+        "detail": "Text tokens"
+      },
+      {
+        "id": "p",
+        "title": "Protobuf decoder",
+        "role": "runtime",
+        "detail": "Tagged fields"
+      },
+      {
+        "id": "f",
+        "title": "FlatBuffers access",
+        "role": "runtime",
+        "detail": "Retained buffer"
+      },
+      {
+        "id": "m",
+        "title": "Application state",
+        "role": "storage",
+        "detail": "Selected fields and copies"
+      }
+    ],
+    "edges": [
+      {
+        "from": "w",
+        "to": "d",
+        "label": "encoded content"
+      },
+      {
+        "from": "w",
+        "to": "b",
+        "label": "uncompressed content"
+      },
+      {
+        "from": "d",
+        "to": "b",
+        "label": "decoded content encoding"
+      },
+      {
+        "from": "b",
+        "to": "j",
+        "label": "text tokens"
+      },
+      {
+        "from": "b",
+        "to": "p",
+        "label": "tagged fields"
+      },
+      {
+        "from": "b",
+        "to": "f",
+        "label": "direct access"
+      },
+      {
+        "from": "j",
+        "to": "m",
+        "label": "materialized values"
+      },
+      {
+        "from": "p",
+        "to": "m",
+        "label": "decoded values"
+      },
+      {
+        "from": "f",
+        "to": "m",
+        "label": "accessed values and copies"
+      }
+    ],
+    "sources": [
+      "https://protobuf.dev/programming-guides/proto3/",
+      "https://flatbuffers.dev/evolution/"
+    ]
+  },
+  {
+    "path": "backend-for-mobile/transport-protocols",
+    "diagram": "487a577a8b0b3107",
+    "kind": "map",
+    "number": 1,
+    "title": "Loss ordering differs while shared constraints remain",
+    "caption": "HTTP/2 frames use TCP’s ordered byte delivery. HTTP/3 uses QUIC streams with independent ordering, while congestion, shared flow-control limits and application recovery remain.",
+    "nodes": [
+      {
+        "id": "tcp",
+        "title": "TCP connection",
+        "role": "runtime",
+        "detail": "Ordered byte stream"
+      },
+      {
+        "id": "h2a",
+        "title": "HTTP/2 stream A",
+        "role": "queue",
+        "detail": "Missing bytes can delay"
+      },
+      {
+        "id": "h2b",
+        "title": "HTTP/2 stream B",
+        "role": "queue",
+        "detail": "Later frames may wait"
+      },
+      {
+        "id": "q",
+        "title": "QUIC connection",
+        "role": "runtime",
+        "detail": "Shared congestion and limits"
+      },
+      {
+        "id": "h3a",
+        "title": "QUIC stream A",
+        "role": "queue",
+        "detail": "Own delivery ordering"
+      },
+      {
+        "id": "h3b",
+        "title": "QUIC stream B",
+        "role": "queue",
+        "detail": "Own delivery ordering"
+      }
+    ],
+    "edges": [
+      {
+        "from": "tcp",
+        "to": "h2a",
+        "label": "ordered bytes"
+      },
+      {
+        "from": "tcp",
+        "to": "h2b",
+        "label": "same byte stream"
+      },
+      {
+        "from": "q",
+        "to": "h3a",
+        "label": "per-stream delivery"
+      },
+      {
+        "from": "q",
+        "to": "h3b",
+        "label": "per-stream delivery"
+      }
+    ],
+    "sources": [
+      "https://www.rfc-editor.org/rfc/rfc9113.html",
+      "https://www.rfc-editor.org/rfc/rfc9000.html",
+      "https://www.rfc-editor.org/rfc/rfc9114.html"
+    ]
+  },
+  {
+    "path": "backend-for-mobile/graphql-vs-rest",
+    "diagram": "a5cb41eb4777cf47",
+    "kind": "map",
+    "number": 1,
+    "title": "Two caches answer different reuse questions",
+    "caption": "A cacheable HTTP representation and a normalized entity record are different units. Either API style still needs deliberate identity, freshness and mutation policies.",
+    "nodes": [
+      {
+        "id": "r",
+        "title": "HTTP representation",
+        "role": "storage",
+        "detail": "Request key and validators"
+      },
+      {
+        "id": "e",
+        "title": "Normalized records",
+        "role": "storage",
+        "detail": "Entity keys and fields"
+      },
+      {
+        "id": "u",
+        "title": "Screen state",
+        "role": "client",
+        "detail": "Accepted data and errors"
+      }
+    ],
+    "edges": [
+      {
+        "from": "r",
+        "to": "u",
+        "label": "reuse eligible representation"
+      },
+      {
+        "from": "e",
+        "to": "u",
+        "label": "assemble selected records"
+      }
+    ],
+    "sources": [
+      "https://www.apollographql.com/docs/kotlin/caching/normalized-cache",
+      "https://www.rfc-editor.org/rfc/rfc9111.html"
+    ]
+  },
+  {
+    "path": "backend-for-mobile/push-vs-poll-vs-sse-vs-websockets",
+    "diagram": "15b415a37fdc274b",
+    "kind": "map",
+    "number": 1,
+    "title": "The background boundary differs from a live stream",
+    "caption": "Polling and app-owned streams depend on their active lifecycle. FCM is shared platform delivery infrastructure; its best-effort hint does not replace authoritative catch-up.",
+    "nodes": [
+      {
+        "id": "a",
+        "title": "Active app",
+        "role": "client",
+        "detail": "Polling or stream owner"
+      },
+      {
+        "id": "s",
+        "title": "Application server",
+        "role": "runtime",
+        "detail": "Durable state"
+      },
+      {
+        "id": "p",
+        "title": "Platform messaging",
+        "role": "queue",
+        "detail": "FCM delivery policy"
+      },
+      {
+        "id": "b",
+        "title": "Inactive app",
+        "role": "client",
+        "detail": "May reconcile later"
+      }
+    ],
+    "edges": [
+      {
+        "from": "a",
+        "to": "s",
+        "label": "poll or duplex command"
+      },
+      {
+        "from": "s",
+        "to": "a",
+        "label": "response or active stream"
+      },
+      {
+        "from": "s",
+        "to": "p",
+        "label": "submit hint"
+      },
+      {
+        "from": "p",
+        "to": "b",
+        "label": "best-effort delivery"
+      }
+    ],
+    "sources": [
+      "https://html.spec.whatwg.org/multipage/server-sent-events.html",
+      "https://www.rfc-editor.org/rfc/rfc6455.html",
+      "https://firebase.google.com/docs/cloud-messaging/customize-messages/setting-message-lifespan"
+    ]
+  },
+  {
+    "path": "backend-for-mobile/sse-vs-websockets",
+    "diagram": "b75d7a852bbdb92e",
+    "kind": "map",
+    "number": 1,
+    "title": "The cursor and the pending edit have separate owners",
+    "caption": "A reset replaces the authoritative base. Pending local work remains separately owned until it is accepted, rebased, conflicted or deliberately discarded under the product contract.",
+    "nodes": [
+      {
+        "id": "c",
+        "title": "Client continuation",
+        "role": "storage",
+        "detail": "Persisted cursor C7"
+      },
+      {
+        "id": "p",
+        "title": "Pending edit P1",
+        "role": "queue",
+        "detail": "Durable outbox"
+      },
+      {
+        "id": "a",
+        "title": "Sync API",
+        "role": "runtime",
+        "detail": "Validate retained cursor"
+      },
+      {
+        "id": "b",
+        "title": "Authoritative base",
+        "role": "storage",
+        "detail": "Replacement snapshot"
+      }
+    ],
+    "edges": [
+      {
+        "from": "c",
+        "to": "a",
+        "label": "resume request"
+      },
+      {
+        "from": "a",
+        "to": "b",
+        "label": "expired cursor: full snapshot"
+      },
+      {
+        "from": "b",
+        "to": "p",
+        "label": "rebase under conflict policy"
+      }
+    ],
+    "sources": [
+      "https://html.spec.whatwg.org/multipage/server-sent-events.html",
+      "https://www.rfc-editor.org/rfc/rfc6455.html"
+    ]
+  },
+  {
+    "path": "backend-for-mobile/rate-limiting",
+    "diagram": "e58a012afaade19f",
+    "kind": "map",
+    "number": 1,
+    "title": "Three owners enforce three different rules",
+    "caption": "Pacing reduces attempts, the screen validates current request identity, and the server enforces admission. No one of these substitutes for the other two.",
+    "nodes": [
+      {
+        "id": "p",
+        "title": "UI pacing",
+        "role": "client",
+        "detail": "Debounce or interaction policy"
+      },
+      {
+        "id": "q",
+        "title": "Current query owner",
+        "role": "client",
+        "detail": "Reject stale completion"
+      },
+      {
+        "id": "s",
+        "title": "Server admission",
+        "role": "runtime",
+        "detail": "Bucket and retry policy"
+      },
+      {
+        "id": "r",
+        "title": "Repository workflow",
+        "role": "queue",
+        "detail": "Cancellation and safe retry"
+      }
+    ],
+    "edges": [
+      {
+        "from": "p",
+        "to": "r",
+        "label": "candidate attempt"
+      },
+      {
+        "from": "r",
+        "to": "s",
+        "label": "request admission"
+      },
+      {
+        "from": "s",
+        "to": "r",
+        "label": "response or 429"
+      },
+      {
+        "from": "r",
+        "to": "q",
+        "label": "result with request identity"
+      }
+    ],
+    "sources": [
+      "https://www.rfc-editor.org/rfc/rfc6585.html#section-4",
+      "https://www.rfc-editor.org/rfc/rfc9110.html#section-10.2.3"
+    ]
+  }
+]

@@ -1,0 +1,34 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">A six-month-old app receives a response that is valid JSON but no longer means what its parser expects. The current app still works, so a happy-path backend test misses the broken contract.</p>
+
+<!-- @before 4. Versioning Strategy for Mobile :: guide -->
+### Preserve meaning as well as syntax
+
+Adding an optional field can be compatible while changing an existing default or unit is not. Test old parsers with current fixtures, including missing, null, unknown enum and error cases. Capabilities describe understood behavior; they do not grant authorization. [AIP-180 compatibility dimensions](https://google.aip.dev/180).
+
+<!-- @before API Governance for Mobile :: staff -->
+### Make the oldest supported reader a release input
+
+Record supported operations and response meanings with the server change. Exercise negative capabilities and rollback paths before rollout. A generated client validates a chosen contract at build time; it cannot rewrite already shipped binaries.
+
+<!-- @before Answer Key :: guide -->
+### Interpret the startup-policy example as a product choice
+
+Answer 5 describes one possible startup policy. Its unavailable, stale and security-emergency outcomes need an explicit contract; a mandatory fresh configuration request is not a prerequisite for every mobile API.
+
+<!-- @before 4. Versioning Strategy for Mobile :: visual -->
+### Compatibility crosses the release boundary
+
+```mermaid
+flowchart TB
+ s["Server release New response behavior"]
+ o["Shipped old app Old parser and semantics"]
+ n["Current app New capabilities"]
+ c["Compatibility fixtures Old and new expectations"]
+ c -->|"validate retained contracts"| s
+ s -->|"supported old representation"| o
+ s -->|"negotiated new representation"| n
+```
+
+The new server must serve the contracts still present in shipped apps. Testing only the newest generated client leaves the older binary outside the check.

@@ -31,6 +31,7 @@ TREES = {
     'mobile-system-design': {'title': 'Mobile System Design', 'phases': None},
     'observability': {'title': 'Observability', 'phases': None},
     'distributed-systems': {'title': 'Distributed Systems', 'phases': None},
+    'backend-for-mobile': {'title': 'Backend for Mobile', 'phases': None},
 }
 
 
@@ -48,6 +49,10 @@ def phases(slug):
         sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
         paths=re.findall(r'\]\((distributed-systems/[^)#]+\.md)\)',sequence)
         return [('Phase 1 — Guarantees and client contracts',paths[:5]),('Phase 2 — Conflict and coordination',paths[5:10]),('Phase 3 — Logs and tracing',paths[10:])]
+    if slug == 'backend-for-mobile':
+        sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
+        paths=re.findall(r'\]\((backend-for-mobile/[^)#]+\.md)\)',sequence)
+        return [('Phase 1 — Mobile API foundations',paths[:4]),('Phase 2 — Query contracts',paths[4:5]),('Phase 3 — Live updates and admission',paths[5:8])]
     if slug == 'observability':
         sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
         paths=re.findall(r'\]\((observability/[^)#]+\.md)\)',sequence)
@@ -98,8 +103,8 @@ KOTLIN_ONLY = json.loads((WEB/'content/code-kotlin-only.json').read_text())
 
 
 def source_url(path):
-    if path == 'distributed-systems.md' or path.startswith('distributed-systems/'):
-        provenance=json.loads((ROOT/'source-snapshot.json').read_text())['distributed-systems_provenance']
+    provenance=json.loads((ROOT/'source-snapshot.json').read_text()).get(path.removesuffix('.md').split('/')[0]+'_provenance')
+    if provenance:
         return provenance['repository']+'/blob/'+provenance['commit']+'/'+quote(path)
     return SOURCE_ROOT+quote(path)
 
@@ -649,7 +654,7 @@ INTRO = {
 
 def intro(path):
     extras={}
-    for name in ('engineering-fundamentals','computer-science','platform-engineering','mobile-system-design','observability','distributed-systems'):
+    for name in ('engineering-fundamentals','computer-science','platform-engineering','mobile-system-design','observability','distributed-systems','backend-for-mobile'):
         extras.update(json.loads((WEB/f'content/{name}.json').read_text()))
     return extras.get(path) or INTRO.get(path) or INTRO[Path(path).stem]
 

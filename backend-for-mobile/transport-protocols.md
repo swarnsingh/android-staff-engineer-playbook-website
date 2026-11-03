@@ -44,7 +44,8 @@ Think of Transport Protocols as a **Highway System**.
 OkHttp can negotiate HTTP/2 when the route, TLS/ALPN, proxy, origin, and server support it, and it reuses eligible pooled connections. It may open another connection for route or policy changes, saturation, failure, or network migration.
 
 ```kotlin
-// These calls may share an eligible HTTP/2 connection and multiplex streams.
+// Sequential calls can reuse an eligible HTTP/2 connection.
+// Concurrent independent calls can multiplex streams on it.
 api.getUser()
 api.getPosts()
 api.getFriends()

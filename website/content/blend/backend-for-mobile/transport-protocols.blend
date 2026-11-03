@@ -1,0 +1,18 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">Two responses share a connection when one packet disappears. Whether the other response can progress depends on delivery ordering in that connection, not on whether its payload is JSON or Protobuf.</p>
+
+<!-- @before First Principles :: guide -->
+### Separate the three decisions
+
+API shape chooses operations and responses. Encoding chooses the wire representation. Transport chooses how bytes move. HTTP/3 maps HTTP semantics onto QUIC; it does not supply a mobile replay cursor or make a command safe to retry. [HTTP/3 mapping](https://www.rfc-editor.org/rfc/rfc9114.html).
+
+<!-- @before Internal Mechanics :: guide -->
+### Independent streams still share a connection
+
+QUIC separates stream delivery ordering, so missing data in one stream need not hold already-received data in another. Congestion and connection-level constraints still apply. The original handshake sketch is illustrative, not a universal count of network round trips. [QUIC streams](https://www.rfc-editor.org/rfc/rfc9000.html) and [HTTP/2 multiplexing](https://www.rfc-editor.org/rfc/rfc9113.html).
+
+<!-- @before Staff Engineer Thinking :: staff -->
+### Recover the operation when migration fails
+
+Connection migration is conditional. Keep an application resume/retry contract and let the networking stack own protocol fallback. Evaluate actual network, lifecycle and workload data before claiming a latency or energy improvement.

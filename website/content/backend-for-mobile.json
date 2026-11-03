@@ -1,0 +1,11 @@
+{
+  "backend-for-mobile.md": "Design the mobile contract before choosing payloads, transports, live updates and admission policy.",
+  "backend-for-mobile/bff-pattern.md": "The catalog is ready, but the home screen is still waiting for a slow promo service. Moving orchestration into a BFF does not decide whether optional data may hold the screen hostage.",
+  "backend-for-mobile/api-design-for-mobile.md": "A six-month-old app receives a response that is valid JSON but no longer means what its parser expects. The current app still works, so a happy-path backend test misses the broken contract.",
+  "backend-for-mobile/data-formats.md": "An absent Boolean used to mean “not entitled.” A serializer migration starts treating a missing, null or unknown value differently. The payload still looks small; the product meaning has changed.",
+  "backend-for-mobile/transport-protocols.md": "Two responses share a connection when one packet disappears. Whether the other response can progress depends on delivery ordering in that connection, not on whether its payload is JSON or Protobuf.",
+  "backend-for-mobile/graphql-vs-rest.md": "A screen needs a product and its seller. One API returns a large representation; another needs two calls. The useful comparison is the screen’s actual request and cache behavior under each contract.",
+  "backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md": "The app is inactive when a server change occurs. A push may hint that something changed, but the phone still needs an authoritative way to discover what it missed when the experience resumes.",
+  "backend-for-mobile/sse-vs-websockets.md": "The socket reconnects successfully, but the server no longer retains the events behind the saved cursor. Connectivity is restored; continuity is still an application decision.",
+  "backend-for-mobile/rate-limiting.md": "Search results for an old query arrive after the new query has already succeeded. Debouncing can reduce calls, but it cannot decide which completion still owns the screen—or when the server will admit another request."
+}

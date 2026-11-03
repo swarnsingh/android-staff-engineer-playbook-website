@@ -1,0 +1,13 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">The app is inactive when a server change occurs. A push may hint that something changed, but the phone still needs an authoritative way to discover what it missed when the experience resumes.</p>
+
+<!-- @before The Options (First Principles) :: guide -->
+### Choose freshness and ownership before a channel
+
+Polling trades a freshness interval for recurring requests. SSE standardizes a downstream text event stream; WebSocket supports duplex messages. An OS-managed push hint has a different lifecycle and delivery boundary. None replaces durable state and reconciliation. [SSE](https://html.spec.whatwg.org/multipage/server-sent-events.html), [WebSocket](https://www.rfc-editor.org/rfc/rfc6455.html) and [FCM lifetime](https://firebase.google.com/docs/cloud-messaging/customize-messages/setting-message-lifespan).
+
+<!-- @before Internal Mechanics and Tradeoffs :: staff -->
+### Acceptance is not display or durable continuity
+
+An FCM message ID confirms acceptance for delivery, not arrival at the device. Retention, collapse and current app/device policy affect delivery. Persist authoritative events on the server and restore client state from a cursor or snapshot rather than counting push callbacks as the ledger.

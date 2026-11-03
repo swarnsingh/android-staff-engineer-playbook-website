@@ -2,183 +2,179 @@
 
 ## Overview
 
-It's easy to assume `JSON` is the only way applications communicate over the internet, and that `Gson` or `Moshi` are magic black boxes that turn text into Kotlin objects.
-
-A Staff Engineer understands that translating data from a network transport format into physical RAM (Heap Allocation) is one of the most CPU-intensive and Garbage Collection (GC) heavy operations a mobile device performs. If you are rendering a high-speed 60fps graph, waiting 300ms for a massive JSON string to parse will destroy the user experience.
-
-Choosing the correct Data Format—whether it's human-readable JSON, strictly typed Protocol Buffers (Protobuf), or zero-copy FlatBuffers—is a fundamental architectural decision that dictates battery life, payload size, and rendering speed.
-
-## Why It Matters
-
-Imagine an app downloading a list of 10,000 products.
-- **JSON:** The network downloads a 5MB text string. The CPU reads the string character by character. Every time it sees a `"name": "Laptop"`, the Android OS allocates a new `String` object in memory. It allocates 10,000 `Product` objects, 10,000 `String` objects, and 10,000 `Double` objects. The Garbage Collector panics, freezes the Main Thread for 200ms, and the app stutters.
-- **Protobuf:** The network downloads a 1MB binary file. The parser reads binary tags and instantly constructs the Kotlin objects. It is 5x faster, but still requires allocating 10,000 objects in RAM.
-- **FlatBuffers:** The network downloads a 1MB binary file. *There is no parser.* The app simply maps the binary file directly into RAM. To get the first product's name, the app reads a memory offset pointer. **Zero objects are allocated.** The parsing time is literally 0 milliseconds.
+A large response can spend time in transfer, decompression, decoding, allocation and UI transformation. Choose a format from measured workload costs and compatibility needs. Wire size, decoded heap size and access latency are different measurements; a compact binary message does not imply zero CPU or memory cost.
 
 ## Historical Context
 
-- **XML (Pre-2010):** Extensible Markup Language. Massive, verbose, and incredibly slow to parse (DOM vs SAX parsing wars).
-- **JSON (2010-Present):** JavaScript Object Notation. Won the war because it was natively supported by Web Browsers. It is human-readable, schema-less, and easy to debug. But it is fundamentally inefficient for machines to read.
-- **Protocol Buffers / Protobuf (2008+):** Invented by Google for internal microservice communication. A binary format requiring a strict `.proto` schema file.
-- **FlatBuffers (2014+):** Invented by Google for Game Developers. A memory-mapped binary format that requires zero parsing or allocation.
+JSON became a common interoperable web representation; Protocol Buffers brought schema-generated tagged messages, and FlatBuffers made direct access to a schema-defined buffer a design goal. These are different access models, not a progression where each newer format universally replaces the last. Existing infrastructure and compatibility can justify keeping JSON even when a binary encoding is smaller.
 
 ## First Principles
 
-1.  **Serialization/Deserialization (SerDes):** The act of converting an in-memory object (Kotlin) into a format that can be sent over a wire (JSON/Binary), and vice versa.
-2.  **Schema:** A strict contract defining exactly what the data looks like (e.g., "Field 1 is an Int32"). JSON has no mandatory schema. Protobuf requires one.
-3.  **Zero-Copy / Memory Mapping:** A technique where the raw binary data downloaded from the network is used directly by the application, completely skipping the Deserialization step.
-4.  **Forward/Backward Compatibility:** The ability for an old Android App (v1) to successfully read data sent by a new Server (v2), and vice versa, without crashing.
+Serialization encodes values; transport delivers bytes; decompression and decoding reconstruct or expose data. A schema describes the wire contract, while a generated model is one language's API for it. Measure compressed transfer size separately from retained heap and access CPU. Streaming, pagination and zero-copy access address different parts of that pipeline.
 
-## The Formats
+## Format Comparison
 
-### 1. JSON (JavaScript Object Notation)
-- **Mechanics:** Text-based key-value pairs.
-- **Pros:** Human readable (you can read it in Charles Proxy or Logcat). Universally supported by every language. No schema setup required.
-- **Cons:** Massive payload size (the keys like `"user_id"` are repeated thousands of times in an array). Very slow to parse. Not strictly typed (the server can accidentally send a String `"123"` instead of an Int `123`, crashing the app).
+| Format | Access model | Contract and tradeoff |
+|---|---|---|
+| JSON | Decode text tokens, optionally from a stream, into selected models | Easy to inspect; schema and compatibility still need enforcement |
+| Protobuf | Generated code decodes tagged binary fields | Compact typed messages; schema distribution and evolution discipline required |
+| FlatBuffers | Generated accessors read fields from a binary buffer | Avoids eagerly constructing a full object graph; buffer lifetime, access patterns and language APIs matter |
 
-### 2. Protocol Buffers (gRPC / Protobuf)
-- **Mechanics:** Binary format based on a strict `.proto` contract.
+There is no fixed 5x or 10x winner. Compare representative data on target devices, with compression, cold/warm adapters, peak memory and the fields actually consumed. A numeric field may be a primitive rather than a separately boxed object; ignored JSON fields need not become model properties.
+
+## JSON: Streaming and Adapters
+
+A JSON decoder does not require the entire decompressed document to become one `String`. Moshi and Gson expose streaming readers; a decompressor can feed the reader incrementally. Calling `body.string()` or building a complete DOM chooses additional buffering. Returning a complete list still allocates the retained model even if token parsing streams; pagination or incremental consumption is a separate design choice.
+
+Generated Moshi adapters and Kotlinx Serialization avoid reflective property discovery. Gson is maintained, but its official README describes maintenance mode and limitations for Kotlin nullability/default arguments and Android shrinking; it is not formally deprecated merely because another library fits better. Custom Gson adapters can avoid reflection. Pick from supported platforms, behavior, maintenance and measurements rather than declaring a universal parser ban.
+
+Move substantial decoding and transformation off the main thread. A tiny decode is not automatically an ANR, and moving work alone does not eliminate CPU contention or allocation pressure. Handle decoder exceptions at a repository boundary; malformed input need not crash the application.
+
+## Protobuf: Evolution Is About the Wire Contract
+
 ```protobuf
 message User {
   int32 id = 1;
   string name = 2;
 }
 ```
-- **Pros:** Tiny payloads (Keys are reduced to a single byte integer tag like `1` or `2`). Blazingly fast parsing. Strongly typed (the compiler generates Kotlin data classes for you). Excellent backward compatibility rules.
-- **Cons:** Binary data cannot be read by humans without a decoder. Requires sharing the `.proto` files between the Android repo and the Backend repo.
 
-### 3. FlatBuffers
-- **Mechanics:** Binary format structured exactly how C++ structs are laid out in memory.
-- **Pros:** **Zero-Copy Parsing.** The parsing time is literally 0ms. It uses practically zero RAM because it doesn't create intermediate Kotlin objects.
-- **Cons:** The API is incredibly hostile to write (you have to build objects backward using a Builder). It is mostly reserved for High-Frequency Trading apps, AAA 3D Games (Unity/Unreal), or massive ML data sets.
+Tags include a field number and wire type; they are not always one byte. Kotlin Protobuf generation adds Kotlin DSLs around generated Java message classes, not ordinary Kotlin data classes. Protobuf can travel over HTTP, a socket, a queue or local storage; it is not a transport protocol.
 
-## Internal Mechanics
+Never reuse a removed field number. Reserve removed numbers and names, and apply the official compatibility rules for the specific binary or ProtoJSON interface. Some type changes are wire-compatible under documented constraints, while others break semantics or lose information without causing an immediate parse error. Do not interpret successful parsing as compatibility. Renaming a field while retaining its number can preserve binary compatibility but can break JSON mappings, generated source APIs and consumers using names.
 
-### How JSON Parsing Kills Battery (Reflection vs Codegen)
+## FlatBuffers: Direct Access Has Costs
 
-In the old days of Android, libraries like `Gson` used **Reflection**.
-To parse `{"name": "John"}`, `Gson` would use Java Reflection to inspect the Kotlin class at runtime, find a field named `name`, force it to be accessible, and inject the string. Reflection is phenomenally slow.
+FlatBuffers has its own schema-defined binary layout; it is not a raw C++ struct dump. A Java/Kotlin client can wrap a `ByteBuffer` and access selected fields without deserializing the entire message graph. File mapping is optional, not a prerequisite of the format.
 
-Modern libraries (like `Moshi` with KSP, or `kotlinx.serialization`) use **Code Generation**.
-During the Gradle build, they generate hardcoded Kotlin classes that act like massive `switch` statements. When the parser reads the string `"name"`, it jumps straight to `user.name = value`. This is 10x faster than Reflection.
+Reading offsets, validating/traversing data and accessing memory take time. Java string access decodes UTF-8 and allocates a string; wrapper objects, builder buffers and application copies may allocate too. Reusable accessors and byte-buffer views can avoid some allocations. The retained buffer occupies memory/address space, and mapped pages incur residency and page-fault costs. Object APIs deliberately construct an object graph. None of this is zero milliseconds or zero RAM.
 
-### The JSON Parser Decision: Moshi vs `kotlinx.serialization`
-If you are forced to use JSON, you must choose a parser.
-- **Gson:** Deprecated by the community. Relies entirely on slow, unsafe Java Reflection. Do not use for new projects.
-- **Moshi (Codegen):** Developed by Square. Highly reliable, fast, and generates Kotlin parsers via KSP at compile time. Excellent if you are using Retrofit in a pure Android (non-KMP) app.
-- **kotlinx.serialization:** Developed by JetBrains. The modern standard. It is the only option that works perfectly across Kotlin Multiplatform (Android, iOS, Wasm). It is incredibly strict (will crash if backend sends `null` for a non-nullable field).
-
-*Staff Rule:* If you use JSON, you MUST use a code-generating parser (`kotlinx.serialization` or Moshi Codegen). If you use `Gson` in a modern app, you are committing architectural malpractice.
+Use it when partial/random access and measured allocation savings justify the tooling and API constraints, not only in games or only above an arbitrary payload size. Keep a buffer alive while readers reference it and validate untrusted input according to the chosen runtime's capabilities.
 
 ## Architecture
 
 ```mermaid
-graph TD
-    subgraph "JSON Payload (5MB Text)"
-        J1["{#quot;id#quot;: 1, #quot;name#quot;: #quot;A#quot;}"] -->|Network| J2[Parse JSON String]
-        J2 -->|Allocate Strings/Ints| J3[Kotlin Objects]
-    end
-    
-    subgraph "Protobuf Payload (1MB Binary)"
-        P1[01 01 02 41] -->|Network| P2[Parse Binary Tags]
-        P2 -->|Allocate Strings/Ints| P3[Kotlin Objects]
-    end
-    
-    subgraph "FlatBuffers Payload (1MB Binary)"
-        F1[Memory Aligned Binary] -->|Network| F2[Memory Map ByteBuffer]
-        F2 -.->|Zero Allocation| F3[Direct Pointer Reads]
-    end
+flowchart TD
+    Wire[Received bytes] -->|Content-encoded| Inflate[Incremental decompression]
+    Wire -->|Uncompressed| Bytes[Bytes ready for decoding or access]
+    Inflate -->|Decoded content encoding| Bytes
+    Bytes -->|Text tokens| JSON[JSON streaming decoder]
+    Bytes -->|Tagged fields| Proto[Protobuf decoder]
+    Bytes -->|Retained buffer| Flat[FlatBuffers generated accessors]
+    JSON -->|Selected values| Models[Application model and UI transforms]
+    Proto -->|Decoded fields| Models
+    Flat -->|Requested fields and optional copies| Models
 ```
 
-## Production Example
+The input may stream, decode into objects, or remain in a buffer. Every path still has access and lifetime costs; none promises a fixed payload ratio or zero work.
 
-**Migrating to `kotlinx.serialization`**
+Validated against: [HTTP content encoding](https://www.rfc-editor.org/rfc/rfc9110.html#name-content-encoding), [Moshi streaming](https://github.com/square/moshi), [Protobuf wire encoding](https://protobuf.dev/programming-guides/encoding/) and [FlatBuffers Java access](https://flatbuffers.dev/languages/java/).
 
-If a team is migrating from `Gson` to `kotlinx.serialization` for performance, a Staff Engineer must handle the **Default Value Trap**.
+## Defaults, Nulls and Unknown Values
+
+Distinguish an absent field, explicit null, unknown property and unknown enum value. Behavior is a decoder configuration contract.
+
+- Kotlinx Serialization rejects unknown JSON keys by default; `ignoreUnknownKeys = true` permits additive properties. That does not by itself handle unknown enum values.
+- A non-null property with a default normally uses that default when absent; an explicit null normally fails. The opt-in `coerceInputValues` setting can treat certain null/unknown enum inputs as missing. Use it only when that fallback is the intended domain behavior.
+- Moshi's `@Json(name = "UNKNOWN")` changes a serialized name; it does **not** catch every unknown enum value. Register `EnumJsonAdapter.create(Status::class.java).withUnknownFallback(Status.UNKNOWN)` from `moshi-adapters`, or use a reviewed custom adapter. This fallback is for unknown strings, not arbitrary wrong JSON types.
+
+Test all four cases with the actual adapter. An unknown payment state may need an explicit unavailable/reconcile state rather than being silently interpreted as success.
+
+## Worked Migration: Defaults Are Part of the Contract
+
+Suppose a Gson model is moving to Kotlinx Serialization. Capture the existing wire fixtures before switching adapters; a successful build does not prove old payloads retain their meaning.
 
 ```kotlin
 @Serializable
-data class User(
-    val id: Int,
-    val name: String,
-    val isPremium: Boolean = false // Default value
+data class FormatUser(val id: Int, val name: String, val isPremium: Boolean = false)
+
+val formatJson = Json { ignoreUnknownKeys = true }
+val missingPremium = formatJson.decodeFromString<FormatUser>(
+    """{"id":1,"name":"Reader","newField":123}"""
 )
+check(!missingPremium.isPremium)
+// An explicit "isPremium": null is a decoding failure with this configuration.
 ```
 
-If the Backend sends `{"id": 1, "name": "John"}`, `Gson` (using unsafe reflection) would sometimes initialize `isPremium` to `false` (JVM default), or worse, leave it null and crash later.
-`kotlinx.serialization` respects Kotlin's default arguments perfectly. However, if the backend sends `{"id": 1, "name": "John", "isPremium": null}`, `kotlinx.serialization` will violently crash with a `SerializationException`. It refuses to put a `null` into a non-nullable field. 
+A primitive Boolean cannot become JVM null. Gson constructor/unsafe-instantiation paths can differ in whether initializers run, so test missing and null inputs rather than describing a universal Gson outcome. Kotlinx's default handles absence here; explicit null still fails unless an intentionally chosen coercion policy changes it. Do not turn an unknown entitlement into permission through a convenience fallback.
 
-This strictness prevents million-dollar bugs, but requires the Backend to actually respect the API contract.
+Test enums separately. In Moshi, naming a constant `UNKNOWN` does not enable a fallback:
 
-## Tradeoffs
+```kotlin
+enum class FormatStatus { ACTIVE, INACTIVE, UNKNOWN }
+val formatMoshi = Moshi.Builder().add(
+    FormatStatus::class.java,
+    EnumJsonAdapter.create(FormatStatus::class.java).withUnknownFallback(FormatStatus.UNKNOWN)
+).build()
+check(formatMoshi.adapter(FormatStatus::class.java).fromJson("\"PENDING\"") == FormatStatus.UNKNOWN)
+```
 
-**Strictness vs Resilience**
+This requires `moshi-adapters` in addition to Moshi. An unknown string, explicit null, absent field and wrong JSON type still need separate fixtures. Keep failures typed at the repository boundary so malformed server input produces an intentional product state.
 
-- **JSON (Loose):** The backend can add 50 new fields to the JSON response. The Android app ignores them and keeps working. The backend can change the order of the fields. The app keeps working.
-- **Protobuf (Strict):** If a backend developer deletes a field (e.g., changes `int32 id = 1` to `string user_id = 1`) without bumping the version, every Android app in the world will instantly fail to parse the binary payload. Protobuf relies on integer Tags (`1`, `2`). You can never reuse a tag, and you can never change a tag's type.
+## Tradeoffs and Failure Modes
 
-*Staff Decision:* Protobuf's strictness is actually a massive advantage. Because the `.proto` file is the contract, you can write CI/CD rules that fail the Backend's Pull Request if they break backward compatibility. JSON's looseness allows backend devs to silently break contracts.
-
-## Failure Modes
-
-- **The Massive JSON Main Thread Freeze:**
-  A developer makes a network request using Coroutines `Dispatchers.IO`, downloads the JSON, and then accidentally passes the massive JSON string to the UI layer where `Moshi.fromJson()` is called on the Main Thread. The UI freezes for 300ms.
-  *(Fix: Deserialization is a CPU-bound mathematical operation. It MUST be executed on `Dispatchers.Default` or `Dispatchers.IO` before the resulting Kotlin object is handed to the UI).*
-- **Enum Evolution Crashes:**
-  The Android app expects `enum class Status { ACTIVE, INACTIVE }`. The backend adds `PENDING` and sends it. The Android JSON parser throws an `IllegalArgumentException` because it doesn't know what `PENDING` is, crashing the app.
-  *(Fix: Mobile API contracts must use `@Json(name = "UNKNOWN")` fallback mechanisms for Enums, or avoid Enums entirely and use Strings for network boundaries, to allow for safe forward-evolution of the API).*
+| Trigger | Risk | Verification |
+|---|---|---|
+| Very large decoded list | Retained heap and transformation pressure despite streaming | Bound pages and profile peak/retained allocations |
+| Decoder swap | Defaults, nulls or unknown values change behavior | Golden wire fixtures through both configurations |
+| Reusing a Protobuf tag | Silent semantic change or incompatible payload | Schema compatibility checks for supported binaries |
+| FlatBuffer released too early | Accessors reference invalid/reused storage | Own buffer lifetime; test copies and reuse explicitly |
+| Reflective model shrunk | Required fields/constructors are altered | Library-specific keep rules and minified artifact tests |
 
 ## Staff Engineer Thinking
 
-When reviewing data transport formats, a Staff engineer focuses on the bottleneck.
+Start with the screen or pipeline that is measurably slow. Compare the same data, fields, compression and supported device cohorts, then include migration, debugging and old-client costs. A format change that saves bytes while making recovery or schema evolution unsafe is not a performance win for the product. Keep the existing format when paging, adapter choice or off-main transformation resolves the actual bottleneck.
 
-1.  **JSON is fine for 95% of use cases.** I don't migrate a Login API to Protobuf to save 5 milliseconds. I migrate the `Live Market Feed` API to Protobuf to save 500 milliseconds and prevent the phone from overheating. Premature optimization is the root of all evil.
-2.  **Network vs CPU:** Sometimes the network is fast, but the CPU is slow. If we are downloading a massive 50MB map dataset, even Protobuf parsing will freeze the app. This is the only time I authorize **FlatBuffers**. We download the binary file, map it to disk via `MappedByteBuffer`, and the UI reads pointers directly off the disk without ever allocating a Kotlin object in RAM.
-3.  **ProGuard / R8 Rules:** JSON parsers are notoriously fragile when minified. If R8 obfuscates `data class User(val firstName: String)` to `data class a(val b: String)`, the JSON parser will look for a JSON key called `"b"` and fail. I aggressively audit `@Keep` annotations and R8 rules to ensure our Data Transfer Objects (DTOs) are never obfuscated.
+## Shrinking and Compatibility
 
-## Common Misconceptions
-
-- **"JSON is smaller because it compresses well with GZIP."** GZIP is fantastic at compressing repeated JSON keys over the network. However, once the payload arrives at the phone, the OS must decompress it back into the massive, uncompressed JSON String in RAM before parsing it. Protobuf is tiny *in RAM*.
-- **"Protobuf is a network protocol."** False. Protobuf is purely a Data Serialization format (like JSON). You can send Protobuf over HTTP/1.1, HTTP/2, WebSockets, or save it to a local disk. gRPC is the network protocol that usually carries Protobuf.
+Reflective models may need narrowly scoped keep rules. Generated adapters and explicit wire names have different requirements; do not prevent all DTO obfuscation by default. Follow the selected library's consumer rules and verify a minified build. Wire compatibility, Kotlin nullability and R8 behavior are separate contracts.
 
 ## Probing Questions
 
-1.  Explain the fundamental difference between how a CPU processes a JSON payload versus a Protocol Buffer (Protobuf) payload.
-2.  Why is Java Reflection incredibly dangerous for battery life and performance when parsing massive JSON arrays in Android?
-3.  Describe the concept of "Zero-Copy" parsing in FlatBuffers. How does it eliminate Garbage Collection (GC) thrashing?
-4.  If a backend developer renames a JSON key from `"user_id"` to `"userId"`, what happens to the Android app? How does Protobuf's integer tag system solve this?
-5.  Why must an Android Engineer ensure that JSON deserialization (e.g., `Gson.fromJson()`) never executes on the Main (UI) Thread?
-6.  Explain the "Enum Evolution Crash" and how a Staff Engineer designs Kotlin Data Classes to safely ignore new Enum values sent by the backend.
-7.  How do Code-Generating JSON parsers (like `Moshi` Codegen or `kotlinx.serialization`) avoid the performance penalties of Reflection?
-8.  Why is it an architectural requirement to configure R8 (ProGuard) rules to prevent obfuscation of Kotlin Data Transfer Objects (DTOs)?
-9.  If an application downloads a 50MB statistical dataset, why might a Staff Engineer choose FlatBuffers over Protobuf?
-10. Does compressing a JSON payload with GZIP reduce the memory footprint required to parse the JSON string on the Android device? Why or why not?
+1. Why can streaming JSON still consume substantial heap?
+2. What does FlatBuffers direct access avoid, and what work remains?
+3. Does renaming a Protobuf field preserve every interface?
+4. Why does `@Json(name = "UNKNOWN")` not provide an enum fallback?
+5. Which measurements should drive a format migration?
+6. How do missing, null and unknown JSON fields differ in a generated Kotlin adapter?
+7. What must be tested when enabling shrinking for reflective DTOs?
+8. Why should deleted Protobuf tags be reserved?
+9. How can a format migration preserve old mobile clients?
+10. When should a team keep JSON despite a faster binary benchmark?
 
 ## Answer Key
 
-1. **Explain the fundamental difference between how a CPU processes a JSON payload versus a Protocol Buffer (Protobuf) payload.**
-   A CPU parses JSON by reading strings character-by-character and dynamically allocating objects. Protobuf parsing involves reading binary tags and directly constructing types, avoiding expensive string parsing and drastically reducing CPU cycles.
-2. **Why is Java Reflection incredibly dangerous for battery life and performance when parsing massive JSON arrays in Android?**
-   Reflection inspects classes at runtime to dynamically discover fields, which is computationally expensive. Doing this repeatedly for massive JSON arrays blocks the CPU and generates excessive intermediate objects, draining battery and triggering UI jank.
-3. **Describe the concept of "Zero-Copy" parsing in FlatBuffers. How does it eliminate Garbage Collection (GC) thrashing?**
-   Zero-Copy means the binary payload is memory-mapped directly into RAM, and the app reads pointers without deserializing. This eliminates intermediate object creation entirely, preventing GC pauses and operating at 0ms parsing time.
-4. **If a backend developer renames a JSON key from `"user_id"` to `"userId"`, what happens to the Android app? How does Protobuf's integer tag system solve this?**
-   The Android app fails to parse the new key because it expects `"user_id"`. Protobuf solves this by binding fields to immutable integer tags (e.g., `1`), meaning the field name can change safely as long as the tag remains the same.
-5. **Why must an Android Engineer ensure that JSON deserialization (e.g., `Gson.fromJson()`) never executes on the Main (UI) Thread?**
-   JSON deserialization is a CPU-bound operation. Executing it on the Main Thread blocks UI rendering, causing dropped frames (jank) and potentially triggering an Application Not Responding (ANR) crash.
-6. **Explain the "Enum Evolution Crash" and how a Staff Engineer designs Kotlin Data Classes to safely ignore new Enum values sent by the backend.**
-   If the backend sends a new enum (e.g., `PENDING`), old apps crash during deserialization. Staff engineers solve this by adding an `@Json(name = "UNKNOWN")` fallback mechanism to gracefully handle unrecognized values.
-7. **How do Code-Generating JSON parsers (like `Moshi` Codegen or `kotlinx.serialization`) avoid the performance penalties of Reflection?**
-   They generate hardcoded parsing logic (like a large `switch` statement) at compile time via KSP. This allows the parser to directly map JSON keys to property assignments at runtime without using reflection.
-8. **Why is it an architectural requirement to configure R8 (ProGuard) rules to prevent obfuscation of Kotlin Data Transfer Objects (DTOs)?**
-   If R8 obfuscates a DTO property name (e.g., `userId` to `a`), the JSON parser will look for the `"a"` key in the network response and fail. `@Keep` annotations ensure DTO names match the network contract.
-9. **If an application downloads a 50MB statistical dataset, why might a Staff Engineer choose FlatBuffers over Protobuf?**
-   Even Protobuf requires allocating 50MB of objects in RAM, which can trigger massive GC pauses. FlatBuffers allows mapping the 50MB binary directly to disk/memory without allocating intermediate Kotlin objects, providing instant access.
-10. **Does compressing a JSON payload with GZIP reduce the memory footprint required to parse the JSON string on the Android device? Why or why not?**
-    No. GZIP reduces network bandwidth, but the Android OS must fully decompress the GZIP payload back into the massive 50MB JSON String in RAM before the parser can process it, maintaining the high memory footprint.
+1. **Why can streaming JSON still consume substantial heap?**
+   Streaming avoids retaining the whole input string or tree, but a returned list and its model values remain allocated. Bound the result with pagination or incremental consumption when needed.
+2. **What does FlatBuffers direct access avoid, and what work remains?**
+   It avoids eager decoding of the complete object graph. Buffer storage, traversal, UTF-8 string decoding, wrappers and application copies still have costs.
+3. **Does renaming a Protobuf field preserve every interface?**
+   Retaining its tag can preserve the binary interface, but JSON field names and generated source APIs may change. Test all supported representations.
+4. **Why does `@Json(name = "UNKNOWN")` not provide an enum fallback?**
+   It maps one literal name. Unknown strings need a configured enum adapter or explicit custom decoding policy.
+5. **Which measurements should drive a format migration?**
+   Representative compressed bytes, end-to-end latency, decoding/access CPU, peak and retained memory, allocations, compatibility and operational costs on supported devices.
+
+6. **How do missing, null and unknown JSON fields differ in a generated Kotlin adapter?**
+   A missing field may use its declared default; explicit null still violates a non-null field unless a specific coercion policy applies. Unknown keys are a separate decoder setting. Test each path with the selected adapter.
+7. **What must be tested when enabling shrinking for reflective DTOs?**
+   Test a minified artifact with real adapter construction, field names, defaults and enum handling. Apply the library's narrowly scoped rules instead of assuming all models need blanket keep rules.
+8. **Why should deleted Protobuf tags be reserved?**
+   Reusing a tag can cause an old reader to interpret a new value as the deleted field. Reserve deleted numbers and relevant names and test binary and JSON compatibility independently.
+9. **How can a format migration preserve old mobile clients?**
+   Keep the supported old contract available, negotiate capabilities/version explicitly, and migrate behind a reversible boundary. Verify caches, stored payloads and rollback before retiring the old representation.
+10. **When should a team keep JSON despite a faster binary benchmark?**
+    Keep it when representative end-to-end results do not justify migration, compatibility and operational costs, or when paging and adapter improvements address the actual bottleneck.
 
 ## Further Reading
 
 - [`transport-protocols.md`](transport-protocols.md) — How Protobufs are usually transmitted over gRPC and HTTP/2.
-- [`app-size-and-r8.md`](../android/performance/app-size-and-r8.md) — How the R8 shrinker breaks JSON parsing if `@Keep` rules are missing.
-- [`jank.md`](../android/performance/jank.md) — The dropped frames caused by heavy JSON Reflection parsing on the Main Thread.
+- [`app-size-and-r8.md`](../android/performance/app-size-and-r8.md) — Shrinker configuration and minified-build verification for the chosen adapters.
+- [`jank.md`](../android/performance/jank.md) — Diagnose measured main-thread decoding, allocation and transformation costs.
+
+- [FlatBuffers Java guide](https://flatbuffers.dev/languages/java/) and [UTF-8 runtime implementation](https://github.com/google/flatbuffers/blob/master/java/src/main/java/com/google/flatbuffers/Utf8Safe.java).
+- [Protobuf evolution rules](https://protobuf.dev/programming-guides/proto3/) and [Kotlin generated code](https://protobuf.dev/reference/kotlin/kotlin-generated/).
+- [Gson supported behavior and limitations](https://github.com/google/gson).
+- [Moshi streaming, code generation and R8 guidance](https://github.com/square/moshi).
+- [Moshi enum fallback implementation](https://github.com/square/moshi/blob/master/moshi-adapters/src/main/java/com/squareup/moshi/adapters/EnumJsonAdapter.kt).
+- [Kotlinx Serialization configuration](https://kotlinlang.org/docs/serialization-json-configuration.html).

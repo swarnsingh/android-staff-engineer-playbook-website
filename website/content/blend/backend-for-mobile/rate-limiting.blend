@@ -1,0 +1,322 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">Search results for an old query arrive after the new query has already succeeded. Debouncing can reduce calls, but it cannot decide which completion still owns the screen—or when the server will admit another request.</p>
+
+<!-- @before 1. Client-Side Throttling (Coroutines & Flow) :: animation -->
+### Keep pacing, result ownership and admission separate
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="The late search callback is still stale">
+<h3>Walkthrough 1. The late search callback is still stale</h3><p class="pb-sub">Illustrative request identity check. Server admission and UI ownership are different boundaries.</p>
+<div class="pb-seg" role="group" aria-label="Comparison policy"><button type="button" data-mode="latest" aria-pressed="true">Current-query guard</button><button type="button" data-mode="arrival" aria-pressed="false">Apply every callback</button></div>
+<div class="pb-paper" role="region" aria-label="Illustrative system; scroll if needed" tabindex="0"><svg class="pb-svg" role="img" aria-label="The late search callback is still stale; every step is available as text below"></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div><div class="pb-caption" aria-live="polite"><span class="pb-count"></span><p></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" hidden aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">
+{
+  "illustrated": true,
+  "playback": "manual",
+  "layout": "request-store",
+  "owners": {
+    "sender": "CURRENT QUERY OWNER",
+    "service": "SERVER",
+    "transaction": "ADMISSION POLICY"
+  },
+  "nodes": [
+    {
+      "id": "sender",
+      "label": "Search UI",
+      "art": {
+        "kind": "phone",
+        "role": "client"
+      }
+    },
+    {
+      "id": "receiver",
+      "label": "Search API",
+      "art": {
+        "kind": "server",
+        "role": "runtime"
+      }
+    },
+    {
+      "id": "store",
+      "label": "Budget",
+      "art": {
+        "kind": "database",
+        "role": "storage"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "send",
+      "from": "sender",
+      "to": "receiver",
+      "label": "query"
+    },
+    {
+      "id": "reply",
+      "from": "receiver",
+      "to": "sender",
+      "label": "result"
+    },
+    {
+      "id": "write",
+      "from": "receiver",
+      "to": "store",
+      "label": "admit"
+    },
+    {
+      "id": "read",
+      "from": "store",
+      "to": "receiver",
+      "label": "decision"
+    }
+  ],
+  "modes": {
+    "latest": {
+      "initial": {
+        "nodes": {
+          "sender": [
+            "",
+            "query A pending"
+          ],
+          "receiver": [
+            "",
+            "A response delayed"
+          ],
+          "store": [
+            "",
+            "server policy"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Request A",
+          "caption": "Query A is already in flight for ca. Its delayed result must not take ownership of a newer query’s screen state.",
+          "packets": []
+        },
+        {
+          "label": "Request B",
+          "caption": "The user changes the query to cat and starts B. The server admits B under its separate budget.",
+          "packets": [
+            {
+              "edge": "send",
+              "label": "query B",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "write",
+              "label": "admit B",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "read",
+              "label": "allowed",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "receiver": [
+                "is-active",
+                "query B: cat"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Result B",
+          "caption": "B returns first. The screen now belongs to query B and displays cat results.",
+          "packets": [
+            {
+              "edge": "reply",
+              "label": "B: cat",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "sender": [
+                "is-done",
+                "results: cat"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Late A",
+          "caption": "A arrives late. Its request identity is stale, so retain B’s result.",
+          "packets": [
+            {
+              "edge": "reply",
+              "label": "A: ca",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "sender": [
+                "is-done",
+                "results: cat"
+              ],
+              "receiver": [
+                "is-done",
+                "late A response"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Separate rules",
+          "caption": "Keep the current-query guard. Server 429 handling still needs its own bucket and retry deadline.",
+          "packets": []
+        }
+      ]
+    },
+    "arrival": {
+      "initial": {
+        "nodes": {
+          "sender": [
+            "",
+            "query A pending"
+          ],
+          "receiver": [
+            "",
+            "A response delayed"
+          ],
+          "store": [
+            "",
+            "server policy"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Request A",
+          "caption": "Query A is already in flight for ca. Its delayed result must not take ownership of a newer query’s screen state.",
+          "packets": []
+        },
+        {
+          "label": "Request B",
+          "caption": "The user changes the query to cat and starts B. The server admits B under its separate budget.",
+          "packets": [
+            {
+              "edge": "send",
+              "label": "query B",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "write",
+              "label": "admit B",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "read",
+              "label": "allowed",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "receiver": [
+                "is-active",
+                "query B: cat"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Result B",
+          "caption": "B returns first. The screen now belongs to query B and displays cat results.",
+          "packets": [
+            {
+              "edge": "reply",
+              "label": "B: cat",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "sender": [
+                "is-done",
+                "results: cat"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Late A",
+          "caption": "A arrives late. Blindly applying the latest callback replaces B with ca results.",
+          "packets": [
+            {
+              "edge": "reply",
+              "label": "A: ca",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "sender": [
+                "is-warn",
+                "results: ca"
+              ],
+              "receiver": [
+                "is-done",
+                "late A response"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Separate rules",
+          "caption": "UI pacing did not prevent a stale result. It also did not grant permission to bypass a server limit.",
+          "packets": []
+        }
+      ]
+    }
+  },
+  "stepNavigation": "select",
+  "compareAtCurrentStep": true
+}
+</script>
+</section>
+
+<!-- @before 2. Handling Server-Side Rate Limits (HTTP 429) :: guide -->
+### A shorter retry budget cannot shorten the embargo
+
+Retry-After can be delay-seconds or an HTTP-date. Preserve the affected bucket’s deadline; if it exceeds the client’s retry budget, surface or stop the attempt. Concurrent responses must not replace a longer active deadline with a shorter one. [429 semantics](https://www.rfc-editor.org/rfc/rfc6585.html#section-4) and [Retry-After](https://www.rfc-editor.org/rfc/rfc9110.html#section-10.2.3).
+
+<!-- @before 3. UI Rate Limiting (Disabling Interactions) :: staff -->
+### A disabled button is not deduplication
+
+UI controls reduce accidental attempts within one experience. They do not cover process death, another device or an already in-flight command. Durable mutations still require their operation identity and backend replay contract.
+
+<!-- @before 1. Client-Side Throttling (Coroutines & Flow) :: visual -->
+### Three owners enforce three different rules
+
+```mermaid
+flowchart TB
+ p["UI pacing Debounce or interaction policy"]
+ q["Current query owner Reject stale completion"]
+ s["Server admission Bucket and retry policy"]
+ r["Repository workflow Cancellation and safe retry"]
+ p -->|"candidate attempt"| r
+ r -->|"request admission"| s
+ s -->|"response or 429"| r
+ r -->|"result with request identity"| q
+```
+
+Pacing reduces attempts, the screen validates current request identity, and the server enforces admission. No one of these substitutes for the other two.

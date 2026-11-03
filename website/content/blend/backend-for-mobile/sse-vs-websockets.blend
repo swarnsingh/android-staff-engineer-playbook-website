@@ -1,0 +1,323 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">The socket reconnects successfully, but the server no longer retains the events behind the saved cursor. Connectivity is restored; continuity is still an application decision.</p>
+
+<!-- @before Reconnection: The Hard Part :: animation -->
+### A new connection does not fill a history gap
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="Reset the cursor without losing a pending edit">
+<h3>Walkthrough 1. Reset the cursor without losing a pending edit</h3><p class="pb-sub">Illustrative application reset protocol. SSE and WebSocket do not define this snapshot/outbox policy for the app.</p>
+<div class="pb-seg" role="group" aria-label="Comparison policy"><button type="button" data-mode="preserve" aria-pressed="true">Preserve pending work</button><button type="button" data-mode="wipe" aria-pressed="false">Replace everything</button></div>
+<div class="pb-paper" role="region" aria-label="Illustrative system; scroll if needed" tabindex="0"><svg class="pb-svg" role="img" aria-label="Reset the cursor without losing a pending edit; every step is available as text below"></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div><div class="pb-caption" aria-live="polite"><span class="pb-count"></span><p></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" hidden aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">
+{
+  "illustrated": true,
+  "playback": "manual",
+  "layout": "request-store",
+  "owners": {
+    "sender": "CLIENT: pending edits",
+    "service": "SERVER",
+    "transaction": "REPLAY RETENTION"
+  },
+  "nodes": [
+    {
+      "id": "sender",
+      "label": "Mobile client",
+      "art": {
+        "kind": "phone",
+        "role": "client"
+      }
+    },
+    {
+      "id": "receiver",
+      "label": "Sync API",
+      "art": {
+        "kind": "server",
+        "role": "runtime"
+      }
+    },
+    {
+      "id": "store",
+      "label": "Replay log",
+      "art": {
+        "kind": "database",
+        "role": "storage"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "send",
+      "from": "sender",
+      "to": "receiver",
+      "label": "resume"
+    },
+    {
+      "id": "reply",
+      "from": "receiver",
+      "to": "sender",
+      "label": "reset"
+    },
+    {
+      "id": "write",
+      "from": "receiver",
+      "to": "store",
+      "label": "cursor"
+    },
+    {
+      "id": "read",
+      "from": "store",
+      "to": "receiver",
+      "label": "expiry"
+    }
+  ],
+  "modes": {
+    "preserve": {
+      "initial": {
+        "nodes": {
+          "sender": [
+            "",
+            "cursor C7"
+          ],
+          "receiver": [
+            "",
+            "ready"
+          ],
+          "store": [
+            "",
+            "bounded history"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Offline",
+          "caption": "The client disconnects with cursor C7. Its supported replay history will expire while it is offline.",
+          "packets": []
+        },
+        {
+          "label": "Edit",
+          "caption": "The user makes local edit P1. It is pending in the durable client outbox.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "sender": [
+                "is-active",
+                "outbox: 1"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Reconnect",
+          "caption": "The API receives C7 and finds that its replay history is no longer available.",
+          "packets": [
+            {
+              "edge": "send",
+              "label": "resume C7",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "write",
+              "label": "lookup C7",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "read",
+              "label": "expired",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "receiver": [
+                "is-warn",
+                "reset required"
+              ],
+              "store": [
+                "is-warn",
+                "C7 expired"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Snapshot",
+          "caption": "The API returns a replacement snapshot under this illustrative reset contract.",
+          "packets": [
+            {
+              "edge": "reply",
+              "label": "snapshot",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "receiver": [
+                "is-done",
+                "snapshot ready"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Install",
+          "caption": "Replace the authoritative base, retain P1 separately, then rebase or resolve it under the API contract.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "sender": [
+                "is-done",
+                "outbox: 1 retained"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "wipe": {
+      "initial": {
+        "nodes": {
+          "sender": [
+            "",
+            "cursor C7"
+          ],
+          "receiver": [
+            "",
+            "ready"
+          ],
+          "store": [
+            "",
+            "bounded history"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Offline",
+          "caption": "The client disconnects with cursor C7. Its supported replay history will expire while it is offline.",
+          "packets": []
+        },
+        {
+          "label": "Edit",
+          "caption": "The user makes local edit P1. It is pending in the durable client outbox.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "sender": [
+                "is-active",
+                "outbox: 1"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Reconnect",
+          "caption": "The API receives C7 and finds that its replay history is no longer available.",
+          "packets": [
+            {
+              "edge": "send",
+              "label": "resume C7",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "write",
+              "label": "lookup C7",
+              "tone": "fwd",
+              "kind": "page"
+            },
+            {
+              "edge": "read",
+              "label": "expired",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "receiver": [
+                "is-warn",
+                "reset required"
+              ],
+              "store": [
+                "is-warn",
+                "C7 expired"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Snapshot",
+          "caption": "The API returns a replacement snapshot under this illustrative reset contract.",
+          "packets": [
+            {
+              "edge": "reply",
+              "label": "snapshot",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "receiver": [
+                "is-done",
+                "snapshot ready"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Install",
+          "caption": "Replacing all local state also deletes P1. A backend retention limit has become lost user work.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "sender": [
+                "is-warn",
+                "outbox: 0; P1 lost"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "stepNavigation": "select",
+  "compareAtCurrentStep": true
+}
+</script>
+</section>
+
+<!-- @before Reconnection: The Hard Part :: guide -->
+### The resume carrier is only one piece
+
+SSE defines event IDs and Last-Event-ID in its browser processing model. An Android integration still needs persisted progress, reconnect ownership, deduplication and a retention-gap outcome. WebSocket framing supplies no equivalent application replay contract. [SSE processing](https://html.spec.whatwg.org/multipage/server-sent-events.html) and [WebSocket protocol](https://www.rfc-editor.org/rfc/rfc6455.html).
+
+<!-- @before Answer Key :: staff -->
+### Authentication refresh requires server protocol support
+
+Answer 8 is an illustrative in-stream design, not a standard WebSocket authentication frame. If that negotiated protocol is unavailable, reconnect with fresh credentials and restore continuity through the application contract. Do not accept unvalidated refresh messages as renewed authorization.
+
+<!-- @before Reconnection: The Hard Part :: visual -->
+### The cursor and the pending edit have separate owners
+
+```mermaid
+flowchart TB
+ c["Client continuation Persisted cursor C7"]
+ p["Pending edit P1 Durable outbox"]
+ a["Sync API Validate retained cursor"]
+ b["Authoritative base Replacement snapshot"]
+ c -->|"resume request"| a
+ a -->|"expired cursor: full snapshot"| b
+ b -->|"rebase under conflict policy"| p
+```
+
+A reset replaces the authoritative base. Pending local work remains separately owned until it is accepted, rebased, conflicted or deliberately discarded under the product contract.

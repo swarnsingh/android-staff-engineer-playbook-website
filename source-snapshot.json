@@ -259,5 +259,23 @@
     "source_pr": 76,
     "scope": "Complete guided Distributed Systems tree: exact approved index and all 12 chapters.",
     "method": "Exact git show bytes from approved combined main; SHA-256 over raw bytes."
+  },
+  "backend-for-mobile_sha256": {
+    "backend-for-mobile.md": "a613c353934a0449bc6ecd1886835482761dae81c607a2f486aa091aff866367",
+    "backend-for-mobile/bff-pattern.md": "617126289a418287ee6d73d29d6be96224e4113012ec37a33752b749b238ffb4",
+    "backend-for-mobile/api-design-for-mobile.md": "2de329b3be42dc8493bf1d02490353e155cf8b8041a3866dedfe1f01f49f4281",
+    "backend-for-mobile/data-formats.md": "5567a911693c5627c4d7f8050cb005f07614376855c5e0ceb3d7de496ca579f0",
+    "backend-for-mobile/transport-protocols.md": "30bb700dda07cd6ae826a1c1fcacffcca8f8bc6e91ea9a41ce9555be7a88a9e8",
+    "backend-for-mobile/graphql-vs-rest.md": "f8e052f23a67fa2a49a8d8cce27812388b5b69fc367e5feb3f67fd0446db9106",
+    "backend-for-mobile/push-vs-poll-vs-sse-vs-websockets.md": "582f3c04f538510ca3bdea9282e263d7fd1cd27c3e54213eec256789ce5feb49",
+    "backend-for-mobile/sse-vs-websockets.md": "32e4540296a33223466c21a01a49d2133325975af702fb7b501dd328b02f6008",
+    "backend-for-mobile/rate-limiting.md": "6ee4a5423ff325fd865dad90393c91a2e2d700bc9961ac3ecf7ea9deb7d07db0"
+  },
+  "backend-for-mobile_provenance": {
+    "repository": "https://github.com/swarnsingh/android-staff-engineer-playbook",
+    "commit": "fb8354edb079e901edf18710ca9388a124712a5b",
+    "source_pr": 77,
+    "scope": "Complete guided tree: exact approved index and all 8 chapters.",
+    "method": "Exact git show bytes from approved combined main; SHA-256 over raw bytes."
   }
 }
