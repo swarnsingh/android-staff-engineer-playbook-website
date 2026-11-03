@@ -279,7 +279,9 @@ def load_blend(path):
     file = scoped if scoped.exists() else folder / (Path(path).stem + '.blend')
     if not file.exists():
         return {}
-    pieces = re.split(r'<!--\s*@(opening|before|after|diagram|part)\b(.*?)-->', file.read_text(), flags=re.S)
+    import static_figures
+    source=static_figures.render(path,file.read_text())
+    pieces = re.split(r'<!--\s*@(opening|before|after|diagram|part)\b(.*?)-->', source, flags=re.S)
     blend = {}
     for i in range(1, len(pieces), 3):
         marker, argument, content = pieces[i], pieces[i + 1].strip(), pieces[i + 2].strip()
@@ -801,7 +803,10 @@ def walkthrough_gallery():
     parts=[walkthrough.timeline(steps),walkthrough.try_first('clarifying'),walkthrough.decision_cards(MD.render(table[1])),walkthrough.pushbacks(MD.render(question[1]))]
     return '<section class="demo"><div class="reading-content">'+''.join(parts)+'</div></section>'
 
-SHARED_CSS=['styles.css','blend.css','theme.css','sequence.css','learning-path.css','navigation.css','design-system/components/bundle.css']
+# Keep public stylesheet URLs stable; source ownership is the shared design system.
+READER_STYLES={name:DESIGN/'components/ReaderShell'/name for name in
+               ['styles.css','blend.css','sequence.css','theme.css','learning-path.css','navigation.css']}
+SHARED_CSS=[str(p.relative_to(WEB)) for p in READER_STYLES.values()]+['design-system/components/bundle.css']
 
 
 def check_design_boundary():
@@ -857,7 +862,7 @@ def build(skip_diagrams=False):
     # Include the generated catalog in the asset version. A newly rendered tree must
     # not reuse a cached catalog that still sends its chapters to GitHub.
     tokens_css=design_tokens_css().encode()
-    asset_inputs=['styles.css','blend.css','sequence.css','theme.css','learning-path.css','navigation.css','app.js','blend.js','coroutines.js','lesson-model.js','design-system/components/bundle.css','design-system/components/bundle.js']
+    asset_inputs=[str(p.relative_to(WEB)) for p in READER_STYLES.values()]+['app.js','blend.js','coroutines.js','lesson-model.js','design-system/components/bundle.css','design-system/components/bundle.js']
     asset_version=hashlib.sha256(tokens_css+b''.join((WEB/n).read_bytes() for n in asset_inputs)+(OUT/'nav-data.js').read_bytes()).hexdigest()[:10]
     font_options,font_head=reader_font_markup()
     template=(WEB/'templates/reader.html').read_text().replace('{{font_head}}',font_head).replace('{{font_options}}',font_options).replace('{{base}}',BASE).replace('{{asset_version}}',asset_version)
@@ -917,7 +922,9 @@ def build(skip_diagrams=False):
     home=(WEB/'templates/home.html').read_text().replace('{{base}}',BASE).replace('{{version}}',asset_version).replace('{{android_count}}',str(len(ORDER['android']))).replace('{{kotlin_count}}',str(len(ORDER['kotlin']))).replace('{{fundamentals_count}}',str(len(ORDER['engineering-fundamentals'])))
     (OUT/'index.html').write_text(home)
     (OUT/'.nojekyll').touch()
-    for name in ['styles.css','blend.css','sequence.css','theme.css','learning-path.css','navigation.css','app.js','blend.js','coroutines.js','lesson-model.js']:
+    for name,source in READER_STYLES.items():
+        shutil.copy2(source,OUT/name)
+    for name in ['app.js','blend.js','coroutines.js','lesson-model.js']:
         shutil.copy2(WEB/name,OUT/name)
     # The design system is the source for tokens, the diagram runtime and the self-hosted fonts.
     (OUT/'tokens.css').write_bytes(tokens_css)

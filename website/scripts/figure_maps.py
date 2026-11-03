@@ -135,7 +135,7 @@ class Canvas:
 def card_height(n):
     if n.get('shape') in ('start', 'end'):
         return 24
-    return n.get('h', 30 + LINE * (len(lines(n['title'])) + len(lines(n.get('detail')))))
+    return n.get('h', 30 + LINE * (len(lines(n['title'])) + len(lines(n.get('detail'))) + bool(n.get('state'))))
 
 
 def card(c, n):
@@ -153,10 +153,13 @@ def card(c, n):
     inner = (f'<rect class="fm-card-inner" x="{x+4}" y="{y+4}" width="{w-8}" height="{h-8}" rx="8"/>'
              if role == 'storage' else '')
     rows = [('fm-title', t) for t in lines(n['title'])] + [('fm-detail', d) for d in lines(n.get('detail'))]
-    top = y + h / 2 - (len(rows) - 1) * LINE / 2 - (2 if len(rows) > 1 else 0)
+    state_labels={'warn':'Warning','error':'Warning','ghost':'Inactive example','active':'Current focus','done':'Shown outcome'}
+    state=state_labels.get(n.get('state'))
+    top = y + h / 2 - (len(rows) - 1) * LINE / 2 - (2 if len(rows) > 1 else 0) + (LINE/2 if state else 0)
     texts = ''.join(f'<text class="{cls_}" x="{x+w/2}" y="{top + i*LINE + (4 if i else 0):.1f}" dominant-baseline="central">{escape(t)}</text>'
                     for i, (cls_, t) in enumerate(rows))
-    c.add(f'<g class="{cls}"><rect class="fm-card" x="{x}" y="{y}" width="{w}" height="{h}" rx="12"/>{inner}{texts}</g>',
+    status=f'<text class="fm-detail fm-status" x="{x+w/2}" y="{y+LINE}" dominant-baseline="central">{escape(state)}</text>' if state else ''
+    c.add(f'<g class="{cls}"><rect class="fm-card" x="{x}" y="{y}" width="{w}" height="{h}" rx="12"/>{inner}{status}{texts}</g>',
           x, y, x + w, y + h)
     c.boxes.append((n['id'], (x, y, x + w, y + h)))
 
@@ -747,14 +750,18 @@ def render(row, source, provenance='original'):
                                      else 'Numbered arrows name relationships, not time steps.')
     sources = ''.join(f'<li><a href="{escape(u)}" target="_blank" rel="noreferrer">{escape(u.split("/")[2])}: '
                       f'{escape(u.rstrip("/").split("/")[-1] or "documentation")}</a></li>' for u in row['sources'])
+    label=row.get('figure_label') or f'Figure {row["number"]}'
+    descriptions=''
+    if row.get('node_descriptions'):
+        descriptions='<dl>'+''.join('<dt>'+escape(' '.join(lines(n['title'])))+'</dt><dd>'+escape(' '.join(lines(n.get('detail'))))+'</dd>' for n in row.get('nodes',row.get('participants',[])))+'</dl>'
     figure = (f'<figure class="fm-figure" data-figure="{row["diagram"]}" data-pb-wide>'
               f'<p class="fm-heading">{escape(row["title"])}</p>'
               # The shared WideDiagram component adds scroll semantics and edge fades only when it overflows.
-              f'<div class="pb-widewrap"><div class="fm-scroll pb-wide" data-label="Figure {row["number"]}">'
+              f'<div class="pb-widewrap"><div class="fm-scroll pb-wide" data-label="{escape(label)}">'
               + canvas.svg(prefix, row['title'], row['caption']) + '</div></div>'
               f'<div class="fm-legend">{legend}<em>{escape(reading)}</em></div>'
-              f'<figcaption><strong>Figure {row["number"]}.</strong> {escape(row["caption"])}</figcaption>'
-              f'<details class="fm-sources"><summary>Read the figure as text</summary><ol>{transcript(row)}</ol>'
+              f'<figcaption><strong>{escape(label)}.</strong> {escape(row["caption"])}</figcaption>'
+              f'<details class="fm-sources"><summary>Read the figure as text</summary>{descriptions}<ol>{transcript(row)}</ol>'
               f'<p>Sources</p><ul>{sources}</ul></details></figure>')
     if provenance != 'original':
         return figure, ''

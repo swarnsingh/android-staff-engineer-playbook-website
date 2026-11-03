@@ -1,0 +1,76 @@
+[
+  {
+    "path": "kotlin/language-core/variables",
+    "figure": 3,
+    "source_sha256": "bc66cd42cd2a65a6f1ef6de86c4a8abff75e2ad15ba924f1c514b0921fa738d7",
+    "title": "The backing-property shape, as a picture",
+    "roles": [
+      "client",
+      "storage",
+      "storage",
+      "runtime"
+    ],
+    "role": "client",
+    "kind": "map",
+    "sources": [
+      "https://kotlinlang.org/docs/properties.html"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "collects"
+      ],
+      [
+        2,
+        3,
+        "read-only view of"
+      ],
+      [
+        4,
+        3,
+        "writes"
+      ]
+    ],
+    "groups": [
+      {
+        "label": "State owner (class)",
+        "nodes": [
+          2,
+          3,
+          4
+        ]
+      }
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/flow-operators-and-backpressure",
+    "figure": 2,
+    "source_sha256": "97d9b488c497da74da8d50e2f9ae9569f2ecf56c2f4b70fd20181cb86f8ad148",
+    "title": "Same producer, same slow collector, four policies",
+    "roles": [],
+    "role": "runtime",
+    "kind": "timeline",
+    "sources": [
+      "https://kotlinlang.org/docs/flow.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model",
+    "figure": 1,
+    "source_sha256": "7937e3746162fbe44c06c4f8336830b50953048252a4688ff92cd2f9039c080d",
+    "title": "Inside computeArea()",
+    "roles": [
+      "storage",
+      "storage",
+      "storage",
+      "storage",
+      "storage"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://docs.oracle.com/javase/specs/jvms/se24/html/jvms-2.html"
+    ]
+  }
+]
