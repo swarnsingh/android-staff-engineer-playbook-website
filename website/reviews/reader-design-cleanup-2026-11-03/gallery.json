@@ -1,0 +1,128 @@
+{
+  "viewport": {
+    "width": 1280,
+    "height": 900
+  },
+  "samples": [
+    {
+      "theme": "light",
+      "box": {
+        "x": 180,
+        "y": 216.671875,
+        "height": 667,
+        "width": 920
+      },
+      "image": "screenshots/light-backing-state.png"
+    },
+    {
+      "theme": "light",
+      "box": {
+        "x": 180,
+        "y": 312.46875,
+        "height": 476.515625,
+        "width": 920
+      },
+      "image": "screenshots/light-stack-heap.png"
+    },
+    {
+      "theme": "light",
+      "box": {
+        "x": 180,
+        "y": 295.78125,
+        "height": 604.15625,
+        "width": 920
+      },
+      "image": "screenshots/light-binding-timeline.png"
+    },
+    {
+      "theme": "dark",
+      "box": {
+        "x": 180,
+        "y": 216.671875,
+        "height": 667,
+        "width": 920
+      },
+      "image": "screenshots/dark-backing-state.png"
+    },
+    {
+      "theme": "dark",
+      "box": {
+        "x": 180,
+        "y": 312.46875,
+        "height": 476.515625,
+        "width": 920
+      },
+      "image": "screenshots/dark-stack-heap.png"
+    },
+    {
+      "theme": "dark",
+      "box": {
+        "x": 180,
+        "y": 295.78125,
+        "height": 604.15625,
+        "width": 920
+      },
+      "image": "screenshots/dark-binding-timeline.png"
+    },
+    {
+      "theme": "sepia",
+      "box": {
+        "x": 180,
+        "y": 216.671875,
+        "height": 667,
+        "width": 920
+      },
+      "image": "screenshots/sepia-backing-state.png"
+    },
+    {
+      "theme": "sepia",
+      "box": {
+        "x": 180,
+        "y": 312.46875,
+        "height": 476.515625,
+        "width": 920
+      },
+      "image": "screenshots/sepia-stack-heap.png"
+    },
+    {
+      "theme": "sepia",
+      "box": {
+        "x": 180,
+        "y": 295.78125,
+        "height": 604.15625,
+        "width": 920
+      },
+      "image": "screenshots/sepia-binding-timeline.png"
+    },
+    {
+      "theme": "contrast",
+      "box": {
+        "x": 181,
+        "y": 216.546875,
+        "height": 667,
+        "width": 918
+      },
+      "image": "screenshots/contrast-backing-state.png"
+    },
+    {
+      "theme": "contrast",
+      "box": {
+        "x": 181,
+        "y": 312.34375,
+        "height": 476.515625,
+        "width": 918
+      },
+      "image": "screenshots/contrast-stack-heap.png"
+    },
+    {
+      "theme": "contrast",
+      "box": {
+        "x": 181,
+        "y": 295.65625,
+        "height": 604.15625,
+        "width": 918
+      },
+      "image": "screenshots/contrast-binding-timeline.png"
+    }
+  ]
+}

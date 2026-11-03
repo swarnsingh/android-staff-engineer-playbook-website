@@ -58,6 +58,8 @@ def check(row):
     if len(ids) != len(set(ids)):
         raise ValueError(f'Figure {key}: duplicate actor IDs')
     for n in actors:
+        if n.get('state') and n['state'] not in {'warn','error','ghost','active','done'}:
+            raise ValueError(f'Figure {key}: unknown card state')
         if n.get('shape') in ('start', 'end'):
             continue
         if n.get('role') not in ROLES or not n.get('title'):
@@ -135,7 +137,7 @@ class Canvas:
 def card_height(n):
     if n.get('shape') in ('start', 'end'):
         return 24
-    return n.get('h', 30 + LINE * (len(lines(n['title'])) + len(lines(n.get('detail')))))
+    return n.get('h', 30 + LINE * (len(lines(n['title'])) + len(lines(n.get('detail'))) + bool(n.get('state'))))
 
 
 def card(c, n):
@@ -153,10 +155,13 @@ def card(c, n):
     inner = (f'<rect class="fm-card-inner" x="{x+4}" y="{y+4}" width="{w-8}" height="{h-8}" rx="8"/>'
              if role == 'storage' else '')
     rows = [('fm-title', t) for t in lines(n['title'])] + [('fm-detail', d) for d in lines(n.get('detail'))]
-    top = y + h / 2 - (len(rows) - 1) * LINE / 2 - (2 if len(rows) > 1 else 0)
+    state_labels={'warn':'Warning','error':'Warning','ghost':'Inactive example','active':'Current focus','done':'Shown outcome'}
+    state=state_labels.get(n.get('state'))
+    top = y + h / 2 - (len(rows) - 1) * LINE / 2 - (2 if len(rows) > 1 else 0) + (LINE/2 if state else 0)
     texts = ''.join(f'<text class="{cls_}" x="{x+w/2}" y="{top + i*LINE + (4 if i else 0):.1f}" dominant-baseline="central">{escape(t)}</text>'
                     for i, (cls_, t) in enumerate(rows))
-    c.add(f'<g class="{cls}"><rect class="fm-card" x="{x}" y="{y}" width="{w}" height="{h}" rx="12"/>{inner}{texts}</g>',
+    status=f'<text class="fm-detail fm-status" x="{x+w/2}" y="{y+LINE}" dominant-baseline="central">{escape(state)}</text>' if state else ''
+    c.add(f'<g class="{cls}"><rect class="fm-card" x="{x}" y="{y}" width="{w}" height="{h}" rx="12"/>{inner}{status}{texts}</g>',
           x, y, x + w, y + h)
     c.boxes.append((n['id'], (x, y, x + w, y + h)))
 
@@ -258,6 +263,11 @@ def auto_layout(row, key):
     """
     row = json.loads(json.dumps(row))
     nodes, groups, edges = row['nodes'], row.get('groups', []), row.get('edges', [])
+    card_max=row.get('_card_max',px('figure-auto-card-max'))
+    card_min=row.get('_card_min',px('figure-auto-card-min'))
+    inset=px('figure-card-text-inset')
+    title_limit=min(int(FIGURE['figure-title-wrap']),int((card_max-inset)/GLYPH['title']))
+    detail_limit=min(int(FIGURE['figure-detail-wrap']),int((card_max-inset)/GLYPH['detail']))
     byid = {n['id']: n for n in nodes}
     parent = {g['id']: g.get('parent') for g in groups}
     root = lambda gid: gid if not parent.get(gid) else root(parent[gid])
@@ -297,25 +307,25 @@ def auto_layout(row, key):
     for n in nodes:
         n['_row'] = used.index(n['_row'])
     for n in nodes:
-        if any(width(t, 'title') + 28 > 330 for t in lines(n['title'])):
-            n['title'] = [part for t in lines(n['title']) for part in lines(wrap_label(t, 32))]
-        if any(width(d, 'detail') + 28 > 330 for d in lines(n.get('detail'))):
-            n['detail'] = [part for d in lines(n['detail']) for part in lines(wrap_label(d, 36))]
+        if any(width(t, 'title') + inset > card_max for t in lines(n['title'])):
+            n['title'] = [part for t in lines(n['title']) for part in lines(wrap_label(t, title_limit))]
+        if any(width(d, 'detail') + inset > card_max for d in lines(n.get('detail'))):
+            n['detail'] = [part for d in lines(n['detail']) for part in lines(wrap_label(d, detail_limit))]
     if row.get('layout') in ('layers', 'snake'):
         place_flow(row, nodes, rank)
     else:
         # Column widths fit their longest title, detail or boundary label.
         labels = {g['id']: g['label'] for g in groups}
         for n in nodes:
-            if width(n['title'], 'title') + 28 > 330:
-                n['title'] = wrap_label(n['title'], 32)
+            if width(n['title'], 'title') + inset > card_max:
+                n['title'] = wrap_label(n['title'], title_limit)
         colw = []
         for c, k in enumerate(columns):
-            need = [width(t, 'title') + 28 for n in nodes if n['_col'] == c for t in lines(n['title'])]
-            need += [width(d, 'detail') + 28 for n in nodes if n['_col'] == c for d in lines(n.get('detail'))]
-            cards_need = min(330, math.ceil(max(need)))
+            need = [width(t, 'title') + inset for n in nodes if n['_col'] == c for t in lines(n['title'])]
+            need += [width(d, 'detail') + inset for n in nodes if n['_col'] == c for d in lines(n.get('detail'))]
+            cards_need = min(card_max, math.ceil(max(need)))
             boundary_need = max([len(labels[g]) * 8.6 + 36 - 48 + 2 for g in labels if root(g) == k], default=0)
-            colw.append(math.ceil(max(200, cards_need, boundary_need)))
+            colw.append(math.ceil(max(card_min, cards_need, boundary_need)))
         gap_x, gap_y = row.get('gap_x', 230), row.get('gap_y', 96)
         # Columns that would make the figure wider than its frame continue on a band below.
         band, xs, x = [0] * len(columns), [0] * len(columns), 0
@@ -729,10 +739,35 @@ def transcript(row):
     return ''.join(f'<li>{escape(i)}</li>' for i in items)
 
 
+def compact_map(row,key):
+    """Reflow relationships without changing their text, endpoints or logical owners.
+
+    Complex or unrouteable models keep their full drawing in the labelled scroll region.
+    The compact result uses the same type sizes and the normal collision checks.
+    """
+    if row['kind']!='map' or any(n.get('shape') for n in row['nodes']):return None
+    candidate={k:row[k] for k in ('path','diagram','kind','number','title','caption','sources','groups') if k in row}
+    candidate['nodes']=[{k:v for k,v in n.items() if k in {'id','title','detail','role','key','state'}} for n in row['nodes']]
+    candidate['edges']=[{k:v for k,v in e.items() if k in {'from','to','label','both','style'}} for e in row.get('edges',[])]
+    candidate.update(max_w=px('figure-phone-width'),frame_w=px('figure-phone-width'),
+                     _card_max=px('figure-phone-card-max'),_card_min=px('figure-phone-card-min'))
+    try:
+        canvas=draw_map(auto_layout(candidate,key+'-compact'),key+'-compact')
+        canvas.verify()
+    except ValueError:return None
+    w,h=canvas.box[2]-canvas.box[0]+2*MARGIN,canvas.box[3]-canvas.box[1]+2*MARGIN
+    return canvas if w<=px('figure-phone-width') and h<=px('figure-phone-max-height') else None
+
+
 def render(row, source, provenance='original'):
     """The designed figure; for an original diagram, also its preserved Mermaid source."""
     prefix = 'fm-' + row['diagram']
     canvas = render_map(row, row['diagram']) if row['kind'] == 'map' else render_sequence(row, row['diagram'])
+    drawing=canvas.svg(prefix,row['title'],row['caption'])
+    compact=compact_map(row,row['diagram'])
+    if compact and compact.box[2]-compact.box[0] < canvas.box[2]-canvas.box[0]:
+        drawing=drawing.replace('<svg ','<svg data-figure-variant="wide" ',1)
+        drawing+=compact.svg(prefix+'-compact',row['title'],row['caption']).replace('<svg ','<svg data-figure-variant="compact" hidden="hidden" ',1)
     used = []
     for item in row.get('nodes', row.get('participants', [])):
         if item.get('shape') not in ('start', 'end') and item['role'] not in used:
@@ -747,14 +782,18 @@ def render(row, source, provenance='original'):
                                      else 'Numbered arrows name relationships, not time steps.')
     sources = ''.join(f'<li><a href="{escape(u)}" target="_blank" rel="noreferrer">{escape(u.split("/")[2])}: '
                       f'{escape(u.rstrip("/").split("/")[-1] or "documentation")}</a></li>' for u in row['sources'])
+    label=row.get('figure_label') or f'Figure {row["number"]}'
+    descriptions=''
+    if row.get('node_descriptions'):
+        descriptions='<dl>'+''.join('<dt>'+escape(' '.join(lines(n['title'])))+'</dt><dd>'+escape(' '.join(lines(n.get('detail'))))+'</dd>' for n in row.get('nodes',row.get('participants',[])))+'</dl>'
     figure = (f'<figure class="fm-figure" data-figure="{row["diagram"]}" data-pb-wide>'
               f'<p class="fm-heading">{escape(row["title"])}</p>'
               # The shared WideDiagram component adds scroll semantics and edge fades only when it overflows.
-              f'<div class="pb-widewrap"><div class="fm-scroll pb-wide" data-label="Figure {row["number"]}">'
-              + canvas.svg(prefix, row['title'], row['caption']) + '</div></div>'
+              f'<div class="pb-widewrap"><div class="fm-scroll pb-wide" data-label="{escape(label)}">'
+              + drawing + '</div></div>'
               f'<div class="fm-legend">{legend}<em>{escape(reading)}</em></div>'
-              f'<figcaption><strong>Figure {row["number"]}.</strong> {escape(row["caption"])}</figcaption>'
-              f'<details class="fm-sources"><summary>Read the figure as text</summary><ol>{transcript(row)}</ol>'
+              f'<figcaption><strong>{escape(label)}.</strong> {escape(row["caption"])}</figcaption>'
+              f'<details class="fm-sources"><summary>Read the figure as text</summary>{descriptions}<ol>{transcript(row)}</ol>'
               f'<p>Sources</p><ul>{sources}</ul></details></figure>')
     if provenance != 'original':
         return figure, ''
