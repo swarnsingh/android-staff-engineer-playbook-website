@@ -108,7 +108,8 @@ KOTLIN_ONLY = json.loads((WEB/'content/code-kotlin-only.json').read_text())
 
 
 def source_url(path):
-    provenance=json.loads((ROOT/'source-snapshot.json').read_text()).get(path.removesuffix('.md').split('/')[0]+'_provenance')
+    snapshot=json.loads((ROOT/'source-snapshot.json').read_text())
+    provenance=snapshot.get('file_provenance',{}).get(path) or snapshot.get(path.removesuffix('.md').split('/')[0]+'_provenance')
     if provenance:
         return provenance['repository']+'/blob/'+provenance['commit']+'/'+quote(path)
     return SOURCE_ROOT+quote(path)

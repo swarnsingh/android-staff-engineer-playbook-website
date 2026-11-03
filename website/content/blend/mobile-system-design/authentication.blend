@@ -1,129 +1,377 @@
-<!-- Website teaching layer for mobile-system-design/authentication.md (interview walkthrough).
-     The original chapter is rendered in full; everything here is added around it. The timeline, try-first prompts,
-     decision cards and pushback checks are generated from the chapter by website/scripts/walkthrough.py.
-     Hand-authored here: the step-through and the end recap.
-     Verified 2026-11-01 against authentication.md at source 8e152a8 (§2 token lifetimes, §4 POST /token, §7 caller-owned single-flight refresh, SessionAuthInterceptor 401 follow-up for bodyless reads, biometric re-auth and failure modes)
-     and against RFC 6749, RFC 7636, RFC 8252 and the OkHttp interceptor guide. -->
+<!-- Teaching layer over exact approved source PR #80, fb8354e. Existing generated interview scaffolding remains unchanged. -->
+<!-- @opening -->
+<p class="story-lead">Two requests receive 401 while one refresh token can be used only once. The app must serialize refresh ownership, preserve a started rotation through caller cancellation, and prevent an old response from entering a new login.</p>
 
 <!-- @after 7. Deep Dive: Token Lifecycle (15 min) :: animation -->
-### Follow two requests through one token refresh
+### Follow refresh ownership, not just token arrival
 
-<figure class="stepper" data-illustrated><span class="stepper-title">Two 401s, one refresh</span><div class="stage viz-stack"><div class="viz-grid" data-cols="3"><div class="node" data-el="reqA" data-art="code" data-art-role="client"><strong>Request A</strong><small data-text="reqAV">GET /orders</small></div><div class="node" data-el="reqB" data-art="code" data-art-role="client"><strong>Request B</strong><small data-text="reqBV">GET /v1/me</small></div><div class="node" data-el="ref" data-art="lock" data-art-role="runtime"><strong>TokenRefresher</strong><small data-text="refV">Mutex + vault re-read</small></div></div><div class="viz-grid" data-cols="3"><div class="node" data-el="idp" data-art="server" data-art-role="runtime"><strong>IdP</strong><small data-text="idpV">POST /token</small></div><div class="node" data-el="vault" data-art="key" data-art-role="storage"><strong>TokenVault</strong><small data-text="vaultV">access token T1</small></div><div class="node" data-el="api" data-art="server" data-art-role="runtime"><strong>Resource API</strong><small data-text="apiV">validates Bearer</small></div></div><div class="node is-key" data-el="event" data-art="signal" data-art-role="runtime"><strong>What happens</strong><small data-text="eventV">—</small></div></div><script type="application/json" class="steps">[
-  {
-    "label": "Stale token sent",
-    "caption": "The device clock runs behind, so the access token T1 still looks valid locally. SessionAuthInterceptor attaches T1 to two GET requests that leave at the same time on OkHttp threads.",
-    "add": [
-      "reqA",
-      "reqB",
-      "ref",
-      "idp",
-      "vault",
-      "api",
-      "event"
-    ],
-    "state": {
-      "reqA": "active",
-      "reqB": "active"
+<section class="pb-figure" data-pb-flow="scene" aria-label="Two 401s share one bounded refresh">
+<h3>Walkthrough 1. Two 401s share one bounded refresh</h3><p class="pb-sub">Illustrative rotating-token policy: reuse revokes this token family. Providers differ; no network or coroutine code executes here.</p>
+<div class="pb-seg" role="group" aria-label="Comparison policy"><button type="button" data-mode="single" aria-pressed="true">Shared single-flight refresh</button><button type="button" data-mode="independent" aria-pressed="false">Independent refresh owners</button></div>
+<div class="pb-paper" role="region" aria-label="Illustrative system; scroll if needed" tabindex="0"><svg class="pb-svg" role="img" aria-label="Two 401s share one bounded refresh; every step is available as text below"></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div><div class="pb-caption" aria-live="polite"><span class="pb-count"></span><p></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" hidden aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">
+{
+  "illustrated": true,
+  "playback": "manual",
+  "layout": "three-peers",
+  "owners": {
+    "a": "BODYLESS REQUESTS",
+    "b": "CAPTURED LOGIN",
+    "c": "IDENTITY PROVIDER"
+  },
+  "nodes": [
+    {
+      "id": "a",
+      "label": "Callers A/B",
+      "art": {
+        "kind": "phone",
+        "role": "client"
+      }
     },
-    "text": {
-      "eventV": "both send Bearer T1"
+    {
+      "id": "b",
+      "label": "Session",
+      "art": {
+        "kind": "database",
+        "role": "storage"
+      }
+    },
+    {
+      "id": "c",
+      "label": "Identity",
+      "art": {
+        "kind": "server",
+        "role": "runtime"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "ab",
+      "from": "a",
+      "to": "b",
+      "label": "refresh"
+    },
+    {
+      "id": "ba",
+      "from": "b",
+      "to": "a",
+      "label": "current"
+    },
+    {
+      "id": "bc",
+      "from": "b",
+      "to": "c",
+      "label": "token"
+    },
+    {
+      "id": "cb",
+      "from": "c",
+      "to": "b",
+      "label": "reply"
+    }
+  ],
+  "modes": {
+    "single": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "two reads; 401 T1"
+          ],
+          "b": [
+            "",
+            "vault T1 / R1"
+          ],
+          "c": [
+            "",
+            "R1 current"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Two 401s",
+          "caption": "Two bodyless reads received 401 for T1. Both retain this login’s objects; the resource API is outside this compact scene.",
+          "packets": []
+        },
+        {
+          "label": "Acquire",
+          "caption": "A owns the shared mutex; B waits and may cancel its wait.",
+          "packets": [
+            {
+              "edge": "ab",
+              "label": "refreshNow T1",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-active",
+                "A owns; B waits"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Rotate",
+          "caption": "A starts refresh R1. If its caller cancels now, bounded rotation and atomic commit still finish before cancellation propagates.",
+          "packets": [
+            {
+              "edge": "bc",
+              "label": "refresh R1",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-active",
+                "rotating R1"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Response",
+          "caption": "Assume this provider revokes the token family on rotated-token reuse. A’s refresh returns T2/R2; R1 is now used.",
+          "packets": [
+            {
+              "edge": "cb",
+              "label": "T2 + R2",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-done",
+                "R1 used; R2 issued"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Commit",
+          "caption": "The session atomically commits T2/R2 before A’s cancellation is propagated. A retired vault would reject replacement.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-done",
+                "vault T2 / R2"
+              ]
+            }
+          }
+        },
+        {
+          "label": "B resumes",
+          "caption": "B re-reads the vault under the same mutex. T2 differs from failed T1, so B makes no second token request.",
+          "packets": [
+            {
+              "edge": "ba",
+              "label": "use T2",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-done",
+                "T2; no second POST"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Outcome",
+          "caption": "B can retry its bodyless read once with T2. Writes remain caller-owned; the scene does not replay them.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-done",
+                "B uses T2"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Limits",
+          "caption": "Mutex and NonCancellable cannot protect process death, another process or ambiguous rotation. Recovery follows the provider’s policy.",
+          "packets": []
+        }
+      ]
+    },
+    "independent": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "two reads; 401 T1"
+          ],
+          "b": [
+            "",
+            "vault T1 / R1"
+          ],
+          "c": [
+            "",
+            "R1 current"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Two 401s",
+          "caption": "Two bodyless reads received 401 for T1. Both retain this login’s objects; the resource API is outside this compact scene.",
+          "packets": []
+        },
+        {
+          "label": "Acquire",
+          "caption": "A and B use independent refresh owners. Neither serializes its decision against the other.",
+          "packets": [
+            {
+              "edge": "ab",
+              "label": "refreshNow T1",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-active",
+                "independent owners"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Rotate",
+          "caption": "A starts refresh R1. If its caller cancels now, bounded rotation and atomic commit still finish before cancellation propagates.",
+          "packets": [
+            {
+              "edge": "bc",
+              "label": "refresh R1",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-active",
+                "rotating R1"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Response",
+          "caption": "Assume this provider revokes the token family on rotated-token reuse. A’s refresh returns T2/R2; R1 is now used.",
+          "packets": [
+            {
+              "edge": "cb",
+              "label": "T2 + R2",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-done",
+                "R1 used; R2 issued"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Commit",
+          "caption": "The session atomically commits T2/R2 before A’s cancellation is propagated. A retired vault would reject replacement.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-done",
+                "vault T2 / R2"
+              ]
+            }
+          }
+        },
+        {
+          "label": "B resumes",
+          "caption": "B’s independent owner sends its captured R1 after rotation; this illustrative provider rejects reuse.",
+          "packets": [
+            {
+              "edge": "bc",
+              "label": "stale R1",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-warn",
+                "R1 reuse rejected"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Outcome",
+          "caption": "Confirmed terminal rejection retires this captured login. Under this provider’s family-revocation policy, the user must reauthenticate.",
+          "packets": [
+            {
+              "edge": "cb",
+              "label": "invalid_grant",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-warn",
+                "reauth required"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Limits",
+          "caption": "Mutex and NonCancellable cannot protect process death, another process or ambiguous rotation. Recovery follows the provider’s policy.",
+          "packets": []
+        }
+      ]
     }
   },
-  {
-    "label": "Both get 401",
-    "caption": "The resource API is the truth about expiry and rejects T1 on both requests. Each interceptor closes its response and calls refreshNow(failedAccessToken = T1).",
-    "state": {
-      "api": "error",
-      "reqA": "warn",
-      "reqB": "warn"
-    },
-    "text": {
-      "apiV": "401 · 401",
-      "eventV": "two callers want a refresh"
-    }
-  },
-  {
-    "label": "Single flight",
-    "caption": "A’s refresh takes the Mutex first and sends POST /token with the refresh token. B’s refresh waits on the same lock instead of sending a second request.",
-    "state": {
-      "ref": "active",
-      "idp": "active"
-    },
-    "text": {
-      "refV": "A holds the lock · B waits",
-      "eventV": "one refresh in flight"
-    },
-    "handoff": {
-      "from": "ref",
-      "to": "idp",
-      "kind": "parcel",
-      "label": "refresh token"
-    }
-  },
-  {
-    "label": "Caller cancelled",
-    "caption": "Request A’s caller is cancelled while A owns the refresh. The bounded rotation and commit run under NonCancellable, so cancellation waits for them. There is no hidden app-scope job.",
-    "state": {
-      "reqA": "warn"
-    },
-    "text": {
-      "reqAV": "cancelled, commit first",
-      "eventV": "the started rotation finishes"
-    }
-  },
-  {
-    "label": "Rotation saved",
-    "caption": "The IdP rotates the refresh token and returns T2. The refresher saves both new tokens to the vault before it releases the lock, then A’s cancellation takes effect. A lost response or process death can still leave recovery to the IdP’s policy.",
-    "state": {
-      "idp": "done",
-      "vault": "done",
-      "reqA": "ghost"
-    },
-    "text": {
-      "reqAV": "cancelled after commit",
-      "vaultV": "T2 + new refresh token",
-      "eventV": "saved before unlock"
-    },
-    "handoff": {
-      "from": "idp",
-      "to": "vault",
-      "kind": "rows",
-      "label": "new tokens"
-    }
-  },
-  {
-    "label": "No second refresh",
-    "caption": "B gets the lock and reloads the vault. The access token is no longer T1, so another caller already refreshed, and B returns T2 without calling the IdP.",
-    "state": {
-      "ref": "done"
-    },
-    "text": {
-      "refV": "lock released",
-      "eventV": "one POST /token in total"
-    }
-  },
-  {
-    "label": "Retry once",
-    "caption": "B’s interceptor retries its bodyless read once with T2 and gets 200. A write’s 401 returns to its caller. A confirmed invalid_grant ends only this login session; a transient refresh failure keeps its tokens.",
-    "state": {
-      "reqB": "done",
-      "api": "done",
-      "event": "done"
-    },
-    "text": {
-      "reqBV": "200 with T2",
-      "apiV": "accepts T2",
-      "eventV": "retried once"
-    }
-  }
-]</script><figcaption>The Mutex makes the refresh single-flight, the vault check stops a second POST /token, and NonCancellable finishes a started rotation when its caller is cancelled.</figcaption></figure>
+  "stepNavigation": "select",
+  "compareAtCurrentStep": true
+}
+</script>
+</section>
+
+<!-- @before 9. Major Concerns :: guide -->
+### A local prompt is not a server action grant
+
+The canonical source now separates a local UI gate from action-bound proof. For a protected server action, follow its challenge, enrolled-key proof and short-lived action grant contract. A prompt result or local timestamp alone cannot authorize that operation. The preserved “Major Concerns” storage-key suggestion concerns local key use; it does not replace this server contract. See [Android biometric cryptographic authentication](https://developer.android.com/identity/sign-in/biometric-auth) and the linked canonical Security chapters.
 
 <!-- @after 12. Further Reading :: recap -->
 ### Say these in the interview
 
-- **Sign in with Authorization Code and PKCE** in the system browser or a Custom Tab; the app never sees the password, and the redirect is a verified HTTPS App Link.
-- **Make refresh single-flight.** A Mutex serializes refreshes, and a caller refreshes only if the vault still holds the token that failed.
-- **Let the caller own the refresh.** Finish a started rotation and its commit under `NonCancellable`, so caller cancellation cannot lose it. This does not protect against process death.
-- **Treat `exp` as advisory.** The server is the truth, and a 401 on a bodyless read triggers one refresh and one retry. A write’s 401 returns to its caller.
-- **Only a confirmed `invalid_grant` ends the session.** End that login locally, clear only its data and cancel its work. A transient failure keeps its tokens.
-- **Gate sensitive actions with biometric re-authentication** that stays valid for a short window, such as 5 minutes.
+- **Bind the browser result to its login attempt.** Use Authorization Code with PKCE in an external user agent and validate the registered redirect, response state and provider contract before exchange. The chapter assumes a verified HTTPS App Link.
+- **Capture one login’s objects.** A new login gets a new vault and refresher; invalidation permanently rejects replacement in the old vault.
+- **Serialize and re-read.** A shared Mutex prevents overlapping refresh owners in this process; re-reading T2 avoids another request for failed T1.
+- **Bound started rotation and commit.** Caller cancellation waits for that bounded work, then propagates. This cannot make the IdP and local disk atomic across process death.
+- **Retry only the declared request class.** The source retries a bodyless read once after a 401; writes remain caller-owned. Only a confirmed terminal credential rejection retires the captured login; transient failures retain its tokens.
+- **Authorize sensitive server actions on the server.** Local biometric UI state is not action-bound authorization. Use the canonical enrolled-key and step-up grant contract when required.

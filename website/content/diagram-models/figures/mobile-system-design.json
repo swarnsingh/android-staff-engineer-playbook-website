@@ -1226,266 +1226,6 @@
     ]
   },
   {
-    "path": "mobile-system-design/authentication",
-    "diagram": "3710faa5da8b8d8f",
-    "number": 1,
-    "title": "The browser signs in; the app only holds tokens",
-    "caption": "The app sends an authorization request with a PKCE challenge through the system browser or a Custom Tab, where the user authenticates with the identity provider. The app exchanges the returned code and its verifier for tokens, stores them in the Keystore-wrapped vault and sends the access token to the API.",
-    "sources": [
-      "https://www.rfc-editor.org/rfc/rfc8252",
-      "https://www.rfc-editor.org/rfc/rfc7636"
-    ],
-    "kind": "map",
-    "nodes": [
-      {
-        "id": "app",
-        "title": "Android client",
-        "role": "client",
-        "detail": [
-          "PKCE verifier +",
-          "session state"
-        ],
-        "key": true
-      },
-      {
-        "id": "browser",
-        "title": "System browser",
-        "role": "client",
-        "detail": "or Custom Tab"
-      },
-      {
-        "id": "idp",
-        "title": "Identity provider",
-        "role": "runtime",
-        "detail": [
-          "authorize + token",
-          "endpoints"
-        ]
-      },
-      {
-        "id": "vault",
-        "title": "Token vault",
-        "role": "storage",
-        "detail": [
-          "Keystore-wrapped",
-          "persistence"
-        ]
-      },
-      {
-        "id": "api",
-        "title": "BFF / resource API",
-        "role": "runtime",
-        "detail": [
-          "validates the",
-          "access token"
-        ]
-      }
-    ],
-    "groups": [
-      {
-        "id": "device",
-        "label": "On the device",
-        "nodes": [
-          "app",
-          "browser",
-          "vault"
-        ]
-      },
-      {
-        "id": "server",
-        "label": "Servers",
-        "nodes": [
-          "idp",
-          "api"
-        ]
-      }
-    ],
-    "edges": [
-      {
-        "from": "app",
-        "to": "browser",
-        "label": "auth request + challenge"
-      },
-      {
-        "from": "browser",
-        "to": "idp",
-        "label": "user signs in"
-      },
-      {
-        "from": "idp",
-        "to": "app",
-        "label": "redirect with code",
-        "style": "dashed"
-      },
-      {
-        "from": "app",
-        "to": "idp",
-        "label": "code + verifier"
-      },
-      {
-        "from": "idp",
-        "to": "app",
-        "label": "access, refresh, ID tokens",
-        "style": "dashed"
-      },
-      {
-        "from": "app",
-        "to": "vault",
-        "label": "stores tokens"
-      },
-      {
-        "from": "app",
-        "to": "api",
-        "label": "Bearer access token"
-      }
-    ]
-  },
-  {
-    "path": "mobile-system-design/authentication",
-    "diagram": "8a97dc623a51512b",
-    "number": 2,
-    "title": "One refresher serves every 401",
-    "caption": "The sign-in path runs from the UI through AuthRepository to Custom Tabs, the IdP API and the vault. On the request path, SessionAuthInterceptor attaches the access token; a 401 goes to the single-flight TokenRefresher, which updates the vault and lets the interceptor retry a bodyless read once. A write's 401 returns to its caller.",
-    "sources": [
-      "https://square.github.io/okhttp/features/interceptors/",
-      "https://developer.chrome.com/docs/android/custom-tabs"
-    ],
-    "kind": "map",
-    "nodes": [
-      {
-        "id": "ui",
-        "title": "Compose UI",
-        "role": "client"
-      },
-      {
-        "id": "vm",
-        "title": "AuthViewModel",
-        "role": "runtime"
-      },
-      {
-        "id": "repo",
-        "title": "AuthRepository",
-        "role": "runtime"
-      },
-      {
-        "id": "browser",
-        "title": "AuthBrowserClient",
-        "role": "client",
-        "detail": "Custom Tabs"
-      },
-      {
-        "id": "idp",
-        "title": "IdP API",
-        "role": "runtime",
-        "detail": "token + revoke"
-      },
-      {
-        "id": "vault",
-        "title": "TokenVault",
-        "role": "storage",
-        "detail": "Keystore-wrapped"
-      },
-      {
-        "id": "call",
-        "title": "Network call",
-        "role": "client"
-      },
-      {
-        "id": "icpt",
-        "title": "SessionAuthInterceptor",
-        "role": "runtime"
-      },
-      {
-        "id": "api",
-        "title": "Resource API",
-        "role": "runtime"
-      },
-      {
-        "id": "ref",
-        "title": "TokenRefresher",
-        "role": "runtime",
-        "detail": "single-flight",
-        "key": true
-      }
-    ],
-    "groups": [
-      {
-        "id": "signin",
-        "label": "Sign-in path",
-        "nodes": [
-          "ui",
-          "vm",
-          "repo",
-          "browser",
-          "idp"
-        ]
-      },
-      {
-        "id": "req",
-        "label": "Request path",
-        "nodes": [
-          "call",
-          "icpt",
-          "api",
-          "ref"
-        ]
-      }
-    ],
-    "edges": [
-      {
-        "from": "ui",
-        "to": "vm",
-        "label": "events"
-      },
-      {
-        "from": "vm",
-        "to": "repo",
-        "label": "sign in / out"
-      },
-      {
-        "from": "repo",
-        "to": "browser",
-        "label": "opens"
-      },
-      {
-        "from": "repo",
-        "to": "idp",
-        "label": "exchanges + revokes"
-      },
-      {
-        "from": "repo",
-        "to": "vault",
-        "label": "saves"
-      },
-      {
-        "from": "call",
-        "to": "icpt",
-        "label": "goes through"
-      },
-      {
-        "from": "icpt",
-        "to": "api",
-        "label": "attaches token"
-      },
-      {
-        "from": "api",
-        "to": "ref",
-        "label": "401"
-      },
-      {
-        "from": "ref",
-        "to": "vault",
-        "label": "reads + saves"
-      },
-      {
-        "from": "ref",
-        "to": "icpt",
-        "label": "retry once",
-        "style": "dashed"
-      }
-    ]
-  },
-  {
     "path": "mobile-system-design/deep-links-and-universal-links",
     "diagram": "baa5bcf2df96c6c3",
     "number": 1,
@@ -7403,6 +7143,215 @@
         "label": "Cloud service",
         "nodes": [
           "Cloud"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "mobile-system-design/authentication",
+    "diagram": "3710faa5da8b8d8f",
+    "kind": "map",
+    "number": 1,
+    "title": "The external browser and session vault have separate ownership",
+    "caption": "The app binds its browser attempt, exchanges the code with its verifier and installs the provider’s response only into that login’s vault. The OIDC scenario determines the token types; an ID token is not a universal OAuth result.",
+    "nodes": [
+      {
+        "id": "a",
+        "title": "Android client",
+        "role": "client",
+        "detail": "PKCE and login-attempt binding"
+      },
+      {
+        "id": "b",
+        "title": "External browser",
+        "role": "runtime"
+      },
+      {
+        "id": "i",
+        "title": "Identity provider",
+        "role": "runtime"
+      },
+      {
+        "id": "v",
+        "title": "Session token vault",
+        "role": "storage"
+      },
+      {
+        "id": "r",
+        "title": "Resource API",
+        "role": "runtime"
+      }
+    ],
+    "edges": [
+      {
+        "from": "a",
+        "to": "b",
+        "label": "authorization request and challenge"
+      },
+      {
+        "from": "b",
+        "to": "i",
+        "label": "user authentication"
+      },
+      {
+        "from": "i",
+        "to": "b",
+        "label": "authorization result"
+      },
+      {
+        "from": "b",
+        "to": "a",
+        "label": "registered redirect response"
+      },
+      {
+        "from": "a",
+        "to": "i",
+        "label": "validated code plus verifier"
+      },
+      {
+        "from": "i",
+        "to": "a",
+        "label": "provider token response"
+      },
+      {
+        "from": "a",
+        "to": "v",
+        "label": "install only in captured login"
+      },
+      {
+        "from": "a",
+        "to": "r",
+        "label": "Bearer access token"
+      }
+    ],
+    "sources": [
+      "https://www.rfc-editor.org/rfc/rfc8252.html",
+      "https://www.rfc-editor.org/rfc/rfc9700.html"
+    ]
+  },
+  {
+    "path": "mobile-system-design/authentication",
+    "diagram": "ea3f08a344dca0ce",
+    "kind": "map",
+    "number": 2,
+    "title": "The authenticated client retains one login’s vault and refresher",
+    "caption": "UI sign-in uses the repository and external browser. A 401 from a bodyless read reaches the captured refresher; it serializes and atomically updates its vault before the interceptor’s one retry. A write’s 401 returns to its caller.",
+    "nodes": [
+      {
+        "id": "u",
+        "title": "Compose UI",
+        "role": "client"
+      },
+      {
+        "id": "v",
+        "title": "AuthViewModel",
+        "role": "runtime"
+      },
+      {
+        "id": "repo",
+        "title": "AuthRepository",
+        "role": "runtime"
+      },
+      {
+        "id": "b",
+        "title": "AppAuth / browser",
+        "role": "runtime"
+      },
+      {
+        "id": "i",
+        "title": "IdP token / revoke",
+        "role": "runtime"
+      },
+      {
+        "id": "vault",
+        "title": "Captured TokenVault",
+        "role": "storage"
+      },
+      {
+        "id": "c",
+        "title": "Network call",
+        "role": "client"
+      },
+      {
+        "id": "int",
+        "title": "Session interceptor",
+        "role": "runtime"
+      },
+      {
+        "id": "api",
+        "title": "Resource API",
+        "role": "runtime"
+      },
+      {
+        "id": "f",
+        "title": "Single-flight refresher",
+        "role": "runtime"
+      }
+    ],
+    "edges": [
+      {
+        "from": "u",
+        "to": "v",
+        "label": "sign-in intent"
+      },
+      {
+        "from": "v",
+        "to": "repo",
+        "label": "login operation"
+      },
+      {
+        "from": "repo",
+        "to": "b",
+        "label": "external authorization attempt"
+      },
+      {
+        "from": "repo",
+        "to": "i",
+        "label": "exchange or revoke"
+      },
+      {
+        "from": "repo",
+        "to": "vault",
+        "label": "captured-login storage"
+      },
+      {
+        "from": "c",
+        "to": "int",
+        "label": "session-bound request"
+      },
+      {
+        "from": "int",
+        "to": "api",
+        "label": "attach access token"
+      },
+      {
+        "from": "api",
+        "to": "f",
+        "label": "401 on declared bodyless read"
+      },
+      {
+        "from": "f",
+        "to": "vault",
+        "label": "atomic re-read / replace"
+      },
+      {
+        "from": "f",
+        "to": "int",
+        "label": "use current token; retry once"
+      }
+    ],
+    "sources": [
+      "https://www.rfc-editor.org/rfc/rfc8252.html",
+      "https://www.rfc-editor.org/rfc/rfc9700.html"
+    ],
+    "groups": [
+      {
+        "id": "session",
+        "label": "One captured login; invalidation is permanent",
+        "nodes": [
+          "vault",
+          "int",
+          "f"
         ]
       }
     ]
