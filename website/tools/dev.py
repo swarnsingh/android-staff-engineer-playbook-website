@@ -12,7 +12,7 @@ Full output goes to website/.cache/logs/; only a summary is printed. Use the Pyt
 environment that has website/requirements.txt installed (set PYTHON to override).
 """
 from pathlib import Path
-import collections, glob, json, os, socket, subprocess, sys, time
+import glob, json, os, socket, subprocess, sys, time, traceback
 
 ROOT = Path(__file__).resolve().parents[2]
 WEB = ROOT / 'website'
@@ -74,34 +74,65 @@ def puppeteer_dir():
 
 
 def summarize(folder):
+    """Summarize complete or partial evidence without hiding the original failure."""
     ok = True
-    browser = json.loads((folder / 'browser.json').read_text())
-    bad = [p for p in browser['pages'] if not p['ok']]
-    reasons = collections.Counter()
-    for p in bad:
-        for m in p['preservation']['problems']:
-            reasons[m[:100]] += 1
-        for s in p.get('sceneChecks', []) + p.get('illustratedChecks', []):
-            if not s.get('ok'):
-                reasons['scene: ' + str(s.get('problems'))[:100]] += 1
-        for layout in p.get('layouts', []):
-            if layout.get('overflow') or layout.get('clipped') or layout.get('smallLabels'):
-                reasons[f'layout at {layout.get("width")}px {layout.get("view")}'] += 1
-        if p.get('runtimeErrors'):
-            reasons['runtime error'] += 1
-    code = [c for p in browser['pages'] for c in p.get('codeChecks', [])]
-    pairs = [c for p in browser['pages'] for v in p['preservation']['views'] for c in v.get('pairChecks', [])]
-    print(f'{"PASS" if not bad else "FAIL"}  browser: {len(browser["pages"]) - len(bad)}/{len(browser["pages"])} pages; '
-          f'code {sum(c["ok"] for c in code)}/{len(code)}; Q&A pairs {sum(c["ok"] for c in pairs)}/{len(pairs)}')
-    for reason, n in reasons.most_common(8):
-        print(f'      {n} × {reason}')
-    ok &= not bad
-    for name in ['binder', 'motion', 'refinement', 'ux', 'qa-tampering']:
-        r = json.loads((folder / f'{name}.json').read_text())
-        checks = r.get('checks') or r.get('results') or []
-        failed = [c for c in checks if not c.get('ok', True)] + list(r.get('problems') or [])
-        print(f'{"PASS" if r.get("done") and not failed else "FAIL"}  {name}: {len(checks) - len(failed)}/{len(checks)}')
-        ok &= bool(r.get('done')) and not failed
+    for name in ['browser', 'binder', 'motion', 'refinement', 'ux', 'qa-tampering']:
+        source = folder / f'{name}.json'
+        try:
+            result = json.loads(source.read_text())
+            if not isinstance(result, dict):
+                raise ValueError('expected a result object')
+            key = 'pages' if name == 'browser' else 'results' if name == 'motion' else 'checks'
+            checks = result.get(key)
+            if not isinstance(checks, list) or not checks or any(not isinstance(c, dict) for c in checks):
+                raise ValueError(f'missing or empty {key} results; {result.get("error") or "audit incomplete"}')
+            failed = [c for c in checks if c.get('ok') is not True]
+            problems = result.get('problems') or []
+            if not isinstance(problems, list):
+                raise ValueError('expected a problems list')
+            clean = (result.get('done') is True and result.get('ok', True) is True
+                     and not result.get('error') and not failed and not problems)
+            counts = f'{len(checks) - len(failed)}/{len(checks)}'
+            if name == 'browser':
+                code = [c for page in checks for c in page.get('codeChecks', [])]
+                pairs = [c for page in checks for view in (page.get('preservation') or {}).get('views', [])
+                         for c in view.get('pairChecks', [])]
+                missing = [page for page in checks if page.get('ok') is True
+                           and not isinstance(page.get('preservation'), dict)]
+                clean &= not missing
+                counts += (f' pages; code {sum(c.get("ok") is True for c in code)}/{len(code)}; '
+                           f'Q&A pairs {sum(c.get("ok") is True for c in pairs)}/{len(pairs)}')
+                print(f'{"PASS" if clean else "FAIL"}  browser: {counts}')
+                for page in failed[:8]:
+                    details = [str(page['error'])] if page.get('error') else []
+                    details += list((page.get('preservation') or {}).get('problems', []))
+                    details += [str(error) for error in page.get('runtimeErrors') or []]
+                    for scene in (page.get('sceneChecks') or []) + (page.get('illustratedChecks') or []):
+                        if scene.get('ok') is not True:
+                            details.append('scene: ' + str(scene.get('problems')))
+                    for layout in page.get('layouts') or []:
+                        if layout.get('overflow') or layout.get('clipped') or layout.get('smallLabels'):
+                            details.append(f'layout at {layout.get("width")}px {layout.get("view")}')
+                    if not details:
+                        details = ['page checks failed; see browser.json for scene/layout/code details']
+                    print(f'      {page.get("href", "unknown page")}: ' + '; '.join(details))
+                for page in missing[:8]:
+                    print(f'      {page.get("href", "unknown page")}: missing preservation results')
+            else:
+                print(f'{"PASS" if clean else "FAIL"}  {name}: {counts}')
+                for check in failed[:8]:
+                    print(f'      {check.get("name", "check")}: '
+                          f'{check.get("error") or check.get("problems") or check.get("errors") or "failed"}')
+            if result.get('done') is not True:
+                print('      audit incomplete')
+            if result.get('error'):
+                print('      ' + str(result['error']))
+            for problem in problems[:8]:
+                print('      ' + str(problem))
+            ok &= bool(clean)
+        except (OSError, ValueError, TypeError, KeyError, AttributeError) as error:
+            print(f'FAIL  {name}: {source.name}: {error}')
+            ok = False
     return ok
 
 
@@ -113,6 +144,7 @@ def audit(name):
     qa = WEB / '.cache/browser-qa'
     if not report('prepare QA copy', *run('prepare', [PY, 'website/tools/prepare_browser_audit.py', str(qa)])):
         return False
+    folder.mkdir(parents=True, exist_ok=True)
     with socket.socket() as s:
         s.bind(('127.0.0.1', 0))
         port = s.getsockname()[1]
@@ -129,7 +161,16 @@ def audit(name):
         # Kotlin fragment evidence carries over; the gate re-verifies its hashes against current content.
         (folder / 'kotlin-validation.json').write_text(kotlin[-1].read_text())
     print(f'      evidence: {folder.relative_to(ROOT)}  (add REPORT.md before running `gate {name}`)')
-    return summarize(folder)
+    try:
+        summary_ok = summarize(folder)
+    except Exception as error:
+        # Keep a formatter bug from replacing the runner's original diagnostics.
+        LOGS.mkdir(parents=True, exist_ok=True)
+        summary_log = LOGS / 'audit-summary.log'
+        summary_log.write_text(traceback.format_exc())
+        print(f'FAIL  audit summary: {error}; full log: {summary_log.relative_to(ROOT)}')
+        return False
+    return ok and summary_ok
 
 
 def gate(name):
@@ -172,14 +213,15 @@ def ci():
     ok &= report('docs unit tests', *run('tests-docs', [PY, '-m', 'unittest', 'discover', '--start-directory', 'scripts', '--pattern', 'test_*.py']))
     ok &= report('docs check', *run('docs', [PY, 'scripts/check_docs.py']), keep=0)
     scripts = ['website/scripts/browser_preservation.js', 'website/app.js', 'website/blend.js',
-               'website/design-system/components/bundle.js', *sorted(str(p.relative_to(ROOT)) for p in (WEB / 'tools').glob('*.js'))]
+               'website/design-system/components/bundle.js', *sorted(str(p.relative_to(ROOT)) for pattern in ('*.js', '*.mjs') for p in (WEB / 'tools').glob(pattern))]
     bad = [s for s in scripts if subprocess.run(['node', '--check', s], cwd=ROOT, capture_output=True).returncode]
     print(f'{"PASS" if not bad else "FAIL"}  browser-script syntax: {len(scripts) - len(bad)}/{len(scripts)}' + ('' if not bad else f' failing {bad}'))
     return ok and not bad
 
 
-if __name__ == '__main__':
-    command, args = (sys.argv[1] if len(sys.argv) > 1 else ''), sys.argv[2:]
+def main(argv=None):
+    argv = sys.argv[1:] if argv is None else argv
+    command, args = (argv[0] if argv else ''), argv[1:]
     if command == 'build' and '--pending' in args:
         os.environ['WEBSITE_PENDING_FIGURES'] = '1'  # local only: other chapters' figures may still be missing
     actions = {'build': lambda: build(), 'figures': figures, 'frames': frames, 'ci': ci,
@@ -187,4 +229,8 @@ if __name__ == '__main__':
                'gate': lambda: gate(args[0]) if args else sys.exit('usage: dev.py gate REVIEW-FOLDER-NAME')}
     if command not in actions:
         sys.exit(__doc__)
-    sys.exit(0 if actions[command]() else 1)
+    return 0 if actions[command]() else 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())
