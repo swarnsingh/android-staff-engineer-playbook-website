@@ -8,15 +8,14 @@ ROOT=build.ROOT;REVIEW=ROOT/'website/reviews/completion'
 def digest(value):return hashlib.sha256(value.encode()).hexdigest()
 def fingerprints():
  files=['website/scripts/check_fundamentals_kotlin.py','website/tests/FundamentalsRegression.kt','website/content/engineering-fundamentals.json','website/content/corrections-engineering-fundamentals.json','website/content/corrections-computer-science.json','source-snapshot.json','website/content/observability.json','website/content/corrections-zz-observability-source-sync.json','website/scripts/check_scene_routes.py','website/scripts/scene_data.py','website/content/distributed-systems.json','website/content/release-engineering.json','website/content/security.json','website/content/backend-for-mobile.json','website/content/corrections-z-completion.json','website/reviews/completion/source-sync.json',
-  'website/scripts/build.py','website/scripts/diagram_models.py','website/scripts/figure_maps.py','website/design-system/components/ReaderShell/sequence.css','website/scripts/check_completion.py','website/scripts/check_preservation.py',
+  'website/scripts/build.py','website/scripts/diagram_models.py','website/scripts/figure_maps.py','website/sequence.css','website/scripts/check_completion.py','website/scripts/check_preservation.py',
   'website/scripts/generate_android_validation.py','website/scripts/browser_preservation.js',
-  'website/tools/qa_fixture_runner.js','website/design-system/components/ReaderShell/styles.css','website/design-system/components/ReaderShell/blend.css',
-  'website/design-system/components/ReaderShell/theme.css','website/design-system/components/ReaderShell/learning-path.css','website/design-system/components/ReaderShell/navigation.css','website/app.js','website/blend.js',
+  'website/tools/qa_fixture_runner.js','website/styles.css','website/blend.css',
+  'website/theme.css','website/learning-path.css','website/navigation.css','website/app.js','website/blend.js',
   'website/templates/reader.html','website/templates/home.html','website/design-system/tokens.json',
   'website/design-system/gallery.html','website/design-system/components/bundle.css',
   'website/design-system/components/bundle.js','website/tools/browser_audit_runner.js',
   'website/tools/ux_audit_runner.js','website/tools/prepare_browser_audit.py']
- files += ['website/scripts/static_figures.py','website/content/static-figures.json']
  files += ['website/content/code-pairs.json','website/content/code-kotlin-only.json','website/scripts/check_cs_code.py']
  files += [str(f.relative_to(ROOT)) for f in (ROOT/'website/content/blend').rglob('*.blend')]
  files += [str(f.relative_to(ROOT)) for f in (ROOT/'website/content/diagram-models').glob('*.json')]

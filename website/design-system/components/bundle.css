@@ -404,26 +404,3 @@ blockquote.pushback>p>strong:first-child{display:block;margin-bottom:var(--space
 /* FlowScene named-step navigation keeps controls compact without reducing actor or label sizes. */
 .pb-step-select{flex:1;min-width:min(100%,var(--scene-step-select-min));max-width:100%}
 @media(max-width:520px){.pb-controls:has(.pb-step-select) .pb-step-select{flex-basis:100%}.pb-controls:has(.pb-step-select) .spacer{display:none}}
-
-/* StaticFigure: authored comparisons and timelines use the same role language as FigureMap. */
-.pb-static{padding:var(--space-4);border:var(--static-card-stroke) solid var(--line);border-radius:var(--radius-lg);background:var(--sheet);font-family:var(--font-sans);font-size:var(--figure-title-size)}
-.pb-static .node{border-color:var(--actor);background:color-mix(in srgb,var(--actor) var(--static-role-tint),var(--sheet))}
-.pb-static .node.actor-runtime{border-width:var(--static-card-strong-stroke)}
-.pb-static .node.actor-storage{border-style:double;border-width:var(--static-card-double-stroke)}
-.pb-static .node.actor-queue{border-style:dashed}.pb-static .node.actor-neutral{border-style:dotted}
-.pb-static .node.is-key{background:color-mix(in srgb,var(--actor) var(--static-key-tint),var(--sheet))}
-.pb-static .node strong{font-family:var(--font-sans);font-size:var(--figure-title-size)}
-.pb-static :is(.node small,.node .note,.lane-label,.axis,.mark){font-family:var(--font-sans);font-size:var(--figure-detail-size);line-height:var(--figure-line)}
-.pb-static .node code{font-size:inherit}
-.pb-static .col{border:var(--static-card-stroke) solid var(--line);border-radius:var(--radius-md);padding:var(--space-3)}
-.pb-static .mark{color:var(--ink);background:color-mix(in srgb,var(--actor) var(--static-role-tint),var(--sheet));border-color:var(--actor)}
-.pb-static .mark[data-tone=ghost]{opacity:1;border-style:dashed;color:var(--ink-muted);background:var(--sheet)}
-.pb-static figcaption{font-size:var(--figure-caption-size);line-height:var(--static-caption-leading)}
-.fm-status{fill:var(--ink-muted)}
-
-.pb-static .static-status{display:block;font-family:var(--font-sans);font-size:var(--figure-detail-size);font-weight:var(--figure-status-weight);color:var(--warning)}
-.pb-static .node[data-state=ghost]{opacity:1}
-
-.fm-svg[hidden]{display:none}
-
-.pb-static .track .mark[data-label-index]{font-size:0;padding-inline:0}

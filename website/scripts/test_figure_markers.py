@@ -40,26 +40,6 @@ class FigureMarkerTests(unittest.TestCase):
     def test_sequence_message_and_self_arrowheads_resolve(self):
         self.assert_resolved_markers(self.fixture('sequence'))
 
-    def test_compact_variant_preserves_relationships_and_has_distinct_svg_ids(self):
-        row=dict(path='fixture',diagram='compact-fixture',kind='map',number=1,
-                 title='Ownership',caption='The same relationships reflow.',sources=['https://www.w3.org/TR/SVG2/'],
-                 nodes=[dict(id='a',title='A long source identifier',detail='A description that must remain readable',role='runtime'),
-                        dict(id='b',title='A long target identifier',detail='The retained result',role='storage')],
-                 edges=[{'from':'a','to':'b','label':'owns stored result'}],
-                 groups=[{'id':'owner','label':'Owner boundary','nodes':['a','b']}])
-        result=figure_maps.render(row,'')[0]
-        svgs=re.findall(r'<svg\b.*?</svg>',result,re.S)
-        self.assertEqual(len(svgs),2)
-        self.assertTrue(all('Owner boundary' in svg and 'fm-group' in svg for svg in svgs))
-        marker_sets=[self.assert_resolved_markers(svg) for svg in svgs]
-        self.assertFalse(marker_sets[0]&marker_sets[1])
-        all_ids=[n.attrib['id'] for svg in svgs for n in ET.fromstring(svg).iter() if 'id' in n.attrib]
-        self.assertEqual(len(all_ids),len(set(all_ids)))
-        for svg in svgs:
-            visible=' '.join(' '.join(ET.fromstring(svg).itertext()).split())
-            for phrase in ('A long source identifier','A description that must remain readable','The retained result','owns stored result'):
-                self.assertIn(phrase,visible)
-
     def test_different_figures_have_distinct_marker_ids(self):
         first = self.assert_resolved_markers(self.fixture('map', 'first-fixture'))
         second = self.assert_resolved_markers(self.fixture('sequence', 'second-fixture'))

@@ -59,6 +59,3 @@ Each SVG has a title and a description taken from the figure's caption. The "Rea
 ## Rendering
 
 `website/scripts/figure_maps.py` computes geometry only. Every colour, typeface and pattern comes from `tokens.json` through the `.fm-*` rules in `bundle.css`, so the figures follow the light, dark, sepia and high-contrast themes. Figures use the shared wide frame. On narrow screens they keep their 15px labels and scroll sideways through `WideDiagram`.
-
-
-Compact maps retain the same actors, labels, edge directions and logical owners. The shared renderer removes desktop coordinates, reflows the semantic graph and applies the usual collision checks. It emits an alternative only when it fits the `figure-phone-width` and `figure-phone-max-height` budgets and is narrower than the normal drawing. Unrouteable or larger graphs retain the normal labelled scroll area. The two drawings have unique SVG and marker IDs, and WideDiagram selects one from the actual region width using `figure-phone-breakpoint`; label sizes are never reduced. Sequence diagrams retain their lanes. Automatic card bounds, label insets and wrap budgets also come from the figure tokens. Remaining routing and sequence constants are separate tokenization work.

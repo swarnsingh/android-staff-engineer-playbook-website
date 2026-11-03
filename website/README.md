@@ -248,12 +248,3 @@ The build now fails if any page would show a rendered Mermaid picture. The share
 ### Engineering Fundamentals rollout ·29 October 2026
 
 All13 chapters now have concise teaching layers, labelled static diagrams and four temporal scenes where movement teaches the mechanism. The 293 primary-source-backed replacements are in `content/corrections-engineering-fundamentals.json` and original-source PR58. The owner approved a single shared ReadingSheet layout: prose fills the760px reading column; padded visual frames extend symmetrically up to 1000px, respecting rails and viewport limits. Layout tokens and the shared component bundle own this behavior for every current and future topic. See `reviews/engineering-fundamentals-2026-10-29/REPORT.md` for evidence and boundaries.
-
-
-### Older teaching figures · 3 November 2026
-
-The 197 older Kotlin and Android teaching figures now use shared presentation models in `content/static-figures.json`. Seventy-five relationship figures have explicit endpoints and labels in FigureMap. The other 122 retain their comparison or timeline structure, with role colours, border patterns, titles, legends and numbered captions. The renderer binds each model to its complete source figure hash and requires a declared role for every card. A card removed from the drawing must survive as an explicit relationship annotation. A complete build rejects unused, missing or stale models.
-
-The six reader stylesheet sources live under `design-system/components/ReaderShell/`. The build still publishes the same stylesheet URLs. `StaticFigure` and `ReaderShell` have component contracts, and the gallery renders three actual lesson figures through the same parameter and timeline-label processing as the reader.
-
-FigureMap also offers a compact phone composition when its automatic layout preserves all actors, labelled edges and owner boundaries within the shared compact-width and height budgets. Fifty-seven figures qualify in this build. The normal collision checks apply to both drawings, type sizes stay unchanged and the shared component selects the drawing from its actual available width. Complex figures retain their keyboard-accessible labelled local scroll area. Run `dev.py frames-phone` for an automated 375px check of every built chapter; this is separate from the deferred consolidated manual mobile review.

@@ -587,12 +587,7 @@
 
   function WideDiagram(root) {
     var box = root.querySelector('.pb-wide') || root; // the root may be its own scroll box (the reader's Mermaid figures)
-    var wide=box.querySelector('[data-figure-variant="wide"]'),compact=box.querySelector('[data-figure-variant="compact"]');
     function sync() {
-      if(wide && compact){
-        var narrow=box.clientWidth < parseFloat(getComputedStyle(box).getPropertyValue('--figure-phone-breakpoint'));
-        wide.toggleAttribute('hidden',narrow);compact.toggleAttribute('hidden',!narrow);
-      }
       var more = box.scrollWidth > box.clientWidth + 1;
       root.classList.toggle('is-scrollable', more);
       root.classList.toggle('at-start', box.scrollLeft <= 1);

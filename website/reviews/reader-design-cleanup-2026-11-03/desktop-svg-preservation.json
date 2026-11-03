@@ -1,7 +1,0 @@
-{
-  "baseline": "262c071198aa26068107cc3a20a2d5552da6c403",
-  "original_models": 220,
-  "unchanged_desktop_svg": 220,
-  "changed": [],
-  "normalization": "Remove the new data-figure-variant=wide attribute before comparing first SVG markup."
-}

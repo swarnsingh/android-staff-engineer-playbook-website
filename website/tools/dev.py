@@ -4,7 +4,6 @@
     python3 website/tools/dev.py build [--pending]  # local build; skips only the publication gate (--pending: allow unfinished figures)
     python3 website/tools/dev.py figures            # check every FigureMap model; list all problems
     python3 website/tools/dev.py frames             # in Chrome: figures framed, nothing scrolls, labels fit (after build)
-    python3 website/tools/dev.py frames-phone       # automated 375px frames and labelled local scrolling
     python3 website/tools/dev.py readiness          # in Chrome: audit startup and controlled resource failures (after build)
     python3 website/tools/dev.py audit NAME         # run the six browser audits into website/reviews/NAME/
     python3 website/tools/dev.py gate NAME          # point the gate at reviews/NAME, refresh fingerprints, real build
@@ -62,20 +61,7 @@ def figures():
                 fm.render(row, 'source', 'original')
             except Exception as error:
                 problems.append(f'{source.name} {row.get("path")} {row.get("diagram")}: {error}')
-    import static_figures as sf
-    static_count=0
-    for row in sf.load().values():
-        static_count+=1
-        try:
-            source=sf.source_for(row)
-            sf.validate(row,source)
-            if row['kind']=='map':
-                model=sf.as_map(row,source)
-                fm.check(model)
-                fm.render(model,'','teaching')
-        except Exception as error:
-            problems.append(f"static {row['path']} #{row['figure']}: {error}")
-    print(f'{"PASS" if not problems else "FAIL"}  figures: {count} original models + {static_count} teaching models, {len(problems)} problems')
+    print(f'{"PASS" if not problems else "FAIL"}  figures: {count} models, {len(problems)} problems')
     for p in problems:
         print('      ' + p[:220])
     return not problems
@@ -202,8 +188,8 @@ def gate(name):
     return report('real build with publication gate', *run('gate-build', [PY, 'website/scripts/build.py'], {'SITE_BASE': PROJECT_BASE}))
 
 
-def frames(width=1440):
-    """Real-browser layout check of every built chapter page at the requested viewport width."""
+def frames():
+    """Real-browser layout check of every built chapter page at desktop width."""
     with socket.socket() as s:
         s.bind(('127.0.0.1', 0))
         port = s.getsockname()[1]
@@ -211,12 +197,12 @@ def frames(width=1440):
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         time.sleep(1)
-        ok, lines, log = run('frames' if width==1440 else 'frames-phone', ['node', str(WEB / 'tools/frame_check.mjs'), puppeteer_dir(), f'http://127.0.0.1:{port}/', str(WEB / 'dist/nav-data.js'),str(width)])
+        ok, lines, log = run('frames', ['node', str(WEB / 'tools/frame_check.mjs'), puppeteer_dir(), f'http://127.0.0.1:{port}/', str(WEB / 'dist/nav-data.js')])
     finally:
         server.terminate()
     result = json.loads(lines[-1]) if ok and lines else None
     clean = bool(result) and not result['kinds']
-    print(f'{"PASS" if clean else "FAIL"}  frames ({width}px): ' + (f'{result["pages"]} pages, {result["figs"]} figures, {result["maps"]} maps, {result["labels"]} labels; static {result.get("staticFigures",0)} figures/{result.get("staticCards",0)} cards; problems {result["kinds"] or "none"}' if result else f'see {log.relative_to(ROOT)}'))
+    print(f'{"PASS" if clean else "FAIL"}  frames: ' + (f'{result["pages"]} pages, {result["figs"]} figures, {result["maps"]} maps, {result["labels"]} labels; problems {result["kinds"] or "none"}' if result else f'see {log.relative_to(ROOT)}'))
     for line in (result or {}).get('sample', []):
         print('      ' + line)
     return clean
@@ -257,7 +243,7 @@ def main(argv=None):
     command, args = (argv[0] if argv else ''), argv[1:]
     if command == 'build' and '--pending' in args:
         os.environ['WEBSITE_PENDING_FIGURES'] = '1'  # local only: other chapters' figures may still be missing
-    actions = {'build': lambda: build(), 'figures': figures, 'frames': frames, 'frames-phone': lambda: frames(375), 'readiness': readiness, 'ci': ci,
+    actions = {'build': lambda: build(), 'figures': figures, 'frames': frames, 'readiness': readiness, 'ci': ci,
                'audit': lambda: audit(args[0]) if args else sys.exit('usage: dev.py audit REVIEW-FOLDER-NAME'),
                'gate': lambda: gate(args[0]) if args else sys.exit('usage: dev.py gate REVIEW-FOLDER-NAME')}
     if command not in actions:

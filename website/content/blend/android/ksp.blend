@@ -11,7 +11,7 @@ KSP lets a processor read your Kotlin declarations at build time and write new s
 <!-- @diagram 983b8acc34b1133f -->
 ### From annotation to compiled class
 
-<figure class="viz"><div class="viz-flow"><div class="node"><strong>Your <code>.kt</code> sources</strong></div><div class="node"><strong>KSP2 symbol analysis</strong><small>standalone source analysis before compilation</small></div><div class="node"><strong>KSP Resolver</strong><small>the symbol graph</small></div><div class="node is-key"><strong>Your processor</strong></div><div class="node"><strong>Generated <code>.kt</code> files</strong></div><div class="node" data-state="done"><strong>Final compilation</strong></div></div><figcaption>Redrawn from the original diagram. Generated code is ordinary Kotlin source: it is compiled, packaged and shrunk like code you wrote. KSP2 runs source processing separately from the Kotlin compile task; processors use the Resolver API, then generated sources join compilation.</figcaption></figure>
+<figure class="viz"><div class="viz-flow"><div class="node"><strong>Your <code>.kt</code> sources</strong></div><div class="node"><strong>Kotlin compiler</strong><small>parses the module</small></div><div class="node"><strong>KSP Resolver</strong><small>the symbol graph</small></div><div class="node is-key"><strong>Your processor</strong></div><div class="node"><strong>Generated <code>.kt</code> files</strong></div><div class="node" data-state="done"><strong>Final compilation</strong></div></div><figcaption>Redrawn from the original diagram. Generated code is ordinary Kotlin source: it is compiled, packaged and shrunk like code you wrote.</figcaption></figure>
 
 <!-- @after How KSP Sees Your Code :: animation -->
 ### Where did the generated class go?
