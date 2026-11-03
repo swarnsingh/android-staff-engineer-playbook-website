@@ -1,0 +1,13 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">The build is correctly signed, but an installed app refuses the update. The certificate that authenticated the upload is not necessarily the identity that the device expects.</p>
+
+<!-- @before 3. Play App Signing (The Standard Today) :: guide -->
+### Follow the artifact to its installed signer
+
+With Play App Signing, distinguish the developer-held upload key from the app-signing identity used for delivered APKs. Verify the signer expected for that distribution path, not merely that a signature exists. An upload-key reset and app-signing-key upgrade address different custody problems. [Android signing guidance](https://developer.android.com/studio/publish/app-signing).
+
+<!-- @before 9. The Compromise Playbook :: staff -->
+### Make recovery specific to the channel
+
+Record certificate fingerprints, custody, access and supported rotation paths before an incident. Assess compromised credentials separately, verify a recovered artifact independently, and account for installed OS cohorts and other distribution channels. A new key generated during an incident does not automatically become a valid update identity.

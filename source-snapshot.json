@@ -233,7 +233,7 @@
   },
   "observability_link_targets_reference_commit": "7666569cf77db7616d43f05cf041c438cb947035",
   "observability_link_targets_sha256": {
-    "release-engineering/crash-rate-gating.md": "b87f6838fb304c0e018ae2403f882b278ebccd7ebd55db83816b0aa3b8a9bd04",
+    "release-engineering/crash-rate-gating.md": "2c74df38baf113f44c3c4a6825f7bc38096dcc693a83132dde9e6a807094be2a",
     "milestones.md": "25df271211d99bb3d6c6ca984e092032f5fb316d5d8b2b7e7f3c19a9db74931b"
   },
   "mobile-system-design_authentication_reference_commit": "fb8354edb079e901edf18710ca9388a124712a5b",
@@ -302,5 +302,30 @@
       "source_pr": 80,
       "scope": "Only the approved Authentication chapter; other MSD snapshots retain their recorded provenance."
     }
+  },
+  "release-engineering_sha256": {
+    "release-engineering.md": "29cedea3ba46943ecdaa6410eeea99446581d9c849f9e5b03ca6d4a812b7ffd1",
+    "release-engineering/code-signing.md": "ccefaa694d7d66e34d1ad03cf042bce1923ea13bc66f0e89c979bab724416194",
+    "release-engineering/ci-cd-for-mobile.md": "582109e465d3d3f52ac0b8ea2340e905234c1c0c4d5766a5ecf1a164f84534a5",
+    "release-engineering/app-bundles.md": "7553dde2a29211b371451c2173cdc2021d7f247876aac33ebde0315f8324fca4",
+    "release-engineering/play-store-internals.md": "7c5ac2598c8e2c1b19ee5183ad033ee2126e2d14dfca247a54fc141cafdc6f4a",
+    "release-engineering/android-developer-verification.md": "1f86a6f24ee16dc8c924096b108585050a48479f3bdd601438236b165d9eb6a3",
+    "release-engineering/android-platform-compatibility.md": "e18207111ed17aba9125664b373fd6acff038036f7f0803b11e73a908aafb665",
+    "release-engineering/16kb-page-sizes.md": "5e416eda7e249392c5c174892ce6b5d7a4ba2b0e250375dcd584e6107776519d",
+    "release-engineering/staged-rollouts.md": "d0dc4e3b6e4300dd34de131788edae8bc9a6d9b3fdba995d6f40732c43a4a853",
+    "release-engineering/crash-rate-gating.md": "2c74df38baf113f44c3c4a6825f7bc38096dcc693a83132dde9e6a807094be2a",
+    "release-engineering/kill-switches.md": "9e757c4f27a60568bc8d458919d86546551fa69bb49ae0d395840675cac3e8fd",
+    "release-engineering/release-strategy.md": "c7cc881913e0df5d6ab7797687fd782acbc1b18d6b8268674dc4b6d5fc624976"
+  },
+  "release-engineering_provenance": {
+    "repository": "https://github.com/swarnsingh/android-staff-engineer-playbook",
+    "commit": "fb8354edb079e901edf18710ca9388a124712a5b",
+    "source_pr": 79,
+    "scope": "Complete guided tree: exact approved index and all 11 chapters.",
+    "method": "Exact git show bytes from approved combined main; SHA-256 over raw bytes."
+  },
+  "observability_link_targets_file_commits": {
+    "release-engineering/crash-rate-gating.md": "fb8354edb079e901edf18710ca9388a124712a5b",
+    "milestones.md": "7666569cf77db7616d43f05cf041c438cb947035"
   }
 }

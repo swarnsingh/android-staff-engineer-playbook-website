@@ -1,0 +1,257 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">A validated configuration disables one feature but also changes a setting intended for the next session. Fetch success did not establish that the whole snapshot was safe to activate now.</p>
+
+<!-- @before 3. Live Apply Policy :: animation -->
+### Activation needs an application policy
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="Apply the live value and retain the pending value">
+<h3>Walkthrough 1. Apply the live value and retain the pending value</h3><p class="pb-sub">Illustrative custom LIVE/NEXT_SESSION policy, not a Firebase built-in feature. Worker behavior is a declared application contract.</p>
+<div class="pb-seg" role="group" aria-label="Comparison policy"><button type="button" data-mode="scoped" aria-pressed="true">Separate active and pending</button><button type="button" data-mode="all" aria-pressed="false">Activate whole snapshot</button></div>
+<div class="pb-paper" role="region" aria-label="Illustrative system; scroll if needed" tabindex="0"><svg class="pb-svg" role="img" aria-label="Apply the live value and retain the pending value; every step is available as text below"></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div><div class="pb-caption" aria-live="polite"><span class="pb-count"></span><p></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" hidden aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">
+{
+  "illustrated": true,
+  "playback": "manual",
+  "layout": "three-peers",
+  "owners": {
+    "a": "CONFIG DISTRIBUTION",
+    "b": "APPLICATION POLICY",
+    "c": "BACKGROUND WORK"
+  },
+  "nodes": [
+    {
+      "id": "a",
+      "label": "Config",
+      "art": {
+        "kind": "server",
+        "role": "runtime"
+      }
+    },
+    {
+      "id": "b",
+      "label": "App policy",
+      "art": {
+        "kind": "phone",
+        "role": "client"
+      }
+    },
+    {
+      "id": "c",
+      "label": "Worker",
+      "art": {
+        "kind": "server",
+        "role": "runtime"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "ab",
+      "from": "a",
+      "to": "b",
+      "label": "revision"
+    },
+    {
+      "id": "bc",
+      "from": "b",
+      "to": "c",
+      "label": "policy"
+    }
+  ],
+  "modes": {
+    "scoped": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "new revision ready"
+          ],
+          "b": [
+            "",
+            "live on; session old"
+          ],
+          "c": [
+            "",
+            "running"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Active",
+          "caption": "The current session uses next-session value old. A worker is already running under its documented checkpoint policy.",
+          "packets": []
+        },
+        {
+          "label": "Fetch",
+          "caption": "A fetched revision carries live=false and next-session=new; it is validated before use.",
+          "packets": [
+            {
+              "edge": "ab",
+              "label": "validated revision",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-active",
+                "pending revision"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Activate",
+          "caption": "The application policy applies the live-safe disable but retains the current session value.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-done",
+                "live off; session old"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Reconcile",
+          "caption": "The worker observes the supported disable at its safe checkpoint; new starts are blocked.",
+          "packets": [
+            {
+              "edge": "bc",
+              "label": "live off",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-done",
+                "checkpoint; no new starts"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Session boundary",
+          "caption": "The pending next-session value remains pending until a new session.",
+          "packets": []
+        },
+        {
+          "label": "Scope",
+          "caption": "This is the chapter’s custom apply policy. Already committed external work is not undone by disabling a flag.",
+          "packets": []
+        }
+      ]
+    },
+    "all": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "new revision ready"
+          ],
+          "b": [
+            "",
+            "live on; session old"
+          ],
+          "c": [
+            "",
+            "running"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Active",
+          "caption": "The current session uses next-session value old. A worker is already running under its documented checkpoint policy.",
+          "packets": []
+        },
+        {
+          "label": "Fetch",
+          "caption": "A fetched revision carries live=false and next-session=new; it is validated before use.",
+          "packets": [
+            {
+              "edge": "ab",
+              "label": "validated revision",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-active",
+                "pending revision"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Activate",
+          "caption": "Whole-snapshot activation also changes the current session value before its intended boundary.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-warn",
+                "live off; session NEW"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Reconcile",
+          "caption": "The worker observes the supported disable at its safe checkpoint; new starts are blocked.",
+          "packets": [
+            {
+              "edge": "bc",
+              "label": "live off",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-done",
+                "checkpoint; no new starts"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Session boundary",
+          "caption": "The next-session value was applied early. Fetching a valid revision did not establish that every value was live-safe.",
+          "packets": []
+        },
+        {
+          "label": "Scope",
+          "caption": "This is the chapter’s custom apply policy. Already committed external work is not undone by disabling a flag.",
+          "packets": []
+        }
+      ]
+    }
+  },
+  "stepNavigation": "select",
+  "compareAtCurrentStep": true
+}
+</script>
+</section>
+
+<!-- @before 4. Propagation Latency :: guide -->
+### Measure reach instead of promising a fixed deadline
+
+Push hints and refreshes do not guarantee delivery to offline or suspended clients. Preserve the last accepted safe state under the documented missing/fetch-failure policy, and observe actual activation and recovery. A live-safe control also needs authorization, validation and revision handling. [Remote Config loading strategies](https://firebase.google.com/docs/remote-config/loading).
+
+<!-- @before 8. Kill Switches During A Bad Release :: staff -->
+### Define what disabling can still stop
+
+Blocking future starts, cancelling cooperative work and compensating a committed effect are separate operations. Give each worker a documented checkpoint/continuation policy. A client flag cannot revoke a server-side effect already accepted, so retain server authorization and compatibility controls.

@@ -1,0 +1,266 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">A release is halted promptly, yet support reports continue from users who already installed it. Exposure control and recovery for installed clients are different operations.</p>
+
+<!-- @before 4. Halting A Bad Release :: animation -->
+### A halt leaves the installed binary in place
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="Stop exposure, then recover installed users">
+<h3>Walkthrough 1. Stop exposure, then recover installed users</h3><p class="pb-sub">Illustrative online client with a supported validated live disable. No Play or configuration API is executed.</p>
+<div class="pb-seg" role="group" aria-label="Comparison policy"><button type="button" data-mode="mitigate" aria-pressed="true">Halt + supported mitigation</button><button type="button" data-mode="halt" aria-pressed="false">Halt only</button></div>
+<div class="pb-paper" role="region" aria-label="Illustrative system; scroll if needed" tabindex="0"><svg class="pb-svg" role="img" aria-label="Stop exposure, then recover installed users; every step is available as text below"></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div><div class="pb-caption" aria-live="polite"><span class="pb-count"></span><p></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" hidden aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">
+{
+  "illustrated": true,
+  "playback": "manual",
+  "layout": "three-peers",
+  "owners": {
+    "a": "INCIDENT OWNER",
+    "b": "PLAY DISTRIBUTION",
+    "c": "INSTALLED COHORT"
+  },
+  "nodes": [
+    {
+      "id": "a",
+      "label": "Release ops",
+      "art": {
+        "kind": "server",
+        "role": "runtime"
+      }
+    },
+    {
+      "id": "b",
+      "label": "Play track",
+      "art": {
+        "kind": "server",
+        "role": "runtime"
+      }
+    },
+    {
+      "id": "c",
+      "label": "Installed app",
+      "art": {
+        "kind": "phone",
+        "role": "client"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "ab",
+      "from": "a",
+      "to": "b",
+      "label": "halt"
+    },
+    {
+      "id": "ac",
+      "from": "a",
+      "to": "c",
+      "label": "disable"
+    }
+  ],
+  "modes": {
+    "mitigate": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "monitoring"
+          ],
+          "b": [
+            "",
+            "N in progress"
+          ],
+          "c": [
+            "",
+            "N installed"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Installed",
+          "caption": "The affected cohort already has version N. This app supports a reviewed live-safe feature disable.",
+          "packets": []
+        },
+        {
+          "label": "Regression",
+          "caption": "Release monitoring identifies a regression in that installed feature.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-warn",
+                "regression confirmed"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Halt",
+          "caption": "An authorized halt stops further rollout exposure; it does not replace the installed binary.",
+          "packets": [
+            {
+              "edge": "ab",
+              "label": "halt",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-warn",
+                "rollout halted"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Installed state",
+          "caption": "The affected device still runs version N after the halt.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-warn",
+                "N; feature broken"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Mitigation",
+          "caption": "The online participating client receives, validates and applies the supported live-safe disable.",
+          "packets": [
+            {
+              "edge": "ac",
+              "label": "live disable",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-done",
+                "N; feature off"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Recovery",
+          "caption": "Verify the disable’s actual adoption and user recovery while preparing a compatible fix.",
+          "packets": []
+        }
+      ]
+    },
+    "halt": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "monitoring"
+          ],
+          "b": [
+            "",
+            "N in progress"
+          ],
+          "c": [
+            "",
+            "N installed"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Installed",
+          "caption": "The affected cohort already has version N. This app supports a reviewed live-safe feature disable.",
+          "packets": []
+        },
+        {
+          "label": "Regression",
+          "caption": "Release monitoring identifies a regression in that installed feature.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-warn",
+                "regression confirmed"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Halt",
+          "caption": "An authorized halt stops further rollout exposure; it does not replace the installed binary.",
+          "packets": [
+            {
+              "edge": "ab",
+              "label": "halt",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-warn",
+                "rollout halted"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Installed state",
+          "caption": "The affected device still runs version N after the halt.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-warn",
+                "N; feature broken"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Mitigation",
+          "caption": "No installed-client mitigation is applied. A halt alone leaves this device affected.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-warn",
+                "N; feature broken"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Recovery",
+          "caption": "Choose a supported mitigation or hotfix and verify recovery. The halt only bounded additional exposure.",
+          "packets": []
+        }
+      ]
+    }
+  },
+  "stepNavigation": "select",
+  "compareAtCurrentStep": true
+}
+</script>
+</section>
+
+<!-- @before 1. The Stage Model :: guide -->
+### Treat the schedule as a team policy
+
+The chapter’s percentages, tester counts and soak times describe an example rollout policy. Choose them against sample sufficiency, failure reach and operational staffing. Eligibility, installation and observed healthy use remain different measures. [Play staged-rollout behavior](https://support.google.com/googleplay/android-developer/answer/6346149).
+
+<!-- @before 5. Automated Stage Promotion With Crash-Rate Gates :: staff -->
+### Unknown evidence must have an explicit outcome
+
+A stale or insufficient sample does not establish safety. Hold exposure while resolving the evidence gap; when a real regression is established, halt and select a lever that reaches the already affected population.

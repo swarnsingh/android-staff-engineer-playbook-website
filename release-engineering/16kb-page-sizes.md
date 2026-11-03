@@ -1,6 +1,6 @@
 # 16 KB Page Sizes: The Native-Code Compliance Gate
 
-Google Play's [current 16 KB compatibility policy](https://developer.android.com/guide/practices/page-sizes#google-play-compatibility-requirement) applies to apps targeting Android 15 (API 35) or higher on 64-bit devices. Starting **February 1, 2027**, Play will block updates that do not support 16 KB memory pages. The earlier November 1, 2025 deadline was superseded. The separate target-API policy has required API 36+ for most new apps and updates since August 31, 2026 (with form-factor exceptions and an extension to November 1, 2026). Treat 16 KB support as release work now: a misaligned `.so` from a transitive SDK can prevent a future submission and can fail on devices already using 16 KB pages.
+Google Play's [current 16 KB compatibility policy](https://developer.android.com/guide/practices/page-sizes#google-play-compatibility-requirement) applies to apps targeting Android 15 (API 35) or higher on 64-bit devices. Starting **February 1, 2027**, Play will block updates that do not support 16 KB memory pages. The earlier November 1, 2025 deadline was superseded. The separate target-API policy has required API 36+ for most new apps and updates since August 31, 2026 (with form-factor exceptions; the published extension ended November 1, 2026). Treat 16 KB support as release work now: a misaligned `.so` from a transitive SDK can prevent a future submission and can fail on devices already using 16 KB pages.
 
 ## 1. Why the platform moved
 
@@ -60,17 +60,39 @@ Anything doing `mmap()` arithmetic, custom allocators, or ELF parsing with a 409
 - **Android Studio** APK Analyzer shows an Alignment column for `lib/`; lint flags misaligned prebuilts.
 - **CI gate:** run the alignment checks on every release candidate so a newly bumped SDK can't regress you silently:
 
-```bash
-# fail the build if any 64-bit .so is misaligned — check every 64-bit ABI
-# you ship (arm64-v8a AND x86_64; universal/internal artifacts often carry both)
-unzip -o app-release.apk 'lib/arm64-v8a/*' 'lib/x86_64/*' -d out/
-for so in out/lib/arm64-v8a/*.so out/lib/x86_64/*.so; do
-  [ -e "$so" ] || continue
-  llvm-objdump -p "$so" | awk '/LOAD/ && $NF !~ /2\*\*(1[4-9]|[2-9][0-9])/ { exit 1 }' || {
-    echo "UNALIGNED: $so"; exit 1; }
-done
-zipalign -c -P 16 4 app-release.apk
+```python
+# scripts/check_elf_alignment.py
+import re
+import subprocess
+import sys
+import tempfile
+import zipfile
+from pathlib import Path
+
+apk = Path(sys.argv[1])
+with zipfile.ZipFile(apk) as archive, tempfile.TemporaryDirectory() as directory:
+    for entry in archive.infolist():
+        parts = entry.filename.split("/")
+        if (len(parts) != 3 or parts[0] != "lib" or
+                parts[1] not in {"arm64-v8a", "x86_64"} or not parts[2].endswith(".so")):
+            continue
+        binary = Path(directory) / "library.so"
+        binary.write_bytes(archive.read(entry))
+        output = subprocess.run(["llvm-objdump", "-p", str(binary)],
+                                check=True, capture_output=True, text=True).stdout
+        loads = [line for line in output.splitlines() if re.search(r"\bLOAD\b", line)]
+        if not loads:
+            raise SystemExit(f"No LOAD segments: {entry.filename}")
+        for line in loads:
+            alignment = re.search(r"align\s+2\*\*(\d+)", line)
+            if alignment is None or int(alignment.group(1)) < 14:
+                raise SystemExit(f"Unaligned or unrecognized LOAD: {entry.filename}")
+subprocess.run(["zipalign", "-c", "-P", "16", "4", str(apk)], check=True)
 ```
+
+A tool failure, unrecognized output or missing LOAD segment fails this gate. Fresh temporary files prevent a previous artifact's libraries from satisfying it. Validate the parser against the pinned LLVM output, and run it on generated APKs for every supported 64-bit configuration, not only the AAB container. Packaging/alignment is still separate from runtime tests.
+
+
 
 This slots next to your existing [AAB size gates](app-bundles.md) in the release pipeline: same philosophy — catch it at build time, not at submission time.
 
@@ -82,7 +104,7 @@ This slots next to your existing [AAB size gates](app-bundles.md) in the release
 
 ## 7. Backcompat mode — and why not to rely on it
 
-Devices can run a 4 KB-aligned app on a 16 KB kernel in a compatibility mode, but it shows users a warning dialog on first launch, and **Android 17 can treat incompatible binaries as fatal** (`bionic.linker.16kb.app_compat.enabled fatal`). The announced Play update-submission block, a user-visible warning, and a possible hard failure mean backcompat mode is a grace period, not a strategy. The `android:pageSizeCompat` manifest attribute only suppresses the warning; it doesn't fix the binaries.
+Devices can run a 4 KB-aligned app on a 16 KB kernel in a compatibility mode, but it shows users a warning dialog on first launch, and **Android 17 can treat incompatible binaries as fatal** (`bionic.linker.16kb.app_compat.enabled fatal`). The announced Play update-submission block, a user-visible warning, and a possible hard failure mean backcompat mode is a grace period, not a strategy. The `android:pageSizeCompat` manifest attribute configures compatibility-mode behavior and its warning; it does not realign or rebuild incompatible binaries.
 
 ## 8. The staff-level rollout playbook
 

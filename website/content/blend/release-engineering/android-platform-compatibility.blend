@@ -1,0 +1,33 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">The annual deadline is visible, but a transitive SDK cannot support the required platform configuration. Raising one build number did not resolve the dependency or behavior risk.</p>
+
+<!-- @before Annual Workflow :: guide -->
+### Separate the requirements before assigning work
+
+compileSdk controls available APIs, targetSdk opts into relevant behavior changes and policy scope, and minSdk controls supported installation versions. Native compatibility and toolchain support add separate evidence. Check the current device category and requirement date rather than reusing last year’s target. [Current Play target requirements](https://developer.android.com/google/play/requirements/target-sdk).
+
+<!-- @before Ownership :: staff -->
+### Put dependency lead time on the release plan
+
+Record the affected artifact, behavior tests, SDK owner, migration evidence and release window. A vendor promise is a dependency to track; it is not proof from the final packaged app.
+
+<!-- @before Ownership :: visual -->
+### One platform program has several independent obligations
+
+```mermaid
+flowchart TB
+ p["Current policy scope Category and deadline"]
+ t["SDK and toolchain owner Supported build combination"]
+ b["Behavior owner Targeted change tests"]
+ n["Native dependency owner Packaged and runtime evidence"]
+ r["Release owner Dated readiness decision"]
+ p -->|"check supported tooling"| t
+ p -->|"enumerate behavior changes"| b
+ p -->|"inventory affected native code"| n
+ t -->|"build evidence"| r
+ b -->|"behavior evidence"| r
+ n -->|"compatibility evidence"| r
+```
+
+Each requirement needs an owner and evidence. Changing targetSdk alone does not prove native compatibility, toolchain support or application behavior.

@@ -12,7 +12,7 @@ An `.apk` is the final installer: code + resources for a specific ABI, screen de
 |---|---|---|
 | Contains | Per-device build | All variants in one |
 | Distributed to user | Yes (directly) | Never (Play generates per-device APK from it) |
-| Size on download | Full APK | Only what device needs (40-60% smaller typical) |
+| Size on download | Full APK | Only what device needs (Savings depend on the universal APK baseline and targeting) |
 | Signing | You sign final APK | You sign bundle; Play re-signs the generated APK |
 | Required by Play | No | Yes (since Aug 2021 for new apps) |
 | Side-loadable | Yes | No (via `bundletool` only) |
@@ -240,16 +240,13 @@ Device-spec APK sets are a practical way to reproduce configuration-specific fai
 ## 8. AAB Size Gates In CI
 
 ```bash
-# Generates a report.json showing per-device APK sizes
+# Writes CSV with MIN/MAX compressed download sizes in bytes by default
 bundletool get-size total --apks=local.apks
 ```
 
 ```
-+--------+--------+
-| MIN    | MAX    |
-+--------+--------+
-| 25 MB  | 41 MB  |
-+--------+--------+
+MIN,MAX
+25000000,41000000
 ```
 
 By dimension:
@@ -260,16 +257,43 @@ bundletool get-size total --apks=local.apks --dimensions=SDK,ABI,LANGUAGE
 
 CI gate: fail the build if any device class crosses a threshold:
 
-```yaml
-- name: AAB size gate
-  run: |
-    MAX_MB=$(bundletool get-size total --apks=local.apks | tail -1 \
-              | awk -F'|' '{print $3}' | tr -d ' MB')
-    if [ "$MAX_MB" -gt 50 ]; then
-      echo "ERROR: max-device APK size $MAX_MB MB exceeds 50 MB budget"
-      exit 1
-    fi
+```python
+# scripts/check_download_size.py
+import csv
+import io
+import subprocess
+
+
+def maximum_download_bytes(output: str) -> int:
+    reader = csv.DictReader(io.StringIO(output))
+    if (reader.fieldnames is None or len(set(reader.fieldnames)) != len(reader.fieldnames) or
+            not {"MIN", "MAX"} <= set(reader.fieldnames)):
+        raise ValueError("Missing bundletool MIN/MAX columns")
+    maxima = []
+    for row in reader:
+        if (None in row or row.get("MIN") is None or row.get("MAX") is None or
+                not row["MIN"].isdigit() or not row["MAX"].isdigit()):
+            raise ValueError("Malformed byte-size row")
+        minimum, maximum = int(row["MIN"]), int(row["MAX"])
+        if minimum > maximum:
+            raise ValueError("Inverted size range")
+        maxima.append(maximum)
+    if not maxima:
+        raise ValueError("No size rows")
+    return max(maxima)
+
+
+if __name__ == "__main__":
+    # Do not pass --human-readable-sizes; this gate requires raw bytes.
+    report = subprocess.run(["bundletool", "get-size", "total", "--apks=local.apks"],
+                            check=True, capture_output=True, text=True).stdout
+    if maximum_download_bytes(report) > 50_000_000:  # example 50 MB decimal budget
+        raise SystemExit("Maximum device download exceeds 50 MB budget")
 ```
+
+Pin bundletool, check its CSV format and fail on tool/parser errors. An archive generated only for one connected device cannot establish the maximum over the full supported fleet; generate the required device/configuration coverage and apply cohort budgets separately.
+
+
 
 ### Size budget matrix
 
@@ -339,11 +363,13 @@ This APK works on any device matching min-SDK. Never ship to Play — defeats th
 - **Disabling language splits to ship all locales.** Wastes per-device size unless you support runtime language switching.
 - **Universal APK leaking to Play.** Configure `play { artifactDir }` to point only to AAB, never universal APK.
 - **No size budget gate in CI.** Bundles grow silently. Set a per-device-class budget.
-- **`bundletool` version mismatch with build-tools.** Pin both.
+- **Unrecorded tool versions.** Pin and validate bundletool, AGP and Build Tools inputs; their version numbers need not be identical.
 
 ---
 
 ## 12. Further Reading
+
+- [bundletool CSV output implementation](https://github.com/google/bundletool/blob/master/src/main/java/com/android/tools/build/bundletool/model/utils/GetSizeCsvUtils.java).
 
 - [Android Developers — App Bundles overview](https://developer.android.com/guide/app-bundle) — official.
 - [App Bundle FAQ and current size limits](https://developer.android.com/guide/app-bundle/faq) — verify Play requirements and compressed-download limits.

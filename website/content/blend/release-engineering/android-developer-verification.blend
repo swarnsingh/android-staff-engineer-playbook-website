@@ -1,0 +1,32 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">A release is ready, but one distribution route lacks the identity and package proof required for that route. A signing task has become an operational ownership gap.</p>
+
+<!-- @before Distribution Inventory :: guide -->
+### Keep the policy attached to the channel
+
+The source’s dated September 2026 rollout covers specified regions and certified Android devices; broader expansion is planned. Verify the current official scope, account workflow and any applicable exceptions for each channel. Do not infer that every distributor uses the same console process. [Current verification requirements](https://developer.android.com/developer-verification).
+
+<!-- @before Signing-Key Proof and Operations :: staff -->
+### Name the owner who can prove the package
+
+Maintain package names, signing identities, account access, delegated authority and recovery contacts together. A release deadline is a poor time to discover that the only person able to complete proof is unavailable.
+
+<!-- @before Signing-Key Proof and Operations :: visual -->
+### Registration joins publisher, package and signing proof
+
+```mermaid
+flowchart TB
+ c["Distribution channel Applicable current requirements"]
+ i["Publisher identity Verified account owner"]
+ p["Package registration Application identity"]
+ k["Signing-key proof Authorized custody"]
+ o["Release owner Access and recovery"]
+ c -->|"determine required workflow"| o
+ i -->|"register under verified owner"| p
+ k -->|"prove package authority"| p
+ o -->|"maintain account access"| i
+ o -->|"maintain proof capability"| k
+```
+
+Inventory each channel against its current applicable verification workflow. The diagram is an ownership checklist, not an invented enforcement schedule.

@@ -1,0 +1,13 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">The universal APK passes, but one delivered ABI split fails to load a native library. Testing a convenient artifact did not cover the configuration that this user installed.</p>
+
+<!-- @before 7. Testing AAB Builds Locally (bundletool) :: guide -->
+### Test the delivered configuration
+
+An AAB is a publishing artifact. Play and bundletool generate APK sets for device configurations; inspect the base and required feature/configuration splits together. A universal APK cannot stand in for every delivery path. [App Bundles](https://developer.android.com/guide/app-bundle) and [bundletool](https://developer.android.com/tools/bundletool).
+
+<!-- @before 8. AAB Size Gates In CI :: staff -->
+### Give the budget a device and delivery scope
+
+Compare like-for-like ABI, density, locale and feature configurations. Keep compressed download size separate from installed footprint and later asset delivery. Name an owner for an unavailable on-demand module and its recovery UI, not just an aggregate size threshold.

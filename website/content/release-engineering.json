@@ -1,0 +1,14 @@
+{
+  "release-engineering.md": "Follow artifact identity through delivery, platform readiness, controlled exposure and recovery for users who already installed the release.",
+  "release-engineering/code-signing.md": "The build is correctly signed, but an installed app refuses the update. The certificate that authenticated the upload is not necessarily the identity that the device expects.",
+  "release-engineering/ci-cd-for-mobile.md": "A pipeline is green, yet the artifact promoted to users is not the one whose evidence was reviewed. Passing jobs are useful only when they can be tied to the release being shipped.",
+  "release-engineering/app-bundles.md": "The universal APK passes, but one delivered ABI split fails to load a native library. Testing a convenient artifact did not cover the configuration that this user installed.",
+  "release-engineering/play-store-internals.md": "The fleet-wide crash rate looks steady while a newly updated device cohort is failing. The release decision needs the right population and version, not another aggregate dashboard.",
+  "release-engineering/android-developer-verification.md": "A release is ready, but one distribution route lacks the identity and package proof required for that route. A signing task has become an operational ownership gap.",
+  "release-engineering/android-platform-compatibility.md": "The annual deadline is visible, but a transitive SDK cannot support the required platform configuration. Raising one build number did not resolve the dependency or behavior risk.",
+  "release-engineering/16kb-page-sizes.md": "The app starts on a 4 KB device but a bundled native dependency fails on a 16 KB configuration. A successful package-alignment check cannot establish that every native allocation assumption is safe.",
+  "release-engineering/staged-rollouts.md": "A release is halted promptly, yet support reports continue from users who already installed it. Exposure control and recovery for installed clients are different operations.",
+  "release-engineering/crash-rate-gating.md": "An automation reports zero crashes because its required query produced no usable evidence. The next promotion would turn a data-quality failure into wider user exposure.",
+  "release-engineering/kill-switches.md": "A validated configuration disables one feature but also changes a setting intended for the next session. Fetch success did not establish that the whole snapshot was safe to activate now.",
+  "release-engineering/release-strategy.md": "The incident spans several installed versions. A halt limits one rollout, while the broken behavior may need a server fallback, a live disable or a new binary. The decision depends on what each lever can reach."
+}

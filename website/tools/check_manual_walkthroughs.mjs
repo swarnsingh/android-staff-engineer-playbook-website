@@ -17,6 +17,9 @@ page.on('console',m=>{if(m.type()==='error'&&!(m.location().url||'').endsWith('/
 async function layout(){await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));}
 async function settle(){await page.waitForFunction(s=>!document.querySelector(s).classList.contains('is-moving'),{},sc);}
 const known={
+ 'staged-rollouts':{mitigate:'N; feature off',halt:'N; feature broken'},
+ 'crash-rate-gating':{hold:'1%; held',zero:'5%; unproven'},
+ 'kill-switches':{scoped:'live off; session old',all:'live off; session NEW'},
  'authentication':{single:'B uses T2',independent:'reauth required'},
  'auth-on-mobile':{guarded:'invalidated; empty',unchecked:'A tokens restored'},
  'certificate-pinning':{overlap:'K2 accepted',missing:'pin failure'},

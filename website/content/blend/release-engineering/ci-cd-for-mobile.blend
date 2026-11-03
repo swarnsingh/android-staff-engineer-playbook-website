@@ -1,0 +1,13 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">A pipeline is green, yet the artifact promoted to users is not the one whose evidence was reviewed. Passing jobs are useful only when they can be tied to the release being shipped.</p>
+
+<!-- @before 5. Release Workflow (Tag → Production) :: guide -->
+### Carry release identity through the evidence
+
+Bind source revision, toolchain, artifact digest, signer and test results to the candidate. Preserve that identity during promotion instead of treating a rebuild as equivalent by name alone. The chapter’s job timings, test selections and thresholds are example team policy. [GitHub Actions security guidance](https://docs.github.com/en/actions/reference/security/secure-use).
+
+<!-- @before 4. Remote Build Cache (Gradle Enterprise / Develocity) :: staff -->
+### Treat cache writers as part of the trust model
+
+A cache hit reuses another execution’s outputs. Separate trusted writers from untrusted pull-request execution and review what credentials each job can reach. A build cache improves reuse; it does not independently prove reproducibility or release provenance. [Gradle build cache](https://docs.gradle.org/current/userguide/build_cache.html).

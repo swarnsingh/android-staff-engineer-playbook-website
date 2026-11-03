@@ -4,7 +4,7 @@
 
 Android developer verification adds an identity and package-registration control to app installation on certified Android devices in applicable regions. It is broader than Play publishing: organizations distributing through other stores or direct channels must understand which console and account type apply. It does not replace app signing, Play App Signing, malware scanning, store review, or the application's own authentication and integrity controls.
 
-Android's official overview says enforcement begins in September 2026 for apps downloaded from participating stores in select regions, with current news describing regional enforcement from September 30. The program requires two core steps: verify the developer identity and register package names by proving ownership with a signed APK. Because dates, regions, account types, and workflows are evolving, release teams must use the official overview and console as the live source rather than copying a one-time checklist into internal runbooks.
+The official overview states that protections began September 30, 2026 for participating-store installs in Brazil, Indonesia, Singapore and Thailand on certified Android 7+ devices, with global expansion planned for 2027. Check the documented advanced-user and limited-distribution paths rather than assuming every installation channel has an identical flow. The program requires two core steps: verify the developer identity and register package names by proving ownership with a signed APK. Because dates, regions, account types, and workflows are evolving, release teams must use the official overview and console as the live source rather than copying a one-time checklist into internal runbooks.
 
 ## Distribution Inventory
 

@@ -1,0 +1,1208 @@
+[
+  {
+    "path": "release-engineering/code-signing",
+    "diagram": "38b90087d3c9b1b0",
+    "kind": "map",
+    "number": 1,
+    "title": "Upload authentication and installed identity have different custody",
+    "caption": "Under Play App Signing, the upload key authenticates the submitted bundle. Play uses the app-signing key for delivered APKs; the device verifies the supported update identity.",
+    "nodes": [
+      {
+        "id": "u",
+        "title": "Developer upload key",
+        "role": "storage"
+      },
+      {
+        "id": "p",
+        "title": "Play upload verification",
+        "role": "runtime"
+      },
+      {
+        "id": "k",
+        "title": "Play app-signing key",
+        "role": "storage"
+      },
+      {
+        "id": "a",
+        "title": "Device-specific APKs",
+        "role": "neutral"
+      },
+      {
+        "id": "d",
+        "title": "Installed device",
+        "role": "client"
+      }
+    ],
+    "edges": [
+      {
+        "from": "u",
+        "to": "p",
+        "label": "sign and submit AAB"
+      },
+      {
+        "from": "p",
+        "to": "k",
+        "label": "accept authenticated upload"
+      },
+      {
+        "from": "k",
+        "to": "a",
+        "label": "sign delivered APKs"
+      },
+      {
+        "from": "a",
+        "to": "d",
+        "label": "verify update identity"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/studio/publish/app-signing"
+    ],
+    "groups": [
+      {
+        "id": "dev",
+        "label": "Developer custody",
+        "nodes": [
+          "u"
+        ]
+      },
+      {
+        "id": "play",
+        "label": "Play App Signing",
+        "nodes": [
+          "p",
+          "k",
+          "a"
+        ]
+      },
+      {
+        "id": "device",
+        "label": "Device verification",
+        "nodes": [
+          "d"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "release-engineering/ci-cd-for-mobile",
+    "diagram": "f9b0ec5bd61c4522",
+    "kind": "map",
+    "number": 1,
+    "title": "Three triggers produce different release evidence",
+    "caption": "The chapter’s PR, nightly and tagged-release jobs serve different purposes. Its fifteen-minute target and soak choices are illustrative policy, not platform requirements.",
+    "nodes": [
+      {
+        "id": "pr",
+        "title": "Pull request",
+        "role": "client"
+      },
+      {
+        "id": "check",
+        "title": "Fast checks",
+        "role": "runtime",
+        "detail": "Lint, unit tests, selected devices"
+      },
+      {
+        "id": "main",
+        "title": "Main branch schedule",
+        "role": "client"
+      },
+      {
+        "id": "qa",
+        "title": "Broad QA build",
+        "role": "runtime",
+        "detail": "Device and benchmark evidence"
+      },
+      {
+        "id": "tag",
+        "title": "Release tag",
+        "role": "client"
+      },
+      {
+        "id": "prod",
+        "title": "Signed release workflow",
+        "role": "runtime",
+        "detail": "Scoped signing; AAB and mappings"
+      },
+      {
+        "id": "promote",
+        "title": "Gated promotion",
+        "role": "runtime",
+        "detail": "Reviewed candidate and soak"
+      }
+    ],
+    "edges": [
+      {
+        "from": "pr",
+        "to": "check",
+        "label": "validate proposed change"
+      },
+      {
+        "from": "main",
+        "to": "qa",
+        "label": "exercise broader matrix"
+      },
+      {
+        "from": "tag",
+        "to": "prod",
+        "label": "build identified candidate"
+      },
+      {
+        "from": "prod",
+        "to": "promote",
+        "label": "review evidence before exposure"
+      }
+    ],
+    "sources": [
+      "https://docs.github.com/en/actions/reference/security/secure-use"
+    ]
+  },
+  {
+    "path": "release-engineering/app-bundles",
+    "diagram": "ce09967166902dad",
+    "kind": "map",
+    "number": 1,
+    "title": "The bundle contains modules and split configuration",
+    "caption": "These labelled containment relationships describe AAB contents, not a runtime request flow. The base module contains manifest, code, resources, native libraries and assets; optional feature modules and bundle configuration are bundle-level entries.",
+    "nodes": [
+      {
+        "id": "a",
+        "title": "App bundle",
+        "role": "storage"
+      },
+      {
+        "id": "b",
+        "title": "Base module",
+        "role": "storage",
+        "detail": "Always-installed base"
+      },
+      {
+        "id": "m",
+        "title": "Manifest",
+        "role": "neutral"
+      },
+      {
+        "id": "d",
+        "title": "DEX code",
+        "role": "neutral"
+      },
+      {
+        "id": "r",
+        "title": "Resources",
+        "role": "neutral"
+      },
+      {
+        "id": "n",
+        "title": "ABI libraries",
+        "role": "neutral"
+      },
+      {
+        "id": "s",
+        "title": "Assets",
+        "role": "neutral"
+      },
+      {
+        "id": "f",
+        "title": "Optional feature module",
+        "role": "storage"
+      },
+      {
+        "id": "c",
+        "title": "BundleConfig.pb",
+        "role": "neutral"
+      }
+    ],
+    "edges": [
+      {
+        "from": "a",
+        "to": "b",
+        "label": "contains base module"
+      },
+      {
+        "from": "b",
+        "to": "m",
+        "label": "contains manifest"
+      },
+      {
+        "from": "b",
+        "to": "d",
+        "label": "contains code"
+      },
+      {
+        "from": "b",
+        "to": "r",
+        "label": "contains resources"
+      },
+      {
+        "from": "b",
+        "to": "n",
+        "label": "contains native libraries"
+      },
+      {
+        "from": "b",
+        "to": "s",
+        "label": "contains assets"
+      },
+      {
+        "from": "a",
+        "to": "f",
+        "label": "may contain feature"
+      },
+      {
+        "from": "a",
+        "to": "c",
+        "label": "contains split configuration"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/guide/app-bundle",
+      "https://developer.android.com/tools/bundletool"
+    ]
+  },
+  {
+    "path": "release-engineering/play-store-internals",
+    "diagram": "97bc021150fceba2",
+    "kind": "map",
+    "number": 1,
+    "title": "Different surfaces answer different release questions",
+    "caption": "A track status describes distribution state; vitals and application telemetry describe their measured populations. Align them by release and cohort before deciding.",
+    "nodes": [
+      {
+        "id": "p",
+        "title": "Publishing API",
+        "role": "runtime",
+        "detail": "Track state and eligible fraction"
+      },
+      {
+        "id": "v",
+        "title": "Reporting API / vitals",
+        "role": "storage",
+        "detail": "Platform-measured stability"
+      },
+      {
+        "id": "a",
+        "title": "App telemetry",
+        "role": "storage",
+        "detail": "Instrumented product behavior"
+      },
+      {
+        "id": "d",
+        "title": "Release decision",
+        "role": "runtime",
+        "detail": "Aligned window and cohort"
+      }
+    ],
+    "edges": [
+      {
+        "from": "p",
+        "to": "d",
+        "label": "exposure configuration"
+      },
+      {
+        "from": "v",
+        "to": "d",
+        "label": "version and cohort evidence"
+      },
+      {
+        "from": "a",
+        "to": "d",
+        "label": "coverage and product evidence"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/google/play/vitals",
+      "https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.crashrate"
+    ]
+  },
+  {
+    "path": "release-engineering/android-developer-verification",
+    "diagram": "05827da08f7ca630",
+    "kind": "map",
+    "number": 1,
+    "title": "Registration joins publisher, package and signing proof",
+    "caption": "Inventory each channel against its current applicable verification workflow. The diagram is an ownership checklist, not an invented enforcement schedule.",
+    "nodes": [
+      {
+        "id": "c",
+        "title": "Distribution channel",
+        "role": "neutral",
+        "detail": "Applicable current requirements"
+      },
+      {
+        "id": "i",
+        "title": "Publisher identity",
+        "role": "storage",
+        "detail": "Verified account owner"
+      },
+      {
+        "id": "p",
+        "title": "Package registration",
+        "role": "storage",
+        "detail": "Application identity"
+      },
+      {
+        "id": "k",
+        "title": "Signing-key proof",
+        "role": "storage",
+        "detail": "Authorized custody"
+      },
+      {
+        "id": "o",
+        "title": "Release owner",
+        "role": "runtime",
+        "detail": "Access and recovery"
+      }
+    ],
+    "edges": [
+      {
+        "from": "c",
+        "to": "o",
+        "label": "determine required workflow"
+      },
+      {
+        "from": "i",
+        "to": "p",
+        "label": "register under verified owner"
+      },
+      {
+        "from": "k",
+        "to": "p",
+        "label": "prove package authority"
+      },
+      {
+        "from": "o",
+        "to": "i",
+        "label": "maintain account access"
+      },
+      {
+        "from": "o",
+        "to": "k",
+        "label": "maintain proof capability"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/developer-verification"
+    ]
+  },
+  {
+    "path": "release-engineering/android-platform-compatibility",
+    "diagram": "d46000d158be9cbf",
+    "kind": "map",
+    "number": 1,
+    "title": "One platform program has several independent obligations",
+    "caption": "Each requirement needs an owner and evidence. Changing targetSdk alone does not prove native compatibility, toolchain support or application behavior.",
+    "nodes": [
+      {
+        "id": "p",
+        "title": "Current policy scope",
+        "role": "neutral",
+        "detail": "Category and deadline"
+      },
+      {
+        "id": "t",
+        "title": "SDK and toolchain owner",
+        "role": "runtime",
+        "detail": "Supported build combination"
+      },
+      {
+        "id": "b",
+        "title": "Behavior owner",
+        "role": "runtime",
+        "detail": "Targeted change tests"
+      },
+      {
+        "id": "n",
+        "title": "Native dependency owner",
+        "role": "runtime",
+        "detail": "Packaged and runtime evidence"
+      },
+      {
+        "id": "r",
+        "title": "Release owner",
+        "role": "runtime",
+        "detail": "Dated readiness decision"
+      }
+    ],
+    "edges": [
+      {
+        "from": "p",
+        "to": "t",
+        "label": "check supported tooling"
+      },
+      {
+        "from": "p",
+        "to": "b",
+        "label": "enumerate behavior changes"
+      },
+      {
+        "from": "p",
+        "to": "n",
+        "label": "inventory affected native code"
+      },
+      {
+        "from": "t",
+        "to": "r",
+        "label": "build evidence"
+      },
+      {
+        "from": "b",
+        "to": "r",
+        "label": "behavior evidence"
+      },
+      {
+        "from": "n",
+        "to": "r",
+        "label": "compatibility evidence"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/google/play/requirements/target-sdk",
+      "https://developer.android.com/guide/practices/page-sizes"
+    ]
+  },
+  {
+    "path": "release-engineering/16kb-page-sizes",
+    "diagram": "16cb20b61e7dd90f",
+    "kind": "map",
+    "number": 1,
+    "title": "ELF, package and runtime checks establish different facts",
+    "caption": "Passing one layer cannot stand in for the others. The final APK and transitive native dependencies belong in the evidence set.",
+    "nodes": [
+      {
+        "id": "e",
+        "title": "ELF load segments",
+        "role": "storage",
+        "detail": "Required native alignment"
+      },
+      {
+        "id": "z",
+        "title": "APK packaging",
+        "role": "storage",
+        "detail": "Uncompressed library alignment"
+      },
+      {
+        "id": "r",
+        "title": "Runtime behavior",
+        "role": "runtime",
+        "detail": "Actual page-size assumptions"
+      },
+      {
+        "id": "c",
+        "title": "Release evidence",
+        "role": "runtime",
+        "detail": "Tested final configurations"
+      }
+    ],
+    "edges": [
+      {
+        "from": "e",
+        "to": "c",
+        "label": "inspect every packaged library"
+      },
+      {
+        "from": "z",
+        "to": "c",
+        "label": "verify generated APKs"
+      },
+      {
+        "from": "r",
+        "to": "c",
+        "label": "exercise native paths"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/guide/practices/page-sizes"
+    ]
+  },
+  {
+    "path": "release-engineering/staged-rollouts",
+    "diagram": "41ea5d5d04c93b06",
+    "kind": "map",
+    "number": 1,
+    "title": "An example team policy expands exposure in stages",
+    "caption": "The original tester counts, soak durations and 1–100% ladder are illustrative runbook choices. Each transition needs enough relevant evidence; a larger eligible fraction does not establish actual adoption.",
+    "nodes": [
+      {
+        "id": "s",
+        "title": "Submit candidate",
+        "role": "storage"
+      },
+      {
+        "id": "i",
+        "title": "Internal testing",
+        "role": "runtime",
+        "detail": "Example: employees and soak"
+      },
+      {
+        "id": "c",
+        "title": "Closed testing",
+        "role": "runtime",
+        "detail": "Example: trusted cohort"
+      },
+      {
+        "id": "o",
+        "title": "Open testing",
+        "role": "runtime",
+        "detail": "Opt-in participants"
+      },
+      {
+        "id": "p",
+        "title": "Production stages",
+        "role": "runtime",
+        "detail": "Example exposure ladder"
+      }
+    ],
+    "edges": [
+      {
+        "from": "s",
+        "to": "i",
+        "label": "install identified artifact"
+      },
+      {
+        "from": "i",
+        "to": "c",
+        "label": "review initial evidence"
+      },
+      {
+        "from": "c",
+        "to": "o",
+        "label": "review broader evidence"
+      },
+      {
+        "from": "o",
+        "to": "p",
+        "label": "start measured exposure"
+      }
+    ],
+    "sources": [
+      "https://support.google.com/googleplay/android-developer/answer/6346149"
+    ]
+  },
+  {
+    "path": "release-engineering/crash-rate-gating",
+    "diagram": "5790f812161be4ee",
+    "kind": "map",
+    "number": 1,
+    "title": "Evidence quality precedes the release guardrail",
+    "caption": "First establish the relevant window, samples and cohorts. A missing or stale prerequisite is unknown and holds exposure; a supported regression can trigger halt plus mitigation.",
+    "nodes": [
+      {
+        "id": "w",
+        "title": "Time and sample window",
+        "role": "storage"
+      },
+      {
+        "id": "s",
+        "title": "Multiple signals",
+        "role": "storage",
+        "detail": "Crash, ANR, startup, business"
+      },
+      {
+        "id": "c",
+        "title": "Aligned cohort baseline",
+        "role": "storage"
+      },
+      {
+        "id": "d",
+        "title": "Guardrail decision",
+        "role": "runtime"
+      },
+      {
+        "id": "h",
+        "title": "Hold or promote",
+        "role": "runtime",
+        "detail": "Only under explicit policy"
+      },
+      {
+        "id": "x",
+        "title": "Halt and mitigate",
+        "role": "runtime",
+        "detail": "Reach affected users"
+      }
+    ],
+    "edges": [
+      {
+        "from": "w",
+        "to": "s",
+        "label": "require sufficient observations"
+      },
+      {
+        "from": "s",
+        "to": "c",
+        "label": "align populations"
+      },
+      {
+        "from": "c",
+        "to": "d",
+        "label": "evaluate supported evidence"
+      },
+      {
+        "from": "d",
+        "to": "h",
+        "label": "no supported breach; policy decides"
+      },
+      {
+        "from": "d",
+        "to": "x",
+        "label": "supported guardrail breach"
+      }
+    ],
+    "sources": [
+      "https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.crashrate",
+      "https://firebase.google.com/docs/crashlytics/crash-free-metrics"
+    ]
+  },
+  {
+    "path": "release-engineering/kill-switches",
+    "diagram": "f5242bf6b943fd1c",
+    "kind": "map",
+    "number": 1,
+    "title": "An authorized control must reach validated live behavior",
+    "caption": "Distribution latency and client availability limit reach. Successful publication or fetch does not establish safe activation or measured recovery.",
+    "nodes": [
+      {
+        "id": "o",
+        "title": "Incident owner",
+        "role": "client"
+      },
+      {
+        "id": "c",
+        "title": "Audited control plane",
+        "role": "runtime"
+      },
+      {
+        "id": "d",
+        "title": "Config distribution",
+        "role": "runtime"
+      },
+      {
+        "id": "f",
+        "title": "Client refresh",
+        "role": "client"
+      },
+      {
+        "id": "v",
+        "title": "Validate revision",
+        "role": "runtime",
+        "detail": "Authenticity and version policy"
+      },
+      {
+        "id": "a",
+        "title": "Apply live-safe policy",
+        "role": "runtime"
+      },
+      {
+        "id": "t",
+        "title": "Recovery telemetry",
+        "role": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "o",
+        "to": "c",
+        "label": "authorized change"
+      },
+      {
+        "from": "c",
+        "to": "d",
+        "label": "publish reviewed revision"
+      },
+      {
+        "from": "d",
+        "to": "f",
+        "label": "fetch; push may hint"
+      },
+      {
+        "from": "f",
+        "to": "v",
+        "label": "verify received config"
+      },
+      {
+        "from": "v",
+        "to": "a",
+        "label": "apply supported values"
+      },
+      {
+        "from": "a",
+        "to": "t",
+        "label": "measure actual recovery"
+      }
+    ],
+    "sources": [
+      "https://firebase.google.com/docs/remote-config/loading"
+    ]
+  },
+  {
+    "path": "release-engineering/release-strategy",
+    "diagram": "16f1e1360cfd2da0",
+    "kind": "map",
+    "number": 1,
+    "title": "A train example separates ongoing main work from release soak",
+    "caption": "Monday/Thursday timing and the production fraction in the original are example team policy. Release preparation overlaps with continuing main-branch work; emergency changes use the selected release line.",
+    "nodes": [
+      {
+        "id": "m",
+        "title": "CI-gated main",
+        "role": "storage"
+      },
+      {
+        "id": "c",
+        "title": "Cut release line",
+        "role": "runtime"
+      },
+      {
+        "id": "b",
+        "title": "Internal and alpha bake",
+        "role": "runtime"
+      },
+      {
+        "id": "t",
+        "title": "Beta evidence",
+        "role": "runtime"
+      },
+      {
+        "id": "p",
+        "title": "Measured production",
+        "role": "runtime"
+      },
+      {
+        "id": "n",
+        "title": "Next train cut",
+        "role": "runtime"
+      },
+      {
+        "id": "h",
+        "title": "Emergency hotfix",
+        "role": "runtime"
+      }
+    ],
+    "edges": [
+      {
+        "from": "m",
+        "to": "c",
+        "label": "scheduled cut"
+      },
+      {
+        "from": "c",
+        "to": "b",
+        "label": "test identified candidate"
+      },
+      {
+        "from": "b",
+        "to": "t",
+        "label": "review initial evidence"
+      },
+      {
+        "from": "t",
+        "to": "p",
+        "label": "begin staged exposure"
+      },
+      {
+        "from": "m",
+        "to": "n",
+        "label": "continue train cadence"
+      },
+      {
+        "from": "c",
+        "to": "h",
+        "label": "emergency only"
+      }
+    ],
+    "sources": [
+      "https://sre.google/sre-book/release-engineering/"
+    ]
+  },
+  {
+    "path": "release-engineering/release-strategy",
+    "diagram": "da4c8c0064e130f2",
+    "kind": "map",
+    "number": 2,
+    "title": "The example branch policy restricts release-line changes",
+    "caption": "Self-updates represent reviewed changes within a branch. Features continue on main; release changes are selected under policy, and fixes must return to the maintained lines.",
+    "nodes": [
+      {
+        "id": "f",
+        "title": "Feature branch",
+        "role": "storage"
+      },
+      {
+        "id": "m",
+        "title": "Main",
+        "role": "storage"
+      },
+      {
+        "id": "r",
+        "title": "Release branch",
+        "role": "storage"
+      },
+      {
+        "id": "h",
+        "title": "Hotfix branch",
+        "role": "storage"
+      },
+      {
+        "id": "t",
+        "title": "Release tag",
+        "role": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "f",
+        "to": "m",
+        "label": "squash reviewed feature PR"
+      },
+      {
+        "from": "m",
+        "to": "r",
+        "label": "cut train"
+      },
+      {
+        "from": "m",
+        "to": "m",
+        "label": "continue reviewed features"
+      },
+      {
+        "from": "r",
+        "to": "r",
+        "label": "selected cherry-picks only"
+      },
+      {
+        "from": "r",
+        "to": "h",
+        "label": "cut emergency line"
+      },
+      {
+        "from": "h",
+        "to": "h",
+        "label": "review hotfix PRs"
+      },
+      {
+        "from": "h",
+        "to": "r",
+        "label": "merge fixes back"
+      },
+      {
+        "from": "r",
+        "to": "t",
+        "label": "tag reviewed release"
+      },
+      {
+        "from": "t",
+        "to": "m",
+        "label": "merge release fixes back"
+      }
+    ],
+    "sources": [
+      "https://sre.google/sre-book/release-engineering/"
+    ]
+  },
+  {
+    "path": "release-engineering/release-strategy",
+    "diagram": "4a5fe6e5be3d2077",
+    "kind": "map",
+    "number": 3,
+    "title": "The example hotfix flow retains review and evidence",
+    "caption": "Skipping alpha/beta and the original 10/50/100% timing are illustrative emergency policy, not safe defaults. Expansion still depends on evidence that the regression is resolved.",
+    "nodes": [
+      {
+        "id": "d",
+        "title": "Production incident",
+        "role": "neutral"
+      },
+      {
+        "id": "c",
+        "title": "Cut affected release line",
+        "role": "storage"
+      },
+      {
+        "id": "f",
+        "title": "Minimal fix",
+        "role": "runtime"
+      },
+      {
+        "id": "r",
+        "title": "Reviewed hotfix PR",
+        "role": "runtime"
+      },
+      {
+        "id": "ci",
+        "title": "Full required gates",
+        "role": "runtime"
+      },
+      {
+        "id": "t",
+        "title": "Tag and release",
+        "role": "storage"
+      },
+      {
+        "id": "s",
+        "title": "Measured staged rollout",
+        "role": "runtime"
+      },
+      {
+        "id": "b",
+        "title": "Back-merge fixes",
+        "role": "runtime"
+      }
+    ],
+    "edges": [
+      {
+        "from": "d",
+        "to": "c",
+        "label": "incident owner authorizes"
+      },
+      {
+        "from": "c",
+        "to": "f",
+        "label": "select or implement fix"
+      },
+      {
+        "from": "f",
+        "to": "r",
+        "label": "CODEOWNERS and policy"
+      },
+      {
+        "from": "r",
+        "to": "ci",
+        "label": "validate candidate"
+      },
+      {
+        "from": "ci",
+        "to": "t",
+        "label": "release identified artifact"
+      },
+      {
+        "from": "t",
+        "to": "s",
+        "label": "expand only with evidence"
+      },
+      {
+        "from": "s",
+        "to": "b",
+        "label": "retain fix on release and main"
+      }
+    ],
+    "sources": [
+      "https://sre.google/sre-book/release-engineering/"
+    ]
+  },
+  {
+    "path": "release-engineering/release-strategy",
+    "diagram": "31b1336cdeb4f1cd",
+    "kind": "map",
+    "number": 4,
+    "title": "Impact and reach determine the recovery lever",
+    "caption": "Soft regressions may hold exposure. Severe version-correlated failures can require halt plus installed-user mitigation. Mixed-version failures need backend/config or cohort investigation; a minimal hotfix remains a separate adoption path.",
+    "nodes": [
+      {
+        "id": "s",
+        "title": "New release signal",
+        "role": "storage"
+      },
+      {
+        "id": "i",
+        "title": "Assess severity and scope",
+        "role": "runtime"
+      },
+      {
+        "id": "h",
+        "title": "Hold exposure",
+        "role": "runtime",
+        "detail": "Soft regression / evidence gap"
+      },
+      {
+        "id": "v",
+        "title": "Version-correlated impact",
+        "role": "runtime"
+      },
+      {
+        "id": "halt",
+        "title": "Halt rollout",
+        "role": "runtime"
+      },
+      {
+        "id": "old",
+        "title": "Installed users still affected",
+        "role": "client"
+      },
+      {
+        "id": "kill",
+        "title": "Supported disable or fallback",
+        "role": "runtime"
+      },
+      {
+        "id": "mix",
+        "title": "Mixed-version investigation",
+        "role": "runtime",
+        "detail": "Backend, config, cohort"
+      },
+      {
+        "id": "fix",
+        "title": "Minimal hotfix",
+        "role": "runtime"
+      },
+      {
+        "id": "obs",
+        "title": "Observe recovery",
+        "role": "storage"
+      }
+    ],
+    "edges": [
+      {
+        "from": "s",
+        "to": "i",
+        "label": "classify impact"
+      },
+      {
+        "from": "i",
+        "to": "h",
+        "label": "soft or insufficient evidence"
+      },
+      {
+        "from": "i",
+        "to": "v",
+        "label": "severe; version-linked"
+      },
+      {
+        "from": "v",
+        "to": "halt",
+        "label": "stop further exposure"
+      },
+      {
+        "from": "halt",
+        "to": "old",
+        "label": "assess installed population"
+      },
+      {
+        "from": "old",
+        "to": "kill",
+        "label": "supported mitigation needed"
+      },
+      {
+        "from": "kill",
+        "to": "fix",
+        "label": "binary fix still required"
+      },
+      {
+        "from": "i",
+        "to": "mix",
+        "label": "severe; not version-only"
+      },
+      {
+        "from": "mix",
+        "to": "kill",
+        "label": "supported server/config/cohort lever"
+      },
+      {
+        "from": "mix",
+        "to": "fix",
+        "label": "binary defect remains"
+      },
+      {
+        "from": "kill",
+        "to": "obs",
+        "label": "measure actual reach"
+      },
+      {
+        "from": "fix",
+        "to": "obs",
+        "label": "stage and measure adoption"
+      }
+    ],
+    "sources": [
+      "https://sre.google/sre-book/release-engineering/",
+      "https://support.google.com/googleplay/android-developer/answer/6346149"
+    ]
+  },
+  {
+    "path": "release-engineering",
+    "diagram": "210ebfafaacf3475",
+    "kind": "map",
+    "number": 1,
+    "title": "Release readiness precedes exposure and recovery",
+    "caption": "Read artifact trust and delivery before platform compatibility. Exposure controls and installed-user recovery then support the release strategy.",
+    "nodes": [
+      {
+        "id": "p",
+        "title": "Prerequisites",
+        "role": "neutral",
+        "detail": "Android builds and security"
+      },
+      {
+        "id": "t",
+        "title": "Artifact trust",
+        "role": "storage",
+        "detail": "Signing and CI"
+      },
+      {
+        "id": "d",
+        "title": "Delivery",
+        "role": "runtime",
+        "detail": "Bundles and Play"
+      },
+      {
+        "id": "c",
+        "title": "Compatibility",
+        "role": "runtime",
+        "detail": "Verification, platform, native"
+      },
+      {
+        "id": "e",
+        "title": "Exposure",
+        "role": "runtime",
+        "detail": "Staged rollout"
+      },
+      {
+        "id": "s",
+        "title": "Safety controls",
+        "role": "runtime",
+        "detail": "Crash gates and kill switches"
+      },
+      {
+        "id": "r",
+        "title": "Release strategy",
+        "role": "runtime",
+        "detail": "Cadence, owners and recovery"
+      }
+    ],
+    "edges": [
+      {
+        "from": "p",
+        "to": "t",
+        "label": "establish foundations"
+      },
+      {
+        "from": "t",
+        "to": "d",
+        "label": "identify delivered artifact"
+      },
+      {
+        "from": "d",
+        "to": "c",
+        "label": "prove supported configurations"
+      },
+      {
+        "from": "c",
+        "to": "e",
+        "label": "begin controlled exposure"
+      },
+      {
+        "from": "e",
+        "to": "s",
+        "label": "evaluate and mitigate"
+      },
+      {
+        "from": "s",
+        "to": "r",
+        "label": "coordinate decisions"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/studio/publish/app-signing",
+      "https://support.google.com/googleplay/android-developer/answer/6346149"
+    ]
+  }
+]

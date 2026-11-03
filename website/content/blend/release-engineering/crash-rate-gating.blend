@@ -1,0 +1,286 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">An automation reports zero crashes because its required query produced no usable evidence. The next promotion would turn a data-quality failure into wider user exposure.</p>
+
+<!-- @before 5. Multi-Signal Release Gate :: animation -->
+### Unknown is a decision state
+
+<section class="pb-figure" data-pb-flow="scene" aria-label="Missing evidence cannot establish a healthy rate">
+<h3>Walkthrough 1. Missing evidence cannot establish a healthy rate</h3><p class="pb-sub">Illustrative policy and fractions; the scene does not query Play or Crashlytics.</p>
+<div class="pb-seg" role="group" aria-label="Comparison policy"><button type="button" data-mode="hold" aria-pressed="true">Require sufficient evidence</button><button type="button" data-mode="zero" aria-pressed="false">Treat unknown as zero</button></div>
+<div class="pb-paper" role="region" aria-label="Illustrative system; scroll if needed" tabindex="0"><svg class="pb-svg" role="img" aria-label="Missing evidence cannot establish a healthy rate; every step is available as text below"></svg></div>
+<div class="pb-progress" aria-hidden="true"><i></i></div><div class="pb-caption" aria-live="polite"><span class="pb-count"></span><p></p></div>
+<div class="pb-controls"><button type="button" class="pb-btn" data-act="prev">Previous</button><button type="button" class="pb-btn primary" data-act="play" hidden aria-pressed="false">Play</button><button type="button" class="pb-btn" data-act="next">Next</button><span class="spacer"></span><button type="button" class="pb-btn" data-act="reset">Reset</button></div>
+<details class="pb-steps"><summary>Read every step as text</summary><ol></ol></details>
+<script type="application/json">
+{
+  "illustrated": true,
+  "playback": "manual",
+  "layout": "three-peers",
+  "owners": {
+    "a": "RELEASE POLICY",
+    "b": "EVIDENCE SOURCE",
+    "c": "DISTRIBUTION STATE"
+  },
+  "nodes": [
+    {
+      "id": "a",
+      "label": "Gate",
+      "art": {
+        "kind": "server",
+        "role": "runtime"
+      }
+    },
+    {
+      "id": "b",
+      "label": "Metrics",
+      "art": {
+        "kind": "database",
+        "role": "storage"
+      }
+    },
+    {
+      "id": "c",
+      "label": "Play track",
+      "art": {
+        "kind": "server",
+        "role": "runtime"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "ab",
+      "from": "a",
+      "to": "b",
+      "label": "query"
+    },
+    {
+      "id": "ba",
+      "from": "b",
+      "to": "a",
+      "label": "evidence"
+    },
+    {
+      "id": "ac",
+      "from": "a",
+      "to": "c",
+      "label": "promote"
+    }
+  ],
+  "modes": {
+    "hold": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "requires evidence"
+          ],
+          "b": [
+            "",
+            "not queried"
+          ],
+          "c": [
+            "",
+            "1% candidate"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Window",
+          "caption": "The candidate is at an illustrative 1% fraction. The policy requires fresh, sufficient cohort evidence.",
+          "packets": []
+        },
+        {
+          "label": "Query",
+          "caption": "The gate queries the required metric window and cohort.",
+          "packets": [
+            {
+              "edge": "ab",
+              "label": "query cohort",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-active",
+                "query pending"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Unknown",
+          "caption": "The required evidence is missing or stale. No valid zero-rate observation was returned.",
+          "packets": [
+            {
+              "edge": "ba",
+              "label": "unknown",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-warn",
+                "evidence unknown"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Decision",
+          "caption": "The gate holds exposure at 1% and records the missing evidence.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-done",
+                "HOLD; unknown"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Exposure",
+          "caption": "No promotion is issued; the current illustrative fraction remains 1%.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-done",
+                "1%; held"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Revisit",
+          "caption": "Restore evidence quality and reevaluate the policy; a hold is not a healthy-release verdict.",
+          "packets": []
+        }
+      ]
+    },
+    "zero": {
+      "initial": {
+        "nodes": {
+          "a": [
+            "",
+            "requires evidence"
+          ],
+          "b": [
+            "",
+            "not queried"
+          ],
+          "c": [
+            "",
+            "1% candidate"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "label": "Window",
+          "caption": "The candidate is at an illustrative 1% fraction. The policy requires fresh, sufficient cohort evidence.",
+          "packets": []
+        },
+        {
+          "label": "Query",
+          "caption": "The gate queries the required metric window and cohort.",
+          "packets": [
+            {
+              "edge": "ab",
+              "label": "query cohort",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-active",
+                "query pending"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Unknown",
+          "caption": "The required evidence is missing or stale. No valid zero-rate observation was returned.",
+          "packets": [
+            {
+              "edge": "ba",
+              "label": "unknown",
+              "tone": "back",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "b": [
+                "is-warn",
+                "evidence unknown"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Decision",
+          "caption": "An unsafe fallback substitutes zero for unknown and authorizes expansion.",
+          "packets": [],
+          "set": {
+            "nodes": {
+              "a": [
+                "is-warn",
+                "unknown → zero"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Exposure",
+          "caption": "The gate requests an illustrative 5% fraction without the required evidence.",
+          "packets": [
+            {
+              "edge": "ac",
+              "label": "promote 5%",
+              "tone": "fwd",
+              "kind": "page"
+            }
+          ],
+          "set": {
+            "nodes": {
+              "c": [
+                "is-warn",
+                "5%; unproven"
+              ]
+            }
+          }
+        },
+        {
+          "label": "Revisit",
+          "caption": "The decision expanded exposure while its prerequisite was unknown. A successful API request would not repair that reasoning.",
+          "packets": []
+        }
+      ]
+    }
+  },
+  "stepNavigation": "select",
+  "compareAtCurrentStep": true
+}
+</script>
+</section>
+
+<!-- @before 1. The Metrics That Matter :: guide -->
+### Keep denominator and encoding with the value
+
+Play and Crashlytics metrics use different populations and definitions. Align window, version, cohort and freshness before comparing them. Verify the real API’s numeric encoding at the adapter boundary; the source converter deliberately requires an explicit fraction-or-percent contract. [Play crash-rate metric](https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.crashrate) and [Crashlytics definitions](https://firebase.google.com/docs/crashlytics/crash-free-metrics).
+
+<!-- @before 8. Time Windows And Sample Size :: staff -->
+### Separate hold, halt and override
+
+Insufficient evidence supports a hold. A demonstrated regression can require a halt and installed-user mitigation. Any override needs the deciding owner, reason, scope and revisit trigger; it must not silently rewrite missing telemetry as a passing observation.

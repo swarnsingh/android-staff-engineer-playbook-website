@@ -1,0 +1,29 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">The app starts on a 4 KB device but a bundled native dependency fails on a 16 KB configuration. A successful package-alignment check cannot establish that every native allocation assumption is safe.</p>
+
+<!-- @before 3. The two alignment requirements :: guide -->
+### Keep three forms of evidence
+
+Check ELF load-segment alignment, alignment of uncompressed libraries in the APK, and runtime behavior with the actual page size. Inspect transitive libraries in the delivered artifact, not only your own source. The official page currently lists 1 February 2027 for the relevant Play update requirement; runtime compatibility matters before that date. [Current 16 KB guidance](https://developer.android.com/guide/practices/page-sizes).
+
+<!-- @before 8. The staff-level rollout playbook :: staff -->
+### Test the artifact that will reach the cohort
+
+Run critical native paths on both supported page-size configurations and retain dependency versions and evidence with the candidate. Compatibility mode can mask failures; it is not a substitute for a native readiness plan.
+
+<!-- @before 5. Detection and CI :: visual -->
+### ELF, package and runtime checks establish different facts
+
+```mermaid
+flowchart TB
+ e["ELF load segments Required native alignment"]
+ z["APK packaging Uncompressed library alignment"]
+ r["Runtime behavior Actual page-size assumptions"]
+ c["Release evidence Tested final configurations"]
+ e -->|"inspect every packaged library"| c
+ z -->|"verify generated APKs"| c
+ r -->|"exercise native paths"| c
+```
+
+Passing one layer cannot stand in for the others. The final APK and transitive native dependencies belong in the evidence set.
