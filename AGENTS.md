@@ -19,6 +19,7 @@ Use a Python with `website/requirements.txt` installed (the owner's venv: `../an
 | Local build (all checks except the publication gate) | `python3 website/tools/dev.py build` |
 | Check every FigureMap diagram model | `python3 website/tools/dev.py figures` |
 | In Chrome: nothing outside its box, no sideways scroll, labels fit (after `build`) | `python3 website/tools/dev.py frames` |
+| In Chrome: audit startup and deliberately broken asset/inspector cases (after `build`) | `python3 website/tools/dev.py readiness` |
 | Everything CI runs (tests, docs check, script syntax) | `python3 website/tools/dev.py ci` |
 | Fresh browser evidence (six audits) | `python3 website/tools/dev.py audit <review-folder>` |
 | Refresh the gate and run the real build | `python3 website/tools/dev.py gate <review-folder>` |

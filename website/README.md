@@ -214,7 +214,9 @@ For browser regressions, create disposable fixtures with `python3 website/script
 
 ## Browser audit preparation
 
-After building, run `python3 website/tools/prepare_browser_audit.py website/.cache/browser-qa`, then serve that disposable directory on an available localhost port and open `/audit.html`. Press **Start audit** and read its JSON result. The prepared copy loads the read-only audit as a script, without console `eval`; the QA runner uses isolated iframes to check preservation first, then animation readiness and enlarged-text geometry. It does not edit source or the deployable `website/dist` output. Never deploy the instrumented QA directory. The existing API still accepts a subset of routes when a focused sweep is appropriate.
+After building, run `python3 website/tools/prepare_browser_audit.py website/.cache/browser-qa`, then serve that disposable directory on an available localhost port and open `/audit.html`. Press **Start audit** and read its JSON result. The prepared copy embeds the read-only inspector directly in each document, without console `eval` or an additional inspector fetch. The QA runner uses isolated iframes to check preservation first, then animation readiness and enlarged-text geometry. It does not edit source or the deployable `website/dist` output. Never deploy the instrumented QA directory. The existing API still accepts a subset of routes when a focused sweep is appropriate.
+
+Run `python3 website/tools/dev.py readiness` after a build to exercise startup in Chromium with intact inputs and deliberately missing reader-script, inspector and source-identity cases. Missing inputs must fail with their original diagnostics; they are not retried. Readiness failures record the expected and actual route, document state, source identity, inspector type and failed resource URLs. The normal 30-second readiness limit is unchanged. A focused passing result does not replace a failed full-site audit.
 
 ### Labelled diagrams and ownership scenes
 

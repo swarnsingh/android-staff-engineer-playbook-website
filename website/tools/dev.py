@@ -4,6 +4,7 @@
     python3 website/tools/dev.py build [--pending]  # local build; skips only the publication gate (--pending: allow unfinished figures)
     python3 website/tools/dev.py figures            # check every FigureMap model; list all problems
     python3 website/tools/dev.py frames             # in Chrome: figures framed, nothing scrolls, labels fit (after build)
+    python3 website/tools/dev.py readiness          # in Chrome: audit startup and controlled resource failures (after build)
     python3 website/tools/dev.py audit NAME         # run the six browser audits into website/reviews/NAME/
     python3 website/tools/dev.py gate NAME          # point the gate at reviews/NAME, refresh fingerprints, real build
     python3 website/tools/dev.py ci                 # unit tests, docs check and browser-script syntax, as CI runs them
@@ -207,6 +208,24 @@ def frames():
     return clean
 
 
+def readiness():
+    """Exercise real audit startup with intact and deliberately broken inputs."""
+    qa = WEB / '.cache/readiness-qa'
+    if not report('prepare readiness fixtures', *run('readiness-prepare', [PY, 'website/tools/prepare_browser_audit.py', str(qa)])):
+        return False
+    with socket.socket() as s:
+        s.bind(('127.0.0.1', 0))
+        port = s.getsockname()[1]
+    server = subprocess.Popen([PY, '-m', 'http.server', str(port), '--bind', '127.0.0.1', '--directory', str(qa)],
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        time.sleep(1)
+        return report('audit readiness fault injection', *run('readiness', ['node', str(WEB / 'tools/check_audit_readiness.mjs'),
+                      puppeteer_dir(), f'http://127.0.0.1:{port}/', str(WEB / '.cache/audit-readiness.json')]))
+    finally:
+        server.terminate()
+
+
 def ci():
     ok = report('website unit tests', *run('tests-website', [PY, '-m', 'unittest', 'discover', '-s', 'website/scripts', '-p', 'test_*.py']))
     ok &= report('Computer Science Java compilation and behaviour', *run('cs-code', [PY, 'website/scripts/check_cs_code.py']))
@@ -224,7 +243,7 @@ def main(argv=None):
     command, args = (argv[0] if argv else ''), argv[1:]
     if command == 'build' and '--pending' in args:
         os.environ['WEBSITE_PENDING_FIGURES'] = '1'  # local only: other chapters' figures may still be missing
-    actions = {'build': lambda: build(), 'figures': figures, 'frames': frames, 'ci': ci,
+    actions = {'build': lambda: build(), 'figures': figures, 'frames': frames, 'readiness': readiness, 'ci': ci,
                'audit': lambda: audit(args[0]) if args else sys.exit('usage: dev.py audit REVIEW-FOLDER-NAME'),
                'gate': lambda: gate(args[0]) if args else sys.exit('usage: dev.py gate REVIEW-FOLDER-NAME')}
     if command not in actions:

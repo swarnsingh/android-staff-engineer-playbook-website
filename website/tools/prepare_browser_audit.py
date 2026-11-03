@@ -80,14 +80,24 @@ def main():
     fx = output/'fx';fx.mkdir(exist_ok=True)
     audit = (ROOT/'website/scripts/browser_preservation.js').read_text()
     version = hashlib.sha256((audit+(ROOT/'website/tools/browser_audit_runner.js').read_text()+(ROOT/'website/blend.js').read_text()+(ROOT/'website/design-system/components/bundle.js').read_text()).encode()).hexdigest()[:12]
-    (fx/'audit.js').write_text('window.__inspectOriginalContent = '+audit+';\n')
+    # The inspector is QA infrastructure, not a reader asset. Keep it in the
+    # document so one extra resource request cannot prevent its own diagnostics.
+    inspector = 'window.__inspectOriginalContent = '+audit+';\n'
+    if '</script' in inspector.lower():
+        raise ValueError('QA inspector must be safe as inline script text')
     shutil.copy2(ROOT/'website/tools/browser_audit_runner.js',fx/'run.js')
     pages = json.loads((output/'coverage/pages.json').read_text())
     pairs = source_pair_manifest(output,pages)
     (output/'coverage/qa-pairs.json').write_text(json.dumps(pairs,separators=(',',':'))+'\n')
     targets = [p['url'] for p in pages if args.tree == 'all' or p['source'].startswith(args.tree+'/') or p['source']==args.tree+'.md']
     for page in output.rglob('index.html'):
-        page.write_text(page.read_text().replace('<head>', '<head><script>window.__qaErrors=[];addEventListener(\"error\",e=>{if(e.message)window.__qaErrors.push(e.message)});addEventListener(\"unhandledrejection\",e=>window.__qaErrors.push(String(e.reason)));</script>').replace('</body>',f'<script src="/fx/audit.js?v={version}"></script></body>'))
+        errors = ('window.__qaErrors=[];window.__qaResourceErrors=[];'
+                  'addEventListener("error",e=>{'
+                  'if(e.message)window.__qaErrors.push(e.message);'
+                  'else if(e.target?.src||e.target?.href)window.__qaResourceErrors.push('
+                  '{tag:e.target.tagName,url:e.target.src||e.target.href});},true);'
+                  'addEventListener("unhandledrejection",e=>window.__qaErrors.push(String(e.reason)));')
+        page.write_text(page.read_text().replace('<head>', '<head><script>'+errors+inspector+'</script>'))
     harness = '<!doctype html><meta charset="utf-8"><title>Reader browser audit</title><h1>Reader browser audit</h1><p>Disposable QA copy. Checks source preservation, image readiness, animations and layout widths with 22px handwritten text.</p><button id="start">Start audit</button><pre id="qa-results">Not started</pre><script src="/fx/run.js"></script><script>document.getElementById("start").onclick=()=>window.__runAudit('+json.dumps(targets)+');</script>'
     (output/'audit.html').write_text(harness.replace('/fx/run.js',f'/fx/run.js?v={version}'))
     # A self-contained real-runtime fixture keeps simultaneous controllers visible.
@@ -116,7 +126,8 @@ def main():
     (output/'ux-audit.html').write_text('<!doctype html><title>Reader UX checks</title><button id="ux-start">Start UX checks</button><pre id="ux-results">Not started</pre><iframe style="width:390px;height:900px;position:fixed;left:0;top:150px;opacity:.01;pointer-events:none"></iframe><script src="/fx/ux.js"></script><script>document.getElementById("ux-start").onclick=runUXAudit</script>')
     shutil.copy2(ROOT/'website/tools/qa_fixture_runner.js',fx/'qa-fixtures.js')
     subprocess.run([sys.executable,str(ROOT/'website/scripts/make_browser_fixtures.py'),str(output/'fixtures')],check=True)
-    (output/'qa-fixtures.html').write_text('<!doctype html><title>Question answer preservation regressions</title><button id="qa-fixture-start">Start Q&amp;A regressions</button><pre id="qa-fixture-results">Not started</pre><iframe style="width:390px;height:900px;position:fixed;left:0;top:150px;opacity:.01;pointer-events:none"></iframe><script src="/fx/qa-fixtures.js"></script><script>document.getElementById("qa-fixture-start").onclick=runQAFixtures</script>')
+    fixture_inspector = '<script>window.__qaInspectorSource='+json.dumps(inspector).replace('<', '\\u003c')+';</script>'
+    (output/'qa-fixtures.html').write_text('<!doctype html><title>Question answer preservation regressions</title><button id="qa-fixture-start">Start Q&amp;A regressions</button><pre id="qa-fixture-results">Not started</pre><iframe style="width:390px;height:900px;position:fixed;left:0;top:150px;opacity:.01;pointer-events:none"></iframe>'+fixture_inspector+'<script src="/fx/qa-fixtures.js"></script><script>document.getElementById("qa-fixture-start").onclick=runQAFixtures</script>')
     export_script = "<button id=\"export-results\">Download results</button><script>document.getElementById('export-results').onclick=()=>{const out=document.querySelector('pre');const a=document.createElement('a');a.download=location.pathname.split('/').pop().replace('.html','.json');a.href=URL.createObjectURL(new Blob([out.textContent],{type:'application/json'}));a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};</script>"
     for name in ['audit.html','motion-fixture.html','binder-audit.html','refinement-audit.html','ux-audit.html','qa-fixtures.html']:
         page=output/name
