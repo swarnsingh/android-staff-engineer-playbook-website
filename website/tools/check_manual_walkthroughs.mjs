@@ -13,8 +13,13 @@ function check(name,ok){checks.push({name,ok:!!ok});if(!ok)throw Error(name);}
 const page=await browser.newPage();
 page.on('pageerror',e=>errors.push(String(e)));
 page.on('console',m=>{if(m.type()==='error'&&!(m.location().url||'').endsWith('/favicon.ico'))errors.push(m.text());});
+// ResizeObserver and sticky navigation update on the rendered frame. Measure after both settle.
+async function layout(){await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));}
 async function settle(){await page.waitForFunction(s=>!document.querySelector(s).classList.contains('is-moving'),{},sc);}
 const known={
+ 'auth-on-mobile':{guarded:'invalidated; empty',unchecked:'A tokens restored'},
+ 'certificate-pinning':{overlap:'K2 accepted',missing:'pin failure'},
+ 'attestation':{bound:'B rejected',verdict:'B wrongly accepted'},
  'bff-pattern':{bounded:'at deadline',wait:'after slow promo'},
  'sse-vs-websockets':{preserve:'outbox: 1 retained',wipe:'outbox: 0; P1 lost'},
  'rate-limiting':{latest:'results: cat',arrival:'results: ca'},
@@ -36,6 +41,7 @@ try{
   if(data.playback!=='manual'||!data.responsive)continue;
   pages.push(route);const select=sc+' select',next=sc+' [data-act=next]';
   check(route+' has two comparable runs',Object.keys(data.modes).length>=2&&data.compareAtCurrentStep);
+  check(route+' starts with a readable precondition before packet travel',Object.values(data.modes).every(r=>!r.steps[0].packets?.length));
   const firstMode=Object.keys(data.modes)[0];
   // An explicit Next really moves a packet, rather than merely tinting a path.
   await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'no-preference'}]);
@@ -50,12 +56,12 @@ try{
   }
   await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
   for(const [width,height] of [[375,812],[1024,768],[1280,900]]){
-   await page.setViewport({width,height});
+   await page.setViewport({width,height});await layout();
    for(const [mode,run] of Object.entries(data.modes)){
     await page.$eval(sc+' [data-mode='+mode+']',e=>e.click());await page.select(select,'0');
-    await page.$eval(next,e=>e.scrollIntoView({block:'end'}));await page.focus(next);
+    await page.$eval(next,e=>e.scrollIntoView({block:'end'}));await page.focus(next);await layout();
     for(let i=0;i<run.steps.length;i++){
-     if(i)await page.keyboard.press('Enter');
+     if(i)await page.keyboard.press('Enter');await layout();
      const g=await page.$eval(sc,e=>{
       const header=Math.max(0,...[...document.querySelectorAll('.topbar,.lesson-tabs,.mobile-outline')].filter(e=>getComputedStyle(e).position==='sticky').map(e=>e.getBoundingClientRect().bottom));
       const boxes=[...e.querySelectorAll('.pb-node,.pb-caption,.pb-controls')].map(e=>{const r=e.getBoundingClientRect();return {top:r.top,bottom:r.bottom,text:e.textContent};});
@@ -84,7 +90,7 @@ try{
   const last=data.modes[Object.keys(data.modes).at(-1)].steps.length-1;
   await page.$eval(sc+' [data-mode='+firstMode+']',e=>e.click());
   check(route+' comparison retains the selected step',await page.$eval(select,(e,i)=>Number(e.value)===i,last));
-  await page.setViewport({width:320,height:768});
+  await page.setViewport({width:320,height:768});await layout();
   check(route+' 320px has no page overflow',await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   const staticPage=await browser.newPage();await staticPage.setJavaScriptEnabled(false);await staticPage.goto(base+route,{waitUntil:'load'});
   check(route+' static transcript retains every run',await staticPage.$$eval(sc+' ol > li',e=>e.length)===Object.values(data.modes).reduce((n,r)=>n+r.steps.length,0));

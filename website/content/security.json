@@ -1,0 +1,10 @@
+{
+  "security.md": "Start with data minimization, then follow session identity, local key custody, transport trust and server-verified evidence.",
+  "security/privacy-gdpr-data-residency.md": "The server completes an account-deletion workflow while a phone remains offline with old rows and queued uploads. A push hint cannot establish that the phone erased its copy or stopped a later replay.",
+  "security/privacy-sandbox.md": "A roadmap relies on an advertising API whose official lifecycle status changes before the app ships. The architectural ideas remain useful, but the release plan now needs an exit path.",
+  "security/auth-on-mobile.md": "A refresh is already in flight when the user signs out. Its successful response arrives later. Saving that response into a generic current-token slot can bring the old session back.",
+  "security/secure-storage-on-android.md": "A backup restores an encrypted token file onto a device without the key that encrypted it. Generating a fresh key with the same alias cannot decrypt the old ciphertext.",
+  "security/key-management.md": "The build hides a vendor credential in generated code. The installed APK still has everything needed to use it. Moving the string into another client-side file changes its location, not its owner.",
+  "security/certificate-pinning.md": "A server certificate rotates successfully, yet an older installed app loses every connection. The trust chain is valid; the app’s extra pin restriction is now the failure boundary.",
+  "security/attestation.md": "The backend receives a genuine-looking device verdict beside a different action than the token was requested for. A positive device signal cannot establish that these parameters belong to this piece of evidence."
+}

@@ -259,7 +259,7 @@
     (L.labels || []).forEach(function (t) {
       var lines = String(t.text).split('\n');
       lines.forEach(function (line, i) {
-        el('text', { 'class': 'pb-label ' + (t.tone || ''), x: t.x, y: t.y - (lines.length - 1 - i) * 18, 'text-anchor': t.anchor || 'middle' }, svg).textContent = line;
+        el('text', { 'class': 'pb-label ' + (t.tone || ''), x: t.x, y: t.y - (lines.length - 1 - i) * 18, 'text-anchor': t.anchor || 'middle', transform: t.rotation == null ? null : 'rotate('+t.rotation+' '+t.x+' '+t.y+')' }, svg).textContent = line;
       });
     });
     var gO = el('g', { 'class': 'pb-order' }, svg);

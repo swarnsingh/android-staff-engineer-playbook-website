@@ -1,8 +1,8 @@
-# Privacy Sandbox on Android: What It Was, Why It Is Being Phased Out, What Replaces It
+# Privacy Sandbox on Android: Architecture, Phaseout and Migration
 
 Privacy Sandbox on Android was Google's multi-year program to rebuild mobile advertising without cross-app identifiers. Google's [feature status page](https://privacysandbox.google.com/overview/status), updated August 14, 2026, lists Attribution Reporting, Protected Audience, Topics, SDK Runtime, On-Device Personalization, and Protected App Signals as **scheduled for phaseout**. It lists several related Chrome advertising APIs for deprecation and removal too; that is a lifecycle plan, not a claim that all those APIs have already been removed. Other Chrome privacy features, including CHIPS, FedCM, and Storage Access, remain supported.
 
-Why keep a file about a platform being phased out in a staff-level playbook? Three reasons. Interviewers still ask about it, and its changed status matters to an answer. Its architecture ideas keep resurfacing in other systems. And its reversal is a useful case study of a question staff engineers face constantly: *when do you bet your roadmap on a platform initiative?*
+Why keep a file about a platform being phased out in a staff-level playbook? Three reasons. Interviewers still ask about it, and its changed status matters to an answer. Its architecture ideas keep resurfacing in other systems. Its lifecycle change also raises a planning question: how can a roadmap retain options when a platform dependency changes?
 
 ---
 
@@ -18,13 +18,11 @@ Announced in early 2022, the program promised to replace the advertising ID (GAI
 
 The unifying idea: move computation to the data (on-device auctions, local topic inference, aggregated noisy reporting) instead of moving data to the computation (server-side identity graphs).
 
-## 2. Why It Is Being Phased Out
+## 2. Status and Planning Implications
 
-- **Adoption never came.** Ad tech ran on GAID and had little incentive to rebuild on APIs that were strictly less capable, especially while GAID remained available. Sandbox APIs were additive, so the ecosystem waited — and a two-sided market that waits, dies.
-- **Regulators boxed it in.** The UK CMA supervised the Chrome side because deprecating third-party cookies while owning the largest ad business is a competition problem; US antitrust rulings in 2025 against Google's ad-tech business made unilateral platform changes to ad infrastructure even harder to push through.
-- **The forcing function disappeared.** In April 2025 Google abandoned third-party-cookie deprecation in Chrome. Once the web side kept cookies, the Android side lost its "the identifier is going away, migrate now" story. Google later [listed selected web and Android APIs for phaseout](https://privacysandbox.google.com/overview/status).
+The official status list establishes the phaseout plan. It does not by itself establish a complete causal account of adoption, competition proceedings or commercial incentives. Treat those as hypotheses requiring separate evidence rather than settled reasons for Google's decision.
 
-What survived is telling: the pieces that improve login and reduce cross-site tracking without restructuring the ads business (on Chrome: CHIPS, FedCM, Storage Access API, partitioning). The pieces that required the ad industry to rebuild itself did not.
+For planning, distinguish a scheduled phaseout from a removal already shipped on every supported device. Inventory dependencies, follow the individual API's release/deprecation notes and provide an adapter migration path. Existing privacy obligations do not disappear with an advertising API, and those APIs never replaced lawful-basis, transparency or deletion duties.
 
 ## 3. What Android Privacy Actually Looks Like Now
 
@@ -32,7 +30,7 @@ With these Sandbox ad APIs scheduled for phaseout, app engineers should rely on 
 
 - **GAID with user control.** The advertising ID persists, but users can delete it (it zeroes out), and Play policy requires declared, consented use. iOS's ATT remains the stricter comparison point.
 - **Play Data safety + policy enforcement.** Your public contract about data collection, sharing, and deletion. Wrong answers are a policy strike, and your SDK vendors' behavior is *your* declaration — you own what they collect.
-- **Regulatory floor.** GDPR/CCPA consent, data-residency, and deletion obligations do the heavy lifting the Sandbox was supposed to make unnecessary — covered in [Privacy, GDPR & Data Residency](privacy-gdpr-data-residency.md).
+- **Regulatory floor.** Applicable lawful-basis, transparency, transfer, consumer-choice and deletion obligations remain independent of advertising API design — covered in [Privacy, GDPR & Data Residency](privacy-gdpr-data-residency.md).
 - **SDK governance while SDK Runtime phases out.** Since [SDK Runtime is scheduled for phaseout](https://privacysandbox.google.com/overview/status#android), third-party SDK risk management still needs an SDK inventory, network-egress review, permission budget, and kill switches per SDK (see [Kill Switches](../release-engineering/kill-switches.md)). Review each SDK's actual process and permission model rather than assuming isolation.
 - **On-device computation as a privacy pattern lives on** — just not as an ads API. Private Compute Core still hosts platform features, and [on-device AI](../mobile-system-design/on-device-ai.md) inference via AICore is now the mainstream "move compute to the data" story.
 
@@ -40,10 +38,10 @@ With these Sandbox ad APIs scheduled for phaseout, app engineers should rely on 
 
 If your team spent 2023–2025 integrating Attribution Reporting, the planned phaseout changes that investment's long-term value. The generalizable heuristics:
 
-1. **Watch the incentives, not the announcements.** Privacy Sandbox required the ad ecosystem to adopt weaker tools while stronger ones remained legal and available. When a migration depends on counterparties acting against their interest, discount the roadmap heavily.
-2. **Distinguish "deprecation-backed" from "aspiration-backed" platform changes.** Scoped-storage and background-execution limits shipped because Google could unilaterally enforce them at the OS level. Sandbox adoption was voluntary. Enforced changes happen; voluntary re-architectures usually don't.
-3. **Wrap, don't weld.** Teams that integrated Sandbox APIs behind their own measurement abstraction lost an adapter; teams that welded event schemas to Attribution Reporting semantics lost a pipeline. The [strategy pattern for vendor boundaries](../android/observability/mobile-apm-and-rum.md) applies to platform APIs too.
-4. **Regulatory supervision is a schedule risk multiplier.** Any platform change that a competition authority reviews line-by-line will slip, repeatedly. Plan optionality, not dates.
+1. **Separate status from explanation.** A phaseout announcement is evidence of lifecycle change; it is not evidence that one commercial incentive or regulatory event caused it. Use official release/status notes to plan dependency work and label any causal analysis separately.
+2. **Inventory exposure.** Record which features use each API, the supported device/client cohort, stored data and the removal/reset contract. A release date in one channel is not proof that every installation has lost the API.
+3. **Wrap vendor boundaries.** Keep application event schemas and purpose controls separate from the advertising adapter. A migration can then replace the transport/measurement integration without quietly changing the meaning of stored events.
+4. **Stage a measured migration.** Assign an owner, validate the replacement's privacy and behavior, observe coverage, then remove the old integration under a documented compatibility policy. These steps do not depend on an unproven explanation for the phaseout.
 
 ## 5. Interview Framing
 

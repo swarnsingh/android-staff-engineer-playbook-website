@@ -32,6 +32,7 @@ TREES = {
     'observability': {'title': 'Observability', 'phases': None},
     'distributed-systems': {'title': 'Distributed Systems', 'phases': None},
     'backend-for-mobile': {'title': 'Backend for Mobile', 'phases': None},
+    'security': {'title': 'Security', 'phases': None},
 }
 
 
@@ -53,6 +54,10 @@ def phases(slug):
         sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
         paths=re.findall(r'\]\((backend-for-mobile/[^)#]+\.md)\)',sequence)
         return [('Phase 1 — Mobile API foundations',paths[:4]),('Phase 2 — Query contracts',paths[4:5]),('Phase 3 — Live updates and admission',paths[5:8])]
+    if slug == 'security':
+        sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
+        paths=re.findall(r'\]\((security/[^)#]+\.md)\)',sequence)
+        return [('Phase 1 — Privacy and policy context',paths[:2]),('Phase 2 — Identity and key custody',paths[2:5]),('Phase 3 — Transport and device trust',paths[5:7])]
     if slug == 'observability':
         sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
         paths=re.findall(r'\]\((observability/[^)#]+\.md)\)',sequence)
@@ -654,7 +659,7 @@ INTRO = {
 
 def intro(path):
     extras={}
-    for name in ('engineering-fundamentals','computer-science','platform-engineering','mobile-system-design','observability','distributed-systems','backend-for-mobile'):
+    for name in ('engineering-fundamentals','computer-science','platform-engineering','mobile-system-design','observability','distributed-systems','security','backend-for-mobile'):
         extras.update(json.loads((WEB/f'content/{name}.json').read_text()))
     return extras.get(path) or INTRO.get(path) or INTRO[Path(path).stem]
 
@@ -761,6 +766,9 @@ def design_gallery(asset_version):
     source=(WEB/'content/blend/distributed-systems/crdts.blend').read_text()
     scene=re.search(r'<section class="pb-figure" data-pb-flow="scene".*?</section>',source,re.S)
     samples.append('<section class="demo"><h3>Independent peers and counter merge</h3>'+steps_as_text(scene[0])+'</section>')
+    source=(WEB/'content/blend/security/auth-on-mobile.blend').read_text()
+    scene=re.search(r'<section class="pb-figure" data-pb-flow="scene".*?</section>',source,re.S)
+    samples.append('<section class="demo"><h3>Session-bound token custody</h3>'+steps_as_text(scene[0])+'</section>')
     page_walkthrough=walkthrough_gallery()
     prose=tokens['type']['prose']
     fonts=''.join(f'<figure class="specimen" style="--specimen:var(--font-{o["family"]});--measure-prose:{o["measure"]}"><figcaption><strong>{escape(o["label"])}</strong> · {escape(o["description"])}</figcaption>'

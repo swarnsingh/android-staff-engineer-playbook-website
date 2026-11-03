@@ -1,0 +1,13 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">A backup restores an encrypted token file onto a device without the key that encrypted it. Generating a fresh key with the same alias cannot decrypt the old ciphertext.</p>
+
+<!-- @before Backup and Device Transfer :: guide -->
+### Recover the product state, not a plausible decryption result
+
+The envelope and the required key have different custody. Treat a missing or invalidated key, a failed authentication tag and incompatible envelope metadata as explicit recovery outcomes. Do not silently substitute plaintext storage or treat a newly generated key as the old one. Review backup and transfer rules for each supported platform path. [Keystore](https://developer.android.com/privacy-and-security/keystore) and [Auto Backup controls](https://developer.android.com/identity/data/autobackup).
+
+<!-- @before Current Platform Position :: staff -->
+### Deprecation and compromise are different findings
+
+AndroidX Security Crypto’s deprecation changes the recommended architecture path; it does not establish that every existing encrypted installation is compromised. Preserve a working legacy vault while migrating deliberately, and keep plaintext-in-process exposure and server revocation in the threat model. [Security Crypto release notes](https://developer.android.com/jetpack/androidx/releases/security).

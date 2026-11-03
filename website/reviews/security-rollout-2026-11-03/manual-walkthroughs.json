@@ -1,0 +1,5730 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "name": "security/attestation/ has two comparable runs",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ starts with a readable precondition before packet travel",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 375 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 375 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 375 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 375 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 375 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 375 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ 375 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1024 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1024 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1024 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1024 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1024 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1024 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ 1024 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1280 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1280 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound 1280 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ bound shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1280 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1280 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict 1280 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ verdict shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ 1280 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ comparison retains the selected step",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ 320px has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "security/attestation/ static transcript retains every run",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ has two comparable runs",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ starts with a readable precondition before packet travel",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 375 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 375 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 375 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 375 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 375 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 375 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ 375 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1024 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1024 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1024 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1024 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1024 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1024 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ 1024 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1280 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1280 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded 1280 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ guarded shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1280 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1280 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked 1280 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ unchecked shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ 1280 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ comparison retains the selected step",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ 320px has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "security/auth-on-mobile/ static transcript retains every run",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ has two comparable runs",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ starts with a readable precondition before packet travel",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ 375 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ 1024 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ overlap shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ missing shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ 1280 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ comparison retains the selected step",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ 320px has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "security/certificate-pinning/ static transcript retains every run",
+      "ok": true
+    },
+    {
+      "name": "security includes the expected walkthroughs",
+      "ok": true
+    },
+    {
+      "name": "security has no application console or runtime errors",
+      "ok": true
+    }
+  ],
+  "geometry": [
+    {
+      "route": "security/attestation/",
+      "mode": "bound",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.79974365234375,
+          "bottom": 274.47418212890625,
+          "text": "Appprepares A"
+        },
+        {
+          "top": 331.07366943359375,
+          "bottom": 394.74810791015625,
+          "text": "Integrityready"
+        },
+        {
+          "top": 451.3475646972656,
+          "bottom": 515.02197265625,
+          "text": "Backendbind action"
+        },
+        {
+          "top": 562.171875,
+          "bottom": 696.171875,
+          "text": "Step 1 of 6The Standard provider is prepared. The app plans action A; the endpoint requires evidence bound to that action."
+        },
+        {
+          "top": 706.171875,
+          "bottom": 812.171875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "bound",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.79974365234375,
+          "bottom": 274.47418212890625,
+          "text": "Appprepares A"
+        },
+        {
+          "top": 331.07366943359375,
+          "bottom": 394.74810791015625,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 451.3475646972656,
+          "bottom": 515.02197265625,
+          "text": "Backendbind action"
+        },
+        {
+          "top": 562.171875,
+          "bottom": 670.171875,
+          "text": "Step 2 of 6This endpoint requires request-bound evidence. The app obtains a Standard token for canonical action A."
+        },
+        {
+          "top": 680.171875,
+          "bottom": 786.171875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "bound",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.79974365234375,
+          "bottom": 274.47418212890625,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 331.07366943359375,
+          "bottom": 394.74810791015625,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 451.3475646972656,
+          "bottom": 515.02197265625,
+          "text": "Backendbind action"
+        },
+        {
+          "top": 562.171875,
+          "bottom": 670.171875,
+          "text": "Step 3 of 6The app submits different action B with A’s token. Authentication alone does not make that evidence match."
+        },
+        {
+          "top": 680.171875,
+          "bottom": 786.171875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "bound",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.79974365234375,
+          "bottom": 274.47418212890625,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 331.07366943359375,
+          "bottom": 394.74810791015625,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 451.3475646972656,
+          "bottom": 515.02197265625,
+          "text": "Backendverified hash A"
+        },
+        {
+          "top": 562.171875,
+          "bottom": 644.171875,
+          "text": "Step 4 of 6The backend decodes the token and receives verified request details for A."
+        },
+        {
+          "top": 654.171875,
+          "bottom": 760.171875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "bound",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.79974365234375,
+          "bottom": 274.47418212890625,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 331.07366943359375,
+          "bottom": 394.74810791015625,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 451.3475646972656,
+          "bottom": 515.02197265625,
+          "text": "BackendB rejected"
+        },
+        {
+          "top": 562.171875,
+          "bottom": 670.171875,
+          "text": "Step 5 of 6The backend recomputes B’s canonical hash. It differs from A, so the required action binding fails."
+        },
+        {
+          "top": 680.171875,
+          "bottom": 786.171875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "bound",
+      "width": 375,
+      "height": 812,
+      "step": 6,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 202.79974365234375,
+          "bottom": 266.47418212890625,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 323.07366943359375,
+          "bottom": 386.74810791015625,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 443.3475646972656,
+          "bottom": 507.0220031738281,
+          "text": "BackendB rejected"
+        },
+        {
+          "top": 554.171875,
+          "bottom": 688.171875,
+          "text": "Step 6 of 6Request fresh correctly bound evidence if policy permits, then enforce authorization and idempotency independently."
+        },
+        {
+          "top": 698.171875,
+          "bottom": 804.171875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "verdict",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.79974365234375,
+          "bottom": 274.47418212890625,
+          "text": "Appprepares A"
+        },
+        {
+          "top": 331.07366943359375,
+          "bottom": 394.74810791015625,
+          "text": "Integrityready"
+        },
+        {
+          "top": 451.3475646972656,
+          "bottom": 515.02197265625,
+          "text": "Backendbind action"
+        },
+        {
+          "top": 562.171875,
+          "bottom": 696.171875,
+          "text": "Step 1 of 6The Standard provider is prepared. The app plans action A; the endpoint requires evidence bound to that action."
+        },
+        {
+          "top": 706.171875,
+          "bottom": 812.171875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "verdict",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.79974365234375,
+          "bottom": 274.47418212890625,
+          "text": "Appprepares A"
+        },
+        {
+          "top": 331.07366943359375,
+          "bottom": 394.74810791015625,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 451.3475646972656,
+          "bottom": 515.02197265625,
+          "text": "Backendbind action"
+        },
+        {
+          "top": 562.171875,
+          "bottom": 670.171875,
+          "text": "Step 2 of 6This endpoint requires request-bound evidence. The app obtains a Standard token for canonical action A."
+        },
+        {
+          "top": 680.171875,
+          "bottom": 786.171875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "verdict",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.79974365234375,
+          "bottom": 274.47418212890625,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 331.07366943359375,
+          "bottom": 394.74810791015625,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 451.3475646972656,
+          "bottom": 515.02197265625,
+          "text": "Backendbind action"
+        },
+        {
+          "top": 562.171875,
+          "bottom": 670.171875,
+          "text": "Step 3 of 6The app submits different action B with A’s token. Authentication alone does not make that evidence match."
+        },
+        {
+          "top": 680.171875,
+          "bottom": 786.171875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "verdict",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.79974365234375,
+          "bottom": 274.47418212890625,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 331.07366943359375,
+          "bottom": 394.74810791015625,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 451.3475646972656,
+          "bottom": 515.02197265625,
+          "text": "Backendverified hash A"
+        },
+        {
+          "top": 562.171875,
+          "bottom": 644.171875,
+          "text": "Step 4 of 6The backend decodes the token and receives verified request details for A."
+        },
+        {
+          "top": 654.171875,
+          "bottom": 760.171875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "verdict",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 202.79974365234375,
+          "bottom": 266.47418212890625,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 323.07366943359375,
+          "bottom": 386.74810791015625,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 443.3475646972656,
+          "bottom": 507.0220031738281,
+          "text": "BackendB wrongly accepted"
+        },
+        {
+          "top": 554.171875,
+          "bottom": 688.171875,
+          "text": "Step 5 of 6Checking only a positive device verdict skips the A-versus-B mismatch. The required evidence policy is bypassed."
+        },
+        {
+          "top": 698.171875,
+          "bottom": 804.171875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "verdict",
+      "width": 375,
+      "height": 812,
+      "step": 6,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 202.79974365234375,
+          "bottom": 266.47418212890625,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 323.07366943359375,
+          "bottom": 386.74810791015625,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 443.3475646972656,
+          "bottom": 507.0220031738281,
+          "text": "BackendB wrongly accepted"
+        },
+        {
+          "top": 554.171875,
+          "bottom": 688.171875,
+          "text": "Step 6 of 6A device signal was treated as a reusable action grant. Neither authorization nor request binding follows from that signal."
+        },
+        {
+          "top": 698.171875,
+          "bottom": 804.171875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "bound",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 305.234375,
+          "bottom": 530.8343505859375,
+          "text": "Appprepares A"
+        },
+        {
+          "top": 305.234375,
+          "bottom": 530.8343505859375,
+          "text": "Integrityready"
+        },
+        {
+          "top": 305.234375,
+          "bottom": 530.8343505859375,
+          "text": "Backendbind action"
+        },
+        {
+          "top": 658.234375,
+          "bottom": 714.234375,
+          "text": "Step 1 of 6The Standard provider is prepared. The app plans action A; the endpoint requires evidence bound to that action."
+        },
+        {
+          "top": 724.234375,
+          "bottom": 768.234375,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "bound",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Appprepares A"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Backendbind action"
+        },
+        {
+          "top": 650.234375,
+          "bottom": 706.234375,
+          "text": "Step 2 of 6This endpoint requires request-bound evidence. The app obtains a Standard token for canonical action A."
+        },
+        {
+          "top": 716.234375,
+          "bottom": 760.234375,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "bound",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Backendbind action"
+        },
+        {
+          "top": 650.234375,
+          "bottom": 706.234375,
+          "text": "Step 3 of 6The app submits different action B with A’s token. Authentication alone does not make that evidence match."
+        },
+        {
+          "top": 716.234375,
+          "bottom": 760.234375,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "bound",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Backendverified hash A"
+        },
+        {
+          "top": 650.234375,
+          "bottom": 706.234375,
+          "text": "Step 4 of 6The backend decodes the token and receives verified request details for A."
+        },
+        {
+          "top": 716.234375,
+          "bottom": 760.234375,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "bound",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "BackendB rejected"
+        },
+        {
+          "top": 650.234375,
+          "bottom": 706.234375,
+          "text": "Step 5 of 6The backend recomputes B’s canonical hash. It differs from A, so the required action binding fails."
+        },
+        {
+          "top": 716.234375,
+          "bottom": 760.234375,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "bound",
+      "width": 1024,
+      "height": 768,
+      "step": 6,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "BackendB rejected"
+        },
+        {
+          "top": 650.234375,
+          "bottom": 706.234375,
+          "text": "Step 6 of 6Request fresh correctly bound evidence if policy permits, then enforce authorization and idempotency independently."
+        },
+        {
+          "top": 716.234375,
+          "bottom": 760.234375,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "verdict",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 305.234375,
+          "bottom": 530.8343505859375,
+          "text": "Appprepares A"
+        },
+        {
+          "top": 305.234375,
+          "bottom": 530.8343505859375,
+          "text": "Integrityready"
+        },
+        {
+          "top": 305.234375,
+          "bottom": 530.8343505859375,
+          "text": "Backendbind action"
+        },
+        {
+          "top": 658.234375,
+          "bottom": 714.234375,
+          "text": "Step 1 of 6The Standard provider is prepared. The app plans action A; the endpoint requires evidence bound to that action."
+        },
+        {
+          "top": 724.234375,
+          "bottom": 768.234375,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "verdict",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Appprepares A"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Backendbind action"
+        },
+        {
+          "top": 650.234375,
+          "bottom": 706.234375,
+          "text": "Step 2 of 6This endpoint requires request-bound evidence. The app obtains a Standard token for canonical action A."
+        },
+        {
+          "top": 716.234375,
+          "bottom": 760.234375,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "verdict",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Backendbind action"
+        },
+        {
+          "top": 650.234375,
+          "bottom": 706.234375,
+          "text": "Step 3 of 6The app submits different action B with A’s token. Authentication alone does not make that evidence match."
+        },
+        {
+          "top": 716.234375,
+          "bottom": 760.234375,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "verdict",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Backendverified hash A"
+        },
+        {
+          "top": 650.234375,
+          "bottom": 706.234375,
+          "text": "Step 4 of 6The backend decodes the token and receives verified request details for A."
+        },
+        {
+          "top": 716.234375,
+          "bottom": 760.234375,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "verdict",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "BackendB wrongly accepted"
+        },
+        {
+          "top": 650.234375,
+          "bottom": 706.234375,
+          "text": "Step 5 of 6Checking only a positive device verdict skips the A-versus-B mismatch. The required evidence policy is bypassed."
+        },
+        {
+          "top": 716.234375,
+          "bottom": 760.234375,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "verdict",
+      "width": 1024,
+      "height": 768,
+      "step": 6,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 297.234375,
+          "bottom": 522.8343505859375,
+          "text": "BackendB wrongly accepted"
+        },
+        {
+          "top": 650.234375,
+          "bottom": 706.234375,
+          "text": "Step 6 of 6A device signal was treated as a reusable action grant. Neither authorization nor request binding follows from that signal."
+        },
+        {
+          "top": 716.234375,
+          "bottom": 760.234375,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "bound",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 437.296875,
+          "bottom": 662.8968505859375,
+          "text": "Appprepares A"
+        },
+        {
+          "top": 437.296875,
+          "bottom": 662.8968505859375,
+          "text": "Integrityready"
+        },
+        {
+          "top": 437.296875,
+          "bottom": 662.8968505859375,
+          "text": "Backendbind action"
+        },
+        {
+          "top": 790.296875,
+          "bottom": 846.296875,
+          "text": "Step 1 of 6The Standard provider is prepared. The app plans action A; the endpoint requires evidence bound to that action."
+        },
+        {
+          "top": 856.296875,
+          "bottom": 900.296875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "bound",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Appprepares A"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Backendbind action"
+        },
+        {
+          "top": 782.296875,
+          "bottom": 838.296875,
+          "text": "Step 2 of 6This endpoint requires request-bound evidence. The app obtains a Standard token for canonical action A."
+        },
+        {
+          "top": 848.296875,
+          "bottom": 892.296875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "bound",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Backendbind action"
+        },
+        {
+          "top": 782.296875,
+          "bottom": 838.296875,
+          "text": "Step 3 of 6The app submits different action B with A’s token. Authentication alone does not make that evidence match."
+        },
+        {
+          "top": 848.296875,
+          "bottom": 892.296875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "bound",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Backendverified hash A"
+        },
+        {
+          "top": 782.296875,
+          "bottom": 838.296875,
+          "text": "Step 4 of 6The backend decodes the token and receives verified request details for A."
+        },
+        {
+          "top": 848.296875,
+          "bottom": 892.296875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "bound",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "BackendB rejected"
+        },
+        {
+          "top": 782.296875,
+          "bottom": 838.296875,
+          "text": "Step 5 of 6The backend recomputes B’s canonical hash. It differs from A, so the required action binding fails."
+        },
+        {
+          "top": 848.296875,
+          "bottom": 892.296875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "bound",
+      "width": 1280,
+      "height": 900,
+      "step": 6,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "BackendB rejected"
+        },
+        {
+          "top": 782.296875,
+          "bottom": 838.296875,
+          "text": "Step 6 of 6Request fresh correctly bound evidence if policy permits, then enforce authorization and idempotency independently."
+        },
+        {
+          "top": 848.296875,
+          "bottom": 892.296875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "verdict",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 437.296875,
+          "bottom": 662.8968505859375,
+          "text": "Appprepares A"
+        },
+        {
+          "top": 437.296875,
+          "bottom": 662.8968505859375,
+          "text": "Integrityready"
+        },
+        {
+          "top": 437.296875,
+          "bottom": 662.8968505859375,
+          "text": "Backendbind action"
+        },
+        {
+          "top": 790.296875,
+          "bottom": 846.296875,
+          "text": "Step 1 of 6The Standard provider is prepared. The app plans action A; the endpoint requires evidence bound to that action."
+        },
+        {
+          "top": 856.296875,
+          "bottom": 900.296875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "verdict",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Appprepares A"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Backendbind action"
+        },
+        {
+          "top": 782.296875,
+          "bottom": 838.296875,
+          "text": "Step 2 of 6This endpoint requires request-bound evidence. The app obtains a Standard token for canonical action A."
+        },
+        {
+          "top": 848.296875,
+          "bottom": 892.296875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "verdict",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Backendbind action"
+        },
+        {
+          "top": 782.296875,
+          "bottom": 838.296875,
+          "text": "Step 3 of 6The app submits different action B with A’s token. Authentication alone does not make that evidence match."
+        },
+        {
+          "top": 848.296875,
+          "bottom": 892.296875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "verdict",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Backendverified hash A"
+        },
+        {
+          "top": 782.296875,
+          "bottom": 838.296875,
+          "text": "Step 4 of 6The backend decodes the token and receives verified request details for A."
+        },
+        {
+          "top": 848.296875,
+          "bottom": 892.296875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "verdict",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "BackendB wrongly accepted"
+        },
+        {
+          "top": 782.296875,
+          "bottom": 838.296875,
+          "text": "Step 5 of 6Checking only a positive device verdict skips the A-versus-B mismatch. The required evidence policy is bypassed."
+        },
+        {
+          "top": 848.296875,
+          "bottom": 892.296875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/attestation/",
+      "mode": "verdict",
+      "width": 1280,
+      "height": 900,
+      "step": 6,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Appsubmits B"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "Integrityhash: action A"
+        },
+        {
+          "top": 429.296875,
+          "bottom": 654.8968505859375,
+          "text": "BackendB wrongly accepted"
+        },
+        {
+          "top": 782.296875,
+          "bottom": 838.296875,
+          "text": "Step 6 of 6A device signal was treated as a reusable action grant. Neither authorization nor request binding follows from that signal."
+        },
+        {
+          "top": 848.296875,
+          "bottom": 892.296875,
+          "text": "1 / 6 · Start2 / 6 · Prepare3 / 6 · Substitute4 / 6 · Decode5 / 6 · Bind6 / 6 · AuthorizePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "guarded",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 262.48724365234375,
+          "bottom": 326.16168212890625,
+          "text": "Session AA active"
+        },
+        {
+          "top": 382.76116943359375,
+          "bottom": 446.43560791015625,
+          "text": "Identityready"
+        },
+        {
+          "top": 503.0350646972656,
+          "bottom": 566.70947265625,
+          "text": "Vault AA tokens"
+        },
+        {
+          "top": 613.859375,
+          "bottom": 695.859375,
+          "text": "Step 1 of 6Session A is active. Its next refresh will race with local logout."
+        },
+        {
+          "top": 705.859375,
+          "bottom": 811.859375,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "guarded",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 254.48724365234375,
+          "bottom": 318.16168212890625,
+          "text": "Session AA active"
+        },
+        {
+          "top": 374.76116943359375,
+          "bottom": 438.43560791015625,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 495.0350646972656,
+          "bottom": 558.70947265625,
+          "text": "Vault AA tokens"
+        },
+        {
+          "top": 605.859375,
+          "bottom": 687.859375,
+          "text": "Step 2 of 6Session A starts a refresh against its own identity provider and token vault."
+        },
+        {
+          "top": 697.859375,
+          "bottom": 803.859375,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "guarded",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.48724365234375,
+          "bottom": 292.16168212890625,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 348.76116943359375,
+          "bottom": 412.43560791015625,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 469.0350646972656,
+          "bottom": 532.70947265625,
+          "text": "Vault Ainvalidated; empty"
+        },
+        {
+          "top": 579.859375,
+          "bottom": 687.859375,
+          "text": "Step 3 of 6Local logout retires A and atomically invalidates its vault before optional network revocation."
+        },
+        {
+          "top": 697.859375,
+          "bottom": 803.859375,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "guarded",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.48724365234375,
+          "bottom": 292.16168212890625,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 348.76116943359375,
+          "bottom": 412.43560791015625,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 469.0350646972656,
+          "bottom": 532.70947265625,
+          "text": "Vault Ainvalidated; empty"
+        },
+        {
+          "top": 579.859375,
+          "bottom": 687.859375,
+          "text": "Step 4 of 6The old refresh returns credentials for A after logout. It is not permission to restore that retired session."
+        },
+        {
+          "top": 697.859375,
+          "bottom": 803.859375,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "guarded",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.48724365234375,
+          "bottom": 292.16168212890625,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 348.76116943359375,
+          "bottom": 412.43560791015625,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 469.0350646972656,
+          "bottom": 532.70947265625,
+          "text": "Vault Ainvalidated; empty"
+        },
+        {
+          "top": 579.859375,
+          "bottom": 687.859375,
+          "text": "Step 5 of 6The captured vault rejects replacement after invalidation. A remains retired."
+        },
+        {
+          "top": 697.859375,
+          "bottom": 803.859375,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "guarded",
+      "width": 375,
+      "height": 812,
+      "step": 6,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.48724365234375,
+          "bottom": 292.16168212890625,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 348.76116943359375,
+          "bottom": 412.43560791015625,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 469.0350646972656,
+          "bottom": 532.70947265625,
+          "text": "Vault Ainvalidated; empty"
+        },
+        {
+          "top": 579.859375,
+          "bottom": 687.859375,
+          "text": "Step 6 of 6Local token resurrection is prevented. Server-wide revocation still needs the identity service’s contract."
+        },
+        {
+          "top": 697.859375,
+          "bottom": 803.859375,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "unchecked",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 262.48724365234375,
+          "bottom": 326.16168212890625,
+          "text": "Session AA active"
+        },
+        {
+          "top": 382.76116943359375,
+          "bottom": 446.43560791015625,
+          "text": "Identityready"
+        },
+        {
+          "top": 503.0350646972656,
+          "bottom": 566.70947265625,
+          "text": "Vault AA tokens"
+        },
+        {
+          "top": 613.859375,
+          "bottom": 695.859375,
+          "text": "Step 1 of 6Session A is active. Its next refresh will race with local logout."
+        },
+        {
+          "top": 705.859375,
+          "bottom": 811.859375,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "unchecked",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 254.48724365234375,
+          "bottom": 318.16168212890625,
+          "text": "Session AA active"
+        },
+        {
+          "top": 374.76116943359375,
+          "bottom": 438.43560791015625,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 495.0350646972656,
+          "bottom": 558.70947265625,
+          "text": "Vault AA tokens"
+        },
+        {
+          "top": 605.859375,
+          "bottom": 687.859375,
+          "text": "Step 2 of 6Session A starts a refresh against its own identity provider and token vault."
+        },
+        {
+          "top": 697.859375,
+          "bottom": 803.859375,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "unchecked",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.48724365234375,
+          "bottom": 292.16168212890625,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 348.76116943359375,
+          "bottom": 412.43560791015625,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 469.0350646972656,
+          "bottom": 532.70947265625,
+          "text": "Vault Ainvalidated; empty"
+        },
+        {
+          "top": 579.859375,
+          "bottom": 687.859375,
+          "text": "Step 3 of 6Local logout retires A and atomically invalidates its vault before optional network revocation."
+        },
+        {
+          "top": 697.859375,
+          "bottom": 803.859375,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "unchecked",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.48724365234375,
+          "bottom": 292.16168212890625,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 348.76116943359375,
+          "bottom": 412.43560791015625,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 469.0350646972656,
+          "bottom": 532.70947265625,
+          "text": "Vault Ainvalidated; empty"
+        },
+        {
+          "top": 579.859375,
+          "bottom": 687.859375,
+          "text": "Step 4 of 6The old refresh returns credentials for A after logout. It is not permission to restore that retired session."
+        },
+        {
+          "top": 697.859375,
+          "bottom": 803.859375,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "unchecked",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.48724365234375,
+          "bottom": 292.16168212890625,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 348.76116943359375,
+          "bottom": 412.43560791015625,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 469.0350646972656,
+          "bottom": 532.70947265625,
+          "text": "Vault AA tokens restored"
+        },
+        {
+          "top": 579.859375,
+          "bottom": 687.859375,
+          "text": "Step 5 of 6An unchecked save installs the old credentials again. Encryption alone did not prevent the stale write."
+        },
+        {
+          "top": 697.859375,
+          "bottom": 803.859375,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "unchecked",
+      "width": 375,
+      "height": 812,
+      "step": 6,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.48724365234375,
+          "bottom": 292.16168212890625,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 348.76116943359375,
+          "bottom": 412.43560791015625,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 469.0350646972656,
+          "bottom": 532.70947265625,
+          "text": "Vault AA tokens restored"
+        },
+        {
+          "top": 579.859375,
+          "bottom": 687.859375,
+          "text": "Step 6 of 6The old session’s local credentials are back. A successful refresh response did not establish current ownership."
+        },
+        {
+          "top": 697.859375,
+          "bottom": 803.859375,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "guarded",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 305.421875,
+          "bottom": 531.0218505859375,
+          "text": "Session AA active"
+        },
+        {
+          "top": 305.421875,
+          "bottom": 531.0218505859375,
+          "text": "Identityready"
+        },
+        {
+          "top": 305.421875,
+          "bottom": 531.0218505859375,
+          "text": "Vault AA tokens"
+        },
+        {
+          "top": 658.421875,
+          "bottom": 714.421875,
+          "text": "Step 1 of 6Session A is active. Its next refresh will race with local logout."
+        },
+        {
+          "top": 724.421875,
+          "bottom": 768.421875,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "guarded",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Session AA active"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Vault AA tokens"
+        },
+        {
+          "top": 650.421875,
+          "bottom": 706.421875,
+          "text": "Step 2 of 6Session A starts a refresh against its own identity provider and token vault."
+        },
+        {
+          "top": 716.421875,
+          "bottom": 760.421875,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "guarded",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Vault Ainvalidated; empty"
+        },
+        {
+          "top": 650.421875,
+          "bottom": 706.421875,
+          "text": "Step 3 of 6Local logout retires A and atomically invalidates its vault before optional network revocation."
+        },
+        {
+          "top": 716.421875,
+          "bottom": 760.421875,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "guarded",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Vault Ainvalidated; empty"
+        },
+        {
+          "top": 650.421875,
+          "bottom": 706.421875,
+          "text": "Step 4 of 6The old refresh returns credentials for A after logout. It is not permission to restore that retired session."
+        },
+        {
+          "top": 716.421875,
+          "bottom": 760.421875,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "guarded",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Vault Ainvalidated; empty"
+        },
+        {
+          "top": 650.421875,
+          "bottom": 706.421875,
+          "text": "Step 5 of 6The captured vault rejects replacement after invalidation. A remains retired."
+        },
+        {
+          "top": 716.421875,
+          "bottom": 760.421875,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "guarded",
+      "width": 1024,
+      "height": 768,
+      "step": 6,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Vault Ainvalidated; empty"
+        },
+        {
+          "top": 650.421875,
+          "bottom": 706.421875,
+          "text": "Step 6 of 6Local token resurrection is prevented. Server-wide revocation still needs the identity service’s contract."
+        },
+        {
+          "top": 716.421875,
+          "bottom": 760.421875,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "unchecked",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 305.421875,
+          "bottom": 531.0218505859375,
+          "text": "Session AA active"
+        },
+        {
+          "top": 305.421875,
+          "bottom": 531.0218505859375,
+          "text": "Identityready"
+        },
+        {
+          "top": 305.421875,
+          "bottom": 531.0218505859375,
+          "text": "Vault AA tokens"
+        },
+        {
+          "top": 658.421875,
+          "bottom": 714.421875,
+          "text": "Step 1 of 6Session A is active. Its next refresh will race with local logout."
+        },
+        {
+          "top": 724.421875,
+          "bottom": 768.421875,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "unchecked",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Session AA active"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Vault AA tokens"
+        },
+        {
+          "top": 650.421875,
+          "bottom": 706.421875,
+          "text": "Step 2 of 6Session A starts a refresh against its own identity provider and token vault."
+        },
+        {
+          "top": 716.421875,
+          "bottom": 760.421875,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "unchecked",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Vault Ainvalidated; empty"
+        },
+        {
+          "top": 650.421875,
+          "bottom": 706.421875,
+          "text": "Step 3 of 6Local logout retires A and atomically invalidates its vault before optional network revocation."
+        },
+        {
+          "top": 716.421875,
+          "bottom": 760.421875,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "unchecked",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Vault Ainvalidated; empty"
+        },
+        {
+          "top": 650.421875,
+          "bottom": 706.421875,
+          "text": "Step 4 of 6The old refresh returns credentials for A after logout. It is not permission to restore that retired session."
+        },
+        {
+          "top": 716.421875,
+          "bottom": 760.421875,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "unchecked",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Vault AA tokens restored"
+        },
+        {
+          "top": 650.421875,
+          "bottom": 706.421875,
+          "text": "Step 5 of 6An unchecked save installs the old credentials again. Encryption alone did not prevent the stale write."
+        },
+        {
+          "top": 716.421875,
+          "bottom": 760.421875,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "unchecked",
+      "width": 1024,
+      "height": 768,
+      "step": 6,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 297.421875,
+          "bottom": 523.0218505859375,
+          "text": "Vault AA tokens restored"
+        },
+        {
+          "top": 650.421875,
+          "bottom": 706.421875,
+          "text": "Step 6 of 6The old session’s local credentials are back. A successful refresh response did not establish current ownership."
+        },
+        {
+          "top": 716.421875,
+          "bottom": 760.421875,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "guarded",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 436.515625,
+          "bottom": 662.1156005859375,
+          "text": "Session AA active"
+        },
+        {
+          "top": 436.515625,
+          "bottom": 662.1156005859375,
+          "text": "Identityready"
+        },
+        {
+          "top": 436.515625,
+          "bottom": 662.1156005859375,
+          "text": "Vault AA tokens"
+        },
+        {
+          "top": 789.515625,
+          "bottom": 845.515625,
+          "text": "Step 1 of 6Session A is active. Its next refresh will race with local logout."
+        },
+        {
+          "top": 855.515625,
+          "bottom": 899.515625,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "guarded",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Session AA active"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Vault AA tokens"
+        },
+        {
+          "top": 781.515625,
+          "bottom": 837.515625,
+          "text": "Step 2 of 6Session A starts a refresh against its own identity provider and token vault."
+        },
+        {
+          "top": 847.515625,
+          "bottom": 891.515625,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "guarded",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Vault Ainvalidated; empty"
+        },
+        {
+          "top": 781.515625,
+          "bottom": 837.515625,
+          "text": "Step 3 of 6Local logout retires A and atomically invalidates its vault before optional network revocation."
+        },
+        {
+          "top": 847.515625,
+          "bottom": 891.515625,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "guarded",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Vault Ainvalidated; empty"
+        },
+        {
+          "top": 781.515625,
+          "bottom": 837.515625,
+          "text": "Step 4 of 6The old refresh returns credentials for A after logout. It is not permission to restore that retired session."
+        },
+        {
+          "top": 847.515625,
+          "bottom": 891.515625,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "guarded",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Vault Ainvalidated; empty"
+        },
+        {
+          "top": 781.515625,
+          "bottom": 837.515625,
+          "text": "Step 5 of 6The captured vault rejects replacement after invalidation. A remains retired."
+        },
+        {
+          "top": 847.515625,
+          "bottom": 891.515625,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "guarded",
+      "width": 1280,
+      "height": 900,
+      "step": 6,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Vault Ainvalidated; empty"
+        },
+        {
+          "top": 781.515625,
+          "bottom": 837.515625,
+          "text": "Step 6 of 6Local token resurrection is prevented. Server-wide revocation still needs the identity service’s contract."
+        },
+        {
+          "top": 847.515625,
+          "bottom": 891.515625,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "unchecked",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 436.515625,
+          "bottom": 662.1156005859375,
+          "text": "Session AA active"
+        },
+        {
+          "top": 436.515625,
+          "bottom": 662.1156005859375,
+          "text": "Identityready"
+        },
+        {
+          "top": 436.515625,
+          "bottom": 662.1156005859375,
+          "text": "Vault AA tokens"
+        },
+        {
+          "top": 789.515625,
+          "bottom": 845.515625,
+          "text": "Step 1 of 6Session A is active. Its next refresh will race with local logout."
+        },
+        {
+          "top": 855.515625,
+          "bottom": 899.515625,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "unchecked",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Session AA active"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Vault AA tokens"
+        },
+        {
+          "top": 781.515625,
+          "bottom": 837.515625,
+          "text": "Step 2 of 6Session A starts a refresh against its own identity provider and token vault."
+        },
+        {
+          "top": 847.515625,
+          "bottom": 891.515625,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "unchecked",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Vault Ainvalidated; empty"
+        },
+        {
+          "top": 781.515625,
+          "bottom": 837.515625,
+          "text": "Step 3 of 6Local logout retires A and atomically invalidates its vault before optional network revocation."
+        },
+        {
+          "top": 847.515625,
+          "bottom": 891.515625,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "unchecked",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Vault Ainvalidated; empty"
+        },
+        {
+          "top": 781.515625,
+          "bottom": 837.515625,
+          "text": "Step 4 of 6The old refresh returns credentials for A after logout. It is not permission to restore that retired session."
+        },
+        {
+          "top": 847.515625,
+          "bottom": 891.515625,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "unchecked",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Vault AA tokens restored"
+        },
+        {
+          "top": 781.515625,
+          "bottom": 837.515625,
+          "text": "Step 5 of 6An unchecked save installs the old credentials again. Encryption alone did not prevent the stale write."
+        },
+        {
+          "top": 847.515625,
+          "bottom": 891.515625,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/auth-on-mobile/",
+      "mode": "unchecked",
+      "width": 1280,
+      "height": 900,
+      "step": 6,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Session AA retired"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Identityrefresh A pending"
+        },
+        {
+          "top": 428.515625,
+          "bottom": 654.1156005859375,
+          "text": "Vault AA tokens restored"
+        },
+        {
+          "top": 781.515625,
+          "bottom": 837.515625,
+          "text": "Step 6 of 6The old session’s local credentials are back. A successful refresh response did not establish current ownership."
+        },
+        {
+          "top": 847.515625,
+          "bottom": 891.515625,
+          "text": "1 / 6 · Start2 / 6 · Refresh3 / 6 · Logout4 / 6 · Late reply5 / 6 · Install6 / 6 · Keep boundaryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "overlap",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 262.76849365234375,
+          "bottom": 326.44293212890625,
+          "text": "Old cohortpins K1,K2"
+        },
+        {
+          "top": 383.04241943359375,
+          "bottom": 446.71685791015625,
+          "text": "New cohortpins K1,K2"
+        },
+        {
+          "top": 503.3163146972656,
+          "bottom": 566.99072265625,
+          "text": "TLS servervalid chain; K1"
+        },
+        {
+          "top": 614.140625,
+          "bottom": 696.140625,
+          "text": "Step 1 of 5Before server rotation, the old cohort has K1 and backup K2."
+        },
+        {
+          "top": 706.140625,
+          "bottom": 812.140625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "overlap",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 254.76849365234375,
+          "bottom": 318.44293212890625,
+          "text": "Old cohortpins K1,K2"
+        },
+        {
+          "top": 375.04241943359375,
+          "bottom": 438.71685791015625,
+          "text": "New cohortpins K1,K2"
+        },
+        {
+          "top": 495.3163146972656,
+          "bottom": 558.99072265625,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 606.140625,
+          "bottom": 688.140625,
+          "text": "Step 2 of 5The server rotates to a valid certificate chain using public key K2."
+        },
+        {
+          "top": 698.140625,
+          "bottom": 804.140625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "overlap",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 254.76849365234375,
+          "bottom": 318.44293212890625,
+          "text": "Old cohortK2 accepted"
+        },
+        {
+          "top": 375.04241943359375,
+          "bottom": 438.71685791015625,
+          "text": "New cohortpins K1,K2"
+        },
+        {
+          "top": 495.3163146972656,
+          "bottom": 558.99072265625,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 606.140625,
+          "bottom": 688.140625,
+          "text": "Step 3 of 5The old client validates the chain and matches backup pin K2."
+        },
+        {
+          "top": 698.140625,
+          "bottom": 804.140625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "overlap",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 254.76849365234375,
+          "bottom": 318.44293212890625,
+          "text": "Old cohortK2 accepted"
+        },
+        {
+          "top": 375.04241943359375,
+          "bottom": 438.71685791015625,
+          "text": "New cohortK2 accepted"
+        },
+        {
+          "top": 495.3163146972656,
+          "bottom": 558.99072265625,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 606.140625,
+          "bottom": 688.140625,
+          "text": "Step 4 of 5The newer cohort also validates the chain and matches K2."
+        },
+        {
+          "top": 698.140625,
+          "bottom": 804.140625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "overlap",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.76849365234375,
+          "bottom": 292.44293212890625,
+          "text": "Old cohortK2 accepted"
+        },
+        {
+          "top": 349.04241943359375,
+          "bottom": 412.71685791015625,
+          "text": "New cohortK2 accepted"
+        },
+        {
+          "top": 469.3163146972656,
+          "bottom": 532.99072265625,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 580.140625,
+          "bottom": 688.140625,
+          "text": "Step 5 of 5Both cohorts can reach the service. Prepare the next supported overlap before removing old pins."
+        },
+        {
+          "top": 698.140625,
+          "bottom": 804.140625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "missing",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 236.76849365234375,
+          "bottom": 300.44293212890625,
+          "text": "Old cohortpin K1 only"
+        },
+        {
+          "top": 357.04241943359375,
+          "bottom": 420.71685791015625,
+          "text": "New cohortpins K1,K2"
+        },
+        {
+          "top": 477.3163146972656,
+          "bottom": 540.99072265625,
+          "text": "TLS servervalid chain; K1"
+        },
+        {
+          "top": 588.140625,
+          "bottom": 696.140625,
+          "text": "Step 1 of 5Before server rotation, the old cohort has only K1. The newer cohort has K1 and K2."
+        },
+        {
+          "top": 706.140625,
+          "bottom": 812.140625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "missing",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 236.76849365234375,
+          "bottom": 300.44293212890625,
+          "text": "Old cohortpin K1 only"
+        },
+        {
+          "top": 357.04241943359375,
+          "bottom": 420.71685791015625,
+          "text": "New cohortpins K1,K2"
+        },
+        {
+          "top": 477.3163146972656,
+          "bottom": 540.99072265625,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 588.140625,
+          "bottom": 670.140625,
+          "text": "Step 2 of 5The server rotates to a valid certificate chain using public key K2."
+        },
+        {
+          "top": 680.140625,
+          "bottom": 786.140625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "missing",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.76849365234375,
+          "bottom": 292.44293212890625,
+          "text": "Old cohortpin failure"
+        },
+        {
+          "top": 349.04241943359375,
+          "bottom": 412.71685791015625,
+          "text": "New cohortpins K1,K2"
+        },
+        {
+          "top": 469.3163146972656,
+          "bottom": 532.99072265625,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 580.140625,
+          "bottom": 688.140625,
+          "text": "Step 3 of 5The chain is valid, but K2 matches no old-client pin. That installed cohort cannot connect."
+        },
+        {
+          "top": 698.140625,
+          "bottom": 804.140625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "missing",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.76849365234375,
+          "bottom": 292.44293212890625,
+          "text": "Old cohortpin failure"
+        },
+        {
+          "top": 349.04241943359375,
+          "bottom": 412.71685791015625,
+          "text": "New cohortK2 accepted"
+        },
+        {
+          "top": 469.3163146972656,
+          "bottom": 532.99072265625,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 580.140625,
+          "bottom": 662.140625,
+          "text": "Step 4 of 5The newer cohort also validates the chain and matches K2."
+        },
+        {
+          "top": 672.140625,
+          "bottom": 778.140625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "missing",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 202.76849365234375,
+          "bottom": 266.44293212890625,
+          "text": "Old cohortpin failure"
+        },
+        {
+          "top": 323.04241943359375,
+          "bottom": 386.71685791015625,
+          "text": "New cohortK2 accepted"
+        },
+        {
+          "top": 443.3163146972656,
+          "bottom": 506.9907531738281,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 554.140625,
+          "bottom": 688.140625,
+          "text": "Step 5 of 5The broken cohort cannot fetch recovery over this same blocked pinned channel. Rotation needed an earlier overlap."
+        },
+        {
+          "top": 698.140625,
+          "bottom": 804.140625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "overlap",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 305.203125,
+          "bottom": 530.8031005859375,
+          "text": "Old cohortpins K1,K2"
+        },
+        {
+          "top": 305.203125,
+          "bottom": 530.8031005859375,
+          "text": "New cohortpins K1,K2"
+        },
+        {
+          "top": 305.203125,
+          "bottom": 530.8031005859375,
+          "text": "TLS servervalid chain; K1"
+        },
+        {
+          "top": 658.203125,
+          "bottom": 714.203125,
+          "text": "Step 1 of 5Before server rotation, the old cohort has K1 and backup K2."
+        },
+        {
+          "top": 724.203125,
+          "bottom": 768.203125,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "overlap",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "Old cohortpins K1,K2"
+        },
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "New cohortpins K1,K2"
+        },
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 650.203125,
+          "bottom": 706.203125,
+          "text": "Step 2 of 5The server rotates to a valid certificate chain using public key K2."
+        },
+        {
+          "top": 716.203125,
+          "bottom": 760.203125,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "overlap",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "Old cohortK2 accepted"
+        },
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "New cohortpins K1,K2"
+        },
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 650.203125,
+          "bottom": 706.203125,
+          "text": "Step 3 of 5The old client validates the chain and matches backup pin K2."
+        },
+        {
+          "top": 716.203125,
+          "bottom": 760.203125,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "overlap",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "Old cohortK2 accepted"
+        },
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "New cohortK2 accepted"
+        },
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 650.203125,
+          "bottom": 706.203125,
+          "text": "Step 4 of 5The newer cohort also validates the chain and matches K2."
+        },
+        {
+          "top": 716.203125,
+          "bottom": 760.203125,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "overlap",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "Old cohortK2 accepted"
+        },
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "New cohortK2 accepted"
+        },
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 650.203125,
+          "bottom": 706.203125,
+          "text": "Step 5 of 5Both cohorts can reach the service. Prepare the next supported overlap before removing old pins."
+        },
+        {
+          "top": 716.203125,
+          "bottom": 760.203125,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "missing",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 305.203125,
+          "bottom": 530.8031005859375,
+          "text": "Old cohortpin K1 only"
+        },
+        {
+          "top": 305.203125,
+          "bottom": 530.8031005859375,
+          "text": "New cohortpins K1,K2"
+        },
+        {
+          "top": 305.203125,
+          "bottom": 530.8031005859375,
+          "text": "TLS servervalid chain; K1"
+        },
+        {
+          "top": 658.203125,
+          "bottom": 714.203125,
+          "text": "Step 1 of 5Before server rotation, the old cohort has only K1. The newer cohort has K1 and K2."
+        },
+        {
+          "top": 724.203125,
+          "bottom": 768.203125,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "missing",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "Old cohortpin K1 only"
+        },
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "New cohortpins K1,K2"
+        },
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 650.203125,
+          "bottom": 706.203125,
+          "text": "Step 2 of 5The server rotates to a valid certificate chain using public key K2."
+        },
+        {
+          "top": 716.203125,
+          "bottom": 760.203125,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "missing",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "Old cohortpin failure"
+        },
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "New cohortpins K1,K2"
+        },
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 650.203125,
+          "bottom": 706.203125,
+          "text": "Step 3 of 5The chain is valid, but K2 matches no old-client pin. That installed cohort cannot connect."
+        },
+        {
+          "top": 716.203125,
+          "bottom": 760.203125,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "missing",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "Old cohortpin failure"
+        },
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "New cohortK2 accepted"
+        },
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 650.203125,
+          "bottom": 706.203125,
+          "text": "Step 4 of 5The newer cohort also validates the chain and matches K2."
+        },
+        {
+          "top": 716.203125,
+          "bottom": 760.203125,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "missing",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "Old cohortpin failure"
+        },
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "New cohortK2 accepted"
+        },
+        {
+          "top": 297.203125,
+          "bottom": 522.8031005859375,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 650.203125,
+          "bottom": 706.203125,
+          "text": "Step 5 of 5The broken cohort cannot fetch recovery over this same blocked pinned channel. Rotation needed an earlier overlap."
+        },
+        {
+          "top": 716.203125,
+          "bottom": 760.203125,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "overlap",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 437.265625,
+          "bottom": 662.8656005859375,
+          "text": "Old cohortpins K1,K2"
+        },
+        {
+          "top": 437.265625,
+          "bottom": 662.8656005859375,
+          "text": "New cohortpins K1,K2"
+        },
+        {
+          "top": 437.265625,
+          "bottom": 662.8656005859375,
+          "text": "TLS servervalid chain; K1"
+        },
+        {
+          "top": 790.265625,
+          "bottom": 846.265625,
+          "text": "Step 1 of 5Before server rotation, the old cohort has K1 and backup K2."
+        },
+        {
+          "top": 856.265625,
+          "bottom": 900.265625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "overlap",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "Old cohortpins K1,K2"
+        },
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "New cohortpins K1,K2"
+        },
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 782.265625,
+          "bottom": 838.265625,
+          "text": "Step 2 of 5The server rotates to a valid certificate chain using public key K2."
+        },
+        {
+          "top": 848.265625,
+          "bottom": 892.265625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "overlap",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "Old cohortK2 accepted"
+        },
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "New cohortpins K1,K2"
+        },
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 782.265625,
+          "bottom": 838.265625,
+          "text": "Step 3 of 5The old client validates the chain and matches backup pin K2."
+        },
+        {
+          "top": 848.265625,
+          "bottom": 892.265625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "overlap",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "Old cohortK2 accepted"
+        },
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "New cohortK2 accepted"
+        },
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 782.265625,
+          "bottom": 838.265625,
+          "text": "Step 4 of 5The newer cohort also validates the chain and matches K2."
+        },
+        {
+          "top": 848.265625,
+          "bottom": 892.265625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "overlap",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "Old cohortK2 accepted"
+        },
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "New cohortK2 accepted"
+        },
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 782.265625,
+          "bottom": 838.265625,
+          "text": "Step 5 of 5Both cohorts can reach the service. Prepare the next supported overlap before removing old pins."
+        },
+        {
+          "top": 848.265625,
+          "bottom": 892.265625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "missing",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 437.265625,
+          "bottom": 662.8656005859375,
+          "text": "Old cohortpin K1 only"
+        },
+        {
+          "top": 437.265625,
+          "bottom": 662.8656005859375,
+          "text": "New cohortpins K1,K2"
+        },
+        {
+          "top": 437.265625,
+          "bottom": 662.8656005859375,
+          "text": "TLS servervalid chain; K1"
+        },
+        {
+          "top": 790.265625,
+          "bottom": 846.265625,
+          "text": "Step 1 of 5Before server rotation, the old cohort has only K1. The newer cohort has K1 and K2."
+        },
+        {
+          "top": 856.265625,
+          "bottom": 900.265625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "missing",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "Old cohortpin K1 only"
+        },
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "New cohortpins K1,K2"
+        },
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 782.265625,
+          "bottom": 838.265625,
+          "text": "Step 2 of 5The server rotates to a valid certificate chain using public key K2."
+        },
+        {
+          "top": 848.265625,
+          "bottom": 892.265625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "missing",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "Old cohortpin failure"
+        },
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "New cohortpins K1,K2"
+        },
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 782.265625,
+          "bottom": 838.265625,
+          "text": "Step 3 of 5The chain is valid, but K2 matches no old-client pin. That installed cohort cannot connect."
+        },
+        {
+          "top": 848.265625,
+          "bottom": 892.265625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "missing",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "Old cohortpin failure"
+        },
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "New cohortK2 accepted"
+        },
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 782.265625,
+          "bottom": 838.265625,
+          "text": "Step 4 of 5The newer cohort also validates the chain and matches K2."
+        },
+        {
+          "top": 848.265625,
+          "bottom": 892.265625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "security/certificate-pinning/",
+      "mode": "missing",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "Old cohortpin failure"
+        },
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "New cohortK2 accepted"
+        },
+        {
+          "top": 429.265625,
+          "bottom": 654.8656005859375,
+          "text": "TLS servervalid chain; K2"
+        },
+        {
+          "top": 782.265625,
+          "bottom": 838.265625,
+          "text": "Step 5 of 5The broken cohort cannot fetch recovery over this same blocked pinned channel. Rotation needed an earlier overlap."
+        },
+        {
+          "top": 848.265625,
+          "bottom": 892.265625,
+          "text": "1 / 5 · Installed2 / 5 · Rotate3 / 5 · Old client4 / 5 · New client5 / 5 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    }
+  ],
+  "pages": [
+    "security/attestation/",
+    "security/auth-on-mobile/",
+    "security/certificate-pinning/"
+  ],
+  "errors": [],
+  "limits": "Headless Chromium; default reading size. Favicon 404 is excluded. No physical-device, network or service integration certification."
+}

@@ -1,115 +1,91 @@
-# Security & Privacy: GDPR, CCPA, and Data Residency
+# Security and Privacy: GDPR, CCPA and Data Residency
 
 ## The Prompt
 
-*"Your company is expanding its mobile app into the European Union (EU). The app currently sends all analytics, crash reports, and user profile data to a centralized server in Virginia, USA. The legal team states this violates GDPR and Data Residency laws. Design a mobile architecture to achieve global compliance without maintaining completely separate codebases for every country."*
+A mobile app sends analytics, crash reports and profile data to a US backend. It is expanding into Europe. Determine the applicable processing, transfer and residency requirements before designing regional routing; the destination alone does not establish that the deployment is unlawful.
 
-## 1. Requirements & Clarification (RADIO Framework)
+GDPR is not a blanket rule that EU citizens' data must remain in the EU. Its territorial scope is not citizenship, consent is one of several lawful bases, and Chapter V provides conditions for international transfers. Erasure also has exceptions and retention obligations. CCPA/CPRA has distinct applicability, notice, deletion, sale/sharing opt-out and sensitive-information rules; do not reduce both regimes to one consent boolean. Product counsel supplies the applicable policy; engineering must make that policy enforceable and testable.
 
-### Functional Requirements
-- The mobile app must respect regional privacy laws (GDPR in Europe, CCPA in California).
-- Users must be able to explicitly consent to (or opt-out of) data collection.
-- EU citizen data must physically reside on servers located within the EU (Data Residency).
+## Requirements to Resolve
 
-### Non-Functional Requirements (NFRs)
-- **Maintainability:** We cannot maintain a `eu.company.app` and a `us.company.app`. A single binary must handle global compliance.
-- **Performance:** Routing decisions based on geography must not introduce noticeable latency to API calls.
+For each data class, record purpose, lawful basis or other applicable permission, destination and processors, retention, subject-rights handling, and any contractual or sector-specific location restriction. Separate operational/security processing from optional marketing. The answer can differ by purpose even for the same user.
 
-## 2. High-Level Architecture (The Consent & Routing Pipeline)
+A user travelling through Germany does not necessarily change the account's residency contract. VPNs, roaming and mobile carrier routing make Geo-IP an unreliable legal-policy authority. Store an authoritative account/tenant region, resolve it server-side, and define migration and unauthenticated bootstrap behavior.
 
-A Junior engineer hardcodes API URLs and assumes "opt-out" means wrapping `Analytics.logEvent()` in an `if (userAgreed)` block, which inevitably leaks when a new engineer forgets the check.
-A Staff engineer builds a **Centralized Consent Manager** and relies on **Geo-Routing at the Edge**.
+## Consent and Collection Pipeline
 
 ```mermaid
-graph TD
-    App[Mobile App] --> CM[Consent Manager SDK]
-    CM --> |Denied| Null[Data Dropped Locally]
-    CM --> |Approved| API[Global API Gateway / CDN]
-    API --> |Geo-IP: Europe| EU_DC[Frankfurt Data Center]
-    API --> |Geo-IP: USA| US_DC[Virginia Data Center]
+flowchart TD
+    Event[Typed event and purpose] --> Policy{Applicable purpose policy permits collection?}
+    Policy -->|No or unknown optional consent| Drop[Drop before SDK or durable queue]
+    Policy -->|Yes| Route[Resolve authoritative tenant region]
+    Route --> EU[Approved regional processor]
+    Route --> Other[Other approved processor under transfer policy]
 ```
 
-## 3. The Core Flows (Deep Dive)
+The collection decision and approved destination follow purpose/account policy, rather than inferring permission from physical IP location.
 
-### Flow 1: The Consent Manager (Client-Side Enforcement)
-*Interviewer:* "A developer adds a new third-party SDK for tracking marketing attribution. They forget to check the user's GDPR consent status. The company is fined. How do you architect the mobile app to make this mistake impossible?"
+A facade and lint rule can prevent accidental direct analytics calls, but cannot make leakage impossible. SDK auto-initializers, automatic events, crash uploads, native code and transitive SDKs need separate review. Configure optional collection before startup, keep a versioned purpose-specific policy, and apply changes to queued events as well as new ones. Withdrawal stops processing that depends on that consent; it is not a universal deletion command for every legal-purpose record.
 
-**Staff Answer:**
-"We implement the **Facade Pattern** combined with a **Consent Manager**.
-1. Developers are strictly forbidden from calling third-party SDKs directly (e.g., `FirebaseAnalytics.logEvent()`).
-2. We create an internal `TelemetryService` interface.
-3. The `ConsentManager` is initialized on app startup. It queries a backend endpoint (or local encrypted cache) to determine the user's jurisdiction (e.g., EU vs US) and their explicit consent boolean.
-4. When a developer calls `TelemetryService.track(Event)`, the service queries the `ConsentManager`.
-5. If `Consent == false`, the event is dropped silently on the client. It never touches the network.
-6. The CI pipeline runs static analysis (Lint/Detekt) to fail the build if any direct imports of third-party analytics SDKs are detected outside of the `TelemetryService` implementation."
+## Residency Is More Than Edge Routing
 
-### Flow 2: Data Residency (Edge Routing)
-*Interviewer:* "The user is in Germany and has consented to data collection. However, GDPR requires their data to be stored in the EU. Your primary database is in the USA. How does the mobile app know where to send the data?"
+A global hostname can resolve to an appropriate region, but TLS termination, CDN logs, cache copies, backups, disaster recovery, support access and subprocessors can still cross boundaries. A regional hostname is also legitimate when it expresses an approved stable account region. Choose either from the complete data-flow contract, not from a rule that regional URLs are always wrong.
 
-**Staff Answer:**
-"The mobile app *should not* know. Hardcoding regional URLs (e.g., `eu.api.company.com`) into the mobile client is an anti-pattern because users travel, and IP addresses change.
-1. The mobile app always points to a single, global Anycast IP or CDN (e.g., Cloudflare, AWS CloudFront) using `api.company.com`.
-2. The CDN terminates the TLS connection at the Edge (closest to the user).
-3. The CDN reads the user's physical Geo-IP or a JWT claim containing their home region.
-4. The Edge Router explicitly forwards the HTTP request to the isolated Frankfurt Data Center.
-The mobile app remains ignorant of topology; it relies on the infrastructure to enforce physical data residency."
+Enforce region/purpose at trusted ingress and downstream stores, including telemetry destinations. A client-supplied region claim is not authorization. Track approved processor locations and remote-access arrangements; verify any required transfer mechanism independently of encryption and consent. Geography, minimization, access control and retention are separate controls.
 
-### Flow 3: The "Right to be Forgotten" (Account Deletion)
-*Interviewer:* "Under GDPR, a user can request their account be deleted. The mobile app has an 'offline mode' that caches their private messages in a local Room database. If they delete their account via the website, how do you ensure the data is scrubbed from the physical mobile device?"
+## Deletion and Offline Devices
 
-**Staff Answer:**
-"We must implement an **Asynchronous Wipe Protocol** tied to the auth session.
-1. When the user clicks 'Delete Account' on the web, the backend revokes their OAuth Refresh Token.
-2. The backend sends a Silent Push Notification (FCM Data payload) to all registered mobile devices for that user: `{"action": "WIPE_DATA"}`.
-3. When the mobile app receives the push (or when the next API call fails with HTTP 401 Unauthorized), the `SessionManager` executes a localized wipe.
-4. It calls `clearAllTables()` on the Room DB, wipes the token vault and dependent ciphertext, and calls `WorkManager.cancelAllWork()`.
-5. It then navigates the user back to the Login screen."
+Account deletion is a durable server workflow with completion tracking, processor requests and recorded lawful-retention exceptions. Revoke the account/session, reject future writes from retired sessions, and prevent a late offline outbox from recreating deleted server data.
 
-## 4. Failure Modes & Bottlenecks
+A push may prompt local cleanup, but it can be delayed or lost and cannot erase an unreachable phone on demand. On resumption, the client checks session/account status, retires the captured session and clears only that account's tokens, local rows, files and scheduled work. Do not run global `clearAllTables()` or `cancelAllWork()` from an old-session callback after another account signs in. A generic 401 alone is not proof of account deletion; use the reviewed terminal-session/deletion contract.
 
-### Bottleneck: PII in Crash Reports
-*Problem:* A developer logs an error: `Crashlytics.log("Failed to load user: " + user.email)`. Email is Personally Identifiable Information (PII). Sending PII to Crashlytics violates GDPR.
-*Solution:* **Data Sanitization Interceptors**.
-Before any string is sent to the Crashlytics SDK, it must pass through a Regex Sanitizer that actively masks emails, phone numbers, and credit cards (e.g., replacing `john@gmail.com` with `j***@g***.com`). Furthermore, the code review process must flag any concatenation of domain objects in logging statements.
+For unusually sensitive offline data, consider authentication-bound encryption and a defined offline-access lifetime. Document the residual limit: a permanently offline or compromised device cannot be guaranteed to execute a remote wipe.
 
-### Bottleneck: Third-Party SDK Data Hoarding
-*Problem:* You integrate a "free" analytics SDK. Even if you don't explicitly send it PII, the SDK silently reads the device's MAC address, Android ID, and installed apps list, and uploads it to their servers.
-*Solution:* **Zero Trust SDK Integration**.
-1. Never integrate an SDK without a legal review of its data collection policies.
-2. For Android, evaluate dependencies in the **Google Play SDK Index** and review each vendor's Data safety guidance, observed network behavior, permissions, and release history. Apple's Privacy Manifests apply only to Apple-platform distributions. Vendor declarations are evidence, not a transfer of responsibility: the app publisher still owns GDPR, Play Data safety, legal-review, and technical-validation obligations.
-3. Use Network Security Configuration to strictly monitor what domains the app is talking to during staging.
-4. On modern Android (10+), MAC addresses and IMEI are heavily restricted, but you must ensure your app does not request `READ_PHONE_STATE` unless absolutely necessary, as it grants SDKs the power to harvest hardware identifiers.
+## Telemetry and SDK Review
 
-## 5. Staff Engineer Thinking: Security as a Platform
+Use typed allowlisted fields and minimization before serialization. Hashing or partially masking an identifier does not automatically anonymize it. Regex scrubbing is a secondary guard, not proof that arbitrary strings contain no personal data. Avoid free-form user content in crash breadcrumbs; retain approved operational context with controlled access and retention.
 
-A Staff Engineer recognizes that privacy cannot be enforced by hoping 100 developers read a Confluence document. Privacy must be enforced by the compiler, the CI pipeline, and the API gateway. If a developer *can* easily violate GDPR, the architecture is flawed. By wrapping third-party SDKs, utilizing Anycast routing, and automating data sanitization, the organization achieves compliance by default.
+Network Security Configuration controls trust, pinning and cleartext policy for participating stacks; it is not a network monitor or general domain-egress firewall. Use approved traffic inspection, SDK documentation and release-device observations to discover actual collection. `READ_PHONE_STATE` alone does not grant ordinary modern apps unrestricted IMEI access; inspect each API's target/version and privileged-access rules rather than equating one permission with all identifiers.
 
-### Data minimization register
+## Data-Minimization Register
 
-Before collecting a new field, require an owner and retention policy.
-
-| Field class | Example | Default policy |
+| Data class | Example | Required decision |
 |---|---|---|
-| Direct identifier | email, phone, government id | Avoid in telemetry; encrypt if product-critical |
-| Indirect identifier | device id, advertising id, IP, precise location | Collect only with purpose and consent |
-| Sensitive behavioral data | search, health, finance, contacts | Explicit product/legal review |
-| Operational metadata | app version, API level, crash stack | Allowed if redacted and sampled |
-| Aggregated metric | crash-free users, startup p95 | Preferred form where debugging still works |
+| Direct identifier | Email or phone | Necessary purpose, access and retention; normally exclude from telemetry |
+| Linkable metadata | IP, device/session ID, location | Assess identifiability and purpose; pseudonymization is not anonymity |
+| User content | Search, messages, health/financial fields | Specific product/legal review and deletion/recovery policy |
+| Operational context | Version, OS, stack trace | Minimize fields; review rare/identifying combinations |
+| Aggregate metric | Cohort crash rate or startup percentile | Ensure grouping and retention do not reveal individual activity |
 
-The review question is not "can we collect it?" It is "what decision becomes impossible without it, how long do we need it, and who owns deletion?"
+Record an owner, processor/destination, retention period and subject-rights handling for every field. Collection being technically possible is not evidence of necessity or permission.
 
-### Privacy enforcement points
+## Enforcement Points
 
-| Layer | Enforcement |
-|---|---|
-| Code | Lint/Detekt bans direct SDK imports and raw PII logging |
-| Telemetry SDK | Consent gate, redaction, sampling, event schema validation |
-| Build | Dependency review for SDKs with data collection behavior |
-| Backend edge | Region routing, residency policy, data processor allowlist |
-| Support tooling | Role-based access, audit logs, retention windows |
+| Layer | Control | Limit to test |
+|---|---|---|
+| API and schema | Allowlisted typed fields and purpose tags | Generic maps/free-form strings can bypass the schema |
+| Client facade | Gate collection before SDK/queue creation | SDK auto-initialization and automatic events need separate controls |
+| Build and review | Dependency inventory and banned direct calls | Lint does not prove native or transitive SDK behavior |
+| Backend ingress/storage | Authenticate owner, enforce region/purpose/retention | Logs, backups and subprocessors must follow the same policy |
+| Support and deletion | Scoped access, audit and durable deletion workflow | Offline/compromised devices may never execute a remote wipe |
 
-Privacy fails when it is only a runtime `if` statement. Staff engineers move privacy into schemas, wrappers, CI, and data retention jobs.
+## Review Checklist
+
+- Is every collected field necessary for a recorded purpose?
+- Does optional collection stay off before an applicable choice, including SDK startup?
+- Is the region authoritative and stable across travel and account switch?
+- Do logs, backups and processor access satisfy the same policy as primary storage?
+- Can deletion and consent changes handle queued uploads and old-session callbacks?
+- Are processor inventories and user-facing declarations consistent with observed behavior?
+
+These controls support compliance; a wrapper, CDN or sanitizer does not confer compliance automatically.
 
 ## Further Reading
-- [`telemetry-sdk.md`](../mobile-system-design/telemetry-sdk.md) (How the Facade pattern hides Firebase).
-- [`authentication.md`](../mobile-system-design/authentication.md) (How session revokes trigger local wipes).
+
+- [GDPR text, Articles 3, 6, 17 and Chapter V](https://eur-lex.europa.eu/eli/reg/2016/679/oj/eng).
+- [EDPB international-transfer guidance](https://www.edpb.europa.eu/sme/be-compliant/international-data-transfers_en).
+- [California Attorney General: CCPA rights and applicability](https://oag.ca.gov/privacy/ccpa).
+- [Android Network Security Configuration](https://developer.android.com/privacy-and-security/security-config).
+- [Android non-resettable identifier restrictions](https://developer.android.com/about/versions/10/privacy/changes#non-resettable-device-ids).
+- [Telemetry purpose and governance matrix](../observability/telemetry-taxonomy.md).
+- [Session-safe local cleanup](auth-on-mobile.md#5-logout).

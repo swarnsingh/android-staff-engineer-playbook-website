@@ -11,7 +11,7 @@ The client runs on hardware the attacker owns. Any constant in your `.dex`, `.so
 | Secret class | Strategy |
 |---|---|
 | Per-user, per-session secrets | Issue server-side post-auth; cache in Keystore-wrapped storage |
-| Per-device long-lived secrets | Generate on-device in Keystore; key material never leaves the chip |
+| Per-device long-lived secrets | Generate on-device in Keystore; key material remains non-exportable; hardware backing must be verified |
 | Third-party API keys with billing implications | Never embed; proxy via your backend |
 | Build-time identifiers (Maps, Firebase) | Embed; restrict by package + SHA-1 in the vendor console |
 | App-signing private key | Play App Signing (Google holds it); upload key stored in HSM you control |
@@ -76,6 +76,7 @@ This pattern keeps the key out of git but **does not** keep it out of the APK. R
 For symmetric encryption keys used to wrap on-device data:
 
 ```kotlin
+@RequiresApi(28) // This example requires StrongBox; generation may fail without it.
 class DeviceSymmetricKey @Inject constructor() {
 
     private val keystore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
@@ -97,12 +98,16 @@ class DeviceSymmetricKey @Inject constructor() {
                 .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
                 .setKeySize(256)
-                .setIsStrongBoxBacked(true)             // dedicated chip if available
-                .setRandomizedEncryptionRequired(true)  // forces unique IV per encryption
+                .setIsStrongBoxBacked(true)             // requires StrongBox; throws if unavailable
+                .setRandomizedEncryptionRequired(true)  // requires randomized encryption; never reuse a GCM IV
                 .build()
         )
         return keyGen.generateKey()
     }
+
+    fun existing(alias: String): SecretKey =
+        keystore.getKey(alias, null) as? SecretKey
+            ?: throw KeyStoreException("Missing decryption key")
 
     fun delete(alias: String) {
         keystore.deleteEntry(alias)
@@ -110,7 +115,7 @@ class DeviceSymmetricKey @Inject constructor() {
 }
 ```
 
-The key material is generated **inside** the secure element. Your code receives a `SecretKey` handle — a Java reference, not the bytes. Use it via `Cipher`:
+The Android Keystore key remains non-exportable. TEE, StrongBox or software backing depends on the device and requested policy; StrongBox is not available everywhere. Your code receives a `SecretKey` handle — a Java reference, not the bytes. Use it via `Cipher`:
 
 ```kotlin
 class GcmCipher @Inject constructor(private val keys: DeviceSymmetricKey) {
@@ -125,7 +130,7 @@ class GcmCipher @Inject constructor(private val keys: DeviceSymmetricKey) {
     }
 
     fun decrypt(blob: EncryptedBlob): ByteArray {
-        val key = keys.getOrCreate(keyAlias)
+        val key = keys.existing(keyAlias)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply {
             init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(128, blob.iv))
         }
@@ -145,6 +150,7 @@ data class EncryptedBlob(val iv: ByteArray, val ciphertext: ByteArray)
 When the backend needs to verify "this request really came from this device":
 
 ```kotlin
+@RequiresApi(28) // Handle StrongBoxUnavailableException under the enrollment policy.
 class DeviceSigningKey @Inject constructor() {
 
     fun create(alias: String): KeyPair {
@@ -206,9 +212,9 @@ When the key should only be usable after the *user* authenticates (per-use), not
 .setInvalidatedByBiometricEnrollment(true)
 ```
 
-The cipher is unusable until `BiometricPrompt` succeeds with the `CryptoObject`. See `secure-storage-on-android.md` for the full prompt code.
+The cipher is unusable until `BiometricPrompt` succeeds with the `CryptoObject`. See [secure storage](secure-storage-on-android.md) for the key policy and the official BiometricPrompt guide for UI integration.
 
-`setInvalidatedByBiometricEnrollment(true)` is a hard tradeoff: every fingerprint enroll wipes the key. If you can't tolerate that, drop it — but then a thief who can add a fingerprint can decrypt.
+`setInvalidatedByBiometricEnrollment(true)` is a hard tradeoff: enrollment can permanently invalidate this configured key; it does not erase the ciphertext. If you can't tolerate that, drop it — but then a thief who can add a fingerprint can decrypt.
 
 ---
 
@@ -278,7 +284,7 @@ Your app-signing private key is what proves "this APK is from your team." Lose i
 
 Benefits:
 - Lost upload key → request a reset from Google (proof of identity required).
-- Compromised upload key → request a key rotation; Google issues a new signing identity that supersedes the old; you publish releases signed with the new key going forward.
+- Compromised upload key → request an upload-key reset. This changes upload authentication, not the app-signing identity of installed APKs; signing-key upgrades are a separate operation.
 - Hardware HSM (Cloud KMS or AWS CloudHSM) for the upload key in CI; never in a developer laptop.
 
 ---
@@ -288,7 +294,7 @@ Benefits:
 - **`google-services.json` committed and confused for "a secret".** It's an identifier, not a secret. The actual security comes from Firebase Security Rules + App Check. But `firebase_credentials.json` (the *server* private key) IS a secret — don't confuse them.
 - **Single shared API key for all users.** A leak means rotation breaks every install. Issue per-user, per-session tokens instead.
 - **Storing the *unwrapped* key alongside the ciphertext.** A direct Android Keystore design stores only the key alias/handle plus versioned ciphertext and IV; raw key bytes never enter the file.
-- **No `setRandomizedEncryptionRequired(true)`.** Identical plaintexts encrypt to identical ciphertexts — an attacker observes "ah, that's another `4242 4242` card number."
+- **Reusing a GCM IV.** Randomized encryption is required by default; omitting the setter does not make encryption deterministic. Let the provider generate a fresh IV and persist it with the ciphertext; never reuse an IV under the same key.
 - **AES-CBC without HMAC.** Authenticate or use GCM. CBC alone is a footgun.
 - **Embedding the upload key in the repo.** Even password-protected. Use Play App Signing + HSM-backed CI secrets.
 - **Trusting "obfuscation" to hide secrets.** R8 renames classes; it doesn't remove `String` constants from the constant pool.
@@ -359,6 +365,8 @@ For build-time keys: a release-build smoke test that asserts the APK does NOT co
 ---
 
 ## 12. Further Reading
+
+- [Randomized encryption defaults](https://developer.android.com/reference/android/security/keystore/KeyGenParameterSpec.Builder#setRandomizedEncryptionRequired(boolean)).
 
 - [Android Developers — Android Keystore system](https://developer.android.com/training/articles/keystore) — Keystore concepts.
 - [Android Developers — Hardware-backed Keystore](https://source.android.com/docs/security/features/keystore) — StrongBox & TEE.

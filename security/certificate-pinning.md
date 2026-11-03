@@ -132,10 +132,10 @@ class PinFailureInterceptor(private val analytics: AnalyticsClient) : Intercepto
         return try {
             chain.proceed(chain.request())
         } catch (e: SSLPeerUnverifiedException) {
-            // Pin failure! Telemetry MUST capture before re-throw.
-            analytics.log("tls_pin_failure", mapOf(
+            // Peer verification can fail for pinning OR hostname verification.
+            analytics.log("tls_peer_verification_failure", mapOf(
                 "host" to chain.request().url.host,
-                "exception" to e.message.orEmpty().take(200),
+                "exception_class" to e.javaClass.simpleName,
             ))
             throw e
         }
@@ -143,7 +143,7 @@ class PinFailureInterceptor(private val analytics: AnalyticsClient) : Intercepto
 }
 ```
 
-`CertificatePinner` augments — does not replace — the OS trust check. The cert must be valid AND match one of the pinned hashes.
+`CertificatePinner` augments — does not replace — the OS trust check. The normal certificate-chain and hostname checks must pass, and an applicable pin must match. An empty pin set does not bypass normal TLS validation. If XML and OkHttp pins both apply, both policies must pass; disabling one does not disable the other.
 
 ---
 
@@ -295,23 +295,9 @@ aapt2 dump xmltree app/build/outputs/apk/release/app-release.apk \
 
 Pin failures are silent killers — the user just sees "no internet." Instrument:
 
-```kotlin
-class PinFailureInterceptor(...) : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response = try {
-        chain.proceed(chain.request())
-    } catch (e: SSLPeerUnverifiedException) {
-        // Capture host, observed SPKI hash, time, app version
-        val sanInfo = extractObservedHash(e)
-        analytics.log("tls_pin_failure", mapOf(
-            "host" to chain.request().url.host,
-            "observed_spki" to sanInfo,
-            "app_version" to BuildConfig.VERSION_NAME,
-            "android_api" to Build.VERSION.SDK_INT,
-        ))
-        throw e
-    }
-}
-```
+Record the approved host, app version, API level and exception class. `SSLPeerUnverifiedException` alone is not proof of a pin mismatch; hostname verification can throw it too. Do not parse an arbitrary exception message to extract an SPKI, or upload that message as telemetry. Keep logging bounded and unable to replace the original network exception.
+
+
 
 Dashboards to maintain:
 - Pin failure rate per host per app version. Spike = ops rotated without your knowing OR an active MITM in some user's environment.
@@ -339,30 +325,31 @@ Dashboards to maintain:
 ```kotlin
 @Test
 fun release_certificatePinnerRejectsUnknownCert() {
-    // Use MockWebServer with a self-signed cert
+    val serverCert = HeldCertificate.Builder().addSubjectAlternativeName("localhost").build()
+    val serverTls = HandshakeCertificates.Builder().heldCertificate(serverCert).build()
+    val clientTls = HandshakeCertificates.Builder().addTrustedCertificate(serverCert.certificate).build()
+    val wrongCert = HeldCertificate.Builder().build()
     val server = MockWebServer()
-    val cert = HeldCertificate.Builder().build()
-    val handshake = HandshakeCertificates.Builder()
-        .heldCertificate(cert)
-        .build()
-    server.useHttps(handshake.sslSocketFactory(), false)
+    server.useHttps(serverTls.sslSocketFactory(), false)
     server.start()
-
-    val client = OkHttpClient.Builder()
-        .certificatePinner(
-            CertificatePinner.Builder()
-                .add(server.hostName, "sha256/INTENTIONALLY_WRONG_PIN_XXXXXXXXXXXX=")
-                .build()
-        )
-        .sslSocketFactory(handshake.sslSocketFactory(), handshake.trustManager)
-        .build()
-
-    val request = Request.Builder().url(server.url("/")).build()
-    assertFailsWith<SSLPeerUnverifiedException> {
-        client.newCall(request).execute()
+    try {
+        val client = OkHttpClient.Builder()
+            .sslSocketFactory(clientTls.sslSocketFactory(), clientTls.trustManager)
+            .certificatePinner(CertificatePinner.Builder()
+                .add("localhost", CertificatePinner.pin(wrongCert.certificate)).build())
+            .build()
+        assertFailsWith<SSLPeerUnverifiedException> {
+            client.newCall(Request.Builder().url(server.url("/")).build()).execute().use { }
+        }
+    } finally {
+        server.shutdown()
     }
 }
 ```
+
+This uses a valid SPKI hash and a normally trusted server chain with a matching hostname, so the failure reaches the pin check. A malformed placeholder pin can fail while building the pinner and never test TLS at all.
+
+
 
 Integration test on a real device against staging with intentionally wrong pin — confirms `SSLPeerUnverifiedException` and confirms the interceptor logs.
 

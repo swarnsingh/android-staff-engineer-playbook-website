@@ -1,0 +1,13 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">The server completes an account-deletion workflow while a phone remains offline with old rows and queued uploads. A push hint cannot establish that the phone erased its copy or stopped a later replay.</p>
+
+<!-- @before Consent and Collection Pipeline :: guide -->
+### Apply the purpose policy before the SDK
+
+For optional consent-dependent collection, an unknown choice must not become a queued event that an SDK uploads later. Operational processing can have a different applicable policy. Keep that purpose distinction in collection, destination and retention controls. [EDPB purpose and minimization principles](https://www.edpb.europa.eu/sme/learn-the-basics/data-protection-basics_en).
+
+<!-- @before Deletion and Offline Devices :: staff -->
+### Reject resurrection at the trusted boundary
+
+Retire the server-side identity and reject writes from that retired session. On resume, clean up only its local namespace; an old callback must not erase a newer account. Record processor completion and permitted retention separately from a notification being sent. The unreachable-device limit remains explicit in the source chapter.

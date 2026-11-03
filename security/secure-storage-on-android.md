@@ -95,8 +95,10 @@ class AndroidKeystoreAead(
     }
 
     fun decrypt(blob: EncryptedBlob, associatedData: ByteArray? = null): ByteArray {
+        val existing = keyStore.getKey(alias, null) as? SecretKey
+            ?: throw KeyStoreException("Missing decryption key; re-authentication required")
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.DECRYPT_MODE, getOrCreateKey(), GCMParameterSpec(128, blob.iv))
+        cipher.init(Cipher.DECRYPT_MODE, existing, GCMParameterSpec(128, blob.iv))
         associatedData?.let(cipher::updateAAD)
         return cipher.doFinal(blob.ciphertext)
     }
@@ -109,9 +111,10 @@ Production code must define a versioned binary format for `iv + ciphertext`, use
 
 `setIsStrongBoxBacked(true)` is a request, not a transparent fallback. Key generation can throw `StrongBoxUnavailableException`; the application must decide whether to retry without StrongBox, disable the feature, or block enrollment. That decision belongs to product security policy.
 
-For API 29 and newer, inspect `KeyInfo.securityLevel`:
+For API 31 and newer, inspect `KeyInfo.securityLevel`:
 
 ```kotlin
+@RequiresApi(31)
 fun securityLevel(alias: String): Int {
     val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
     val key = store.getKey(alias, null) as SecretKey
@@ -121,7 +124,7 @@ fun securityLevel(alias: String): Int {
 }
 ```
 
-`SECURITY_LEVEL_STRONGBOX` and `SECURITY_LEVEL_TRUSTED_ENVIRONMENT` indicate secure-hardware backing. Software backing can still provide non-exportability through the system process, but it does not meet the same assurance level.
+`KeyProperties.SECURITY_LEVEL_STRONGBOX` and `KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT` indicate secure-hardware backing. On API 23–30, `isInsideSecureHardware` distinguishes secure hardware from software, but does not distinguish TEE from StrongBox. Software backing can still provide non-exportability through the system process, but it does not meet the same assurance level.
 
 ## Authentication-Bound Keys
 
@@ -181,13 +184,15 @@ Never send aliases, ciphertext, IVs, plaintext lengths for sensitive records, or
 1. Keystore keeps key material non-exportable and can enforce use restrictions outside the app process; an encrypted file merely stores ciphertext.
 2. Non-exportability prevents copying key bytes, not invoking an authorized key through a compromised process or OS.
 3. When the UID sandbox and short token lifetime satisfy the threat model, backups are controlled, and extra encryption would not reduce the dominant risk.
-4. Retrieve `KeyInfo` and inspect `securityLevel` on API 29+; never infer backing from device model.
+4. Retrieve `KeyInfo` and inspect `securityLevel` on API 31+; never infer backing from device model.
 5. Ciphertext can be restored while its device-bound key cannot, creating an unrecoverable record unless the app clears it and re-authenticates.
 6. Dual-read, single-write to the new format; verify before deleting legacy data; instrument outcomes; keep rollback compatibility for a bounded window.
 7. Stable context that must not be swapped—such as account ID, record purpose, and schema version—but no secret that must later be recovered from the ciphertext.
 8. Transient provider failures may be retried with limits; invalidated/missing keys and authentication failures require an explicit recovery or re-authentication path.
 
 ## Further Reading
+
+- [KeyInfo.getSecurityLevel API 31 boundary](https://developer.android.com/reference/android/security/keystore/KeyInfo#getSecurityLevel()).
 
 - [Android Keystore system](https://developer.android.com/privacy-and-security/keystore) — guarantees, security levels, and key authorizations.
 - [AndroidX Security releases](https://developer.android.com/jetpack/androidx/releases/security) — Security Crypto deprecation record.

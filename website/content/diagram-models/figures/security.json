@@ -1,0 +1,588 @@
+[
+  {
+    "path": "security/privacy-gdpr-data-residency",
+    "diagram": "86d2e3ac70618eb4",
+    "kind": "map",
+    "number": 1,
+    "title": "Collection and routing enforce the applicable purpose policy",
+    "caption": "Optional consent-dependent events with no valid choice are dropped before the SDK or durable queue. Approved destinations come from authoritative account and purpose policy, not a travelling device’s IP address.",
+    "nodes": [
+      {
+        "id": "e",
+        "title": "Typed event",
+        "role": "client",
+        "detail": "Known fields and purpose"
+      },
+      {
+        "id": "p",
+        "title": "Purpose policy",
+        "role": "runtime",
+        "detail": "Applicable permission"
+      },
+      {
+        "id": "d",
+        "title": "Drop optional event",
+        "role": "runtime",
+        "detail": "No SDK or queued copy"
+      },
+      {
+        "id": "r",
+        "title": "Resolve destination",
+        "role": "runtime",
+        "detail": "Authoritative account region"
+      },
+      {
+        "id": "eu",
+        "title": "Approved processor",
+        "role": "storage",
+        "detail": "Regional contract"
+      },
+      {
+        "id": "other",
+        "title": "Approved processor",
+        "role": "storage",
+        "detail": "Reviewed transfer policy"
+      }
+    ],
+    "edges": [
+      {
+        "from": "e",
+        "to": "p",
+        "label": "evaluate before collection"
+      },
+      {
+        "from": "p",
+        "to": "d",
+        "label": "optional permission absent"
+      },
+      {
+        "from": "p",
+        "to": "r",
+        "label": "policy permits processing"
+      },
+      {
+        "from": "r",
+        "to": "eu",
+        "label": "approved regional route"
+      },
+      {
+        "from": "r",
+        "to": "other",
+        "label": "approved transfer route"
+      }
+    ],
+    "sources": [
+      "https://www.edpb.europa.eu/sme/learn-the-basics/data-protection-basics_en"
+    ]
+  },
+  {
+    "path": "security/privacy-sandbox",
+    "diagram": "f3b37d18f76eded6",
+    "kind": "map",
+    "number": 1,
+    "title": "A lifecycle update changes the plan, not the underlying duties",
+    "caption": "The Android APIs’ scheduled phaseout is a dated planning input. It does not establish universal removal or erase the application’s privacy and compatibility obligations.",
+    "nodes": [
+      {
+        "id": "h",
+        "title": "Historical Android APIs",
+        "role": "neutral",
+        "detail": "Program and integration history"
+      },
+      {
+        "id": "s",
+        "title": "Official status",
+        "role": "neutral",
+        "detail": "14 August 2026: phaseout"
+      },
+      {
+        "id": "i",
+        "title": "Dependency inventory",
+        "role": "storage",
+        "detail": "Features, cohorts, retained data"
+      },
+      {
+        "id": "m",
+        "title": "Migration owner",
+        "role": "runtime",
+        "detail": "Measured replacement and exit"
+      }
+    ],
+    "edges": [
+      {
+        "from": "h",
+        "to": "s",
+        "label": "later lifecycle update"
+      },
+      {
+        "from": "s",
+        "to": "i",
+        "label": "review exposed dependencies"
+      },
+      {
+        "from": "i",
+        "to": "m",
+        "label": "define compatibility and exit"
+      }
+    ],
+    "sources": [
+      "https://privacysandbox.google.com/overview/status"
+    ]
+  },
+  {
+    "path": "security/auth-on-mobile",
+    "diagram": "9a15e4e7fe62f91e",
+    "kind": "sequence",
+    "number": 1,
+    "title": "The app exchanges a bound browser authorization response",
+    "caption": "The external browser owns credential entry. The app validates the returned response and exchanges the code with its verifier; actual token types and expiry follow the chosen provider and protocol.",
+    "participants": [
+      {
+        "id": "a",
+        "title": "Mobile app",
+        "role": "client"
+      },
+      {
+        "id": "b",
+        "title": "External browser",
+        "role": "runtime"
+      },
+      {
+        "id": "i",
+        "title": "Identity provider",
+        "role": "runtime"
+      }
+    ],
+    "events": [
+      {
+        "at": "a",
+        "label": "Generate verifier, S256 challenge and state"
+      },
+      {
+        "from": "a",
+        "to": "b",
+        "label": "authorize with registered redirect and challenge"
+      },
+      {
+        "from": "b",
+        "to": "i",
+        "label": "user authentication"
+      },
+      {
+        "from": "i",
+        "to": "b",
+        "label": "authorization response"
+      },
+      {
+        "from": "b",
+        "to": "a",
+        "label": "code and returned state"
+      },
+      {
+        "at": "a",
+        "label": "validate state, issuer and redirect binding"
+      },
+      {
+        "from": "a",
+        "to": "i",
+        "label": "code, verifier and client/redirect identity"
+      },
+      {
+        "from": "i",
+        "to": "a",
+        "label": "provider token response"
+      },
+      {
+        "at": "a",
+        "label": "install only in this login’s vault"
+      }
+    ],
+    "sources": [
+      "https://www.rfc-editor.org/rfc/rfc8252.html",
+      "https://www.rfc-editor.org/rfc/rfc9700.html"
+    ]
+  },
+  {
+    "path": "security/secure-storage-on-android",
+    "diagram": "1a498154f034ccbb",
+    "kind": "map",
+    "number": 1,
+    "title": "The key stays in Keystore while the envelope stays with app data",
+    "caption": "Cryptographic operations use the Keystore key without exporting its material. The versioned envelope contains the IV, ciphertext and authentication metadata; plaintext exists in app memory when used.",
+    "nodes": [
+      {
+        "id": "p",
+        "title": "Plaintext in memory",
+        "role": "runtime",
+        "detail": "Visible to the app process"
+      },
+      {
+        "id": "k",
+        "title": "Keystore key",
+        "role": "storage",
+        "detail": "Non-exportable key material"
+      },
+      {
+        "id": "e",
+        "title": "Authenticated encrypt",
+        "role": "runtime",
+        "detail": "Fresh IV and chosen AAD"
+      },
+      {
+        "id": "v",
+        "title": "Versioned envelope",
+        "role": "storage",
+        "detail": "Algorithm, IV, ciphertext, tag"
+      },
+      {
+        "id": "f",
+        "title": "Private app storage",
+        "role": "storage"
+      },
+      {
+        "id": "d",
+        "title": "Authenticated decrypt",
+        "role": "runtime",
+        "detail": "Existing key and metadata"
+      }
+    ],
+    "edges": [
+      {
+        "from": "p",
+        "to": "e",
+        "label": "sensitive bytes"
+      },
+      {
+        "from": "k",
+        "to": "e",
+        "label": "use key; do not export"
+      },
+      {
+        "from": "e",
+        "to": "v",
+        "label": "capture envelope"
+      },
+      {
+        "from": "v",
+        "to": "f",
+        "label": "persist ciphertext"
+      },
+      {
+        "from": "f",
+        "to": "d",
+        "label": "load envelope"
+      },
+      {
+        "from": "k",
+        "to": "d",
+        "label": "use existing key"
+      },
+      {
+        "from": "d",
+        "to": "p",
+        "label": "only on successful authentication"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/privacy-and-security/keystore",
+      "https://developer.android.com/identity/data/autobackup"
+    ],
+    "groups": [
+      {
+        "id": "ks",
+        "label": "Android Keystore",
+        "nodes": [
+          "k"
+        ]
+      },
+      {
+        "id": "app",
+        "label": "App callers and stored envelope",
+        "nodes": [
+          "p",
+          "e",
+          "v",
+          "f",
+          "d"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "security/key-management",
+    "diagram": "553386c0c8620acd",
+    "kind": "sequence",
+    "number": 1,
+    "title": "The vendor secret belongs to the backend request",
+    "caption": "The app presents its scoped user/session credential. The backend authorizes a permitted operation and uses its vendor secret without returning that secret to the app.",
+    "participants": [
+      {
+        "id": "a",
+        "title": "Mobile app",
+        "role": "client"
+      },
+      {
+        "id": "b",
+        "title": "Backend proxy",
+        "role": "runtime"
+      },
+      {
+        "id": "v",
+        "title": "Vendor API",
+        "role": "runtime"
+      }
+    ],
+    "events": [
+      {
+        "from": "a",
+        "to": "b",
+        "label": "authenticated permitted-operation request"
+      },
+      {
+        "at": "b",
+        "label": "authorize caller, resource and limits"
+      },
+      {
+        "from": "b",
+        "to": "v",
+        "label": "server-held vendor credential"
+      },
+      {
+        "from": "v",
+        "to": "b",
+        "label": "vendor response"
+      },
+      {
+        "from": "b",
+        "to": "a",
+        "label": "reviewed mobile response"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/privacy-and-security/risks/hardcoded-cryptographic-secrets",
+      "https://developer.android.com/privacy-and-security/keystore"
+    ]
+  },
+  {
+    "path": "security/certificate-pinning",
+    "diagram": "6ffcade25b38f831",
+    "kind": "map",
+    "number": 1,
+    "title": "Overlapping installed pins permit planned server rotation",
+    "caption": "Ship the next accepted public key before rotating the server identity. Without overlap, a supported installed cohort can fail even though a newer cohort connects; recovery through that blocked channel cannot be assumed.",
+    "nodes": [
+      {
+        "id": "old",
+        "title": "Installed cohort",
+        "role": "client",
+        "detail": "K1 plus backup K2"
+      },
+      {
+        "id": "rot",
+        "title": "Server rotation",
+        "role": "runtime",
+        "detail": "Valid chain using K2"
+      },
+      {
+        "id": "ok",
+        "title": "Overlapping cohort",
+        "role": "client",
+        "detail": "Chain and pin pass"
+      },
+      {
+        "id": "next",
+        "title": "Later app release",
+        "role": "client",
+        "detail": "K2 plus next backup"
+      },
+      {
+        "id": "bad",
+        "title": "No overlapping pin",
+        "role": "client",
+        "detail": "Connection rejected"
+      }
+    ],
+    "edges": [
+      {
+        "from": "old",
+        "to": "rot",
+        "label": "backup distributed first"
+      },
+      {
+        "from": "rot",
+        "to": "ok",
+        "label": "K2 already accepted"
+      },
+      {
+        "from": "ok",
+        "to": "next",
+        "label": "advance overlap deliberately"
+      },
+      {
+        "from": "rot",
+        "to": "bad",
+        "label": "old cohort lacks K2"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/privacy-and-security/security-config",
+      "https://developer.android.com/privacy-and-security/security-ssl"
+    ]
+  },
+  {
+    "path": "security/attestation",
+    "diagram": "8e49a62e3d16c406",
+    "kind": "sequence",
+    "number": 1,
+    "title": "Standard evidence is checked against canonical action bytes",
+    "caption": "Preparation and token acquisition happen in the app, but a trusted backend recomputes the request binding and applies its own authorization and risk policy.",
+    "participants": [
+      {
+        "id": "a",
+        "title": "App",
+        "role": "client"
+      },
+      {
+        "id": "p",
+        "title": "Play Integrity",
+        "role": "neutral"
+      },
+      {
+        "id": "b",
+        "title": "Backend",
+        "role": "runtime"
+      }
+    ],
+    "events": [
+      {
+        "from": "a",
+        "to": "p",
+        "label": "prepare token provider"
+      },
+      {
+        "from": "p",
+        "to": "a",
+        "label": "in-memory provider"
+      },
+      {
+        "at": "a",
+        "label": "hash canonical action bytes"
+      },
+      {
+        "from": "a",
+        "to": "p",
+        "label": "request token with requestHash"
+      },
+      {
+        "from": "p",
+        "to": "a",
+        "label": "token"
+      },
+      {
+        "from": "a",
+        "to": "b",
+        "label": "authenticated action and token"
+      },
+      {
+        "from": "b",
+        "to": "p",
+        "label": "decode token"
+      },
+      {
+        "from": "p",
+        "to": "b",
+        "label": "verified details and verdicts"
+      },
+      {
+        "at": "b",
+        "label": "recompute binding; validate freshness and policy"
+      },
+      {
+        "from": "b",
+        "to": "a",
+        "label": "recorded action outcome"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/google/play/integrity/standard"
+    ]
+  },
+  {
+    "path": "security/attestation",
+    "diagram": "491b89edc9f779e1",
+    "kind": "sequence",
+    "number": 2,
+    "title": "Classic evidence consumes one bound challenge",
+    "caption": "The backend binds its nonce to an owner and canonical action, verifies the returned evidence, and atomically consumes the challenge with the operation policy. A get-then-mark sequence is not sufficient.",
+    "participants": [
+      {
+        "id": "a",
+        "title": "App",
+        "role": "client"
+      },
+      {
+        "id": "b",
+        "title": "Backend",
+        "role": "runtime"
+      },
+      {
+        "id": "p",
+        "title": "Play Integrity",
+        "role": "neutral"
+      }
+    ],
+    "events": [
+      {
+        "from": "a",
+        "to": "b",
+        "label": "prepare authenticated action"
+      },
+      {
+        "from": "b",
+        "to": "a",
+        "label": "single-use bound challenge"
+      },
+      {
+        "from": "a",
+        "to": "p",
+        "label": "Classic nonce request"
+      },
+      {
+        "from": "p",
+        "to": "a",
+        "label": "token"
+      },
+      {
+        "from": "a",
+        "to": "b",
+        "label": "action ID and token"
+      },
+      {
+        "from": "b",
+        "to": "p",
+        "label": "decode and verify"
+      },
+      {
+        "from": "p",
+        "to": "b",
+        "label": "verified payload"
+      },
+      {
+        "at": "b",
+        "label": "validate owner, binding, freshness and risk"
+      },
+      {
+        "at": "b",
+        "label": "atomically consume challenge and authorize"
+      },
+      {
+        "from": "b",
+        "to": "a",
+        "label": "recorded outcome or rejection"
+      }
+    ],
+    "sources": [
+      "https://developer.android.com/google/play/integrity/classic"
+    ]
+  }
+]
