@@ -8,4 +8,4 @@ A `map` model supplies explicit endpoint numbers and relationship labels. Its ca
 
 All styling is in `components/bundle.css`. Tokens are `static-card-stroke`, `static-card-strong-stroke`, `static-card-double-stroke`, `static-role-tint` and `static-key-tint`, with existing role, figure typography, spacing and surface tokens. Roles follow FigureMap: clients, execution, stored data, queued work and sources/structure. Border patterns and written descriptions retain the meaning without colour.
 
-The component is being reviewed with representative backing-state relationships, stack/heap comparisons and virtual-time timelines before the complete migration. The gallery uses actual lesson data; no separate hand-maintained illustration is required.
+The migration covers 197 teaching figures: 75 relationship maps and 122 comparisons or timelines. The gallery includes backing-state relationships, a stack/heap comparison and a binding-initialization timeline. The gallery uses actual lesson data; no separate hand-maintained illustration is required.

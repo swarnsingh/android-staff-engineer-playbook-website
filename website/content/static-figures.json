@@ -1,5 +1,133 @@
 [
   {
+    "path": "kotlin",
+    "figure": 1,
+    "source_sha256": "af013d2d34ad9426a5f36dd60fff91514fcac2b27d880a3b22a654ce29f74698",
+    "title": "The route through Kotlin",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/kotlin.md"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "prerequisite"
+      ],
+      [
+        2,
+        3,
+        "then study"
+      ],
+      [
+        3,
+        4,
+        "then study"
+      ],
+      [
+        4,
+        5,
+        "then study"
+      ],
+      [
+        5,
+        6,
+        "then study"
+      ],
+      [
+        6,
+        7,
+        "then review"
+      ]
+    ],
+    "reading": "Arrows show the approved reading sequence, not runtime calls."
+  },
+  {
+    "path": "kotlin/language-core/variables",
+    "figure": 1,
+    "source_sha256": "46842d0410e086aad82ef3db8e95eb801f03127afa4443173dcf8e9e1f470911",
+    "title": "When does each binding get its value?",
+    "roles": [],
+    "role": "storage",
+    "kind": "timeline",
+    "sources": [
+      "https://kotlinlang.org/docs/properties.html",
+      "https://kotlinlang.org/docs/delegated-properties.html",
+      "https://kotlinlang.org/docs/typecasts.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/variables",
+    "figure": 2,
+    "source_sha256": "e060a9b3cda88fbdd950a430ca2f62907552bf826c296a4a6cb446946d5b68cf",
+    "title": "Three decisions, in order",
+    "roles": [
+      "runtime",
+      "neutral",
+      "storage",
+      "storage",
+      "storage",
+      "storage",
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://kotlinlang.org/docs/properties.html",
+      "https://kotlinlang.org/docs/delegated-properties.html",
+      "https://kotlinlang.org/docs/typecasts.html"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "binding rule"
+      ],
+      [
+        1,
+        3,
+        "choose immediate initialization"
+      ],
+      [
+        1,
+        4,
+        "choose later initialization"
+      ],
+      [
+        1,
+        5,
+        "choose first-read initialization"
+      ],
+      [
+        1,
+        6,
+        "choose constant initialization"
+      ],
+      [
+        7,
+        8,
+        "compare visibility"
+      ],
+      [
+        8,
+        9,
+        "compare visibility"
+      ]
+    ]
+  },
+  {
     "path": "kotlin/language-core/variables",
     "figure": 3,
     "source_sha256": "bc66cd42cd2a65a6f1ef6de86c4a8abff75e2ad15ba924f1c514b0921fa738d7",
@@ -13,7 +141,9 @@
     "role": "client",
     "kind": "map",
     "sources": [
-      "https://kotlinlang.org/docs/properties.html"
+      "https://kotlinlang.org/docs/properties.html",
+      "https://kotlinlang.org/docs/delegated-properties.html",
+      "https://kotlinlang.org/docs/typecasts.html"
     ],
     "edges": [
       [
@@ -44,6 +174,776 @@
     ]
   },
   {
+    "path": "kotlin/language-core/null-safety",
+    "figure": 1,
+    "source_sha256": "61b16a5769ac6b99b6106e87ba1f2713cd9e7eb1e9c31df5ac8e5b4d185b7212",
+    "title": "The walls and the gates",
+    "roles": [
+      "neutral",
+      "neutral",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://kotlinlang.org/docs/null-safety.html"
+    ],
+    "edges": [
+      [
+        2,
+        1,
+        "platform value enters"
+      ],
+      [
+        3,
+        1,
+        "unchecked construction can enter"
+      ],
+      [
+        4,
+        1,
+        "asserts non-null"
+      ],
+      [
+        5,
+        1,
+        "lifetime can invalidate access"
+      ]
+    ]
+  },
+  {
+    "path": "kotlin/language-core/null-safety",
+    "figure": 2,
+    "source_sha256": "d77e9750a044a4653b85c7ee2e266377ecb2e7c2592984955ff59921c089165f",
+    "title": "Choose by asking what absence means",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/null-safety.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/null-safety",
+    "figure": 3,
+    "source_sha256": "ee3b8c0813970a269669285630228ced3f5282d6dc13598c7ccd8ae69322567a",
+    "title": "Seal the Java gate once, at the boundary",
+    "roles": [
+      "runtime",
+      "neutral",
+      "neutral",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://kotlinlang.org/docs/null-safety.html"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "unannotated result"
+      ],
+      [
+        2,
+        3,
+        "choose nullable boundary contract"
+      ],
+      [
+        3,
+        4,
+        "checked access"
+      ]
+    ]
+  },
+  {
+    "path": "kotlin/language-core/null-safety",
+    "figure": 4,
+    "source_sha256": "e1aa726c605bffe16538b9236135994fd14d6808c211ced3d5d45fa81b8be4c4",
+    "title": "The ViewBinding window, on a timeline",
+    "roles": [],
+    "role": "storage",
+    "kind": "timeline",
+    "sources": [
+      "https://kotlinlang.org/docs/null-safety.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/functions",
+    "figure": 1,
+    "source_sha256": "0f49b776f123d2ed01fdc2c1247da32873e23a40c4a91b1039c7e301e0099149",
+    "title": "One behaviour, five shapes",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "neutral",
+      "neutral",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/lambdas.html",
+      "https://kotlinlang.org/docs/inline-functions.html",
+      "https://kotlinlang.org/docs/fun-interfaces.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/functions",
+    "figure": 2,
+    "source_sha256": "cad130b060512fe94dbae6c0a763223e6fc9d8d5b012c387bb758d7c2e92ba40",
+    "title": "What the call site becomes",
+    "roles": [],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/lambdas.html",
+      "https://kotlinlang.org/docs/inline-functions.html",
+      "https://kotlinlang.org/docs/fun-interfaces.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/functions",
+    "figure": 3,
+    "source_sha256": "0a2866c14b60cab7abf164668cb813c47ff26b7f7870f5392d2a54364c9048e5",
+    "title": "The five scope functions as a 2 × 2",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/lambdas.html",
+      "https://kotlinlang.org/docs/inline-functions.html",
+      "https://kotlinlang.org/docs/fun-interfaces.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/extensions",
+    "figure": 1,
+    "source_sha256": "956aee3421959832fb43954ebafffbec9ea6f69d2385b92de450187507e860b6",
+    "title": "What you write, and what actually exists",
+    "roles": [],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/extensions.html",
+      "https://github.com/Kotlin/KEEP/blob/context-parameters/proposals/context-parameters.md",
+      "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/core/core-ktx/"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/extensions",
+    "figure": 2,
+    "source_sha256": "e060a46940351be351d97c3cc6555bfff48ebd6bb7c6a767b5dd4c8661c50aab",
+    "title": "Lambdas with receivers: who is this?",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/extensions.html",
+      "https://github.com/Kotlin/KEEP/blob/context-parameters/proposals/context-parameters.md",
+      "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/core/core-ktx/"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/data-classes",
+    "figure": 1,
+    "source_sha256": "0ae042266142e1eef71c2385b82568e98d426838b9a632c0e5107d2e9e04dd5c",
+    "title": "Who calls your equals()?",
+    "roles": [
+      "runtime",
+      "client",
+      "runtime",
+      "storage"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/data-classes.html",
+      "https://openjdk.org/jeps/395"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/data-classes",
+    "figure": 2,
+    "source_sha256": "8b8bf4a4cd7fb983a622b3c0d570b76804f88d5f195b00fe5d701b474c14147f",
+    "title": "Destructuring follows position, not names",
+    "roles": [
+      "runtime",
+      "runtime",
+      "storage",
+      "storage"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/data-classes.html",
+      "https://openjdk.org/jeps/395"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/value-classes",
+    "figure": 1,
+    "source_sha256": "169aaa621fa88c7b819698e4ff755b79bbc9b3800785674cbb4a91e5f8acfb99",
+    "title": "Two worlds: the type checker and the JVM",
+    "roles": [],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/value-classes",
+    "figure": 2,
+    "source_sha256": "5eae01592a031441bde74f306ff37566d31caa849aa5fd990e4db98c9bf00938",
+    "title": "Why Java cannot see the function, and the fix",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-classes.html"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "lowers to JVM name"
+      ],
+      [
+        3,
+        2,
+        "replaces mangled name"
+      ]
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes",
+    "figure": 1,
+    "source_sha256": "384fcd3b4a78a70eee9b4a493f5aaebc1f408d06e23e24209ebfd83b770154a1",
+    "title": "Eight combinations, three real states",
+    "roles": [
+      "storage",
+      "storage",
+      "storage",
+      "storage",
+      "storage",
+      "storage",
+      "storage",
+      "storage"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/sealed-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes",
+    "figure": 2,
+    "source_sha256": "d208b41c5575423c3cfeb29ad9dde4f260b2cf849f3ea46b9081da128b5d2bb9",
+    "title": "Two questions choose the tool",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/sealed-classes.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/sealed-classes",
+    "figure": 3,
+    "source_sha256": "9355e195fbac7d3b5cb880d4e3b884607023349467bc89257c7aefa73c6b64c7",
+    "title": "Why the Unknown case protects old clients",
+    "roles": [
+      "runtime",
+      "client",
+      "runtime",
+      "client"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://kotlinlang.org/docs/sealed-classes.html"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "sends new discriminator"
+      ],
+      [
+        2,
+        3,
+        "needs configured fallback"
+      ],
+      [
+        3,
+        4,
+        "renders generic case"
+      ]
+    ]
+  },
+  {
+    "path": "kotlin/language-core/delegation",
+    "figure": 1,
+    "source_sha256": "3f5161222370bc16b4c62beb56014bcf98cafe67126ff0c0a460ae0df7644a72",
+    "title": "Where the call actually goes",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime",
+      "storage",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/delegation.html",
+      "https://kotlinlang.org/docs/delegated-properties.html"
+    ]
+  },
+  {
+    "path": "kotlin/language-core/delegation",
+    "figure": 2,
+    "source_sha256": "1c3a7d7377db2f223f42a1943ae990688bb09511c9c55e7d4ef38b9ce5c61dee",
+    "title": "Which ViewModelStore answers by viewModels()?",
+    "roles": [],
+    "role": "storage",
+    "kind": "timeline",
+    "sources": [
+      "https://kotlinlang.org/docs/delegation.html",
+      "https://kotlinlang.org/docs/delegated-properties.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/generics",
+    "figure": 1,
+    "source_sha256": "55984c483eafd390aede79f5a653392f9d9fba5f1e17472a3e5c7fd790dca8c2",
+    "title": "Two pictures of the same list",
+    "roles": [
+      "neutral",
+      "storage",
+      "neutral",
+      "runtime"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/generics",
+    "figure": 2,
+    "source_sha256": "6a1de5f264e2c21bb9e47d434b7c4edc9276ed761576843086a6084164315dea",
+    "title": "What reified changes at each call site",
+    "roles": [],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/generics",
+    "figure": 3,
+    "source_sha256": "666f0b85eade7a1827f66d8c56519919652d9270b880a88404d41bf715b65140",
+    "title": "Why the compiler refuses val animals: MutableList = dogs",
+    "roles": [
+      "storage",
+      "storage",
+      "runtime",
+      "runtime"
+    ],
+    "role": "storage",
+    "kind": "map",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "hypothetical unsafe alias"
+      ],
+      [
+        2,
+        3,
+        "would permit Cat insertion"
+      ],
+      [
+        3,
+        4,
+        "breaks Dog read assumption"
+      ]
+    ]
+  },
+  {
+    "path": "kotlin/type-system/variance",
+    "figure": 1,
+    "source_sha256": "c8ff3364fa016526eea4bc50c7dd0bba44256abe7659d5f9c9ae1cbb36bec7d0",
+    "title": "The position rule, inside a class body",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html#variance"
+    ]
+  },
+  {
+    "path": "kotlin/type-system/variance",
+    "figure": 2,
+    "source_sha256": "18696b9da5e842f599a0146d0f65fb2b278926934b5dab10603b6bd3d5a199a7",
+    "title": "A function type is both at once",
+    "roles": [
+      "neutral",
+      "neutral"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://kotlinlang.org/docs/generics.html#variance"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "safe function substitution"
+      ]
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/inline-functions",
+    "figure": 1,
+    "source_sha256": "3a887355ac13af35ecef8f156b917d0d881e72bde656f7d8c408a0c31f92de18",
+    "title": "When does a lambda need an object?",
+    "roles": [
+      "storage",
+      "storage",
+      "runtime",
+      "storage"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/inline-functions",
+    "figure": 2,
+    "source_sha256": "72b664a828d9f2fc6d18f86669dcfb79c5aca1a802aad5685815f8af04fdc135",
+    "title": "Choosing between plain, crossinline and noinline",
+    "roles": [
+      "neutral",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "direct call"
+      ],
+      [
+        1,
+        3,
+        "nested invocation"
+      ],
+      [
+        1,
+        4,
+        "stored or passed onward"
+      ]
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/reified-types",
+    "figure": 1,
+    "source_sha256": "bbd08d61dc2080dba9b603b0f84fdf796dbe76cc68b65522f675c53f5e892b09",
+    "title": "What each tool keeps of List",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html#reified-type-parameters"
+    ]
+  },
+  {
+    "path": "kotlin/compiler-features/reified-types",
+    "figure": 2,
+    "source_sha256": "ba7fbb5839cd5bb652ca57a364332b381a2c72abf3935276b6391f7bffaa8e2c",
+    "title": "The wrapper rule, as a shape",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://kotlinlang.org/docs/inline-functions.html#reified-type-parameters"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "inlines tiny wrapper"
+      ],
+      [
+        2,
+        3,
+        "calls shared body"
+      ]
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines",
+    "figure": 1,
+    "source_sha256": "87c0e8971996dc9377282726dc75b709ea93b0e8bbbb173fb27a4c0f45a387b0",
+    "title": "The frozen screen, measured",
+    "roles": [],
+    "role": "runtime",
+    "kind": "timeline",
+    "sources": [
+      "https://kotlinlang.org/docs/coroutines-guide.html",
+      "https://github.com/Kotlin/KEEP/blob/master/proposals/coroutines.md",
+      "https://developer.android.com/kotlin/coroutines"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines",
+    "figure": 2,
+    "source_sha256": "bdb7bf276ee4448591449c22da79d95bbd27cb3b17830c4e9898502a47bfe4df",
+    "title": "The thread pools behind the dispatchers",
+    "roles": [
+      "client",
+      "runtime",
+      "runtime"
+    ],
+    "role": "client",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/coroutines-guide.html",
+      "https://github.com/Kotlin/KEEP/blob/master/proposals/coroutines.md",
+      "https://developer.android.com/kotlin/coroutines"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines",
+    "figure": 3,
+    "source_sha256": "d20e0f67150643f26f7583c3f59e13e53b6a3b6ef388df837ba51f656e939b50",
+    "title": "Two builders, one question: do you need a value back?",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/coroutines-guide.html",
+      "https://github.com/Kotlin/KEEP/blob/master/proposals/coroutines.md",
+      "https://developer.android.com/kotlin/coroutines"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines",
+    "figure": 4,
+    "source_sha256": "1f552a0bd41116f7609e8af2503fedf292627a6cfc11b2efbc596ba01e313f36",
+    "title": "Cooperative cancellation, on a timeline",
+    "roles": [],
+    "role": "runtime",
+    "kind": "timeline",
+    "sources": [
+      "https://kotlinlang.org/docs/coroutines-guide.html",
+      "https://github.com/Kotlin/KEEP/blob/master/proposals/coroutines.md",
+      "https://developer.android.com/kotlin/coroutines"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/channels-and-select",
+    "figure": 1,
+    "source_sha256": "8631b2598a156d58a7e54431265b5bd3c69d618d62ad31e2f04f88d234305c31",
+    "title": "A queue, not a broadcast",
+    "roles": [
+      "queue",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "queue",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.selects/select.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/channels-and-select",
+    "figure": 2,
+    "source_sha256": "b1229f0724030ce4c540dda7620bcfcd5f41feec06949e609649feb4aa8e2b4c",
+    "title": "close() versus cancel()",
+    "roles": [
+      "runtime",
+      "queue",
+      "runtime",
+      "runtime",
+      "queue",
+      "neutral"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.selects/select.html"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/channels-and-select",
+    "figure": 3,
+    "source_sha256": "14fc2492dd5e6a35d313d0a7f334527f68a223e2c8bf910d924335d9bd70f3c5",
+    "title": "The actor shape",
+    "roles": [
+      "runtime",
+      "queue",
+      "runtime",
+      "storage"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.selects/select.html"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "enqueue command"
+      ],
+      [
+        2,
+        3,
+        "handle one command at a time"
+      ],
+      [
+        3,
+        4,
+        "complete awaited reply"
+      ]
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/flow-operators-and-backpressure",
+    "figure": 1,
+    "source_sha256": "10b5416c2d67176a4be9fe2d23c651633e01c89444e38af1c813964ad28cbec2",
+    "title": "flowOn moves only what is above it",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime",
+      "client"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://kotlinlang.org/docs/flow.html",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow/"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "emits rows"
+      ],
+      [
+        2,
+        3,
+        "upstream of context boundary"
+      ],
+      [
+        3,
+        4,
+        "crosses dispatcher boundary"
+      ],
+      [
+        4,
+        5,
+        "collector-context result"
+      ]
+    ],
+    "groups": [
+      {
+        "label": "Upstream: Default dispatcher",
+        "nodes": [
+          1,
+          2
+        ]
+      },
+      {
+        "label": "Collector context (Main in this UI example)",
+        "nodes": [
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  {
     "path": "kotlin/coroutines-and-flow/flow-operators-and-backpressure",
     "figure": 2,
     "source_sha256": "97d9b488c497da74da8d50e2f9ae9569f2ecf56c2f4b70fd20181cb86f8ad148",
@@ -52,7 +952,224 @@
     "role": "runtime",
     "kind": "timeline",
     "sources": [
-      "https://kotlinlang.org/docs/flow.html"
+      "https://kotlinlang.org/docs/flow.html",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow/"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/flow-operators-and-backpressure",
+    "figure": 3,
+    "source_sha256": "759cc90b44bba8bd6757089650c745e0b10014ce239110387130c1d6ae34bd77",
+    "title": "A new input arrives while the old inner flow is still running",
+    "roles": [
+      "runtime",
+      "runtime",
+      "neutral",
+      "runtime",
+      "runtime",
+      "neutral",
+      "runtime",
+      "runtime",
+      "neutral"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/flow.html",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow/"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/flow-operators-and-backpressure",
+    "figure": 4,
+    "source_sha256": "f3b8b8e1b288cd98435425f742d2aac3b3957539910e0c9de5169a5651885831",
+    "title": "What a catch can see",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "client"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://kotlinlang.org/docs/flow.html",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow/"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "upstream values"
+      ],
+      [
+        2,
+        3,
+        "upstream failure reaches catch"
+      ],
+      [
+        3,
+        4,
+        "collector remains downstream"
+      ]
+    ],
+    "groups": [
+      {
+        "label": "Upstream seen by catch",
+        "nodes": [
+          1,
+          2
+        ]
+      }
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks",
+    "figure": 1,
+    "source_sha256": "501bbcabed424fefaadaf3bea8d14d118469c858863faad76a8bd412ddb597ff",
+    "title": "Two collectors, two listeners — unless you share",
+    "roles": [
+      "client",
+      "client",
+      "runtime",
+      "runtime"
+    ],
+    "role": "client",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html",
+      "https://developer.android.com/kotlin/flow"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/callbackflow-and-bridging-callbacks",
+    "figure": 2,
+    "source_sha256": "7766559d86e4fb4d613cda91fe101af29952bd9937eaccacb5ed1e6cb4f2ab84",
+    "title": "Collecting with the screen's lifecycle",
+    "roles": [],
+    "role": "runtime",
+    "kind": "timeline",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/callback-flow.html",
+      "https://developer.android.com/kotlin/flow"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines-debugging-and-profiling",
+    "figure": 1,
+    "source_sha256": "f0457a7aba495bbb982edba8a0e97724f9f1e16abf4dfb7b7c834dfee9900b01",
+    "title": "Two views of the same coroutine",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html#debugging-coroutines-and-threads",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-debug/"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/coroutines-debugging-and-profiling",
+    "figure": 2,
+    "source_sha256": "75e2a316e1615ef771208069efda43bdbbc6b040e0d3c5a6069867de064b0e1b",
+    "title": "Where upstream work starts and stops",
+    "roles": [
+      "runtime",
+      "runtime",
+      "storage",
+      "client"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html#debugging-coroutines-and-threads",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-debug/"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "cold upstream"
+      ],
+      [
+        2,
+        3,
+        "shared by stateIn"
+      ],
+      [
+        3,
+        4,
+        "observed by lifecycle collector"
+      ]
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/test-dispatchers-virtual-time",
+    "figure": 1,
+    "source_sha256": "e555456385ce01f235579edc2b578a170e3c41f60c38f21ce0ddb53ce2e90d44",
+    "title": "Queued versus eager",
+    "roles": [
+      "runtime",
+      "runtime",
+      "neutral",
+      "runtime",
+      "runtime",
+      "neutral"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/"
+    ]
+  },
+  {
+    "path": "kotlin/coroutines-and-flow/test-dispatchers-virtual-time",
+    "figure": 2,
+    "source_sha256": "d6e56912e181d3ec196b37b7a41599ec5106f2230846c85ad9fdaebd7d5f6629",
+    "title": "One clock for everything in the test",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "shared test scheduler"
+      ],
+      [
+        1,
+        3,
+        "shared test scheduler"
+      ],
+      [
+        1,
+        4,
+        "cannot advance real IO"
+      ]
+    ],
+    "groups": [
+      {
+        "label": "Use one shared TestCoroutineScheduler",
+        "nodes": [
+          1,
+          2,
+          3
+        ]
+      }
     ]
   },
   {
@@ -70,7 +1187,4397 @@
     "role": "storage",
     "kind": "comparison",
     "sources": [
-      "https://docs.oracle.com/javase/specs/jvms/se24/html/jvms-2.html"
+      "https://developer.android.com/topic/performance/memory",
+      "https://square.github.io/leakcanary/",
+      "https://source.android.com/docs/core/runtime/gc-debug"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model",
+    "figure": 2,
+    "source_sha256": "db7a3c3d33f83c1108d57985647634c7ba46080843f5279aaef3dceaacb4ff0b",
+    "title": "How strongly is it held?",
+    "roles": [
+      "storage",
+      "storage",
+      "storage",
+      "storage"
+    ],
+    "role": "storage",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/topic/performance/memory",
+      "https://square.github.io/leakcanary/",
+      "https://source.android.com/docs/core/runtime/gc-debug"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "compare soft policy"
+      ],
+      [
+        2,
+        3,
+        "compare weak policy"
+      ],
+      [
+        3,
+        4,
+        "compare cleanup notification"
+      ]
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/memory-model",
+    "figure": 3,
+    "source_sha256": "daa3fe09378d798acc8b2d8d9934516fe8c6b95d5ed1dfc9510c65bd3a43ea9b",
+    "title": "Reading a LeakCanary trace",
+    "roles": [
+      "neutral",
+      "runtime",
+      "storage",
+      "storage",
+      "client"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/topic/performance/memory",
+      "https://square.github.io/leakcanary/",
+      "https://source.android.com/docs/core/runtime/gc-debug"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "retains"
+      ],
+      [
+        2,
+        3,
+        "holds map"
+      ],
+      [
+        3,
+        4,
+        "contains record"
+      ],
+      [
+        4,
+        5,
+        "unexpectedly retains"
+      ]
+    ],
+    "groups": [
+      {
+        "label": "One process reachability graph",
+        "nodes": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/jvm-interop",
+    "figure": 1,
+    "source_sha256": "62cce27655221cb8ffbe9ee50354c6627613b45afabb4476e40e5e92d7b96621",
+    "title": "Two directions across one seam",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/java-to-kotlin-interop.html",
+      "https://kotlinlang.org/docs/java-interop.html"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/bytecode",
+    "figure": 1,
+    "source_sha256": "3ac419f5424adcc8e17d28bf90a9d8a4bc4d35f4e33266c5bd33cfd7f4806979",
+    "title": "From source to running app",
+    "roles": [
+      "neutral",
+      "runtime",
+      "runtime",
+      "runtime",
+      "storage",
+      "runtime"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-6.html",
+      "https://docs.oracle.com/en/java/javase/21/docs/specs/man/javap.html",
+      "https://developer.android.com/build/shrink-code#decode-stack-trace"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "compiled by"
+      ],
+      [
+        2,
+        3,
+        "class files processed by"
+      ],
+      [
+        3,
+        4,
+        "DEX packaged for installation"
+      ],
+      [
+        5,
+        6,
+        "guides compilation of hot code"
+      ],
+      [
+        4,
+        6,
+        "ART loads and executes"
+      ]
+    ],
+    "groups": [
+      {
+        "label": "Build-time tools",
+        "nodes": [
+          2,
+          3
+        ]
+      },
+      {
+        "label": "Android runtime",
+        "nodes": [
+          4,
+          6
+        ]
+      }
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/bytecode",
+    "figure": 2,
+    "source_sha256": "8a5898245dc48069b55e77427ab55ac1fe4854b70e25027e44ed302f7a5f8ec3",
+    "title": "Kotlin fingerprints to look for",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-6.html",
+      "https://docs.oracle.com/en/java/javase/21/docs/specs/man/javap.html",
+      "https://developer.android.com/build/shrink-code#decode-stack-trace"
+    ]
+  },
+  {
+    "path": "kotlin/runtime-and-jvm/bytecode",
+    "figure": 3,
+    "source_sha256": "134069d5d637d2c64fc24ed62c2c357a2cfd0ecefbe6c2a9f7271af8453e5379",
+    "title": "Retracing a release crash",
+    "roles": [
+      "storage",
+      "storage",
+      "runtime"
+    ],
+    "role": "storage",
+    "kind": "map",
+    "sources": [
+      "https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-6.html",
+      "https://docs.oracle.com/en/java/javase/21/docs/specs/man/javap.html",
+      "https://developer.android.com/build/shrink-code#decode-stack-trace"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "use exact-build mapping"
+      ],
+      [
+        2,
+        3,
+        "recover readable frame"
+      ]
+    ]
+  },
+  {
+    "path": "kotlin/version-updates/kotlin-2-4-update",
+    "figure": 1,
+    "source_sha256": "b2d35a65450e6cd3d6eb271b52e652dcd0607678c27571e8cf2a98d42c2da139",
+    "title": "Shared Flow as Swift sees it",
+    "roles": [
+      "storage",
+      "neutral",
+      "runtime"
+    ],
+    "role": "storage",
+    "kind": "map",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew24.html",
+      "https://kotlinlang.org/docs/native-swift-export.html"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "exports typed flow"
+      ],
+      [
+        2,
+        3,
+        "consumes sequence"
+      ]
+    ]
+  },
+  {
+    "path": "kotlin/version-updates/kotlin-2-4-update",
+    "figure": 2,
+    "source_sha256": "92627b5f1f75d57a90294daf32ad0c5693b5fe62c81b29519a29200d7a3136da",
+    "title": "When is an upgrade safe?",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "runtime"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://kotlinlang.org/docs/whatsnew24.html",
+      "https://kotlinlang.org/docs/native-swift-export.html"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "then verify builds"
+      ],
+      [
+        2,
+        3,
+        "then compare public APIs"
+      ],
+      [
+        3,
+        4,
+        "upgrade with rollback"
+      ]
+    ]
+  },
+  {
+    "path": "android",
+    "figure": 1,
+    "source_sha256": "529688e12502c11efeb8510614850a27e3f884f4d84742e6d83341bce675f445",
+    "title": "Nine phases, one feature",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://github.com/swarnsingh/android-staff-engineer-playbook-website/blob/main/android.md"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "prerequisite"
+      ],
+      [
+        2,
+        3,
+        "then study"
+      ],
+      [
+        3,
+        4,
+        "then study"
+      ],
+      [
+        4,
+        5,
+        "then study"
+      ],
+      [
+        5,
+        6,
+        "then study"
+      ],
+      [
+        6,
+        7,
+        "then study"
+      ],
+      [
+        7,
+        8,
+        "then study"
+      ],
+      [
+        8,
+        9,
+        "then study"
+      ],
+      [
+        9,
+        10,
+        "optional: Kotlin Multiplatform"
+      ]
+    ],
+    "reading": "Arrows show the approved reading sequence, not runtime calls."
+  },
+  {
+    "path": "android/architecture/activity",
+    "figure": 1,
+    "source_sha256": "3e4bb0b32c9b1524dc7b888a79d5f47f4618e82e9da2bbb823c1864d157ce601",
+    "title": "The lifecycle as states, plus the exit nobody announces",
+    "roles": [
+      "client",
+      "client",
+      "client",
+      "client",
+      "client",
+      "client",
+      "runtime"
+    ],
+    "role": "client",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/guide/components/activities/activity-lifecycle",
+      "https://developer.android.com/guide/components/activities/tasks-and-back-stack",
+      "https://developer.android.com/topic/architecture/recommendations"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "onStart"
+      ],
+      [
+        2,
+        3,
+        "onResume"
+      ],
+      [
+        3,
+        4,
+        "onPause"
+      ],
+      [
+        4,
+        2,
+        "returns to STARTED"
+      ],
+      [
+        2,
+        5,
+        "onStop"
+      ],
+      [
+        5,
+        2,
+        "onRestart then onStart"
+      ],
+      [
+        5,
+        6,
+        "finish or configuration change"
+      ],
+      [
+        5,
+        7,
+        "background process reclaimed"
+      ]
+    ],
+    "groups": [
+      {
+        "label": "Activity lifecycle states (one instance)",
+        "nodes": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    ]
+  },
+  {
+    "path": "android/architecture/activity",
+    "figure": 2,
+    "source_sha256": "6e78b983ed6b035b3cc5959fd0875a738ce6703708c39d1bc6a371fbda60b944",
+    "title": "Put each kind of work in its callback pair",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/guide/components/activities/activity-lifecycle",
+      "https://developer.android.com/guide/components/activities/tasks-and-back-stack",
+      "https://developer.android.com/topic/architecture/recommendations"
+    ]
+  },
+  {
+    "path": "android/architecture/activity",
+    "figure": 3,
+    "source_sha256": "faaaeb0ce5cce0fa41488d699da03a3f79e4d0f37fce3d82f97caaa8fd1ef80b",
+    "title": "Why the singleton leak keeps the whole screen alive",
+    "roles": [
+      "runtime",
+      "storage",
+      "client",
+      "client"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/guide/components/activities/activity-lifecycle",
+      "https://developer.android.com/guide/components/activities/tasks-and-back-stack",
+      "https://developer.android.com/topic/architecture/recommendations"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "holds field"
+      ],
+      [
+        2,
+        3,
+        "retains reference"
+      ],
+      [
+        3,
+        4,
+        "retains view graph"
+      ]
+    ],
+    "groups": [
+      {
+        "label": "Process-lived singleton",
+        "nodes": [
+          1,
+          2
+        ]
+      },
+      {
+        "label": "Destroyed screen graph",
+        "nodes": [
+          3,
+          4
+        ]
+      }
+    ]
+  },
+  {
+    "path": "android/architecture/fragment",
+    "figure": 1,
+    "source_sha256": "1eb9392e9f4f6ba5a0d06756173cfe9eec7fdda6c8a53235c731f28e598ce378",
+    "title": "One object, a sequence of views",
+    "roles": [],
+    "role": "client",
+    "kind": "timeline",
+    "sources": [
+      "https://developer.android.com/guide/fragments",
+      "https://developer.android.com/guide/fragments/lifecycle",
+      "https://developer.android.com/guide/fragments/transactions"
+    ]
+  },
+  {
+    "path": "android/architecture/fragment",
+    "figure": 2,
+    "source_sha256": "359ce7b2aaa087c810ab47ccf9306980d8f3186107b0117ef6ff20f17d85c8d5",
+    "title": "Who owns what inside the activity",
+    "roles": [
+      "client",
+      "runtime",
+      "client",
+      "client",
+      "runtime"
+    ],
+    "role": "client",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/guide/fragments",
+      "https://developer.android.com/guide/fragments/lifecycle",
+      "https://developer.android.com/guide/fragments/transactions"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "hosts manager"
+      ],
+      [
+        2,
+        3,
+        "manages fragment"
+      ],
+      [
+        2,
+        4,
+        "manages fragment"
+      ],
+      [
+        3,
+        5,
+        "gets host-scoped instance"
+      ],
+      [
+        4,
+        5,
+        "gets host-scoped instance"
+      ]
+    ],
+    "groups": [
+      {
+        "label": "Host Activity instance",
+        "nodes": [
+          1,
+          2
+        ]
+      },
+      {
+        "label": "Managed Fragments",
+        "nodes": [
+          3,
+          4
+        ]
+      },
+      {
+        "label": "Host ViewModelStore (retained on recreation)",
+        "nodes": [
+          5
+        ]
+      }
+    ]
+  },
+  {
+    "path": "android/architecture/fragment",
+    "figure": 3,
+    "source_sha256": "9ecc864e82fc0ad4ff986efdef8ec012e66a8ea55eace49f34e5af7ff6cff552",
+    "title": "How a result travels between Fragments",
+    "roles": [
+      "client",
+      "storage",
+      "client",
+      "runtime"
+    ],
+    "role": "client",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/guide/fragments",
+      "https://developer.android.com/guide/fragments/lifecycle",
+      "https://developer.android.com/guide/fragments/transactions"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "stores pending result"
+      ],
+      [
+        3,
+        4,
+        "receiver reaches STARTED"
+      ],
+      [
+        2,
+        4,
+        "delivers and clears result"
+      ]
+    ]
+  },
+  {
+    "path": "android/architecture/viewmodel",
+    "figure": 1,
+    "source_sha256": "562e7fa5f3c2cc6b6d51bacce82c275586ec989c725bb21e52de852b074c500c",
+    "title": "Three lifetimes, three kinds of state",
+    "roles": [],
+    "role": "storage",
+    "kind": "timeline",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/viewmodel",
+      "https://developer.android.com/topic/architecture/recommendations"
+    ]
+  },
+  {
+    "path": "android/architecture/viewmodel",
+    "figure": 2,
+    "source_sha256": "b0608c1618ec9e23a7963399ba3ad74898c4daefab8a07b98af7a5850577e7b2",
+    "title": "The state loop and each layer's lifetime",
+    "roles": [
+      "client",
+      "runtime",
+      "storage",
+      "runtime",
+      "runtime",
+      "storage",
+      "runtime"
+    ],
+    "role": "client",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/viewmodel",
+      "https://developer.android.com/topic/architecture/recommendations"
+    ],
+    "edges": [
+      [
+        1,
+        4,
+        {
+          "card": 2
+        }
+      ],
+      [
+        4,
+        1,
+        {
+          "card": 3
+        }
+      ],
+      [
+        4,
+        7,
+        {
+          "card": 5
+        }
+      ],
+      [
+        7,
+        4,
+        {
+          "card": 6
+        }
+      ]
+    ],
+    "groups": [
+      {
+        "label": "ViewModel state and work",
+        "nodes": [
+          4
+        ]
+      },
+      {
+        "label": "UI instance",
+        "nodes": [
+          1
+        ]
+      }
+    ],
+    "keep_nodes": [
+      1,
+      4,
+      7
+    ]
+  },
+  {
+    "path": "android/architecture/viewmodel",
+    "figure": 3,
+    "source_sha256": "12243dafeb69c99fa910472796b479a1d5659f3bb79d5cec1b1574f39a1eb6ce",
+    "title": "Choosing the owner chooses who shares the instance",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/viewmodel",
+      "https://developer.android.com/topic/architecture/recommendations"
+    ]
+  },
+  {
+    "path": "android/architecture/savedstatehandle",
+    "figure": 1,
+    "source_sha256": "250e830f18c7d7583ad5f783445ec1a11c5fd21fac29776432318671643a9d0f",
+    "title": "Two processes, one small parcel between them",
+    "roles": [
+      "client",
+      "runtime",
+      "storage",
+      "storage"
+    ],
+    "role": "client",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-savedstate"
+    ]
+  },
+  {
+    "path": "android/architecture/process-death-and-state-restoration",
+    "figure": 1,
+    "source_sha256": "1545133cbc349225269caeac31e6f5d0380d65179b0702ca85121a21bd1c8ec3",
+    "title": "What survives which event",
+    "roles": [
+      "client",
+      "runtime",
+      "storage",
+      "storage"
+    ],
+    "role": "client",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/saving-states",
+      "https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-savedstate"
+    ]
+  },
+  {
+    "path": "android/architecture/process-death-and-state-restoration",
+    "figure": 2,
+    "source_sha256": "cb75dc48add0bc16dce5860c2acfb938e0bac85b806d10f2e9b228b70e7e14e0",
+    "title": "The save, kill and restore sequence",
+    "roles": [
+      "client",
+      "storage",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "client",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/saving-states",
+      "https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-savedstate"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "saves small UI state"
+      ],
+      [
+        1,
+        3,
+        "background process may be reclaimed"
+      ],
+      [
+        3,
+        4,
+        "Recents later starts a new process"
+      ],
+      [
+        4,
+        5,
+        "cold initialization"
+      ],
+      [
+        2,
+        5,
+        "restores saved bundle"
+      ]
+    ]
+  },
+  {
+    "path": "android/architecture/navigation",
+    "figure": 1,
+    "source_sha256": "2cdfdb53ba7e93c48888f9c0a9062eb1a447b98b6a99302dfa8a642cfa615fd3",
+    "title": "Graph, host and controller",
+    "roles": [
+      "neutral",
+      "runtime",
+      "client"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/guide/navigation",
+      "https://developer.android.com/guide/navigation/backstack",
+      "https://developer.android.com/guide/navigation/backstack/multi-back-stacks"
+    ]
+  },
+  {
+    "path": "android/architecture/navigation",
+    "figure": 2,
+    "source_sha256": "e9011ee5b6865d0b7addd93a50cb3b7c77f9e8346b306c24d062e596fcc46621",
+    "title": "The stack the host is showing",
+    "roles": [
+      "client",
+      "storage",
+      "storage",
+      "storage",
+      "storage",
+      "storage"
+    ],
+    "role": "client",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/guide/navigation",
+      "https://developer.android.com/guide/navigation/backstack",
+      "https://developer.android.com/guide/navigation/backstack/multi-back-stacks"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "NavHost manages entries"
+      ],
+      [
+        2,
+        3,
+        "parent graph entry"
+      ],
+      [
+        2,
+        4,
+        "parent graph entry"
+      ],
+      [
+        2,
+        5,
+        "parent graph entry"
+      ],
+      [
+        3,
+        4,
+        "below in stack"
+      ],
+      [
+        4,
+        5,
+        "below in stack"
+      ],
+      [
+        5,
+        6,
+        "owns this store"
+      ]
+    ]
+  },
+  {
+    "path": "android/architecture/navigation",
+    "figure": 3,
+    "source_sha256": "3ba6caa6d4fa6bccf781d38f58e6e309702b8cc466c0c50f06c1da9b66c98eee",
+    "title": "One stack per tab",
+    "roles": [
+      "storage",
+      "storage",
+      "storage",
+      "storage",
+      "storage"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/guide/navigation",
+      "https://developer.android.com/guide/navigation/backstack",
+      "https://developer.android.com/guide/navigation/backstack/multi-back-stacks"
+    ]
+  },
+  {
+    "path": "android/architecture/mvvm-vs-mvi",
+    "figure": 1,
+    "source_sha256": "32136a9bb8833034b6ee85bfad153d21741b767991e7b2f870b0b92f0ccad251",
+    "title": "The MVI loop",
+    "roles": [
+      "client",
+      "runtime",
+      "runtime",
+      "storage"
+    ],
+    "role": "client",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/topic/architecture/ui-layer",
+      "https://developer.android.com/topic/architecture/ui-layer/events",
+      "https://developer.android.com/topic/architecture/recommendations"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "intent"
+      ],
+      [
+        2,
+        3,
+        "result after asynchronous work"
+      ],
+      [
+        3,
+        4,
+        "updates state"
+      ],
+      [
+        4,
+        1,
+        "renders state"
+      ]
+    ]
+  },
+  {
+    "path": "android/architecture/mvvm-vs-mvi",
+    "figure": 2,
+    "source_sha256": "9a100991c0b48e546f27c8ae647fbded92ea388eb032a3b925db6013e42deeca",
+    "title": "Where should this action live?",
+    "roles": [
+      "neutral",
+      "client",
+      "runtime",
+      "storage",
+      "queue"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/topic/architecture/ui-layer",
+      "https://developer.android.com/topic/architecture/ui-layer/events",
+      "https://developer.android.com/topic/architecture/recommendations"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "yes: UI-local"
+      ],
+      [
+        1,
+        3,
+        "no: produced by state owner"
+      ],
+      [
+        3,
+        4,
+        "must not be lost"
+      ],
+      [
+        3,
+        5,
+        "best-effort loss acceptable"
+      ]
+    ]
+  },
+  {
+    "path": "android/architecture/state-management",
+    "figure": 1,
+    "source_sha256": "5961423ed966e03c4fb586414491789df69fe032fc4947ab7260fbe044987d62",
+    "title": "Choose the owner by required lifetime",
+    "roles": [],
+    "role": "storage",
+    "kind": "timeline",
+    "sources": [
+      "https://developer.android.com/topic/architecture/ui-layer/events",
+      "https://developer.android.com/topic/architecture/recommendations",
+      "https://developer.android.com/develop/ui/compose/state"
+    ]
+  },
+  {
+    "path": "android/architecture/state-management",
+    "figure": 2,
+    "source_sha256": "e3272cdc57e9880718578b0bbb27f64c994a773d2790ce06f48bda4808dc2c50",
+    "title": "Where does this state belong?",
+    "roles": [
+      "neutral",
+      "storage",
+      "storage",
+      "neutral",
+      "runtime",
+      "storage",
+      "storage"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/topic/architecture/ui-layer/events",
+      "https://developer.android.com/topic/architecture/recommendations",
+      "https://developer.android.com/develop/ui/compose/state"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "yes: small UI input"
+      ],
+      [
+        1,
+        3,
+        "yes: durable business data"
+      ],
+      [
+        1,
+        4,
+        "no: evaluate configuration lifetime"
+      ],
+      [
+        4,
+        5,
+        "yes: business or async state"
+      ],
+      [
+        4,
+        6,
+        "no: composition-scoped coordination"
+      ],
+      [
+        4,
+        7,
+        "no: local presentation"
+      ]
+    ]
+  },
+  {
+    "path": "android/architecture/modularization-strategies",
+    "figure": 1,
+    "source_sha256": "edd3fb2cdc58d2af00a3cb1b709f96be218484c849d3b8bd6e70ccf08576d815",
+    "title": "Bad shape: a deep chain",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/guide/playcore/feature-delivery"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "dependency of"
+      ],
+      [
+        2,
+        3,
+        "dependency of"
+      ],
+      [
+        3,
+        4,
+        "dependency of"
+      ],
+      [
+        4,
+        5,
+        "dependency of"
+      ],
+      [
+        5,
+        6,
+        "dependency of"
+      ]
+    ]
+  },
+  {
+    "path": "android/architecture/modularization-strategies",
+    "figure": 2,
+    "source_sha256": "8e1b16813f7ecd8281f5ce74f86e6849133ec697cf5f6b18e2ef2dfca3961f8d",
+    "title": "Good shape: wide fan-out from a thin core",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/guide/playcore/feature-delivery"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "dependency of"
+      ],
+      [
+        1,
+        3,
+        "dependency of"
+      ],
+      [
+        1,
+        4,
+        "dependency of"
+      ],
+      [
+        2,
+        5,
+        "used by implementation"
+      ],
+      [
+        3,
+        6,
+        "used by implementation"
+      ],
+      [
+        4,
+        7,
+        "used by implementation"
+      ],
+      [
+        2,
+        7,
+        "used by checkout"
+      ],
+      [
+        3,
+        7,
+        "used by checkout"
+      ],
+      [
+        5,
+        8,
+        "assembled by app"
+      ],
+      [
+        6,
+        8,
+        "assembled by app"
+      ],
+      [
+        7,
+        8,
+        "assembled by app"
+      ]
+    ]
+  },
+  {
+    "path": "android/architecture/modularization-strategies",
+    "figure": 3,
+    "source_sha256": "097729405939013071bd7bb92963919efd28b48434e6573da973ba28d359443a",
+    "title": "How an api edge leaks",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/guide/playcore/feature-delivery"
+    ]
+  },
+  {
+    "path": "android/data-and-di/repository-source-of-truth",
+    "figure": 1,
+    "source_sha256": "8816a9d9d9947bdfc4bb2f4125bcd4f124f4eaad3912fd9eaf145de6329e23ae",
+    "title": "The UI reads one place; the network only writes to it",
+    "roles": [
+      "runtime",
+      "runtime",
+      "storage",
+      "runtime",
+      "client"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/topic/architecture"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "network response"
+      ],
+      [
+        2,
+        3,
+        "transactional write"
+      ],
+      [
+        3,
+        4,
+        "query invalidation and rows"
+      ],
+      [
+        4,
+        5,
+        "observed snapshot"
+      ]
+    ],
+    "groups": [
+      {
+        "label": "Android app layers",
+        "nodes": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  {
+    "path": "android/data-and-di/repository-source-of-truth",
+    "figure": 2,
+    "source_sha256": "533294ebf777f93940ce9cf376e79072a2494f6ab34959e5f7af5b6086deb01b",
+    "title": "Data and sync status are separate axes",
+    "roles": [
+      "storage",
+      "storage",
+      "storage",
+      "storage"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/topic/architecture"
+    ]
+  },
+  {
+    "path": "android/data-and-di/room",
+    "figure": 1,
+    "source_sha256": "219b268d9ef9d7609f158ba9e09bd694b07eead0d1801cad81a837cff82bfc26",
+    "title": "Three annotations, three generated pieces",
+    "roles": [
+      "storage",
+      "runtime",
+      "storage"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/jetpack/androidx/releases/room#2.7.0-alpha01",
+      "https://developer.android.com/training/data-storage/room"
+    ]
+  },
+  {
+    "path": "android/data-and-di/room",
+    "figure": 2,
+    "source_sha256": "31a3c46b6175b90bf62bf7663ba9ae6bd5c733ea168354d82975251f4f7c1a78",
+    "title": "Where Room sits in the data flow",
+    "roles": [
+      "client",
+      "runtime",
+      "runtime",
+      "storage",
+      "runtime"
+    ],
+    "role": "client",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/jetpack/androidx/releases/room#2.7.0-alpha01",
+      "https://developer.android.com/training/data-storage/room"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "observes screen state"
+      ],
+      [
+        2,
+        3,
+        "observes repository flow"
+      ],
+      [
+        3,
+        4,
+        "queries and persists"
+      ],
+      [
+        4,
+        3,
+        "observable rows"
+      ],
+      [
+        5,
+        3,
+        "refresh response"
+      ]
+    ]
+  },
+  {
+    "path": "android/data-and-di/room",
+    "figure": 3,
+    "source_sha256": "281a6fc8e4fb2fa93f4d30fe1be5b33103274080ca5c239960dc4b962fb6559e",
+    "title": "A user who skipped nine releases",
+    "roles": [
+      "storage",
+      "storage",
+      "storage",
+      "storage",
+      "storage"
+    ],
+    "role": "storage",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/jetpack/androidx/releases/room#2.7.0-alpha01",
+      "https://developer.android.com/training/data-storage/room"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "find migration path"
+      ],
+      [
+        2,
+        3,
+        "missing required step"
+      ],
+      [
+        3,
+        4,
+        "cannot continue"
+      ],
+      [
+        4,
+        5,
+        "target not reached"
+      ]
+    ]
+  },
+  {
+    "path": "android/data-and-di/datastore",
+    "figure": 1,
+    "source_sha256": "945c7fcdc07fa99154eb337a9d3ae17666cc72657bd98c8a875c6f23946fba7c",
+    "title": "Two flavours, one contract",
+    "roles": [
+      "storage",
+      "neutral",
+      "neutral",
+      "storage",
+      "neutral",
+      "neutral"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/training/data-storage/shared-preferences",
+      "https://developer.android.com/topic/libraries/architecture/datastore"
+    ]
+  },
+  {
+    "path": "android/data-and-di/datastore",
+    "figure": 2,
+    "source_sha256": "0688e38c47212bf2405082b46853f2dd2934b1060b09f92cbb3bd0c476ec559a",
+    "title": "Reads flow up, writes go down",
+    "roles": [
+      "client",
+      "runtime",
+      "runtime",
+      "storage"
+    ],
+    "role": "client",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/training/data-storage/shared-preferences",
+      "https://developer.android.com/topic/libraries/architecture/datastore"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "intent"
+      ],
+      [
+        2,
+        1,
+        "screen state"
+      ],
+      [
+        2,
+        3,
+        "suspending write"
+      ],
+      [
+        3,
+        2,
+        "settings flow"
+      ],
+      [
+        3,
+        4,
+        "atomic settings update"
+      ],
+      [
+        4,
+        3,
+        "settings snapshot"
+      ]
+    ]
+  },
+  {
+    "path": "android/data-and-di/room-vs-datastore",
+    "figure": 1,
+    "source_sha256": "eafcc06dfb4f7adeb45b37d4f070d67d6592eb0fec4be4aaf6ad30df5ab8d882",
+    "title": "Decide by the shape of the data",
+    "roles": [
+      "neutral",
+      "storage",
+      "neutral",
+      "storage",
+      "storage",
+      "storage"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/training/data-storage/shared-preferences",
+      "https://developer.android.com/topic/libraries/architecture/datastore",
+      "https://developer.android.com/training/data-storage/room"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "yes: query structured items"
+      ],
+      [
+        1,
+        3,
+        "no: consider document shape"
+      ],
+      [
+        3,
+        4,
+        "structured settings"
+      ],
+      [
+        3,
+        5,
+        "simple flags"
+      ],
+      [
+        3,
+        6,
+        "binary or secret data needs separate design"
+      ]
+    ]
+  },
+  {
+    "path": "android/data-and-di/room-vs-datastore",
+    "figure": 2,
+    "source_sha256": "84cf97b7d7421c464c996d056022aac2fef9ea8f0dd32e1b38e427cbb31c2181",
+    "title": "Backup is a per-data decision",
+    "roles": [
+      "storage",
+      "storage",
+      "storage",
+      "storage"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/training/data-storage/shared-preferences",
+      "https://developer.android.com/topic/libraries/architecture/datastore",
+      "https://developer.android.com/training/data-storage/room"
+    ]
+  },
+  {
+    "path": "android/data-and-di/storage-and-content-sharing",
+    "figure": 1,
+    "source_sha256": "8569706a7faf2ae2a6469e422e51df7e5c78a7e961ce34f7f4eb38e112ebbd75",
+    "title": "Who owns it, and who chose it?",
+    "roles": [
+      "storage",
+      "storage",
+      "storage",
+      "storage"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/training/data-storage/",
+      "https://developer.android.com/training/data-storage/shared/photo-picker",
+      "https://developer.android.com/training/data-storage/shared/documents-files"
+    ]
+  },
+  {
+    "path": "android/data-and-di/storage-and-content-sharing",
+    "figure": 2,
+    "source_sha256": "2c75491a1bd35f36cd60f29144b30d54c879585b4969813aa86c1d916bd3d1e6",
+    "title": "Ingest a file as a state machine",
+    "roles": [
+      "storage",
+      "storage",
+      "runtime",
+      "runtime",
+      "storage"
+    ],
+    "role": "storage",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/training/data-storage/",
+      "https://developer.android.com/training/data-storage/shared/photo-picker",
+      "https://developer.android.com/training/data-storage/shared/documents-files"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "record access policy"
+      ],
+      [
+        2,
+        3,
+        "read off main"
+      ],
+      [
+        3,
+        4,
+        "validate payload"
+      ],
+      [
+        4,
+        5,
+        "store or upload"
+      ]
+    ]
+  },
+  {
+    "path": "android/data-and-di/paging",
+    "figure": 1,
+    "source_sha256": "abffb7726b64a61b1b2fabea52bece47ac161eb75e2bf7a1fd6d95df1558abf5",
+    "title": "Four pieces, four jobs",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "storage"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/paging/v3-overview"
+    ],
+    "edges": [
+      [
+        3,
+        1,
+        "loads pages through"
+      ],
+      [
+        3,
+        2,
+        "optionally triggers"
+      ],
+      [
+        3,
+        4,
+        "exposes paging stream"
+      ]
+    ]
+  },
+  {
+    "path": "android/data-and-di/paging",
+    "figure": 2,
+    "source_sha256": "2fb9a8a6c2aeec7259e353b55f9800979efb18e63b9862e40701ba2a55c22231",
+    "title": "Who talks to whom",
+    "roles": [
+      "client",
+      "runtime",
+      "storage",
+      "runtime"
+    ],
+    "role": "client",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/paging/v3-overview"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "scroll demand"
+      ],
+      [
+        2,
+        1,
+        "PagingData"
+      ],
+      [
+        2,
+        3,
+        "reads via Room PagingSource"
+      ],
+      [
+        2,
+        4,
+        "requests remote boundary load"
+      ],
+      [
+        4,
+        3,
+        "inserts API response"
+      ]
+    ]
+  },
+  {
+    "path": "android/data-and-di/dependency-injection",
+    "figure": 1,
+    "source_sha256": "048b3374eca511d30c5081672a4a2265ae6907d476071fca98eca7cd31d5e9af",
+    "title": "How Hilt resolves one request",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/training/dependency-injection/hilt-android"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "requires"
+      ],
+      [
+        2,
+        3,
+        "constructor dependency"
+      ],
+      [
+        3,
+        4,
+        "provided using"
+      ]
+    ]
+  },
+  {
+    "path": "android/data-and-di/components",
+    "figure": 1,
+    "source_sha256": "0322fa863a3751df7770483e17be7b9cf327d4470760ffaf2b8eb9e2895aae99",
+    "title": "An entry point is a typed door into a component",
+    "roles": [
+      "runtime",
+      "neutral",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/training/dependency-injection/hilt-android#component-hierarchy",
+      "https://developer.android.com/training/dependency-injection/hilt-android#component-lifetimes",
+      "https://github.com/google/dagger"
+    ],
+    "edges": [
+      [
+        1,
+        3,
+        "asks application component"
+      ],
+      [
+        3,
+        2,
+        "returns typed component view"
+      ]
+    ]
+  },
+  {
+    "path": "android/data-and-di/scopes",
+    "figure": 1,
+    "source_sha256": "a520192792306bea35e203083714186c2ee95025aed0b6be12356ef8fee5715d",
+    "title": "Same word, two questions",
+    "roles": [
+      "storage",
+      "neutral",
+      "neutral",
+      "runtime",
+      "runtime",
+      "neutral"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/coroutines",
+      "https://developer.android.com/training/dependency-injection/hilt-android#component-scopes"
+    ]
+  },
+  {
+    "path": "android/data-and-di/scopes",
+    "figure": 2,
+    "source_sha256": "2aca517e15652e70535e7e801802914efc9f4dfdd22988abe0dd0bcf55950aec",
+    "title": "Shared anchors, separate management",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/coroutines",
+      "https://developer.android.com/training/dependency-injection/hilt-android#component-scopes"
+    ]
+  },
+  {
+    "path": "android/data-and-di/hilt-vs-koin-vs-manual-di",
+    "figure": 1,
+    "source_sha256": "ad80abeca8553f9aca0c7df224ada736114a8be1c45886d16fc101b450881f06",
+    "title": "Who asks, and who is told",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/training/dependency-injection/hilt-android"
+    ]
+  },
+  {
+    "path": "android/compose/compose-runtime",
+    "figure": 1,
+    "source_sha256": "dc87e7fd391106a307613ae020921ae6f4897d1e8c580e80fa82f96575341b09",
+    "title": "Three layers, one loop",
+    "roles": [
+      "neutral",
+      "runtime",
+      "runtime",
+      "runtime",
+      "storage",
+      "runtime"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/jetpack/androidx/releases/compose-runtime",
+      "https://android.googlesource.com/platform/frameworks/support/+/androidx-main/compose/runtime/design/how-compose-works.md",
+      "https://developer.android.com/develop/ui/compose/architecture"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "compiled by"
+      ],
+      [
+        2,
+        3,
+        "adds compiler/runtime protocol"
+      ],
+      [
+        3,
+        4,
+        "applies node changes"
+      ],
+      [
+        5,
+        6,
+        "invalidates observed scopes"
+      ],
+      [
+        6,
+        3,
+        "re-runs invalidated composition"
+      ]
+    ]
+  },
+  {
+    "path": "android/compose/compose-runtime",
+    "figure": 2,
+    "source_sha256": "28d24ba9fd9a045b7b1093c5237e0f706b31e3e8947b9e4030fb11ff33bef75f",
+    "title": "What a provider change invalidates",
+    "roles": [
+      "storage",
+      "runtime",
+      "neutral",
+      "storage",
+      "runtime",
+      "neutral"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/jetpack/androidx/releases/compose-runtime",
+      "https://android.googlesource.com/platform/frameworks/support/+/androidx-main/compose/runtime/design/how-compose-works.md",
+      "https://developer.android.com/develop/ui/compose/architecture"
+    ]
+  },
+  {
+    "path": "android/compose/snapshot-system",
+    "figure": 1,
+    "source_sha256": "f28fcd11a70c32b6c558c34952ba291d357a2dbcaef8b532cdd242cc4e734030",
+    "title": "Records, views and observation",
+    "roles": [
+      "runtime",
+      "storage",
+      "storage",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/state",
+      "https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/Snapshot",
+      "https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/package-summary"
+    ]
+  },
+  {
+    "path": "android/compose/snapshot-system",
+    "figure": 2,
+    "source_sha256": "dcf76f727f1d124a3cc6ac2e2c945146d7f14d4c4029b43f67d5a5f70e9edad0",
+    "title": "Two ways to derive from snapshot state",
+    "roles": [
+      "storage",
+      "runtime",
+      "runtime",
+      "storage",
+      "runtime",
+      "runtime"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/state",
+      "https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/Snapshot",
+      "https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/package-summary"
+    ]
+  },
+  {
+    "path": "android/compose/recomposition-and-state",
+    "figure": 1,
+    "source_sha256": "5da4997b9a2ffab22627da1e579b6a9a50d503e44b14bb5d2ae593ae254ab371",
+    "title": "State down, events up",
+    "roles": [
+      "storage",
+      "storage",
+      "runtime",
+      "client",
+      "client"
+    ],
+    "role": "storage",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/state",
+      "https://developer.android.com/develop/ui/compose/performance/stability",
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    ],
+    "edges": [
+      [
+        1,
+        4,
+        {
+          "card": 2
+        }
+      ],
+      [
+        4,
+        1,
+        {
+          "card": 3
+        }
+      ],
+      [
+        4,
+        5,
+        "passes values"
+      ],
+      [
+        5,
+        4,
+        "reports clicks"
+      ]
+    ],
+    "keep_nodes": [
+      1,
+      4,
+      5
+    ]
+  },
+  {
+    "path": "android/compose/stability",
+    "figure": 1,
+    "source_sha256": "acbedc0f34587afdb9a8da340872348c0b9259eef7b9819aaa2dcb190b01c962",
+    "title": "Does this call run or skip?",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/jetpack/compose/performance/stability",
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping",
+      "https://github.com/Kotlin/kotlinx.collections.immutable"
+    ]
+  },
+  {
+    "path": "android/compose/stability",
+    "figure": 2,
+    "source_sha256": "c36d90ca92a0d0619b6f602a51026531c23d41727ec37547662998b955be3a37",
+    "title": "What each annotation promises",
+    "roles": [
+      "neutral",
+      "client",
+      "neutral",
+      "client"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/jetpack/compose/performance/stability",
+      "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping",
+      "https://github.com/Kotlin/kotlinx.collections.immutable"
+    ]
+  },
+  {
+    "path": "android/compose/modifiers-and-layout",
+    "figure": 1,
+    "source_sha256": "feffd1a263577101f11201f4413cc06edff909218772446c090275e6e104ba4c",
+    "title": "The chain as nested boxes",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/modifiers",
+      "https://developer.android.com/develop/ui/compose/layouts/constraints-modifiers",
+      "https://developer.android.com/develop/ui/compose/lists#avoid-nesting-scrollable"
+    ]
+  },
+  {
+    "path": "android/compose/modifiers-and-layout",
+    "figure": 2,
+    "source_sha256": "e18ba408784843cc7402dbf1e6e70070d9b472a8ea9af9e80eb182d41ccbb7c7",
+    "title": "Same modifiers, two orders",
+    "roles": [
+      "client",
+      "client"
+    ],
+    "role": "client",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/modifiers",
+      "https://developer.android.com/develop/ui/compose/layouts/constraints-modifiers",
+      "https://developer.android.com/develop/ui/compose/lists#avoid-nesting-scrollable"
+    ]
+  },
+  {
+    "path": "android/compose/custom-layout-measurement",
+    "figure": 1,
+    "source_sha256": "801696955d4aa3c369ddd3af4d9a4edfe376f624b76946f8b3b34677258395f9",
+    "title": "Pick the smallest tool that fits",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/layouts/custom",
+      "https://developer.android.com/develop/ui/compose/layouts/intrinsic-measurements",
+      "https://developer.android.com/develop/ui/compose/layouts/alignment-lines"
+    ]
+  },
+  {
+    "path": "android/compose/side-effects",
+    "figure": 1,
+    "source_sha256": "8749a4c8dfdbea94e2e525e729473ab54f5fef651178d0b0b16a0197afc04989",
+    "title": "Pick the effect by what starts the work",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/side-effects",
+      "https://developer.android.com/develop/ui/compose/state-hoisting"
+    ]
+  },
+  {
+    "path": "android/compose/side-effects",
+    "figure": 2,
+    "source_sha256": "0e91049a9173e09754ca7c7e5a7a048dc7ffea5f0f66882316cc4767ae030b5d",
+    "title": "Two ways a coroutine starts from the UI",
+    "roles": [
+      "client",
+      "runtime",
+      "runtime",
+      "client",
+      "runtime",
+      "runtime"
+    ],
+    "role": "client",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/side-effects",
+      "https://developer.android.com/develop/ui/compose/state-hoisting"
+    ]
+  },
+  {
+    "path": "android/compose/compose-navigation",
+    "figure": 1,
+    "source_sha256": "89f366de1d824ce7b9f7b6e9d0e80043379b6a4582056390c8b61b9a886a9bcc",
+    "title": "Who holds the list?",
+    "roles": [
+      "runtime",
+      "runtime",
+      "client",
+      "runtime",
+      "storage",
+      "client"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/guide/navigation/design/type-safety",
+      "https://developer.android.com/blog/posts/jetpack-navigation-3-is-stable",
+      "https://developer.android.com/guide/navigation/navigation-3"
+    ]
+  },
+  {
+    "path": "android/compose/compose-navigation",
+    "figure": 2,
+    "source_sha256": "64018dc7d3942349a80342511494626415504bd73e806ce311cd227cc74dab36",
+    "title": "Navigation 2: routes, controller, host",
+    "roles": [
+      "neutral",
+      "neutral",
+      "client",
+      "runtime",
+      "client",
+      "client"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/guide/navigation/design/type-safety",
+      "https://developer.android.com/blog/posts/jetpack-navigation-3-is-stable",
+      "https://developer.android.com/guide/navigation/navigation-3"
+    ],
+    "edges": [
+      [
+        1,
+        5,
+        "Home destination identity"
+      ],
+      [
+        2,
+        5,
+        "Profile destination identity"
+      ],
+      [
+        3,
+        4,
+        "navigate to Profile"
+      ],
+      [
+        4,
+        5,
+        "selects back-stack destination"
+      ],
+      [
+        5,
+        6,
+        "displays Profile content"
+      ]
+    ]
+  },
+  {
+    "path": "android/compose/adaptive-compose-large-screens",
+    "figure": 1,
+    "source_sha256": "faa7d4a9a4ba4a29c12af8ee75fcbb6599f7beff833476af1dc63f31b0d5ea1b",
+    "title": "Two decisions, two inputs",
+    "roles": [
+      "storage",
+      "runtime",
+      "storage",
+      "runtime"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/layouts/adaptive",
+      "https://developer.android.com/develop/ui/compose/layouts/adaptive/use-window-size-classes",
+      "https://developer.android.com/develop/ui/compose/layouts/adaptive/canonical-layouts"
+    ]
+  },
+  {
+    "path": "android/compose/form-factors-matrix",
+    "figure": 1,
+    "source_sha256": "4ddce567d316495a1461dfcfa520406588beef9b13b95e1f8eeee0a4eb925e0b",
+    "title": "What carries over, and what is new",
+    "roles": [
+      "client",
+      "client",
+      "client",
+      "client",
+      "runtime"
+    ],
+    "role": "client",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/training/cars/apps/media",
+      "https://developer.android.com/training/cars/whats-new",
+      "https://developer.android.com/training/wearables/compose"
+    ],
+    "edges": [
+      [
+        1,
+        5,
+        "uses shared product contracts"
+      ],
+      [
+        2,
+        5,
+        "uses shared product contracts"
+      ],
+      [
+        3,
+        5,
+        "uses shared product contracts"
+      ],
+      [
+        4,
+        5,
+        "uses shared product contracts"
+      ]
+    ]
+  },
+  {
+    "path": "android/compose/compose-accessibility",
+    "figure": 1,
+    "source_sha256": "7205928cb32fe5c2fd3358ae8489189ef439bcb3872e0a551c0aa822496412fc",
+    "title": "Two trees for one screen",
+    "roles": [
+      "client",
+      "client",
+      "client",
+      "client",
+      "client",
+      "client"
+    ],
+    "role": "client",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/accessibility",
+      "https://developer.android.com/develop/ui/compose/accessibility/semantics",
+      "https://developer.android.com/develop/ui/compose/accessibility/testing"
+    ]
+  },
+  {
+    "path": "android/compose/view-interop-and-migration",
+    "figure": 1,
+    "source_sha256": "0d20c2c131aea7749b0c306827758a9da10d748b1669b9a9df8c9d28b14d0705",
+    "title": "Migrate in this order",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views",
+      "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose",
+      "https://developer.android.com/develop/ui/compose/migrate/strategy"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "incremental adoption"
+      ],
+      [
+        2,
+        3,
+        "reuse shared components"
+      ],
+      [
+        3,
+        4,
+        "migrate navigation after screens"
+      ],
+      [
+        5,
+        1,
+        "verify parity throughout"
+      ],
+      [
+        5,
+        2,
+        "verify parity throughout"
+      ],
+      [
+        5,
+        3,
+        "verify parity throughout"
+      ],
+      [
+        5,
+        4,
+        "verify parity throughout"
+      ]
+    ]
+  },
+  {
+    "path": "android/compose/compose-performance-tooling",
+    "figure": 1,
+    "source_sha256": "af324854ae49d24d78ef0ce163d50d06992ca053d7f1583f3e5a7afcdc07d293",
+    "title": "Where a frame's time can go",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/performance",
+      "https://developer.android.com/develop/ui/compose/performance/bestpractices",
+      "https://developer.android.com/develop/ui/compose/performance/stability"
+    ]
+  },
+  {
+    "path": "android/architecture/structured-concurrency",
+    "figure": 1,
+    "source_sha256": "35c3e1819325275ad315d6949322b76fb84a8b70d093b8b32402f266afb15558",
+    "title": "The tree in the Architecture section",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "parents job"
+      ],
+      [
+        1,
+        3,
+        "parents job"
+      ],
+      [
+        3,
+        4,
+        "parents async child"
+      ],
+      [
+        3,
+        5,
+        "parents async child"
+      ]
+    ],
+    "groups": [
+      {
+        "label": "ViewModel job tree",
+        "nodes": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  {
+    "path": "android/architecture/flow",
+    "figure": 1,
+    "source_sha256": "25f3dd8beb2d6db092d56a78d24650b41e8ad79c108e742818591745566f5406",
+    "title": "Cold runs per collector; hot is shared",
+    "roles": [
+      "client",
+      "client",
+      "client",
+      "runtime",
+      "storage"
+    ],
+    "role": "client",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/kotlin/flow/stateflow-and-sharedflow"
+    ]
+  },
+  {
+    "path": "android/architecture/flow",
+    "figure": 2,
+    "source_sha256": "07c3bca2e4b9e7d3ab3d3cb15ce3712ec6878fdf4d8ee07bdbe88bba45bec05f",
+    "title": "Cold to hot, once, in the ViewModel",
+    "roles": [
+      "storage",
+      "runtime",
+      "storage",
+      "client"
+    ],
+    "role": "storage",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/kotlin/flow/stateflow-and-sharedflow"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "queried rows"
+      ],
+      [
+        2,
+        3,
+        "mapped stateIn upstream"
+      ],
+      [
+        3,
+        4,
+        "lifecycle-aware collection"
+      ]
+    ]
+  },
+  {
+    "path": "android/concurrency/coroutines-under-the-hood",
+    "figure": 1,
+    "source_sha256": "7d32ae768436008b2565a352c50a0c26ebbb07b78a34fd27b7a79dbc35760de9",
+    "title": "Labels, suspensions and threads",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://kotlinlang.org/docs/coroutines-guide.html"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "starts suspension"
+      ],
+      [
+        2,
+        3,
+        "callback resumes continuation"
+      ],
+      [
+        3,
+        4,
+        "continues at saved label"
+      ],
+      [
+        4,
+        5,
+        "starts next suspension"
+      ],
+      [
+        5,
+        6,
+        "later callback resumes"
+      ]
+    ]
+  },
+  {
+    "path": "android/concurrency/threads-and-looper",
+    "figure": 1,
+    "source_sha256": "9b258c390397ac0a929561f39e27a416e969fdadcd9d80c5d2c958c0688cc76b",
+    "title": "One thread, one loop, one queue",
+    "roles": [
+      "runtime",
+      "queue",
+      "runtime",
+      "client"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/guide/components/processes-and-threads"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "posts message"
+      ],
+      [
+        2,
+        3,
+        "next due message"
+      ],
+      [
+        3,
+        4,
+        "dispatch executes on this thread"
+      ]
+    ],
+    "groups": [
+      {
+        "label": "Looper-owned queue and dispatch",
+        "nodes": [
+          2,
+          3,
+          4
+        ]
+      }
+    ]
+  },
+  {
+    "path": "android/concurrency/threads-and-looper",
+    "figure": 2,
+    "source_sha256": "74c6022451d2a87a0bdd0f93180de39694d8d30425f4ffb8847d227b6a5d9132",
+    "title": "Background work, main-thread update",
+    "roles": [
+      "runtime",
+      "runtime",
+      "queue",
+      "runtime",
+      "client"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/guide/components/processes-and-threads"
+    ]
+  },
+  {
+    "path": "android/concurrency/shared-flow-and-state-flow",
+    "figure": 1,
+    "source_sha256": "714ae7a3ecd7ad4bd93ed59f90983636f7c8df51333d34b9c6d916e7a3d06861",
+    "title": "Three contracts",
+    "roles": [
+      "storage",
+      "runtime",
+      "queue"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/kotlin/flow/stateflow-and-sharedflow",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/",
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/"
+    ]
+  },
+  {
+    "path": "android/concurrency/synchronization-and-mutex",
+    "figure": 1,
+    "source_sha256": "797e63a0ef88400febc66ff996ab7ff5af1ea8583684a9f65f08ef2a05b386bf",
+    "title": "Match the tool to the problem",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html"
+    ]
+  },
+  {
+    "path": "android/concurrency/services",
+    "figure": 1,
+    "source_sha256": "d818ec4e36512c3792cdfe0914fef601c0d83adc7b629ab29caa56e7cdf95c29",
+    "title": "Three kinds of service, three contracts",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/develop/background-work/services"
+    ]
+  },
+  {
+    "path": "android/concurrency/workmanager",
+    "figure": 1,
+    "source_sha256": "6e68ad0fa429e3d8085b5333cfac16386dc049db3aabbe6ecdcb663e75c5af74",
+    "title": "Who does what",
+    "roles": [
+      "client",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "client",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/topic/libraries/architecture/workmanager"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "enqueue work"
+      ],
+      [
+        2,
+        3,
+        "schedule under constraints"
+      ],
+      [
+        3,
+        2,
+        "execution opportunity"
+      ],
+      [
+        2,
+        4,
+        "runs eligible work"
+      ],
+      [
+        4,
+        2,
+        "records result and work state"
+      ]
+    ]
+  },
+  {
+    "path": "android/concurrency/battery-optimizations",
+    "figure": 1,
+    "source_sha256": "1cc800629dadf48796463b6423d4b87b8c738b108e0fc82345a8e7f4ec1fe4da",
+    "title": "How a device reaches Doze",
+    "roles": [
+      "client",
+      "storage",
+      "storage",
+      "runtime",
+      "runtime",
+      "queue",
+      "queue",
+      "runtime"
+    ],
+    "role": "client",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/training/monitoring-device-state/doze-standby"
+    ],
+    "edges": [
+      [
+        1,
+        4,
+        "full-idle condition"
+      ],
+      [
+        2,
+        4,
+        "full-idle condition"
+      ],
+      [
+        3,
+        4,
+        "full-idle condition"
+      ],
+      [
+        4,
+        5,
+        "defers ordinary network"
+      ],
+      [
+        4,
+        6,
+        "defers ordinary alarms"
+      ],
+      [
+        4,
+        7,
+        "defers ordinary jobs"
+      ],
+      [
+        4,
+        8,
+        "periodic maintenance"
+      ],
+      [
+        8,
+        4,
+        "returns to idle"
+      ]
+    ]
+  },
+  {
+    "path": "android/networking-and-security/retrofit-and-okhttp",
+    "figure": 1,
+    "source_sha256": "3ad22f8d122ba16f8a245462e913cc6321bec8dd545fd191c50f25b877562ecb",
+    "title": "Follow the ownership, not just the URL",
+    "roles": [
+      "neutral",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/training/dependency-injection/hilt-android#component-lifetimes",
+      "https://kotlinlang.org/docs/shared-mutable-state-and-concurrency.html",
+      "https://kotlinlang.org/docs/data-classes.html"
+    ]
+  },
+  {
+    "path": "android/networking-and-security/ktor-vs-retrofit",
+    "figure": 1,
+    "source_sha256": "2b2db2fab7722a25d85b952786bc71c90d7581a5dc5b063e3a282c0de504a25e",
+    "title": "Choose the boundary before the library",
+    "roles": [
+      "neutral",
+      "neutral",
+      "runtime",
+      "runtime"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://ktor.io/docs/getting-started-ktor-client.html",
+      "https://ktor.io/docs/client-engines.html",
+      "https://api.ktor.io/ktor-client-android/io.ktor.client.engine.android/-android/index.html"
+    ]
+  },
+  {
+    "path": "android/networking-and-security/graphql",
+    "figure": 1,
+    "source_sha256": "0e43149efb505c6854aa2b825a04a4b4ac1f27d73d6f5778ba858f447417e5f5",
+    "title": "Build inputs and runtime data are different paths",
+    "roles": [
+      "neutral",
+      "neutral",
+      "runtime",
+      "runtime",
+      "storage",
+      "storage"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://www.apollographql.com/docs/kotlin/"
+    ],
+    "edges": [
+      [
+        1,
+        3,
+        "schema input"
+      ],
+      [
+        2,
+        3,
+        "operation input"
+      ],
+      [
+        3,
+        5,
+        "generates models"
+      ],
+      [
+        5,
+        4,
+        "runtime parsing contract"
+      ],
+      [
+        4,
+        6,
+        "optional cache write"
+      ]
+    ],
+    "groups": [
+      {
+        "label": "Build inputs and generated model contract",
+        "nodes": [
+          1,
+          2,
+          3,
+          5
+        ]
+      },
+      {
+        "label": "Optional client cache",
+        "nodes": [
+          6
+        ]
+      }
+    ]
+  },
+  {
+    "path": "android/networking-and-security/networkcallback-metered-vpn-captive-portal",
+    "figure": 1,
+    "source_sha256": "d4fcc62ef8d4c2dd3175c534cf371de7fd6b3c0c3eabbebb765992ce11708bc1",
+    "title": "What each signal can and cannot tell you",
+    "roles": [
+      "storage",
+      "storage",
+      "storage",
+      "storage",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/develop/connectivity/network-ops/reading-network-state",
+      "https://developer.android.com/develop/connectivity/network-ops/managing"
+    ]
+  },
+  {
+    "path": "android/networking-and-security/webview-and-hybrid",
+    "figure": 1,
+    "source_sha256": "65d37f1772da8fbe63e38aa4ed229e0ffcf3899ffd89371337cbe8e9e904e4f2",
+    "title": "Audit a capability at both ends",
+    "roles": [
+      "client",
+      "neutral",
+      "neutral",
+      "runtime"
+    ],
+    "role": "client",
+    "kind": "comparison",
+    "sources": [
+      "https://www.rfc-editor.org/rfc/rfc8252",
+      "https://developer.android.com/privacy-and-security/risks/insecure-webview-native-bridges",
+      "https://developer.android.com/privacy-and-security/risks/webview-unsafe-file-inclusion"
+    ]
+  },
+  {
+    "path": "android/media/media3-player-architecture",
+    "figure": 1,
+    "source_sha256": "b7c614320f73933ff7e683faad185e37be7614a6108da88cbd5585d527f8b7ab",
+    "title": "Objects with different jobs",
+    "roles": [
+      "runtime",
+      "client",
+      "runtime",
+      "client"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/jetpack/androidx/releases/media3",
+      "https://developer.android.com/media/media3/exoplayer"
+    ]
+  },
+  {
+    "path": "android/media/camerax-capture-architecture",
+    "figure": 1,
+    "source_sha256": "caec03a1f4a4595446e8459df7bb3f8edb11042235f51790f02d8d05e639b221",
+    "title": "One camera, separate jobs",
+    "roles": [
+      "client",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "client",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/media/camera/camerax",
+      "https://developer.android.com/media/camera/camerax/architecture",
+      "https://developer.android.com/media/camera/camerax/configuration"
+    ]
+  },
+  {
+    "path": "android/testing/testing-strategy",
+    "figure": 1,
+    "source_sha256": "3a3417f9e710a620f0506795f48ca67263028b6b0f24ccb9d4a34a731c835d29",
+    "title": "One risk, several observation points",
+    "roles": [
+      "runtime",
+      "client",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/studio/test/gradle-managed-devices"
+    ]
+  },
+  {
+    "path": "android/testing/testing-strategy",
+    "figure": 2,
+    "source_sha256": "78959a725097b9b2b266afc81a94dc5db97158fb757c9868240698fa61970794",
+    "title": "Four gates, rising fidelity",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/studio/test/gradle-managed-devices"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "broader gate scope"
+      ],
+      [
+        2,
+        3,
+        "broader gate scope"
+      ],
+      [
+        3,
+        4,
+        "release qualification scope"
+      ]
+    ],
+    "reading": "Arrows compare wider gate scopes; the actual schedule is team policy."
+  },
+  {
+    "path": "android/testing/unit-testing",
+    "figure": 1,
+    "source_sha256": "f99988923beb5182a36bb70410751a3cb656d1a9c3c6c128fd43e3cb0cea251d",
+    "title": "The pyramid as an economics model",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/"
+    ]
+  },
+  {
+    "path": "android/testing/unit-testing",
+    "figure": 2,
+    "source_sha256": "95a1911ca99f844d4d1fe94b0ec0111b119aa832808b9f1ea34558c85e82eeab",
+    "title": "Mock, fake or spy?",
+    "roles": [
+      "runtime",
+      "storage",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/"
+    ]
+  },
+  {
+    "path": "android/testing/ui-testing",
+    "figure": 1,
+    "source_sha256": "d6bc264a68a1b6f7f005a28507a0695b9f18bf408f5a662dd042217f9674579d",
+    "title": "Choose the cheapest layer that can see the failure",
+    "roles": [
+      "neutral",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/jetpack/compose/testing",
+      "https://developer.android.com/studio/preview/compose-screenshot-testing",
+      "https://developer.android.com/training/testing/espresso"
+    ]
+  },
+  {
+    "path": "android/testing/ui-testing",
+    "figure": 2,
+    "source_sha256": "abdfe5b8ac2944fa4646f8a2800945e24efa7449b0f02ce43f8be4e136e04bcd",
+    "title": "Three different witnesses",
+    "roles": [
+      "storage",
+      "storage",
+      "runtime"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/jetpack/compose/testing",
+      "https://developer.android.com/studio/preview/compose-screenshot-testing",
+      "https://developer.android.com/training/testing/espresso"
+    ]
+  },
+  {
+    "path": "android/performance/startup",
+    "figure": 1,
+    "source_sha256": "66b029420e621975d0ac2600b7ab1974fc98f92185f21ab59c646b9b3bb0600c",
+    "title": "Two finish lines, one user journey",
+    "roles": [
+      "runtime",
+      "client",
+      "client"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/guide/practices/page-sizes",
+      "https://developer.android.com/topic/performance/vitals/launch-time",
+      "https://developer.android.com/topic/performance/baselineprofiles/overview"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "time to initial display"
+      ],
+      [
+        1,
+        3,
+        "time to full display"
+      ]
+    ]
+  },
+  {
+    "path": "android/performance/jank",
+    "figure": 1,
+    "source_sha256": "a60b496847a61e1dd14c91742765316e92d944844459449184477db34205c4dd",
+    "title": "A slow frame has several possible owners",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/topic/performance/tracing"
+    ]
+  },
+  {
+    "path": "android/performance/rendering",
+    "figure": 1,
+    "source_sha256": "c7e8567661b8bc2674799b867b51cdb54e5984d2c942e4ba0dae101665210c12",
+    "title": "Commands are not pixels on the display",
+    "roles": [],
+    "role": "runtime",
+    "kind": "timeline",
+    "sources": [
+      "https://developer.android.com/topic/performance/vitals/render",
+      "https://developer.android.com/topic/performance/threads",
+      "https://developer.android.com/topic/performance/rendering/profile-gpu"
+    ]
+  },
+  {
+    "path": "android/performance/anrs",
+    "figure": 1,
+    "source_sha256": "85cd2a084389c75fdd6240df43956d65c76ec80782c0e7a53646d2b2ea19dad8",
+    "title": "Read the wait-for chain",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/reference/android/content/SharedPreferences",
+      "https://developer.android.com/reference/android/os/StrictMode.ThreadPolicy.Builder",
+      "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+    ]
+  },
+  {
+    "path": "android/performance/memory-management-and-leaks",
+    "figure": 1,
+    "source_sha256": "57b1a1cee265f0091ab2e7e4e880b0c754cd1767374cfdd8fdaadb2ef50a81cb",
+    "title": "One retained edge keeps a larger graph alive",
+    "roles": [
+      "runtime",
+      "storage",
+      "client"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/topic/performance/memory",
+      "https://developer.android.com/reference/android/app/Activity",
+      "https://developer.android.com/reference/androidx/fragment/app/Fragment"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "retains registration"
+      ],
+      [
+        2,
+        3,
+        "captures destroyed screen"
+      ]
+    ],
+    "groups": [
+      {
+        "label": "One app-session reachability graph",
+        "nodes": [
+          1,
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "path": "android/performance/native-memory-bitmaps",
+    "figure": 1,
+    "source_sha256": "1ff7b21d8f70e4d342f619ab6b8aa9f9be249d86fd6e061b7492cbce3ab9639b",
+    "title": "Compression size is not decoded size",
+    "roles": [
+      "storage",
+      "storage",
+      "client"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/develop/ui/compose/graphics/images/optimization",
+      "https://developer.android.com/topic/performance/vitals/lmk",
+      "https://developer.android.com/studio/profile/memory-profiler"
+    ]
+  },
+  {
+    "path": "android/performance/app-size-and-r8",
+    "figure": 1,
+    "source_sha256": "72a414402b6d60b1c03a9ed27ea18680dfff5eb0b0207d2c9c21951ac922a905",
+    "title": "The artifact is the evidence boundary",
+    "roles": [
+      "neutral",
+      "neutral",
+      "storage",
+      "runtime",
+      "neutral",
+      "runtime"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/studio/build/shrink-code"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "defines reachable roots"
+      ],
+      [
+        2,
+        3,
+        "kept and optimized code"
+      ],
+      [
+        4,
+        5,
+        "untraced reference needs explicit rule"
+      ],
+      [
+        5,
+        2,
+        "adds required roots"
+      ],
+      [
+        2,
+        6,
+        "keeps required target"
+      ],
+      [
+        6,
+        3,
+        "ships required class"
+      ]
+    ]
+  },
+  {
+    "path": "android/performance/baseline-profiles",
+    "figure": 1,
+    "source_sha256": "4a8d1c79a21d17fc1812a08b139e128c70627012a003df93415075e4c521775c",
+    "title": "Two profiles act at different boundaries",
+    "roles": [
+      "storage",
+      "storage",
+      "runtime"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/topic/performance/baselineprofiles/overview"
+    ]
+  },
+  {
+    "path": "android/performance/macrobenchmark-and-perfetto",
+    "figure": 1,
+    "source_sha256": "862dfd522fb9381b9100b3f1cc3174b48cf4f2ac3cd38a5a71ab76b241f2d599",
+    "title": "Choose evidence for the question",
+    "roles": [
+      "storage",
+      "storage",
+      "storage"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview",
+      "https://developer.android.com/topic/performance/tracing"
+    ]
+  },
+  {
+    "path": "android/performance/battery-power-profiling",
+    "figure": 1,
+    "source_sha256": "ec70dfb75c7da5cb13fc12055369a5e62ade6f8b4eaa70a3977019dfc90dffad",
+    "title": "Work, hardware activity, useful outcome",
+    "roles": [
+      "runtime",
+      "runtime",
+      "neutral"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/topic/performance/power/setup-battery-historian",
+      "https://developer.android.com/topic/performance/power/battery-historian",
+      "https://developer.android.com/topic/performance/tracing"
+    ]
+  },
+  {
+    "path": "android/performance/network-radio-wakeups",
+    "figure": 1,
+    "source_sha256": "648d13a408fd5007462e3b382660da227eeae59fe3ad397c0889487b1e6d12c6",
+    "title": "A batch is a freshness policy",
+    "roles": [
+      "storage",
+      "queue",
+      "runtime"
+    ],
+    "role": "storage",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/develop/connectivity/network-ops/reading-network-state",
+      "https://developer.android.com/develop/connectivity/network-ops/network-access-optimization",
+      "https://developer.android.com/topic/performance/power/battery-historian"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "persist until eligible"
+      ],
+      [
+        2,
+        3,
+        "size, age or user-action trigger"
+      ]
+    ]
+  },
+  {
+    "path": "android/performance/thermal-low-end-device-strategy",
+    "figure": 1,
+    "source_sha256": "e1d6b4a8b73dbfa5b293bbe12800a824cbc13389fe08380d8facaf008dcbf482",
+    "title": "Reduce optional work, preserve the task",
+    "roles": [
+      "storage",
+      "runtime",
+      "runtime"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/reference/android/os/PowerManager#THERMAL_STATUS_SEVERE",
+      "https://developer.android.com/topic/performance/vitals/lmk",
+      "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
+    ]
+  },
+  {
+    "path": "android/observability/logging",
+    "figure": 1,
+    "source_sha256": "465554c8a8dc940061862a3f42588a4b3d40192711340421d0420b90b8bea457",
+    "title": "Policy starts after ordinary arguments are evaluated",
+    "roles": [
+      "runtime",
+      "runtime",
+      "storage"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/reference/android/util/Log",
+      "https://developer.android.com/topic/performance/app-optimization/enable-app-optimization"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "ordinary arguments already evaluated"
+      ],
+      [
+        2,
+        3,
+        "approved output only"
+      ]
+    ]
+  },
+  {
+    "path": "android/observability/crash-monitoring",
+    "figure": 1,
+    "source_sha256": "0d8c913ba97f99531c316b6f48fee58a660571e7afe7b73a4f914824599dcbcd",
+    "title": "A report crosses several failure boundaries",
+    "roles": [
+      "runtime",
+      "storage",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://source.android.com/docs/core/tests/debug/native-crash"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "attempt bounded persistence"
+      ],
+      [
+        2,
+        3,
+        "if delivery succeeds"
+      ]
+    ]
+  },
+  {
+    "path": "android/observability/mobile-apm-and-rum",
+    "figure": 1,
+    "source_sha256": "19f4f1cd628b4cff55cdbc495a07d321fb49af96d0f6e32d6682434a3be0e653",
+    "title": "A request lives inside a larger interaction",
+    "roles": [
+      "client",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "client",
+    "kind": "timeline",
+    "sources": [
+      "https://www.w3.org/TR/trace-context/",
+      "https://developer.android.com/topic/performance/vitals",
+      "https://developer.android.com/topic/performance/jankstats"
+    ],
+    "reading": "Nested boxes show elapsed-time intervals, not process ownership."
+  },
+  {
+    "path": "android/build-tooling/gradle-and-build-systems",
+    "figure": 1,
+    "source_sha256": "f20df629faccc5d6073dfebd003c656dfff2352d02429fe52482b59561711088",
+    "title": "Three phases, three different costs",
+    "roles": [
+      "neutral",
+      "runtime",
+      "neutral",
+      "runtime"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://docs.gradle.org/current/userguide/build_lifecycle.html",
+      "https://developer.android.com/build/migrate-to-built-in-kotlin"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "configure when needed"
+      ],
+      [
+        2,
+        3,
+        "configuration result"
+      ],
+      [
+        1,
+        3,
+        "reuse valid cached configuration"
+      ],
+      [
+        3,
+        4,
+        "schedules selected tasks"
+      ]
+    ]
+  },
+  {
+    "path": "android/build-tooling/gradle-and-build-systems",
+    "figure": 2,
+    "source_sha256": "4af8dbe967940acf60a4fad3b4b377ab0bc4a32ecb66716d560e132d527d99fc",
+    "title": "Who can see a dependency",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://docs.gradle.org/current/userguide/build_lifecycle.html",
+      "https://developer.android.com/build/migrate-to-built-in-kotlin"
+    ]
+  },
+  {
+    "path": "android/build-tooling/multi-module",
+    "figure": 1,
+    "source_sha256": "71ba0a8aea0dc900d37bd5c3a438d958e00596062bd5b439645d0385c9f16600",
+    "title": "The canonical module graph",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/topic/modularization"
+    ]
+  },
+  {
+    "path": "android/build-tooling/multi-module",
+    "figure": 2,
+    "source_sha256": "4fcd73b5a542b1d81b666fb25be898a4ec86fcc0f8cb67b968dc655661f6798d",
+    "title": "Routes cross modules; screens do not",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/topic/modularization"
+    ]
+  },
+  {
+    "path": "android/build-tooling/convention-plugins",
+    "figure": 1,
+    "source_sha256": "e83c1cd4c35e0427db7fc0a3ab4ea8ec40a2b832886c2156913041f4facb142c",
+    "title": "How the pieces connect",
+    "roles": [
+      "storage",
+      "runtime",
+      "neutral",
+      "runtime",
+      "runtime",
+      "neutral"
+    ],
+    "role": "storage",
+    "kind": "map",
+    "sources": [
+      "https://docs.gradle.org/current/userguide/sharing_build_logic_between_subprojects.html"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "explicit catalog import"
+      ],
+      [
+        2,
+        3,
+        "applies conventions to modules"
+      ],
+      [
+        2,
+        4,
+        "provides base conventions"
+      ],
+      [
+        2,
+        5,
+        "provides selected capabilities"
+      ],
+      [
+        4,
+        6,
+        "base conventions"
+      ],
+      [
+        5,
+        6,
+        "selected capabilities"
+      ]
+    ],
+    "groups": [
+      {
+        "label": "Convention distribution",
+        "nodes": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "label": "Capability composition example",
+        "nodes": [
+          4,
+          5,
+          6
+        ]
+      }
+    ]
+  },
+  {
+    "path": "android/build-tooling/convention-plugins",
+    "figure": 2,
+    "source_sha256": "141b2ce9212addce6e7cb24a9ac00d5a0f2ce9814117d2c2f0a6cbf266c94566",
+    "title": "One mega-plugin or small capabilities?",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://docs.gradle.org/current/userguide/sharing_build_logic_between_subprojects.html"
+    ]
+  },
+  {
+    "path": "android/build-tooling/ksp",
+    "figure": 1,
+    "source_sha256": "136ada1879e513f147af257c50b1f58bd3357166d7fb94fd86c929706c4f3970",
+    "title": "From annotation to compiled class",
+    "roles": [
+      "neutral",
+      "runtime",
+      "storage",
+      "runtime",
+      "neutral",
+      "runtime"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://github.com/google/ksp/blob/main/docs/ksp2.md",
+      "https://github.com/google/ksp/releases",
+      "https://square.github.io/kotlinpoet/",
+      "https://kotlinlang.org/docs/ksp-overview.html"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "source analysis input"
+      ],
+      [
+        2,
+        3,
+        "symbol API"
+      ],
+      [
+        3,
+        4,
+        "processor inspects symbols"
+      ],
+      [
+        4,
+        5,
+        "writes generated source"
+      ],
+      [
+        5,
+        6,
+        "joins final compilation"
+      ],
+      [
+        1,
+        6,
+        "original source also compiles"
+      ]
+    ]
+  },
+  {
+    "path": "android/build-tooling/ksp",
+    "figure": 2,
+    "source_sha256": "e44940180ec40eee592e99f88234134d91477282b653a0a0f44ae95847079c1c",
+    "title": "What a generated file depends on",
+    "roles": [
+      "storage",
+      "neutral",
+      "storage",
+      "neutral"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://github.com/google/ksp/releases",
+      "https://square.github.io/kotlinpoet/",
+      "https://kotlinlang.org/docs/ksp-overview.html"
+    ]
+  },
+  {
+    "path": "android/os-internals/intent-resolution-and-manifest",
+    "figure": 1,
+    "source_sha256": "4265bec6c975bf99c6563d5097d0379c4b3deb74da86387afac69728db624c0a",
+    "title": "How an implicit intent finds its target",
+    "roles": [
+      "client",
+      "runtime",
+      "runtime",
+      "storage",
+      "client"
+    ],
+    "role": "client",
+    "kind": "map",
+    "sources": [
+      "https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/services/core/java/com/android/server/wm/ActivityTaskManagerService.java",
+      "https://developer.android.com/guide/components/intents-filters",
+      "https://developer.android.com/guide/topics/manifest/manifest-intro",
+      "https://developer.android.com/training/package-visibility"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "startActivity request"
+      ],
+      [
+        2,
+        3,
+        "resolve implicit intent"
+      ],
+      [
+        3,
+        4,
+        "matching candidates"
+      ],
+      [
+        4,
+        2,
+        "selection and access checks"
+      ],
+      [
+        2,
+        5,
+        "launch chosen component"
+      ]
+    ],
+    "groups": [
+      {
+        "label": "System-server service responsibilities",
+        "nodes": [
+          2,
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "path": "android/os-internals/intent-resolution-and-manifest",
+    "figure": 2,
+    "source_sha256": "75cd2494ddac2f9c67df83254a690716bf513f2a9744645e0fa683f17a7f3ea4",
+    "title": "Four gates, two owners",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/guide/components/intents-filters",
+      "https://developer.android.com/guide/topics/manifest/manifest-intro",
+      "https://developer.android.com/training/package-visibility"
+    ]
+  },
+  {
+    "path": "android/os-internals/broadcast-receivers",
+    "figure": 1,
+    "source_sha256": "1a1fb6052a43030799079f891251aa90f98ec641c09213b5d03a001dae04f0a7",
+    "title": "Delivering one broadcast",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/develop/background-work/background-tasks/broadcasts"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "send broadcast"
+      ],
+      [
+        2,
+        3,
+        "deliver to eligible receiver process"
+      ],
+      [
+        3,
+        4,
+        "dispatch callback"
+      ],
+      [
+        4,
+        5,
+        "return promptly"
+      ]
+    ]
+  },
+  {
+    "path": "android/os-internals/broadcast-receivers",
+    "figure": 2,
+    "source_sha256": "951ff5d140b377aefe5683f50f2129455d9f4128d801f105a686cd6a1348263a",
+    "title": "How long each piece lives",
+    "roles": [],
+    "role": "runtime",
+    "kind": "timeline",
+    "sources": [
+      "https://developer.android.com/develop/background-work/background-tasks/broadcasts"
+    ]
+  },
+  {
+    "path": "android/os-internals/content-providers-and-contentresolver",
+    "figure": 1,
+    "source_sha256": "16773e9f857387172859013043969d0ba460b90237aebc2b834290123c95f513",
+    "title": "Reading a content:// URI",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "runtime"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/guide/topics/providers/content-providers"
+    ],
+    "edges": [
+      [
+        1,
+        4,
+        "provider access contract"
+      ],
+      [
+        2,
+        4,
+        "selects provider authority"
+      ],
+      [
+        3,
+        4,
+        "provider-defined path"
+      ]
+    ]
+  },
+  {
+    "path": "android/os-internals/permissions-and-app-ops",
+    "figure": 1,
+    "source_sha256": "623efcf6c8e16171ec3b5161a1d7a19f84364808ae4b7b7c15e4f1b4c8c097ae",
+    "title": "Three questions before a feature works",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/guide/topics/permissions/overview",
+      "https://developer.android.com/training/permissions/requesting"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "then check current operation policy"
+      ],
+      [
+        2,
+        3,
+        "still observe actual result"
+      ]
+    ]
+  },
+  {
+    "path": "android/os-internals/activitymanager-process-lifecycle",
+    "figure": 1,
+    "source_sha256": "0e09cf73e5cadf3f54cf7d264f5681861c5123a68d6c8c626a22a34f11637f6d",
+    "title": "Starting a process from a tap",
+    "roles": [
+      "client",
+      "client",
+      "runtime",
+      "runtime",
+      "client"
+    ],
+    "role": "client",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/guide/components/activities/process-lifecycle"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "launch request"
+      ],
+      [
+        2,
+        3,
+        "requests activity/process start"
+      ],
+      [
+        3,
+        4,
+        "starts app process when needed"
+      ],
+      [
+        4,
+        5,
+        "framework schedules activity lifecycle"
+      ]
+    ]
+  },
+  {
+    "path": "android/os-internals/activitymanager-process-lifecycle",
+    "figure": 2,
+    "source_sha256": "2cbc316a2ace39150a9691e39ab1648a66b2adcd7e9abdcdf405ae3ccf6a4f11",
+    "title": "Where each piece of state lives",
+    "roles": [
+      "storage",
+      "storage",
+      "storage",
+      "queue",
+      "runtime",
+      "runtime"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/guide/components/activities/process-lifecycle"
+    ]
+  },
+  {
+    "path": "android/os-internals/package-manager-installation-classloading",
+    "figure": 1,
+    "source_sha256": "52f15efce9d5b3543f9e815d35b34b1712dd93c1eb539ad99c4ab604bd55d05e",
+    "title": "The install pipeline",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "storage",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://developer.android.com/guide/topics/manifest/manifest-intro",
+      "https://developer.android.com/guide/app-bundle"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "install session"
+      ],
+      [
+        2,
+        3,
+        "commit session for verification"
+      ],
+      [
+        3,
+        4,
+        "register package identity and components"
+      ],
+      [
+        3,
+        5,
+        "DEX preparation as policy allows"
+      ]
+    ]
+  },
+  {
+    "path": "android/os-internals/package-manager-installation-classloading",
+    "figure": 2,
+    "source_sha256": "c13ba1528988a6b567798dc874a6c5a3a9b4725fd70c23c712d90f1b65a2128e",
+    "title": "Install time versus first use",
+    "roles": [
+      "storage",
+      "storage",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/guide/topics/manifest/manifest-intro",
+      "https://developer.android.com/guide/app-bundle"
+    ]
+  },
+  {
+    "path": "android/os-internals/the-binder",
+    "figure": 1,
+    "source_sha256": "13baabd927e98dd08e6469a0d99a0e7178d0168b2e178edf9a47060a9265eb30",
+    "title": "One call across the boundary",
+    "roles": [
+      "client",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "client",
+    "kind": "comparison",
+    "sources": [
+      "https://source.android.com/docs/core/architecture/aidl",
+      "https://android.googlesource.com/platform/frameworks/native/+/master/libs/binder/ProcessState.cpp",
+      "https://developer.android.com/topic/performance/vitals/anr"
+    ]
+  },
+  {
+    "path": "android/os-internals/the-zygote",
+    "figure": 1,
+    "source_sha256": "929af88ca11c6fa23439b7ae07a0e71e5c1c9c625538c7d1d61e54d514f378d0",
+    "title": "One preloaded parent, many children",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime",
+      "client",
+      "client"
+    ],
+    "role": "runtime",
+    "kind": "map",
+    "sources": [
+      "https://source.android.com/docs/core/runtime/zygote"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "starts init"
+      ],
+      [
+        2,
+        3,
+        "starts preloaded runtime"
+      ],
+      [
+        3,
+        4,
+        "forks system server"
+      ],
+      [
+        3,
+        5,
+        "forks app process"
+      ],
+      [
+        3,
+        6,
+        "forks app process"
+      ]
+    ],
+    "groups": [
+      {
+        "label": "Boot services",
+        "nodes": [
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "label": "Separate forked processes",
+        "nodes": [
+          4,
+          5,
+          6
+        ]
+      }
+    ]
+  },
+  {
+    "path": "android/os-internals/the-zygote",
+    "figure": 2,
+    "source_sha256": "c90df9673b26a81d14c6997c6bdb93767dae8798eb11149c5e60d82fadbfcab1",
+    "title": "Shared and private memory in one app",
+    "roles": [
+      "storage",
+      "storage",
+      "storage",
+      "storage"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://source.android.com/docs/core/runtime/zygote"
+    ]
+  },
+  {
+    "path": "android/os-internals/art-and-dalvik",
+    "figure": 1,
+    "source_sha256": "216cdf65d96bead94b5d6b207f25bd4204a834e0c5ec1ef51261f0bf5aeb1b9b",
+    "title": "Execution modes and the profile loop",
+    "roles": [
+      "neutral",
+      "runtime",
+      "storage",
+      "runtime",
+      "storage",
+      "runtime",
+      "runtime",
+      "storage"
+    ],
+    "role": "neutral",
+    "kind": "map",
+    "sources": [
+      "https://source.android.com/docs/core/runtime",
+      "https://source.android.com/docs/core/runtime/jit-compiler",
+      "https://source.android.com/docs/core/runtime/configure"
+    ],
+    "edges": [
+      [
+        1,
+        2,
+        "build input"
+      ],
+      [
+        2,
+        3,
+        "produces DEX"
+      ],
+      [
+        3,
+        4,
+        "loaded by runtime"
+      ],
+      [
+        4,
+        5,
+        "records selected hot code"
+      ],
+      [
+        5,
+        6,
+        "eligible compilation opportunity"
+      ],
+      [
+        6,
+        7,
+        "invokes dex2oat"
+      ],
+      [
+        3,
+        7,
+        "DEX input"
+      ],
+      [
+        5,
+        7,
+        "profile input"
+      ],
+      [
+        7,
+        8,
+        "compiled output"
+      ],
+      [
+        8,
+        4,
+        "used by later execution"
+      ]
+    ]
+  },
+  {
+    "path": "android/os-internals/art-and-dalvik",
+    "figure": 2,
+    "source_sha256": "08eea46312f7eb394f89f80c2b163a985c10cfc9be221b1fa05268880257c169",
+    "title": "Three ways the same method can run",
+    "roles": [
+      "neutral",
+      "runtime",
+      "neutral",
+      "storage",
+      "runtime",
+      "storage"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://source.android.com/docs/core/runtime",
+      "https://source.android.com/docs/core/runtime/jit-compiler",
+      "https://source.android.com/docs/core/runtime/configure"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/kmp-decision-matrix",
+    "figure": 1,
+    "source_sha256": "2f7b188b5d371d11d9cb751b7df9ffb2f1ea31048c4502da88ea75b64b913fd9",
+    "title": "Share a promise before choosing a framework",
+    "roles": [],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/kotlin/multiplatform",
+      "https://kotlinlang.org/docs/multiplatform.html"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/foundations/overview-and-k1-vs-k2",
+    "figure": 1,
+    "source_sha256": "6572d62d49eaa73a3a4b861889c27f92acab38cf8043aad8f6c48063f7fa376a",
+    "title": "Two questions the build must answer",
+    "roles": [],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/k2-compiler-migration-guide.html",
+      "https://kotlinlang.org/docs/multiplatform/multiplatform-hierarchy.html",
+      "https://kotlinlang.org/docs/multiplatform/multiplatform-expect-actual.html"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/shared-domain-boundaries",
+    "figure": 1,
+    "source_sha256": "1b57ca6390ac0836d908d7d8c903595c8cb206d93eacfa7d9a6e7e659e179a2c",
+    "title": "Put each promise with its owner",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/api-guidelines-build-for-multiplatform.html",
+      "https://kotlinlang.org/docs/native-objc-interop.html",
+      "https://kotlinlang.org/docs/native-swift-export.html"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/foundations/architecture-and-module-boundaries",
+    "figure": 1,
+    "source_sha256": "78807252926104bdfce19e9ff3be435aa91a0adc93a1799e39114a9d580d495f",
+    "title": "Move the boundary deliberately",
+    "roles": [],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/kotlin/multiplatform/viewmodel",
+      "https://kotlinlang.org/docs/api-guidelines-build-for-multiplatform.html",
+      "https://kotlinlang.org/docs/native-swift-export.html"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/tooling/build-system-and-source-sets",
+    "figure": 1,
+    "source_sha256": "63583680d77b22ab7ab769cc17d56f4617219fa52a3229899003c4d920677582",
+    "title": "Same instruction family, different destinations",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/kotlin/multiplatform/plugin",
+      "https://kotlinlang.org/docs/multiplatform/multiplatform-compatibility-guide.html",
+      "https://kotlinlang.org/docs/multiplatform/multiplatform-hierarchy.html"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/tooling/build-system-and-source-sets",
+    "figure": 2,
+    "source_sha256": "1a47cba8e2d10b4329fe8243dc43b93fb7366c43da174665e0d63741988e49e8",
+    "title": "Who can see whose code",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral",
+      "neutral"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/kotlin/multiplatform/plugin",
+      "https://kotlinlang.org/docs/multiplatform/multiplatform-compatibility-guide.html",
+      "https://kotlinlang.org/docs/multiplatform/multiplatform-hierarchy.html"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/ecosystem/libraries-ecosystem",
+    "figure": 1,
+    "source_sha256": "08e69906eb74b863e4840c857f8d2610f4990dea8868d1fc3e5a5df33f2cd902",
+    "title": "Four pieces of portability evidence",
+    "roles": [],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/native-target-support.html",
+      "https://kotlinlang.org/docs/multiplatform/multiplatform-add-dependencies.html",
+      "https://kotlinlang.org/docs/compiler-plugins-overview.html"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/ecosystem/networking-with-ktor",
+    "figure": 1,
+    "source_sha256": "8c17683e48d4e6d93f624870e102a9640353badacbdcba6be382aa3f557fe337",
+    "title": "Keep policy and transport visible",
+    "roles": [
+      "runtime",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://ktor.io/docs/client-engines.html",
+      "https://ktor.io/docs/client-request-retry.html",
+      "https://ktor.io/docs/client-response-validation.html"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/ecosystem/networking-with-ktor",
+    "figure": 2,
+    "source_sha256": "6d9cb5fc7c0d8105aa830650e57e9b6b6be6e94f5748eb73466a432500e3fa70",
+    "title": "One client API, one engine per platform",
+    "roles": [
+      "runtime",
+      "neutral",
+      "runtime",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://ktor.io/docs/client-engines.html",
+      "https://ktor.io/docs/client-request-retry.html",
+      "https://ktor.io/docs/client-response-validation.html"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/ecosystem/persistence",
+    "figure": 1,
+    "source_sha256": "f77e9a8da62f8e9c32d4483b6404fbc756af92919a2c2daecfaa0f1e4d3e90f1",
+    "title": "Choose from the data contract",
+    "roles": [
+      "storage",
+      "storage",
+      "storage",
+      "runtime"
+    ],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/kotlin/multiplatform/room",
+      "https://developer.android.com/kotlin/multiplatform/datastore"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/ecosystem/dependency-injection",
+    "figure": 1,
+    "source_sha256": "ecb61658e339837ca46ae30b6294d8d92ac071559b3255ad1b27dcb0ba4f0b68",
+    "title": "Construction belongs at the edge",
+    "roles": [],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/native-objc-interop.html"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/ui-sharing/compose-multiplatform",
+    "figure": 1,
+    "source_sha256": "bc7f5cb98d71e2d39077dfb7560aa6ff3e04c7d3266d336a7d81401cf6d4300f",
+    "title": "One surface, explicit owners",
+    "roles": [],
+    "role": "client",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/native-target-support.html#supporting-lower-apple-target-versions",
+      "https://kotlinlang.org/docs/multiplatform/compose-compatibility-and-versioning.html",
+      "https://kotlinlang.org/docs/multiplatform/compose-multiplatform-and-jetpack-compose.html"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/ui-sharing/resource-sharing",
+    "figure": 1,
+    "source_sha256": "874ab11818a6724f319d5ad5be2aa66e9c82628486b9c6d93afb2e4e72c8e1c5",
+    "title": "One source can produce different platform outputs",
+    "roles": [],
+    "role": "storage",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/multiplatform/compose-multiplatform-resources.html",
+      "https://kotlinlang.org/docs/multiplatform/compose-multiplatform-resources-setup.html",
+      "https://kotlinlang.org/docs/multiplatform/compose-multiplatform-resources-usage.html"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/tooling/swift-interop",
+    "figure": 1,
+    "source_sha256": "7734da46b6265886c6271e9d7f0d5dd670825b6e3c74684644fbcbd017a04687",
+    "title": "Three strategies, one consumer contract",
+    "roles": [
+      "neutral",
+      "neutral",
+      "neutral",
+      "runtime"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/native-objc-interop.html",
+      "https://kotlinlang.org/docs/native-swift-export.html",
+      "https://kotlinlang.org/docs/whatsnew24.html#swift-export-goes-alpha-with-improved-concurrency-support"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/tooling/ios-distribution",
+    "figure": 1,
+    "source_sha256": "0be9bd11504ab0f77502bbf278bd94585b8b0f5465e8950c0e4cebdc7cf8a449",
+    "title": "Who runs the build?",
+    "roles": [
+      "runtime",
+      "runtime",
+      "neutral",
+      "runtime"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/multiplatform/multiplatform-ios-integration-overview.html",
+      "https://kotlinlang.org/docs/multiplatform/multiplatform-build-native-binaries.html",
+      "https://kotlinlang.org/docs/multiplatform/multiplatform-direct-integration.html"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/binary-compatibility-api-evolution",
+    "figure": 1,
+    "source_sha256": "c248ad0841fcd3eb46e2861e170767f152cb0b89cf385e2323c641ac3826f8fb",
+    "title": "One change, different witnesses",
+    "roles": [
+      "runtime",
+      "runtime",
+      "storage",
+      "storage"
+    ],
+    "role": "runtime",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/api-guidelines-backward-compatibility.html",
+      "https://kotlinlang.org/docs/gradle-binary-compatibility-validation.html",
+      "https://kotlinlang.org/docs/api-guidelines-simplicity.html#use-explicit-api-mode"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/production/testing-and-mocking",
+    "figure": 1,
+    "source_sha256": "cfb843223019d7b573f88ea273c9307fd5ef90dcbc5533c598d96ced9903e385",
+    "title": "Read the test report as a matrix",
+    "roles": [
+      "neutral",
+      "runtime",
+      "runtime",
+      "runtime"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://kotlinlang.org/docs/multiplatform/multiplatform-run-tests.html",
+      "https://kotlinlang.org/docs/multiplatform/multiplatform-discover-project.html#integration-with-tests",
+      "https://kotlinlang.org/api/core/kotlin-test/"
+    ]
+  },
+  {
+    "path": "android/kotlin-multiplatform/production/adoption-and-migration",
+    "figure": 1,
+    "source_sha256": "05853d4ef46c34bce2767874fa54d16af83d62f28831e8a061adff18ee1a4c2a",
+    "title": "A pilot has three owners",
+    "roles": [
+      "neutral",
+      "neutral",
+      "runtime",
+      "neutral"
+    ],
+    "role": "neutral",
+    "kind": "comparison",
+    "sources": [
+      "https://developer.android.com/kotlin/multiplatform/migrate",
+      "https://kotlinlang.org/docs/multiplatform/multiplatform-ios-integration-overview.html",
+      "https://developer.android.com/codelabs/kmp-migrate-room"
     ]
   }
 ]

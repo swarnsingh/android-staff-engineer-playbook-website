@@ -420,3 +420,10 @@ blockquote.pushback>p>strong:first-child{display:block;margin-bottom:var(--space
 .pb-static .mark[data-tone=ghost]{opacity:1;border-style:dashed;color:var(--ink-muted);background:var(--sheet)}
 .pb-static figcaption{font-size:var(--figure-caption-size);line-height:var(--static-caption-leading)}
 .fm-status{fill:var(--ink-muted)}
+
+.pb-static .static-status{display:block;font-family:var(--font-sans);font-size:var(--figure-detail-size);font-weight:var(--figure-status-weight);color:var(--warning)}
+.pb-static .node[data-state=ghost]{opacity:1}
+
+.fm-svg[hidden]{display:none}
+
+.pb-static .track .mark[data-label-index]{font-size:0;padding-inline:0}

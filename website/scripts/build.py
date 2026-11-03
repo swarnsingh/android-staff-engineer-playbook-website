@@ -261,6 +261,15 @@ BLEND_LABELS = {'story': 'Start here', 'guide': 'In plain words', 'visual': 'See
                 'tryfirst': 'Try first', 'pushback': 'Interviewer pushes back', 'recap': 'Interview recap · added by this site'}
 
 
+def blend_file(path):
+    # Kotlin blends predate other trees and sit at the top level; other trees use a folder per tree.
+    folder = WEB / 'content/blend' if tree_of(path) == 'kotlin' else WEB / 'content/blend' / tree_of(path)
+    # Full chapter paths prevent collisions such as data-and-di/dependency-injection
+    # and kotlin-multiplatform/ecosystem/dependency-injection. Retain legacy locations.
+    scoped = WEB / 'content/blend' / Path(path).with_suffix('.blend')
+    return scoped if scoped.exists() else folder / (Path(path).stem + '.blend')
+
+
 def load_blend(path):
     """Read website/content/blend/<chapter>.blend: Markdown fragments placed by markers.
 
@@ -271,12 +280,7 @@ def load_blend(path):
     <!-- @part Heading :: KEY -->          force the part a section belongs to
     Headings are matched on their visible text (backticks and emphasis removed).
     """
-    # Kotlin blends predate other trees and sit at the top level; other trees use a folder per tree.
-    folder = WEB / 'content/blend' if tree_of(path) == 'kotlin' else WEB / 'content/blend' / tree_of(path)
-    # Full chapter paths prevent collisions such as data-and-di/dependency-injection
-    # and kotlin-multiplatform/ecosystem/dependency-injection. Retain legacy locations.
-    scoped = WEB / 'content/blend' / Path(path).with_suffix('.blend')
-    file = scoped if scoped.exists() else folder / (Path(path).stem + '.blend')
+    file=blend_file(path)
     if not file.exists():
         return {}
     import static_figures
@@ -777,11 +781,23 @@ def design_gallery(asset_version):
     source=(WEB/'content/blend/security/auth-on-mobile.blend').read_text()
     scene=re.search(r'<section class="pb-figure" data-pb-flow="scene".*?</section>',source,re.S)
     samples.append('<section class="demo"><h3>Session-bound token custody</h3>'+steps_as_text(scene[0])+'</section>')
+    import static_figures
+    static_samples=[]
+    for path,number in [('kotlin/language-core/variables',3),('kotlin/runtime-and-jvm/memory-model',1),('kotlin/language-core/variables',1)]:
+        row=static_figures.load().get((path,number))
+        if row is None: raise ValueError('Static gallery model missing: '+path)
+        source=static_figures.source_for(row)
+        if row['kind']=='map': sample=__import__('figure_maps').render(static_figures.as_map(row,source),'','teaching')[0]
+        else:
+            # render() numbers from the complete blend, then select the requested complete figure.
+            rendered=static_figures.render(path,blend_file(path+'.md').read_text())
+            sample=next(m[0] for m in re.finditer(r'<figure class="viz pb-static[^"]*".*?</figure>',rendered,re.S) if f'data-static-figure="{static_figures.figure_key(row)}"' in m[0])
+        static_samples.append('<section class="demo"><h3>'+escape(row['title'])+'</h3>'+timeline_labels(component_parameters(sample))+'</section>')
     page_walkthrough=walkthrough_gallery()
     prose=tokens['type']['prose']
     fonts=''.join(f'<figure class="specimen" style="--specimen:var(--font-{o["family"]});--measure-prose:{o["measure"]}"><figcaption><strong>{escape(o["label"])}</strong> · {escape(o["description"])}</figcaption>'
                   '<p>A suspended call gives its thread back. When the result arrives, the coroutine resumes where it stopped, with its state intact.</p></figure>' for o in prose['options'])
-    page=(DESIGN/'gallery.html').read_text().replace('{{swatches}}',swatches).replace('{{fonts}}',fonts).replace('{{scenes}}',''.join(samples)).replace('{{walkthrough}}',page_walkthrough)
+    page=(DESIGN/'gallery.html').read_text().replace('{{swatches}}',swatches).replace('{{fonts}}',fonts).replace('{{scenes}}',''.join(samples)).replace('{{walkthrough}}',page_walkthrough).replace('{{static_figures}}',''.join(static_samples))
     for asset in ('styles.css','blend.css','theme.css','tokens.css','flow.css','sequence.css','flow.js','blend.js'):page=page.replace('"/'+asset+'"','"'+BASE+asset+'?v='+asset_version+'"')
     page=page.replace('href="/android/"','href="'+route('android.md')+'"')
     destination=OUT/'design-system';destination.mkdir(exist_ok=True)
@@ -828,6 +844,8 @@ def check_design_boundary():
 
 
 def build(skip_diagrams=False):
+    import static_figures
+    static_figures.begin()
     check_design_boundary()
     import diagram_models
     relationship_models=diagram_models.check()
@@ -935,6 +953,7 @@ def build(skip_diagrams=False):
     # Each bundled family travels with its SIL Open Font License and provenance.
     shutil.copytree(DESIGN/'fonts/licenses',OUT/'fonts/licenses'); shutil.copy2(DESIGN/'fonts/README.md',OUT/'fonts/README.md')
     design_gallery(asset_version)
+    static_figures.check_coverage()
     # Rulebook §20 "Designed visuals only": no page may show a rendered Mermaid picture.
     mermaid_pages=sorted(str(f.relative_to(OUT)) for f in OUT.rglob('*.html') if re.search(r'<img data-(original|teaching)-diagram=',f.read_text()))
     if mermaid_pages:
