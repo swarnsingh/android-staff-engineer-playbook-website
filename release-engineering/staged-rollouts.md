@@ -1,6 +1,6 @@
 # Release Engineering: Staged Rollouts
 
-> Never ship to 100% of users at once. Use Play's staged rollout API to grow the audience gradually, monitor crash/ANR rate per stage, and pull the release if numbers degrade.
+> Choose staged exposure and promotion criteria for the release risk. Use Play's staged rollout API to grow the audience gradually, monitor crash/ANR rate per stage, and pull the release if numbers degrade.
 
 ---
 
@@ -23,7 +23,7 @@ A safer cadence costs a week of latency but turns a "30% crash rate disaster" in
 ```kotlin
 // app/build.gradle.kts
 plugins {
-    id("com.github.triplet.play") version "3.11.0"
+    id("com.github.triplet.play") version "4.1.1"
 }
 
 play {
@@ -54,7 +54,7 @@ play {
     --user-fraction=0.01
 ```
 
-The Play API supports incremental `userFraction`. Each promotion increases it.
+The Play API supports `0 < userFraction < 1` for in-progress/halted releases. Finish by setting `completed` and omitting the fraction; initial app publication cannot use a staged rollout. The cadence above is example policy, not a Play-mandated timing rule.
 
 ---
 
@@ -63,65 +63,46 @@ The Play API supports incremental `userFraction`. Each promotion increases it.
 For automation outside Triple-T's coverage, use the Play Developer Publishing API directly. JWT-based service account auth:
 
 ```python
-# scripts/promote.py
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-import sys, json, os
+# scripts/promote.py: update one already-inProgress release; no implicit resume.
+from copy import deepcopy
+import math
 
-SCOPES = ['https://www.googleapis.com/auth/androidpublisher']
-PACKAGE = 'com.example.app'
-
-def main(track: str, fraction: float):
-    creds = service_account.Credentials.from_service_account_file(
-        os.environ['PLAY_SERVICE_ACCOUNT'], scopes=SCOPES
-    )
-    service = build('androidpublisher', 'v3', credentials=creds)
-
-    edits = service.edits()
-    edit = edits.insert(packageName=PACKAGE, body={}).execute()
-    edit_id = edit['id']
-
-    current = edits.tracks().get(packageName=PACKAGE, editId=edit_id, track=track).execute()
-    release = current['releases'][0]
-
-    release['status'] = 'inProgress' if fraction < 1.0 else 'completed'
-    release['userFraction'] = fraction if fraction < 1.0 else None
-
-    edits.tracks().update(
-        packageName=PACKAGE, editId=edit_id, track=track,
-        body={'releases': [release]}
-    ).execute()
-
-    edits.commit(packageName=PACKAGE, editId=edit_id).execute()
-    print(f"Promoted {track} to fraction={fraction}")
-
-if __name__ == '__main__':
-    main(sys.argv[1], float(sys.argv[2]))
+def promotion_body(current: dict, expected_codes: set[str], fraction: float,
+                   *, replace_track_on_completion: bool = False) -> dict:
+    if not expected_codes or not math.isfinite(fraction) or not 0 < fraction <= 1:
+        raise ValueError("Explicit version codes and a finite fraction in (0,1] are required")
+    releases = deepcopy(current.get("releases", []))
+    targets = [r for r in releases if set(r.get("versionCodes", [])) == expected_codes]
+    if len(targets) != 1:
+        raise ValueError("Target release missing or ambiguous")
+    target = targets[0]
+    old_fraction = target.get("userFraction")
+    if (target.get("status") != "inProgress" or
+            not isinstance(old_fraction, (int, float)) or
+            not math.isfinite(old_fraction) or not 0 < old_fraction < 1):
+        raise ValueError("Expected an active staged rollout")
+    if fraction < old_fraction:
+        raise ValueError("A fraction decrease is not a rollback; halt explicitly")
+    target["status"] = "completed" if fraction == 1 else "inProgress"
+    if fraction == 1:
+        if not replace_track_on_completion:
+            raise ValueError("Completion requires explicit approval to replace this track")
+        target.pop("userFraction", None)
+        # Documented single-release completion; retire the other track entries.
+        return {"releases": [target]}
+    else:
+        target["userFraction"] = fraction
+    return {"releases": releases}
 ```
 
-```yaml
-# .github/workflows/promote.yml
-on:
-  workflow_dispatch:
-    inputs:
-      track: { description: 'Track (production)', required: true, default: 'production' }
-      fraction: { description: 'User fraction (0.01-1.0)', required: true, default: '0.05' }
+The publisher integration creates an edit, fetches the intended track, verifies the approved version-code set and current fraction, calls this transformer, updates that track and commits the edit. For fractional increases, preserve other releases and their metadata. Completion instead uses the [documented single-release request](https://developers.google.com/android-publisher/tracks#completing_a_staged_rollout): the caller must explicitly approve replacing the track with the target release. This example assumes one AAB release covers the supported devices; it is not a generic multi-APK retention policy. Review device coverage before retiring any other entries. It does not claim that two `completed` releases are accepted together; that behavior has not been tested against a real track. Serialize promotions per package/track; a concurrent console edit or commit failure requires a fresh read and renewed decision, not replaying a stale body. Reconcile an uncertain commit before retrying. Authentication, edit cleanup and the gate are integration work, not supplied by this pure transformer.
 
-jobs:
-  promote:
-    runs-on: ubuntu-latest
-    environment: production-promote
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
-      - run: pip install google-api-python-client google-auth
-      - run: python scripts/promote.py "${{ inputs.track }}" "${{ inputs.fraction }}"
-        env:
-          PLAY_SERVICE_ACCOUNT: ${{ secrets.PLAY_PUBLISHER_SA_JSON }}
-```
 
-Wrap in `environment: production-promote` so a separate set of reviewers must approve each promotion.
+
+A deployment workflow must pass validated inputs through environment variables or structured API arguments, not interpolate arbitrary workflow input into shell source. If the publisher expects a credentials **file path**, materialize the secret JSON in a restricted temporary file, pass that path and remove it in an always-run cleanup. A raw JSON secret is not a file path. Prefer an appropriately scoped short-lived identity when the publisher supports it.
+
+
+In the consuming deployment workflow, use a protected `production-promote` environment with configured required reviewers. Declaring an environment name alone does not configure approval rules.
 
 ---
 
@@ -157,84 +138,21 @@ Do not resume because the graph "looks better" after the halt. Resume only after
 
 ## 5. Automated Stage Promotion With Crash-Rate Gates
 
-```yaml
-# .github/workflows/auto-promote.yml
-on:
-  schedule:
-    - cron: '0 14 * * *'   # 14:00 UTC daily check
+Use the [canonical crash gate](crash-rate-gating.md#4-the-auto-halt-workflow) and its multi-signal orchestration contract. The former example compared two unvalidated percentages and doubled exposure without checking window completeness, sample size, ANRs, active version or other guardrails.
 
-jobs:
-  evaluate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Fetch current Play release status
-        id: status
-        run: python scripts/play_status.py > status.json
-        env: { PLAY_SERVICE_ACCOUNT: ${{ secrets.PLAY_PUBLISHER_SA_JSON }} }
-
-      - name: Read crash rate from Firebase Crashlytics
-        id: crash
-        run: python scripts/crashlytics_rate.py --version "$(jq -r .versionName status.json)" > crash.json
-        env: { FIREBASE_SA: ${{ secrets.FIREBASE_SA_JSON }} }
-
-      - name: Decide next fraction
-        id: decide
-        run: |
-          rate=$(jq -r .crashFreeUsersPercent crash.json)
-          baseline=$(jq -r .baselinePercent crash.json)
-          delta=$(python -c "print($baseline - $rate)")
-          if (( $(python -c "print(int($delta > 0.5))") )); then
-            echo "action=halt" >> $GITHUB_OUTPUT
-          elif (( $(python -c "print(int($delta < 0.1))") )); then
-            current=$(jq -r .userFraction status.json)
-            next=$(python -c "print(min(1.0, $current * 2))")
-            echo "action=promote" >> $GITHUB_OUTPUT
-            echo "fraction=$next" >> $GITHUB_OUTPUT
-          else
-            echo "action=hold" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Apply decision
-        run: |
-          case "${{ steps.decide.outputs.action }}" in
-            halt) python scripts/halt.py "production" ;;
-            promote) python scripts/promote.py "production" "${{ steps.decide.outputs.fraction }}" ;;
-            hold) echo "Holding; reviewing tomorrow" ;;
-          esac
-        env: { PLAY_SERVICE_ACCOUNT: ${{ secrets.PLAY_PUBLISHER_SA_JSON }} }
-```
-
-Decision rules (tune to your risk profile):
-
-| Crash-free Δ vs baseline | Action |
-|---|---|
-| Worse by > 0.5 pp | Halt + Slack-alert release manager |
-| Worse by 0.1 to 0.5 pp | Hold at current fraction, alert team |
-| Within 0.1 pp | Double the fraction |
-| Better than baseline | Double the fraction |
-
-See `crash-rate-gating.md` for the metric source details.
+A scheduled job should record evidence, evaluate **all** halt conditions before holds, and return hold on missing/stale/incompatible data. A promote-eligible result still needs approval policy, staffed response, expected version/fraction checks and mutation serialization. An emergency halt has its own incident policy. Do not infer safe promotion merely because crash-free percentage improved.
 
 ---
 
 ## 6. Per-Country & Per-Device Staging
 
-Play lets you stage by country:
+A production release can restrict eligible countries and specify one user fraction for that release. It does not offer independent `NZ: 50%`, `AU: 20%`, `IN: 0%` percentages for one release. Country targeting is represented by the Publishing API's `countryTargeting`; verify supported transitions before changing the included set. Play does not allow removing countries after a staged rollout starts.
 
-```bash
-# Promote to production at 5% globally, but 50% only in NZ (low-volume canary)
-./gradlew :app:promoteArtifact \
-  --promote-track=production \
-  --user-fraction=0.05
-
-# Then via Play Console UI: target country override for NZ to 50%
-```
-
-For per-device-class staging (e.g., "exclude Samsung Galaxy A series this release"), use Play's device catalog exclusion in Console. Useful when a known bug only affects certain chipsets.
+Device-catalog exclusions affect app/device availability, not arbitrary per-release canary percentages. Use them only after assessing existing users and support impact. Feature flags can select a runtime cohort but are a different exposure mechanism from Play binary distribution.
 
 ---
+
+
 
 ## 7. Update Priority And In-App Updates
 
@@ -244,7 +162,7 @@ play {
 }
 ```
 
-The priority is read by the In-App Updates API:
+Priority is metadata, not an automatic Play UX choice. This app-defined policy reads it and checks permitted update types:
 
 ```kotlin
 class InAppUpdateChecker @Inject constructor(
@@ -256,8 +174,8 @@ class InAppUpdateChecker @Inject constructor(
         val info = manager.appUpdateInfo.await()
         return when {
             info.updateAvailability() != UpdateAvailability.UPDATE_AVAILABLE -> UpdateAction.None
-            info.updatePriority() >= 4 -> UpdateAction.Immediate(info)
-            info.updatePriority() >= 2 -> UpdateAction.Flexible(info)
+            info.updatePriority() >= 4 && info.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE) -> UpdateAction.Immediate(info)
+            info.updatePriority() >= 2 && info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE) -> UpdateAction.Flexible(info)
             else -> UpdateAction.None
         }
     }
@@ -272,9 +190,9 @@ sealed class UpdateAction {
 
 | Priority | UX |
 |---|---|
-| 0-1 | Update silently next time Play decides |
-| 2-3 | Flexible: background download + restart prompt |
-| 4-5 | Immediate: blocking full-screen update dialog |
+| 0-1 | This example does not request an in-app update |
+| 2-3 | Request flexible flow only if allowed |
+| 4-5 | Request immediate flow if allowed; handle cancellation/recovery |
 
 Reserve 4-5 for security-critical releases. Most go at 2-3.
 
@@ -319,6 +237,12 @@ Stored as a build artifact + appended to a release-history file. Post-mortems re
 ---
 
 ## 10. Further Reading
+
+- [In-app update availability and allowed flow types](https://developer.android.com/reference/com/google/android/play/core/appupdate/AppUpdateInfo).
+
+- [Play staged-rollout eligibility and country rules](https://support.google.com/googleplay/android-developer/answer/6346149).
+
+- [Publishing API release fields and bounds](https://developers.google.com/android-publisher/api-ref/rest/v3/edits.tracks).
 
 - [Triple-T Gradle Play Publisher](https://github.com/Triple-T/gradle-play-publisher) — promotion + rollout commands.
 - [Play Developer API — Edits and Releases](https://developers.google.com/android-publisher/api-ref/rest/v3/edits.tracks) — official.

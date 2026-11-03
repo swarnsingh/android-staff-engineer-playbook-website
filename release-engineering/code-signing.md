@@ -6,18 +6,19 @@
 
 ## 1. What "Signing" Actually Does
 
-Android's package manager won't install or update an APK unless the signing certificate matches the one already on the device for that package name. The certificate is a public key; the signing process produces a digest over the APK contents signed with the matching private key.
+Android verifies an APK's signatures. Updating an installed package requires a compatible signing identity, including a supported proof-of-rotation lineage where applicable. The certificate is a public key; the signing process produces a digest over the APK contents signed with the matching private key.
 
-Modify any byte of a signed APK and the digest no longer matches. Sign with a different key and the update is rejected — the user has to uninstall and reinstall, losing all app data.
+Modify any byte of a signed APK and the digest no longer matches. An unrelated key is rejected for updates; supported signing-key rotation can preserve update continuity without reinstalling.
 
-Four signing schemes coexist, but they do not all apply to every artifact or device:
+Several signing schemes coexist, and not every scheme applies to every device:
 
 | Scheme | Introduced | What it covers | When required |
 |---|---|---|---|
 | **v1 (JAR signing)** | Android 1.0 | Per-entry digests in `META-INF/` | Needed when supporting Android 6.0/API 23 or lower |
 | **v2** | Android 7.0 | APK Signing Block; whole-file digest | Normal baseline for modern APKs |
 | **v3** | Android 9.0 | Signing-certificate rotation lineage | Use when the distribution and device floor support rotation |
-| **v4** | Android 11 | Separate `.idsig` data for incremental installation | Optional; not embedded as another APK signature block |
+| **v4** | Android 11 | Separate `.idsig` data for incremental installation | Optional; not embedded as another APK signature block; excluded for quantum-ready hybrid signing |
+| **v3.2** | Android 17 | Quantum-ready hybrid signing | Follow current Play/AOSP guidance and preserve older-device signature coverage |
 
 Choose schemes from the app's `minSdk`, distribution path, and rotation requirements, then verify the produced artifact. v2 and v3 data live in the APK Signing Block; v4 metadata is separate.
 
@@ -39,7 +40,7 @@ keytool -genkey -v \
 
 Notes:
 - **25,000 days ≈ 68 years.** Play requires a cert valid until at least 2033 (currently). Pick "longer than your career" — you cannot extend it later.
-- **RSA 4096** or **EC P-256**. RSA is wider-compatible; EC is smaller.
+- **RSA 4096** satisfies the current Play upload-key requirement of RSA 2048 bits or greater. Do not substitute an EC upload key based only on APK signature-algorithm support.
 - **Use one upload certificate per app at a time.** Generate the private key in a controlled environment, protect it with an audited signing service or secret-management workflow, and retain a tested recovery path.
 - **`-dname` identifies the certificate subject.** Choose an organization-controlled value, but do not treat it as legal proof of ownership.
 
@@ -82,11 +83,13 @@ Cons:
 - You depend on Google to keep their KMS healthy.
 - Changing developer accounts is hard.
 
-New Play apps distributed with Android App Bundles use Play App Signing. Existing apps should confirm their enrollment and migration options in Play Console rather than assuming their historical signing arrangement changed automatically.
+Current Play guidance says new apps are automatically enrolled in quantum-ready hybrid signing with Google-generated keys: Android 17+ uses RSA 4096 plus ML-DSA-65 via v3.2, with separate classical signing for older Android versions. There are three distribution keys: the classical key for older devices and the new RSA and ML-DSA keys for hybrid signing. Register the additional signing-certificate fingerprints with API providers as Play directs; otherwise installed builds can lose access to certificate-restricted services. Quantum-ready hybrid-signed apps are excluded from v4 signing. This distribution-key policy is separate from the RSA upload key. New Play apps distributed with Android App Bundles use Play App Signing. Existing apps should confirm their enrollment and migration options in Play Console rather than assuming their historical signing arrangement changed automatically.
 
 ---
 
 ## 4. Signing Configuration In Gradle
+
+The APK scheme switches below affect locally signed APKs. They do not select the signatures on an AAB upload or on APKs Play generates and re-signs. The upload key authenticates the submitted bundle; Play's distribution signing policy independently determines the installed APK signatures, including the hybrid/v4 exclusion above. This example disables local v4 because it does not use incremental APK installation; choose the local policy for the actual distribution workflow.
 
 The aliases used below must exist in the version catalog:
 
@@ -124,7 +127,7 @@ android {
                 enableV1Signing = false       // v1 no longer needed for API 26+
                 enableV2Signing = true
                 enableV3Signing = true
-                enableV4Signing = true
+                enableV4Signing = false // local APK policy; no incremental-install .idsig requested
             }
         }
     }
@@ -339,6 +342,10 @@ Wire these into the release workflow as `Verify signature` steps.
 ---
 
 ## 12. Further Reading
+
+- [AOSP APK Signature Scheme v3.2](https://source.android.com/docs/security/features/apksigning/v3-2).
+
+- [Current Play signing keys and quantum-ready enrollment](https://support.google.com/googleplay/android-developer/answer/9842756).
 
 - [Android Developers — Sign your app](https://developer.android.com/studio/publish/app-signing) — official.
 - [APK Signature Scheme v2](https://source.android.com/docs/security/features/apksigning/v2) — what it covers and why v2 supplanted v1.

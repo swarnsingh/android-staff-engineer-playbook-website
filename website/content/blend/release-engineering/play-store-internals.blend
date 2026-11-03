@@ -1,0 +1,29 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">The fleet-wide crash rate looks steady while a newly updated device cohort is failing. The release decision needs the right population and version, not another aggregate dashboard.</p>
+
+<!-- @before Vitals and Application Telemetry :: guide -->
+### Choose the question before the data surface
+
+Vitals and application telemetry have different populations, collection paths and delays. Align version, time window, device/OS cohort and coverage before interpreting a disagreement. A low value from a different denominator is not confirming evidence. [Android vitals](https://developer.android.com/google/play/vitals).
+
+<!-- @before Staged Rollout and Adoption :: staff -->
+### Eligibility is not adoption
+
+A rollout fraction controls eligible exposure. It does not show how many devices installed the release, launched it or reported telemetry. Keep Publishing API state, Reporting API evidence and application observations distinct; attach the promotion decision to their aligned timestamps and an incident owner.
+
+<!-- @before Fleet and Cohort Analysis :: visual -->
+### Different surfaces answer different release questions
+
+```mermaid
+flowchart TB
+ p["Publishing API Track state and eligible fraction"]
+ v["Reporting API / vitals Platform-measured stability"]
+ a["App telemetry Instrumented product behavior"]
+ d["Release decision Aligned window and cohort"]
+ p -->|"exposure configuration"| d
+ v -->|"version and cohort evidence"| d
+ a -->|"coverage and product evidence"| d
+```
+
+A track status describes distribution state; vitals and application telemetry describe their measured populations. Align them by release and cohort before deciding.

@@ -1,263 +1,98 @@
 # Release Engineering: Play Store Internals
 
-> What Play Console actually shows you, the difference between Vitals' view and your crash reporter's view, how Play distributes updates, and the dashboards a release manager needs to live in.
+## Console Map for Release Decisions
 
----
+Console navigation can change; use these capability names rather than memorizing a menu path.
 
-## 1. The Play Console Surface Area
-
-| Section | What it tells you | When you look at it |
+| Capability | Question it answers | Limit |
 |---|---|---|
-| **Production / Testing tracks** | Current rollout status, % adopted, halt button | Every promotion |
-| **Statistics — Installs** | Daily installs, uninstalls, by country / device / version | Weekly review |
-| **Statistics — Acquisition** | Source of installs (organic, search, referrer) | Marketing/Growth |
-| **Quality — Android Vitals** | Crash rate, ANR rate, slow start, slow render | During rollout, daily after |
-| **Quality — Pre-launch reports** | Crawler-based automated tests on real devices | After every Internal upload |
-| **Quality — Reach and devices** | Per-device-class adoption, fragmentation | Quarterly |
-| **App content** | Privacy policy, data safety, target audience | Compliance |
-| **Setup → App integrity** | Signing keys, Play Integrity setup | Setup only |
-| **Pricing & distribution** | Countries, pricing, in-app products | Per-launch |
+| Release tracks | Which candidate and exposure state are configured? | Eligibility differs from installed adoption |
+| App integrity | Which signing certificates and integrity settings apply? | Upload and installed-app identities differ |
+| Android vitals | Which eligible cohorts show stability/performance problems? | Population, freshness and coverage are constrained |
+| Statistics | How does supported install/device activity vary? | Metric definitions and exports must match the question |
+| Device catalog | Which devices are supported or excluded? | Exclusion affects app availability, not a binary canary percentage |
+| Pre-launch report | What did automated tested paths reveal? | Unvisited flows and unavailable devices remain gaps |
+| Policy status | Which requirements or enforcement actions need attention? | Review requirements for the actual app/account |
+| Store listing and reviews | What do users see and report? | Qualitative reports do not replace cohort denominators |
 
-The interesting ones for releng are **Production tracks**, **Vitals**, and **Reach and devices**. Vitals is the source of truth for crash decisions because it's what Play itself uses to decide whether to deprioritize your app in Search.
+## Vitals and Application Telemetry
 
----
+Android vitals describes the eligible, opted-in population observed by Play, not every installed device. Crashlytics sees the population covered by its SDK/session instrumentation and collection policy. Fatal crashes, non-fatal errors, user-perceived outcomes and ANRs are different metrics; never count a non-fatal log as a fatal crash merely because both appear in a crash-reporting tool.
 
-## 2. Vitals vs Crashlytics — Why Different Numbers
+Compare definitions, eligibility, version/cohort, window, freshness and sample coverage before interpreting a difference. Some startup failures occur before SDK initialization, and Crashlytics also supports ANR reporting on supported Android versions. The claim that it cannot observe ANRs is wrong. Neither source is a complete census or an instant decision oracle.
 
-| Source | Methodology | Reach |
-|---|---|---|
-| **Android Vitals** | GMS-instrumented; data from Play Services on every Play-installed device | Every Play-installed device with GMS |
-| **Crashlytics** | SDK in your APK; reports when your app code initializes | Devices that successfully ran your app |
+Use [crash-rate gating](crash-rate-gating.md) for the canonical metric/converter contract. Play's quality signals affect discoverability, but that does not establish a documented automatic halt or deterministic rollout slowdown for every regression. Keep the release owner's explicit halt and mitigation automation.
 
-They differ because:
-- Vitals counts a crash on app start before Crashlytics initializes. (Your SDK was DOA.)
-- Crashlytics counts crashes Vitals misses (e.g., custom non-fatal logs).
-- Vitals' user base = all Play users; Crashlytics' = users whose app ran long enough to init.
-- Vitals shows ANRs that Crashlytics misses (system-detected vs in-process detected).
+## Fleet and Cohort Analysis
 
-For **promote/halt decisions**, use Vitals. For **issue grouping and stack traces during triage**, use Crashlytics or Sentry.
+Use Play Console's supported install/device statistics and actual product telemetry to size the fleet. Label illustrative percentages as examples; they are not Android market share. The ANR metric set's `distinctUsers` is its rounded normalization population for a declared aggregation period, not an install count or a universal active-user metric.
 
----
+The Reporting API supports resource-specific dimensions such as version code, API level, device model and country code. It can paginate results and suppress data when coverage is insufficient. A dictionary keyed only by country/model can overwrite multiple dates or cohorts; retain the complete row identity. Do not add distinct-user rows across overlapping periods as if they were a deduplicated population.
 
-## 3. Reach And Devices Dashboard
+### Worked Cohort Investigation
 
-The most useful undervalued tool. Shows your install base broken down by:
-- API level (Android version)
-- RAM tier
-- Screen size & density
-- ABI (32-bit / 64-bit)
-- OEM (Samsung, Xiaomi, Pixel, ...)
-- Country
-- Language
+Suppose the new version has a startup-crash signal concentrated on one device model and API level. This is a hypothetical investigation, not a measured market-share claim:
 
-```
-API Level
-  API 26 (Android 8.0):   2.3%
-  API 28 (Android 9.0):   8.1%
-  API 29 (Android 10):    11.4%
-  API 30 (Android 11):    18.7%
-  API 31 (Android 12):    14.2%
-  API 33 (Android 13):    21.8%
-  API 34 (Android 14):    18.1%
-  API 35 (Android 15):    5.4%
+1. Pin the version code and compare the same eligible cohort and complete reporting windows with the previous release. Keep freshness, suppression and sample coverage visible.
+2. Inspect the stack/cluster and startup initialization order. A crash before an SDK starts can explain missing SDK evidence, but does not prove that every discrepancy has that cause.
+3. Halt further exposure under the incident policy. If the faulty initializer is remotely gateable, disable that path and retain a tested fallback for already-updated clients.
+4. Reproduce on an available matching device or a justified substitute, including an upgrade with existing app data. Record the reproduction gap when the exact model is unavailable.
+5. Ship a minimal fix with a greater version code, then watch the affected cohort and the broader guardrails during recovery. Halting does not downgrade installed users.
 
-OEM
-  Samsung:    42%
-  Xiaomi:     11%
-  Pixel:      8%
-  OPPO:       7%
-  Vivo:       5%
-  Other:      27%
-```
+Do not add country, date or device rows together when their user populations overlap. A cohort label needs its version, time window, metric definition and population to support a release decision.
 
-Use this when:
-- Setting `minSdk`. Don't drop API 26 if 2.3% is meaningful.
-- Investigating a "only on Samsung Galaxy A" bug — what's the Samsung share?
-- Sizing test coverage: if 11% are Xiaomi, you owe them an FTL run.
+## API Boundaries
 
-Available via the same Play Developer Reporting API:
-
-```python
-# scripts/reach_breakdown.py
-def reach_by_dimension(dimension: str) -> dict:
-    body = {
-        "timelineSpec": {"aggregationPeriod": "DAILY", "startTime": ..., "endTime": ...},
-        "metrics": ["activeUsers"],
-        "dimensions": [dimension],
-    }
-    resp = service.vitals().anrrate().query(
-        name=f"apps/{PACKAGE}/anrRateMetricSet", body=body
-    ).execute()
-    return {row['dimensions'][0]['value']: int(row['metrics'][0]['decimalValue']['value'])
-            for row in resp['rows']}
-```
-
----
-
-## 4. Pre-Launch Report
-
-When you upload to any track, Play runs the APK against a fleet of physical devices for ~30 minutes. Automated crawler clicks through the UI. Returns:
-
-- Crashes (with stack traces).
-- ANRs.
-- Performance issues.
-- Security vulnerabilities (basic scan).
-- Accessibility issues (basic).
-
-Doesn't replace your own testing but catches obvious smokes — particularly useful for OEM-specific crashes you couldn't reproduce.
-
-You can disable pre-launch reports on Internal track if they slow your iteration; keep them on for Alpha and above.
-
----
-
-## 5. How Play Distributes Updates
-
-Play doesn't push updates immediately; it adopts a slow schedule:
-
-- **Internal track**: instant (seconds to minutes).
-- **Alpha/Beta**: usually within 1-2 hours of upload.
-- **Production at X%**: distributed over 24-48 hours; user fraction is a probability, not an immediate switch.
-
-Per-device factors:
-- Wi-Fi vs cellular. Default settings only auto-update on Wi-Fi.
-- App in use. Play tends to update at idle.
-- Battery state. Low battery delays.
-- Time of day. User's local night-time often.
-- Device idleness. Idle devices get updates faster.
-
-This means "10% rollout" doesn't snap to 10% in 10 seconds. It ramps over a day.
-
-In-App Updates API gives you control:
-
-```kotlin
-class InAppUpdateChecker @Inject constructor(@ApplicationContext ctx: Context) {
-    private val manager = AppUpdateManagerFactory.create(ctx)
-
-    suspend fun checkAndPrompt(activity: ComponentActivity) {
-        val info = manager.appUpdateInfo.await()
-        when {
-            info.updateAvailability() != UpdateAvailability.UPDATE_AVAILABLE -> return
-            info.updatePriority() >= 4 && info.isUpdateTypeAllowed(IMMEDIATE) -> {
-                manager.startUpdateFlowForResult(info, IMMEDIATE, activity, REQ_IMMEDIATE)
-            }
-            info.updatePriority() >= 2 && info.isUpdateTypeAllowed(FLEXIBLE) -> {
-                manager.startUpdateFlowForResult(info, FLEXIBLE, activity, REQ_FLEXIBLE)
-            }
-        }
-    }
-}
-```
-
-`updatePriority()` is the `updatePriority` you set in Triple-T `play { }`. The app reads it; you decide blocking vs background download.
-
----
-
-## 6. Play's Distribution Throttles
-
-If your release is "bad" (crash rate spikes, install error rate spikes), Play silently slows the distribution. You'll see:
-- Adoption rate plateauing well below target.
-- Play Console showing "distribution paused" or "issues detected."
-- Vitals showing the regression.
-
-Play's distribution throttling is a safety net; don't rely on it. Detect via your own crash gate first.
-
----
-
-## 7. Country-Specific Distribution
-
-Play Console lets you target specific countries during staged rollout:
-
-```
-Track: production
-  Global rollout: 5%
-  Per-country override:
-    NZ:  50%       (low-volume canary)
-    AU:  20%       (English-speaking, similar device mix)
-    IN:  0%        (postponed pending OEM fix)
-```
-
-Useful when a known regression affects a specific region. CI can't currently set per-country overrides via the API for staged rollouts — must be done in Console UI, which means it's a manual button.
-
----
-
-## 8. Device Catalog Exclusions
-
-Play Console → Setup → Advanced settings → Device catalog.
-
-Exclude specific device models from receiving the app entirely or from receiving updates:
-- Galaxy S10 (model SM-G973) — exclude this release due to known SoC bug.
-- Xiaomi POCO M3 — exclude due to insufficient testing coverage.
-
-```
-Per-app excluded devices:
-  - Samsung SM-G973F (Galaxy S10)         — known SoC bug, exclude until v2.0.3
-  - Xiaomi M2010J19SG (POCO M3)            — exclude pending QA coverage
-```
-
-Last-resort tool. Customers on excluded devices stay on whatever version they had, with no path forward until you re-include. Document and unblock.
-
----
-
-## 9. The "Suddenly Crashing in India on Samsung A11 Android 11" Cohort
-
-Your Vitals breakdown reveals it. Crashlytics doesn't (your app crashed before init). Steps:
-
-1. **Vitals: Crash rate by device.** Filter `country=IN`. Find Samsung A11 spiking.
-2. **Vitals: Crash details.** Stack trace from Play's instrumentation. Often points to OEM-modified libraries.
-3. **Cohort kill switch.** Disable the offending feature for `deviceModel matches 'SM-A11*'` via the variant kill flag (see `kill-switches.md`).
-4. **Forensic on a real device.** Buy a Samsung A11 or rent one through FTL. Reproduce.
-5. **Fix or block.** Either fix in next release, or use Play Device Catalog exclusion temporarily.
-
-This pattern — Vitals reveals it, kill-switch contains it, real-device reproduces it, fix ships — is the entire reason for the dashboards and tooling.
-
----
-
-## 10. Common Pitfalls
-
-- **Trusting Crashlytics's "0 crashes" while Vitals reports 12%.** Your app died before init. Add a `Thread.UncaughtExceptionHandler` to catch boot-time crashes.
-- **Not checking Vitals during rollout.** "We don't have any reports!" doesn't mean what you think.
-- **Ignoring pre-launch reports.** Free 30-minute crawler coverage on real devices. Costs you nothing.
-- **Promoting to 100% before reviewing per-country breakdowns.** Globally fine; emerging market specifically broken.
-- **Excluding devices and forgetting.** Excluded devices accumulate. Quarterly review.
-- **Treating the rollout fraction as instantaneous.** Ramps over 24-48h; expect a soak time.
-- **Setting `updatePriority` to 5 for non-critical releases.** Trains users to dismiss the update dialog.
-- **Not using a Slack alert when Play auto-pauses distribution.** Buried in Console.
-- **Forgetting Play has separate "review for compliance" workflows.** Policy violations can hold a release for weeks.
-- **Trusting the Play Console UI for ground truth.** Dashboards lag by hours. Use the API for hot-path automation.
-
----
-
-## 11. Useful Play Developer API Endpoints
-
-```
-# Status of current production release
+```http
+# Publishing API: current track, inside an edit
 GET https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{packageName}/edits/{editId}/tracks/production
 
-# Vitals
-GET https://playdeveloperreporting.googleapis.com/v1beta1/apps/{packageName}/crashRateMetricSet:query
-GET https://playdeveloperreporting.googleapis.com/v1beta1/apps/{packageName}/anrRateMetricSet:query
+# Reporting API: metric queries use POST with a reviewed query body
+POST https://playdeveloperreporting.googleapis.com/v1beta1/apps/{packageName}/crashRateMetricSet:query
+POST https://playdeveloperreporting.googleapis.com/v1beta1/apps/{packageName}/anrRateMetricSet:query
 
-# Reviews
+# Publishing API: store reviews
 GET https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{packageName}/reviews
-
-# Install statistics
-GET https://playdeveloperreporting.googleapis.com/v1beta1/apps/{packageName}/installCountMetricSet:query
 ```
 
-OAuth scopes:
-- `https://www.googleapis.com/auth/androidpublisher` — Console operations (releases, listings, in-app products).
-- `https://www.googleapis.com/auth/playdeveloperreporting` — Reporting (Vitals, install metrics, reviews).
+Publishing uses the `androidpublisher` scope; Reporting uses `playdeveloperreporting`. Do not invent an `installCountMetricSet` or send GET to a documented POST query endpoint. Select the actual supported Console export/API for installation statistics. Fetch freshness metadata and handle pagination; calling the API rather than looking at Console does not remove upstream reporting delay.
 
----
+## Pre-Launch Reports and Release Readiness
 
-## 12. Further Reading
+Play's pre-launch testing can discover stability, performance, accessibility and security issues on its tested paths. Coverage, eligible uploads, authentication setup, supported devices and completion time depend on the current service. It is not a guaranteed thirty-minute exhaustive suite for every upload and never replaces the app's own device and upgrade tests.
 
-- [Play Console help](https://support.google.com/googleplay/android-developer/) — official.
-- [Play Developer API](https://developers.google.com/android-publisher) — automation.
-- [Play Developer Reporting API](https://developers.google.com/play/developer/reporting) — Vitals + install metrics.
-- [Android Vitals](https://developer.android.com/topic/performance/vitals) — what they measure and thresholds.
-- [In-app Updates](https://developer.android.com/guide/playcore/in-app-updates) — priority-driven update prompts.
+Review whether the crawler can reach meaningful authenticated flows with safe test accounts. Exercise payment and destructive actions in an appropriate test environment. Capture what paths/devices were covered and investigate gaps instead of treating a green report as universal validation.
 
----
+## Staged Rollout and Adoption
 
-> **In short:** Vitals is the source of truth Play itself uses; learn the dashboards; automate the reads via Play Developer Reporting API; treat Crashlytics as triage and Vitals as gate. Use Reach & Devices for `minSdk` decisions. Don't be surprised by 24-48h ramp times.
+A staged rollout sets eligibility for an **update**, not immediate installed adoption. Review, publication, user settings, connectivity, device state and foreground use affect timing. Do not promise internal, testing or production delivery in fixed seconds or hours. A halt stops further serving of the release; users who already installed it keep that version.
+
+For one production release, country targeting selects an included set and `userFraction` supplies one rollout percentage. It is not a map of per-country percentages. The Publishing API exposes country targeting, while Play documents constraints on changing the set after starting. A device-catalog exclusion changes device/app availability; it is not a release-scoped canary mechanism. Assess its impact on existing users before using it as mitigation.
+
+## In-App Updates
+
+The API reports update availability, priority and permitted flow types. The app decides whether to request a flexible or immediate update; priority alone does not trigger either UI. Check `isUpdateTypeAllowed`, handle cancellation/failure and process/activity recreation, resume an in-progress flow where documented, and complete a flexible download through its install-state workflow.
+
+An immediate flow is not guaranteed enforcement against every user state. Server compatibility and authorization remain independent. Keep backend support and recovery paths for users who have not installed the new binary.
+
+## Incident Workflow
+
+1. Identify the exact affected version, eligible cohort, metric and evidence freshness.
+2. Halt further exposure under the release policy and preserve the evidence.
+3. Apply an audited server or client mitigation, accounting for unreachable clients.
+4. Reproduce on relevant devices and upgrade paths; do not assume a cloud test lab has every production model.
+5. Ship a greater-version-code fix, verify it and recover through staged exposure.
+
+Do not install a second uncaught-exception handler as a blanket fix for missing startup crashes; it cannot recover evidence from before registration or every native/process failure and can interfere with existing handlers. Diagnose the coverage gap using appropriate platform and application signals.
+
+## Further Reading
+
+- [Android vitals collection and definitions](https://developer.android.com/google/play/vitals).
+- [Console technical-quality guidance](https://support.google.com/googleplay/android-developer/answer/9844486).
+- [ANR metric-set population and dimensions](https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.anrrate).
+- [ANR query method and pagination](https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.anrrate/query).
+- [Publishing release fields](https://developers.google.com/android-publisher/api-ref/rest/v3/edits.tracks).
+- [Staged rollout rules](https://support.google.com/googleplay/android-developer/answer/6346149).
+- [Pre-launch reports](https://support.google.com/googleplay/android-developer/answer/9842757).
+- [In-app update integration](https://developer.android.com/guide/playcore/in-app-updates/kotlin-java).
+- [Crashlytics ANR diagnosis](https://firebase.google.com/docs/crashlytics/troubleshooting#android-support).

@@ -107,7 +107,7 @@ jobs:
   instrumented:
     runs-on: ubuntu-latest
     needs: assemble
-    if: ${{ github.event.pull_request.draft == false }}
+    if: ${{ github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -172,25 +172,22 @@ android.defaults.buildfeatures.shaders=false
 
 `org.gradle.configuration-cache=true`: configuration is reused between builds. Saves 10-30 seconds per command on a moderately complex project.
 
-`android.useAndroidX=true` + `android.enableJetifier=false`: forbids legacy support libraries. Modernizes the project and shrinks the build graph.
+`android.enableJetifier=false` disables support-library rewriting; it does not ban a dependency. Verify the graph is AndroidX-compatible before disabling it.
 
-```kotlin
-// gradle/libs.versions.toml — Version Catalog
+```toml
+# gradle/libs.versions.toml — Version Catalog
 [versions]
 agp = "9.3.0"
 compose-bom = "2026.06.00"
-hilt = "2.55"
 android-targetSdk = "36"
 
 [libraries]
 androidx-core = { module = "androidx.core:core-ktx", version = "1.15.0" }
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
 compose-ui = { module = "androidx.compose.ui:ui" }
-hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ```
 
 Every module reads from the catalog:
@@ -199,18 +196,16 @@ Every module reads from the catalog:
 // app/build.gradle.kts
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.hilt)
 }
 
 dependencies {
     implementation(libs.androidx.core)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
-    implementation(libs.hilt.android)
 }
 ```
 
-No version literals in `build.gradle.kts`. One source of truth.
+This catalog illustrates central version ownership, not a complete Compose/DI build. Add the compatible Compose compiler plugin and code generators required by the app. Follow current [Hilt setup](https://dagger.dev/hilt/gradle-setup.html) rather than mixing an old Hilt pin with a new AGP toolchain without validation.
 
 ---
 
@@ -287,17 +282,38 @@ jobs:
           gcloud secrets versions access latest --secret=android-upload-keystore --format='get(payload.data)' \
             | base64 --decode > "$RUNNER_TEMP/upload-keystore.jks"
 
+      # Required project integration: fetch the allocator's immutable approved record.
+      # The helper authenticates to the allocator and fails if this SHA has no allocation.
+      - name: Fetch allocated identity
+        run: python3 scripts/fetch_release_identity.py --git-sha "$GITHUB_SHA" > release-identity.json
+
+      # release-identity.json contains versionCode, versionName and this candidate's gitSha.
+      - name: Load allocated identity
+        id: identity
+        run: |
+          jq -e --arg sha "$GITHUB_SHA" \
+            '.gitSha == $sha and (.versionCode | type == "number") and
+             (.versionCode | . >= 1 and . <= 2100000000 and . == floor) and
+             (.versionName | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._+-]*$"))' \
+            release-identity.json
+          echo "code=$(jq -r .versionCode release-identity.json)" >> "$GITHUB_OUTPUT"
+          echo "name=$(jq -r .versionName release-identity.json)" >> "$GITHUB_OUTPUT"
+
       - name: Build signed AAB
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          RELEASE_CODE: ${{ steps.identity.outputs.code }}
+          RELEASE_NAME: ${{ steps.identity.outputs.name }}
         run: |
           ./gradlew :app:bundleRelease \
+            -PreleaseVersionCode="$RELEASE_CODE" \
+            -PreleaseVersionName="$RELEASE_NAME" \
             -Pandroid.injected.signing.store.file="$RUNNER_TEMP/upload-keystore.jks" \
-            -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
-            -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
-            -Pandroid.injected.signing.key.password=$KEY_PASSWORD
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
 
       - name: Remove temporary keystore
         if: always()
@@ -306,11 +322,29 @@ jobs:
       - name: Upload mapping to Crashlytics
         run: ./gradlew :app:uploadCrashlyticsMappingFileRelease
 
-      - name: Publish to Play (Internal Track)
+      - name: Materialize publisher credentials
         env:
-          PLAY_SERVICE_ACCOUNT: ${{ secrets.PLAY_PUBLISHER_SA_JSON }}
-        run: ./gradlew :app:publishReleaseBundle --track=internal
+          PUBLISHER_JSON: ${{ secrets.PLAY_PUBLISHER_SA_JSON }}
+        run: |
+          umask 077
+          printf '%s' "$PUBLISHER_JSON" > "$RUNNER_TEMP/play-publisher.json"
+          echo "PLAY_SERVICE_ACCOUNT=$RUNNER_TEMP/play-publisher.json" >> "$GITHUB_ENV"
+
+      - name: Publish reviewed AAB to Play internal
+        env:
+          RELEASE_CODE: ${{ steps.identity.outputs.code }}
+          RELEASE_NAME: ${{ steps.identity.outputs.name }}
+        run: |
+          ./gradlew :app:publishReleaseBundle --track=internal \
+            -PreleaseVersionCode="$RELEASE_CODE" \
+            -PreleaseVersionName="$RELEASE_NAME" --artifact-dir=app/build/outputs/bundle/release
+
+      - name: Remove publisher credentials
+        if: always()
+        run: rm -f "$RUNNER_TEMP/play-publisher.json"
 ```
+
+The allocator and `fetch_release_identity.py` are consuming-project integrations, not supplied tools. The helper must authenticate and return the approved immutable allocation for the candidate SHA; a missing or mismatched record stops release. Both packaging and publishing receive the same identity. Local sync and debug/test jobs use development defaults.
 
 This example stores an exportable keystore in Secret Manager and retrieves it with a short-lived workload-identity token. Removing the temporary file narrows exposure but does not prove secure physical erasure on a hosted runner. A Cloud KMS/HSM design is different: the private key remains non-exportable and requires signing-tool integration. In either design, restrict principal, secret, environment, log, and artifact access and verify the certificate before upload.
 
@@ -348,10 +382,12 @@ This artifact becomes the release manager's source of truth. It proves what was 
 
 ## 6. Triple-T Play Publisher Plugin
 
+The upstream setup currently uses 4.1.1. Pin a version tested with the project's AGP/Gradle matrix; the snippets are not an executed Android build. The upstream project describes itself as in maintenance mode.
+
 ```kotlin
 // app/build.gradle.kts
 plugins {
-    id("com.github.triplet.play") version "3.11.0"
+    id("com.github.triplet.play") version "4.1.1"
 }
 
 play {
@@ -360,14 +396,14 @@ play {
     track.set("internal")
     releaseStatus.set(ReleaseStatus.COMPLETED)
     updatePriority.set(2)
-    resolutionStrategy.set(ResolutionStrategy.AUTO)
+    // Keep the default error on version conflict; never silently reallocate at upload.
     artifactDir.set(file("build/outputs/bundle/release"))
 }
 ```
 
 Tasks the plugin contributes:
 - `publishReleaseBundle` — upload the AAB and create a release.
-- `promoteArtifact --from-track internal --to-track production --user-fraction 0.1` — staged rollout (see `staged-rollouts.md`).
+- `promoteArtifact --from-track internal --promote-track production --release-status inProgress --user-fraction 0.1` — staged rollout (see `staged-rollouts.md`).
 - `publishListing` — push release notes and store listings.
 
 ---
@@ -461,31 +497,7 @@ Heap needs depend on module graph, worker count, Kotlin/AGP versions, and concur
 
 ## 10. Macrobenchmark Gate
 
-```kotlin
-// app-benchmark/build.gradle.kts
-plugins {
-    id("com.android.test")
-    id("androidx.baselineprofile") version "1.4.1"
-}
-
-android {
-    defaultConfig {
-        minSdk = 28
-        targetSdk = libs.versions.android.targetSdk.get().toInt()
-    }
-    testOptions {
-        managedDevices {
-            devices {
-                create<ManagedVirtualDevice>("pixel6Api33") {
-                    device = "Pixel 6"
-                    apiLevel = 33
-                    systemImageSource = "aosp"
-                }
-            }
-        }
-    }
-}
-```
+Create a Macrobenchmark module with the current Android Studio/template guidance, a target project, correct benchmark variant, profileable non-debuggable target and required dependencies. The following test assumes that setup. Use controlled physical devices for a performance release gate; emulators are useful for setup checks but Macrobenchmark flags their results as unreliable unless the error is deliberately suppressed. Suppression is not evidence that the timings are production-representative.
 
 ```kotlin
 // app-benchmark/src/main/kotlin/StartupBenchmark.kt
@@ -508,20 +520,7 @@ class StartupBenchmark {
 }
 ```
 
-```yaml
-# .github/workflows/nightly.yml
-- name: Run startup benchmark
-  run: ./gradlew :app-benchmark:pixel6Api33BenchmarkAndroidTest
-
-- name: Gate on regression
-  run: |
-    python3 scripts/check_perf.py \
-      app-benchmark/build/outputs/connected_android_test_additional_output/ \
-      --baseline scripts/baselines/startup.json \
-      --max-regression-percent 10
-```
-
-A nightly perf gate that diffs against a baseline. If cold-start regresses > 10%, the build fails and triggers an investigation.
+Run the configured benchmark variant on the controlled device fleet and retain its JSON and Perfetto traces. Compare equivalent compilation modes, device/OS state and baseline cohorts. A ten-percent delta can be an example policy threshold, but acceptance needs a repeatability/noise policy rather than an unconditional comparison against any emulator output. Fail or hold when the expected benchmark result is missing.
 
 ---
 
@@ -541,6 +540,10 @@ A nightly perf gate that diffs against a baseline. If cold-start regresses > 10%
 ---
 
 ## 12. Further Reading
+
+- [Gradle Play Publisher artifact and promotion contracts](https://github.com/Triple-T/gradle-play-publisher).
+
+- [Macrobenchmark environment requirements](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview).
 
 - [Gradle build cache](https://docs.gradle.org/current/userguide/build_cache.html) — official.
 - [Gradle configuration cache](https://docs.gradle.org/current/userguide/configuration_cache.html) — what it caches and pitfalls.

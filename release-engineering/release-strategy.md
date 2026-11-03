@@ -28,6 +28,9 @@ on:
 
 jobs:
   cut:
+    permissions:
+      contents: write
+      issues: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +39,8 @@ jobs:
       - name: Determine next version
         id: ver
         run: |
-          latest=$(git tag --sort=-v:refname | head -1 || echo v1.0.0)
+          latest=$(git tag --sort=-v:refname | head -1)
+          latest=${latest:-v1.0.0}
           next=$(python scripts/bump_minor.py "$latest")
           echo "next=$next" >> $GITHUB_OUTPUT
           echo "branch=release/$next" >> $GITHUB_OUTPUT
@@ -64,44 +68,44 @@ jobs:
 ## 2. Versioning
 
 ```kotlin
-// app/build.gradle.kts
+// app/build.gradle.kts: local defaults allow sync, debug builds and tests.
+val allocatedCode = providers.gradleProperty("releaseVersionCode")
+val allocatedName = providers.gradleProperty("releaseVersionName")
 android {
     defaultConfig {
-        versionCode = computeVersionCode()
-        versionName = computeVersionName()
+        versionCode = allocatedCode.map { it.toInt() }.orElse(1).get()
+        versionName = allocatedName.orElse("0.0.0-local").get()
     }
 }
 
-fun computeVersionName(): String {
-    val major = 2
-    val minor = 0
-    val patch = countCommitsSinceLastMinor()
-    return "$major.$minor.$patch"
+// This unflavored sample protects release packaging and publishing tasks.
+val validateReleaseIdentity = tasks.register("validateReleaseIdentity") {
+    inputs.property("allocatedCode", allocatedCode.orElse(""))
+    inputs.property("allocatedName", allocatedName.orElse(""))
+    doLast {
+        val code = inputs.properties.getValue("allocatedCode").toString().toIntOrNull()
+        require(code != null && code in 1..2_100_000_000) {
+            "Release requires an allocated -PreleaseVersionCode"
+        }
+        require(inputs.properties.getValue("allocatedName").toString().isNotBlank()) {
+            "Release requires -PreleaseVersionName"
+        }
+    }
 }
-
-fun computeVersionCode(): Int {
-    // major*10_000 + minor*1_000 + patch + small ABI offset
-    // Monotonic across branches; never decreasing.
-    return 20000 + 0 * 1000 + countCommitsSinceLastMinor()
-}
-
-fun countCommitsSinceLastMinor(): Int {
-    val proc = ProcessBuilder("git", "rev-list", "--count", "HEAD")
-        .redirectErrorStream(true).start()
-    return proc.inputStream.bufferedReader().readText().trim().toInt()
-}
+tasks.matching {
+    it.name in setOf("assembleRelease", "bundleRelease", "publishReleaseBundle")
+}.configureEach { dependsOn(validateReleaseIdentity) }
 ```
 
-Rules:
-- **`versionCode` must monotonically increase.** Play rejects backwards moves.
-- **`versionName` is the human-readable string** (semantic versioning works fine: `2.0.0`, `2.0.1`, `2.1.0`).
-- **Hotfixes increment patch.** `2.0.0` → `2.0.1`.
-- **Train releases increment minor.** `2.0.0` → `2.1.0`.
-- **Major bumps are deliberate.** Breaking API contract, full rewrite, paid upgrade.
+Local defaults are for development only. Wire the validator into **every** release packaging/publishing entry point in the consuming project; flavor-specific tasks need corresponding wiring in its convention plugin. The CI release workflow passes both allocated properties, while debug/test jobs need neither. Validation runs before the protected release tasks; it does not make the allocator or signing/upload process part of this snippet.
 
-Pin both in `build.gradle.kts`; compute deterministically. Commit count from `main` gives you a reliable monotonic patch.
+Persist an allocated version code with the candidate's Git SHA and artifact hash. Serialize allocation across train and hotfix branches, never reuse a published code, and consume the **same** values for rebuilds, tests and upload. A Git commit count is not globally monotonic across branches, shallow clones, rebases or cherry-picks. `major * factor + minor * factor + patch` can collide unless the ranges and allocator are proven.
+
+Version name is a product-readable string; version code controls update ordering. If older behavior must be restored, build it as a new candidate with a greater code and validate storage/API compatibility. Do not attempt to distribute a lower-code binary as an automatic downgrade.
 
 ---
+
+
 
 ## 3. Branching
 
@@ -143,18 +147,18 @@ jobs:
         with: { fetch-depth: 0 }
 
       - name: Require label
+        env:
+          LABELS_JSON: ${{ toJson(github.event.pull_request.labels.*.name) }}
         run: |
-          labels='${{ toJson(github.event.pull_request.labels.*.name) }}'
-          if ! echo "$labels" | jq -e 'contains(["release/cherry-pick"])'; then
+          if ! printf '%s' "$LABELS_JSON" | jq -e 'contains(["release/cherry-pick"])'; then
             echo "ERROR: PRs to release/* must have label 'release/cherry-pick'"
             echo "       cut a hotfix branch and cherry-pick from main"
             exit 1
           fi
 
-      - name: Require approval from releng
-        uses: hmarr/auto-approve-action@v4
-        if: contains(github.event.pull_request.labels.*.name, 'release/cherry-pick')
 ```
+
+The label check is metadata, not proof that commits were cherry-picked or reviewed. A bot auto-approval is not a release-owner approval. Require human review and verify the original fix/provenance under branch rules.
 
 Combined with GitHub branch protection:
 - Require status checks to pass.
@@ -227,7 +231,7 @@ The release halts (no further promotion) if:
 | Signal | Source |
 |---|---|
 | Crash-free users < threshold (e.g., 99.5%) | Firebase Crashlytics, Android Vitals |
-| ANR rate > threshold (e.g., 0.47%) | Android Vitals |
+| User-perceived ANR rate exceeds the declared DAU-based gate (Play overall threshold: 0.47%) | Android Vitals; see [SLO definitions](../observability/slos.md#mobile-implementation-android) |
 | Active P0 incident | PagerDuty / Opsgenie |
 | Compliance escalation (legal, security) | Manual flag in release tracking issue |
 | API breaking change on backend | Coordinated stop with backend team |
@@ -377,6 +381,12 @@ Conventional commit messages (`feat:`, `fix:`, `chore:`) let you generate cleane
 ---
 
 ## 13. Further Reading
+
+- [Gradle lazy configuration](https://docs.gradle.org/current/userguide/lazy_configuration.html) and [task dependencies](https://docs.gradle.org/current/dsl/org.gradle.api.Task.html).
+
+- [GitHub workflow permissions](https://docs.github.com/en/actions/tutorials/authenticate-with-github_token).
+
+- [Android version-code rules](https://developer.android.com/studio/publish/versioning).
 
 - [Google — Site Reliability Engineering, ch.27 (Release engineering)](https://sre.google/sre-book/release-engineering/) — principles.
 - [Triple-T Gradle Play Publisher](https://github.com/Triple-T/gradle-play-publisher) — Play release automation.

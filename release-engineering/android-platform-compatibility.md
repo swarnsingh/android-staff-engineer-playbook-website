@@ -4,7 +4,7 @@
 
 Android compatibility is an annual engineering program, not a late change to `targetSdk`. Four values have different jobs: `minSdk` defines the oldest runtime the app supports; `compileSdk` exposes APIs to the compiler; `targetSdk` opts the app into compatibility behaviors and is constrained by distribution policy; the device API level decides runtime availability. Updating one does not substitute for testing the others.
 
-As of July 29, 2026, Google Play states that beginning August 31, 2026, new phone/tablet apps and updates must target Android 16 (API 36) or higher, with different floors for Wear OS, Automotive OS, TV, and XR. Existing-app availability has a separate target requirement, and an extension path is described through November 1, 2026. These dates are deliberately recorded in the currency watchlist because the official Play page, not this paragraph, is authoritative when planning a release.
+Google Play states that since August 31, 2026, new phone/tablet apps and updates must target Android 16 (API 36) or higher, with different floors for Wear OS, Automotive OS, TV, and XR. Existing-app availability has a separate target requirement, and the published extension ended November 1, 2026. These dates are deliberately recorded in the currency watchlist because the official Play page, not this paragraph, is authoritative when planning a release.
 
 ## Annual Workflow
 

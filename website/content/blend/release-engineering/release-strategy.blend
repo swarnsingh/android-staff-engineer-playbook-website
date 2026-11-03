@@ -1,0 +1,13 @@
+<!-- Teaching layer over exact approved source fb8354e. -->
+<!-- @opening -->
+<p class="story-lead">The incident spans several installed versions. A halt limits one rollout, while the broken behavior may need a server fallback, a live disable or a new binary. The decision depends on what each lever can reach.</p>
+
+<!-- @before 9. Production Release Decision Tree :: guide -->
+### Choose the lever by affected population
+
+Separate impact severity, version correlation and available recovery paths. A halt bounds further exposure; a supported disable or server fallback can reach some installed users; a hotfix still needs distribution and adoption. Keep older-client API behavior compatible during recovery. [SRE release engineering](https://sre.google/sre-book/release-engineering/) and [Play rollout semantics](https://support.google.com/googleplay/android-developer/answer/6346149).
+
+<!-- @before 7. Release Roles :: staff -->
+### Give the decision an owner and a revisit trigger
+
+The chapter’s weekly train, percentages and hotfix timing are example team policy. Assign the release decision, incident command, evidence collection and communication explicitly. Record which users remain affected and what evidence will justify promotion, continued hold or another mitigation.

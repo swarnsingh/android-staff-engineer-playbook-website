@@ -7,7 +7,7 @@ import build
 ROOT=build.ROOT;REVIEW=ROOT/'website/reviews/completion'
 def digest(value):return hashlib.sha256(value.encode()).hexdigest()
 def fingerprints():
- files=['website/scripts/check_fundamentals_kotlin.py','website/tests/FundamentalsRegression.kt','website/content/engineering-fundamentals.json','website/content/corrections-engineering-fundamentals.json','website/content/corrections-computer-science.json','source-snapshot.json','website/content/observability.json','website/content/corrections-zz-observability-source-sync.json','website/scripts/check_scene_routes.py','website/scripts/scene_data.py','website/content/distributed-systems.json','website/content/security.json','website/content/backend-for-mobile.json','website/content/corrections-z-completion.json','website/reviews/completion/source-sync.json',
+ files=['website/scripts/check_fundamentals_kotlin.py','website/tests/FundamentalsRegression.kt','website/content/engineering-fundamentals.json','website/content/corrections-engineering-fundamentals.json','website/content/corrections-computer-science.json','source-snapshot.json','website/content/observability.json','website/content/corrections-zz-observability-source-sync.json','website/scripts/check_scene_routes.py','website/scripts/scene_data.py','website/content/distributed-systems.json','website/content/release-engineering.json','website/content/security.json','website/content/backend-for-mobile.json','website/content/corrections-z-completion.json','website/reviews/completion/source-sync.json',
   'website/scripts/build.py','website/scripts/diagram_models.py','website/scripts/figure_maps.py','website/sequence.css','website/scripts/check_completion.py','website/scripts/check_preservation.py',
   'website/scripts/generate_android_validation.py','website/scripts/browser_preservation.js',
   'website/tools/qa_fixture_runner.js','website/styles.css','website/blend.css',
@@ -100,6 +100,8 @@ def check(source_root=None):
  assert len(topic_pairs)==72 and all(c['ok'] for c in topic_pairs), 'Backend for Mobile original Q&A pairing failed'
  topic_pairs=[c for p in browser['pages'] if audit_tree(p['href'])=='security' for v in p['preservation']['views'] for c in v.get('pairChecks',[])]
  assert len(topic_pairs)==8 and all(c['ok'] for c in topic_pairs), 'Security original Q&A pairing failed'
+ topic_pairs=[c for p in browser['pages'] if audit_tree(p['href'])=='release-engineering' for v in p['preservation']['views'] for c in v.get('pairChecks',[])]
+ assert len(topic_pairs)==10 and all(c['ok'] for c in topic_pairs), 'Release Engineering original Q&A pairing failed'
  # Kotlin/Android and Fundamentals counts are fixed; newer trees add pairs that must all pass.
  assert len(core_pairs)==928 and len(fundamentals_pairs)==130 and all(c['ok'] for c in pairs),'Question/answer pairing failed'
  kotlin=json.loads((ux/'kotlin-validation.json').read_text())

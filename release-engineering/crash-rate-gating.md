@@ -12,8 +12,8 @@
 | **Crash-free sessions** | Firebase Crashlytics | > 99.7% |
 | **User-perceived ANR rate** | Android Vitals | < 0.47% of daily active users (Play overall threshold) |
 | **User-perceived crash rate** | Android Vitals, daily active users | Below the declared internal gate; Play overall threshold is 1.09% |
-| **Slow cold start rate** | Android Vitals | < 5% |
-| **Slow rendering rate** | Android Vitals | < 5% |
+| **Slow cold start rate** | Android Vitals | < 5% (example internal target) |
+| **Slow rendering rate** | Android Vitals | < 5% (example internal target) |
 
 Crashlytics crash-free users measures unique active installations without a fatal crash in the selected period. Play uses its own daily active-user population and user-perceived subset. Do not interchange the two. Targets here are example internal policy, not proof that every cohort is healthy.
 

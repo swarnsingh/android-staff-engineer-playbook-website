@@ -45,51 +45,46 @@ object Flags {
 ```kotlin
 @Composable
 fun VideoCallButton(...) {
-    val enabled by remember { derivedStateOf { Flags.killVideoCalls() } }
+    val enabled by repo.videoCallsEnabled.collectAsStateWithLifecycle()
     if (!enabled) return     // feature gone; no entry point
     Button(onClick = startVideoCall) { Text("Video Call") }
 }
 ```
 
-The naming convention is `kill_<feature>`. Server flipping to `false` means "kill the feature." Default `true` because if the flag service is down, you ship the feature (otherwise you'd accidentally kill on flag-fetch failure).
+Here `kill_<feature> = false` means disabled; this is a project naming convention. Choose a per-feature bootstrap and stale-policy response from risk. A refresh failure must not discard a previously accepted disabled state or automatically re-enable a vulnerable feature.
 
 ---
 
 ## 3. Live Apply Policy
 
-Most flags use "next session" apply policy (see `mobile-system-design/feature-flags-and-remote-config.md`). Kill switches are the exception: they MUST take effect now, not at next launch.
+Most flags use "next session" apply policy (see `mobile-system-design/feature-flags-and-remote-config.md`). Kill switches are the exception: they apply as soon as a validated policy is accepted, without waiting for the next session. Delivery can still be delayed.
 
 ```kotlin
-class FlagsRepository @Inject constructor(...) {
+enum class ApplyPolicy { LIVE, NEXT_SESSION }
+data class FlagDefinition(val default: Boolean, val policy: ApplyPolicy)
+data class AppliedFlags(val active: Map<String, Boolean>, val pending: Map<String, Boolean>)
 
-    private val flagSet = MutableStateFlow(FlagSet.EMPTY)
-
-    suspend fun refresh() {
-        val response = api.fetchFlags(context.snapshot())
-        store.write(FlagsSnapshot(response.flags, response.evaluatedAt))
-
-        val newSet = evaluator.evaluate(FlagsSnapshot(response.flags, response.evaluatedAt))
-
-        if (hasLiveFlagChange(flagSet.value, newSet)) {
-            flagSet.value = newSet       // immediate
-        } else {
-            pendingSnapshot.value = newSet  // wait for next session
-        }
+fun applySnapshot(
+    current: AppliedFlags,
+    incoming: Map<String, Boolean>,
+    definitions: Map<String, FlagDefinition>,
+): AppliedFlags {
+    val pending = definitions.mapValues { (key, definition) ->
+        incoming[key] ?: current.pending[key] ?: current.active[key] ?: definition.default
     }
-
-    private fun hasLiveFlagChange(old: FlagSet, new: FlagSet): Boolean {
-        return old.entries.any { (key, oldValue) ->
-            val newValue = new.entries[key]
-            val policy = flagDefinitions[key]?.applyPolicy
-            policy == ApplyPolicy.LIVE && oldValue != newValue
-        }
+    val active = definitions.mapValues { (key, definition) ->
+        if (definition.policy == ApplyPolicy.LIVE) pending.getValue(key)
+        else current.active[key] ?: definition.default
     }
+    return AppliedFlags(active, pending)
 }
 ```
 
-A kill switch flip triggers an immediate UI update via the StateFlow; any composable observing the flag re-runs.
+Missing keys preserve the last accepted pending value, falling back to the active value only when no pending value exists. This preserves both an already-disabled live switch and a next-session change waiting to apply. Defaults apply only to keys with no accepted value. Removing a key is not authorization to re-enable it; retirement needs an explicit versioned protocol. A fetch/validation failure leaves both maps unchanged. This pure boolean example handles newly introduced keys and applies **only** live-safe changes immediately. The repository must serialize refresh/commit, reject stale revisions and retired-account results, persist accepted snapshots atomically, then publish observable state. A live change must not swap the entire incoming snapshot into active state and activate next-session flags early.
 
 ---
+
+
 
 ## 4. Propagation Latency
 
@@ -100,41 +95,29 @@ flowchart LR
 
 A kill switch is an operational system: authorization, audit, propagation, safe client semantics, and recovery telemetry determine whether it works during an incident.
 
-How fast does a kill switch travel?
-
-| Step | Typical latency |
-|---|---|
-| Engineer flips flag in dashboard | 0s |
-| Flag service caches invalidated | 5-30s |
-| Next client polling fetch | 0-300s (poll interval) |
-| FCM "refresh flags" push (optional) | 2-10s |
-| Client refresh + UI update | < 1s |
-| **Total without FCM**: | up to 5 minutes |
-| **Total with FCM push**: | < 15 seconds |
-
-For true incident response, ship the FCM push path. Server flips the flag, then fires a `data` push to all devices:
-
-```json
-{ "type": "flags.refresh", "reason": "kill_video_calls" }
-```
+Measure propagation from control-plane publication to acknowledgement by eligible active clients. Polling cadence and push can improve the observed distribution, but neither bounds delivery to offline, suspended or force-stopped devices. Define freshness and fallback for clients that cannot fetch a policy. FCM is a best-effort invalidation hint, not a fifteen-second guarantee.
 
 ```kotlin
 class FlagRefreshFcmService : FirebaseMessagingService() {
-    @Inject lateinit var flagsRepository: FlagsRepository
-
     override fun onMessageReceived(message: RemoteMessage) {
         if (message.data["type"] == "flags.refresh") {
-            CoroutineScope(Dispatchers.IO).launch {
-                flagsRepository.refresh()
-            }
+            val work = OneTimeWorkRequestBuilder<RefreshFlagsWorker>()
+                .setConstraints(Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED).build())
+                .build()
+            WorkManager.getInstance(this).enqueueUniqueWork(
+                "refresh-flags", ExistingWorkPolicy.APPEND_OR_REPLACE, work
+            )
         }
     }
 }
 ```
 
-FCM data messages bypass the app's normal polling cadence. Even backgrounded devices wake to apply the flip (subject to OEM kill caveats; see `mobile-system-design/push-notifications.md`).
+The worker performs a bounded authenticated fetch and applies the repository contract. APPEND_OR_REPLACE queues a fetch after unfinished work, so a hint received during an older fetch is not discarded. If a prerequisite is already failed/cancelled when enqueueing, this policy starts a new chain. A predecessor that fails or is cancelled **after** a child is appended can still fail/cancel that child. The worker must record an expected fetch/validation failure as a completed refresh attempt (leaving accepted flags unchanged), so subsequent queued hints can run; use bounded retries rather than an indefinitely retrying predecessor. Unexpected failures still require recovery through freshness/lifecycle refresh and monitoring. Bound retries and monitor backlog; scheduling constraints, backoff and delivery still prevent an immediate-effect guarantee. Refresh again on relevant lifecycle/freshness transitions. Do not launch an unowned coroutine from `onMessageReceived` and assume it survives the callback or process.
 
 ---
+
+
 
 ## 5. Who Can Flip (Authorization)
 
@@ -149,7 +132,7 @@ flags:
     owners: ["video-calls@example.com"]
     required_approvers: ["releng@example.com"]   # second sign-off
     audit_required: true                          # log every flip
-    rollback_window: 24h                          # auto-revert if no human reapplies
+    review_after: 24h                            # reminder/escalation, not automatic re-enable
 ```
 
 A flag flip:
@@ -158,9 +141,9 @@ A flag flip:
 3. A second signer (releng on-call or feature owner) approves.
 4. Flag changes server-side, audit log records (who, when, why, approvers).
 5. Optional FCM push fires.
-6. Auto-revert if no one re-applies the flip within the rollback window.
+6. Escalate at the review deadline; re-enable only after the owner verifies mitigation and authorizes a staged recovery.
 
-The auto-revert is the most important rule: a kill switch that nobody re-validates becomes a forgotten dead feature.
+A review deadline prevents forgotten state. Automatically turning a vulnerable or crashing path back on after 24 hours can restart the incident.
 
 ---
 
@@ -177,7 +160,7 @@ val killVideoCalls = VariantFlag(
 
 @Composable
 fun VideoCallButton(...) {
-    val mode = Flags.killVideoCalls()
+    val mode by repo.videoCallsMode.collectAsStateWithLifecycle()
     val show = when (mode) {
         "disabled_globally" -> false
         "disabled_for_samsung_a" -> !DeviceInfo.isSamsungA()
@@ -207,18 +190,9 @@ fun handleVideoCallStart(...): Response {
 }
 ```
 
-```kotlin
-// Client handles the 503 gracefully
-suspend fun startVideoCall(): Result<...> {
-    return runCatching { api.startVideoCall(...) }
-        .onFailure { e ->
-            if (e is HttpException && e.code() == 503) {
-                analytics.log("video_call_unavailable_server_side")
-                showSnack("Video calling is temporarily unavailable. Please try again later.")
-            }
-        }
-}
-```
+The client maps the documented unavailable response to UI state and honors any retry policy. Preserve coroutine cancellation; `runCatching` around suspending work catches cancellation unless it is explicitly rethrown outside the result conversion.
+
+
 
 Server + client kill together. Client kill hides the entry point; server kill rejects any race-condition calls. Defense in depth.
 
@@ -289,19 +263,19 @@ analytics.log("flag_evaluated", mapOf(
 
 Server-side telemetry monitors:
 - **Kill switch flip frequency.** A flag flipped > 5x in a month signals an unstable feature.
-- **Auto-revert events.** A flag that auto-reverted without resolution is an incident.
+- **Overdue reviews and re-enable events.** Record owner approval and recovery evidence.
 - **Time from flag flip to deactivation rate plateau.** Did the kill actually take effect?
 
 ---
 
 ## 11. Common Pitfalls
 
-- **Kill switch default = `false`.** A flag-fetch failure now silently kills the feature for all users. Always default `true`.
-- **No FCM push for live flags.** A 5-minute propagation is too slow for incident response.
+- **One universal default.** Define bootstrap and stale-policy behavior per risk; preserve the last accepted emergency disablement when a fetch fails.
+- **Assuming FCM delivery is bounded.** Use push to improve active-client response, plus freshness/lifecycle reconciliation and server enforcement.
 - **Flipping experiments and kill switches through the same path.** Different stakes, different approvals.
-- **No auto-revert.** Kill switches become "abandoned switches" no one knows about.
+- **No review deadline.** Assign an owner and escalation; do not automatically reactivate a dangerous path.
 - **Forgetting client-side kill = no server protection.** A racing client still calls the endpoint. Server-side kill too.
-- **Kill switch around a feature that's deep in code.** If kill = compile-time `#if`, the user must update. If kill = runtime check, the user gets it instantly. Always runtime.
+- **Kill switch around a feature that's deep in code.** If kill = compile-time `#if`, the user must update. A runtime check applies once accepted configuration reaches that code path; existing work needs its own cancellation or safe-boundary policy.
 - **No audit log.** "Who killed video calls last night?" answerable in 30 seconds, not 3 hours.
 - **Engineer-only kill authority.** Releng / on-call needs to be able to kill features they didn't write at 3 AM.
 - **Killing without a path to re-enable.** Once killed, the rollout to re-enable should be staged: 1% → 10% → 100% to confirm the fix.
@@ -312,6 +286,68 @@ Server-side telemetry monitors:
 
 ## 12. Testing
 
+The pure refresh boundary retains both maps on transport failure. `fetchValidated` must return an accepted, validated snapshot or fail without committing it. Serialization, revision/account checks and atomic persistence remain repository responsibilities; this helper does not replace them. Unexpected errors and cancellation propagate rather than becoming a new accepted snapshot.
+
+```kotlin
+// Imports: java.io.IOException. The caller serializes refresh and commit.
+suspend fun refreshSnapshot(
+    current: AppliedFlags,
+    definitions: Map<String, FlagDefinition>,
+    fetchValidated: suspend () -> Map<String, Boolean>,
+): AppliedFlags {
+    val incoming = try {
+        fetchValidated()
+    } catch (failure: IOException) {
+        return current
+    }
+    return applySnapshot(current, incoming, definitions)
+}
+```
+
+These regression tests start with accepted state, not only bootstrap defaults:
+
+```kotlin
+@Test
+fun killSwitch_failedFetch_keepsDisabledAndPendingState() = runTest {
+    val definitions = mapOf(
+        "kill_video_calls" to FlagDefinition(true, ApplyPolicy.LIVE),
+        "next" to FlagDefinition(false, ApplyPolicy.NEXT_SESSION),
+    )
+    val disabled = AppliedFlags(
+        active = mapOf("kill_video_calls" to false, "next" to false),
+        pending = mapOf("kill_video_calls" to false, "next" to true),
+    )
+    var attempted = false
+    val after = refreshSnapshot(disabled, definitions) {
+        attempted = true
+        throw IOException("offline")
+    }
+    assertTrue(attempted)
+    assertSame(disabled, after)
+    assertFalse(after.active.getValue("kill_video_calls"))
+    assertTrue(after.pending.getValue("next"))
+}
+
+@Test
+fun killSwitch_omittedKeys_keepDisabledAndPendingValues() {
+    val definitions = mapOf(
+        "kill_video_calls" to FlagDefinition(true, ApplyPolicy.LIVE),
+        "next" to FlagDefinition(false, ApplyPolicy.NEXT_SESSION),
+    )
+    val disabled = AppliedFlags(
+        active = mapOf("kill_video_calls" to false, "next" to false),
+        pending = mapOf("kill_video_calls" to false, "next" to true),
+    )
+    val after = applySnapshot(disabled, emptyMap(), definitions)
+    assertFalse(after.active.getValue("kill_video_calls"))
+    assertFalse(after.pending.getValue("kill_video_calls"))
+    assertFalse(after.active.getValue("next"))
+    assertTrue(after.pending.getValue("next"))
+}
+```
+
+The following UI tests are separate integration examples. The enabled bootstrap fallback is this feature's declared risk policy, not a universal kill-switch default.
+
 ```kotlin
 @Test
 fun killSwitch_disabled_hidesFeature() = runTest {
@@ -321,7 +357,7 @@ fun killSwitch_disabled_hidesFeature() = runTest {
 }
 
 @Test
-fun killSwitch_flagFetchFails_defaultsToEnabled() = runTest {
+fun killSwitch_noAcceptedSnapshot_usesDeclaredEnabledDefault() = runTest {
     val flagsRepo = FailingFlagsRepository()
     composeRule.setContent { VideoCallButton(repo = flagsRepo) }
     composeRule.onNodeWithText("Video Call").assertExists()
@@ -334,6 +370,12 @@ End-to-end: flip a kill switch in the staging flag service; assert the productio
 
 ## 13. Further Reading
 
+- [WorkManager unique-work policies](https://developer.android.com/reference/androidx/work/ExistingWorkPolicy) and [constraints](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work).
+
+- [Unique WorkManager work](https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/manage-work).
+
+- [FCM processing and delivery limits](https://firebase.google.com/docs/cloud-messaging/android/receive).
+
 - [Martin Fowler — Feature Toggles taxonomy](https://martinfowler.com/articles/feature-toggles.html) — categorization: release, ops, experiment, permission.
 - [GrowthBook](https://www.growthbook.io/) — open-source flag platform with kill-switch path.
 - [LaunchDarkly — Kill switches](https://launchdarkly.com/blog/) — vendor patterns.
@@ -342,4 +384,4 @@ End-to-end: flip a kill switch in the staging flag service; assert the productio
 
 ---
 
-> **In short:** kill switches default-enabled, live-apply policy, FCM-driven refresh for < 15s propagation, gated approval, audit + auto-revert, server + client kill in tandem, cohort-specific where possible. Build them before you need them.
+> **Operational contract:** per-risk defaults, observable live-safe application, best-effort push plus reconciliation, approval and review deadlines, and server enforcement for dangerous actions.

@@ -33,6 +33,7 @@ TREES = {
     'distributed-systems': {'title': 'Distributed Systems', 'phases': None},
     'backend-for-mobile': {'title': 'Backend for Mobile', 'phases': None},
     'security': {'title': 'Security', 'phases': None},
+    'release-engineering': {'title': 'Release Engineering', 'phases': None},
 }
 
 
@@ -58,6 +59,10 @@ def phases(slug):
         sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
         paths=re.findall(r'\]\((security/[^)#]+\.md)\)',sequence)
         return [('Phase 1 — Privacy and policy context',paths[:2]),('Phase 2 — Identity and key custody',paths[2:5]),('Phase 3 — Transport and device trust',paths[5:7])]
+    if slug == 'release-engineering':
+        sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
+        paths=re.findall(r'\]\((release-engineering/[^)#]+\.md)\)',sequence)
+        return [('Phase 1 — Artifact trust and automation',paths[:2]),('Phase 2 — Distribution and platform compatibility',paths[2:7]),('Phase 3 — Exposure and recovery',paths[7:11])]
     if slug == 'observability':
         sequence=(ROOT/f'{slug}.md').read_text().split('## Guided Reading Sequence',1)[1].split('**Next:**',1)[0]
         paths=re.findall(r'\]\((observability/[^)#]+\.md)\)',sequence)
@@ -660,7 +665,7 @@ INTRO = {
 
 def intro(path):
     extras={}
-    for name in ('engineering-fundamentals','computer-science','platform-engineering','mobile-system-design','observability','distributed-systems','security','backend-for-mobile'):
+    for name in ('engineering-fundamentals','computer-science','platform-engineering','mobile-system-design','observability','distributed-systems','release-engineering','security','backend-for-mobile'):
         extras.update(json.loads((WEB/f'content/{name}.json').read_text()))
     return extras.get(path) or INTRO.get(path) or INTRO[Path(path).stem]
 

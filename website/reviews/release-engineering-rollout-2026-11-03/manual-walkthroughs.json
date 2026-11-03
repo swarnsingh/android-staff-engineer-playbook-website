@@ -1,0 +1,6046 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "name": "release-engineering/crash-rate-gating/ has two comparable runs",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ starts with a readable precondition before packet travel",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 375 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 375 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 375 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 375 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 375 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 375 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ 375 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1024 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1024 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1024 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1024 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1024 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1024 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ 1024 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1280 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1280 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold 1280 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ hold shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1280 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1280 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero 1280 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ zero shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ 1280 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ comparison retains the selected step",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ 320px has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/crash-rate-gating/ static transcript retains every run",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ has two comparable runs",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ starts with a readable precondition before packet travel",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 375 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 375 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 375 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 375 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 375 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 375 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ 375 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1024 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1024 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1024 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1024 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1024 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1024 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ 1024 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1280 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1280 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped 1280 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ scoped shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1280 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1280 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all 1280 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ all shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ 1280 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ comparison retains the selected step",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ 320px has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/kill-switches/ static transcript retains every run",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ has two comparable runs",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ starts with a readable precondition before packet travel",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ animates a declared transfer",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 375 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 375 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 375 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 375 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 375 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 375 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 375 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 375 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 375 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 375 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 375 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 375 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 375 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 375 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 375 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 375 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 375 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 375 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 375 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 375 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 375 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ 375 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1024 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1024 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1024 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1024 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1024 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1024 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1024 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1024 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1024 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1024 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1024 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1024 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1024 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1024 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1024 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1024 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1024 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1024 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1024 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1024 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1024 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ 1024 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1280 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1280 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate 1280 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ mitigate shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1280 step 1 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1280 step 1 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1280 step 1 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1280 step 2 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1280 step 2 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1280 step 2 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1280 step 3 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1280 step 3 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1280 step 3 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1280 step 4 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1280 step 4 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1280 step 4 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1280 step 5 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1280 step 5 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1280 step 5 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1280 step 6 fits with stable focus",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1280 step 6 labels do not overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt 1280 step 6 text stays in its drawing without title/status overlap",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ halt shows the intended final outcome",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ 1280 has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ comparison retains the selected step",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ 320px has no page overflow",
+      "ok": true
+    },
+    {
+      "name": "release-engineering/staged-rollouts/ static transcript retains every run",
+      "ok": true
+    },
+    {
+      "name": "release-engineering includes the expected walkthroughs",
+      "ok": true
+    },
+    {
+      "name": "release-engineering has no application console or runtime errors",
+      "ok": true
+    }
+  ],
+  "geometry": [
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "hold",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 237.09661865234375,
+          "bottom": 300.77105712890625,
+          "text": "Gaterequires evidence"
+        },
+        {
+          "top": 357.37054443359375,
+          "bottom": 421.04498291015625,
+          "text": "Metricsnot queried"
+        },
+        {
+          "top": 477.6444396972656,
+          "bottom": 541.31884765625,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 588.46875,
+          "bottom": 696.46875,
+          "text": "Step 1 of 6The candidate is at an illustrative 1% fraction. The policy requires fresh, sufficient cohort evidence."
+        },
+        {
+          "top": 706.46875,
+          "bottom": 812.46875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "hold",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 237.09661865234375,
+          "bottom": 300.77105712890625,
+          "text": "Gaterequires evidence"
+        },
+        {
+          "top": 357.37054443359375,
+          "bottom": 421.04498291015625,
+          "text": "Metricsquery pending"
+        },
+        {
+          "top": 477.6444396972656,
+          "bottom": 541.31884765625,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 588.46875,
+          "bottom": 670.46875,
+          "text": "Step 2 of 6The gate queries the required metric window and cohort."
+        },
+        {
+          "top": 680.46875,
+          "bottom": 786.46875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "hold",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 229.09661865234375,
+          "bottom": 292.77105712890625,
+          "text": "Gaterequires evidence"
+        },
+        {
+          "top": 349.37054443359375,
+          "bottom": 413.04498291015625,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 469.6444396972656,
+          "bottom": 533.31884765625,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 580.46875,
+          "bottom": 688.46875,
+          "text": "Step 3 of 6The required evidence is missing or stale. No valid zero-rate observation was returned."
+        },
+        {
+          "top": 698.46875,
+          "bottom": 804.46875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "hold",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 229.09661865234375,
+          "bottom": 292.77105712890625,
+          "text": "GateHOLD; unknown"
+        },
+        {
+          "top": 349.37054443359375,
+          "bottom": 413.04498291015625,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 469.6444396972656,
+          "bottom": 533.31884765625,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 580.46875,
+          "bottom": 662.46875,
+          "text": "Step 4 of 6The gate holds exposure at 1% and records the missing evidence."
+        },
+        {
+          "top": 672.46875,
+          "bottom": 778.46875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "hold",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 229.09661865234375,
+          "bottom": 292.77105712890625,
+          "text": "GateHOLD; unknown"
+        },
+        {
+          "top": 349.37054443359375,
+          "bottom": 413.04498291015625,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 469.6444396972656,
+          "bottom": 533.31884765625,
+          "text": "Play track1%; held"
+        },
+        {
+          "top": 580.46875,
+          "bottom": 662.46875,
+          "text": "Step 5 of 6No promotion is issued; the current illustrative fraction remains 1%."
+        },
+        {
+          "top": 672.46875,
+          "bottom": 778.46875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "hold",
+      "width": 375,
+      "height": 812,
+      "step": 6,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 229.09661865234375,
+          "bottom": 292.77105712890625,
+          "text": "GateHOLD; unknown"
+        },
+        {
+          "top": 349.37054443359375,
+          "bottom": 413.04498291015625,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 469.6444396972656,
+          "bottom": 533.31884765625,
+          "text": "Play track1%; held"
+        },
+        {
+          "top": 580.46875,
+          "bottom": 688.46875,
+          "text": "Step 6 of 6Restore evidence quality and reevaluate the policy; a hold is not a healthy-release verdict."
+        },
+        {
+          "top": 698.46875,
+          "bottom": 804.46875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "zero",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 237.09661865234375,
+          "bottom": 300.77105712890625,
+          "text": "Gaterequires evidence"
+        },
+        {
+          "top": 357.37054443359375,
+          "bottom": 421.04498291015625,
+          "text": "Metricsnot queried"
+        },
+        {
+          "top": 477.6444396972656,
+          "bottom": 541.31884765625,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 588.46875,
+          "bottom": 696.46875,
+          "text": "Step 1 of 6The candidate is at an illustrative 1% fraction. The policy requires fresh, sufficient cohort evidence."
+        },
+        {
+          "top": 706.46875,
+          "bottom": 812.46875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "zero",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 237.09661865234375,
+          "bottom": 300.77105712890625,
+          "text": "Gaterequires evidence"
+        },
+        {
+          "top": 357.37054443359375,
+          "bottom": 421.04498291015625,
+          "text": "Metricsquery pending"
+        },
+        {
+          "top": 477.6444396972656,
+          "bottom": 541.31884765625,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 588.46875,
+          "bottom": 670.46875,
+          "text": "Step 2 of 6The gate queries the required metric window and cohort."
+        },
+        {
+          "top": 680.46875,
+          "bottom": 786.46875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "zero",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 229.09661865234375,
+          "bottom": 292.77105712890625,
+          "text": "Gaterequires evidence"
+        },
+        {
+          "top": 349.37054443359375,
+          "bottom": 413.04498291015625,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 469.6444396972656,
+          "bottom": 533.31884765625,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 580.46875,
+          "bottom": 688.46875,
+          "text": "Step 3 of 6The required evidence is missing or stale. No valid zero-rate observation was returned."
+        },
+        {
+          "top": 698.46875,
+          "bottom": 804.46875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "zero",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 229.09661865234375,
+          "bottom": 292.77105712890625,
+          "text": "Gateunknown → zero"
+        },
+        {
+          "top": 349.37054443359375,
+          "bottom": 413.04498291015625,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 469.6444396972656,
+          "bottom": 533.31884765625,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 580.46875,
+          "bottom": 662.46875,
+          "text": "Step 4 of 6An unsafe fallback substitutes zero for unknown and authorizes expansion."
+        },
+        {
+          "top": 672.46875,
+          "bottom": 778.46875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "zero",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 229.09661865234375,
+          "bottom": 292.77105712890625,
+          "text": "Gateunknown → zero"
+        },
+        {
+          "top": 349.37054443359375,
+          "bottom": 413.04498291015625,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 469.6444396972656,
+          "bottom": 533.31884765625,
+          "text": "Play track5%; unproven"
+        },
+        {
+          "top": 580.46875,
+          "bottom": 662.46875,
+          "text": "Step 5 of 6The gate requests an illustrative 5% fraction without the required evidence."
+        },
+        {
+          "top": 672.46875,
+          "bottom": 778.46875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "zero",
+      "width": 375,
+      "height": 812,
+      "step": 6,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 203.09661865234375,
+          "bottom": 266.77105712890625,
+          "text": "Gateunknown → zero"
+        },
+        {
+          "top": 323.37054443359375,
+          "bottom": 387.04498291015625,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 443.6444396972656,
+          "bottom": 507.3188781738281,
+          "text": "Play track5%; unproven"
+        },
+        {
+          "top": 554.46875,
+          "bottom": 688.46875,
+          "text": "Step 6 of 6The decision expanded exposure while its prerequisite was unknown. A successful API request would not repair that reasoning."
+        },
+        {
+          "top": 698.46875,
+          "bottom": 804.46875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "hold",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 305.296875,
+          "bottom": 530.8968505859375,
+          "text": "Gaterequires evidence"
+        },
+        {
+          "top": 305.296875,
+          "bottom": 530.8968505859375,
+          "text": "Metricsnot queried"
+        },
+        {
+          "top": 305.296875,
+          "bottom": 530.8968505859375,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 658.296875,
+          "bottom": 714.296875,
+          "text": "Step 1 of 6The candidate is at an illustrative 1% fraction. The policy requires fresh, sufficient cohort evidence."
+        },
+        {
+          "top": 724.296875,
+          "bottom": 768.296875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "hold",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Gaterequires evidence"
+        },
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Metricsquery pending"
+        },
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 650.296875,
+          "bottom": 706.296875,
+          "text": "Step 2 of 6The gate queries the required metric window and cohort."
+        },
+        {
+          "top": 716.296875,
+          "bottom": 760.296875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "hold",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Gaterequires evidence"
+        },
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 650.296875,
+          "bottom": 706.296875,
+          "text": "Step 3 of 6The required evidence is missing or stale. No valid zero-rate observation was returned."
+        },
+        {
+          "top": 716.296875,
+          "bottom": 760.296875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "hold",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "GateHOLD; unknown"
+        },
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 650.296875,
+          "bottom": 706.296875,
+          "text": "Step 4 of 6The gate holds exposure at 1% and records the missing evidence."
+        },
+        {
+          "top": 716.296875,
+          "bottom": 760.296875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "hold",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "GateHOLD; unknown"
+        },
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Play track1%; held"
+        },
+        {
+          "top": 650.296875,
+          "bottom": 706.296875,
+          "text": "Step 5 of 6No promotion is issued; the current illustrative fraction remains 1%."
+        },
+        {
+          "top": 716.296875,
+          "bottom": 760.296875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "hold",
+      "width": 1024,
+      "height": 768,
+      "step": 6,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "GateHOLD; unknown"
+        },
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Play track1%; held"
+        },
+        {
+          "top": 650.296875,
+          "bottom": 706.296875,
+          "text": "Step 6 of 6Restore evidence quality and reevaluate the policy; a hold is not a healthy-release verdict."
+        },
+        {
+          "top": 716.296875,
+          "bottom": 760.296875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "zero",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 305.296875,
+          "bottom": 530.8968505859375,
+          "text": "Gaterequires evidence"
+        },
+        {
+          "top": 305.296875,
+          "bottom": 530.8968505859375,
+          "text": "Metricsnot queried"
+        },
+        {
+          "top": 305.296875,
+          "bottom": 530.8968505859375,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 658.296875,
+          "bottom": 714.296875,
+          "text": "Step 1 of 6The candidate is at an illustrative 1% fraction. The policy requires fresh, sufficient cohort evidence."
+        },
+        {
+          "top": 724.296875,
+          "bottom": 768.296875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "zero",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Gaterequires evidence"
+        },
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Metricsquery pending"
+        },
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 650.296875,
+          "bottom": 706.296875,
+          "text": "Step 2 of 6The gate queries the required metric window and cohort."
+        },
+        {
+          "top": 716.296875,
+          "bottom": 760.296875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "zero",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Gaterequires evidence"
+        },
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 650.296875,
+          "bottom": 706.296875,
+          "text": "Step 3 of 6The required evidence is missing or stale. No valid zero-rate observation was returned."
+        },
+        {
+          "top": 716.296875,
+          "bottom": 760.296875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "zero",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Gateunknown → zero"
+        },
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 650.296875,
+          "bottom": 706.296875,
+          "text": "Step 4 of 6An unsafe fallback substitutes zero for unknown and authorizes expansion."
+        },
+        {
+          "top": 716.296875,
+          "bottom": 760.296875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "zero",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Gateunknown → zero"
+        },
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 297.296875,
+          "bottom": 522.8968505859375,
+          "text": "Play track5%; unproven"
+        },
+        {
+          "top": 650.296875,
+          "bottom": 706.296875,
+          "text": "Step 5 of 6The gate requests an illustrative 5% fraction without the required evidence."
+        },
+        {
+          "top": 716.296875,
+          "bottom": 760.296875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "zero",
+      "width": 1024,
+      "height": 768,
+      "step": 6,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 271.296875,
+          "bottom": 496.8968811035156,
+          "text": "Gateunknown → zero"
+        },
+        {
+          "top": 271.296875,
+          "bottom": 496.8968811035156,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 271.296875,
+          "bottom": 496.8968811035156,
+          "text": "Play track5%; unproven"
+        },
+        {
+          "top": 624.296875,
+          "bottom": 706.296875,
+          "text": "Step 6 of 6The decision expanded exposure while its prerequisite was unknown. A successful API request would not repair that reasoning."
+        },
+        {
+          "top": 716.296875,
+          "bottom": 760.296875,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "hold",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 437.390625,
+          "bottom": 662.9906005859375,
+          "text": "Gaterequires evidence"
+        },
+        {
+          "top": 437.390625,
+          "bottom": 662.9906005859375,
+          "text": "Metricsnot queried"
+        },
+        {
+          "top": 437.390625,
+          "bottom": 662.9906005859375,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 790.390625,
+          "bottom": 846.390625,
+          "text": "Step 1 of 6The candidate is at an illustrative 1% fraction. The policy requires fresh, sufficient cohort evidence."
+        },
+        {
+          "top": 856.390625,
+          "bottom": 900.390625,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "hold",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Gaterequires evidence"
+        },
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Metricsquery pending"
+        },
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 782.390625,
+          "bottom": 838.390625,
+          "text": "Step 2 of 6The gate queries the required metric window and cohort."
+        },
+        {
+          "top": 848.390625,
+          "bottom": 892.390625,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "hold",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Gaterequires evidence"
+        },
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 782.390625,
+          "bottom": 838.390625,
+          "text": "Step 3 of 6The required evidence is missing or stale. No valid zero-rate observation was returned."
+        },
+        {
+          "top": 848.390625,
+          "bottom": 892.390625,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "hold",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "GateHOLD; unknown"
+        },
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 782.390625,
+          "bottom": 838.390625,
+          "text": "Step 4 of 6The gate holds exposure at 1% and records the missing evidence."
+        },
+        {
+          "top": 848.390625,
+          "bottom": 892.390625,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "hold",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "GateHOLD; unknown"
+        },
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Play track1%; held"
+        },
+        {
+          "top": 782.390625,
+          "bottom": 838.390625,
+          "text": "Step 5 of 6No promotion is issued; the current illustrative fraction remains 1%."
+        },
+        {
+          "top": 848.390625,
+          "bottom": 892.390625,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "hold",
+      "width": 1280,
+      "height": 900,
+      "step": 6,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "GateHOLD; unknown"
+        },
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Play track1%; held"
+        },
+        {
+          "top": 782.390625,
+          "bottom": 838.390625,
+          "text": "Step 6 of 6Restore evidence quality and reevaluate the policy; a hold is not a healthy-release verdict."
+        },
+        {
+          "top": 848.390625,
+          "bottom": 892.390625,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "zero",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 437.390625,
+          "bottom": 662.9906005859375,
+          "text": "Gaterequires evidence"
+        },
+        {
+          "top": 437.390625,
+          "bottom": 662.9906005859375,
+          "text": "Metricsnot queried"
+        },
+        {
+          "top": 437.390625,
+          "bottom": 662.9906005859375,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 790.390625,
+          "bottom": 846.390625,
+          "text": "Step 1 of 6The candidate is at an illustrative 1% fraction. The policy requires fresh, sufficient cohort evidence."
+        },
+        {
+          "top": 856.390625,
+          "bottom": 900.390625,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "zero",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Gaterequires evidence"
+        },
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Metricsquery pending"
+        },
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 782.390625,
+          "bottom": 838.390625,
+          "text": "Step 2 of 6The gate queries the required metric window and cohort."
+        },
+        {
+          "top": 848.390625,
+          "bottom": 892.390625,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "zero",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Gaterequires evidence"
+        },
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 782.390625,
+          "bottom": 838.390625,
+          "text": "Step 3 of 6The required evidence is missing or stale. No valid zero-rate observation was returned."
+        },
+        {
+          "top": 848.390625,
+          "bottom": 892.390625,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "zero",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Gateunknown → zero"
+        },
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Play track1% candidate"
+        },
+        {
+          "top": 782.390625,
+          "bottom": 838.390625,
+          "text": "Step 4 of 6An unsafe fallback substitutes zero for unknown and authorizes expansion."
+        },
+        {
+          "top": 848.390625,
+          "bottom": 892.390625,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "zero",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Gateunknown → zero"
+        },
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 429.390625,
+          "bottom": 654.9906005859375,
+          "text": "Play track5%; unproven"
+        },
+        {
+          "top": 782.390625,
+          "bottom": 838.390625,
+          "text": "Step 5 of 6The gate requests an illustrative 5% fraction without the required evidence."
+        },
+        {
+          "top": 848.390625,
+          "bottom": 892.390625,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/crash-rate-gating/",
+      "mode": "zero",
+      "width": 1280,
+      "height": 900,
+      "step": 6,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 403.390625,
+          "bottom": 628.9906005859375,
+          "text": "Gateunknown → zero"
+        },
+        {
+          "top": 403.390625,
+          "bottom": 628.9906005859375,
+          "text": "Metricsevidence unknown"
+        },
+        {
+          "top": 403.390625,
+          "bottom": 628.9906005859375,
+          "text": "Play track5%; unproven"
+        },
+        {
+          "top": 756.390625,
+          "bottom": 838.390625,
+          "text": "Step 6 of 6The decision expanded exposure while its prerequisite was unknown. A successful API request would not repair that reasoning."
+        },
+        {
+          "top": 848.390625,
+          "bottom": 892.390625,
+          "text": "1 / 6 · Window2 / 6 · Query3 / 6 · Unknown4 / 6 · Decision5 / 6 · Exposure6 / 6 · RevisitPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "scoped",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.58099365234375,
+          "bottom": 274.25543212890625,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 330.85491943359375,
+          "bottom": 394.52935791015625,
+          "text": "App policylive on; session old"
+        },
+        {
+          "top": 451.1288146972656,
+          "bottom": 514.80322265625,
+          "text": "Workerrunning"
+        },
+        {
+          "top": 561.953125,
+          "bottom": 695.953125,
+          "text": "Step 1 of 6The current session uses next-session value old. A worker is already running under its documented checkpoint policy."
+        },
+        {
+          "top": 705.953125,
+          "bottom": 811.953125,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "scoped",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.58099365234375,
+          "bottom": 274.25543212890625,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 330.85491943359375,
+          "bottom": 394.52935791015625,
+          "text": "App policypending revision"
+        },
+        {
+          "top": 451.1288146972656,
+          "bottom": 514.80322265625,
+          "text": "Workerrunning"
+        },
+        {
+          "top": 561.953125,
+          "bottom": 669.953125,
+          "text": "Step 2 of 6A fetched revision carries live=false and next-session=new; it is validated before use."
+        },
+        {
+          "top": 679.953125,
+          "bottom": 785.953125,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "scoped",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.58099365234375,
+          "bottom": 274.25543212890625,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 330.85491943359375,
+          "bottom": 394.52935791015625,
+          "text": "App policylive off; session old"
+        },
+        {
+          "top": 451.1288146972656,
+          "bottom": 514.80322265625,
+          "text": "Workerrunning"
+        },
+        {
+          "top": 561.953125,
+          "bottom": 669.953125,
+          "text": "Step 3 of 6The application policy applies the live-safe disable but retains the current session value."
+        },
+        {
+          "top": 679.953125,
+          "bottom": 785.953125,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "scoped",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.58099365234375,
+          "bottom": 274.25543212890625,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 330.85491943359375,
+          "bottom": 394.52935791015625,
+          "text": "App policylive off; session old"
+        },
+        {
+          "top": 451.1288146972656,
+          "bottom": 514.80322265625,
+          "text": "Workercheckpoint; no new starts"
+        },
+        {
+          "top": 561.953125,
+          "bottom": 669.953125,
+          "text": "Step 4 of 6The worker observes the supported disable at its safe checkpoint; new starts are blocked."
+        },
+        {
+          "top": 679.953125,
+          "bottom": 785.953125,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "scoped",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.58099365234375,
+          "bottom": 274.25543212890625,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 330.85491943359375,
+          "bottom": 394.52935791015625,
+          "text": "App policylive off; session old"
+        },
+        {
+          "top": 451.1288146972656,
+          "bottom": 514.80322265625,
+          "text": "Workercheckpoint; no new starts"
+        },
+        {
+          "top": 561.953125,
+          "bottom": 643.953125,
+          "text": "Step 5 of 6The pending next-session value remains pending until a new session."
+        },
+        {
+          "top": 653.953125,
+          "bottom": 759.953125,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "scoped",
+      "width": 375,
+      "height": 812,
+      "step": 6,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.58099365234375,
+          "bottom": 274.25543212890625,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 330.85491943359375,
+          "bottom": 394.52935791015625,
+          "text": "App policylive off; session old"
+        },
+        {
+          "top": 451.1288146972656,
+          "bottom": 514.80322265625,
+          "text": "Workercheckpoint; no new starts"
+        },
+        {
+          "top": 561.953125,
+          "bottom": 669.953125,
+          "text": "Step 6 of 6This is the chapter’s custom apply policy. Already committed external work is not undone by disabling a flag."
+        },
+        {
+          "top": 679.953125,
+          "bottom": 785.953125,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "all",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.58099365234375,
+          "bottom": 274.25543212890625,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 330.85491943359375,
+          "bottom": 394.52935791015625,
+          "text": "App policylive on; session old"
+        },
+        {
+          "top": 451.1288146972656,
+          "bottom": 514.80322265625,
+          "text": "Workerrunning"
+        },
+        {
+          "top": 561.953125,
+          "bottom": 695.953125,
+          "text": "Step 1 of 6The current session uses next-session value old. A worker is already running under its documented checkpoint policy."
+        },
+        {
+          "top": 705.953125,
+          "bottom": 811.953125,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "all",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.58099365234375,
+          "bottom": 274.25543212890625,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 330.85491943359375,
+          "bottom": 394.52935791015625,
+          "text": "App policypending revision"
+        },
+        {
+          "top": 451.1288146972656,
+          "bottom": 514.80322265625,
+          "text": "Workerrunning"
+        },
+        {
+          "top": 561.953125,
+          "bottom": 669.953125,
+          "text": "Step 2 of 6A fetched revision carries live=false and next-session=new; it is validated before use."
+        },
+        {
+          "top": 679.953125,
+          "bottom": 785.953125,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "all",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.58099365234375,
+          "bottom": 274.25543212890625,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 330.85491943359375,
+          "bottom": 394.52935791015625,
+          "text": "App policylive off; session NEW"
+        },
+        {
+          "top": 451.1288146972656,
+          "bottom": 514.80322265625,
+          "text": "Workerrunning"
+        },
+        {
+          "top": 561.953125,
+          "bottom": 669.953125,
+          "text": "Step 3 of 6Whole-snapshot activation also changes the current session value before its intended boundary."
+        },
+        {
+          "top": 679.953125,
+          "bottom": 785.953125,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "all",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 210.58099365234375,
+          "bottom": 274.25543212890625,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 330.85491943359375,
+          "bottom": 394.52935791015625,
+          "text": "App policylive off; session NEW"
+        },
+        {
+          "top": 451.1288146972656,
+          "bottom": 514.80322265625,
+          "text": "Workercheckpoint; no new starts"
+        },
+        {
+          "top": 561.953125,
+          "bottom": 669.953125,
+          "text": "Step 4 of 6The worker observes the supported disable at its safe checkpoint; new starts are blocked."
+        },
+        {
+          "top": 679.953125,
+          "bottom": 785.953125,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "all",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 202.58099365234375,
+          "bottom": 266.25543212890625,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 322.85491943359375,
+          "bottom": 386.52935791015625,
+          "text": "App policylive off; session NEW"
+        },
+        {
+          "top": 443.1288146972656,
+          "bottom": 506.8032531738281,
+          "text": "Workercheckpoint; no new starts"
+        },
+        {
+          "top": 553.953125,
+          "bottom": 687.953125,
+          "text": "Step 5 of 6The next-session value was applied early. Fetching a valid revision did not establish that every value was live-safe."
+        },
+        {
+          "top": 697.953125,
+          "bottom": 803.953125,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "all",
+      "width": 375,
+      "height": 812,
+      "step": 6,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 202.58099365234375,
+          "bottom": 266.25543212890625,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 322.85491943359375,
+          "bottom": 386.52935791015625,
+          "text": "App policylive off; session NEW"
+        },
+        {
+          "top": 443.1288146972656,
+          "bottom": 506.8032531738281,
+          "text": "Workercheckpoint; no new starts"
+        },
+        {
+          "top": 553.953125,
+          "bottom": 661.953125,
+          "text": "Step 6 of 6This is the chapter’s custom apply policy. Already committed external work is not undone by disabling a flag."
+        },
+        {
+          "top": 671.953125,
+          "bottom": 777.953125,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "scoped",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 304.875,
+          "bottom": 530.4749755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 304.875,
+          "bottom": 530.4749755859375,
+          "text": "App policylive on; session old"
+        },
+        {
+          "top": 304.875,
+          "bottom": 530.4749755859375,
+          "text": "Workerrunning"
+        },
+        {
+          "top": 657.875,
+          "bottom": 713.875,
+          "text": "Step 1 of 6The current session uses next-session value old. A worker is already running under its documented checkpoint policy."
+        },
+        {
+          "top": 723.875,
+          "bottom": 767.875,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "scoped",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "App policypending revision"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Workerrunning"
+        },
+        {
+          "top": 649.875,
+          "bottom": 705.875,
+          "text": "Step 2 of 6A fetched revision carries live=false and next-session=new; it is validated before use."
+        },
+        {
+          "top": 715.875,
+          "bottom": 759.875,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "scoped",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "App policylive off; session old"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Workerrunning"
+        },
+        {
+          "top": 649.875,
+          "bottom": 705.875,
+          "text": "Step 3 of 6The application policy applies the live-safe disable but retains the current session value."
+        },
+        {
+          "top": 715.875,
+          "bottom": 759.875,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "scoped",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "App policylive off; session old"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Workercheckpoint; no new starts"
+        },
+        {
+          "top": 649.875,
+          "bottom": 705.875,
+          "text": "Step 4 of 6The worker observes the supported disable at its safe checkpoint; new starts are blocked."
+        },
+        {
+          "top": 715.875,
+          "bottom": 759.875,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "scoped",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "App policylive off; session old"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Workercheckpoint; no new starts"
+        },
+        {
+          "top": 649.875,
+          "bottom": 705.875,
+          "text": "Step 5 of 6The pending next-session value remains pending until a new session."
+        },
+        {
+          "top": 715.875,
+          "bottom": 759.875,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "scoped",
+      "width": 1024,
+      "height": 768,
+      "step": 6,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "App policylive off; session old"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Workercheckpoint; no new starts"
+        },
+        {
+          "top": 649.875,
+          "bottom": 705.875,
+          "text": "Step 6 of 6This is the chapter’s custom apply policy. Already committed external work is not undone by disabling a flag."
+        },
+        {
+          "top": 715.875,
+          "bottom": 759.875,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "all",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 304.875,
+          "bottom": 530.4749755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 304.875,
+          "bottom": 530.4749755859375,
+          "text": "App policylive on; session old"
+        },
+        {
+          "top": 304.875,
+          "bottom": 530.4749755859375,
+          "text": "Workerrunning"
+        },
+        {
+          "top": 657.875,
+          "bottom": 713.875,
+          "text": "Step 1 of 6The current session uses next-session value old. A worker is already running under its documented checkpoint policy."
+        },
+        {
+          "top": 723.875,
+          "bottom": 767.875,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "all",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "App policypending revision"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Workerrunning"
+        },
+        {
+          "top": 649.875,
+          "bottom": 705.875,
+          "text": "Step 2 of 6A fetched revision carries live=false and next-session=new; it is validated before use."
+        },
+        {
+          "top": 715.875,
+          "bottom": 759.875,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "all",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "App policylive off; session NEW"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Workerrunning"
+        },
+        {
+          "top": 649.875,
+          "bottom": 705.875,
+          "text": "Step 3 of 6Whole-snapshot activation also changes the current session value before its intended boundary."
+        },
+        {
+          "top": 715.875,
+          "bottom": 759.875,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "all",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "App policylive off; session NEW"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Workercheckpoint; no new starts"
+        },
+        {
+          "top": 649.875,
+          "bottom": 705.875,
+          "text": "Step 4 of 6The worker observes the supported disable at its safe checkpoint; new starts are blocked."
+        },
+        {
+          "top": 715.875,
+          "bottom": 759.875,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "all",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "App policylive off; session NEW"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Workercheckpoint; no new starts"
+        },
+        {
+          "top": 649.875,
+          "bottom": 705.875,
+          "text": "Step 5 of 6The next-session value was applied early. Fetching a valid revision did not establish that every value was live-safe."
+        },
+        {
+          "top": 715.875,
+          "bottom": 759.875,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "all",
+      "width": 1024,
+      "height": 768,
+      "step": 6,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "App policylive off; session NEW"
+        },
+        {
+          "top": 296.875,
+          "bottom": 522.4749755859375,
+          "text": "Workercheckpoint; no new starts"
+        },
+        {
+          "top": 649.875,
+          "bottom": 705.875,
+          "text": "Step 6 of 6This is the chapter’s custom apply policy. Already committed external work is not undone by disabling a flag."
+        },
+        {
+          "top": 715.875,
+          "bottom": 759.875,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "scoped",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 436.9375,
+          "bottom": 662.5374755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 436.9375,
+          "bottom": 662.5374755859375,
+          "text": "App policylive on; session old"
+        },
+        {
+          "top": 436.9375,
+          "bottom": 662.5374755859375,
+          "text": "Workerrunning"
+        },
+        {
+          "top": 789.9375,
+          "bottom": 845.9375,
+          "text": "Step 1 of 6The current session uses next-session value old. A worker is already running under its documented checkpoint policy."
+        },
+        {
+          "top": 855.9375,
+          "bottom": 899.9375,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "scoped",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "App policypending revision"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Workerrunning"
+        },
+        {
+          "top": 781.9375,
+          "bottom": 837.9375,
+          "text": "Step 2 of 6A fetched revision carries live=false and next-session=new; it is validated before use."
+        },
+        {
+          "top": 847.9375,
+          "bottom": 891.9375,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "scoped",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "App policylive off; session old"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Workerrunning"
+        },
+        {
+          "top": 781.9375,
+          "bottom": 837.9375,
+          "text": "Step 3 of 6The application policy applies the live-safe disable but retains the current session value."
+        },
+        {
+          "top": 847.9375,
+          "bottom": 891.9375,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "scoped",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "App policylive off; session old"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Workercheckpoint; no new starts"
+        },
+        {
+          "top": 781.9375,
+          "bottom": 837.9375,
+          "text": "Step 4 of 6The worker observes the supported disable at its safe checkpoint; new starts are blocked."
+        },
+        {
+          "top": 847.9375,
+          "bottom": 891.9375,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "scoped",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "App policylive off; session old"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Workercheckpoint; no new starts"
+        },
+        {
+          "top": 781.9375,
+          "bottom": 837.9375,
+          "text": "Step 5 of 6The pending next-session value remains pending until a new session."
+        },
+        {
+          "top": 847.9375,
+          "bottom": 891.9375,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "scoped",
+      "width": 1280,
+      "height": 900,
+      "step": 6,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "App policylive off; session old"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Workercheckpoint; no new starts"
+        },
+        {
+          "top": 781.9375,
+          "bottom": 837.9375,
+          "text": "Step 6 of 6This is the chapter’s custom apply policy. Already committed external work is not undone by disabling a flag."
+        },
+        {
+          "top": 847.9375,
+          "bottom": 891.9375,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "all",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 436.9375,
+          "bottom": 662.5374755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 436.9375,
+          "bottom": 662.5374755859375,
+          "text": "App policylive on; session old"
+        },
+        {
+          "top": 436.9375,
+          "bottom": 662.5374755859375,
+          "text": "Workerrunning"
+        },
+        {
+          "top": 789.9375,
+          "bottom": 845.9375,
+          "text": "Step 1 of 6The current session uses next-session value old. A worker is already running under its documented checkpoint policy."
+        },
+        {
+          "top": 855.9375,
+          "bottom": 899.9375,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "all",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "App policypending revision"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Workerrunning"
+        },
+        {
+          "top": 781.9375,
+          "bottom": 837.9375,
+          "text": "Step 2 of 6A fetched revision carries live=false and next-session=new; it is validated before use."
+        },
+        {
+          "top": 847.9375,
+          "bottom": 891.9375,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "all",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "App policylive off; session NEW"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Workerrunning"
+        },
+        {
+          "top": 781.9375,
+          "bottom": 837.9375,
+          "text": "Step 3 of 6Whole-snapshot activation also changes the current session value before its intended boundary."
+        },
+        {
+          "top": 847.9375,
+          "bottom": 891.9375,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "all",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "App policylive off; session NEW"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Workercheckpoint; no new starts"
+        },
+        {
+          "top": 781.9375,
+          "bottom": 837.9375,
+          "text": "Step 4 of 6The worker observes the supported disable at its safe checkpoint; new starts are blocked."
+        },
+        {
+          "top": 847.9375,
+          "bottom": 891.9375,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "all",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "App policylive off; session NEW"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Workercheckpoint; no new starts"
+        },
+        {
+          "top": 781.9375,
+          "bottom": 837.9375,
+          "text": "Step 5 of 6The next-session value was applied early. Fetching a valid revision did not establish that every value was live-safe."
+        },
+        {
+          "top": 847.9375,
+          "bottom": 891.9375,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/kill-switches/",
+      "mode": "all",
+      "width": 1280,
+      "height": 900,
+      "step": 6,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Confignew revision ready"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "App policylive off; session NEW"
+        },
+        {
+          "top": 428.9375,
+          "bottom": 654.5374755859375,
+          "text": "Workercheckpoint; no new starts"
+        },
+        {
+          "top": 781.9375,
+          "bottom": 837.9375,
+          "text": "Step 6 of 6This is the chapter’s custom apply policy. Already committed external work is not undone by disabling a flag."
+        },
+        {
+          "top": 847.9375,
+          "bottom": 891.9375,
+          "text": "1 / 6 · Active2 / 6 · Fetch3 / 6 · Activate4 / 6 · Reconcile5 / 6 · Session boundary6 / 6 · ScopePreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "mitigate",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 236.97161865234375,
+          "bottom": 300.64605712890625,
+          "text": "Release opsmonitoring"
+        },
+        {
+          "top": 357.24554443359375,
+          "bottom": 420.91998291015625,
+          "text": "Play trackN in progress"
+        },
+        {
+          "top": 477.5194396972656,
+          "bottom": 541.19384765625,
+          "text": "Installed appN installed"
+        },
+        {
+          "top": 588.34375,
+          "bottom": 696.34375,
+          "text": "Step 1 of 6The affected cohort already has version N. This app supports a reviewed live-safe feature disable."
+        },
+        {
+          "top": 706.34375,
+          "bottom": 812.34375,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "mitigate",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 236.97161865234375,
+          "bottom": 300.64605712890625,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 357.24554443359375,
+          "bottom": 420.91998291015625,
+          "text": "Play trackN in progress"
+        },
+        {
+          "top": 477.5194396972656,
+          "bottom": 541.19384765625,
+          "text": "Installed appN installed"
+        },
+        {
+          "top": 588.34375,
+          "bottom": 670.34375,
+          "text": "Step 2 of 6Release monitoring identifies a regression in that installed feature."
+        },
+        {
+          "top": 680.34375,
+          "bottom": 786.34375,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "mitigate",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.97161865234375,
+          "bottom": 292.64605712890625,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 349.24554443359375,
+          "bottom": 412.91998291015625,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 469.5194396972656,
+          "bottom": 533.19384765625,
+          "text": "Installed appN installed"
+        },
+        {
+          "top": 580.34375,
+          "bottom": 688.34375,
+          "text": "Step 3 of 6An authorized halt stops further rollout exposure; it does not replace the installed binary."
+        },
+        {
+          "top": 698.34375,
+          "bottom": 804.34375,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "mitigate",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.97161865234375,
+          "bottom": 292.64605712890625,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 349.24554443359375,
+          "bottom": 412.91998291015625,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 469.5194396972656,
+          "bottom": 533.19384765625,
+          "text": "Installed appN; feature broken"
+        },
+        {
+          "top": 580.34375,
+          "bottom": 662.34375,
+          "text": "Step 4 of 6The affected device still runs version N after the halt."
+        },
+        {
+          "top": 672.34375,
+          "bottom": 778.34375,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "mitigate",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.97161865234375,
+          "bottom": 292.64605712890625,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 349.24554443359375,
+          "bottom": 412.91998291015625,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 469.5194396972656,
+          "bottom": 533.19384765625,
+          "text": "Installed appN; feature off"
+        },
+        {
+          "top": 580.34375,
+          "bottom": 688.34375,
+          "text": "Step 5 of 6The online participating client receives, validates and applies the supported live-safe disable."
+        },
+        {
+          "top": 698.34375,
+          "bottom": 804.34375,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "mitigate",
+      "width": 375,
+      "height": 812,
+      "step": 6,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.97161865234375,
+          "bottom": 292.64605712890625,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 349.24554443359375,
+          "bottom": 412.91998291015625,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 469.5194396972656,
+          "bottom": 533.19384765625,
+          "text": "Installed appN; feature off"
+        },
+        {
+          "top": 580.34375,
+          "bottom": 688.34375,
+          "text": "Step 6 of 6Verify the disable’s actual adoption and user recovery while preparing a compatible fix."
+        },
+        {
+          "top": 698.34375,
+          "bottom": 804.34375,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "halt",
+      "width": 375,
+      "height": 812,
+      "step": 1,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 236.97161865234375,
+          "bottom": 300.64605712890625,
+          "text": "Release opsmonitoring"
+        },
+        {
+          "top": 357.24554443359375,
+          "bottom": 420.91998291015625,
+          "text": "Play trackN in progress"
+        },
+        {
+          "top": 477.5194396972656,
+          "bottom": 541.19384765625,
+          "text": "Installed appN installed"
+        },
+        {
+          "top": 588.34375,
+          "bottom": 696.34375,
+          "text": "Step 1 of 6The affected cohort already has version N. This app supports a reviewed live-safe feature disable."
+        },
+        {
+          "top": 706.34375,
+          "bottom": 812.34375,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "halt",
+      "width": 375,
+      "height": 812,
+      "step": 2,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 236.97161865234375,
+          "bottom": 300.64605712890625,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 357.24554443359375,
+          "bottom": 420.91998291015625,
+          "text": "Play trackN in progress"
+        },
+        {
+          "top": 477.5194396972656,
+          "bottom": 541.19384765625,
+          "text": "Installed appN installed"
+        },
+        {
+          "top": 588.34375,
+          "bottom": 670.34375,
+          "text": "Step 2 of 6Release monitoring identifies a regression in that installed feature."
+        },
+        {
+          "top": 680.34375,
+          "bottom": 786.34375,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "halt",
+      "width": 375,
+      "height": 812,
+      "step": 3,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.97161865234375,
+          "bottom": 292.64605712890625,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 349.24554443359375,
+          "bottom": 412.91998291015625,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 469.5194396972656,
+          "bottom": 533.19384765625,
+          "text": "Installed appN installed"
+        },
+        {
+          "top": 580.34375,
+          "bottom": 688.34375,
+          "text": "Step 3 of 6An authorized halt stops further rollout exposure; it does not replace the installed binary."
+        },
+        {
+          "top": 698.34375,
+          "bottom": 804.34375,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "halt",
+      "width": 375,
+      "height": 812,
+      "step": 4,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.97161865234375,
+          "bottom": 292.64605712890625,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 349.24554443359375,
+          "bottom": 412.91998291015625,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 469.5194396972656,
+          "bottom": 533.19384765625,
+          "text": "Installed appN; feature broken"
+        },
+        {
+          "top": 580.34375,
+          "bottom": 662.34375,
+          "text": "Step 4 of 6The affected device still runs version N after the halt."
+        },
+        {
+          "top": 672.34375,
+          "bottom": 778.34375,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "halt",
+      "width": 375,
+      "height": 812,
+      "step": 5,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.97161865234375,
+          "bottom": 292.64605712890625,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 349.24554443359375,
+          "bottom": 412.91998291015625,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 469.5194396972656,
+          "bottom": 533.19384765625,
+          "text": "Installed appN; feature broken"
+        },
+        {
+          "top": 580.34375,
+          "bottom": 688.34375,
+          "text": "Step 5 of 6No installed-client mitigation is applied. A halt alone leaves this device affected."
+        },
+        {
+          "top": 698.34375,
+          "bottom": 804.34375,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "halt",
+      "width": 375,
+      "height": 812,
+      "step": 6,
+      "header": 165,
+      "boxes": [
+        {
+          "top": 228.97161865234375,
+          "bottom": 292.64605712890625,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 349.24554443359375,
+          "bottom": 412.91998291015625,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 469.5194396972656,
+          "bottom": 533.19384765625,
+          "text": "Installed appN; feature broken"
+        },
+        {
+          "top": 580.34375,
+          "bottom": 688.34375,
+          "text": "Step 6 of 6Choose a supported mitigation or hotfix and verify recovery. The halt only bounded additional exposure."
+        },
+        {
+          "top": 698.34375,
+          "bottom": 804.34375,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "mitigate",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 304.765625,
+          "bottom": 530.3656005859375,
+          "text": "Release opsmonitoring"
+        },
+        {
+          "top": 304.765625,
+          "bottom": 530.3656005859375,
+          "text": "Play trackN in progress"
+        },
+        {
+          "top": 304.765625,
+          "bottom": 530.3656005859375,
+          "text": "Installed appN installed"
+        },
+        {
+          "top": 657.765625,
+          "bottom": 713.765625,
+          "text": "Step 1 of 6The affected cohort already has version N. This app supports a reviewed live-safe feature disable."
+        },
+        {
+          "top": 723.765625,
+          "bottom": 767.765625,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "mitigate",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Play trackN in progress"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Installed appN installed"
+        },
+        {
+          "top": 649.765625,
+          "bottom": 705.765625,
+          "text": "Step 2 of 6Release monitoring identifies a regression in that installed feature."
+        },
+        {
+          "top": 715.765625,
+          "bottom": 759.765625,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "mitigate",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Installed appN installed"
+        },
+        {
+          "top": 649.765625,
+          "bottom": 705.765625,
+          "text": "Step 3 of 6An authorized halt stops further rollout exposure; it does not replace the installed binary."
+        },
+        {
+          "top": 715.765625,
+          "bottom": 759.765625,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "mitigate",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Installed appN; feature broken"
+        },
+        {
+          "top": 649.765625,
+          "bottom": 705.765625,
+          "text": "Step 4 of 6The affected device still runs version N after the halt."
+        },
+        {
+          "top": 715.765625,
+          "bottom": 759.765625,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "mitigate",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Installed appN; feature off"
+        },
+        {
+          "top": 649.765625,
+          "bottom": 705.765625,
+          "text": "Step 5 of 6The online participating client receives, validates and applies the supported live-safe disable."
+        },
+        {
+          "top": 715.765625,
+          "bottom": 759.765625,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "mitigate",
+      "width": 1024,
+      "height": 768,
+      "step": 6,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Installed appN; feature off"
+        },
+        {
+          "top": 649.765625,
+          "bottom": 705.765625,
+          "text": "Step 6 of 6Verify the disable’s actual adoption and user recovery while preparing a compatible fix."
+        },
+        {
+          "top": 715.765625,
+          "bottom": 759.765625,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "halt",
+      "width": 1024,
+      "height": 768,
+      "step": 1,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 304.765625,
+          "bottom": 530.3656005859375,
+          "text": "Release opsmonitoring"
+        },
+        {
+          "top": 304.765625,
+          "bottom": 530.3656005859375,
+          "text": "Play trackN in progress"
+        },
+        {
+          "top": 304.765625,
+          "bottom": 530.3656005859375,
+          "text": "Installed appN installed"
+        },
+        {
+          "top": 657.765625,
+          "bottom": 713.765625,
+          "text": "Step 1 of 6The affected cohort already has version N. This app supports a reviewed live-safe feature disable."
+        },
+        {
+          "top": 723.765625,
+          "bottom": 767.765625,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "halt",
+      "width": 1024,
+      "height": 768,
+      "step": 2,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Play trackN in progress"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Installed appN installed"
+        },
+        {
+          "top": 649.765625,
+          "bottom": 705.765625,
+          "text": "Step 2 of 6Release monitoring identifies a regression in that installed feature."
+        },
+        {
+          "top": 715.765625,
+          "bottom": 759.765625,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "halt",
+      "width": 1024,
+      "height": 768,
+      "step": 3,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Installed appN installed"
+        },
+        {
+          "top": 649.765625,
+          "bottom": 705.765625,
+          "text": "Step 3 of 6An authorized halt stops further rollout exposure; it does not replace the installed binary."
+        },
+        {
+          "top": 715.765625,
+          "bottom": 759.765625,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "halt",
+      "width": 1024,
+      "height": 768,
+      "step": 4,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Installed appN; feature broken"
+        },
+        {
+          "top": 649.765625,
+          "bottom": 705.765625,
+          "text": "Step 4 of 6The affected device still runs version N after the halt."
+        },
+        {
+          "top": 715.765625,
+          "bottom": 759.765625,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "halt",
+      "width": 1024,
+      "height": 768,
+      "step": 5,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Installed appN; feature broken"
+        },
+        {
+          "top": 649.765625,
+          "bottom": 705.765625,
+          "text": "Step 5 of 6No installed-client mitigation is applied. A halt alone leaves this device affected."
+        },
+        {
+          "top": 715.765625,
+          "bottom": 759.765625,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "halt",
+      "width": 1024,
+      "height": 768,
+      "step": 6,
+      "header": 180.1875,
+      "boxes": [
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 296.765625,
+          "bottom": 522.3656005859375,
+          "text": "Installed appN; feature broken"
+        },
+        {
+          "top": 649.765625,
+          "bottom": 705.765625,
+          "text": "Step 6 of 6Choose a supported mitigation or hotfix and verify recovery. The halt only bounded additional exposure."
+        },
+        {
+          "top": 715.765625,
+          "bottom": 759.765625,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "mitigate",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 436.828125,
+          "bottom": 662.4281005859375,
+          "text": "Release opsmonitoring"
+        },
+        {
+          "top": 436.828125,
+          "bottom": 662.4281005859375,
+          "text": "Play trackN in progress"
+        },
+        {
+          "top": 436.828125,
+          "bottom": 662.4281005859375,
+          "text": "Installed appN installed"
+        },
+        {
+          "top": 789.828125,
+          "bottom": 845.828125,
+          "text": "Step 1 of 6The affected cohort already has version N. This app supports a reviewed live-safe feature disable."
+        },
+        {
+          "top": 855.828125,
+          "bottom": 899.828125,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "mitigate",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Play trackN in progress"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Installed appN installed"
+        },
+        {
+          "top": 781.828125,
+          "bottom": 837.828125,
+          "text": "Step 2 of 6Release monitoring identifies a regression in that installed feature."
+        },
+        {
+          "top": 847.828125,
+          "bottom": 891.828125,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "mitigate",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Installed appN installed"
+        },
+        {
+          "top": 781.828125,
+          "bottom": 837.828125,
+          "text": "Step 3 of 6An authorized halt stops further rollout exposure; it does not replace the installed binary."
+        },
+        {
+          "top": 847.828125,
+          "bottom": 891.828125,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "mitigate",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Installed appN; feature broken"
+        },
+        {
+          "top": 781.828125,
+          "bottom": 837.828125,
+          "text": "Step 4 of 6The affected device still runs version N after the halt."
+        },
+        {
+          "top": 847.828125,
+          "bottom": 891.828125,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "mitigate",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Installed appN; feature off"
+        },
+        {
+          "top": 781.828125,
+          "bottom": 837.828125,
+          "text": "Step 5 of 6The online participating client receives, validates and applies the supported live-safe disable."
+        },
+        {
+          "top": 847.828125,
+          "bottom": 891.828125,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "mitigate",
+      "width": 1280,
+      "height": 900,
+      "step": 6,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Installed appN; feature off"
+        },
+        {
+          "top": 781.828125,
+          "bottom": 837.828125,
+          "text": "Step 6 of 6Verify the disable’s actual adoption and user recovery while preparing a compatible fix."
+        },
+        {
+          "top": 847.828125,
+          "bottom": 891.828125,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "halt",
+      "width": 1280,
+      "height": 900,
+      "step": 1,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 436.828125,
+          "bottom": 662.4281005859375,
+          "text": "Release opsmonitoring"
+        },
+        {
+          "top": 436.828125,
+          "bottom": 662.4281005859375,
+          "text": "Play trackN in progress"
+        },
+        {
+          "top": 436.828125,
+          "bottom": 662.4281005859375,
+          "text": "Installed appN installed"
+        },
+        {
+          "top": 789.828125,
+          "bottom": 845.828125,
+          "text": "Step 1 of 6The affected cohort already has version N. This app supports a reviewed live-safe feature disable."
+        },
+        {
+          "top": 855.828125,
+          "bottom": 899.828125,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "halt",
+      "width": 1280,
+      "height": 900,
+      "step": 2,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Play trackN in progress"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Installed appN installed"
+        },
+        {
+          "top": 781.828125,
+          "bottom": 837.828125,
+          "text": "Step 2 of 6Release monitoring identifies a regression in that installed feature."
+        },
+        {
+          "top": 847.828125,
+          "bottom": 891.828125,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "halt",
+      "width": 1280,
+      "height": 900,
+      "step": 3,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Installed appN installed"
+        },
+        {
+          "top": 781.828125,
+          "bottom": 837.828125,
+          "text": "Step 3 of 6An authorized halt stops further rollout exposure; it does not replace the installed binary."
+        },
+        {
+          "top": 847.828125,
+          "bottom": 891.828125,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "halt",
+      "width": 1280,
+      "height": 900,
+      "step": 4,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Installed appN; feature broken"
+        },
+        {
+          "top": 781.828125,
+          "bottom": 837.828125,
+          "text": "Step 4 of 6The affected device still runs version N after the halt."
+        },
+        {
+          "top": 847.828125,
+          "bottom": 891.828125,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "halt",
+      "width": 1280,
+      "height": 900,
+      "step": 5,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Installed appN; feature broken"
+        },
+        {
+          "top": 781.828125,
+          "bottom": 837.828125,
+          "text": "Step 5 of 6No installed-client mitigation is applied. A halt alone leaves this device affected."
+        },
+        {
+          "top": 847.828125,
+          "bottom": 891.828125,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    },
+    {
+      "route": "release-engineering/staged-rollouts/",
+      "mode": "halt",
+      "width": 1280,
+      "height": 900,
+      "step": 6,
+      "header": 132.1875,
+      "boxes": [
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Release opsregression confirmed"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Play trackrollout halted"
+        },
+        {
+          "top": 428.828125,
+          "bottom": 654.4281005859375,
+          "text": "Installed appN; feature broken"
+        },
+        {
+          "top": 781.828125,
+          "bottom": 837.828125,
+          "text": "Step 6 of 6Choose a supported mitigation or hotfix and verify recovery. The halt only bounded additional exposure."
+        },
+        {
+          "top": 847.828125,
+          "bottom": 891.828125,
+          "text": "1 / 6 · Installed2 / 6 · Regression3 / 6 · Halt4 / 6 · Installed state5 / 6 · Mitigation6 / 6 · RecoveryPreviousPlayNextReset"
+        }
+      ],
+      "labelOverlap": false,
+      "clippedText": false,
+      "titleOverlap": false,
+      "ok": true,
+      "focused": true,
+      "moving": false,
+      "packets": 0
+    }
+  ],
+  "pages": [
+    "release-engineering/crash-rate-gating/",
+    "release-engineering/kill-switches/",
+    "release-engineering/staged-rollouts/"
+  ],
+  "errors": [],
+  "limits": "Headless Chromium; default reading size. Favicon 404 is excluded. No physical-device, network or service integration certification."
+}
